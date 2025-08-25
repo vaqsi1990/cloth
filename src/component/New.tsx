@@ -1,7 +1,8 @@
 "use client"
 import React, { useState } from "react"
 import Image from "next/image"
-import { Star, ShoppingCart, Heart } from "lucide-react"
+import {  ShoppingCart, Heart } from "lucide-react"
+import Link from "next/link"
 
 const New = () => {
   const [activeTab, setActiveTab] = useState("ALL")
@@ -85,7 +86,7 @@ const New = () => {
     },
   ]
 
-  
+
 
   // ფილტრაცია ტაბის მიხედვით
   const filteredProducts =
@@ -108,11 +109,10 @@ const New = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`pb-2 text-lg font-medium transition-colors duration-300 border-b-2 ${
-                  activeTab === tab.id
+                className={`pb-2 text-lg font-medium transition-colors duration-300 border-b-2 ${activeTab === tab.id
                     ? "text-teal-600 border-teal-600"
                     : "text-gray-600 border-transparent hover:text-teal-500 hover:border-teal-500"
-                }`}
+                  }`}
               >
                 {tab.label}
               </button>
@@ -168,7 +168,7 @@ const New = () => {
                   {product.name}
                 </h3>
 
-             
+
 
                 {/* Pricing */}
                 <div className="flex items-center space-x-2">
@@ -181,6 +181,14 @@ const New = () => {
                     </span>
                   )}
                 </div>
+
+                <Link
+                  href={`/product/${product.id}`}
+                  className="gi-btn-1 mt-4 transition-all duration-[0.3s] ease-in-out overflow-hidden text-center relative py-[10px] max-[767px]:py-[6px] px-[15px] max-[767px]:px-[10px] bg-[#4b5966] text-[#fff] border-[0] text-[15px] max-[767px]:text-[13px] tracking-[0] font-medium inline-flex items-center hover:bg-[#5caf90] hover:text-[#fff]"
+                >
+                  დეტალები
+
+                </Link>
               </div>
             </div>
           ))}

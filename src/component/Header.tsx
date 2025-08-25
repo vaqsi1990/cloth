@@ -29,21 +29,21 @@ const Header = () => {
            <Image src="/logo.jpg" className='rounded-full' alt="logo" width={60} height={60} />
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center space-x-8">
-            <Link href="/women" className="text-black md:text-[20px] text-[18px]  font-medium transition-colors">
-          ქალი
-            </Link>
-            <Link href="/men" className="text-black md:text-[20px] text-[18px]  font-medium transition-colors">
-            მამაკაცი
-            </Link>
-            <Link href="/kids" className="text-black md:text-[20px] text-[18px]  font-medium transition-colors">
-            ბავშვები
-            </Link>
+                     {/* Desktop Navigation */}
+           <nav className="hidden lg:flex items-center space-x-8">
+             <Link href="/shop?category=women" className="text-black md:text-[20px] text-[18px]  font-medium transition-colors">
+           ქალი
+             </Link>
+             <Link href="/shop?category=men" className="text-black md:text-[20px] text-[18px]  font-medium transition-colors">
+             მამაკაცი
+             </Link>
+             <Link href="/shop?category=kids" className="text-black md:text-[20px] text-[18px]  font-medium transition-colors">
+             ბავშვები
+             </Link>
             
-            <Link href="/sale" className="text-black md:text-[20px] text-[18px] font-medium transition-colors">
-            ფასდაკლებები
-            </Link>
+          
+            
+          
           </nav>
 
           {/* Search, Account, Cart */}
@@ -54,17 +54,17 @@ const Header = () => {
               className="p-2 text-black cursor-pointer  transition-colors"
               aria-label="Search"
             >
-              <Search className="w-5 h-5 cursor-pointer" />
+              <Search className="w-5 h-5 md:w-7 md:h-7 cursor-pointer" />
             </button>
 
             {/* Account */}
             <Link href="/account" className="p-2 text-black  transition-colors">
-              <User className="w-5 h-5 cursor-pointer" />
+              <User className="w-5 h-5 md:w-7 md:h-7 cursor-pointer" />
             </Link>
 
             {/* Cart */}
             <Link href="/cart" className="p-2 text-black  transition-colors relative">
-              <ShoppingBag className="w-5 h-5 cursor-pointer" />
+              <ShoppingBag className="w-5 h-5 md:w-7 md:h-7 cursor-pointer" />
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                 0
               </span>
@@ -102,36 +102,30 @@ const Header = () => {
       {isMobileMenuOpen && (
         <div className="lg:hidden h-screen bg-white border-t border-black">
           <nav className="container mx-auto px-4 py-4">
-            <div className="flex flex-col space-y-4">
-              <Link 
-                href="/women" 
-                className="text-black hover:text-gray-900 font-medium py-2 transition-colors"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                ქალი
-              </Link>
-              <Link 
-                href="/men" 
-                className="text-black hover:text-gray-900 font-medium py-2 transition-colors"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                მამაკაცი
-              </Link>
-              <Link 
-                href="/kids" 
-                className="text-black hover:text-gray-900 font-medium py-2 transition-colors"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                ბავშვები
-              </Link>
+                         <div className="flex flex-col space-y-4">
+               <Link 
+                 href="/shop?category=women" 
+                 className="text-black hover:text-gray-900 font-medium py-2 transition-colors"
+                 onClick={() => setIsMobileMenuOpen(false)}
+               >
+                 ქალი
+               </Link>
+               <Link 
+                 href="/shop?category=men" 
+                 className="text-black hover:text-gray-900 font-medium py-2 transition-colors"
+                 onClick={() => setIsMobileMenuOpen(false)}
+               >
+                 მამაკაცი
+               </Link>
+               <Link 
+                 href="/shop?category=kids" 
+                 className="text-black hover:text-gray-900 font-medium py-2 transition-colors"
+                 onClick={() => setIsMobileMenuOpen(false)}
+               >
+                 ბავშვები
+               </Link>
              
-              <Link 
-                href="/sale" 
-                className="text-red-600 hover:text-red-700 font-medium py-2 transition-colors"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                ფასდაკლებები
-              </Link>
+            
             
             </div>
           </nav>
