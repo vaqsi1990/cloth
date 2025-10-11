@@ -1,8 +1,10 @@
 "use client"
 import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { Star, ShoppingCart, Heart, Filter, X, ChevronDown } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
+import productsData from '@/data/products.json'
 
 const ShopPageClient = () => {
     const searchParams = useSearchParams()
@@ -46,216 +48,23 @@ const ShopPageClient = () => {
 
     // Dynamic product data based on category
     const getProductsByCategory = (category: string) => {
+        const allProducts = productsData.products
+        
         switch (category) {
             case 'women':
-                return [
-                    {
-                        id: 1,
-                        name: "ქალის ელეგანტური კაბა",
-                        category: "DRESSES",
-                        currentPrice: 89.99,
-                        originalPrice: 120.00,
-                        rating: 5,
-                        image: "/new/4.jpg",
-                        hasSale: true,
-                        isNew: true,
-                        sizes: ["S", "M", "L"],
-                        colors: ["black", "red", "blue"]
-                    },
-                    {
-                        id: 2,
-                        name: "ქალის ბლუზა ფრენჩული მანჟეტებით",
-                        category: "TOPS",
-                        currentPrice: 45.99,
-                        originalPrice: 65.00,
-                        rating: 4,
-                        image: "/new/1.jpg",
-                        hasSale: false,
-                        isNew: true,
-                        sizes: ["XS", "S", "M", "L"],
-                        colors: ["white", "pink", "purple"]
-                    },
-                    {
-                        id: 3,
-                        name: "ქალის ზაფხულის კაბა",
-                        category: "DRESSES",
-                        currentPrice: 67.50,
-                        originalPrice: 67.50,
-                        rating: 5,
-                        image: "/new/2.jpg",
-                        hasSale: false,
-                        isNew: false,
-                        sizes: ["S", "M", "L", "XL"],
-                        colors: ["green", "yellow", "blue"]
-                    },
-                    {
-                        id: 4,
-                        name: "ქალის ჯინსები მაღალი წელით",
-                        category: "BOTTOMS",
-                        currentPrice: 78.00,
-                        originalPrice: 95.00,
-                        rating: 4,
-                        image: "/new/3.jpg",
-                        hasSale: true,
-                        isNew: false,
-                        sizes: ["26", "28", "30", "32"],
-                        colors: ["blue", "black"]
-                    },
-                    {
-                        id: 5,
-                        name: "ქალის ბლუზა ბოუტონებით",
-                        category: "TOPS",
-                        currentPrice: 52.99,
-                        originalPrice: 52.99,
-                        rating: 5,
-                        image: "/new/5.jpg",
-                        hasSale: false,
-                        isNew: true,
-                        sizes: ["S", "M", "L"],
-                        colors: ["white", "black", "red"]
-                    }
-                ]
-            
+                return allProducts.filter(product => 
+                    product.id >= 1 && product.id <= 5
+                )
             case 'men':
-                return [
-                    {
-                        id: 6,
-                        name: "მამაკაცის კლასიკური შარვალი",
-                        category: "BOTTOMS",
-                        currentPrice: 75.99,
-                        originalPrice: 95.00,
-                        rating: 5,
-                        image: "/new/1.jpg",
-                        hasSale: true,
-                        isNew: false,
-                        sizes: ["30", "32", "34", "36"],
-                        colors: ["black", "blue", "gray"]
-                    },
-                    {
-                        id: 7,
-                        name: "მამაკაცის ბლუზა",
-                        category: "TOPS",
-                        currentPrice: 55.50,
-                        originalPrice: 70.00,
-                        rating: 4,
-                        image: "/new/2.jpg",
-                        hasSale: true,
-                        isNew: false,
-                        sizes: ["S", "M", "L", "XL"],
-                        colors: ["white", "blue", "green"]
-                    },
-                    {
-                        id: 8,
-                        name: "მამაკაცის ქურთუკი",
-                        category: "OUTERWEAR",
-                        currentPrice: 120.00,
-                        originalPrice: 150.00,
-                        rating: 5,
-                        image: "/new/3.jpg",
-                        hasSale: true,
-                        isNew: false,
-                        sizes: ["M", "L", "XL", "XXL"],
-                        colors: ["black", "gray", "brown"]
-                    },
-                    {
-                        id: 9,
-                        name: "მამაკაცის ფეხსაცმელი",
-                        category: "ACCESSORIES",
-                        currentPrice: 89.99,
-                        originalPrice: 110.00,
-                        rating: 4,
-                        image: "/new/4.jpg",
-                        hasSale: true,
-                        isNew: false,
-                        sizes: ["7", "8", "9", "10", "11"],
-                        colors: ["black", "brown", "white"]
-                    },
-                    {
-                        id: 10,
-                        name: "მამაკაცის ტანსაცმელი",
-                        category: "TOPS",
-                        currentPrice: 42.99,
-                        originalPrice: 42.99,
-                        rating: 5,
-                        image: "/new/5.jpg",
-                        hasSale: false,
-                        isNew: true,
-                        sizes: ["S", "M", "L"],
-                        colors: ["white", "black", "gray"]
-                    }
-                ]
-            
+                return allProducts.filter(product => 
+                    product.id >= 6 && product.id <= 10
+                )
             case 'kids':
-                return [
-                    {
-                        id: 11,
-                        name: "ბავშვის ზაფხულის კაბა",
-                        category: "DRESSES",
-                        currentPrice: 35.99,
-                        originalPrice: 45.00,
-                        rating: 5,
-                        image: "/new/6.jpg",
-                        hasSale: true,
-                        isNew: false,
-                        sizes: ["2T", "3T", "4T", "5T"],
-                        colors: ["pink", "yellow", "blue"]
-                    },
-                    {
-                        id: 12,
-                        name: "ბავშვის ბლუზა",
-                        category: "TOPS",
-                        currentPrice: 28.50,
-                        originalPrice: 35.00,
-                        rating: 4,
-                        image: "/new/7.jpg",
-                        hasSale: true,
-                        isNew: false,
-                        sizes: ["2T", "3T", "4T"],
-                        colors: ["white", "red", "green"]
-                    },
-                    {
-                        id: 13,
-                        name: "ბავშვის შარვალი",
-                        category: "BOTTOMS",
-                        currentPrice: 32.99,
-                        originalPrice: 40.00,
-                        rating: 5,
-                        image: "/new/1.jpg",
-                        hasSale: true,
-                        isNew: false,
-                        sizes: ["2T", "3T", "4T", "5T"],
-                        colors: ["blue", "black", "gray"]
-                    },
-                    {
-                        id: 14,
-                        name: "ბავშვის ქურთუკი",
-                        category: "OUTERWEAR",
-                        currentPrice: 65.00,
-                        originalPrice: 80.00,
-                        rating: 4,
-                        image: "/new/2.jpg",
-                        hasSale: true,
-                        isNew: false,
-                        sizes: ["2T", "3T", "4T"],
-                        colors: ["red", "blue", "green"]
-                    },
-                    {
-                        id: 15,
-                        name: "ბავშვის ფეხსაცმელი",
-                        category: "ACCESSORIES",
-                        currentPrice: 45.99,
-                        originalPrice: 55.00,
-                        rating: 5,
-                        image: "/new/3.jpg",
-                        hasSale: true,
-                        isNew: false,
-                        sizes: ["8", "9", "10", "11", "12"],
-                        colors: ["black", "white", "red"]
-                    }
-                ]
-            
+                return allProducts.filter(product => 
+                    product.id >= 11 && product.id <= 15
+                )
             default:
-                return []
+                return allProducts
         }
     }
 
@@ -523,12 +332,13 @@ const ShopPageClient = () => {
                                     className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 group"
                                 >
                                     {/* Product Image */}
-                                    <div className="relative aspect-square overflow-hidden rounded-t-lg">
+                                    <div className="relative aspect-square overflow-hidden rounded-t-lg bg-white">
                                         <Image
                                             src={product.image}
                                             alt={product.name}
                                             fill
-                                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                            className="object-cover group-hover:scale-110 transition-transform duration-500"
+                                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                                         />
 
                                         {/* Badges */}
@@ -586,7 +396,7 @@ const ShopPageClient = () => {
                                         </div>
 
                                         {/* Pricing */}
-                                        <div className="flex items-center space-x-2">
+                                        <div className="flex items-center space-x-2 mb-4">
                                             <span className="text-lg font-bold text-gray-900">
                                                 ₾{product.currentPrice.toFixed(2)}
                                             </span>
@@ -596,6 +406,14 @@ const ShopPageClient = () => {
                                                 </span>
                                             )}
                                         </div>
+
+                                        {/* Action Button */}
+                                        <Link
+                                            href={`/product/${product.id}`}
+                                            className="w-full bg-teal-600 text-white py-2 px-4 rounded-lg font-medium text-center hover:bg-teal-700 transition-colors"
+                                        >
+                                            დეტალები
+                                        </Link>
                                     </div>
                                 </div>
                             ))}

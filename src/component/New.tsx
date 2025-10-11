@@ -3,6 +3,7 @@ import React, { useState } from "react"
 import Image from "next/image"
 import {  ShoppingCart, Heart } from "lucide-react"
 import Link from "next/link"
+import productsData from '@/data/products.json'
 
 const New = () => {
   const [activeTab, setActiveTab] = useState("ALL")
@@ -13,78 +14,8 @@ const New = () => {
     { id: "FOOTWEAR", label: "ფეხსაცმელი" },
   ]
 
-  const newProducts = [
-    {
-      id: 1,
-      name: "Men's Stylish Printed Shirt",
-      category: "CLOTHES",
-      currentPrice: 59.0,
-      originalPrice: 87.0,
-      rating: 5,
-      image: "/new/1.jpg",
-      hasSale: false,
-    },
-    {
-      id: 2,
-      name: "Men's Stylish Printed Shirt",
-      category: "CLOTHES",
-      currentPrice: 59.0,
-      originalPrice: 87.0,
-      rating: 5,
-      image: "/new/2.jpg",
-      hasSale: false,
-    },
-    {
-      id: 3,
-      name: "Men's Stylish Printed Shirt",
-      category: "CLOTHES",
-      currentPrice: 59.0,
-      originalPrice: 87.0,
-      rating: 5,
-      image: "/new/3.jpg",
-      hasSale: false,
-    },
-    {
-      id: 6,
-      name: "Men's Stylish Printed Shirt",
-      category: "FOOTWEAR",
-      currentPrice: 59.0,
-      originalPrice: 87.0,
-      rating: 5,
-      image: "/new/6.jpg",
-      hasSale: false,
-    },
-    {
-      id: 5,
-      name: "Stylish Printed Women's Dress",
-      category: "FOOTWEAR",
-      currentPrice: 78.0,
-      originalPrice: 85.0,
-      rating: 5,
-      image: "/new/4.jpg",
-      hasSale: true,
-    },
-    {
-      id: 8,
-      name: "Printed Round Neck T-shirt",
-      category: "CLOTHES",
-      currentPrice: 32.0,
-      originalPrice: 45.0,
-      rating: 5,
-      image: "/new/5.jpg",
-      hasSale: false,
-    },
-    {
-      id: 7,
-      name: "Women's Sport Shoes",
-      category: "FOOTWEAR",
-      currentPrice: 500.0,
-      originalPrice: 600.0,
-      rating: 4,
-      image: "/new/7.jpg",
-      hasSale: true,
-    },
-  ]
+  // Get new products from JSON data
+  const newProducts = productsData.products.filter(product => product.isNew)
 
 
 
@@ -128,12 +59,13 @@ const New = () => {
               className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 group"
             >
               {/* Product Image */}
-              <div className="relative aspect-square overflow-hidden rounded-t-lg">
+              <div className="relative aspect-square overflow-hidden rounded-t-lg bg-white">
                 <Image
                   src={product.image}
                   alt={product.name}
                   fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  className="object-cover group-hover:scale-110 transition-transform duration-500"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 20vw"
                 />
 
                 {/* Sale Badge */}
@@ -173,11 +105,11 @@ const New = () => {
                 {/* Pricing */}
                 <div className="flex items-center space-x-2">
                   <span className="text-lg font-bold text-gray-900">
-                    ${product.currentPrice.toFixed(2)}
+                    {product.currentPrice.toFixed(2)} ლარი
                   </span>
                   {product.originalPrice > product.currentPrice && (
                     <span className="text-[14px] text-gray-400 line-through">
-                      ${product.originalPrice.toFixed(2)}
+                      {product.originalPrice.toFixed(2)} ლარი
                     </span>
                   )}
                 </div>

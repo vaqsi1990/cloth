@@ -1,0 +1,481 @@
+{
+  "products": [
+    {
+      "id": 1,
+      "name": "ქალის ელეგანტური კაბა",
+      "category": "DRESSES",
+      "currentPrice": 89.99,
+      "originalPrice": 120.00,
+      "rating": 5,
+      "image": "/new/1.jpg",
+      "images": ["/new/1.jpg", "/new/2.jpg", "/new/3.jpg", "/new/4.jpg"],
+      "hasSale": true,
+      "isNew": true,
+      "sizes": ["S", "M", "L"],
+      "colors": ["black", "red", "blue"],
+      "description": "ელეგანტური კაბა უმაღლესი ხარისხის მასალისგან. იდეალურია როგორც ყოველდღიური, ასევე სპეციალური ღონისძიებებისთვის.",
+      "features": [
+        "100% ბამბა",
+        "მოქნილი მასალა",
+        "მარტივი მოვლა",
+        "წინა და უკანა ჯიბეები"
+      ],
+      "inStock": true,
+      "stockCount": 15,
+      "reviews": [
+        { "id": 1, "user": "მარია", "rating": 5, "comment": "ძალიან ლამაზი კაბაა, ხარისხიანი მასალისგან!", "date": "2024-01-15" },
+        { "id": 2, "user": "ნინო", "rating": 5, "comment": "ფერი და ზომა იდეალურია", "date": "2024-01-10" }
+      ],
+      "specifications": {
+        "მასალა": "100% ბამბა",
+        "ფორმა": "A-ფორმა",
+        "სიგრძე": "შუა სიგრძე",
+        "ჯიბეები": "2 ჯიბე",
+        "მოვლა": "30°C ხელით"
+      }
+    },
+    {
+      "id": 2,
+      "name": "ქალის ბლუზა ფრენჩული მანჟეტებით",
+      "category": "TOPS",
+      "currentPrice": 45.99,
+      "originalPrice": 65.00,
+      "rating": 4,
+      "image": "/new/2.jpg",
+      "images": ["/new/2.jpg", "/new/3.jpg", "/new/4.jpg", "/new/5.jpg"],
+      "hasSale": false,
+      "isNew": true,
+      "sizes": ["XS", "S", "M", "L"],
+      "colors": ["white", "pink", "purple"],
+      "description": "სტილური ბლუზა ფრენჩული მანჟეტებით, რომელიც გამოირჩევა თავისი ელეგანტურობით და კომფორტით.",
+      "features": [
+        "95% ბამბა, 5% ელასტანი",
+        "ფრენჩული მანჟეტები",
+        "მოქნილი მასალა",
+        "მარტივი მოვლა"
+      ],
+      "inStock": true,
+      "stockCount": 8,
+      "reviews": [
+        { "id": 1, "user": "ელენა", "rating": 4, "comment": "ლამაზი ბლუზაა, მაგრამ ცოტა მჭირდება", "date": "2024-01-12" }
+      ],
+      "specifications": {
+        "მასალა": "95% ბამბა, 5% ელასტანი",
+        "ფორმა": "კლასიკური",
+        "მანჟეტები": "ფრენჩული",
+        "მოვლა": "30°C ხელით"
+      }
+    },
+    {
+      "id": 3,
+      "name": "ქალის ზაფხულის კაბა",
+      "category": "DRESSES",
+      "currentPrice": 67.50,
+      "originalPrice": 67.50,
+      "rating": 5,
+      "image": "/new/3.jpg",
+      "images": ["/new/3.jpg", "/new/4.jpg", "/new/5.jpg", "/new/6.jpg"],
+      "hasSale": false,
+      "isNew": false,
+      "sizes": ["S", "M", "L", "XL"],
+      "colors": ["green", "yellow", "blue"],
+      "description": "მოდური ზაფხულის კაბა, რომელიც გამოირჩევა თავისი ფერადობით და კომფორტით.",
+      "features": [
+        "100% ბამბა",
+        "ფერადი დიზაინი",
+        "მოქნილი მასალა",
+        "მარტივი მოვლა"
+      ],
+      "inStock": true,
+      "stockCount": 10,
+      "reviews": [
+        { "id": 1, "user": "თამარი", "rating": 5, "comment": "ძალიან ლამაზი კაბაა!", "date": "2024-01-16" }
+      ],
+      "specifications": {
+        "მასალა": "100% ბამბა",
+        "ფორმა": "A-ფორმა",
+        "სიგრძე": "მოკლე",
+        "ფერი": "ფერადი",
+        "მოვლა": "30°C ხელით"
+      }
+    },
+    {
+      "id": 4,
+      "name": "ქალის ჯინსები მაღალი წელით",
+      "category": "BOTTOMS",
+      "currentPrice": 78.00,
+      "originalPrice": 95.00,
+      "rating": 4,
+      "image": "/new/4.jpg",
+      "images": ["/new/4.jpg", "/new/5.jpg", "/new/6.jpg", "/new/7.jpg"],
+      "hasSale": true,
+      "isNew": false,
+      "sizes": ["26", "28", "30", "32"],
+      "colors": ["blue", "black"],
+      "description": "კლასიკური ჯინსები მაღალი წელით, რომელიც გამოირჩევა თავისი კომფორტით და სტილით.",
+      "features": [
+        "98% ბამბა, 2% ელასტანი",
+        "მაღალი წელი",
+        "კლასიკური ფორმა",
+        "მაგარი მასალა"
+      ],
+      "inStock": true,
+      "stockCount": 18,
+      "reviews": [
+        { "id": 1, "user": "ნინო", "rating": 4, "comment": "კარგი ხარისხი", "date": "2024-01-14" }
+      ],
+      "specifications": {
+        "მასალა": "98% ბამბა, 2% ელასტანი",
+        "ფორმა": "სწორი",
+        "წელი": "მაღალი",
+        "ჯიბეები": "5 ჯიბე",
+        "მოვლა": "30°C ხელით"
+      }
+    },
+    {
+      "id": 5,
+      "name": "ქალის ბლუზა ბოუტონებით",
+      "category": "TOPS",
+      "currentPrice": 52.99,
+      "originalPrice": 52.99,
+      "rating": 5,
+      "image": "/new/5.jpg",
+      "images": ["/new/5.jpg", "/new/6.jpg", "/new/7.jpg", "/new/1.jpg"],
+      "hasSale": false,
+      "isNew": true,
+      "sizes": ["S", "M", "L"],
+      "colors": ["white", "black", "red"],
+      "description": "ელეგანტური ბლუზა ბოუტონებით, რომელიც გამოირჩევა თავისი სტილით და კომფორტით.",
+      "features": [
+        "100% ბამბა",
+        "ბოუტონები",
+        "კლასიკური ფორმა",
+        "მარტივი მოვლა"
+      ],
+      "inStock": true,
+      "stockCount": 12,
+      "reviews": [
+        { "id": 1, "user": "მარია", "rating": 5, "comment": "ძალიან ლამაზია!", "date": "2024-01-15" }
+      ],
+      "specifications": {
+        "მასალა": "100% ბამბა",
+        "ფორმა": "კლასიკური",
+        "ბოუტონები": "წინა",
+        "მოვლა": "30°C ხელით"
+      }
+    },
+    {
+      "id": 6,
+      "name": "მამაკაცის კლასიკური შარვალი",
+      "category": "BOTTOMS",
+      "currentPrice": 75.99,
+      "originalPrice": 95.00,
+      "rating": 5,
+      "image": "/new/6.jpg",
+      "images": ["/new/6.jpg", "/new/7.jpg", "/new/1.jpg", "/new/2.jpg"],
+      "hasSale": true,
+      "isNew": false,
+      "sizes": ["30", "32", "34", "36"],
+      "colors": ["black", "blue", "gray"],
+      "description": "კლასიკური შარვალი მამაკაცებისთვის, რომელიც გამოირჩევა თავისი ხარისხით და კომფორტით.",
+      "features": [
+        "100% ბამბა",
+        "კლასიკური ფორმა",
+        "მაგარი მასალა",
+        "წინა და უკანა ჯიბეები"
+      ],
+      "inStock": true,
+      "stockCount": 12,
+      "reviews": [
+        { "id": 1, "user": "გიორგი", "rating": 5, "comment": "ძალიან კარგი ხარისხი, რეკომენდირებულია!", "date": "2024-01-14" }
+      ],
+      "specifications": {
+        "მასალა": "100% ბამბა",
+        "ფორმა": "სწორი",
+        "ჯიბეები": "5 ჯიბე",
+        "მოვლა": "40°C მანქანით"
+      }
+    },
+    {
+      "id": 7,
+      "name": "მამაკაცის ბლუზა",
+      "category": "TOPS",
+      "currentPrice": 55.50,
+      "originalPrice": 70.00,
+      "rating": 4,
+      "image": "/new/5.jpg",
+      "images": ["/new/5.jpg", "/new/6.jpg", "/new/7.jpg", "/new/1.jpg"],
+      "hasSale": true,
+      "isNew": false,
+      "sizes": ["S", "M", "L", "XL"],
+      "colors": ["white", "blue", "green"],
+      "description": "კლასიკური მამაკაცის ბლუზა, რომელიც გამოირჩევა თავისი ხარისხით და კომფორტით.",
+      "features": [
+        "100% ბამბა",
+        "კლასიკური ფორმა",
+        "მაგარი მასალა",
+        "მარტივი მოვლა"
+      ],
+      "inStock": true,
+      "stockCount": 14,
+      "reviews": [
+        { "id": 1, "user": "დავითი", "rating": 4, "comment": "კარგი ხარისხი", "date": "2024-01-13" }
+      ],
+      "specifications": {
+        "მასალა": "100% ბამბა",
+        "ფორმა": "კლასიკური",
+        "მოვლა": "40°C მანქანით"
+      }
+    },
+    {
+      "id": 8,
+      "name": "მამაკაცის ქურთუკი",
+      "category": "OUTERWEAR",
+      "currentPrice": 120.00,
+      "originalPrice": 150.00,
+      "rating": 5,
+      "image": "/new/2.jpg",
+      "images": ["/new/2.jpg", "/new/3.jpg", "/new/4.jpg", "/new/5.jpg"],
+      "hasSale": true,
+      "isNew": false,
+      "sizes": ["M", "L", "XL", "XXL"],
+      "colors": ["black", "gray", "brown"],
+      "description": "ელეგანტური მამაკაცის ქურთუკი, რომელიც გამოირჩევა თავისი სტილით და ხარისხით.",
+      "features": [
+        "100% ბამბა",
+        "ელეგანტური დიზაინი",
+        "მაგარი მასალა",
+        "მარტივი მოვლა"
+      ],
+      "inStock": true,
+      "stockCount": 8,
+      "reviews": [
+        { "id": 1, "user": "ლევანი", "rating": 5, "comment": "ძალიან კარგია!", "date": "2024-01-12" }
+      ],
+      "specifications": {
+        "მასალა": "100% ბამბა",
+        "ფორმა": "კლასიკური",
+        "მოვლა": "40°C მანქანით"
+      }
+    },
+    {
+      "id": 9,
+      "name": "მამაკაცის ფეხსაცმელი",
+      "category": "ACCESSORIES",
+      "currentPrice": 89.99,
+      "originalPrice": 110.00,
+      "rating": 4,
+      "image": "/new/3.jpg",
+      "images": ["/new/3.jpg", "/new/4.jpg", "/new/5.jpg", "/new/6.jpg"],
+      "hasSale": true,
+      "isNew": false,
+      "sizes": ["7", "8", "9", "10", "11"],
+      "colors": ["black", "brown", "white"],
+      "description": "კომფორტული მამაკაცის ფეხსაცმელი, რომელიც გამოირჩევა თავისი ხარისხით.",
+      "features": [
+        "ნამდვილი ტყავი",
+        "კომფორტული",
+        "გამძლე",
+        "მარტივი მოვლა"
+      ],
+      "inStock": true,
+      "stockCount": 16,
+      "reviews": [
+        { "id": 1, "user": "გიორგი", "rating": 4, "comment": "კარგი ხარისხი", "date": "2024-01-11" }
+      ],
+      "specifications": {
+        "მასალა": "ნამდვილი ტყავი",
+        "ფორმა": "კლასიკური",
+        "მოვლა": "ხელით"
+      }
+    },
+    {
+      "id": 10,
+      "name": "მამაკაცის ტანსაცმელი",
+      "category": "TOPS",
+      "currentPrice": 42.99,
+      "originalPrice": 42.99,
+      "rating": 5,
+      "image": "/new/4.jpg",
+      "images": ["/new/4.jpg", "/new/5.jpg", "/new/6.jpg", "/new/7.jpg"],
+      "hasSale": false,
+      "isNew": true,
+      "sizes": ["S", "M", "L"],
+      "colors": ["white", "black", "gray"],
+      "description": "კომფორტული მამაკაცის ტანსაცმელი, რომელიც გამოირჩევა თავისი ხარისხით.",
+      "features": [
+        "100% ბამბა",
+        "კომფორტული",
+        "მაგარი მასალა",
+        "მარტივი მოვლა"
+      ],
+      "inStock": true,
+      "stockCount": 20,
+      "reviews": [
+        { "id": 1, "user": "ნიკო", "rating": 5, "comment": "ძალიან კარგია!", "date": "2024-01-10" }
+      ],
+      "specifications": {
+        "მასალა": "100% ბამბა",
+        "ფორმა": "კლასიკური",
+        "მოვლა": "40°C მანქანით"
+      }
+    },
+    {
+      "id": 11,
+      "name": "ბავშვის ზაფხულის კაბა",
+      "category": "DRESSES",
+      "currentPrice": 35.99,
+      "originalPrice": 45.00,
+      "rating": 5,
+      "image": "/new/1.jpg",
+      "images": ["/new/1.jpg", "/new/2.jpg", "/new/3.jpg", "/new/4.jpg"],
+      "hasSale": true,
+      "isNew": false,
+      "sizes": ["2T", "3T", "4T", "5T"],
+      "colors": ["pink", "yellow", "blue"],
+      "description": "საყვარელი ზაფხულის კაბა ბავშვებისთვის, რომელიც გამოირჩევა თავისი ფერადობით და კომფორტით.",
+      "features": [
+        "100% ბამბა",
+        "ფერადი დიზაინი",
+        "მოქნილი მასალა",
+        "მარტივი მოვლა"
+      ],
+      "inStock": true,
+      "stockCount": 20,
+      "reviews": [
+        { "id": 1, "user": "ანა", "rating": 5, "comment": "ჩემი ქალიშვილი ძალიან უყვარს!", "date": "2024-01-13" }
+      ],
+      "specifications": {
+        "მასალა": "100% ბამბა",
+        "ფორმა": "A-ფორმა",
+        "სიგრძე": "მოკლე",
+        "ფერი": "ფერადი",
+        "მოვლა": "30°C ხელით"
+      }
+    },
+    {
+      "id": 12,
+      "name": "ბავშვის ბლუზა",
+      "category": "TOPS",
+      "currentPrice": 28.50,
+      "originalPrice": 35.00,
+      "rating": 4,
+      "image": "/new/5.jpg",
+      "images": ["/new/5.jpg", "/new/6.jpg", "/new/7.jpg", "/new/1.jpg"],
+      "hasSale": true,
+      "isNew": false,
+      "sizes": ["2T", "3T", "4T"],
+      "colors": ["white", "red", "green"],
+      "description": "კომფორტული ბავშვის ბლუზა, რომელიც გამოირჩევა თავისი ხარისხით.",
+      "features": [
+        "100% ბამბა",
+        "კომფორტული",
+        "მაგარი მასალა",
+        "მარტივი მოვლა"
+      ],
+      "inStock": true,
+      "stockCount": 15,
+      "reviews": [
+        { "id": 1, "user": "მარიამი", "rating": 4, "comment": "კარგი ხარისხი", "date": "2024-01-12" }
+      ],
+      "specifications": {
+        "მასალა": "100% ბამბა",
+        "ფორმა": "კლასიკური",
+        "მოვლა": "30°C ხელით"
+      }
+    },
+    {
+      "id": 13,
+      "name": "ბავშვის შარვალი",
+      "category": "BOTTOMS",
+      "currentPrice": 32.99,
+      "originalPrice": 40.00,
+      "rating": 5,
+      "image": "/new/1.jpg",
+      "images": ["/new/1.jpg", "/new/2.jpg", "/new/3.jpg", "/new/4.jpg"],
+      "hasSale": true,
+      "isNew": false,
+      "sizes": ["2T", "3T", "4T", "5T"],
+      "colors": ["blue", "black", "gray"],
+      "description": "კომფორტული ბავშვის შარვალი, რომელიც გამოირჩევა თავისი ხარისხით.",
+      "features": [
+        "100% ბამბა",
+        "კომფორტული",
+        "მაგარი მასალა",
+        "მარტივი მოვლა"
+      ],
+      "inStock": true,
+      "stockCount": 18,
+      "reviews": [
+        { "id": 1, "user": "ნინო", "rating": 5, "comment": "ძალიან კარგია!", "date": "2024-01-11" }
+      ],
+      "specifications": {
+        "მასალა": "100% ბამბა",
+        "ფორმა": "კლასიკური",
+        "მოვლა": "30°C ხელით"
+      }
+    },
+    {
+      "id": 14,
+      "name": "ბავშვის ქურთუკი",
+      "category": "OUTERWEAR",
+      "currentPrice": 65.00,
+      "originalPrice": 80.00,
+      "rating": 4,
+      "image": "/new/2.jpg",
+      "images": ["/new/2.jpg", "/new/3.jpg", "/new/4.jpg", "/new/1.jpg"],
+      "hasSale": true,
+      "isNew": false,
+      "sizes": ["2T", "3T", "4T"],
+      "colors": ["red", "blue", "green"],
+      "description": "თბილი ბავშვის ქურთუკი, რომელიც გამოირჩევა თავისი ხარისხით.",
+      "features": [
+        "100% ბამბა",
+        "თბილი",
+        "მაგარი მასალა",
+        "მარტივი მოვლა"
+      ],
+      "inStock": true,
+      "stockCount": 12,
+      "reviews": [
+        { "id": 1, "user": "თამარი", "rating": 4, "comment": "კარგი ხარისხი", "date": "2024-01-10" }
+      ],
+      "specifications": {
+        "მასალა": "100% ბამბა",
+        "ფორმა": "კლასიკური",
+        "მოვლა": "30°C ხელით"
+      }
+    },
+    {
+      "id": 15,
+      "name": "ბავშვის ფეხსაცმელი",
+      "category": "ACCESSORIES",
+      "currentPrice": 45.99,
+      "originalPrice": 55.00,
+      "rating": 5,
+      "image": "/new/2.jpg",
+      "images": ["/new/2.jpg", "/new/3.jpg", "/new/4.jpg", "/new/5.jpg"],
+      "hasSale": true,
+      "isNew": false,
+      "sizes": ["8", "9", "10", "11", "12"],
+      "colors": ["black", "white", "red"],
+      "description": "კომფორტული ბავშვის ფეხსაცმელი, რომელიც გამოირჩევა თავისი ხარისხით.",
+      "features": [
+        "ნამდვილი ტყავი",
+        "კომფორტული",
+        "გამძლე",
+        "მარტივი მოვლა"
+      ],
+      "inStock": true,
+      "stockCount": 22,
+      "reviews": [
+        { "id": 1, "user": "ელენა", "rating": 5, "comment": "ძალიან კარგია!", "date": "2024-01-09" }
+      ],
+      "specifications": {
+        "მასალა": "ნამდვილი ტყავი",
+        "ფორმა": "კლასიკური",
+        "მოვლა": "ხელით"
+      }
+    }
+  ]
+}
