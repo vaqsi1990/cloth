@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useParams } from 'next/navigation'
 import Image from 'next/image'
 import { Star, ShoppingCart, Heart, Truck, Shield, RotateCcw, ArrowLeft, Share2, Eye, MessageCircle, CheckCircle } from 'lucide-react'
@@ -11,7 +11,6 @@ const ProductPage = () => {
     const productId = params.id as string
     
     const [selectedSize, setSelectedSize] = useState<string>('')
-    const [selectedColor, setSelectedColor] = useState<string>('')
     const [quantity, setQuantity] = useState(1)
     const [activeImage, setActiveImage] = useState(0)
     const [activeTab, setActiveTab] = useState('description')
@@ -29,22 +28,18 @@ const ProductPage = () => {
         setSelectedSize(size)
     }
 
-    // Handle color selection
-    const handleColorSelect = (color: string) => {
-        setSelectedColor(color)
-    }
 
     // Handle quantity change
     const handleQuantityChange = (newQuantity: number) => {
-        if (newQuantity >= 1 && newQuantity <= product?.stockCount!) {
+        if (newQuantity >= 1 && newQuantity <= (product?.stockCount || 0)) {
             setQuantity(newQuantity)
         }
     }
 
     // Add to cart
     const addToCart = () => {
-        if (!selectedSize || !selectedColor) {
-            alert('გთხოვთ აირჩიოთ ზომა და ფერი')
+        if (!selectedSize) {
+            alert('გთხოვთ აირჩიოთ ზომა')
             return
         }
         // Add to cart logic here
@@ -83,31 +78,6 @@ const ProductPage = () => {
         )
     }
 
-    const colorLabels: { [key: string]: string } = {
-        black: "შავი",
-        white: "თეთრი",
-        red: "წითელი",
-        blue: "ლურჯი",
-        green: "მწვანე",
-        yellow: "ყვითელი",
-        pink: "ვარდისფერი",
-        purple: "იისფერი",
-        gray: "ნაცრისფერი",
-        brown: "ყავისფერი"
-    }
-
-    const colorHex: { [key: string]: string } = {
-        black: "#000000",
-        white: "#FFFFFF",
-        red: "#FF0000",
-        blue: "#0000FF",
-        green: "#008000",
-        yellow: "#FFFF00",
-        pink: "#FFC0CB",
-        purple: "#800080",
-        gray: "#808080",
-        brown: "#A52A2A"
-    }
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -291,7 +261,7 @@ const ProductPage = () => {
                         <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4">
                             <button
                                 onClick={addToCart}
-                                disabled={!selectedSize || !selectedColor}
+                                disabled={!selectedSize}
                                 className="w-full bg-teal-600 text-white py-5 px-6 rounded-xl font-semibold text-xl hover:bg-teal-700 transition-all duration-300 disabled:bg-gray-300 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
                             >
                                 <ShoppingCart className="w-6 h-6 inline mr-3" />
@@ -337,7 +307,7 @@ const ProductPage = () => {
                                 </div>
                                 <div className="flex items-center text-gray-600">
                                     <RotateCcw className="w-6 h-6 mr-4 text-teal-600" />
-                                    <div>
+        <div>
                                         <div className="font-medium">30 დღიანი დაბრუნება</div>
                                         <div className="text-sm">უფასო დაბრუნება</div>
                                     </div>
