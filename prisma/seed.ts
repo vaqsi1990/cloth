@@ -17,7 +17,8 @@ async function main() {
     { name: 'ბლუზები', slug: 'tops' },
     { name: 'შარვლები', slug: 'bottoms' },
     { name: 'ზედა ტანსაცმელი', slug: 'outerwear' },
-    { name: 'აქსესუარები', slug: 'accessories' }
+    { name: 'აქსესუარები', slug: 'accessories' },
+    { name: 'ფეხსაცმელი', slug: 'shoes' }
   ]
 
   console.log('📁 Creating categories...')
@@ -38,6 +39,7 @@ async function main() {
     if (cat.slug === 'bottoms') categoryMap['BOTTOMS'] = cat.id
     if (cat.slug === 'outerwear') categoryMap['OUTERWEAR'] = cat.id
     if (cat.slug === 'accessories') categoryMap['ACCESSORIES'] = cat.id
+    if (cat.slug === 'shoes') categoryMap['SHOES'] = cat.id
   })
 
   console.log('🛍️ Creating products...')

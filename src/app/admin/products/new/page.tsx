@@ -1,7 +1,7 @@
 "use client"
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Upload, Plus, X } from 'lucide-react'
+import { ArrowLeft, Plus, X } from 'lucide-react'
 import Link from 'next/link'
 import { z } from 'zod'
 import ImageUpload from '@/component/CloudinaryUploader'
@@ -58,7 +58,7 @@ const NewProductPage = () => {
 
   const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
 
-  const handleInputChange = (field: keyof ProductFormData, value: any) => {
+  const handleInputChange = (field: keyof ProductFormData, value: string | number | boolean | undefined) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -125,7 +125,7 @@ const NewProductPage = () => {
     }))
   }
 
-  const updateVariant = (index: number, field: string, value: any) => {
+  const updateVariant = (index: number, field: string, value: string | number | undefined) => {
     setFormData(prev => ({
       ...prev,
       variants: prev.variants.map((variant, i) => 
@@ -167,7 +167,7 @@ const NewProductPage = () => {
       } else {
         if (result.errors) {
           const newErrors: Record<string, string> = {}
-          result.errors.forEach((err: any) => {
+          result.errors.forEach((err: { path: string[]; message: string }) => {
             if (err.path.length > 0) {
               newErrors[err.path.join('.')] = err.message
             }

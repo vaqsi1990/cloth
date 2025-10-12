@@ -8,7 +8,7 @@ const productSchema = z.object({
   slug: z.string().min(1, 'Slug აუცილებელია').regex(/^[a-z0-9-]+$/, 'Slug უნდა შეიცავდეს მხოლოდ პატარა ასოებს, ციფრებს და ტირეებს'),
   description: z.string().optional(),
   currentPrice: z.number().min(0, 'ფასი უნდა იყოს დადებითი'),
-  originalPrice: z.number().min(0, 'ორიგინალური ფასი უნდა იყოს დადებითი').optional(),
+  originalPrice: z.number().min(0, 'ორიგინალური ფასი უნდა იყოს დადებითი').nullable().optional(),
   stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი').default(0),
   isNew: z.boolean().default(false),
   hasSale: z.boolean().default(false),
@@ -17,9 +17,9 @@ const productSchema = z.object({
   variants: z.array(z.object({
     size: z.string().min(1, 'ზომა აუცილებელია'),
     stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი'),
-    price: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional()
+    price: z.number().min(0, 'ფასი უნდა იყოს დადებითი').nullable().optional()
   })).default([]),
-  imageUrls: z.array(z.string().url('არასწორი URL')).default([])
+  imageUrls: z.array(z.string().min(1, 'URL აუცილებელია')).default([])
 })
 
 // GET - Fetch single product by ID
@@ -145,6 +145,15 @@ export async function PUT(
       }, { status: 404 })
     }
 
+    // First delete existing images and variants
+    await prisma.productImage.deleteMany({
+      where: { productId: productId }
+    })
+    
+    await prisma.productVariant.deleteMany({
+      where: { productId: productId }
+    })
+
     // Update product with nested updates
     const updatedProduct = await prisma.product.update({
       where: { id: productId },
@@ -159,18 +168,16 @@ export async function PUT(
         hasSale: validatedData.hasSale,
         rating: validatedData.rating,
         categoryId: validatedData.categoryId,
-        // Update images
+        // Create new images
         images: {
-          deleteMany: {}, // Delete existing images
           create: validatedData.imageUrls.map((url, index) => ({
             url: url,
             alt: `${validatedData.name} - სურათი ${index + 1}`,
             position: index
           }))
         },
-        // Update variants
+        // Create new variants
         variants: {
-          deleteMany: {}, // Delete existing variants
           create: validatedData.variants.map(variant => ({
             size: variant.size,
             stock: variant.stock,

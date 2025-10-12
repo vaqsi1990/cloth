@@ -11,7 +11,7 @@ const productSchema = z.object({
   slug: z.string().min(1, 'Slug აუცილებელია').regex(/^[a-z0-9-]+$/, 'Slug უნდა შეიცავდეს მხოლოდ პატარა ასოებს, ციფრებს და ტირეებს'),
   description: z.string().optional(),
   currentPrice: z.number().min(0, 'ფასი უნდა იყოს დადებითი'),
-  originalPrice: z.number().min(0, 'ორიგინალური ფასი უნდა იყოს დადებითი').optional(),
+  originalPrice: z.number().min(0, 'ორიგინალური ფასი უნდა იყოს დადებითი').nullable().optional(),
   stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი').default(0),
   isNew: z.boolean().default(false),
   hasSale: z.boolean().default(false),
@@ -20,9 +20,9 @@ const productSchema = z.object({
   variants: z.array(z.object({
     size: z.string().min(1, 'ზომა აუცილებელია'),
     stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი'),
-    price: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional()
+    price: z.number().min(0, 'ფასი უნდა იყოს დადებითი').nullable().optional()
   })).default([]),
-  imageUrls: z.array(z.string().url('არასწორი URL')).default([])
+  imageUrls: z.array(z.string().min(1, 'URL აუცილებელია')).default([])
 })
 
 type ProductFormData = z.infer<typeof productSchema>
@@ -33,6 +33,7 @@ const EditProductPage = () => {
   const productId = params.id as string
 
   const [product, setProduct] = useState<Product | null>(null)
+  const [categories, setCategories] = useState<{ id: number; name: string; slug: string }[]>([])
   const [loading, setLoading] = useState(true)
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
@@ -51,14 +52,38 @@ const EditProductPage = () => {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  // Fetch categories
+  const fetchCategories = async () => {
+    try {
+      console.log('=== FETCHING CATEGORIES ===')
+      const response = await fetch('/api/categories')
+      const data = await response.json()
+      console.log('Categories response:', data)
+      if (data.success) {
+        setCategories(data.categories)
+        console.log('Categories set successfully:', data.categories)
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error)
+    }
+  }
+
   // Fetch product data
   useEffect(() => {
     const fetchProduct = async () => {
       try {
+        console.log('=== FETCHING PRODUCT ===')
+        console.log('Product ID:', productId)
         const response = await fetch(`/api/products/${productId}`)
+        console.log('Fetch response status:', response.status)
         const data = await response.json()
+        console.log('Fetch response data:', data)
         if (data.success) {
           const product = data.product
+          console.log('Product data:', product)
+          console.log('Product images:', product.images)
+          const imageUrls = product.images?.map((img: { url: string }) => img.url) || []
+          console.log('Mapped image URLs:', imageUrls)
           setProduct(product)
           setFormData({
             name: product.name,
@@ -72,18 +97,24 @@ const EditProductPage = () => {
             rating: product.rating || 0,
             categoryId: product.categoryId,
             variants: product.variants || [],
-            imageUrls: product.images?.map((img: any) => img.url) || []
+            imageUrls: imageUrls
           })
+          console.log('Form data set successfully')
+        } else {
+          console.log('API returned success: false')
         }
       } catch (error) {
+        console.error('=== ERROR FETCHING PRODUCT ===')
         console.error('Error fetching product:', error)
       } finally {
         setLoading(false)
+        console.log('Loading set to false')
       }
     }
 
     if (productId) {
       fetchProduct()
+      fetchCategories()
     }
   }, [productId])
 
@@ -119,7 +150,7 @@ const EditProductPage = () => {
     }
   }
 
-  const handleInputChange = (field: keyof ProductFormData, value: any) => {
+  const handleInputChange = (field: keyof ProductFormData, value: string | number | boolean | undefined) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -143,7 +174,7 @@ const EditProductPage = () => {
     }))
   }
 
-  const updateVariant = (index: number, field: string, value: any) => {
+  const updateVariant = (index: number, field: string, value: string | number | undefined) => {
     setFormData(prev => ({
       ...prev,
       variants: prev.variants.map((variant, i) => 
@@ -161,11 +192,21 @@ const EditProductPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('=== FORM SUBMISSION STARTED ===')
+    console.log('Form submitted!')
+    console.log('Product ID:', productId)
+    console.log('Form data:', formData)
+    console.log('Is submitting:', isSubmitting)
     setIsSubmitting(true)
     setErrors({})
 
     try {
+      console.log('About to validate form data...')
+      console.log('Form data before validation:', JSON.stringify(formData, null, 2))
+      console.log('Image URLs in form data:', formData.imageUrls)
       const validatedData = productSchema.parse(formData)
+      console.log('Validation successful, sending update request:', validatedData)
+      
       const response = await fetch(`/api/products/${productId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -173,14 +214,21 @@ const EditProductPage = () => {
       })
       
       const result = await response.json()
+      console.log('=== API RESPONSE ===')
+      console.log('Response status:', response.status)
+      console.log('Response ok:', response.ok)
+      console.log('Update response:', result)
       
       if (result.success) {
+        console.log('=== SUCCESS ===')
         alert('პროდუქტი წარმატებით განახლდა!')
         router.push('/admin')
       } else {
+        console.log('=== API ERROR ===')
+        console.log('Error result:', result)
         if (result.errors) {
           const newErrors: Record<string, string> = {}
-          result.errors.forEach((err: any) => {
+           result.errors.forEach((err: { path: string[]; message: string }) => {
             if (err.path.length > 0) {
               newErrors[err.path.join('.')] = err.message
             }
@@ -191,7 +239,10 @@ const EditProductPage = () => {
         }
       }
     } catch (error) {
+      console.log('=== CATCH ERROR ===')
+      console.error('Error updating product:', error)
       if (error instanceof z.ZodError) {
+        console.log('Zod validation error:', error.issues)
         const newErrors: Record<string, string> = {}
         error.issues.forEach(err => {
           if (err.path.length > 0) {
@@ -200,10 +251,11 @@ const EditProductPage = () => {
         })
         setErrors(newErrors)
       } else {
-        console.error('Error updating product:', error)
+        console.error('General error:', error)
         alert('შეცდომა პროდუქტის განახლებისას')
       }
     } finally {
+      console.log('=== FINALLY BLOCK ===')
       setIsSubmitting(false)
     }
   }
@@ -295,6 +347,25 @@ const EditProductPage = () => {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                   placeholder="შეიყვანეთ პროდუქტის აღწერა"
                 />
+              </div>
+
+              <div>
+                <label className="block text-[20px] text-black font-medium mb-2">
+                  კატეგორია
+                </label>
+                <select
+                  value={formData.categoryId || ''}
+                  onChange={(e) => handleInputChange('categoryId', e.target.value ? parseInt(e.target.value) : undefined)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                >
+                  <option value="">კატეგორიის არჩევა</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+                {errors.categoryId && <p className="text-red-500 text-sm mt-1">{errors.categoryId}</p>}
               </div>
 
               <div className="grid grid-cols-2 gap-4">

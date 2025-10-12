@@ -8,7 +8,7 @@ const productSchema = z.object({
   slug: z.string().min(1, 'Slug აუცილებელია'),
   description: z.string().optional(),
   currentPrice: z.number().min(0, 'ფასი უნდა იყოს დადებითი'),
-  originalPrice: z.number().min(0, 'ორიგინალური ფასი უნდა იყოს დადებითი').optional(),
+  originalPrice: z.number().min(0, 'ორიგინალური ფასი უნდა იყოს დადებითი').nullable().optional(),
   stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი').default(0),
   isNew: z.boolean().default(false),
   hasSale: z.boolean().default(false),
@@ -17,9 +17,9 @@ const productSchema = z.object({
   variants: z.array(z.object({
     size: z.string().min(1, 'ზომა აუცილებელია'),
     stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი'),
-    price: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional()
+    price: z.number().min(0, 'ფასი უნდა იყოს დადებითი').nullable().optional()
   })).default([]),
-  imageUrls: z.array(z.string().url('არასწორი URL')).default([])
+  imageUrls: z.array(z.string().min(1, 'URL აუცილებელია')).default([])
 })
 
 // GET - Fetch all products
