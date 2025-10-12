@@ -4,10 +4,12 @@ import React, { useState } from 'react'
 import Link from 'next/link'
 import { ShoppingBag, Search, Menu,  User } from 'lucide-react'
 import Image from 'next/image'
+import { useCart } from '@/context/CartContext'
 
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const { getTotalItems } = useCart()
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen)
@@ -65,9 +67,11 @@ const Header = () => {
             {/* Cart */}
             <Link href="/cart" className="p-2 text-black  transition-colors relative">
               <ShoppingBag className="w-5 h-5 md:w-7 md:h-7 cursor-pointer" />
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                0
-              </span>
+              {getTotalItems() > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {getTotalItems()}
+                </span>
+              )}
             </Link>
 
             {/* Mobile menu button */}

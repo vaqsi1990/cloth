@@ -5,17 +5,18 @@ import Image from 'next/image'
 import { Star, ShoppingCart, Heart, Truck, Shield, RotateCcw, ArrowLeft, Share2, Eye, MessageCircle, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
 import productsData from '@/data/products.json'
+import { useCart } from '@/context/CartContext'
 
 const ProductPage = () => {
     const params = useParams()
     const productId = params.id as string
+    const { addToCart } = useCart()
     
     const [selectedSize, setSelectedSize] = useState<string>('')
     const [quantity, setQuantity] = useState(1)
     const [activeImage, setActiveImage] = useState(0)
     const [activeTab, setActiveTab] = useState('description')
     const [isWishlisted, setIsWishlisted] = useState(false)
-
     // Get product data from JSON
     const getProductById = (id: string) => {
         return productsData.products.find(product => product.id === parseInt(id)) || null
@@ -28,23 +29,51 @@ const ProductPage = () => {
         setSelectedSize(size)
     }
 
-
     // Handle quantity change
     const handleQuantityChange = (newQuantity: number) => {
         if (newQuantity >= 1 && newQuantity <= (product?.stockCount || 0)) {
             setQuantity(newQuantity)
         }
     }
+    const [isAdding, setIsAdding] = useState(false)
 
-    // Add to cart
-    const addToCart = () => {
+    const handleAddToCart = () => {
+        console.log('handleAddToCart called at:', Date.now())
+        
+        if (!product) return
         if (!selectedSize) {
             alert('გთხოვთ აირჩიოთ ზომა')
             return
         }
-        // Add to cart logic here
-        alert('პროდუქტი დაემატა კალათაში')
+    
+        if (isAdding) {
+            console.log('Already adding, skipping duplicate call')
+            return // <-- თავიდან აიცილე ორმაგი დაჭერა
+        }
+        
+        console.log('Setting isAdding to true')
+        setIsAdding(true)
+    
+        const cartItem = {
+            id: product.id,
+            name: product.name,
+            image: product.image,
+            price: product.currentPrice,
+            size: selectedSize,
+            quantity,
+            maxStock: product.stockCount,
+        }
+    
+        console.log('Calling addToCart with:', cartItem)
+        addToCart(cartItem)
+        setQuantity(1)
+    
+        setTimeout(() => {
+            console.log('Setting isAdding to false')
+            setIsAdding(false)
+        }, 400)
     }
+    
 
     // Toggle wishlist
     const toggleWishlist = () => {
@@ -122,7 +151,7 @@ const ProductPage = () => {
                                     </span>
                                 )}
                                 {product.isNew && (
-                                    <span className="bg-teal-500 text-white px-3 py-1 rounded-full text-sm font-semibold shadow-lg transform hover:scale-105 transition-transform duration-200">
+                                    <span className="bg-black text-white px-3 py-1 rounded-full text-sm font-semibold shadow-lg transform hover:scale-105 transition-transform duration-200">
                                         NEW
                                     </span>
                                 )}
@@ -140,8 +169,8 @@ const ProductPage = () => {
                                     onClick={() => setActiveImage(index)}
                                     className={`relative w-full h-20 bg-white rounded-lg overflow-hidden border-2 transition-all duration-300 hover:scale-105 ${
                                         activeImage === index 
-                                            ? 'border-teal-500 ring-2 ring-teal-200 shadow-lg' 
-                                            : 'border-gray-200 hover:border-teal-300 hover:shadow-md'
+                                              ? 'border-black ring-2 ring-black shadow-lg'
+                                            : 'border-gray-200 hover:border-black hover:shadow-md'
                                     }`}
                                 >
                                     <Image
@@ -200,7 +229,7 @@ const ProductPage = () => {
                                         <button
                                             key={size}
                                             onClick={() => handleSizeSelect(size)}
-                                            className={`py-4 px-4 text-center rounded-xl border-2 transition-all font-medium ${
+                                            className={`py-4 px-4 cursor-pointer text-center rounded-xl border-2 transition-all font-medium ${
                                                 selectedSize === size
                                                     ? "border-black bg-black text-white shadow-md"
                                                     : "border-gray-300 hover:border-black text-black hover:bg-gray-50"
@@ -220,14 +249,14 @@ const ProductPage = () => {
                                 <div className="flex items-center space-x-4">
                                     <button
                                         onClick={() => handleQuantityChange(quantity - 1)}
-                                        className="w-12 h-12 rounded-xl border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                                        className="w-12 h-12 cursor-pointer rounded-xl border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
                                     >
                                         -
                                     </button>
                                     <span className="w-20 text-center text-xl font-medium">{quantity}</span>
                                     <button
                                         onClick={() => handleQuantityChange(quantity + 1)}
-                                        className="w-12 h-12 rounded-xl border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                                        className="w-12 cursor-pointer h-12 rounded-xl border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
                                     >
                                         +
                                     </button>
@@ -240,9 +269,9 @@ const ProductPage = () => {
 
                         {/* Action Buttons */}
                             <button
-                                onClick={addToCart}
+                                onClick={handleAddToCart}
                                 disabled={!selectedSize}
-                                className="w-full bg-black  text-white py-5 px-6 rounded-xl font-semibold md:text-[20px] text-[18px] transition-all duration-300 disabled:bg-gray-300 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+                                className="w-full bg-black cursor-pointer text-white py-5 px-6 rounded-xl font-semibold md:text-[20px] text-[18px] transition-all duration-300 disabled:bg-gray-300 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
                             >
                                 <ShoppingCart className="w-6 h-6 inline mr-3" />
                                 კალათაში დამატება
@@ -291,7 +320,7 @@ const ProductPage = () => {
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
-                                    className={`py-6 px-1 border-b-2 font-medium text-sm transition-colors ${
+                                    className={`py-6 cursor-pointer px-1 border-b-2 font-medium text-sm transition-colors ${
                                         activeTab === tab.id
                                             ? 'border-black text-black'
                                             : 'border-transparent text-black hover:text-black hover:border-black'
@@ -340,7 +369,7 @@ const ProductPage = () => {
                                         <div className="flex items-center justify-between mb-3">
                                             <div className="flex items-center space-x-3">
                                                 <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center">
-                                                    <span className="text-black font-medium">{review.user[0]}</span>
+                                                    <span className="text-white font-medium">{review.user[0]}</span>
                                                 </div>
                                                 <div>
                                                     <div className="font-medium text-black">{review.user}</div>

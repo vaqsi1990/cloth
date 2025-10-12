@@ -164,14 +164,14 @@ const ShopPageClient = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50">
             {/* Header */}
             <div className="bg-white shadow-sm border-b">
                 <div className="container mx-auto px-4 py-6">
-                    <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
-                        {categoryInfo.title} <span className="text-teal-600">ტანსაცმელი</span>
+                    <h1 className="md:text-[18px] text-[16px] font-bold text-black">
+                        {categoryInfo.title} <span className="text-black">ტანსაცმელი</span>
                     </h1>
-                    <p className="text-gray-600 mt-2">{categoryInfo.description}</p>
+                    <p className="md:text-[18px] text-[16px] text-black mt-2">{categoryInfo.description}</p>
                 </div>
             </div>
 
@@ -183,13 +183,13 @@ const ShopPageClient = () => {
                         className="flex items-center space-x-2 bg-white px-4 py-3 rounded-lg shadow-sm border w-full justify-between"
                     >
                         <div className="flex items-center space-x-2">
-                            <Filter className="w-5 h-5 text-gray-600" />
-                            <span className="font-medium text-gray-700">ფილტრები</span>
+                            <Filter className="w-5 h-5 text-black" />
+                            <span className="font-medium text-black">ფილტრები</span>
                         </div>
                         {isFilterOpen ? (
-                            <X className="w-5 h-5 text-gray-600" />
+                            <X className="w-5 h-5 text-black" />
                         ) : (
-                            <ChevronDown className="w-5 h-5 text-gray-600" />
+                            <ChevronDown className="w-5 h-5 text-black" />
                         )}
                     </button>
                 </div>
@@ -203,7 +203,7 @@ const ShopPageClient = () => {
                                 <h3 className="text-lg font-semibold text-gray-900">ფილტრები</h3>
                                 <button
                                     onClick={clearFilters}
-                                    className="text-sm text-teal-600 hover:text-teal-700 font-medium"
+                                    className="text-sm text-black hover:text-black font-medium"
                                 >
                                     გაწმენდა
                                 </button>
@@ -219,7 +219,7 @@ const ShopPageClient = () => {
                                             onClick={() => setActiveCategory(category.id)}
                                             className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
                                                 activeCategory === category.id
-                                                    ? "bg-teal-100 text-teal-700"
+                                                    ? "bg-black text-white"
                                                     : "text-gray-600 hover:bg-gray-100"
                                             }`}
                                         >
@@ -260,8 +260,8 @@ const ShopPageClient = () => {
                                             onClick={() => toggleSize(size.id)}
                                             className={`px-3 py-2 text-sm rounded-md border transition-colors ${
                                                 selectedSizes.includes(size.id)
-                                                    ? "bg-teal-600 text-white border-teal-600"
-                                                    : "bg-white text-gray-700 border-gray-300 hover:border-teal-500"
+                                                    ? "bg-black text-white border-black"
+                                                    : "bg-white text-gray-700 border-gray-300 hover:border-black"
                                             }`}
                                         >
                                             {size.label}
@@ -273,7 +273,7 @@ const ShopPageClient = () => {
                           
                             {/* Results Count */}
                             <div className="pt-4 border-t border-gray-200">
-                                <p className="text-sm text-gray-600">
+                                <p className="md:text-[18px] text-[16px] text-black">
                                     ნაპოვნია {sortedProducts.length} პროდუქტი
                                 </p>
                             </div>
@@ -286,11 +286,11 @@ const ShopPageClient = () => {
                         <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0">
                                 <div className="flex items-center space-x-2">
-                                    <span className="text-sm text-gray-600">დალაგება:</span>
+                                    <span className="md:text-[18px] text-[16px] text-black">დალაგება:</span>
                                     <select
                                         value={sortBy}
                                         onChange={(e) => setSortBy(e.target.value)}
-                                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black"
                                     >
                                         <option value="newest">ახალი</option>
                                         <option value="price-low">ფასი: დაბლიდან მაღლა</option>
@@ -299,7 +299,7 @@ const ShopPageClient = () => {
                                     </select>
                                 </div>
                                 
-                                <div className="text-sm text-gray-600">
+                                <div className="md:text-[18px] text-[16px] text-black">
                                     ნაპოვნია {sortedProducts.length} პროდუქტი
                                 </div>
                             </div>
@@ -325,13 +325,13 @@ const ShopPageClient = () => {
                                         {/* Badges */}
                                         <div className="absolute top-3 left-3 flex flex-col space-y-2">
                                             {product.hasSale && (
-                                                <div className="bg-red-500 text-white px-2 py-1 rounded text-xs font-semibold">
-                                                    SALE
+                                                <div className="bg-black text-white px-2 py-1 rounded md:text-[18px] text-[16px] font-semibold">
+                                                   ფასდაკლება
                                                 </div>
                                             )}
                                             {product.isNew && (
-                                                <div className="bg-teal-500 text-white px-2 py-1 rounded text-xs font-semibold">
-                                                    NEW
+                                                <div className="bg-black text-white px-2 py-1 rounded md:text-[18px] text-[16px] font-semibold">
+                                                   ახალი
                                                 </div>
                                             )}
                                         </div>
@@ -339,10 +339,10 @@ const ShopPageClient = () => {
                                         {/* Quick Actions */}
                                         <div className="absolute top-3 right-3 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                             <button className="bg-white p-2 rounded-full shadow-lg hover:bg-gray-50 transition-colors">
-                                                <Heart className="w-4 h-4 text-gray-600" />
+                                                <Heart className="w-4 h-4 text-black" />
                                             </button>
                                             <button className="bg-white p-2 rounded-full shadow-lg hover:bg-gray-50 transition-colors">
-                                                <ShoppingCart className="w-4 h-4 text-gray-600" />
+                                                <ShoppingCart className="w-4 h-4 text-black" />
                                             </button>
                                         </div>
                                     </div>
@@ -351,13 +351,13 @@ const ShopPageClient = () => {
                                     <div className="p-4">
                                         {/* Category */}
                                         <div className="mb-2">
-                                            <span className="text-xs text-gray-500 uppercase tracking-wide">
+                                            <span className="md:text-[18px] text-[16px] text-black uppercase tracking-wide">
                                                 {categories.find(cat => cat.id === product.category)?.label}
                                             </span>
                                         </div>
 
                                         {/* Product Title */}
-                                        <h3 className="text-sm font-medium text-gray-900 mb-2 leading-tight line-clamp-2">
+                                        <h3 className="md:text-[18px] text-[16px] font-medium text-black mb-2 leading-tight line-clamp-2">
                                             {product.name}
                                         </h3>
 
@@ -373,16 +373,16 @@ const ShopPageClient = () => {
                                                     />
                                                 ))}
                                             </div>
-                                            <span className="text-xs text-gray-500 ml-2">({product.rating})</span>
+                                            <span className="md:text-[18px] text-[16px] text-black ml-2">({product.rating})</span>
                                         </div>
 
                                         {/* Pricing */}
                                         <div className="flex items-center space-x-2 mb-4">
-                                            <span className="text-lg font-bold text-gray-900">
+                                            <span className="md:text-[18px] text-[16px] font-bold text-black">
                                                 ₾{product.currentPrice.toFixed(2)}
                                             </span>
                                             {product.originalPrice > product.currentPrice && (
-                                                <span className="text-sm text-gray-400 line-through">
+                                                <span className="md:text-[18px] text-[16px] text-black line-through">
                                                     ₾{product.originalPrice.toFixed(2)}
                                                 </span>
                                             )}
@@ -391,7 +391,7 @@ const ShopPageClient = () => {
                                         {/* Action Button */}
                                         <Link
                                             href={`/product/${product.id}`}
-                                            className="w-full bg-teal-600 text-white py-2 px-4 rounded-lg font-medium text-center hover:bg-teal-700 transition-colors"
+                                            className="gi-btn-1 rounded-md mt-4 transition-all duration-[0.3s] ease-in-out overflow-hidden text-center relative py-[10px] max-[767px]:py-[6px] px-[15px] max-[767px]:px-[10px] bg-[#4b5966] text-[#fff] border-[0] text-[15px] max-[767px]:text-[13px] tracking-[0] font-medium inline-flex items-center hover:text-[#fff]"
                                         >
                                             დეტალები
                                         </Link>
@@ -403,7 +403,7 @@ const ShopPageClient = () => {
                         {/* No Results */}
                         {sortedProducts.length === 0 && (
                             <div className="text-center py-12">
-                                <div className="text-gray-500 text-lg mb-2">პროდუქტი ვერ მოიძებნა</div>
+                                <div className="md:text-[18px] text-[16px] text-black mb-2">პროდუქტი ვერ მოიძებნა</div>
                                 <p className="text-gray-400">სცადეთ სხვა ფილტრები</p>
                             </div>
                         )}
