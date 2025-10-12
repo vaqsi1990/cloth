@@ -58,12 +58,12 @@ const Deal = () => {
                            
 
                             <div className="flex mx-auto flex-col mb-8">
-                                <h2 className="text-2xl text-center  font-bold mb-6 text-center ">
+                                <h2 className="text-2xl text-black text-center  font-bold mb-6 text-center ">
                                     კვირის შემოთავაზება
                                 </h2>
 
                                 {/* Navigation Tabs */}
-                                <div className="flex mx-auto flex-wrap justify-center md:justify-start gap-4 sm:gap-4 md:gap-6">
+                                <div className="flex mx-auto text-black flex-wrap justify-center md:justify-start gap-4 sm:gap-4 md:gap-6">
                                     <div id="dealend" className="dealend-timer text-[16px]   flex gap-2 sm:gap-3 md:gap-4">
                                         <div className="time-block text-center min-w-[40px] sm:min-w-[50px]">
                                             <div className="time font-bold ">{timeLeft.days}</div>
@@ -156,7 +156,7 @@ const Deal = () => {
                                             </div>
 
                                             {/* Product Info */}
-                                            <div className="p-4 flex-1 flex flex-col">
+                                            <div className="p-4 text-black text-center flex-1 flex flex-col">
                                                 {/* Category */}
                                                 <div className="mb-2">
                                                     <span className="text-[14px] text-gray-500 uppercase tracking-wide">
@@ -165,7 +165,7 @@ const Deal = () => {
                                                 </div>
 
                                                 {/* Product Title */}
-                                                <h3 className="text-sm font-medium text-gray-900 mb-3 leading-tight line-clamp-2">
+                                                <h3 className="text-[16px] font-medium text-gray-900 mb-3 leading-tight line-clamp-2">
                                                     {product.name}
                                                 </h3>
 

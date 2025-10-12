@@ -32,18 +32,18 @@ const New = () => {
     <section className="gi-product-tab px-3 gi-products py-10 wow fadeInUp">
       <div className="flex flex-wrap justify-between items-center mx-auto min-[1600px]:max-w-[1600px] min-[1400px]:max-w-[1320px] min-[1200px]:max-w-[1140px] min-[992px]:max-w-[960px] min-[768px]:max-w-[720px] min-[576px]:max-w-[540px]">
         {/* Title + Tabs */}
-        <div className="flex mx-auto flex-col mb-8">
-          <h2 className="text-2xl text-center sm:text-3xl md:text-4xl font-bold mb-6 text-center ">
+        <div className="flex flex-col mb-8 w-full">
+          <h2 className="md:text-[20px] text-[18px] font-bold mb-6 text-center">
             ახალი ნივთები
           </h2>
 
           {/* Navigation Tabs */}
-          <div className="flex flex-wrap justify-center md:justify-start gap-4 sm:gap-4 md:gap-6">
+          <div className="flex flex-wrap justify-center md:justify-start gap-2 sm:gap-4 md:gap-6">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`pb-2 text-sm sm:text-base md:text-lg font-medium transition-colors duration-300 border-b-2 whitespace-nowrap ${activeTab === tab.id
+                className={`pb-2 text-[16px] md:text-[20px] font-medium transition-colors duration-300 border-b-2 whitespace-nowrap ${activeTab === tab.id
                     ? "text-teal-600 border-teal-600"
                     : "text-gray-600 border-transparent hover:text-teal-500 hover:border-teal-500"
                   }`}
@@ -55,11 +55,11 @@ const New = () => {
         </div>
 
         {/* Products Grid */}
-        <div className="grid mx-auto grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+        <div className="grid  grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 w-full">
           {filteredProducts.map((product) => (
             <div
               key={product.id}
-              className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 group"
+              className="bg-white text-center rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 group"
             >
               {/* Product Image */}
               <div className="relative aspect-square overflow-hidden rounded-t-lg bg-white">
@@ -106,12 +106,12 @@ const New = () => {
 
 
                 {/* Pricing */}
-                <div className="flex items-center space-x-2">
-                  <span className="text-lg font-bold text-gray-900">
+                <div className="flex items-center justify-center text-center space-x-2">
+                  <span className="text-lg font-bold text-black">
                     {product.currentPrice.toFixed(2)} ლარი
                   </span>
                   {product.originalPrice > product.currentPrice && (
-                    <span className="text-[14px] text-gray-400 line-through">
+                    <span className="text-[14px] text-black line-through">
                       {product.originalPrice.toFixed(2)} ლარი
                     </span>
                   )}

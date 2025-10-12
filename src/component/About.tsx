@@ -3,7 +3,7 @@ import Image from 'next/image'
 
 const About = () => {
     return (
-        <section className="py-16 ">
+        <section className="px-[12px]  ">
             <div className="flex flex-wrap justify-between items-center mx-auto min-[1600px]:max-w-[1600px] min-[1400px]:max-w-[1320px] min-[1200px]:max-w-[1140px] min-[992px]:max-w-[960px] min-[768px]:max-w-[720px] min-[576px]:max-w-[540px]">
                 <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
                     {/* Image - Left Side */}
