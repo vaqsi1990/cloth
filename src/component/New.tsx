@@ -32,7 +32,7 @@ const New = () => {
     <section className="gi-product-tab px-3 gi-products py-10 wow fadeInUp">
       <div className="flex flex-wrap justify-between items-center mx-auto min-[1600px]:max-w-[1600px] min-[1400px]:max-w-[1320px] min-[1200px]:max-w-[1140px] min-[992px]:max-w-[960px] min-[768px]:max-w-[720px] min-[576px]:max-w-[540px]">
         {/* Title + Tabs */}
-        <div className="flex flex-col mb-8 w-full">
+        <div className="flex flex-col justify-center items-center mb-8 w-full">
           <h2 className="md:text-[20px] text-[18px] font-bold mb-6 text-center">
             ახალი ნივთები
           </h2>

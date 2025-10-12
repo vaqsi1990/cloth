@@ -89,7 +89,7 @@ const Header = () => {
             <div className="relative max-w-md mx-auto">
               <input
                 type="text"
-                placeholder="Search for products..."
+                placeholder="მოძებნე ნივთები..."
                 className="w-full pl-10 pr-4 py-2 border border-black rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
               <Search className="absolute cursor-pointer left-3 top-2.5 w-5 h-5 text-black" />

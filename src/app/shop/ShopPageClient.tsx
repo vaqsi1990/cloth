@@ -270,26 +270,7 @@ const ShopPageClient = () => {
                                 </div>
                             </div>
 
-                            {/* Color Filter */}
-                            <div className="mb-6">
-                                <h4 className="font-medium text-gray-900 mb-3">ფერი</h4>
-                                <div className="grid grid-cols-4 gap-2">
-                                    {colors.map((color) => (
-                                        <button
-                                            key={color.id}
-                                            onClick={() => toggleColor(color.id)}
-                                            className={`w-10 h-10 rounded-full border-2 transition-all ${
-                                                selectedColors.includes(color.id)
-                                                    ? "border-teal-600 scale-110"
-                                                    : "border-gray-300 hover:border-teal-500"
-                                            }`}
-                                            style={{ backgroundColor: color.color }}
-                                            title={color.label}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-
+                          
                             {/* Results Count */}
                             <div className="pt-4 border-t border-gray-200">
                                 <p className="text-sm text-gray-600">
