@@ -67,10 +67,10 @@ const ProductPage = () => {
 
     if (!product) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center">
                 <div className="text-center">
-                    <h1 className="text-2xl font-bold text-gray-900 mb-4">პროდუქტი ვერ მოიძებნა</h1>
-                    <Link href="/shop" className="text-teal-600 hover:text-teal-700">
+                    <h1 className="text-2xl font-bold text-black mb-4">პროდუქტი ვერ მოიძებნა</h1>
+                    <Link href="/shop" className="text-black hover:text-black">
                         დაბრუნდი მაღაზიაში
                     </Link>
                 </div>
@@ -80,44 +80,25 @@ const ProductPage = () => {
 
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 gi-product-tab px-3 gi-products">
             {/* Header with Navigation */}
-            <div className="bg-white shadow-sm border-b sticky top-0 z-40">
-                <div className="container mx-auto px-4 py-4">
+            <div className=" gi-product-tab px-3 gi-products  sticky top-0 z-40">
+                <div className="flex pt-5 flex-wrap justify-between items-center mx-auto min-[1600px]:max-w-[1600px] min-[1400px]:max-w-[1320px] min-[1200px]:max-w-[1140px] min-[992px]:max-w-[960px] min-[768px]:max-w-[720px] min-[576px]:max-w-[540px]">
                     <div className="flex items-center justify-between">
                         <Link 
-                            href="/shop" 
-                            className="inline-flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+                            href="/" 
+                            className="inline-flex items-center text-black hover:text-black transition-colors"
                         >
                             <ArrowLeft className="w-5 h-5 mr-2" />
-                            დაბრუნდი მაღაზიაში
+                            უკან დაბრუნება
                         </Link>
                         
-                        <div className="flex items-center space-x-4">
-                            <button
-                                onClick={shareProduct}
-                                className="p-2 text-gray-600 hover:text-teal-600 transition-colors"
-                                title="გაზიარება"
-                            >
-                                <Share2 className="w-5 h-5" />
-                            </button>
-                            <button
-                                onClick={toggleWishlist}
-                                className={`p-2 transition-colors ${
-                                    isWishlisted 
-                                        ? 'text-red-500 hover:text-red-600' 
-                                        : 'text-gray-600 hover:text-red-500'
-                                }`}
-                                title="ფავორიტები"
-                            >
-                                <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-current' : ''}`} />
-                            </button>
-                        </div>
+                     
                     </div>
                 </div>
             </div>
 
-            <div className="container mx-auto px-4 py-8">
+            <div className="gi-product-tab px-3 gi-products flex mt-10 flex-wrap justify-between items-center mx-auto min-[1600px]:max-w-[1600px] min-[1400px]:max-w-[1320px] min-[1200px]:max-w-[1140px] min-[992px]:max-w-[960px] min-[768px]:max-w-[720px] min-[576px]:max-w-[540px]">
                 {/* Main Product Section */}
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-12 mb-16">
                     {/* Product Images */}
@@ -179,7 +160,7 @@ const ProductPage = () => {
                     <div className="space-y-8">
                         {/* Product Header */}
                         <div className="bg-white rounded-2xl p-6 shadow-sm">
-                            <h1 className="text-4xl font-bold text-gray-900 mb-4">{product.name}</h1>
+                            <h1 className="text-4xl font-bold text-black mb-4">{product.name}</h1>
                             
                             <div className="flex items-center space-x-4 mb-4">
                                 <div className="flex items-center">
@@ -187,33 +168,33 @@ const ProductPage = () => {
                                         <Star
                                             key={i}
                                             className={`w-6 h-6 ${
-                                                i < product.rating ? "text-yellow-400 fill-current" : "text-gray-300"
+                                                i < product.rating ? "text-yellow-400 fill-current" : "text-black"
                                             }`}
                                         />
                                     ))}
                                 </div>
-                                <span className="text-gray-600 text-lg">({product.rating} შეფასება)</span>
+                                <span className="text-black text-lg">({product.rating} შეფასება)</span>
                             </div>
 
                             <div className="flex items-center space-x-4 mb-6">
-                                <span className="text-4xl font-bold text-teal-600">
+                                <span className="text-4xl font-bold text-black">
                                     ₾{product.currentPrice.toFixed(2)}
                                 </span>
                                 {product.originalPrice > product.currentPrice && (
-                                    <span className="text-2xl text-gray-400 line-through">
+                                    <span className="text-2xl text-black line-through">
                                         ₾{product.originalPrice.toFixed(2)}
                                     </span>
                                 )}
                             </div>
 
-                            <p className="text-gray-600 text-lg leading-relaxed">{product.description}</p>
+                            <p className="text-black text-lg leading-relaxed">{product.description}</p>
                         </div>
 
                         {/* Selection Options */}
                         <div className="bg-white rounded-2xl p-6 shadow-sm space-y-6">
                             {/* Size Selection */}
                             <div>
-                                <h3 className="text-lg font-semibold text-gray-900 mb-3">ზომა</h3>
+                                <h3 className="text-lg font-semibold text-black mb-3">ზომა</h3>
                                 <div className="grid grid-cols-4 gap-3">
                                     {product.sizes.map((size) => (
                                         <button
@@ -221,8 +202,8 @@ const ProductPage = () => {
                                             onClick={() => handleSizeSelect(size)}
                                             className={`py-4 px-4 text-center rounded-xl border-2 transition-all font-medium ${
                                                 selectedSize === size
-                                                    ? "border-teal-500 bg-teal-50 text-teal-700 shadow-md"
-                                                    : "border-gray-300 hover:border-teal-400 text-gray-700 hover:bg-gray-50"
+                                                    ? "border-black bg-black text-white shadow-md"
+                                                    : "border-gray-300 hover:border-black text-black hover:bg-gray-50"
                                             }`}
                                         >
                                             {size}
@@ -235,7 +216,7 @@ const ProductPage = () => {
 
                             {/* Quantity */}
                             <div>
-                                <h3 className="text-lg font-semibold text-gray-900 mb-3">რაოდენობა</h3>
+                                <h3 className="text-lg font-semibold text-black mb-3">რაოდენობა</h3>
                                 <div className="flex items-center space-x-4">
                                     <button
                                         onClick={() => handleQuantityChange(quantity - 1)}
@@ -250,7 +231,7 @@ const ProductPage = () => {
                                     >
                                         +
                                     </button>
-                                    <span className="text-sm text-gray-600">
+                                    <span className="text-sm text-black">
                                         ხელმისაწვდომია: <span className="font-medium">{product.stockCount}</span>
                                     </span>
                                 </div>
@@ -258,55 +239,35 @@ const ProductPage = () => {
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4">
                             <button
                                 onClick={addToCart}
                                 disabled={!selectedSize}
-                                className="w-full bg-teal-600 text-white py-5 px-6 rounded-xl font-semibold text-xl hover:bg-teal-700 transition-all duration-300 disabled:bg-gray-300 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+                                className="w-full bg-black  text-white py-5 px-6 rounded-xl font-semibold md:text-[20px] text-[18px] transition-all duration-300 disabled:bg-gray-300 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
                             >
                                 <ShoppingCart className="w-6 h-6 inline mr-3" />
                                 კალათაში დამატება
                             </button>
-                            
-                            <div className="grid grid-cols-2 gap-4">
-                                <button
-                                    onClick={toggleWishlist}
-                                    className={`py-4 px-6 rounded-xl font-medium transition-all duration-300 ${
-                                        isWishlisted
-                                            ? 'bg-red-50 text-red-600 border-2 border-red-200 hover:bg-red-100'
-                                            : 'border-2 border-gray-300 text-gray-700 hover:border-teal-500 hover:text-teal-600'
-                                    }`}
-                                >
-                                    <Heart className={`w-5 h-5 inline mr-2 ${isWishlisted ? 'fill-current' : ''}`} />
-                                    {isWishlisted ? 'ფავორიტებში' : 'ფავორიტები'}
-                                </button>
-                                
-                                <button className="border-2 border-gray-300 text-gray-700 py-4 px-6 rounded-xl font-medium hover:border-teal-500 hover:text-teal-600 transition-all duration-300">
-                                    <Eye className="w-5 h-5 inline mr-2" />
-                                    სწრაფი ნახვა
-                                </button>
-                            </div>
-                        </div>
+                      
 
                         {/* Product Benefits */}
                         <div className="bg-white rounded-2xl p-6 shadow-sm">
                             <div className="space-y-4">
-                                <div className="flex items-center text-gray-600">
-                                    <Truck className="w-6 h-6 mr-4 text-teal-600" />
+                                <div className="flex items-center text-black">
+                                    <Truck className="w-6 h-6 mr-4 text-black" />
                                     <div>
                                         <div className="font-medium">უფასო მიწოდება</div>
                                         <div className="text-sm">50₾-ზე მეტი შეკვეთისთვის</div>
                                     </div>
                                 </div>
-                                <div className="flex items-center text-gray-600">
-                                    <Shield className="w-6 h-6 mr-4 text-teal-600" />
+                                <div className="flex items-center text-black">
+                                    <Shield className="w-6 h-6 mr-4 text-black" />
                                     <div>
                                         <div className="font-medium">უსაფრთხო გადახდა</div>
                                         <div className="text-sm">SSL დაცული გადახდები</div>
                                     </div>
                                 </div>
-                                <div className="flex items-center text-gray-600">
-                                    <RotateCcw className="w-6 h-6 mr-4 text-teal-600" />
+                                <div className="flex items-center text-black">
+                                    <RotateCcw className="w-6 h-6 mr-4 text-black" />
         <div>
                                         <div className="font-medium">30 დღიანი დაბრუნება</div>
                                         <div className="text-sm">უფასო დაბრუნება</div>
@@ -318,22 +279,22 @@ const ProductPage = () => {
                 </div>
 
                 {/* Tabs Section */}
-                <div className="bg-white rounded-2xl shadow-sm mb-16">
-                    <div className="border-b border-gray-200">
+                <div className="bg-white mx-auto rounded-2xl shadow-sm mb-16">
+                    <div className="border-b border-black">
                         <nav className="flex space-x-8 px-6">
                             {[
                                 { id: 'description', label: 'აღწერა', icon: Eye },
                                 { id: 'features', label: 'მახასიათებლები', icon: CheckCircle },
                                 { id: 'specifications', label: 'სპეციფიკაციები', icon: MessageCircle },
-                                { id: 'reviews', label: 'მიმოხილვები', icon: Star }
+                               
                             ].map((tab) => (
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
                                     className={`py-6 px-1 border-b-2 font-medium text-sm transition-colors ${
                                         activeTab === tab.id
-                                            ? 'border-teal-500 text-teal-600'
-                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                            ? 'border-black text-black'
+                                            : 'border-transparent text-black hover:text-black hover:border-black'
                                     }`}
                                 >
                                     <tab.icon className="w-5 h-5 inline mr-2" />
@@ -346,7 +307,7 @@ const ProductPage = () => {
                     <div className="p-6">
                         {activeTab === 'description' && (
                             <div className="prose max-w-none">
-                                <p className="text-gray-600 leading-relaxed text-lg">{product.description}</p>
+                                <p className="text-black leading-relaxed text-lg">{product.description}</p>
                             </div>
                         )}
 
@@ -354,8 +315,8 @@ const ProductPage = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {product.features.map((feature, index) => (
                                     <div key={index} className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
-                                        <CheckCircle className="w-5 h-5 text-teal-600 flex-shrink-0" />
-                                        <span className="text-gray-700">{feature}</span>
+                                        <CheckCircle className="w-5 h-5 text-black flex-shrink-0" />
+                                        <span className="text-black">{feature}</span>
                                     </div>
                                 ))}
                             </div>
@@ -365,8 +326,8 @@ const ProductPage = () => {
                             <div className="space-y-4">
                                 {Object.entries(product.specifications).map(([key, value]) => (
                                     <div key={key} className="flex justify-between py-3 border-b border-gray-200">
-                                        <span className="font-medium text-gray-700">{key}</span>
-                                        <span className="text-gray-600">{value}</span>
+                                        <span className="font-medium text-black">{key}</span>
+                                        <span className="text-black">{value}</span>
                                     </div>
                                 ))}
                             </div>
@@ -378,12 +339,12 @@ const ProductPage = () => {
                                     <div key={review.id} className="border-b border-gray-200 pb-6 last:border-b-0">
                                         <div className="flex items-center justify-between mb-3">
                                             <div className="flex items-center space-x-3">
-                                                <div className="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center">
-                                                    <span className="text-teal-600 font-medium">{review.user[0]}</span>
+                                                <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center">
+                                                    <span className="text-black font-medium">{review.user[0]}</span>
                                                 </div>
                                                 <div>
-                                                    <div className="font-medium text-gray-900">{review.user}</div>
-                                                    <div className="text-sm text-gray-500">{review.date}</div>
+                                                    <div className="font-medium text-black">{review.user}</div>
+                                                    <div className="text-sm text-black">{review.date}</div>
                                                 </div>
                                             </div>
                                             <div className="flex items-center">
@@ -391,13 +352,13 @@ const ProductPage = () => {
                                                     <Star
                                                         key={i}
                                                         className={`w-4 h-4 ${
-                                                            i < review.rating ? "text-yellow-400 fill-current" : "text-gray-300"
+                                                            i < review.rating ? "text-yellow-400 fill-current" : "text-black"
                                                         }`}
                                                     />
                                                 ))}
                                             </div>
                                         </div>
-                                        <p className="text-gray-600">{review.comment}</p>
+                                        <p className="text-black">{review.comment}</p>
                                     </div>
                                 ))}
                             </div>
