@@ -4,12 +4,14 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Star, ShoppingCart, Heart, Filter, X, ChevronDown } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
-import productsData from '@/data/products.json'
+import { Product } from '@/types/product'
 
 const ShopPageClient = () => {
     const searchParams = useSearchParams()
-    const categoryParam = searchParams.get('category') || 'women'
+    const categoryParam = searchParams.get('category')
     
+    const [products, setProducts] = useState<Product[]>([])
+    const [loading, setLoading] = useState(true)
     const [activeCategory, setActiveCategory] = useState("ALL")
     const [sortBy, setSortBy] = useState("newest")
     const [isFilterOpen, setIsFilterOpen] = useState(false)
@@ -19,11 +21,11 @@ const ShopPageClient = () => {
 
     const categories = [
         { id: "ALL", label: "ყველა" },
-        { id: "DRESSES", label: "კაბები" },
-        { id: "TOPS", label: "ბლუზები" },
-        { id: "BOTTOMS", label: "შარვლები" },
-        { id: "OUTERWEAR", label: "ზედა ტანსაცმელი" },
-        { id: "ACCESSORIES", label: "აქსესუარები" }
+        { id: "კაბები", label: "კაბები" },
+        { id: "ბლუზები", label: "ბლუზები" },
+        { id: "შარვლები", label: "შარვლები" },
+        { id: "ზედა ტანსაცმელი", label: "ზედა ტანსაცმელი" },
+        { id: "აქსესუარები", label: "აქსესუარები" }
     ]
 
     const sizes = [
@@ -46,34 +48,24 @@ const ShopPageClient = () => {
         { id: "purple", label: "იისფერი", color: "#800080" }
     ]
 
-    // Dynamic product data based on category
-    const getProductsByCategory = (category: string) => {
-        const allProducts = productsData.products
-        
-        switch (category) {
-            case 'women':
-                return allProducts.filter(product => 
-                    product.id >= 1 && product.id <= 5
-                )
-            case 'men':
-                return allProducts.filter(product => 
-                    product.id >= 6 && product.id <= 10
-                )
-            case 'kids':
-                return allProducts.filter(product => 
-                    product.id >= 11 && product.id <= 15
-                )
-            default:
-                return allProducts
-        }
-    }
-
-    const [products, setProducts] = useState(getProductsByCategory(categoryParam))
-
-    // Update products when category changes
+    // Fetch products from API
     useEffect(() => {
-        setProducts(getProductsByCategory(categoryParam))
-    }, [categoryParam])
+        const fetchProducts = async () => {
+            try {
+                const response = await fetch('/api/products')
+                const data = await response.json()
+                if (data.success) {
+                    setProducts(data.products)
+                }
+            } catch (error) {
+                console.error('Error fetching products:', error)
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        fetchProducts()
+    }, [])
 
     // Get category title and description
     const getCategoryInfo = (category: string) => {
@@ -95,32 +87,64 @@ const ShopPageClient = () => {
                 }
             default:
                 return {
-                    title: "ქალის",
-                    description: "აღმოაჩინეთ ულამაზესი ქალის ტანსაცმელი"
+                    title: "მაღაზია",
+                    description: ""
                 }
         }
     }
 
-    const categoryInfo = getCategoryInfo(categoryParam)
+    // Map URL category to database category names
+    const getCategoryFilter = (categoryParam: string | null) => {
+        if (!categoryParam) return null
+        
+        switch (categoryParam) {
+            case 'women':
+                // Women's categories: dresses, tops, bottoms, outerwear, accessories
+                return ['კაბები', 'ბლუზები', 'შარვლები', 'ზედა ტანსაცმელი', 'აქსესუარები']
+            case 'men':
+                // Men's categories: tops, bottoms, outerwear, accessories (no dresses)
+                return ['ბლუზები', 'შარვლები', 'ზედა ტანსაცმელი', 'აქსესუარები']
+            case 'kids':
+                // Kids' categories: all categories
+                return ['კაბები', 'ბლუზები', 'შარვლები', 'ზედა ტანსაცმელი', 'აქსესუარები']
+            default:
+                return null
+        }
+    }
+
+    const categoryInfo = getCategoryInfo(categoryParam || '')
 
     // Filter products by all criteria
     const filteredProducts = products.filter(product => {
-        // Category filter
-        const categoryMatch = activeCategory === "ALL" || product.category === activeCategory
+        // URL Category filter (from ?category=women/men/kids)
+        const categoryFilter = getCategoryFilter(categoryParam)
+        const urlCategoryMatch = !categoryFilter || categoryFilter.includes(product.category?.name || '')
+        
+        // Debug logging (only for first few products to avoid spam)
+        if (categoryParam && products.indexOf(product) < 3) {
+            console.log('Product:', product.name, 'Category:', product.category?.name, 'Match:', urlCategoryMatch)
+        }
+        
+        // Active Category filter (from sidebar)
+        const activeCategoryMatch = activeCategory === "ALL" || product.category?.name === activeCategory
         
         // Price filter
         const priceMatch = product.currentPrice >= priceRange[0] && product.currentPrice <= priceRange[1]
         
         // Size filter
         const sizeMatch = selectedSizes.length === 0 || 
-            product.sizes.some(size => selectedSizes.includes(size))
+            product.variants.some(variant => selectedSizes.includes(variant.size))
         
-        // Color filter
-        const colorMatch = selectedColors.length === 0 || 
-            product.colors.some(color => selectedColors.includes(color))
+        // Color filter (skip for now as we don't have colors in database)
+        const colorMatch = selectedColors.length === 0
         
-        return categoryMatch && priceMatch && sizeMatch && colorMatch
+        return urlCategoryMatch && activeCategoryMatch && priceMatch && sizeMatch && colorMatch
     })
+
+    // Debug: Log filtering results
+    console.log('Total products:', products.length)
+    console.log('Filtered products:', filteredProducts.length)
+    console.log('Category param:', categoryParam)
 
     // Sort products
     const sortedProducts = [...filteredProducts].sort((a, b) => {
@@ -130,7 +154,7 @@ const ShopPageClient = () => {
             case "price-high":
                 return b.currentPrice - a.currentPrice
             case "rating":
-                return b.rating - a.rating
+                return (b.rating || 0) - (a.rating || 0)
             case "newest":
             default:
                 return b.isNew ? 1 : -1
@@ -163,17 +187,39 @@ const ShopPageClient = () => {
         setSelectedColors([])
     }
 
+    // Get main product image
+    const getMainImage = (product: Product) => {
+        if (product.images && product.images.length > 0) {
+            return product.images[0].url
+        }
+        return '/placeholder.jpg'
+    }
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center">
+                <div className="text-center">
+                    <h1 className="text-2xl font-bold text-black mb-4">იტვირთება...</h1>
+                </div>
+            </div>
+        )
+    }
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50">
             {/* Header */}
-            <div className="bg-white shadow-sm border-b">
-                <div className="container mx-auto px-4 py-6">
-                    <h1 className="md:text-[18px] text-[16px] font-bold text-black">
-                        {categoryInfo.title} <span className="text-black">ტანსაცმელი</span>
-                    </h1>
-                    <p className="md:text-[18px] text-[16px] text-black mt-2">{categoryInfo.description}</p>
+            {categoryParam && (
+                <div className="bg-white shadow-sm border-b">
+                    <div className="container mx-auto px-4 py-6">
+                        <h1 className="md:text-[18px] text-[16px] font-bold text-black">
+                            {categoryInfo.title} <span className="text-black">ტანსაცმელი</span>
+                        </h1>
+                        {categoryInfo.description && (
+                            <p className="md:text-[18px] text-[16px] text-black mt-2">{categoryInfo.description}</p>
+                        )}
+                    </div>
                 </div>
-            </div>
+            )}
 
             <div className="container mx-auto px-4 py-8">
                 {/* Mobile Filter Toggle */}
@@ -315,7 +361,7 @@ const ShopPageClient = () => {
                                     {/* Product Image */}
                                     <div className="relative aspect-square overflow-hidden rounded-t-lg bg-white">
                                         <Image
-                                            src={product.image}
+                                            src={getMainImage(product)}
                                             alt={product.name}
                                             fill
                                             className="object-cover group-hover:scale-110 transition-transform duration-500"
@@ -352,7 +398,7 @@ const ShopPageClient = () => {
                                         {/* Category */}
                                         <div className="mb-2">
                                             <span className="md:text-[18px] text-[16px] text-black uppercase tracking-wide">
-                                                {categories.find(cat => cat.id === product.category)?.label}
+                                                {product.category?.name || 'უცნობი'}
                                             </span>
                                         </div>
 
@@ -368,12 +414,12 @@ const ShopPageClient = () => {
                                                     <Star
                                                         key={i}
                                                         className={`w-4 h-4 ${
-                                                            i < product.rating ? "text-yellow-400 fill-current" : "text-gray-300"
+                                                            i < (product.rating || 0) ? "text-yellow-400 fill-current" : "text-gray-300"
                                                         }`}
                                                     />
                                                 ))}
                                             </div>
-                                            <span className="md:text-[18px] text-[16px] text-black ml-2">({product.rating})</span>
+                                            <span className="md:text-[18px] text-[16px] text-black ml-2">({product.rating || 0})</span>
                                         </div>
 
                                         {/* Pricing */}
@@ -381,7 +427,7 @@ const ShopPageClient = () => {
                                             <span className="md:text-[18px] text-[16px] font-bold text-black">
                                                 ₾{product.currentPrice.toFixed(2)}
                                             </span>
-                                            {product.originalPrice > product.currentPrice && (
+                                            {product.originalPrice && product.originalPrice > product.currentPrice && (
                                                 <span className="md:text-[18px] text-[16px] text-black line-through">
                                                     ₾{product.originalPrice.toFixed(2)}
                                                 </span>

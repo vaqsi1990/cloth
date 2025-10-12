@@ -1,28 +1,45 @@
 "use client"
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Image from 'next/image'
 import { Star, ShoppingCart, Heart, Truck, Shield, RotateCcw, ArrowLeft, Share2, Eye, MessageCircle, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
-import productsData from '@/data/products.json'
 import { useCart } from '@/context/CartContext'
+import { Product } from '@/types/product'
 
 const ProductPage = () => {
     const params = useParams()
     const productId = params.id as string
     const { addToCart } = useCart()
     
+    const [product, setProduct] = useState<Product | null>(null)
+    const [loading, setLoading] = useState(true)
     const [selectedSize, setSelectedSize] = useState<string>('')
     const [quantity, setQuantity] = useState(1)
     const [activeImage, setActiveImage] = useState(0)
     const [activeTab, setActiveTab] = useState('description')
     const [isWishlisted, setIsWishlisted] = useState(false)
-    // Get product data from JSON
-    const getProductById = (id: string) => {
-        return productsData.products.find(product => product.id === parseInt(id)) || null
-    }
 
-    const product = getProductById(productId)
+    // Fetch product from API
+    useEffect(() => {
+        const fetchProduct = async () => {
+            try {
+                const response = await fetch(`/api/products/${productId}`)
+                const data = await response.json()
+                if (data.success) {
+                    setProduct(data.product)
+                }
+            } catch (error) {
+                console.error('Error fetching product:', error)
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        if (productId) {
+            fetchProduct()
+        }
+    }, [productId])
 
     // Handle size selection
     const handleSizeSelect = (size: string) => {
@@ -31,9 +48,28 @@ const ProductPage = () => {
 
     // Handle quantity change
     const handleQuantityChange = (newQuantity: number) => {
-        if (newQuantity >= 1 && newQuantity <= (product?.stockCount || 0)) {
+        if (newQuantity >= 1 && newQuantity <= (getMaxStock() || 0)) {
             setQuantity(newQuantity)
         }
+    }
+
+    // Get max stock from variants
+    const getMaxStock = () => {
+        if (!product || !product.variants) return 0
+        const selectedVariant = product.variants.find((v) => v.size === selectedSize)
+        return selectedVariant ? selectedVariant.stock : 0
+    }
+
+    // Get available sizes from variants
+    const getAvailableSizes = () => {
+        if (!product || !product.variants) return []
+        return product.variants.map((v) => v.size)
+    }
+
+    // Get main product image
+    const getMainImage = () => {
+        if (!product || !product.images || product.images.length === 0) return '/placeholder.jpg'
+        return product.images[activeImage]?.url || product.images[0]?.url
     }
     const [isAdding, setIsAdding] = useState(false)
 
@@ -57,11 +93,11 @@ const ProductPage = () => {
         const cartItem = {
             id: product.id,
             name: product.name,
-            image: product.image,
+            image: getMainImage(),
             price: product.currentPrice,
             size: selectedSize,
             quantity,
-            maxStock: product.stockCount,
+            maxStock: getMaxStock(),
         }
     
         console.log('Calling addToCart with:', cartItem)
@@ -92,6 +128,16 @@ const ProductPage = () => {
             navigator.clipboard.writeText(window.location.href)
             alert('ბმული დაკოპირებულია!')
         }
+    }
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center">
+                <div className="text-center">
+                    <h1 className="text-2xl font-bold text-black mb-4">იტვირთება...</h1>
+                </div>
+            </div>
+        )
     }
 
     if (!product) {
@@ -135,7 +181,7 @@ const ProductPage = () => {
                         {/* Main Image */}
                         <div className="relative aspect-square bg-white rounded-2xl overflow-hidden shadow-xl border border-gray-100">
                             <Image
-                                src={product.images[activeImage]}
+                                src={getMainImage()}
                                 alt={product.name}
                                 fill
                                 className="object-cover transition-transform duration-700 hover:scale-110"
@@ -147,12 +193,12 @@ const ProductPage = () => {
                             <div className="absolute top-4 left-4 flex flex-col space-y-2 z-10">
                                 {product.hasSale && (
                                     <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold shadow-lg transform hover:scale-105 transition-transform duration-200">
-                                        SALE
+                                        ფასდაკლება
                                     </span>
                                 )}
                                 {product.isNew && (
                                     <span className="bg-black text-white px-3 py-1 rounded-full text-sm font-semibold shadow-lg transform hover:scale-105 transition-transform duration-200">
-                                        NEW
+                                        ახალი
                                     </span>
                                 )}
                             </div>
@@ -163,7 +209,7 @@ const ProductPage = () => {
                         
                         {/* Thumbnail Images */}
                         <div className="grid grid-cols-4 gap-3">
-                            {product.images.map((image, index) => (
+                            {product.images && product.images.map((image, index) => (
                                 <button
                                     key={index}
                                     onClick={() => setActiveImage(index)}
@@ -174,7 +220,7 @@ const ProductPage = () => {
                                     }`}
                                 >
                                     <Image
-                                        src={image}
+                                        src={image.url}
                                         alt={`${product.name} ${index + 1}`}
                                         fill
                                         className="object-cover transition-transform duration-300 hover:scale-110"
@@ -190,26 +236,13 @@ const ProductPage = () => {
                         {/* Product Header */}
                         <div className="bg-white rounded-2xl p-6 shadow-sm">
                             <h1 className="text-4xl font-bold text-black mb-4">{product.name}</h1>
-                            
-                            <div className="flex items-center space-x-4 mb-4">
-                                <div className="flex items-center">
-                                    {[...Array(5)].map((_, i) => (
-                                        <Star
-                                            key={i}
-                                            className={`w-6 h-6 ${
-                                                i < product.rating ? "text-yellow-400 fill-current" : "text-black"
-                                            }`}
-                                        />
-                                    ))}
-                                </div>
-                                <span className="text-black text-lg">({product.rating} შეფასება)</span>
-                            </div>
+                           
 
                             <div className="flex items-center space-x-4 mb-6">
                                 <span className="text-4xl font-bold text-black">
                                     ₾{product.currentPrice.toFixed(2)}
                                 </span>
-                                {product.originalPrice > product.currentPrice && (
+                                {product.originalPrice && product.originalPrice > product.currentPrice && (
                                     <span className="text-2xl text-black line-through">
                                         ₾{product.originalPrice.toFixed(2)}
                                     </span>
@@ -225,7 +258,7 @@ const ProductPage = () => {
                             <div>
                                 <h3 className="text-lg font-semibold text-black mb-3">ზომა</h3>
                                 <div className="grid grid-cols-4 gap-3">
-                                    {product.sizes.map((size) => (
+                                    {getAvailableSizes().map((size: string) => (
                                         <button
                                             key={size}
                                             onClick={() => handleSizeSelect(size)}
@@ -261,7 +294,7 @@ const ProductPage = () => {
                                         +
                                     </button>
                                     <span className="text-sm text-black">
-                                        ხელმისაწვდომია: <span className="font-medium">{product.stockCount}</span>
+                                        ხელმისაწვდომია: <span className="font-medium">{getMaxStock()}</span>
                                     </span>
                                 </div>
                             </div>
@@ -342,54 +375,44 @@ const ProductPage = () => {
 
                         {activeTab === 'features' && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {product.features.map((feature, index) => (
-                                    <div key={index} className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
-                                        <CheckCircle className="w-5 h-5 text-black flex-shrink-0" />
-                                        <span className="text-black">{feature}</span>
-                                    </div>
-                                ))}
+                                {/* Since we don't have features in database, show basic product info */}
+                                <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
+                                    <CheckCircle className="w-5 h-5 text-black flex-shrink-0" />
+                                    <span className="text-black">უმაღლესი ხარისხი</span>
+                                </div>
+                                <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
+                                    <CheckCircle className="w-5 h-5 text-black flex-shrink-0" />
+                                    <span className="text-black">სწრაფი მიწოდება</span>
+                                </div>
+                                <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
+                                    <CheckCircle className="w-5 h-5 text-black flex-shrink-0" />
+                                    <span className="text-black">30 დღიანი დაბრუნება</span>
+                                </div>
+                                <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
+                                    <CheckCircle className="w-5 h-5 text-black flex-shrink-0" />
+                                    <span className="text-black">უსაფრთხო გადახდა</span>
+                                </div>
                             </div>
                         )}
 
                         {activeTab === 'specifications' && (
                             <div className="space-y-4">
-                                {Object.entries(product.specifications).map(([key, value]) => (
-                                    <div key={key} className="flex justify-between py-3 border-b border-gray-200">
-                                        <span className="font-medium text-black">{key}</span>
-                                        <span className="text-black">{value}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        {activeTab === 'reviews' && (
-                            <div className="space-y-6">
-                                {product.reviews.map((review) => (
-                                    <div key={review.id} className="border-b border-gray-200 pb-6 last:border-b-0">
-                                        <div className="flex items-center justify-between mb-3">
-                                            <div className="flex items-center space-x-3">
-                                                <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center">
-                                                    <span className="text-white font-medium">{review.user[0]}</span>
-                                                </div>
-                                                <div>
-                                                    <div className="font-medium text-black">{review.user}</div>
-                                                    <div className="text-sm text-black">{review.date}</div>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center">
-                                                {[...Array(5)].map((_, i) => (
-                                                    <Star
-                                                        key={i}
-                                                        className={`w-4 h-4 ${
-                                                            i < review.rating ? "text-yellow-400 fill-current" : "text-black"
-                                                        }`}
-                                                    />
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <p className="text-black">{review.comment}</p>
-                                    </div>
-                                ))}
+                                <div className="flex justify-between py-3 border-b border-gray-200">
+                                    <span className="font-medium text-black">კატეგორია</span>
+                                    <span className="text-black">{product.category?.name || 'უცნობი'}</span>
+                                </div>
+                                <div className="flex justify-between py-3 border-b border-gray-200">
+                                    <span className="font-medium text-black">ფასი</span>
+                                    <span className="text-black">₾{product.currentPrice.toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between py-3 border-b border-gray-200">
+                                    <span className="font-medium text-black">რეიტინგი</span>
+                                    <span className="text-black">{product.rating || 0}/5</span>
+                                </div>
+                                <div className="flex justify-between py-3 border-b border-gray-200">
+                                    <span className="font-medium text-black">ზომები</span>
+                                    <span className="text-black">{getAvailableSizes().join(', ')}</span>
+                                </div>
                             </div>
                         )}
                     </div>

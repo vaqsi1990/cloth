@@ -1,12 +1,15 @@
 "use client"
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import Image from "next/image"
 import {  ShoppingCart, Heart } from "lucide-react"
 import Link from "next/link"
+import { Product } from '@/types/product'
 import productsData from '@/data/products.json'
 
 const New = () => {
   const [activeTab, setActiveTab] = useState("ALL")
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
 
   const tabs = [
     { id: "ALL", label: "ყველა" },
@@ -17,16 +20,53 @@ const New = () => {
     { id: "ACCESSORIES", label: "აქსესუარები" },
   ]
 
-  // Get all products from JSON data
-  const newProducts = productsData.products
+  // Fetch products from API
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch('/api/products')
+        const data = await response.json()
+        if (data.success) {
+          setProducts(data.products)
+        }
+      } catch (error) {
+        console.error('Error fetching products:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
 
+    fetchProducts()
+  }, [])
 
+  // Get category name from database category
+  const getCategoryName = (category: Product['category']) => {
+    if (!category) return ''
+    return category.name
+  }
+
+  // Get main product image
+  const getMainImage = (product: Product) => {
+    if (product.images && product.images.length > 0) {
+      return product.images[0].url
+    }
+    return '/placeholder.jpg' // fallback image
+  }
 
   // ფილტრაცია ტაბის მიხედვით
   const filteredProducts =
     activeTab === "ALL"
-      ? newProducts
-      : newProducts.filter((p) => p.category === activeTab)
+      ? products
+      : products.filter((p) => {
+          const categorySlug = p.category?.slug
+          return (
+            (activeTab === "DRESSES" && categorySlug === "dresses") ||
+            (activeTab === "TOPS" && categorySlug === "tops") ||
+            (activeTab === "BOTTOMS" && categorySlug === "bottoms") ||
+            (activeTab === "OUTERWEAR" && categorySlug === "outerwear") ||
+            (activeTab === "ACCESSORIES" && categorySlug === "accessories")
+          )
+        })
 
   return (
     <section className="gi-product-tab px-3 gi-products py-10 wow fadeInUp">
@@ -56,77 +96,91 @@ const New = () => {
 
         {/* Products Grid */}
         <div className="grid  grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 w-full">
-          {filteredProducts.map((product) => (
-            <div
-              key={product.id}
-              className="bg-white text-center rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 group"
-            >
-              {/* Product Image */}
-              <div className="relative aspect-square overflow-hidden rounded-t-lg bg-white">
-                <Image
-                  src={product.image}
-                  alt={product.name}
-                  fill
-                  className="object-cover group-hover:scale-110 transition-transform duration-500"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 20vw"
-                />
-
-                {/* Sale Badge */}
-                {product.hasSale && (
-                  <div className="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded text-xs font-semibold">
-                    SALE
-                  </div>
-                )}
-
-                {/* Quick Actions */}
-                <div className="absolute top-3 right-3 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <button className="bg-white p-2 rounded-full shadow-lg hover:bg-gray-50 transition-colors">
-                    <Heart className="w-4 h-4 text-gray-600" />
-                  </button>
-                  <button className="bg-white p-2 rounded-full shadow-lg hover:bg-gray-50 transition-colors">
-                    <ShoppingCart className="w-4 h-4 text-gray-600" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Product Info */}
-              <div className="p-4">
-                {/* Category */}
-                <div className="mb-2">
-                  <span className="text-[14px] text-gray-500 uppercase tracking-wide">
-                    {product.category}
-                  </span>
-                </div>
-
-                {/* Product Title */}
-                <h3 className="text-[16px] font-medium text-gray-900 mb-3 leading-tight line-clamp-2">
-                  {product.name}
-                </h3>
-
-
-
-                {/* Pricing */}
-                <div className="flex items-center justify-center text-center space-x-2">
-                  <span className="text-lg font-bold text-black">
-                    {product.currentPrice.toFixed(2)} ლარი
-                  </span>
-                  {product.originalPrice > product.currentPrice && (
-                    <span className="text-[14px] text-black line-through">
-                      {product.originalPrice.toFixed(2)} ლარი
-                    </span>
-                  )}
-                </div>
-
-                <Link
-                  href={`/product/${product.id}`}
-                  className="gi-btn-1 rounded-md mt-4 transition-all duration-[0.3s] ease-in-out overflow-hidden text-center relative py-[10px] max-[767px]:py-[6px] px-[15px] max-[767px]:px-[10px] bg-[#4b5966] text-[#fff] border-[0] text-[15px] max-[767px]:text-[13px] tracking-[0] font-medium inline-flex items-center hover:text-[#fff]"
-                >
-                  დეტალები
-
-                </Link>
-              </div>
+          {loading ? (
+            <div className="col-span-full text-center py-8">
+              <div className="text-[20px] text-black">იტვირთება...</div>
             </div>
-          ))}
+          ) : filteredProducts.length === 0 ? (
+            <div className="col-span-full text-center py-8">
+              <div className="text-[20px] text-black">პროდუქტები ვერ მოიძებნა</div>
+            </div>
+          ) : (
+            filteredProducts.map((product) => (
+              <div
+                key={product.id}
+                className="bg-white text-center rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 group"
+              >
+                {/* Product Image */}
+                <div className="relative aspect-square overflow-hidden rounded-t-lg bg-white">
+                  <Image
+                    src={getMainImage(product)}
+                    alt={product.name}
+                    fill
+                    className="object-cover group-hover:scale-110 transition-transform duration-500"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 20vw"
+                  />
+
+                  {/* Sale Badge */}
+                  {product.hasSale && (
+                    <div className="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded text-xs font-semibold">
+                      ფასდაკლება
+                    </div>
+                  )}
+
+                  {/* New Badge */}
+                  {product.isNew && (
+                    <div className="absolute top-3 left-3 bg-green-500 text-white px-2 py-1 rounded text-xs font-semibold">
+                      ახალი
+                    </div>
+                  )}
+
+                  {/* Quick Actions */}
+                  <div className="absolute top-3 right-3 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <button className="bg-white p-2 rounded-full shadow-lg hover:bg-gray-50 transition-colors">
+                      <Heart className="w-4 h-4 text-gray-600" />
+                    </button>
+                    <button className="bg-white p-2 rounded-full shadow-lg hover:bg-gray-50 transition-colors">
+                      <ShoppingCart className="w-4 h-4 text-gray-600" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Product Info */}
+                <div className="p-4">
+                  {/* Category */}
+                  <div className="mb-2">
+                    <span className="text-[14px] text-gray-500 uppercase tracking-wide">
+                      {getCategoryName(product.category)}
+                    </span>
+                  </div>
+
+                  {/* Product Title */}
+                  <h3 className="text-[16px] font-medium text-gray-900 mb-3 leading-tight line-clamp-2">
+                    {product.name}
+                  </h3>
+
+                  {/* Pricing */}
+                  <div className="flex items-center justify-center text-center space-x-2">
+                    <span className="text-lg font-bold text-black">
+                      {product.currentPrice.toFixed(2)} ლარი
+                    </span>
+                    {product.originalPrice && product.originalPrice > product.currentPrice && (
+                      <span className="text-[14px] text-black line-through">
+                        {product.originalPrice.toFixed(2)} ლარი
+                      </span>
+                    )}
+                  </div>
+
+                  <Link
+                    href={`/product/${product.id}`}
+                    className="gi-btn-1 rounded-md mt-4 transition-all duration-[0.3s] ease-in-out overflow-hidden text-center relative py-[10px] max-[767px]:py-[6px] px-[15px] max-[767px]:px-[10px] bg-[#4b5966] text-[#fff] border-[0] text-[15px] max-[767px]:text-[13px] tracking-[0] font-medium inline-flex items-center hover:text-[#fff]"
+                  >
+                    დეტალები
+                  </Link>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </section>
