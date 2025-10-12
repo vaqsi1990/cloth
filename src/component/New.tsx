@@ -10,12 +10,15 @@ const New = () => {
 
   const tabs = [
     { id: "ALL", label: "ყველა" },
-    { id: "CLOTHES", label: "ტანსაცმელი" },
-    { id: "FOOTWEAR", label: "ფეხსაცმელი" },
+    { id: "DRESSES", label: "კაბები" },
+    { id: "TOPS", label: "ბლუზები" },
+    { id: "BOTTOMS", label: "შარვლები" },
+    { id: "OUTERWEAR", label: "ქურთუკები" },
+    { id: "ACCESSORIES", label: "აქსესუარები" },
   ]
 
-  // Get new products from JSON data
-  const newProducts = productsData.products.filter(product => product.isNew)
+  // Get all products from JSON data
+  const newProducts = productsData.products
 
 
 
@@ -27,20 +30,20 @@ const New = () => {
 
   return (
     <section className="gi-product-tab px-3 gi-products py-10 wow fadeInUp">
-      <div className="container mx-auto">
+      <div className="flex flex-wrap justify-between items-center mx-auto min-[1600px]:max-w-[1600px] min-[1400px]:max-w-[1320px] min-[1200px]:max-w-[1140px] min-[992px]:max-w-[960px] min-[768px]:max-w-[720px] min-[576px]:max-w-[540px]">
         {/* Title + Tabs */}
-        <div className="flex flex-col md:flex-row justify-between items-center mb-8">
-          <h2 className="text-3xl md:text-4xl font-bold  mb-4 md:mb-0">
-            ახალი <span className="text-teal-600">ნივთები</span>
+        <div className="flex mx-auto flex-col mb-8">
+          <h2 className="text-2xl text-center sm:text-3xl md:text-4xl font-bold mb-6 text-center ">
+            ახალი ნივთები
           </h2>
 
           {/* Navigation Tabs */}
-          <div className="flex space-x-6">
+          <div className="flex flex-wrap justify-center md:justify-start gap-4 sm:gap-4 md:gap-6">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`pb-2 text-lg font-medium transition-colors duration-300 border-b-2 ${activeTab === tab.id
+                className={`pb-2 text-sm sm:text-base md:text-lg font-medium transition-colors duration-300 border-b-2 whitespace-nowrap ${activeTab === tab.id
                     ? "text-teal-600 border-teal-600"
                     : "text-gray-600 border-transparent hover:text-teal-500 hover:border-teal-500"
                   }`}
@@ -52,7 +55,7 @@ const New = () => {
         </div>
 
         {/* Products Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+        <div className="grid mx-auto grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
           {filteredProducts.map((product) => (
             <div
               key={product.id}
@@ -116,7 +119,7 @@ const New = () => {
 
                 <Link
                   href={`/product/${product.id}`}
-                  className="gi-btn-1 mt-4 transition-all duration-[0.3s] ease-in-out overflow-hidden text-center relative py-[10px] max-[767px]:py-[6px] px-[15px] max-[767px]:px-[10px] bg-[#4b5966] text-[#fff] border-[0] text-[15px] max-[767px]:text-[13px] tracking-[0] font-medium inline-flex items-center hover:bg-[#5caf90] hover:text-[#fff]"
+                  className="gi-btn-1 rounded-md mt-4 transition-all duration-[0.3s] ease-in-out overflow-hidden text-center relative py-[10px] max-[767px]:py-[6px] px-[15px] max-[767px]:px-[10px] bg-[#4b5966] text-[#fff] border-[0] text-[15px] max-[767px]:text-[13px] tracking-[0] font-medium inline-flex items-center hover:text-[#fff]"
                 >
                   დეტალები
 

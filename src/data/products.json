@@ -36,7 +36,7 @@
     },
     {
       "id": 2,
-      "name": "ქალის ბლუზა ფრენჩული მანჟეტებით",
+      "name": "ქალის ბლუზა გაზაფხულისთვის",
       "category": "TOPS",
       "currentPrice": 45.99,
       "originalPrice": 65.00,
@@ -101,7 +101,7 @@
     },
     {
       "id": 4,
-      "name": "ქალის ჯინსები მაღალი წელით",
+      "name": "ქალის ზედები",
       "category": "BOTTOMS",
       "currentPrice": 78.00,
       "originalPrice": 95.00,
@@ -166,7 +166,7 @@
     },
     {
       "id": 6,
-      "name": "მამაკაცის კლასიკური შარვალი",
+      "name": "მამაკაცის ფეხსაცმელები",
       "category": "BOTTOMS",
       "currentPrice": 75.99,
       "originalPrice": 95.00,
@@ -231,7 +231,7 @@
       "id": 8,
       "name": "მამაკაცის ქურთუკი",
       "category": "OUTERWEAR",
-      "currentPrice": 120.00,
+      "currentPrice": 90.00,
       "originalPrice": 150.00,
       "rating": 5,
       "image": "/new/2.jpg",
@@ -383,99 +383,7 @@
         "ფორმა": "კლასიკური",
         "მოვლა": "30°C ხელით"
       }
-    },
-    {
-      "id": 13,
-      "name": "ბავშვის შარვალი",
-      "category": "BOTTOMS",
-      "currentPrice": 32.99,
-      "originalPrice": 40.00,
-      "rating": 5,
-      "image": "/new/1.jpg",
-      "images": ["/new/1.jpg", "/new/2.jpg", "/new/3.jpg", "/new/4.jpg"],
-      "hasSale": true,
-      "isNew": false,
-      "sizes": ["2T", "3T", "4T", "5T"],
-      "colors": ["blue", "black", "gray"],
-      "description": "კომფორტული ბავშვის შარვალი, რომელიც გამოირჩევა თავისი ხარისხით.",
-      "features": [
-        "100% ბამბა",
-        "კომფორტული",
-        "მაგარი მასალა",
-        "მარტივი მოვლა"
-      ],
-      "inStock": true,
-      "stockCount": 18,
-      "reviews": [
-        { "id": 1, "user": "ნინო", "rating": 5, "comment": "ძალიან კარგია!", "date": "2024-01-11" }
-      ],
-      "specifications": {
-        "მასალა": "100% ბამბა",
-        "ფორმა": "კლასიკური",
-        "მოვლა": "30°C ხელით"
-      }
-    },
-    {
-      "id": 14,
-      "name": "ბავშვის ქურთუკი",
-      "category": "OUTERWEAR",
-      "currentPrice": 65.00,
-      "originalPrice": 80.00,
-      "rating": 4,
-      "image": "/new/2.jpg",
-      "images": ["/new/2.jpg", "/new/3.jpg", "/new/4.jpg", "/new/1.jpg"],
-      "hasSale": true,
-      "isNew": false,
-      "sizes": ["2T", "3T", "4T"],
-      "colors": ["red", "blue", "green"],
-      "description": "თბილი ბავშვის ქურთუკი, რომელიც გამოირჩევა თავისი ხარისხით.",
-      "features": [
-        "100% ბამბა",
-        "თბილი",
-        "მაგარი მასალა",
-        "მარტივი მოვლა"
-      ],
-      "inStock": true,
-      "stockCount": 12,
-      "reviews": [
-        { "id": 1, "user": "თამარი", "rating": 4, "comment": "კარგი ხარისხი", "date": "2024-01-10" }
-      ],
-      "specifications": {
-        "მასალა": "100% ბამბა",
-        "ფორმა": "კლასიკური",
-        "მოვლა": "30°C ხელით"
-      }
-    },
-    {
-      "id": 15,
-      "name": "ბავშვის ფეხსაცმელი",
-      "category": "ACCESSORIES",
-      "currentPrice": 45.99,
-      "originalPrice": 55.00,
-      "rating": 5,
-      "image": "/new/2.jpg",
-      "images": ["/new/2.jpg", "/new/3.jpg", "/new/4.jpg", "/new/5.jpg"],
-      "hasSale": true,
-      "isNew": false,
-      "sizes": ["8", "9", "10", "11", "12"],
-      "colors": ["black", "white", "red"],
-      "description": "კომფორტული ბავშვის ფეხსაცმელი, რომელიც გამოირჩევა თავისი ხარისხით.",
-      "features": [
-        "ნამდვილი ტყავი",
-        "კომფორტული",
-        "გამძლე",
-        "მარტივი მოვლა"
-      ],
-      "inStock": true,
-      "stockCount": 22,
-      "reviews": [
-        { "id": 1, "user": "ელენა", "rating": 5, "comment": "ძალიან კარგია!", "date": "2024-01-09" }
-      ],
-      "specifications": {
-        "მასალა": "ნამდვილი ტყავი",
-        "ფორმა": "კლასიკური",
-        "მოვლა": "ხელით"
-      }
     }
+
   ]
 }

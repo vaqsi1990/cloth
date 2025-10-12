@@ -3,11 +3,13 @@ import React, { useState, useEffect } from 'react'
 
 import Image from 'next/image'
 import { Swiper, SwiperSlide } from 'swiper/react'
-import { Navigation} from 'swiper/modules'
+import { Navigation } from 'swiper/modules'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import productsData from '@/data/products.json'
 
 // Import Swiper styles
 import 'swiper/css'
+import Link from 'next/link'
 
 
 const Deal = () => {
@@ -44,113 +46,60 @@ const Deal = () => {
         return () => clearInterval(timer);
     }, []);
 
-    const dealProducts = [
-        {
-            id: 1,
-            name: 'Summer Collection Dress',
-            originalPrice: 65.00,
-            salePrice: 49.00,
-            category: 'Women',
-            image: '/deals/1.jpg',
-            badge: 'SALE',
-            badgeColor: 'bg-red-500'
-        },
-        {
-            id: 2,
-            name: 'Casual Denim Jacket',
-            originalPrice: 85.00,
-            salePrice: 78.00,
-            category: 'Men',
-            image: '/deals/1.jpg',
-            badge: 'SALE',
-            badgeColor: 'bg-red-500'
-        },
-        {
-            id: 3,
-            name: 'Premium Cotton T-Shirt',
-            originalPrice: 50.00,
-            salePrice: 45.00,
-            category: 'Unisex',
-            image: '/deals/1.jpg',
-            badge: 'NEW',
-            badgeColor: 'bg-green-500'
-        },
-        {
-            id: 4,
-            name: 'Designer Handbag',
-            originalPrice: 21.00,
-            salePrice: 20.00,
-            category: 'Accessories',
-            image: '/deals/1.jpg',
-            badge: 'NEW',
-            badgeColor: 'bg-green-500'
-        },
-        {
-            id: 5,
-            name: 'Organic Cotton Hoodie',
-            originalPrice: 3.00,
-            salePrice: 2.00,
-            category: 'Unisex',
-            image: '/deals/1.jpg'
-        },
-        {
-            id: 6,
-            name: 'Organic Cotton Hoodie',
-            originalPrice: 3.00,
-            salePrice: 2.00,
-            category: 'Unisex',
-            image: '/deals/1.jpg'
-        }
-    ];
+    // Get products with sales for deals
+    const dealProducts = productsData.products.filter(product => product.hasSale);
 
     return (
         <section className="py-[40px] max-[767px]:py-[30px] bg-gradient-to-br from-red-50 to-orange-50">
             <div className="flex flex-wrap justify-between items-center mx-auto min-[1600px]:max-w-[1600px] min-[1400px]:max-w-[1320px] min-[1200px]:max-w-[1140px] min-[992px]:max-w-[960px] min-[768px]:max-w-[720px] min-[576px]:max-w-[540px]">
-                <div className="w-full flex flex-wrap px-[15px] overflow-hidden">
+                <div className="w-full flex flex-wrap  overflow-hidden">
                     <div className="gi-deal-section w-full">
                         <div className="gi-products">
-                            <div className="section-title mb-[20px] relative flex justify-between pb-[20px] z-[5] max-[767px]:flex-col">
-                                <div className="section-detail">
-                                    <h2 className="gi-title mb-[0] text-[25px] font-semibold text-black relative inline p-[0] capitalize leading-[1] font-manrope max-[991px]:text-[24px] max-[767px]:text-[22px] max-[575px]:text-[20px]">
-                                        კვირის <span className="text-teal-600">შემოთავაზება</span></h2>
-                                    
-                                </div>
+                           
 
-                                <div id="dealend" className="dealend-timer flex gap-4 max-[767px]:mt-[15px]">
-                                    <div className="time-block text-center">
-                                        <div className="time text-2xl font-bold">{timeLeft.days}</div>
-                                        <span className="day text-[16px]">დღე</span>
-                                    </div>
-                                    <div className="time-block text-center">
-                                        <div className="time text-2xl font-bold">{timeLeft.hours}</div>
-                                        <span className="day text-[16px]">საათი</span>
-                                    </div>
-                                    <div className="time-block text-center">
-                                        <div className="time text-2xl font-bold">{timeLeft.minutes}</div>
-                                        <span className="day text-[16px]">წუთი</span>
-                                    </div>
-                                    <div className="time-block text-center">
-                                        <div className="time text-2xl font-bold">{timeLeft.seconds}</div>
-                                        <span className="day text-[16px]">წამი</span>
+                            <div className="flex mx-auto flex-col mb-8">
+                                <h2 className="text-2xl text-center  font-bold mb-6 text-center ">
+                                    კვირის შემოთავაზება
+                                </h2>
+
+                                {/* Navigation Tabs */}
+                                <div className="flex mx-auto flex-wrap justify-center md:justify-start gap-4 sm:gap-4 md:gap-6">
+                                    <div id="dealend" className="dealend-timer text-[16px]   flex gap-2 sm:gap-3 md:gap-4">
+                                        <div className="time-block text-center min-w-[40px] sm:min-w-[50px]">
+                                            <div className="time font-bold ">{timeLeft.days}</div>
+                                            <span className="day ">დღე</span>
+                                        </div>
+                                        <div className="time-block text-center min-w-[40px] sm:min-w-[50px]">
+                                            <div className="time font-bold ">{timeLeft.hours}</div>
+                                            <span className="day ">საათი</span>
+                                        </div>
+                                        <div className="time-block text-center min-w-[40px] sm:min-w-[50px]">
+                                            <div className="time font-bold ">{timeLeft.minutes}</div>
+                                            <span className="day ">წუთი</span>
+                                        </div>
+                                        <div className="time-block text-center min-w-[40px] sm:min-w-[50px]">
+                                            <div className="time font-bold ">{timeLeft.seconds}</div>
+                                            <span className="day ">წამი</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="gi-deal-block mx-[-12px] w-full relative">
+                    <div className="gi-deal-block mx-auto mx-[-12px] w-full relative">
                         {/* Custom Navigation Buttons */}
-                        <button className="swiper-button-prev cursor-pointer absolute left-0 top-1/2 transform -translate-y-1/2 z-10 w-10 h-10 bg-white shadow-lg rounded-full flex items-center justify-center hover:bg-gray-50 transition-all duration-300 group border border-gray-200">
-                            <ChevronLeft className="w-5 h-5 text-gray-600 group-hover:text-gray-900" />
+                        <button className="swiper-button-prev cursor-pointer absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 z-10 w-8 h-8 sm:w-10 sm:h-10 bg-white shadow-lg rounded-full flex items-center justify-center hover:bg-gray-50 transition-all duration-300 group border border-gray-200">
+                            <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 group-hover:text-gray-900" />
                         </button>
 
-                        <button className="swiper-button-next cursor-pointer absolute right-0 top-1/2 transform -translate-y-1/2 z-10 w-10 h-10 bg-white shadow-lg rounded-full flex items-center justify-center hover:bg-gray-50 transition-all duration-300 group border border-gray-200">
-                            <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-gray-900" />
+                        <button className="swiper-button-next cursor-pointer absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 z-10 w-8 h-8 sm:w-10 sm:h-10 bg-white shadow-lg rounded-full flex items-center justify-center hover:bg-gray-50 transition-all duration-300 group border border-gray-200">
+                            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 group-hover:text-gray-900" />
                         </button>
 
                         {/* Swiper Carousel */}
                         <Swiper
-                            modules={[Navigation  ]}
+                            modules={[Navigation]}
                             spaceBetween={20}
                             slidesPerView={1}
                             breakpoints={{
@@ -201,8 +150,8 @@ const Deal = () => {
                                                         fill
                                                         className="object-cover w-full h-full"
                                                     />
-                                                    
-                                                   
+
+
                                                 </div>
                                             </div>
 
@@ -222,14 +171,21 @@ const Deal = () => {
 
                                                 {/* Pricing */}
                                                 <div className="mt-auto">
-                                                    <div className="flex items-center space-x-2">
-                                                        <span className="text-lg font-bold text-gray-900">
-                                                            ${product.salePrice.toFixed(2)}
+                                                    <div className="flex items-center justify-center flex-row md:text-[16px] text-[16px] space-x-2">
+                                                        <span className=" font-bold text-black">
+                                                            {product.currentPrice.toFixed(2)} ლარი
                                                         </span>
-                                                        <span className="text-sm text-gray-400 line-through">
-                                                            ${product.originalPrice.toFixed(2)}
+                                                        <span className=" text-black line-through">
+                                                            {product.originalPrice.toFixed(2)} ლარი
                                                         </span>
                                                     </div>
+                                                    <Link
+                                                        href={`/product/${product.id}`}
+                                                        className="gi-btn-1 rounded-md mt-4 transition-all duration-[0.3s] ease-in-out overflow-hidden text-center relative py-[10px] max-[767px]:py-[6px] px-[15px] max-[767px]:px-[10px] bg-[#4b5966] text-[#fff] border-[0] text-[15px] max-[767px]:text-[13px] tracking-[0] font-medium inline-flex items-center  hover:text-[#fff]"
+                                                    >
+                                                        დეტალები
+
+                                                    </Link>
                                                 </div>
                                             </div>
                                         </div>

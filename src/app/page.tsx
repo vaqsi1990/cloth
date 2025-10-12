@@ -1,8 +1,8 @@
-import Cat from "@/component/Cat";
+  import Cat from "@/component/Cat";
 import Deal from "@/component/Deal";
 import Hero from "@/component/Hero";
 import New from "@/component/New";
-
+import About from "@/component/About";
 
 export default function Home() {
   return (
@@ -12,6 +12,7 @@ export default function Home() {
     <Deal />
     <Cat />
     <New />
+    <About />
     </div>
     
     
