@@ -46,7 +46,7 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link href="/shop?category=kids" className="text-gray-300 hover:text-white transition-colors text-sm">
+                <Link href="/shop?category=children" className="text-gray-300 hover:text-white transition-colors text-sm">
                 ბავშვების კოლექცია
                 </Link>
               </li>

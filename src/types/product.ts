@@ -27,6 +27,7 @@ export interface Product {
   currentPrice: number
   originalPrice?: number
   sku?: string
+  gender: 'MEN' | 'WOMEN' | 'CHILDREN' | 'UNISEX'
   isNew: boolean
   hasSale: boolean
   rating?: number

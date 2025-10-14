@@ -10,6 +10,7 @@ const productSchema = z.object({
   currentPrice: z.number().min(0, 'ფასი უნდა იყოს დადებითი'),
   originalPrice: z.number().min(0, 'ორიგინალური ფასი უნდა იყოს დადებითი').nullable().optional(),
   stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი').default(0),
+  gender: z.enum(['MEN', 'WOMEN', 'CHILDREN', 'UNISEX']).default('UNISEX'),
   isNew: z.boolean().default(false),
   hasSale: z.boolean().default(false),
   rating: z.number().min(0).max(5).optional(),
@@ -167,6 +168,7 @@ export async function PUT(
         currentPrice: validatedData.currentPrice,
         originalPrice: validatedData.originalPrice,
         sku: `SKU-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Generate unique SKU
+        gender: validatedData.gender,
         isNew: validatedData.isNew,
         hasSale: validatedData.hasSale,
         rating: validatedData.rating,

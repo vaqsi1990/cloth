@@ -6,20 +6,20 @@ const cat = [
         id: 1,
         title: "ქალების კოლექცია",
         image: "/cat/1.jpg",
-        href:"/shop?category=women" 
+        href:"/shop?gender=women" 
     },
     {
         id: 2,
         title: "ბავშვების კოლექცია",
         image: "/cat/2.jpg",
-        href:"/shop?category=kids" 
+        href:"/shop?gender=children" 
     },
 
     {
         id: 3,
         title: "კაცების კოლექცია",
         image: "/cat/3.jpg",
-        href:"/shop?category=men" 
+        href:"/shop?gender=men" 
     },
 
 

@@ -14,6 +14,7 @@ const productSchema = z.object({
   currentPrice: z.number().min(0, 'ფასი უნდა იყოს დადებითი'),
   originalPrice: z.number().min(0, 'ორიგინალური ფასი უნდა იყოს დადებითი').optional(),
   stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი').default(0),
+  gender: z.enum(['MEN', 'WOMEN', 'CHILDREN', 'UNISEX']).default('UNISEX'),
   isNew: z.boolean().default(false),
   hasSale: z.boolean().default(false),
   rating: z.number().min(0).max(5).optional(),
@@ -37,6 +38,7 @@ const NewProductPage = () => {
     currentPrice: 0,
     originalPrice: undefined,
     stock: 0,
+    gender: 'UNISEX',
     isNew: false,
     hasSale: false,
     rating: 0,
@@ -308,6 +310,22 @@ const NewProductPage = () => {
                       {category.name}
                     </option>
                   ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[20px] text-black font-medium mb-2">
+                  სქესი/მიზანობრივი აუდიტორია
+                </label>
+                <select
+                  value={formData.gender}
+                  onChange={(e) => handleInputChange('gender', e.target.value as 'MEN' | 'WOMEN' | 'CHILDREN' | 'UNISEX')}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                >
+                  <option value="UNISEX">უნივერსალური</option>
+                  <option value="MEN">კაცისთვის</option>
+                  <option value="WOMEN">ქალისთვის</option>
+                  <option value="CHILDREN">ბავშვისთვის</option>
                 </select>
               </div>
             </div>

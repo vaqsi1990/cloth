@@ -10,6 +10,7 @@ const productSchema = z.object({
   currentPrice: z.number().min(0, 'ფასი უნდა იყოს დადებითი'),
   originalPrice: z.number().min(0, 'ორიგინალური ფასი უნდა იყოს დადებითი').nullable().optional(),
   stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი').default(0),
+  gender: z.enum(['MEN', 'WOMEN', 'CHILDREN', 'UNISEX']).default('UNISEX'),
   isNew: z.boolean().default(false),
   hasSale: z.boolean().default(false),
   rating: z.number().min(0).max(5).optional(),
@@ -27,6 +28,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category')
+    const gender = searchParams.get('gender')
     const isNew = searchParams.get('isNew')
     
     const products = await prisma.product.findMany({
@@ -39,6 +41,11 @@ export async function GET(request: NextRequest) {
                   category === 'OUTERWEAR' ? 'outerwear' :
                   category === 'ACCESSORIES' ? 'accessories' : category
           } 
+        } : {}),
+        ...(gender && gender !== 'ALL' ? { 
+          gender: gender === 'women' ? 'WOMEN' as const :
+                  gender === 'men' ? 'MEN' as const :
+                  gender === 'children' ? 'CHILDREN' as const : undefined
         } : {}),
         ...(isNew === 'true' ? { isNew: true } : {})
       },
@@ -85,6 +92,7 @@ export async function POST(request: NextRequest) {
         currentPrice: validatedData.currentPrice,
         originalPrice: validatedData.originalPrice,
         sku: `SKU-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Generate unique SKU
+        gender: validatedData.gender,
         isNew: validatedData.isNew,
         hasSale: validatedData.hasSale,
         rating: validatedData.rating,

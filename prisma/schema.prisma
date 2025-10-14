@@ -16,6 +16,13 @@ enum OrderStatus {
   REFUNDED
 }
 
+enum Gender {
+  MEN
+  WOMEN
+  CHILDREN
+  UNISEX
+}
+
 model Category {
   id        Int       @id @default(autoincrement())
   name      String
@@ -34,6 +41,7 @@ model Product {
   currentPrice  Float
   originalPrice Float?
   sku           String?          @unique
+  gender        Gender           @default(UNISEX)
   isNew         Boolean          @default(false)
   hasSale       Boolean          @default(false)
   rating        Float?           @default(0)

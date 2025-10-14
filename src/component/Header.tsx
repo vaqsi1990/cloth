@@ -39,7 +39,7 @@ const Header = () => {
              <Link href="/shop?category=men" className="text-black md:text-[20px] text-[18px]  font-medium transition-colors">
              მამაკაცი
              </Link>
-             <Link href="/shop?category=kids" className="text-black md:text-[20px] text-[18px]  font-medium transition-colors">
+             <Link href="/shop?category=children" className="text-black md:text-[20px] text-[18px]  font-medium transition-colors">
              ბავშვები
              </Link>
             
@@ -122,7 +122,7 @@ const Header = () => {
                  მამაკაცი
                </Link>
                <Link 
-                 href="/shop?category=kids" 
+                 href="/shop?category=children" 
                  className="text-black hover:text-gray-900 font-medium py-2 transition-colors"
                  onClick={() => setIsMobileMenuOpen(false)}
                >

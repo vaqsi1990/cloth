@@ -8,7 +8,7 @@ import { Product } from '@/types/product'
 
 const ShopPageClient = () => {
     const searchParams = useSearchParams()
-    const categoryParam = searchParams.get('category')
+    const genderParam = searchParams.get('gender')
     
     const [products, setProducts] = useState<Product[]>([])
     const [loading, setLoading] = useState(true)
@@ -52,7 +52,13 @@ const ShopPageClient = () => {
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                const response = await fetch('/api/products')
+                // Build query parameters
+                const params = new URLSearchParams()
+                if (genderParam) {
+                    params.append('gender', genderParam)
+                }
+                
+                const response = await fetch(`/api/products?${params.toString()}`)
                 const data = await response.json()
                 if (data.success) {
                     setProducts(data.products)
@@ -65,11 +71,11 @@ const ShopPageClient = () => {
         }
 
         fetchProducts()
-    }, [])
+    }, [genderParam])
 
-    // Get category title and description
-    const getCategoryInfo = (category: string) => {
-        switch (category) {
+    // Get gender title and description
+    const getGenderInfo = (gender: string) => {
+        switch (gender) {
             case 'women':
                 return {
                     title: "ქალის",
@@ -80,51 +86,23 @@ const ShopPageClient = () => {
                     title: "მამაკაცის",
                     description: "აღმოაჩინეთ მამაკაცის ტანსაცმელი"
                 }
-            case 'kids':
+            case 'children':
                 return {
                     title: "ბავშვის",
                     description: "აღმოაჩინეთ ბავშვის ტანსაცმელი"
                 }
             default:
                 return {
-                    title: "მაღაზია",
+                    title: "",
                     description: ""
                 }
         }
     }
 
-    // Map URL category to database category names
-    const getCategoryFilter = (categoryParam: string | null) => {
-        if (!categoryParam) return null
-        
-        switch (categoryParam) {
-            case 'women':
-                // Women's categories: dresses, tops, bottoms, outerwear, accessories
-                return ['კაბები', 'ბლუზები', 'შარვლები', 'ზედა ტანსაცმელი', 'აქსესუარები']
-            case 'men':
-                // Men's categories: tops, bottoms, outerwear, accessories (no dresses)
-                return ['ბლუზები', 'შარვლები', 'ზედა ტანსაცმელი', 'აქსესუარები']
-            case 'kids':
-                // Kids' categories: all categories
-                return ['კაბები', 'ბლუზები', 'შარვლები', 'ზედა ტანსაცმელი', 'აქსესუარები']
-            default:
-                return null
-        }
-    }
+    const genderInfo = getGenderInfo(genderParam || '')
 
-    const categoryInfo = getCategoryInfo(categoryParam || '')
-
-    // Filter products by all criteria
+    // Filter products by all criteria (excluding gender since it's handled by API)
     const filteredProducts = products.filter(product => {
-        // URL Category filter (from ?category=women/men/kids)
-        const categoryFilter = getCategoryFilter(categoryParam)
-        const urlCategoryMatch = !categoryFilter || categoryFilter.includes(product.category?.name || '')
-        
-        // Debug logging (only for first few products to avoid spam)
-        if (categoryParam && products.indexOf(product) < 3) {
-            console.log('Product:', product.name, 'Category:', product.category?.name, 'Match:', urlCategoryMatch)
-        }
-        
         // Active Category filter (from sidebar)
         const activeCategoryMatch = activeCategory === "ALL" || product.category?.name === activeCategory
         
@@ -138,13 +116,13 @@ const ShopPageClient = () => {
         // Color filter (skip for now as we don't have colors in database)
         const colorMatch = selectedColors.length === 0
         
-        return urlCategoryMatch && activeCategoryMatch && priceMatch && sizeMatch && colorMatch
+        return activeCategoryMatch && priceMatch && sizeMatch && colorMatch
     })
 
     // Debug: Log filtering results
     console.log('Total products:', products.length)
     console.log('Filtered products:', filteredProducts.length)
-    console.log('Category param:', categoryParam)
+    console.log('Gender param:', genderParam)
 
     // Sort products
     const sortedProducts = [...filteredProducts].sort((a, b) => {
@@ -208,14 +186,14 @@ const ShopPageClient = () => {
     return (
         <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50">
             {/* Header */}
-            {categoryParam && (
+            {genderParam && (
                 <div className="bg-white shadow-sm border-b">
                     <div className="container mx-auto px-4 py-6">
                         <h1 className="md:text-[18px] text-[16px] font-bold text-black">
-                            {categoryInfo.title} <span className="text-black">ტანსაცმელი</span>
+                            {genderInfo.title} <span className="text-black">ტანსაცმელი</span>
                         </h1>
-                        {categoryInfo.description && (
-                            <p className="md:text-[18px] text-[16px] text-black mt-2">{categoryInfo.description}</p>
+                        {genderInfo.description && (
+                            <p className="md:text-[18px] text-[16px] text-black mt-2">{genderInfo.description}</p>
                         )}
                     </div>
                 </div>
