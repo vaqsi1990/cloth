@@ -122,14 +122,14 @@ const New = () => {
 
                   {/* Sale Badge */}
                   {product.hasSale && (
-                    <div className="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded text-xs font-semibold">
+                    <div className="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded text-[16px]  mt-4  tracking-[0] font-medium">
                       ფასდაკლება
                     </div>
                   )}
 
                   {/* New Badge */}
                   {product.isNew && (
-                    <div className="absolute top-3 left-3 bg-green-500 text-white px-2 py-1 rounded text-xs font-semibold">
+                    <div className="absolute top-3 left-3 bg-green-500 text-white px-2 py-1 rounded text-[16px]  mt-4  tracking-[0] font-medium">
                       ახალი
                     </div>
                   )}

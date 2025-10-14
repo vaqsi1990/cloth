@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
         description: validatedData.description,
         currentPrice: validatedData.currentPrice,
         originalPrice: validatedData.originalPrice,
-        sku: validatedData.stock.toString(), // Using stock as SKU for now
+        sku: `SKU-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Generate unique SKU
         isNew: validatedData.isNew,
         hasSale: validatedData.hasSale,
         rating: validatedData.rating,

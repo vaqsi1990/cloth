@@ -89,11 +89,11 @@ const Deal = () => {
 
                     <div className="gi-deal-block mx-auto mx-[-12px] w-full relative">
                         {/* Custom Navigation Buttons */}
-                        <button className="swiper-button-prev cursor-pointer absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 z-10 w-8 h-8 sm:w-10 sm:h-10 bg-white shadow-lg rounded-full flex items-center justify-center hover:bg-gray-50 transition-all duration-300 group border border-gray-200">
+                        <button className="swiper-button-prev cursor-pointer absolute left-2 sm:left-4 top-1/3 transform -translate-y-1/2 z-10 w-8 h-8 sm:w-10 sm:h-10 bg-white shadow-lg rounded-full flex items-center justify-center hover:bg-gray-50 transition-all duration-300 group border border-gray-200">
                             <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 group-hover:text-gray-900" />
                         </button>
 
-                        <button className="swiper-button-next cursor-pointer absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 z-10 w-8 h-8 sm:w-10 sm:h-10 bg-white shadow-lg rounded-full flex items-center justify-center hover:bg-gray-50 transition-all duration-300 group border border-gray-200">
+                        <button className="swiper-button-next cursor-pointer absolute right-2 sm:right-4 top-1/3 transform -translate-y-1/2 z-10 w-8 h-8 sm:w-10 sm:h-10 bg-white shadow-lg rounded-full flex items-center justify-center hover:bg-gray-50 transition-all duration-300 group border border-gray-200">
                             <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 group-hover:text-gray-900" />
                         </button>
 
@@ -181,7 +181,7 @@ const Deal = () => {
                                                     </div>
                                                     <Link
                                                         href={`/product/${product.id}`}
-                                                        className="gi-btn-1 rounded-md mt-4 transition-all duration-[0.3s] ease-in-out overflow-hidden text-center relative py-[10px] max-[767px]:py-[6px] px-[15px] max-[767px]:px-[10px] bg-[#4b5966] text-[#fff] border-[0] text-[15px] max-[767px]:text-[13px] tracking-[0] font-medium inline-flex items-center  hover:text-[#fff]"
+                                                        className="gi-btn-1 rounded-md transition-all duration-[0.3s] ease-in-out overflow-hidden text-center relative py-[10px] max-[767px]:py-[6px] px-[15px] max-[767px]:px-[10px] bg-[#4b5966] text-[#fff] border-[0] text-[18px] md:text-[20px] mt-4  tracking-[0] font-medium inline-flex items-center"
                                                     >
                                                         დეტალები
 

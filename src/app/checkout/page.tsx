@@ -217,7 +217,7 @@ const CheckoutPage = () => {
                                     <div className="flex-1">
                                         <h3 className="text-[20px] text-black font-medium">{item.name}</h3>
                                         <p className="text-[20px] text-black text-gray-600">ზომა: {item.size}</p>
-                                        <p className="text-[20px] text-black text-gray-600">რაოდენობა: {item.quantity}</p>
+                                     
                                     </div>
                                     <div className="text-right">
                                         <p className="text-[20px] text-black font-semibold">₾{(item.price * item.quantity).toFixed(2)}</p>
