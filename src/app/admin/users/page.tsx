@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { ArrowLeft, Search, Filter, Users, Mail, Calendar, Package, ShoppingCart, Trash2, UserCheck, UserX } from 'lucide-react'
 
 interface User {
@@ -166,7 +167,7 @@ const AdminUsersPage = () => {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
-          <p className="text-gray-600 mb-6">You don't have permission to access this page.</p>
+          <p className="text-gray-600 mb-6">You don&apos;t have permission to access this page.</p>
           <Link
             href="/"
             className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
@@ -351,10 +352,11 @@ const AdminUsersPage = () => {
                                   {/* Product Image */}
                                   <div className="w-16 h-20 bg-gray-200 rounded-lg relative flex-shrink-0">
                                     {product.images.length > 0 ? (
-                                      <img
+                                      <Image
                                         src={product.images[0].url}
                                         alt={product.images[0].alt || product.name}
-                                        className="w-full h-full object-cover rounded-lg"
+                                        fill
+                                        className="object-cover rounded-lg"
                                       />
                                     ) : (
                                       <div className="w-full h-full flex items-center justify-center">
