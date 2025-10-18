@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 
 // Product validation schema
 const productSchema = z.object({
@@ -67,53 +69,6 @@ export async function GET(
     return NextResponse.json({
       success: false,
       message: 'შეცდომა პროდუქტის მიღებისას'
-    }, { status: 500 })
-  }
-}
-
-// DELETE - Delete product by ID
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const resolvedParams = await params
-    const productId = parseInt(resolvedParams.id)
-    
-    if (isNaN(productId)) {
-      return NextResponse.json({
-        success: false,
-        message: 'არასწორი პროდუქტის ID'
-      }, { status: 400 })
-    }
-
-    // Check if product exists
-    const existingProduct = await prisma.product.findUnique({
-      where: { id: productId }
-    })
-
-    if (!existingProduct) {
-      return NextResponse.json({
-        success: false,
-        message: 'პროდუქტი ვერ მოიძებნა'
-      }, { status: 404 })
-    }
-
-    // Delete product (cascade will handle related records)
-    await prisma.product.delete({
-      where: { id: productId }
-    })
-
-    return NextResponse.json({
-      success: true,
-      message: 'პროდუქტი წარმატებით წაიშალა'
-    })
-    
-  } catch (error) {
-    console.error('Error deleting product:', error)
-    return NextResponse.json({
-      success: false,
-      message: 'შეცდომა პროდუქტის წაშლისას'
     }, { status: 500 })
   }
 }
@@ -212,6 +167,70 @@ export async function PUT(
     return NextResponse.json({
       success: false,
       message: 'შეცდომა პროდუქტის განახლებისას'
+    }, { status: 500 })
+  }
+}
+
+// DELETE - Delete product by ID
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    // Check authentication
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
+    const resolvedParams = await params
+    const productId = parseInt(resolvedParams.id)
+    
+    if (isNaN(productId)) {
+      return NextResponse.json({
+        success: false,
+        message: 'არასწორი პროდუქტის ID'
+      }, { status: 400 })
+    }
+
+    // Check if product exists
+    const existingProduct = await prisma.product.findUnique({
+      where: { id: productId }
+    })
+
+    if (!existingProduct) {
+      return NextResponse.json({
+        success: false,
+        message: 'პროდუქტი ვერ მოიძებნა'
+      }, { status: 404 })
+    }
+
+    // Check if user owns the product or is admin
+    if (session.user.role !== 'ADMIN' && existingProduct.userId !== session.user.id) {
+      return NextResponse.json(
+        { success: false, error: 'Permission denied' },
+        { status: 403 }
+      )
+    }
+
+    // Delete product (cascade will handle related records)
+    await prisma.product.delete({
+      where: { id: productId }
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: 'პროდუქტი წარმატებით წაიშალა'
+    })
+    
+  } catch (error) {
+    console.error('Error deleting product:', error)
+    return NextResponse.json({
+      success: false,
+      message: 'შეცდომა პროდუქტის წაშლისას'
     }, { status: 500 })
   }
 }

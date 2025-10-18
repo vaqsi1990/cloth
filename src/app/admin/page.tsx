@@ -1,338 +1,344 @@
-"use client"
+'use client'
+
 import React, { useState, useEffect } from 'react'
-import Image from 'next/image'
-import { Plus, Package, ShoppingCart, Users, BarChart3, Settings, Upload, Edit, Trash2, Eye } from 'lucide-react'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Product } from '@/types/product'
-// Removed JSON import - now using database
+import { Plus, Users, Package, ShoppingCart, BarChart3, User } from 'lucide-react'
 
-const AdminPage = () => {
-    const [activeTab, setActiveTab] = useState('dashboard')
-    const [products, setProducts] = useState<Product[]>([])
-    const [loading, setLoading] = useState(true)
-
-    const tabs = [
-        { id: 'dashboard', label: 'დაფა', icon: BarChart3 },
-        { id: 'products', label: 'პროდუქტები', icon: Package },
-        { id: 'orders', label: 'შეკვეთები', icon: ShoppingCart },
-        { id: 'settings', label: 'პარამეტრები', icon: Settings }
-    ]
-
-    const stats = [
-        { title: 'სულ პროდუქტები', value: '156', change: '+12%' },
-        { title: 'შეკვეთები', value: '89', change: '+5%' },
-        { title: 'შემოსავალი', value: '₾12,450', change: '+18%' },
-        { title: 'მომხმარებლები', value: '234', change: '+8%' }
-    ]
-
-    const recentOrders = [
-        { id: 1, customer: 'ანა ნიკოლაიშვილი', total: '₾125.50', status: 'მიწოდებული', date: '2024-01-15' },
-        { id: 2, customer: 'გიორგი მელაძე', total: '₾89.99', status: 'მუშავდება', date: '2024-01-14' },
-        { id: 3, customer: 'მარიამ ხუციშვილი', total: '₾245.00', status: 'გადახდილი', date: '2024-01-13' }
-    ]
-
-    // Fetch products from API
-    useEffect(() => {
-        const fetchProducts = async () => {
-            try {
-                const response = await fetch('/api/products')
-                const data = await response.json()
-                if (data.success) {
-                    setProducts(data.products)
-                }
-            } catch (error) {
-                console.error('Error fetching products:', error)
-            } finally {
-                setLoading(false)
-            }
-        }
-
-        fetchProducts()
-    }, [])
-
-    const getCategoryLabel = (category: Product['category']) => {
-        if (!category) return 'უცნობი'
-        return category.name
-    }
-
-    const getMainImage = (product: Product) => {
-        if (product.images && product.images.length > 0) {
-            return product.images[0].url
-        }
-        return '/placeholder.jpg'
-    }
-
-    // Handle edit product
-    const handleEditProduct = (productId: number) => {
-        // Navigate to edit page
-        window.location.href = `/admin/products/${productId}/edit`
-    }
-
-    // Handle delete product
-    const handleDeleteProduct = async (productId: number, productName: string) => {
-        if (!confirm(`დარწმუნებული ხართ, რომ გსურთ წაშალოთ "${productName}"?`)) {
-            return
-        }
-
-        try {
-            const response = await fetch(`/api/products/${productId}`, {
-                method: 'DELETE'
-            })
-            
-            const data = await response.json()
-            
-            if (data.success) {
-                alert('პროდუქტი წარმატებით წაიშალა!')
-                // Refresh products list
-                const fetchProducts = async () => {
-                    try {
-                        const response = await fetch('/api/products')
-                        const data = await response.json()
-                        if (data.success) {
-                            setProducts(data.products)
-                        }
-                    } catch (error) {
-                        console.error('Error fetching products:', error)
-                    }
-                }
-                fetchProducts()
-            } else {
-                alert(data.message || 'შეცდომა პროდუქტის წაშლისას')
-            }
-        } catch (error) {
-            console.error('Error deleting product:', error)
-            alert('შეცდომა პროდუქტის წაშლისას')
-        }
-    }
-
-    return (
-        <div className="min-h-screen bg-gray-50">
-            {/* Header */}
-            <div className="bg-white shadow-sm border-b">
-                <div className="px-6 py-4">
-                    <h1 className="text-[20px] text-black font-bold">ადმინისტრაციის პანელი</h1>
-                </div>
-            </div>
-
-            <div className="flex">
-                {/* Sidebar */}
-                <div className="w-64 bg-white shadow-sm min-h-screen">
-                    <div className="p-6">
-                        <nav className="space-y-2">
-                            {tabs.map((tab) => {
-                                const Icon = tab.icon
-                                return (
-                                    <button
-                                        key={tab.id}
-                                        onClick={() => setActiveTab(tab.id)}
-                                        className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-[20px] text-black transition-colors ${
-                                            activeTab === tab.id
-                                                ? 'bg-black text-white'
-                                                : 'hover:bg-gray-100'
-                                        }`}
-                                    >
-                                        <Icon className="w-5 h-5" />
-                                        <span>{tab.label}</span>
-                                    </button>
-                                )
-                            })}
-                        </nav>
-                    </div>
-                </div>
-
-                {/* Main Content */}
-                <div className="flex-1 p-6">
-                    {activeTab === 'dashboard' && (
-                        <div className="space-y-6">
-                            {/* Stats Cards */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                {stats.map((stat, index) => (
-                                    <div key={index} className="bg-white p-6 rounded-lg shadow-sm">
-                                        <h3 className="text-[20px] text-black text-gray-600 mb-2">{stat.title}</h3>
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-[20px] text-black font-bold text-2xl">{stat.value}</span>
-                                            <span className="text-[20px] text-black text-green-600 text-sm">{stat.change}</span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Recent Orders */}
-                            <div className="bg-white rounded-lg shadow-sm">
-                                <div className="p-6 border-b border-gray-200">
-                                    <h2 className="text-[20px] text-black font-semibold">ბოლო შეკვეთები</h2>
-                                </div>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full">
-                                        <thead className="bg-gray-50">
-                                            <tr>
-                                                <th className="px-6 py-3 text-left text-[20px] text-black font-medium">ID</th>
-                                                <th className="px-6 py-3 text-left text-[20px] text-black font-medium">მომხმარებელი</th>
-                                                <th className="px-6 py-3 text-left text-[20px] text-black font-medium">თანხა</th>
-                                                <th className="px-6 py-3 text-left text-[20px] text-black font-medium">სტატუსი</th>
-                                                <th className="px-6 py-3 text-left text-[20px] text-black font-medium">თარიღი</th>
-                                                <th className="px-6 py-3 text-left text-[20px] text-black font-medium">მოქმედება</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-200">
-                                            {recentOrders.map((order) => (
-                                                <tr key={order.id}>
-                                                    <td className="px-6 py-4 text-[20px] text-black">#{order.id}</td>
-                                                    <td className="px-6 py-4 text-[20px] text-black">{order.customer}</td>
-                                                    <td className="px-6 py-4 text-[20px] text-black font-semibold">{order.total}</td>
-                                                    <td className="px-6 py-4">
-                                                        <span className={`px-2 py-1 rounded-full text-[20px] text-black text-sm ${
-                                                            order.status === 'მიწოდებული' ? 'bg-green-100 text-green-800' :
-                                                            order.status === 'მუშავდება' ? 'bg-yellow-100 text-yellow-800' :
-                                                            'bg-blue-100 text-blue-800'
-                                                        }`}>
-                                                            {order.status}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-6 py-4 text-[20px] text-black">{order.date}</td>
-                                                    <td className="px-6 py-4">
-                                                        <div className="flex space-x-2">
-                                                            <button className="p-1 text-[20px] text-black hover:text-blue-600">
-                                                                <Eye className="w-4 h-4" />
-                                                            </button>
-                                                            <button className="p-1 text-[20px] text-black hover:text-green-600">
-                                                                <Edit className="w-4 h-4" />
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {activeTab === 'products' && (
-                        <div className="space-y-6">
-                            <div className="flex justify-between items-center">
-                                <h2 className="text-[20px] text-black font-semibold">პროდუქტები</h2>
-                                <Link 
-                                    href="/admin/products/new"
-                                    className="bg-black text-white px-4 py-2 rounded-lg text-[20px] text-black flex items-center space-x-2 hover:bg-gray-800 transition-colors"
-                                >
-                                    <Plus className="w-4 h-4" />
-                                    <span>ახალი პროდუქტი</span>
-                                </Link>
-                            </div>
-
-                            <div className="bg-white rounded-lg shadow-sm">
-                                <div className="overflow-x-auto">
-                                    <table className="w-full">
-                                        <thead className="bg-gray-50">
-                                            <tr>
-                                                <th className="px-6 py-3 text-left text-[20px] text-black font-medium">სურათი</th>
-                                                <th className="px-6 py-3 text-left text-[20px] text-black font-medium">ID</th>
-                                                <th className="px-6 py-3 text-left text-[20px] text-black font-medium">სახელი</th>
-                                                <th className="px-6 py-3 text-left text-[20px] text-black font-medium">ფასი</th>
-                                                <th className="px-6 py-3 text-left text-[20px] text-black font-medium">კატეგორია</th>
-                                                <th className="px-6 py-3 text-left text-[20px] text-black font-medium">სტატუსი</th>
-                                                <th className="px-6 py-3 text-left text-[20px] text-black font-medium">მოქმედება</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-200">
-                                            {loading ? (
-                                                <tr>
-                                                    <td colSpan={7} className="px-6 py-4 text-center text-[20px] text-black">
-                                                        იტვირთება...
-                                                    </td>
-                                                </tr>
-                                            ) : products.length === 0 ? (
-                                                <tr>
-                                                    <td colSpan={7} className="px-6 py-4 text-center text-[20px] text-black">
-                                                        პროდუქტები ვერ მოიძებნა
-                                                    </td>
-                                                </tr>
-                                            ) : (
-                                                products.map((product) => (
-                                                    <tr key={product.id}>
-                                                        <td className="px-6 py-4">
-                                                            <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden">
-                                                                <Image
-                                                                    src={getMainImage(product)}
-                                                                    alt={product.name}
-                                                                    width={48}
-                                                                    height={48}
-                                                                    className="w-full h-full object-cover"
-                                                                />
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-6 py-4 text-[20px] text-black">#{product.id}</td>
-                                                        <td className="px-6 py-4 text-[20px] text-black font-medium">{product.name}</td>
-                                                        <td className="px-6 py-4 text-[20px] text-black">
-                                                            <div className="flex flex-col">
-                                                                <span className="font-semibold">₾{product.currentPrice.toFixed(2)}</span>
-                                                                {product.originalPrice && product.originalPrice > product.currentPrice && (
-                                                                    <span className="text-gray-500 line-through text-sm">₾{product.originalPrice.toFixed(2)}</span>
-                                                                )}
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-6 py-4 text-[20px] text-black">{getCategoryLabel(product.category)}</td>
-                                                        <td className="px-6 py-4">
-                                                            <div className="flex flex-col space-y-1">
-                                                                {product.isNew && (
-                                                                    <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-[20px] text-black text-xs">ახალი</span>
-                                                                )}
-                                                                {product.hasSale && (
-                                                                    <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-[20px] text-black text-xs">ფასდაკლება</span>
-                                                                )}
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-6 py-4">
-                                                            <div className="flex space-x-2">
-                                                                <button 
-                                                                    onClick={() => handleEditProduct(product.id)}
-                                                                    className="p-1 text-[20px] text-black hover:text-blue-600 transition-colors"
-                                                                    title="რედაქტირება"
-                                                                >
-                                                                    <Edit className="w-4 h-4" />
-                                                                </button>
-                                                                <button 
-                                                                    onClick={() => handleDeleteProduct(product.id, product.name)}
-                                                                    className="p-1 text-[20px] text-black hover:text-red-600 transition-colors"
-                                                                    title="წაშლა"
-                                                                >
-                                                                    <Trash2 className="w-4 h-4" />
-                                                                </button>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                ))
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {activeTab === 'orders' && (
-                        <div className="space-y-6">
-                            <h2 className="text-[20px] text-black font-semibold">შეკვეთების მართვა</h2>
-                            <div className="bg-white rounded-lg shadow-sm p-6">
-                                <p className="text-[20px] text-black text-gray-600">შეკვეთების დეტალური მართვა აქ იქნება</p>
-                            </div>
-                        </div>
-                    )}
-
-                    {activeTab === 'settings' && (
-                        <div className="space-y-6">
-                            <h2 className="text-[20px] text-black font-semibold">პარამეტრები</h2>
-                            <div className="bg-white rounded-lg shadow-sm p-6">
-                                <p className="text-[20px] text-black text-gray-600">სისტემის პარამეტრები აქ იქნება</p>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
-    )
+interface AdminStats {
+  totalProducts: number
+  totalUsers: number
+  totalOrders: number
+  totalRevenue: number
 }
 
-export default AdminPage
+interface RecentActivity {
+  id: string
+  type: 'product' | 'user' | 'order'
+  action: string
+  description: string
+  timestamp: string
+  user?: string
+}
+
+const AdminDashboard = () => {
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  const [stats, setStats] = useState<AdminStats>({
+    totalProducts: 0,
+    totalUsers: 0,
+    totalOrders: 0,
+    totalRevenue: 0
+  })
+  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin')
+    }
+  }, [status, router])
+
+  useEffect(() => {
+    if (session?.user?.role === 'ADMIN') {
+      fetchAdminStats()
+    }
+  }, [session])
+
+  const fetchAdminStats = async () => {
+    try {
+      setLoading(true)
+      
+      // Fetch products count
+      const productsResponse = await fetch('/api/products')
+      const productsData = await productsResponse.json()
+      const totalProducts = productsData.success ? productsData.products.length : 0
+
+      // Fetch users count
+      const usersResponse = await fetch('/api/admin/users')
+      const usersData = await usersResponse.json()
+      const totalUsers = usersData.success ? usersData.users.length : 0
+
+      // Fetch orders count
+      const ordersResponse = await fetch('/api/admin/orders')
+      const ordersData = await ordersResponse.json()
+      const totalOrders = ordersData.success ? ordersData.orders.length : 0
+
+      // Calculate total revenue
+      const totalRevenue = ordersData.success 
+        ? ordersData.orders.reduce((sum: number, order: any) => sum + order.total, 0)
+        : 0
+
+      setStats({
+        totalProducts,
+        totalUsers,
+        totalOrders,
+        totalRevenue
+      })
+
+      // Fetch recent activity
+      await fetchRecentActivity(productsData, usersData, ordersData)
+    } catch (error) {
+      console.error('Error fetching admin stats:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchRecentActivity = async (productsData: any, usersData: any, ordersData: any) => {
+    try {
+      const activities: RecentActivity[] = []
+
+      // Recent products (last 3)
+      if (productsData.success && productsData.products.length > 0) {
+        const recentProducts = productsData.products.slice(0, 3)
+        recentProducts.forEach((product: any) => {
+          activities.push({
+            id: `product-${product.id}`,
+            type: 'product',
+            action: 'ახალი პროდუქტი დაემატა',
+            description: product.name,
+            timestamp: new Date(product.createdAt).toLocaleDateString('ka-GE'),
+            user: product.user?.name || 'Unknown'
+          })
+        })
+      }
+
+      // Recent users (last 2)
+      if (usersData.success && usersData.users.length > 0) {
+        const recentUsers = usersData.users.slice(0, 2)
+        recentUsers.forEach((user: any) => {
+          activities.push({
+            id: `user-${user.id}`,
+            type: 'user',
+            action: 'ახალი მომხმარებელი',
+            description: user.name || user.email,
+            timestamp: new Date(user.createdAt).toLocaleDateString('ka-GE')
+          })
+        })
+      }
+
+      // Recent orders (last 2)
+      if (ordersData.success && ordersData.orders.length > 0) {
+        const recentOrders = ordersData.orders.slice(0, 2)
+        recentOrders.forEach((order: any) => {
+          activities.push({
+            id: `order-${order.id}`,
+            type: 'order',
+            action: 'ახალი შეკვეთა',
+            description: `შეკვეთა #${order.id}`,
+            timestamp: new Date(order.createdAt).toLocaleDateString('ka-GE'),
+            user: order.user?.name || order.customerName
+          })
+        })
+      }
+
+      // Sort by timestamp (most recent first) and take last 3
+      activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      setRecentActivity(activities.slice(0, 3))
+    } catch (error) {
+      console.error('Error fetching recent activity:', error)
+    }
+  }
+
+  if (status === 'loading' || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    )
+  }
+
+  if (!session || session.user.role !== 'ADMIN') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
+          <p className="text-gray-600 mb-6">You don't have permission to access this page.</p>
+          <Link
+            href="/"
+            className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+          >
+            Go Home
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  const statsData = [
+    {
+      title: 'მთლიანი პროდუქტები',
+      value: stats.totalProducts.toString(),
+      icon: Package,
+      color: 'bg-blue-500'
+    },
+    {
+      title: 'მომხმარებლები',
+      value: stats.totalUsers.toString(),
+      icon: Users,
+      color: 'bg-green-500'
+    },
+    {
+      title: 'შეკვეთები',
+      value: stats.totalOrders.toString(),
+      icon: ShoppingCart,
+      color: 'bg-purple-500'
+    },
+    {
+      title: 'შემოსავალი',
+      value: `₾${stats.totalRevenue.toFixed(2)}`,
+      icon: BarChart3,
+      color: 'bg-orange-500'
+    }
+  ]
+
+  const quickActions = [
+    {
+      title: 'ახალი პროდუქტი',
+      description: 'დაამატე ახალი პროდუქტი კატალოგში',
+      href: '/admin/products/new',
+      icon: Plus,
+      color: 'bg-black'
+    },
+    {
+      title: 'პროდუქტების მართვა',
+      description: 'შეცვალე ან წაშალე არსებული პროდუქტები',
+      href: '/admin/products',
+      icon: Package,
+      color: 'bg-blue-600'
+    },
+    {
+      title: 'მომხმარებლების მართვა',
+      description: 'ნახე და მართე მომხმარებლები',
+      href: '/admin/users',
+      icon: Users,
+      color: 'bg-green-600'
+    },
+    {
+      title: 'შეკვეთების მართვა',
+      description: 'ნახე და მართე შეკვეთები',
+      href: '/admin/orders',
+      icon: ShoppingCart,
+      color: 'bg-purple-600'
+    },
+    {
+      title: 'პარამეტრები',
+      description: 'შეცვალე პროფილი და პაროლი',
+      href: '/admin/settings',
+      icon: User,
+      color: 'bg-gray-600'
+    }
+  ]
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">ადმინ პანელი</h1>
+              <p className="text-gray-600 mt-1">მოგესალმებით, {session.user.name}</p>
+            </div>
+            <Link
+              href="/"
+              className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+            >
+              მთავარ გვერდზე დაბრუნება
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 py-8">
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {statsData.map((stat, index) => (
+            <div key={index} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">{stat.title}</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
+                </div>
+                <div className={`w-12 h-12 ${stat.color} rounded-lg flex items-center justify-center`}>
+                  <stat.icon className="w-6 h-6 text-white" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Quick Actions */}
+        <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">სწრაფი მოქმედებები</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
+            {quickActions.map((action, index) => (
+              <Link
+                key={index}
+                href={action.href}
+                className="group block p-6 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all duration-300 hover:shadow-md"
+              >
+                <div className="flex items-center space-x-4">
+                  <div className={`w-12 h-12 ${action.color} rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
+                    <action.icon className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900 group-hover:text-black transition-colors">
+                      {action.title}
+                    </h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {action.description}
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Recent Activity */}
+        <div className="mt-8 bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">ბოლო აქტივობა</h2>
+          
+          {recentActivity.length === 0 ? (
+            <div className="text-center py-8">
+              <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600">ჯერ არ არის აქტივობა</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {recentActivity.map((activity) => (
+                <div key={activity.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      activity.type === 'product' ? 'bg-green-100' :
+                      activity.type === 'user' ? 'bg-blue-100' :
+                      'bg-purple-100'
+                    }`}>
+                      {activity.type === 'product' && <Plus className="w-4 h-4 text-green-600" />}
+                      {activity.type === 'user' && <Users className="w-4 h-4 text-blue-600" />}
+                      {activity.type === 'order' && <ShoppingCart className="w-4 h-4 text-purple-600" />}
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{activity.action}</p>
+                      <p className="text-sm text-gray-600">{activity.description}</p>
+                      {activity.user && (
+                        <p className="text-xs text-gray-500">მომხმარებელი: {activity.user}</p>
+                      )}
+                    </div>
+                  </div>
+                  <span className="text-sm text-gray-500">{activity.timestamp}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default AdminDashboard

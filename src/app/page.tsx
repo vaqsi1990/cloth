@@ -1,21 +1,19 @@
-  import Cat from "@/component/Cat";
-import Deal from "@/component/Deal";
+
+
 import Hero from "@/component/Hero";
-import New from "@/component/New";
+import HowItWorks from "@/component/HowItWorks";
+import PopularProducts from "@/component/PopularProducts";
 import About from "@/component/About";
+import ContactForm from "@/component/ContactForm";
 
 export default function Home() {
   return (
     <>
     <Hero />
-    <div className="bg-gradient-to-br from-red-50 to-orange-50">
-    <Deal />
-    <Cat />
-    <New />
+    <HowItWorks />
+    <PopularProducts />
     <About />
-    </div>
-    
-    
+    <ContactForm />
     </>
   );
 }

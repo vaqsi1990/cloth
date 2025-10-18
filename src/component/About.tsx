@@ -3,8 +3,8 @@ import Image from 'next/image'
 
 const About = () => {
     return (
-        <section className="px-[12px] pb-24 ">
-            <div className="flex flex-wrap justify-between items-center mx-auto min-[1600px]:max-w-[1600px] min-[1400px]:max-w-[1320px] min-[1200px]:max-w-[1140px] min-[992px]:max-w-[960px] min-[768px]:max-w-[720px] min-[576px]:max-w-[540px]">
+        <section className="px-[12px] pb-14 ">
+            <div className="flex flex-wrap justify-between items-center mx-auto max-w-7xl">
                 <div className="flex flex-col lg:flex-row items-start gap-8 lg:gap-12">
                     {/* Image - Left Side */}
                     <div className="w-full lg:w-1/2">
@@ -22,7 +22,7 @@ const About = () => {
                     {/* Text Content - Right Side */}
                     <div className="w-full lg:w-1/2">
                         <div className="text-black text-[20px] leading-relaxed">
-                            <h2 className="text-3xl lg:text-4xl font-bold mb-6 text-gray-900">
+                            <h2 className="text-[20px] md:text-[30px] font-bold mb-6 text-gray-900">
                                 ჩვენს შესახებ
                             </h2>
                             <p className="mb-4">

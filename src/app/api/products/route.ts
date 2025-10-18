@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 
 // Product validation schema
 const productSchema = z.object({
@@ -76,6 +78,15 @@ export async function GET(request: NextRequest) {
 // POST - Create new product
 export async function POST(request: NextRequest) {
   try {
+    // Check authentication
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
     const body = await request.json()
     
     // Validate the request body
@@ -97,6 +108,7 @@ export async function POST(request: NextRequest) {
         hasSale: validatedData.hasSale,
         rating: validatedData.rating,
         categoryId: validatedData.categoryId,
+        userId: session.user.id, // Associate product with user
         // Create product images
         images: {
           create: validatedData.imageUrls.map((url, index) => ({

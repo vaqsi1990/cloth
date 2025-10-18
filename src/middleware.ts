@@ -1,32 +1,22 @@
-import { NextRequest, NextResponse } from "next/server";
+import { withAuth } from "next-auth/middleware"
 
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-
-  const isAdminPath = /^\/admin(\/.*)?$/.test(pathname);
-
-  if (isAdminPath) {
-    const basicAuth = request.headers.get("authorization");
-
-    if (basicAuth) {
-      const [user, pwd] = atob(basicAuth.split(" ")[1] || "").split(":");
-
-      const validUser = process.env.BASIC_AUTH_USER;
-      const validPassword = process.env.BASIC_AUTH_PASSWORD;
-
-      if (user === validUser && pwd === validPassword) {
-        return NextResponse.next();
-      }
-    }
-
-    const url = request.nextUrl.clone();
-    url.pathname = "/api/basicauth";
-    return NextResponse.rewrite(url);
+export default withAuth(
+  function middleware(req) {
+    // Add any additional middleware logic here
+  },
+  {
+    callbacks: {
+      authorized: ({ token, req }) => {
+        // Check if user is trying to access admin routes
+        if (req.nextUrl.pathname.startsWith("/admin")) {
+          return token?.role === "ADMIN"
+        }
+        return true
+      },
+    },
   }
-
-  return NextResponse.next();
-}
+)
 
 export const config = {
-  matcher: ['/((?!api|trpc|_next|_vercel|.*\\..*).*)'],
-};
+  matcher: ["/admin/:path*"]
+}
