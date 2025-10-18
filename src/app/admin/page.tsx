@@ -13,6 +13,33 @@ interface AdminStats {
   totalRevenue: number
 }
 
+interface Order {
+  id: number
+  total: number
+  status: string
+  createdAt: string
+  user?: {
+    name: string
+  }
+  customerName?: string
+}
+
+interface Product {
+  id: number
+  name: string
+  createdAt: string
+  user?: {
+    name: string
+  }
+}
+
+interface User {
+  id: string
+  name: string
+  email: string
+  createdAt: string
+}
+
 interface RecentActivity {
   id: string
   type: 'product' | 'user' | 'order'
@@ -67,7 +94,7 @@ const AdminDashboard = () => {
 
       // Calculate total revenue
       const totalRevenue = ordersData.success 
-        ? ordersData.orders.reduce((sum: number, order: any) => sum + order.total, 0)
+        ? ordersData.orders.reduce((sum: number, order: Order) => sum + order.total, 0)
         : 0
 
       setStats({
@@ -86,14 +113,14 @@ const AdminDashboard = () => {
     }
   }
 
-  const fetchRecentActivity = async (productsData: any, usersData: any, ordersData: any) => {
+  const fetchRecentActivity = async (productsData: { success: boolean; products?: Product[] }, usersData: { success: boolean; users?: User[] }, ordersData: { success: boolean; orders?: Order[] }) => {
     try {
       const activities: RecentActivity[] = []
 
       // Recent products (last 3)
-      if (productsData.success && productsData.products.length > 0) {
+      if (productsData.success && productsData.products && productsData.products.length > 0) {
         const recentProducts = productsData.products.slice(0, 3)
-        recentProducts.forEach((product: any) => {
+        recentProducts.forEach((product: Product) => {
           activities.push({
             id: `product-${product.id}`,
             type: 'product',
@@ -106,9 +133,9 @@ const AdminDashboard = () => {
       }
 
       // Recent users (last 2)
-      if (usersData.success && usersData.users.length > 0) {
+      if (usersData.success && usersData.users && usersData.users.length > 0) {
         const recentUsers = usersData.users.slice(0, 2)
-        recentUsers.forEach((user: any) => {
+        recentUsers.forEach((user: User) => {
           activities.push({
             id: `user-${user.id}`,
             type: 'user',
@@ -120,9 +147,9 @@ const AdminDashboard = () => {
       }
 
       // Recent orders (last 2)
-      if (ordersData.success && ordersData.orders.length > 0) {
+      if (ordersData.success && ordersData.orders && ordersData.orders.length > 0) {
         const recentOrders = ordersData.orders.slice(0, 2)
-        recentOrders.forEach((order: any) => {
+        recentOrders.forEach((order: Order) => {
           activities.push({
             id: `order-${order.id}`,
             type: 'order',
@@ -155,7 +182,7 @@ const AdminDashboard = () => {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
-          <p className="text-gray-600 mb-6">You don't have permission to access this page.</p>
+          <p className="text-gray-600 mb-6">You don&apos;t have permission to access this page.</p>
           <Link
             href="/"
             className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"

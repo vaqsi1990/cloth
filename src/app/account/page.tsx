@@ -6,6 +6,20 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { User, Package, ShoppingCart, Settings, LogOut, Edit3, MapPin, Phone, Mail } from 'lucide-react'
 
+interface Order {
+  id: number
+  total: number
+  status: string
+  createdAt: string
+}
+
+interface Product {
+  id: number
+  name: string
+  currentPrice: number
+  createdAt: string
+}
+
 const AccountPage = () => {
   const { data: session, status } = useSession()
   const router = useRouter()
@@ -38,7 +52,7 @@ const AccountPage = () => {
       const ordersData = await ordersResponse.json()
       const ordersCount = ordersData.success ? ordersData.orders.length : 0
       const totalSpent = ordersData.success 
-        ? ordersData.orders.reduce((sum: number, order: any) => sum + order.total, 0)
+        ? ordersData.orders.reduce((sum: number, order: Order) => sum + order.total, 0)
         : 0
 
       // Fetch user products
