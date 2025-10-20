@@ -181,11 +181,11 @@ const AdminDashboard = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
-          <p className="text-gray-600 mb-6">You don&apos;t have permission to access this page.</p>
+          <h1 className="text-2xl font-bold text-black mb-4">Access Denied</h1>
+          <p className="text-black mb-6">You don&apos;t have permission to access this page.</p>
           <Link
             href="/"
-            className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+            className="px-6 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
           >
             Go Home
           </Link>
@@ -271,7 +271,7 @@ const AdminDashboard = () => {
             </div>
             <Link
               href="/"
-              className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+              className="px-4 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
             >
               მთავარ გვერდზე დაბრუნება
             </Link>

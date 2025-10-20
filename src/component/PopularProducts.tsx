@@ -125,14 +125,14 @@ const PopularProducts = () => {
     }
 
     return (
-        <section className="pb-14 bg-white">
+        <section className="pb-14 ">
             <div className="container max-w-7xl mx-auto px-4">
                 {/* Header */}
                 <div className="text-center mb-12">
-                    <h2 className="text-[20px] md:text-[30px] font-bold text-gray-900 mb-4">
+                    <h2 className="text-[20px] md:text-[30px] font-bold text-black mb-4">
                         პოპულარული პროდუქტები
                     </h2>
-                    <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                    <p className="text-lg text-black max-w-2xl mx-auto">
                         აღმოაჩინეთ ყველაზე მოთხოვნადი ტანსაცმელი ჩვენი კოლექციიდან
                     </p>
                 </div>
@@ -144,14 +144,14 @@ const PopularProducts = () => {
                         onClick={prevSlide}
                         className="absolute cursor-pointer left-0 top-[30%] -translate-y-1/2 -translate-x-4 z-10 w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center hover:shadow-xl transition-all duration-300"
                     >
-                        <ChevronLeft className="w-6 h-6 text-gray-600" />
+                        <ChevronLeft className="w-6 h-6 text-black" />
                     </button>
 
                     <button
                         onClick={nextSlide}
                         className="absolute cursor-pointer right-0 top-[30%] -translate-y-1/2 translate-x-4 z-10 w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center hover:shadow-xl transition-all duration-300"
                     >
-                        <ChevronRight className="w-6 h-6 text-gray-600" />
+                        <ChevronRight className="w-6 h-6 text-black" />
                     </button>
 
 
@@ -204,15 +204,15 @@ const PopularProducts = () => {
                                                         {/* Price */}
                                                         <div className="flex items-center justify-between">
                                                             <div>
-                                                                <span className="text-lg font-bold text-gray-900">
+                                                                <span className="text-lg font-bold text-black">
                                                                     ₾{product.price}
                                                                 </span>
-                                                                <span className="text-xs text-gray-500 ml-1">
+                                                                <span className="text-xs text-black ml-1">
                                                                     /დღე
                                                                 </span>
                                                             </div>
                                                             <div className="text-right">
-                                                                <div className="text-xs text-gray-500 line-through">
+                                                                <div className="text-xs text-black line-through">
                                                                     {product.originalPrice} ლარი
                                                                 </div>
                                                             </div>
@@ -221,7 +221,7 @@ const PopularProducts = () => {
                                                         {/* Rent Button */}
                                                         <Link
                                                             href={`/product/${product.id}`}
-                                                            className="block w-full mt-3 bg-black md:text-[18px] text-[16px] text-white text-center py-2 rounded-lg font-medium hover:bg-gray-800 transition-colors duration-300"
+                                                            className="block w-full mt-3 bg-[#1B3729] md:text-[18px] text-[16px] text-white text-center py-2 rounded-lg font-bold transition-colors duration-300"
                                                         >
                                                             დაჯავშნე
                                                         </Link>
@@ -242,7 +242,7 @@ const PopularProducts = () => {
                 <div className="text-center ">
                     <Link
                         href="/shop"
-                        className="flex md:text-[20px] text-[18px] font-bold justify-center  items-center w-[200px] mx-auto mt-4 bg-black text-white px-8 py-4 rounded-lg font-medium uppercase tracking-wide hover:bg-gray-800 transition-colors duration-300"
+                        className="flex md:text-[20px] text-[18px] font-bold justify-center  items-center w-[200px] mx-auto mt-4 bg-[#1B3729] text-white px-8 py-4 rounded-lg font-bold uppercase tracking-wide  transition-colors duration-300"
                     >
                         დაათვალიერე
                     </Link>

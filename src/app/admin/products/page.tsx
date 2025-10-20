@@ -119,7 +119,7 @@ const AdminProductsPage = () => {
           <p className="text-gray-600 mb-6">You don&apos;t have permission to access this page.</p>
           <Link
             href="/"
-            className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+            className="px-6 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
           >
             Go Home
           </Link>
@@ -141,13 +141,13 @@ const AdminProductsPage = () => {
             <div className="flex items-center space-x-4">
               <Link
                 href="/admin"
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                className="px-4 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
               >
                 ადმინ პანელი
               </Link>
               <Link
                 href="/admin/products/new"
-                className="flex items-center space-x-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+                className="flex items-center space-x-2 px-4 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
               >
                 <Plus className="w-4 h-4" />
                 <span>ახალი პროდუქტი</span>
@@ -227,7 +227,7 @@ const AdminProductsPage = () => {
               </p>
               <Link
                 href="/admin/products/new"
-                className="inline-block px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+                className="inline-block px-6 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
               >
                 პირველი პროდუქტის დამატება
               </Link>

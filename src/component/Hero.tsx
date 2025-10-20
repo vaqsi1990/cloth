@@ -6,7 +6,7 @@ import Link from 'next/link'
 
 const Hero = () => {
     return (
-        <section className="relative w-full    overflow-hidden">
+        <section className="relative w-full bg-light-green   overflow-hidden">
             {/* Background decorative elements */}
 
 
@@ -70,7 +70,7 @@ const Hero = () => {
                     {/* Bottom text */}
                     <Link
                                 href="/shop"
-                                className="flex md:text-[20px] text-[18px] font-bold justify-center md:mt-14 items-center w-[200px] mx-auto mt-4 bg-black text-white px-8 py-4 rounded-lg font-medium uppercase tracking-wide hover:bg-gray-800 transition-colors duration-300"
+                                className="flex md:text-[20px] text-[18px] font-bold justify-center md:mt-14 items-center w-[200px] mx-auto mt-4 bg-[#1B3729] text-white px-8 py-4 rounded-lg font-bold uppercase tracking-wide  transition-colors duration-300"
                             >
                               დაათვალიერე
                             </Link>

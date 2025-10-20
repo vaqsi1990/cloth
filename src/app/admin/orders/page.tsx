@@ -176,7 +176,7 @@ const AdminOrdersPage = () => {
           <p className="text-gray-600 mb-6">You don&apos;t have permission to access this page.</p>
           <Link
             href="/"
-            className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+            className="px-6 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
           >
             Go Home
           </Link>

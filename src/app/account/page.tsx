@@ -136,11 +136,11 @@ const AccountPage = () => {
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <div className="flex items-center space-x-4 mb-6">
           <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
-            <User className="w-8 h-8 text-gray-600" />
+            <User className="w-8 h-8 text-black" />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-gray-900">{session.user.name}</h3>
-            <p className="text-gray-600">{session.user.email}</p>
+            <h3 className="text-xl font-bold text-black">{session.user.name}</h3>
+            <p className="text-black">{session.user.email}</p>
             <span className="inline-block mt-2 px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
               {session.user.role === 'ADMIN' ? 'ადმინისტრატორი' : 'მომხმარებელი'}
             </span>
@@ -150,32 +150,32 @@ const AccountPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-4">
             <div className="flex items-center space-x-3">
-              <Mail className="w-5 h-5 text-gray-400" />
+              <Mail className="w-5 h-5 text-black" />
               <div>
-                <p className="text-sm text-gray-600">ელფოსტა</p>
+                <p className="text-sm text-black">ელფოსტა</p>
                 <p className="font-medium">{session.user.email}</p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <User className="w-5 h-5 text-gray-400" />
+              <User className="w-5 h-5 text-black" />
               <div>
-                <p className="text-sm text-gray-600">სახელი</p>
+                <p className="text-sm text-black">სახელი</p>
                 <p className="font-medium">{session.user.name}</p>
               </div>
             </div>
           </div>
           <div className="space-y-4">
             <div className="flex items-center space-x-3">
-              <Phone className="w-5 h-5 text-gray-400" />
+              <Phone className="w-5 h-5 text-black" />
               <div>
-                <p className="text-sm text-gray-600">ტელეფონი</p>
+                <p className="text-sm text-black">ტელეფონი</p>
                 <p className="font-medium">+995 555 123 456</p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <MapPin className="w-5 h-5 text-gray-400" />
+              <MapPin className="w-5 h-5 text-black" />
               <div>
-                <p className="text-sm text-gray-600">მისამართი</p>
+                <p className="text-sm text-black">მისამართი</p>
                 <p className="font-medium">თბილისი, საქართველო</p>
               </div>
             </div>
@@ -186,7 +186,7 @@ const AccountPage = () => {
       </div>
 
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-        <h4 className="text-lg font-bold text-gray-900 mb-4">ანგარიშის სტატისტიკა</h4>
+        <h4 className="text-lg font-bold text-black mb-4">ანგარიშის სტატისტიკა</h4>
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => (
@@ -199,16 +199,16 @@ const AccountPage = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">{userStats.ordersCount}</div>
-              <div className="text-sm text-gray-600">შეკვეთა</div>
+              <div className="text-2xl font-bold text-black">{userStats.ordersCount}</div>
+              <div className="text-sm text-black">შეკვეთა</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">₾{userStats.totalSpent.toFixed(2)}</div>
-              <div className="text-sm text-gray-600">მთლიანი ღირებულება</div>
+              <div className="text-2xl font-bold text-black">₾{userStats.totalSpent.toFixed(2)}</div>
+              <div className="text-sm text-black">მთლიანი ღირებულება</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">{userStats.productsCount}</div>
-              <div className="text-sm text-gray-600">პროდუქტი</div>
+              <div className="text-2xl font-bold text-black">{userStats.productsCount}</div>
+              <div className="text-sm text-black">პროდუქტი</div>
             </div>
           </div>
         )}
@@ -219,15 +219,15 @@ const AccountPage = () => {
   const renderOrdersTab = () => (
     <div className="space-y-6">
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-        <h3 className="text-lg font-bold text-gray-900 mb-6">შეკვეთების ისტორია</h3>
+        <h3 className="text-lg font-bold text-black mb-6">შეკვეთების ისტორია</h3>
         
         {mockOrders.length === 0 ? (
           <div className="text-center py-8">
-            <ShoppingCart className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600">ჯერ არ გაქვთ შეკვეთები</p>
+            <ShoppingCart className="w-12 h-12 text-black mx-auto mb-4" />
+            <p className="text-black">ჯერ არ გაქვთ შეკვეთები</p>
             <Link
               href="/shop"
-              className="inline-block mt-4 px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+              className="inline-block mt-4 px-6 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
             >
               შეკვეთის დაწყება
             </Link>
@@ -235,18 +235,18 @@ const AccountPage = () => {
         ) : (
           <div className="space-y-4">
             {mockOrders.map((order) => (
-              <div key={order.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+              <div key={order.id} className="border border-black rounded-lg p-4 hover:shadow-md transition-shadow">
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <h4 className="font-semibold text-gray-900">შეკვეთა #{order.id}</h4>
-                    <p className="text-sm text-gray-600">{order.date}</p>
+                    <h4 className="font-semibold text-black">შეკვეთა #{order.id}</h4>
+                    <p className="text-sm text-black">{order.date}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-gray-900">₾{order.total}</p>
+                    <p className="font-bold text-black">₾{order.total}</p>
                     <span className={`inline-block px-2 py-1 text-xs rounded-full ${
                       order.status === 'მიღებული' ? 'bg-green-100 text-green-800' :
                       order.status === 'მიწოდება' ? 'bg-blue-100 text-blue-800' :
-                      'bg-gray-100 text-gray-800'
+                      'bg-gray-100 text-black'
                     }`}>
                       {order.status}
                     </span>
@@ -256,13 +256,13 @@ const AccountPage = () => {
                 <div className="space-y-2">
                   {order.items.map((item, index) => (
                     <div key={index} className="flex items-center justify-between text-sm">
-                      <span className="text-gray-700">{item.name} ({item.size})</span>
+                      <span className="text-black">{item.name} ({item.size})</span>
                       <span className="font-medium">₾{item.price}</span>
                     </div>
                   ))}
                 </div>
                 
-                <div className="mt-4 pt-4 border-t border-gray-100">
+                <div className="mt-4 pt-4 border-t border-black">
                   <button className="text-sm text-blue-600 hover:text-blue-800 font-medium">
                     დეტალების ნახვა
                   </button>
@@ -279,10 +279,10 @@ const AccountPage = () => {
     <div className="space-y-6">
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-bold text-gray-900">ჩემი პროდუქტები</h3>
+          <h3 className="text-lg font-bold text-black">ჩემი პროდუქტები</h3>
           <Link
             href="/admin/products/new"
-            className="flex items-center space-x-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+            className="flex items-center space-x-2 px-4 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
           >
             <Package className="w-4 h-4" />
             <span>ახალი პროდუქტი</span>
@@ -291,11 +291,11 @@ const AccountPage = () => {
         
         {mockProducts.length === 0 ? (
           <div className="text-center py-8">
-            <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600">ჯერ არ გაქვთ პროდუქტები</p>
+            <Package className="w-12 h-12 text-black mx-auto mb-4" />
+            <p className="text-black">ჯერ არ გაქვთ პროდუქტები</p>
             <Link
               href="/admin/products/new"
-              className="inline-block mt-4 px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+              className="inline-block mt-4 px-6 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
             >
               პირველი პროდუქტის დამატება
             </Link>
@@ -303,7 +303,7 @@ const AccountPage = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {mockProducts.map((product) => (
-              <div key={product.id} className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+              <div key={product.id} className="border border-black rounded-lg overflow-hidden hover:shadow-md transition-shadow">
                 <div className="aspect-[3/4] bg-gray-200 relative">
                   <img
                     src={product.image}
@@ -320,12 +320,12 @@ const AccountPage = () => {
                 </div>
                 
                 <div className="p-4">
-                  <h4 className="font-semibold text-gray-900 mb-2">{product.name}</h4>
-                  <p className="text-lg font-bold text-gray-900 mb-2">₾{product.price}</p>
-                  <p className="text-sm text-gray-600">დამატებული: {product.createdAt}</p>
+                      <h4 className="font-semibold text-black mb-2">{product.name}</h4>
+                  <p className="text-lg font-bold text-black mb-2">₾{product.price}</p>
+                  <p className="text-sm text-black">დამატებული: {product.createdAt}</p>
                   
                   <div className="mt-4 flex space-x-2">
-                    <button className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm">
+                    <button className="flex-1 px-3 py-2 bg-black text-white rounded-lg hover:bg-gray-200 transition-colors text-sm">
                       რედაქტირება
                     </button>
                     <button className="flex-1 px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm">
@@ -344,11 +344,11 @@ const AccountPage = () => {
   const renderSettingsTab = () => (
     <div className="space-y-6">
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-        <h3 className="text-lg font-bold text-gray-900 mb-6">პარამეტრები</h3>
+        <h3 className="text-lg font-bold text-black mb-6">პარამეტრები</h3>
         
         <div className="space-y-6">
           <div>
-            <h4 className="font-semibold text-gray-900 mb-3">პაროლის შეცვლა</h4>
+            <h4 className="font-semibold text-black mb-3">პაროლის შეცვლა</h4>
             <div className="space-y-3">
               <input
                 type="password"
@@ -365,7 +365,7 @@ const AccountPage = () => {
                 placeholder="ახალი პაროლის დადასტურება"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
               />
-              <button className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors">
+              <button className="px-6 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors">
                 პაროლის შეცვლა
               </button>
             </div>
@@ -407,12 +407,12 @@ const AccountPage = () => {
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">ჩემი ანგარიში</h1>
-              <p className="text-gray-600 mt-1">მოგესალმებით, {session.user.name}</p>
+              <h1 className="text-3xl font-bold text-black">ჩემი ანგარიში</h1>
+              <p className="text-black mt-1">მოგესალმებით, {session.user.name}</p>
             </div>
             <Link
               href="/"
-              className="px-4 py-2 bg-black md:text-[20px] text-[18px] font-bold uppercase tracking-widest text-white rounded-lg hover:bg-gray-800 transition-colors"
+              className="px-4 py-2 bg-[#1B3729] md:text-[20px] text-[18px] font-bold uppercase tracking-widest text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
             >
               მთავარ გვერდზე დაბრუნება
             </Link>
@@ -432,7 +432,7 @@ const AccountPage = () => {
                     onClick={() => setActiveTab(tab.id)}
                     className={`w-full cursor-pointer flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
                       activeTab === tab.id
-                        ? 'bg-black text-white'
+                        ? 'bg-[#1B3729] text-white'
                         : 'text-black '
                     }`}
                   >

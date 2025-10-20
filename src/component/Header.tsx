@@ -31,7 +31,7 @@ const Header = () => {
   }
 
   return (
-    <header className="bg-white/95 backdrop-blur-md shadow-lg sticky top-0 z-50 border-b border-gray-100">
+    <header className="bg-[#1B3729] text-white shadow-lg sticky top-0 z-50 border-b border-gray-100">
       {/* Main header */}
       <div className="container max-w-7xl mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
@@ -59,7 +59,7 @@ const Header = () => {
               onMouseLeave={handleMouseLeave}
             >
               <button
-                className="group flex items-center space-x-1 px-4 py-2 rounded-lg text-black md:text-[18px] text-[16px] font-medium transition-all duration-300 hover:text-gray-900 hover:bg-gray-50 cursor-pointer  "
+                className="group flex items-center space-x-1 px-4 py-2 rounded-lg text-white md:text-[18px] text-[16px] font-medium transition-all duration-300 hover:text-gray-900 hover:bg-gray-50 cursor-pointer  "
               >
                   <span className="relative">
                     ქალი
@@ -156,7 +156,7 @@ const Header = () => {
               onMouseLeave={handleMouseLeave}
             >
               <button
-                className="group flex items-center space-x-1 px-4 py-2 rounded-lg text-black md:text-[18px] text-[16px] font-medium transition-all duration-300 hover:text-gray-900 hover:bg-gray-50 cursor-pointer  "
+                className="group flex items-center space-x-1 px-4 py-2 rounded-lg text-white md:text-[18px] text-[16px] font-medium transition-all duration-300 hover:text-gray-900 hover:bg-gray-50 cursor-pointer  "
               >
                   <span className="relative">
                     მამაკაცი
@@ -243,7 +243,7 @@ const Header = () => {
               onMouseLeave={handleMouseLeave}
             >
               <button
-                className="group flex items-center space-x-1 px-4 py-2 rounded-lg text-black md:text-[18px] text-[16px] font-medium transition-all duration-300 hover:text-gray-900 hover:bg-gray-50 cursor-pointer  "
+                className="group flex items-center space-x-1 px-4 py-2 rounded-lg text-white md:text-[18px] text-[16px] font-medium transition-all duration-300 hover:text-gray-900 hover:bg-gray-50 cursor-pointer  "
               >
                   <span className="relative">
                     ბავშვები
@@ -265,7 +265,7 @@ const Header = () => {
                 <div className="py-2">
                    <Link
                      href="/shop?gender=children"
-                     className="group flex items-center px-4 py-3 text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-gray-900 transition-all duration-300"
+                     className="group flex items-center px-4 py-3 text-black hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-gray-900 transition-all duration-300"
                    >
                      <span className="group-hover:translate-x-1 transition-transform duration-300">
                        ყველა ბავშვის ტანსაცმელი
@@ -273,7 +273,7 @@ const Header = () => {
                    </Link>
                    <Link
                      href="/shop?gender=children&category=dresses"
-                     className="group flex items-center px-4 py-3 text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-gray-900 transition-all duration-300"
+                     className="group flex items-center px-4 py-3 text-black hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-gray-900 transition-all duration-300"
                    >
                      <span className="group-hover:translate-x-1 transition-transform duration-300">
                       მაისურები
@@ -281,7 +281,7 @@ const Header = () => {
                    </Link>
                    <Link
                      href="/shop?gender=children&category=tops"
-                     className="group flex items-center px-4 py-3 text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-gray-900 transition-all duration-300"
+                     className="group flex items-center px-4 py-3 text-black hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-gray-900 transition-all duration-300"
                    >
                      <span className="group-hover:translate-x-1 transition-transform duration-300">
                   სვიტრები/ჯემპრები
@@ -289,7 +289,7 @@ const Header = () => {
                    </Link>
                    <Link
                      href="/shop?gender=children&category=bottoms"
-                     className="group flex items-center px-4 py-3 text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-gray-900 transition-all duration-300"
+                     className="group flex items-center px-4 py-3 text-black hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50  transition-all duration-300"
                    >
                      <span className="group-hover:translate-x-1 transition-transform duration-300">
                      ქვედა ტანსაცმელი(შარვლები, ქვედაკაბები)
@@ -297,7 +297,7 @@ const Header = () => {
                    </Link>
                    <Link
                      href="/shop?gender=women&category=bottoms"
-                     className="group flex items-center px-4 py-3 text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-gray-900 transition-all duration-300"
+                     className="group flex items-center px-4 py-3 text-black hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50  transition-all duration-300"
                    >
                      <span className="group-hover:translate-x-1 transition-transform duration-300">
                     კაბები(გოგონებისთვის)
@@ -306,7 +306,7 @@ const Header = () => {
 
                    <Link
                      href="/shop?gender=women&category=bottoms"
-                     className="group flex items-center px-4 py-3 text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-gray-900 transition-all duration-300"
+                     className="group flex items-center px-4 py-3 text-black hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50  transition-all duration-300"
                    >
                      <span className="group-hover:translate-x-1 transition-transform duration-300">
                    ტრადიციული ტანსაცმელი
@@ -323,7 +323,7 @@ const Header = () => {
             {/* Search */}
             <button
               onClick={toggleSearch}
-              className="group cursor-pointer p-3 rounded-full text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-all duration-300 hover:shadow-sm"
+              className="group cursor-pointer p-3 rounded-full text-white  transition-all duration-300 hover:shadow-sm"
               aria-label="Search"
             >
               <Search className="w-5 cursor-pointer h-5 transition-transform duration-300 group-hover:scale-110" />
@@ -335,20 +335,20 @@ const Header = () => {
                 <div className="flex items-center space-x-2">
                   <Link
                     href="/admin"
-                    className="px-4 py-2 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
+                    className="px-4 py-2 bg-black text-white text-[16px] font-bold uppercase tracking-wide rounded-lg  transition-colors"
                   >
                     ადმინ პანელი
                   </Link>
                   <button
                     onClick={() => signOut()}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                    className="px-4 py-2 text-[16px] font-bold uppercase tracking-wide text-white cursor-pointer transition-colors"
                   >
                     გასვლა
                   </button>
                 </div>
               ) : (
                 <div className="relative group">
-                  <button className="group cursor-pointer p-3 rounded-full text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-all duration-300 hover:shadow-sm">
+                  <button className="group cursor-pointer p-3 rounded-full text-white  transition-all duration-300 hover:shadow-sm">
                     <User className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
                   </button>
                   
@@ -369,7 +369,7 @@ const Header = () => {
                       
                       <button
                         onClick={() => signOut()}
-                        className="w-full cursor-pointer text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center space-x-2"
+                        className="w-full cursor-pointer text-left px-4 py-2 text-[16px] text-white font-bold uppercase tracking-wide hover:bg-gray-50 transition-colors flex items-center space-x-2"
                       >
                         <LogOut className="w-4 h-4" />
                         <span>გასვლა</span>
@@ -382,13 +382,13 @@ const Header = () => {
               <div className="flex items-center space-x-2">
                 <Link
                   href="/auth/signin"
-                  className="cursor-pointer px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                  className="cursor-pointer px-4 py-2 text-[16px] font-medium text-white  transition-colors"
                 >
                   შესვლა
                 </Link>
                 <Link
                   href="/auth/signup"
-                  className="px-4 py-2 cursor-pointer bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
+                  className="px-4 py-2 cursor-pointer bg-[#1B3729] text-white text-[16px] font-medium rounded-lg transition-colors"
                 >
                   რეგისტრაცია
                 </Link>
@@ -398,7 +398,7 @@ const Header = () => {
             {/* Cart */}
             <Link
               href="/cart"
-              className="group relative cursor-pointer p-3 rounded-full text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-all duration-300 hover:shadow-sm"
+              className="group relative cursor-pointer p-3 rounded-full text-white   transition-all duration-300 hover:shadow-sm"
             >
               <ShoppingBag className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
               {getTotalItems() > 0 && (
@@ -411,7 +411,7 @@ const Header = () => {
             {/* Mobile menu button */}
             <button
               onClick={toggleMobileMenu}
-              className="lg:hidden group cursor-pointer p-3 rounded-full text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-all duration-300 hover:shadow-sm"
+              className="lg:hidden group cursor-pointer p-3 rounded-full text-white  transition-all duration-300 hover:shadow-sm"
               aria-label="Toggle mobile menu"
             >
               <Menu className="w-6 h-6 transition-transform duration-300 group-hover:scale-110" />
@@ -428,7 +428,7 @@ const Header = () => {
               <input
                 type="text"
                 placeholder="მოძებნე ნივთები..."
-                className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent transition-all duration-300 shadow-sm hover:shadow-md"
+                className="w-full placeholder:text-black text-black pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent transition-all duration-300 shadow-sm hover:shadow-md"
               />
               <Search className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
             </div>
@@ -438,26 +438,26 @@ const Header = () => {
 
       {/* Mobile Navigation */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden bg-white/95 backdrop-blur-md border-t border-gray-100 animate-in slide-in-from-top-2 duration-300">
+        <div className="lg:hidden h-screen text-white text-center items-center justify-center border-t border-gray-100 animate-in slide-in-from-top-2 duration-300">
           <nav className="container mx-auto px-4 py-6">
-            <div className="flex flex-col space-y-1">
+            <div className="flex flex-col text-white text-center items-center justify-center space-y-1">
               <Link
                 href="/shop?gender=women"
-                className="group flex items-center px-4 py-3 rounded-lg text-gray-700 hover:bg-gradient-to-r hover:from-pink-50 hover:to-rose-50 hover:text-gray-900 transition-all duration-300"
+                className="group flex items-center px-4 py-3 rounded-lg text-white text-[16px] transition-all duration-300"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <span className="group-hover:translate-x-2 transition-transform duration-300">ქალი</span>
               </Link>
               <Link
                 href="/shop?gender=men"
-                className="group flex items-center px-4 py-3 rounded-lg text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-gray-900 transition-all duration-300"
+                className="group flex items-center px-4 py-3 rounded-lg text-white text-[16px] transition-all duration-300"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <span className="group-hover:translate-x-2 transition-transform duration-300">მამაკაცი</span>
               </Link>
               <Link
                 href="/shop?gender=children"
-                className="group flex items-center px-4 py-3 rounded-lg text-gray-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 hover:text-gray-900 transition-all duration-300"
+                className="group flex items-center px-4 py-3 rounded-lg text-white text-[16px] transition-all duration-300"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <span className="group-hover:translate-x-2 transition-transform duration-300">ბავშვები</span>

@@ -9,11 +9,14 @@ import ContactForm from "@/component/ContactForm";
 export default function Home() {
   return (
     <>
+    <div className=" ">
+       
     <Hero />
     <HowItWorks />
     <PopularProducts />
     <About />
     <ContactForm />
+    </div>
     </>
   );
 }

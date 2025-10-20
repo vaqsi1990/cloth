@@ -74,7 +74,7 @@ const ContactForm = () => {
                         {/* Contact Details */}
                         <div className="space-y-6">
                             <div className="flex items-start space-x-4">
-                                <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center flex-shrink-0">
+                                <div className="w-12 h-12 bg-[#1B3729] rounded-lg flex items-center justify-center flex-shrink-0">
                                     <Mail className="w-6 h-6 text-white" />
                                 </div>
                                 <div>
@@ -85,7 +85,7 @@ const ContactForm = () => {
                             </div>
 
                             <div className="flex items-start space-x-4">
-                                <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center flex-shrink-0">
+                                <div className="w-12 h-12 bg-[#1B3729] rounded-lg flex items-center justify-center flex-shrink-0">
                                     <Phone className="w-6 h-6 text-white" />
                                 </div>
                                 <div>
@@ -96,7 +96,7 @@ const ContactForm = () => {
                             </div>
 
                             <div className="flex items-start space-x-4">
-                                <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center flex-shrink-0">
+                                <div className="w-12 h-12 bg-[#1B3729] rounded-lg flex items-center justify-center flex-shrink-0">
                                     <MapPin className="w-6 h-6 text-white" />
                                 </div>
                                 <div>
@@ -111,7 +111,7 @@ const ContactForm = () => {
                     </div>
 
                     {/* Contact Form */}
-                    <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
+                    <div className="bg-white rounded-2xl p-8 shadow-lg mb-14">
                         <h3 className="text-2xl font-bold text-gray-900 mb-6">
                             გამოგვიგზავნეთ შეტყობინება
                         </h3>
@@ -225,7 +225,7 @@ const ContactForm = () => {
                             <button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="w-full bg-black cursor-pointer text-white py-3 px-6 rounded-lg md:text-[20px] text-[18px] font-bold hover:bg-gray-800 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                                className="w-full bg-[#1B3729] cursor-pointer text-white py-3 px-6 rounded-lg md:text-[20px] text-[18px] font-bold hover:bg-gray-800 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                             >
                                 {isSubmitting ? (
                                     <>
