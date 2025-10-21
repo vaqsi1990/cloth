@@ -436,7 +436,7 @@ const Header = () => {
         </div>
       )}
 
-      {/* Mobile Navigation */}
+    
       {isMobileMenuOpen && (
         <div className="lg:hidden h-screen text-white text-center items-center justify-center border-t border-gray-100 animate-in slide-in-from-top-2 duration-300">
           <nav className="container mx-auto px-4 py-6">
