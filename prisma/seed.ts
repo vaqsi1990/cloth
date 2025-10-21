@@ -65,8 +65,8 @@ async function main() {
           name: product.name,
           slug: slug,
           description: product.description || '',
-          currentPrice: product.currentPrice,
-          originalPrice: product.originalPrice,
+       
+     
           isNew: product.isNew || false,
           hasSale: product.hasSale || false,
           rating: product.rating || 0,
