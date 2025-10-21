@@ -4,14 +4,23 @@ import React, { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Search, Filter, ShoppingCart, Package, User, MapPin, Phone, Mail, CheckCircle, XCircle, Clock } from 'lucide-react'
+import { ArrowLeft, Search, Filter, ShoppingCart, Package, User, MapPin, Phone, Mail, CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
 
 interface OrderItem {
   id: number
-  productId: number
+  productId?: number
+  productName: string
+  image?: string
+  size?: string
   quantity: number
   price: number
-  product: {
+  // Rental fields
+  isRental?: boolean
+  rentalStartDate?: string
+  rentalEndDate?: string
+  rentalDays?: number
+  deposit?: number
+  product?: {
     id: number
     name: string
     images: Array<{
@@ -23,16 +32,21 @@ interface OrderItem {
 
 interface Order {
   id: number
-  orderNumber: string
   status: string
   total: number
   createdAt: string
   updatedAt: string
   customerName: string
-  customerEmail: string
-  customerPhone: string
-  deliveryAddress: string
-  notes?: string
+  email?: string
+  phone: string
+  address: string
+  city?: string
+  postalCode?: string
+  country?: string
+  note?: string
+  paymentMethod?: string
+  paymentId?: string
+  userId?: string
   user?: {
     id: string
     name: string
@@ -48,6 +62,7 @@ const AdminOrdersPage = () => {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('ALL')
+  const [expandedOrders, setExpandedOrders] = useState<Set<number>>(new Set())
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -98,6 +113,41 @@ const AdminOrdersPage = () => {
       console.error('Error updating status:', error)
       alert('შეცდომა სტატუსის განახლებისას')
     }
+  }
+
+  const deleteOrder = async (orderId: number) => {
+    if (!confirm('ნამდვილად გსურთ ამ შეკვეთის წაშლა? ეს ქმედება შეუქცევადია.')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/orders/${orderId}`, {
+        method: 'DELETE',
+      })
+      
+      if (response.ok) {
+        setOrders(orders.filter(order => order.id !== orderId))
+        alert('შეკვეთა წაიშალა წარმატებით')
+      } else {
+        const data = await response.json()
+        alert(data.message || 'შეცდომა შეკვეთის წაშლისას')
+      }
+    } catch (error) {
+      console.error('Error deleting order:', error)
+      alert('შეცდომა შეკვეთის წაშლისას')
+    }
+  }
+
+  const toggleOrderExpansion = (orderId: number) => {
+    setExpandedOrders(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(orderId)) {
+        newSet.delete(orderId)
+      } else {
+        newSet.add(orderId)
+      }
+      return newSet
+    })
   }
 
   const getStatusColor = (status: string) => {
@@ -152,9 +202,9 @@ const AdminOrdersPage = () => {
   }
 
   const filteredOrders = orders.filter(order => {
-    const matchesSearch = order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = order.id.toString().includes(searchTerm.toLowerCase()) ||
                          order.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         order.customerEmail.toLowerCase().includes(searchTerm.toLowerCase())
+                         (order.email && order.email.toLowerCase().includes(searchTerm.toLowerCase()))
     const matchesStatus = filterStatus === 'ALL' || order.status === filterStatus
     
     return matchesSearch && matchesStatus
@@ -272,7 +322,7 @@ const AdminOrdersPage = () => {
                         <ShoppingCart className="w-5 h-5 text-gray-600" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-gray-900">შეკვეთა #{order.orderNumber}</h3>
+                        <h3 className="font-semibold text-gray-900">შეკვეთა #{order.id}</h3>
                         <p className="text-sm text-gray-600">
                           {new Date(order.createdAt).toLocaleDateString('ka-GE')}
                         </p>
@@ -284,83 +334,156 @@ const AdminOrdersPage = () => {
                         {getStatusIcon(order.status)}
                         <span>{getStatusText(order.status)}</span>
                       </span>
-                      <span className="text-lg font-bold text-gray-900">₾{order.total}</span>
-                    </div>
-                  </div>
-
-                  {/* Customer Info */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
-                        <User className="w-4 h-4" />
-                        <span>{order.customerName}</span>
-                      </div>
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
-                        <Mail className="w-4 h-4" />
-                        <span>{order.customerEmail}</span>
-                      </div>
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
-                        <Phone className="w-4 h-4" />
-                        <span>{order.customerPhone}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
-                        <MapPin className="w-4 h-4" />
-                        <span>{order.deliveryAddress}</span>
-                      </div>
-                      {order.user && (
-                        <div className="flex items-center space-x-2 text-sm text-gray-600">
-                          <User className="w-4 h-4" />
-                          <span>რეგისტრირებული მომხმარებელი: {order.user.name}</span>
-                        </div>
+                      {/* Rental indicator */}
+                      {order.items.some(item => item.isRental) && (
+                        <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium">
+                          ქირაობა
+                        </span>
                       )}
-                    </div>
-                  </div>
-
-                  {/* Order Items */}
-                  <div className="mb-4">
-                    <h4 className="font-medium text-gray-900 mb-2">შეკვეთის პროდუქტები:</h4>
-                    <div className="space-y-2">
-                      {order.items.map((item) => (
-                        <div key={item.id} className="flex items-center space-x-3 p-2 bg-gray-50 rounded-lg">
-                          <div className="w-8 h-8 bg-gray-200 rounded flex items-center justify-center">
-                            <Package className="w-4 h-4 text-gray-600" />
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-gray-900">{item.product.name}</p>
-                            <p className="text-xs text-gray-600">რაოდენობა: {item.quantity}</p>
-                          </div>
-                          <span className="text-sm font-medium text-gray-900">₾{item.price}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Status Actions */}
-                  <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-gray-600">სტატუსის შეცვლა:</span>
-                      <select
-                        value={order.status}
-                        onChange={(e) => handleStatusUpdate(order.id, e.target.value)}
-                        className="px-3 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-black focus:border-transparent"
+                      <span className="text-lg font-bold text-gray-900">₾{order.total}</span>
+                      <button
+                        onClick={() => toggleOrderExpansion(order.id)}
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        title={expandedOrders.has(order.id) ? 'დეტალების დამალვა' : 'დეტალების ჩვენება'}
                       >
-                        <option value="PENDING">მოლოდინი</option>
-                        <option value="PAID">გადახდილი</option>
-                        <option value="SHIPPED">გაგზავნილი</option>
-                        <option value="CANCELED">გაუქმებული</option>
-                        <option value="REFUNDED">დაბრუნებული</option>
-                      </select>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <span className="text-xs text-gray-500">
-                        განახლდა: {new Date(order.updatedAt).toLocaleDateString('ka-GE')}
-                      </span>
+                        {expandedOrders.has(order.id) ? (
+                          <ChevronUp className="w-5 h-5 text-gray-600" />
+                        ) : (
+                          <ChevronDown className="w-5 h-5 text-gray-600" />
+                        )}
+                      </button>
                     </div>
                   </div>
+
+                  {/* Order Details - Only show when expanded */}
+                  {expandedOrders.has(order.id) && (
+                    <>
+                      {/* Customer Info */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div className="space-y-2">
+                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <User className="w-4 h-4" />
+                            <span>{order.customerName}</span>
+                          </div>
+                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <Mail className="w-4 h-4" />
+                            <span>{order.email || 'N/A'}</span>
+                          </div>
+                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <Phone className="w-4 h-4" />
+                            <span>{order.phone}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <MapPin className="w-4 h-4" />
+                            <span>{order.address}</span>
+                          </div>
+                          {order.user && (
+                            <div className="flex items-center space-x-2 text-sm text-gray-600">
+                              <User className="w-4 h-4" />
+                              <span>რეგისტრირებული მომხმარებელი: {order.user.name}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Order Items */}
+                      <div className="mb-4">
+                        <h4 className="font-medium text-gray-900 mb-2">შეკვეთის პროდუქტები:</h4>
+                        <div className="space-y-2">
+                          {order.items.map((item) => (
+                            <div key={item.id} className={`flex items-center space-x-3 p-2 rounded-lg ${item.isRental ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50'}`}>
+                              <div className={`w-8 h-8 rounded flex items-center justify-center ${item.isRental ? 'bg-blue-200' : 'bg-gray-200'}`}>
+                                <Package className={`w-4 h-4 ${item.isRental ? 'text-blue-600' : 'text-gray-600'}`} />
+                              </div>
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <p className="text-sm font-medium text-gray-900">{item.product?.name || item.productName || 'პროდუქტი ვერ მოიძებნა'}</p>
+                                  {item.isRental && (
+                                    <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">
+                                      ქირაობა
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-xs text-gray-600">რაოდენობა: {item.quantity}</p>
+                                {/* Show rental information if it's a rental item */}
+                                {item.isRental && item.rentalStartDate && item.rentalEndDate && (
+                                  <div className="text-xs text-blue-600 mt-1 space-y-1">
+                                    <p>📅 ქირაობის პერიოდი: {new Date(item.rentalStartDate).toLocaleDateString('ka-GE')} - {new Date(item.rentalEndDate).toLocaleDateString('ka-GE')}</p>
+                                    <p>⏱️ დღეების რაოდენობა: {item.rentalDays} დღე</p>
+                                    {item.deposit && item.deposit > 0 && (
+                                      <p>💰 გირაო: ₾{item.deposit.toFixed(2)}</p>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                              <span className="text-sm font-medium text-gray-900">₾{item.price}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Order Summary */}
+                      <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                        <h4 className="font-medium text-gray-900 mb-2">შეკვეთის შეჯამება:</h4>
+                        <div className="space-y-1 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">ყიდვის ნივთები:</span>
+                            <span className="font-medium">{order.items.filter(item => !item.isRental).reduce((total, item) => total + item.quantity, 0)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">ქირაობის ნივთები:</span>
+                            <span className="font-medium text-blue-600">{order.items.filter(item => item.isRental).length}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">სულ თანხა:</span>
+                            <span className="font-bold">₾{order.total.toFixed(2)}</span>
+                          </div>
+                          {/* Show total deposit if any rental items have deposits */}
+                          {order.items.some(item => item.isRental && item.deposit && item.deposit > 0) && (
+                            <div className="flex justify-between">
+                              <span className="text-blue-600">გირაო (ქირაობისთვის):</span>
+                              <span className="font-medium text-blue-600">₾{order.items.filter(item => item.isRental).reduce((total, item) => total + (item.deposit || 0), 0).toFixed(2)}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Status Actions */}
+                      <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm text-gray-600">სტატუსის შეცვლა:</span>
+                          <select
+                            value={order.status}
+                            onChange={(e) => handleStatusUpdate(order.id, e.target.value)}
+                            className="px-3 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-black focus:border-transparent"
+                          >
+                            <option value="PENDING">მოლოდინი</option>
+                            <option value="PAID">გადახდილი</option>
+                            <option value="SHIPPED">გაგზავნილი</option>
+                            <option value="CANCELED">გაუქმებული</option>
+                            <option value="REFUNDED">დაბრუნებული</option>
+                          </select>
+                        </div>
+                        
+                        <div className="flex items-center space-x-3">
+                          <span className="text-xs text-gray-500">
+                            განახლდა: {new Date(order.updatedAt).toLocaleDateString('ka-GE')}
+                          </span>
+                        </div>
+                          <button
+                            onClick={() => deleteOrder(order.id)}
+                            className="flex items-center space-x-1 px-3 py-1 bg-red-100 text-red-700 rounded text-sm hover:bg-red-200 transition-colors"
+                            title="შეკვეთის წაშლა"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            <span>წაშლა</span>
+                          </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               ))}
             </div>

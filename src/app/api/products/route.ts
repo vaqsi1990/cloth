@@ -11,13 +11,14 @@ const productSchema = z.object({
   description: z.string().optional(),
   stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი').default(0),
   gender: z.enum(['MEN', 'WOMEN', 'CHILDREN', 'UNISEX']).default('UNISEX'),
+  color: z.string().optional(),
   isNew: z.boolean().default(false),
   hasSale: z.boolean().default(false),
   rating: z.number().min(0).max(5).optional(),
   categoryId: z.number().optional(),
   isRentable: z.boolean().default(false),
   pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional(),
-  maxRentalDays: z.number().min(1, 'მინიმუმ 1 დღე').optional(),
+  maxRentalDays: z.number().optional(),
   deposit: z.number().min(0, 'გირაო უნდა იყოს დადებითი').optional(),
   variants: z.array(z.object({
     size: z.string().min(1, 'ზომა აუცილებელია'),
@@ -104,6 +105,7 @@ export async function POST(request: NextRequest) {
         description: validatedData.description,
         sku: `SKU-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Generate unique SKU
         gender: validatedData.gender,
+        color: validatedData.color,
         isNew: validatedData.isNew,
         hasSale: validatedData.hasSale,
         rating: validatedData.rating,

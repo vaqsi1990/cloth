@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import Link from 'next/link'
 import { ShoppingBag, Search, Menu, User, ChevronDown, LogOut } from 'lucide-react'
 import Image from 'next/image'
-import { useCart } from '@/context/CartContext'
+import { useCart } from '@/hooks/useCart'
 import { useSession, signOut } from 'next-auth/react'
 
 const Header = () => {

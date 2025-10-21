@@ -12,13 +12,14 @@ const productSchema = z.object({
   description: z.string().optional(),
   stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი').default(0),
   gender: z.enum(['MEN', 'WOMEN', 'CHILDREN', 'UNISEX']).default('UNISEX'),
+  color: z.string().optional(),
   isNew: z.boolean().default(false),
   hasSale: z.boolean().default(false),
   rating: z.number().min(0).max(5).optional(),
   categoryId: z.number().optional(),
   isRentable: z.boolean().default(false), // 🆕
   pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional(), // 🆕
-  maxRentalDays: z.number().min(1, 'მინიმუმ 1 დღე').optional(), // 🆕
+  maxRentalDays: z.number().optional(), // 🆕
   deposit: z.number().min(0, 'გირაო უნდა იყოს დადებითი').optional(), // 🆕
   variants: z.array(
     z.object({
@@ -41,6 +42,7 @@ const NewProductPage = () => {
     description: '',
     stock: 0,
     gender: 'UNISEX',
+    color: '',
     isNew: false,
     hasSale: false,
     rating: 0,
@@ -305,6 +307,19 @@ const NewProductPage = () => {
                   <option value="CHILDREN">ბავშვისთვის</option>
                 </select>
               </div>
+
+              <div>
+                <label className="block text-[20px] text-black font-medium mb-2">
+                  ფერი
+                </label>
+                <input
+                  type="text"
+                  value={formData.color}
+                  onChange={(e) => handleInputChange('color', e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  placeholder="მაგ: შავი, თეთრი, ლურჯი"
+                />
+              </div>
             </div>
 
             <div className="mt-6">
@@ -435,7 +450,7 @@ const NewProductPage = () => {
                 </div>
 
                 <div>
-                  <label className="block text-[20px] text-black font-medium mb-2">მაქსიმალური დღეების რაოდენობა</label>
+                  <label className="block text-[20px] text-black font-medium mb-2">მაქს დღეების რაოდენობა(არასავალდებულო)</label>
                   <input
                     type="number"
                     value={formData.maxRentalDays || ''}

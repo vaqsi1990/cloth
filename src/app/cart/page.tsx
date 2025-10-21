@@ -3,21 +3,21 @@ import React from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ShoppingCart, Plus, Minus, Trash2, ArrowLeft } from 'lucide-react'
-import { useCart } from '@/context/CartContext'
+import { useCart } from '@/hooks/useCart'
 
 const CartPage = () => {
     const { cartItems, removeFromCart, updateQuantity, getTotalPrice, clearCart } = useCart()
 
-    const handleQuantityChange = (id: number, size: string, newQuantity: number) => {
+    const handleQuantityChange = async (id: number, newQuantity: number) => {
         if (newQuantity <= 0) {
-            removeFromCart(id, size)
+            await removeFromCart(id)
         } else {
-            updateQuantity(id, size, newQuantity)
+            await updateQuantity(id, newQuantity)
         }
     }
 
-    const handleRemoveItem = (id: number, size: string) => {
-        removeFromCart(id, size)
+    const handleRemoveItem = async (id: number) => {
+        await removeFromCart(id)
     }
 
     if (cartItems.length === 0) {
@@ -68,53 +68,81 @@ const CartPage = () => {
                                 
                                 <div className="space-y-6">
                                     {cartItems.map((item) => (
-                                        <div key={`${item.id}-${item.size}`} className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg">
+                                        <div key={item.id} className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg">
                                             {/* Product Image */}
                                             <div className="relative w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                                                 <Image
-                                                    src={item.image}
-                                                    alt={item.name}
+                                                    src={item.image || '/placeholder.jpg'}
+                                                    alt={item.productName}
                                                     fill
                                                     className="object-cover"
                                                     sizes="80px"
                                                 />
+                                                {/* Rental Badge */}
+                                                {item.isRental && (
+                                                    <div className="absolute top-1 right-1 bg-blue-500 text-white text-xs px-1 py-0.5 rounded">
+                                                        ქირა
+                                                    </div>
+                                                )}
                                             </div>
 
                                             {/* Product Info */}
                                             <div className="flex-1 min-w-0">
                                                 <h3 className="text-lg font-medium text-black truncate">
-                                                    {item.name}
+                                                    {item.productName}
                                                 </h3>
                                                 <p className="text-black text-sm">
                                                     ზომა: <span className="font-medium">{item.size}</span>
                                                 </p>
+                                                
+                                                {/* Rental Information */}
+                                                {item.isRental && item.rentalStartDate && item.rentalEndDate && (
+                                                    <div className="text-sm text-blue-600 mb-1">
+                                                        <p>ქირაობის პერიოდი: {new Date(item.rentalStartDate).toLocaleDateString('ka-GE')} - {new Date(item.rentalEndDate).toLocaleDateString('ka-GE')}</p>
+                                                        <p>დღეების რაოდენობა: {item.rentalDays}</p>
+                                                        {item.deposit && item.deposit > 0 && (
+                                                            <p>გირაო: ₾{item.deposit.toFixed(2)}</p>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                
                                                 <p className="text-lg font-bold text-black">
                                                     ₾{item.price.toFixed(2)}
                                                 </p>
                                             </div>
 
-                                            {/* Quantity Controls */}
-                                            <div className="flex items-center space-x-2">
-                                                <button
-                                                    onClick={() => handleQuantityChange(item.id, item.size, item.quantity - 1)}
-                                                    className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
-                                                >
-                                                    <Minus className="w-4 h-4 text-black" />
-                                                </button>
-                                                <span className="w-12 text-center font-medium text-black">
-                                                    {item.quantity}
-                                                </span>
-                                                <button
-                                                    onClick={() => handleQuantityChange(item.id, item.size, item.quantity + 1)}
-                                                    className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
-                                                >
-                                                    <Plus className="w-4 h-4 text-black" />
-                                                </button>
-                                            </div>
+                                            {/* Quantity Controls - Only show for non-rental items */}
+                                            {!item.isRental && (
+                                                <div className="flex items-center space-x-2">
+                                                    <button
+                                                        onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
+                                                        className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                                                    >
+                                                        <Minus className="w-4 h-4 text-black" />
+                                                    </button>
+                                                    <span className="w-12 text-center font-medium text-black">
+                                                        {item.quantity}
+                                                    </span>
+                                                    <button
+                                                        onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
+                                                        className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                                                    >
+                                                        <Plus className="w-4 h-4 text-black" />
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            {/* Rental items show quantity as 1 */}
+                                            {item.isRental && (
+                                                <div className="text-center">
+                                                    <span className="text-sm text-gray-600">რაოდენობა:</span>
+                                                    <div className="font-medium text-black">1</div>
+                                                </div>
+                                            )}
 
                                             {/* Remove Button */}
                                             <button
-                                                onClick={() => handleRemoveItem(item.id, item.size)}
+                                                onClick={() => handleRemoveItem(item.id)}
                                                 className="p-2 text-black hover:text-red-600 transition-colors"
                                             >
                                                 <Trash2 className="w-5 h-5" />
@@ -132,19 +160,30 @@ const CartPage = () => {
                                 
                                 <div className="space-y-4 mb-6">
                                     <div className="flex justify-between text-black">
-                                        <span>ნივთების რაოდენობა:</span>
-                                        <span className="font-medium">{cartItems.reduce((total, item) => total + item.quantity, 0)}</span>
+                                        <span>ყიდვის ნივთები:</span>
+                                        <span className="font-medium">{cartItems.filter(item => !item.isRental).reduce((total, item) => total + item.quantity, 0)}</span>
+                                    </div>
+                                    <div className="flex justify-between text-black">
+                                        <span>ქირაობის ნივთები:</span>
+                                        <span className="font-medium">{cartItems.filter(item => item.isRental).length}</span>
                                     </div>
                                     <div className="flex justify-between text-black">
                                         <span>ჯამური ღირებულება:</span>
                                         <span className="font-bold text-lg">₾{getTotalPrice().toFixed(2)}</span>
                                     </div>
+                                    {/* Show total deposit if any rental items have deposits */}
+                                    {cartItems.some(item => item.isRental && item.deposit && item.deposit > 0) && (
+                                        <div className="flex justify-between text-blue-600">
+                                            <span>გირაო (ქირაობისთვის):</span>
+                                            <span className="font-medium">₾{cartItems.filter(item => item.isRental).reduce((total, item) => total + (item.deposit || 0), 0).toFixed(2)}</span>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="space-y-4">
                                     <Link 
                                         href="/checkout"
-                                        className="w-full cursor-pointer bg-black text-white py-4 px-6 rounded-lg font-semibold text-lg hover:bg-gray-800 transition-colors text-center block"
+                                        className="flex md:text-[20px] text-[18px] font-bold justify-center md:mt-14 items-center w-full mx-auto mt-4 bg-[#1B3729] text-white px-8 py-4 rounded-lg font-bold uppercase tracking-wide  transition-colors duration-300"
                                     >
                                         შეკვეთის გაფორმება
                                     </Link>

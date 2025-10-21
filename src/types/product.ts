@@ -57,4 +57,10 @@ export interface CartItem {
   size: string
   quantity: number
   maxStock: number
+  // Rental specific fields
+  isRental?: boolean
+  rentalStartDate?: string
+  rentalEndDate?: string
+  rentalDays?: number
+  deposit?: number
 }

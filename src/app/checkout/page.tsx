@@ -1,7 +1,7 @@
 "use client"
 import React, { useState } from 'react'
 import Image from 'next/image'
-import { useCart } from '@/context/CartContext'
+import { useCart } from '@/hooks/useCart'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, CreditCard, MapPin, Phone, Mail, User } from 'lucide-react'
 import Link from 'next/link'
@@ -34,12 +34,55 @@ const CheckoutPage = () => {
         e.preventDefault()
         setIsProcessing(true)
         
-        // Simulate order processing
-        setTimeout(() => {
-            alert('შეკვეთა წარმატებით გაფორმდა!')
-            clearCart()
-            router.push('/')
-        }, 2000)
+        try {
+            // Prepare order data
+            const orderData = {
+                customerName: `${formData.firstName} ${formData.lastName}`,
+                phone: formData.phone,
+                email: formData.email,
+                address: formData.address,
+                city: formData.city,
+                paymentMethod: formData.paymentMethod,
+                items: cartItems.map(item => ({
+                    productId: item.productId,
+                    productName: item.productName,
+                    image: item.image,
+                    size: item.size,
+                    price: item.price,
+                    quantity: item.quantity,
+                    // Include rental information if it's a rental item
+                    isRental: item.isRental || false,
+                    rentalStartDate: item.rentalStartDate || null,
+                    rentalEndDate: item.rentalEndDate || null,
+                    rentalDays: item.rentalDays || null,
+                    deposit: item.deposit || null
+                }))
+            }
+
+            // Send order to API
+            const response = await fetch('/api/orders', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(orderData),
+            })
+
+            const result = await response.json()
+
+            if (result.success) {
+                alert('შეკვეთა წარმატებით გაფორმდა!')
+                clearCart()
+                router.push('/')
+            } else {
+                alert(result.message || 'შეცდომა შეკვეთის გაფორმებისას')
+            }
+        } catch (error) {
+            console.error('Error submitting order:', error)
+            alert('მოულოდნელი შეცდომა')
+        } finally {
+            setIsProcessing(false)
+        }
     }
 
     if (cartItems.length === 0) {
@@ -190,7 +233,7 @@ const CheckoutPage = () => {
                             <button
                                 type="submit"
                                 disabled={isProcessing}
-                                className="w-full bg-black text-white py-4 px-6 rounded-lg font-semibold text-[20px] text-black hover:bg-gray-800 transition-colors disabled:bg-gray-400"
+                                className="flex md:text-[20px] text-[18px] font-bold justify-center md:mt-14 items-center w-full cursor-pointer mx-auto mt-4 bg-[#1B3729] text-white px-8 py-4 rounded-lg font-bold uppercase tracking-wide  transition-colors duration-300"
                             >
                                 {isProcessing ? 'მუშავდება...' : 'შეკვეთის დადასტურება'}
                             </button>
@@ -204,20 +247,36 @@ const CheckoutPage = () => {
                         {/* Items */}
                         <div className="space-y-4 mb-6">
                             {cartItems.map((item) => (
-                                <div key={`${item.id}-${item.size}`} className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg">
-                                    <div className="w-16 h-16 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden">
+                                <div key={item.id} className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg">
+                                    <div className="relative w-16 h-16 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden">
                                         <Image
-                                            src={item.image}
-                                            alt={item.name}
+                                            src={item.image || '/placeholder.jpg'}
+                                            alt={item.productName}
                                             width={64}
                                             height={64}
                                             className="w-full h-full object-cover"
                                         />
+                                        {/* Rental Badge */}
+                                        {item.isRental && (
+                                            <div className="absolute top-1 right-1 bg-blue-500 text-white text-xs px-1 py-0.5 rounded">
+                                                ქირა
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="flex-1">
-                                        <h3 className="text-[20px] text-black font-medium">{item.name}</h3>
+                                        <h3 className="text-[20px] text-black font-medium">{item.productName}</h3>
                                         <p className="text-[20px] text-black text-gray-600">ზომა: {item.size}</p>
-                                     
+                                        
+                                        {/* Rental Information */}
+                                        {item.isRental && item.rentalStartDate && item.rentalEndDate && (
+                                            <div className="text-sm text-blue-600 mt-1">
+                                                <p>ქირაობის პერიოდი: {new Date(item.rentalStartDate).toLocaleDateString('ka-GE')} - {new Date(item.rentalEndDate).toLocaleDateString('ka-GE')}</p>
+                                                <p>დღეების რაოდენობა: {item.rentalDays} დღე</p>
+                                                {item.deposit && item.deposit > 0 && (
+                                                    <p>გირაო: ₾{item.deposit.toFixed(2)}</p>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="text-right">
                                         <p className="text-[20px] text-black font-semibold">₾{(item.price * item.quantity).toFixed(2)}</p>
@@ -229,13 +288,24 @@ const CheckoutPage = () => {
                         {/* Summary */}
                         <div className="border-t border-gray-200 pt-4 space-y-2">
                             <div className="flex justify-between text-[20px] text-black">
-                                <span>სულ ნივთები:</span>
-                                <span>{getTotalItems()}</span>
+                                <span>ყიდვის ნივთები:</span>
+                                <span>{cartItems.filter(item => !item.isRental).reduce((total, item) => total + item.quantity, 0)}</span>
+                            </div>
+                            <div className="flex justify-between text-[20px] text-black">
+                                <span>ქირაობის ნივთები:</span>
+                                <span>{cartItems.filter(item => item.isRental).length}</span>
                             </div>
                             <div className="flex justify-between text-[20px] text-black font-semibold">
                                 <span>სულ თანხა:</span>
                                 <span>₾{getTotalPrice().toFixed(2)}</span>
                             </div>
+                            {/* Show total deposit if any rental items have deposits */}
+                            {cartItems.some(item => item.isRental && item.deposit && item.deposit > 0) && (
+                                <div className="flex justify-between text-[20px] text-blue-600">
+                                    <span>გირაო (ქირაობისთვის):</span>
+                                    <span>₾{cartItems.filter(item => item.isRental).reduce((total, item) => total + (item.deposit || 0), 0).toFixed(2)}</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

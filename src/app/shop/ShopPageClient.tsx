@@ -101,6 +101,18 @@ const ShopPageClient = () => {
 
     const genderInfo = getGenderInfo(genderParam || '')
 
+    // Get minimum price from variants
+    const getMinPrice = (product: Product) => {
+        if (!product.variants || product.variants.length === 0) return 0
+        return Math.min(...product.variants.map(v => v.price))
+    }
+
+    // Get maximum price from variants
+    const getMaxPrice = (product: Product) => {
+        if (!product.variants || product.variants.length === 0) return 0
+        return Math.max(...product.variants.map(v => v.price))
+    }
+
     // Filter products by all criteria (excluding gender since it's handled by API)
     const filteredProducts = products.filter(product => {
         // Active Category filter (from sidebar)
@@ -167,18 +179,6 @@ const ShopPageClient = () => {
         setPriceRange([0, 200])
         setSelectedSizes([])
         setSelectedColors([])
-    }
-
-    // Get minimum price from variants
-    const getMinPrice = (product: Product) => {
-        if (!product.variants || product.variants.length === 0) return 0
-        return Math.min(...product.variants.map(v => v.price))
-    }
-
-    // Get maximum price from variants
-    const getMaxPrice = (product: Product) => {
-        if (!product.variants || product.variants.length === 0) return 0
-        return Math.max(...product.variants.map(v => v.price))
     }
 
     // Get main product image

@@ -112,6 +112,7 @@ model Product {
   description   String?
   sku           String?          @unique
   gender        Gender           @default(UNISEX)
+  color         String?
   isNew         Boolean          @default(false)
   hasSale       Boolean          @default(false)
   rating        Float?           @default(0)
@@ -132,11 +133,12 @@ model Product {
   variants      ProductVariant[]
   orderItems    OrderItem[]      // history relation (for denormalized order items)
   rentals       Rental[]
+  cartItems     CartItem[]
 }
 
 model ProductImage {
   id        Int     @id @default(autoincrement())
-  product   Product @relation(fields: [productId], references: [id])
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId Int
   url       String
   alt       String?
@@ -145,7 +147,7 @@ model ProductImage {
 
 model ProductVariant {
   id        Int     @id @default(autoincrement())
-  product   Product @relation(fields: [productId], references: [id])
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId Int
   size      String
   stock     Int     @default(0)
@@ -157,6 +159,46 @@ model ProductVariant {
   rentals   Rental[]
 
   @@unique([productId, size])
+}
+
+model Cart {
+  id        Int      @id @default(autoincrement())
+  userId    String?  // Optional for guest users
+  sessionId String?  // For guest users
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  items CartItem[]
+  
+  @@unique([userId])
+  @@unique([sessionId])
+}
+
+model CartItem {
+  id        Int      @id @default(autoincrement())
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  cartId    Int
+  
+  // Product information
+  productId Int?
+  product   Product? @relation(fields: [productId], references: [id])
+  productName String
+  image     String?
+  size      String?
+  price     Float
+  quantity  Int
+  
+  // Rental fields
+  isRental        Boolean?
+  rentalStartDate DateTime?
+  rentalEndDate   DateTime?
+  rentalDays      Int?
+  deposit         Float?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([cartId, productId, size, isRental, rentalStartDate, rentalEndDate])
 }
 
 model Order {
@@ -189,7 +231,7 @@ model Order {
 
 model OrderItem {
   id          Int     @id @default(autoincrement())
-  order       Order   @relation(fields: [orderId], references: [id])
+  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   orderId     Int
 
   // Denormalized snapshot of product at time of order
@@ -200,6 +242,13 @@ model OrderItem {
   size        String?
   price       Float
   quantity    Int
+  
+  // Rental fields
+  isRental        Boolean?
+  rentalStartDate DateTime?
+  rentalEndDate   DateTime?
+  rentalDays      Int?
+  deposit         Float?
 }
 
 model Transaction {
