@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { RentalStatus } from '@prisma/client'
 
 export async function POST(request: NextRequest) {
   try {
@@ -183,12 +184,12 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10')
     const skip = (page - 1) * limit
 
-    const whereClause: any = {
+    const whereClause: { userId: string; status?: RentalStatus } = {
       userId: session.user.id
     }
 
     if (status) {
-      whereClause.status = status
+      whereClause.status = status as RentalStatus
     }
 
     const rentals = await prisma.rental.findMany({

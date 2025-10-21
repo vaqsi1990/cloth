@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { RentalStatus } from '@prisma/client'
 
 export async function GET(
   request: NextRequest,
@@ -97,8 +98,8 @@ export async function PATCH(
     }
 
     // Validate status if provided
-    const validStatuses = ['RESERVED', 'ACTIVE', 'RETURNED', 'LATE', 'CANCELED']
-    if (status && !validStatuses.includes(status)) {
+    const validStatuses: RentalStatus[] = ['RESERVED', 'ACTIVE', 'RETURNED', 'LATE', 'CANCELED']
+    if (status && !validStatuses.includes(status as RentalStatus)) {
       return NextResponse.json(
         { error: 'Invalid status' },
         { status: 400 }
@@ -119,8 +120,12 @@ export async function PATCH(
     }
 
     // Prepare update data
-    const updateData: any = {}
-    if (status) updateData.status = status
+    const updateData: {
+      status?: RentalStatus
+      startDate?: Date
+      endDate?: Date
+    } = {}
+    if (status) updateData.status = status as RentalStatus
     if (startDate) updateData.startDate = new Date(startDate)
     if (endDate) updateData.endDate = new Date(endDate)
 

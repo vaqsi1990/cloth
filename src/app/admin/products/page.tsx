@@ -18,8 +18,6 @@ interface Product {
   name: string
   slug: string
   description?: string
-  currentPrice: number
-  originalPrice?: number
   gender: string
   isNew: boolean
   hasSale: boolean
@@ -39,6 +37,12 @@ interface Product {
     id: number
     url: string
     alt?: string
+  }>
+  variants?: Array<{
+    id: number
+    size: string
+    stock: number
+    price: number
   }>
   rentalStatus?: {[size: string]: RentalPeriod[]}
 }
@@ -79,7 +83,7 @@ const AdminProductsPage = () => {
               const rentalData = await rentalResponse.json()
               if (rentalData.success) {
                 const statusMap: {[size: string]: RentalPeriod[]} = {}
-                rentalData.variants.forEach((variant: any) => {
+                rentalData.variants.forEach((variant: { size: string; activeRentals?: RentalPeriod[] }) => {
                   statusMap[variant.size] = variant.activeRentals || []
                 })
                 return { ...product, rentalStatus: statusMap }
