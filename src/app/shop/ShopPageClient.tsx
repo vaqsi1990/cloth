@@ -385,21 +385,7 @@ const ShopPageClient = () => {
                                             {product.name}
                                         </h3>
 
-                                        {/* Rating */}
-                                        <div className="flex items-center mb-3">
-                                            <div className="flex items-center">
-                                                {[...Array(5)].map((_, i) => (
-                                                    <Star
-                                                        key={i}
-                                                        className={`w-4 h-4 ${
-                                                            i < (product.rating || 0) ? "text-yellow-400 fill-current" : "text-gray-300"
-                                                        }`}
-                                                    />
-                                                ))}
-                                            </div>
-                                            <span className="md:text-[18px] text-[16px] text-black ml-2">({product.rating || 0})</span>
-                                        </div>
-
+                                    
                                         {/* Pricing */}
                                         <div className="flex items-center space-x-2 mb-4">
                                             <span className="md:text-[18px] text-[16px] font-bold text-black">
@@ -415,7 +401,7 @@ const ShopPageClient = () => {
                                         {/* Action Button */}
                                         <Link
                                             href={`/product/${product.id}`}
-                                            className="gi-btn-1 rounded-md mt-4 transition-all duration-[0.3s] ease-in-out overflow-hidden text-center relative py-[10px] max-[767px]:py-[6px] px-[15px] max-[767px]:px-[10px] bg-[#4b5966] text-[#fff] border-[0] text-[15px] max-[767px]:text-[13px] tracking-[0] font-medium inline-flex items-center hover:text-[#fff]"
+                                            className="block w-full md:w-[200px]  mt-3 bg-[#1B3729] md:text-[18px] text-[16px] text-white text-center py-2 rounded-lg font-bold transition-colors duration-300"
                                         >
                                             დეტალები
                                         </Link>

@@ -9,18 +9,20 @@ const productSchema = z.object({
   name: z.string().min(1, 'სახელი აუცილებელია'),
   slug: z.string().min(1, 'Slug აუცილებელია').regex(/^[a-z0-9-]+$/, 'Slug უნდა შეიცავდეს მხოლოდ პატარა ასოებს, ციფრებს და ტირეებს'),
   description: z.string().optional(),
-  currentPrice: z.number().min(0, 'ფასი უნდა იყოს დადებითი'),
-  originalPrice: z.number().min(0, 'ორიგინალური ფასი უნდა იყოს დადებითი').nullable().optional(),
   stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი').default(0),
   gender: z.enum(['MEN', 'WOMEN', 'CHILDREN', 'UNISEX']).default('UNISEX'),
   isNew: z.boolean().default(false),
   hasSale: z.boolean().default(false),
   rating: z.number().min(0).max(5).optional(),
   categoryId: z.number().optional(),
+  isRentable: z.boolean().default(false),
+  pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional(),
+  maxRentalDays: z.number().min(1, 'მინიმუმ 1 დღე').optional(),
+  deposit: z.number().min(0, 'გირაო უნდა იყოს დადებითი').optional(),
   variants: z.array(z.object({
     size: z.string().min(1, 'ზომა აუცილებელია'),
     stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი'),
-    price: z.number().min(0, 'ფასი უნდა იყოს დადებითი').nullable().optional()
+    price: z.number().min(0, 'ფასი უნდა იყოს დადებითი')
   })).default([]),
   imageUrls: z.array(z.string().min(1, 'URL აუცილებელია')).default([])
 })
@@ -114,20 +116,29 @@ export async function PUT(
     })
 
     // Update product with nested updates
+    console.log('=== UPDATING PRODUCT ===')
+    console.log('Product ID:', productId)
+    console.log('Validated data:', JSON.stringify(validatedData, null, 2))
+    console.log('Variants to create:', validatedData.variants)
+    console.log('Variants length:', validatedData.variants.length)
+    console.log('Each variant:', validatedData.variants.map(v => ({ size: v.size, stock: v.stock, price: v.price })))
+    
     const updatedProduct = await prisma.product.update({
       where: { id: productId },
       data: {
         name: validatedData.name,
         slug: validatedData.slug,
         description: validatedData.description,
-        currentPrice: validatedData.currentPrice,
-        originalPrice: validatedData.originalPrice,
         sku: `SKU-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Generate unique SKU
         gender: validatedData.gender,
         isNew: validatedData.isNew,
         hasSale: validatedData.hasSale,
         rating: validatedData.rating,
         categoryId: validatedData.categoryId,
+        isRentable: validatedData.isRentable,
+        pricePerDay: validatedData.pricePerDay,
+        maxRentalDays: validatedData.maxRentalDays,
+        deposit: validatedData.deposit,
         // Create new images
         images: {
           create: validatedData.imageUrls.map((url, index) => ({
@@ -147,6 +158,9 @@ export async function PUT(
       },
       include: { images: true, variants: true, category: true }
     })
+    
+    console.log('=== PRODUCT UPDATED SUCCESSFULLY ===')
+    console.log('Updated product:', JSON.stringify(updatedProduct, null, 2))
 
     return NextResponse.json({
       success: true,

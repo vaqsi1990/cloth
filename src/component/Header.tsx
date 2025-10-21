@@ -11,6 +11,7 @@ const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
+  const [mobileDropdownOpen, setMobileDropdownOpen] = useState<string | null>(null)
   const { getTotalItems } = useCart()
   const { data: session, status } = useSession()
 
@@ -28,6 +29,11 @@ const Header = () => {
 
   const handleMouseLeave = () => {
     setActiveDropdown(null)
+  }
+  
+
+  const toggleMobileDropdown = (dropdown: string) => {
+    setMobileDropdownOpen(mobileDropdownOpen === dropdown ? null : dropdown)
   }
 
   return (
@@ -356,20 +362,20 @@ const Header = () => {
                   <div className="absolute right-0 top-full mt-2 w-48 bg-white/95 backdrop-blur-md border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300">
                     <div className="py-2">
                       <div className="px-4 py-2 border-b border-gray-100">
-                        <p className="text-sm font-medium text-gray-900">{session.user.name}</p>
-                        <p className="text-xs text-gray-500">{session.user.email}</p>
+                        <p className="text-[16px] font-medium text-black">{session.user.name}</p>
+                        <p className="text-[16px] text-black">{session.user.email}</p>
                       </div>
                       
                       <Link
                         href="/account"
-                        className="block cursor-pointer px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        className="block cursor-pointer px-4 py-2 text-[16px] text-black hover:bg-gray-50 transition-colors"
                       >
                         პროფილი
                       </Link>
                       
                       <button
                         onClick={() => signOut()}
-                        className="w-full cursor-pointer text-left px-4 py-2 text-[16px] text-white font-bold uppercase tracking-wide hover:bg-gray-50 transition-colors flex items-center space-x-2"
+                        className="w-full cursor-pointer text-left px-4 py-2 text-[16px] text-black font-bold uppercase tracking-wide hover:bg-gray-50 transition-colors flex items-center space-x-2"
                       >
                         <LogOut className="w-4 h-4" />
                         <span>გასვლა</span>
@@ -438,30 +444,275 @@ const Header = () => {
 
     
       {isMobileMenuOpen && (
-        <div className="lg:hidden h-screen text-white text-center items-center justify-center border-t border-gray-100 animate-in slide-in-from-top-2 duration-300">
+        <div className="lg:hidden bg-[#1B3729] text-white border-t border-gray-100 animate-in slide-in-from-top-2 duration-300">
           <nav className="container mx-auto px-4 py-6">
-            <div className="flex flex-col text-white text-center items-center justify-center space-y-1">
-              <Link
-                href="/shop?gender=women"
-                className="group flex items-center px-4 py-3 rounded-lg text-white text-[16px] transition-all duration-300"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <span className="group-hover:translate-x-2 transition-transform duration-300">ქალი</span>
-              </Link>
-              <Link
-                href="/shop?gender=men"
-                className="group flex items-center px-4 py-3 rounded-lg text-white text-[16px] transition-all duration-300"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <span className="group-hover:translate-x-2 transition-transform duration-300">მამაკაცი</span>
-              </Link>
-              <Link
-                href="/shop?gender=children"
-                className="group flex items-center px-4 py-3 rounded-lg text-white text-[16px] transition-all duration-300"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <span className="group-hover:translate-x-2 transition-transform duration-300">ბავშვები</span>
-              </Link>
+            <div className="flex flex-col space-y-2">
+              {/* Women Dropdown */}
+              <div className="border-b border-gray-600 pb-2">
+                <button
+                  onClick={() => toggleMobileDropdown('women')}
+                  className="flex items-center justify-between w-full px-4 py-3 rounded-lg text-white text-[16px] transition-all duration-300 hover:bg-gray-700"
+                >
+                  <span>ქალი</span>
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform duration-300 ${mobileDropdownOpen === 'women' ? 'rotate-180' : ''}`}
+                  />
+                </button>
+                {mobileDropdownOpen === 'women' && (
+                  <div className="mt-2 ml-4 space-y-1">
+                    <Link
+                      href="/shop?gender=women"
+                      className="block px-4 py-2 text-white text-[14px] hover:text-white transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      ყველა ქალის ტანსაცმელი
+                    </Link>
+                    <Link
+                      href="/shop?gender=women&category=dresses"
+                      className="block px-4 py-2 text-white text-[14px] hover:text-white transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      კაბები
+                    </Link>
+                    <Link
+                      href="/shop?gender=women&category=tops"
+                      className="block px-4 py-2 text-white text-[14px] hover:text-white transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      ზედა ტანსაცმელი
+                    </Link>
+                    <Link
+                      href="/shop?gender=women&category=bottoms"
+                      className="block px-4 py-2 text-white text-[14px] hover:text-white transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      ქვედა ტანსაცმელი
+                    </Link>
+                    <Link
+                      href="/shop?gender=women&category=accessories"
+                      className="block px-4 py-2 text-white text-[14px] hover:text-white transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      აქსესუარები
+                    </Link>
+                    <Link
+                      href="/shop?gender=women&category=classic"
+                      className="block px-4 py-2 text-white text-[14px] hover:text-white transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      კლასიკური სამოსი
+                    </Link>
+                    <Link
+                      href="/shop?gender=women&category=traditional"
+                      className="block px-4 py-2 text-white text-[14px] hover:text-white transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      ნაციონალური სამოსი
+                    </Link>
+                    <Link
+                      href="/shop?gender=women&category=carnival"
+                      className="block px-4 py-2 text-white text-[14px] hover:text-white transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      საკარნავალო კოსტუმები
+                    </Link>
+                  </div>
+                )}
+              </div>
+
+              {/* Men Dropdown */}
+              <div className="border-b border-gray-600 pb-2">
+                <button
+                  onClick={() => toggleMobileDropdown('men')}
+                  className="flex items-center justify-between w-full px-4 py-3 rounded-lg text-white text-[16px] transition-all duration-300 hover:bg-gray-700"
+                >
+                  <span>მამაკაცი</span>
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform duration-300 ${mobileDropdownOpen === 'men' ? 'rotate-180' : ''}`}
+                  />
+                </button>
+                {mobileDropdownOpen === 'men' && (
+                  <div className="mt-2 ml-4 space-y-1">
+                    <Link
+                      href="/shop?gender=men"
+                      className="block px-4 py-2 text-white text-[14px] hover:text-white transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      ყველა მამაკაცის ტანსაცმელი
+                    </Link>
+                    <Link
+                      href="/shop?gender=men&category=suits"
+                      className="block px-4 py-2 text-white text-[14px] hover:text-white transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      კოსტუმი
+                    </Link>
+                    <Link
+                      href="/shop?gender=men&category=jumpers"
+                      className="block px-4 py-2 text-white text-[14px] hover:text-white transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      ჯემპრი
+                    </Link>
+                    <Link
+                      href="/shop?gender=men&category=pants"
+                      className="block px-4 py-2 text-white text-[14px] hover:text-white transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      შარვალი
+                    </Link>
+                    <Link
+                      href="/shop?gender=men&category=chokha"
+                          className="block px-4 py-2 text-white text-[14px] hover:text-white transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      ჩოხა
+                    </Link>
+                    <Link
+                      href="/shop?gender=men&category=classic"
+                      className="block px-4 py-2 text-white text-[14px] hover:text-white transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      კლასიკური სამოსი
+                    </Link>
+                    <Link
+                      href="/shop?gender=men&category=carnival"
+                      className="block px-4 py-2 text-white text-[14px] hover:text-white transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      საკარნავალო კოსტუმები
+                    </Link>
+                  </div>
+                )}
+              </div>
+
+              {/* Children Dropdown */}
+              <div className="border-b border-gray-600 pb-2">
+                <button
+                  onClick={() => toggleMobileDropdown('children')}
+                  className="flex items-center justify-between w-full px-4 py-3 rounded-lg text-white text-[16px] transition-all duration-300 hover:bg-gray-700"
+                >
+                  <span>ბავშვები</span>
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform duration-300 ${mobileDropdownOpen === 'children' ? 'rotate-180' : ''}`}
+                  />
+                </button>
+                {mobileDropdownOpen === 'children' && (
+                  <div className="mt-2 ml-4 space-y-1">
+                    <Link
+                      href="/shop?gender=children"
+                      className="block px-4 py-2 text-white text-[14px] hover:text-white transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      ყველა ბავშვის ტანსაცმელი
+                    </Link>
+                    <Link
+                      href="/shop?gender=children&category=shirts"
+                      className="block px-4 py-2 text-white text-[14px] hover:text-white transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      მაისურები
+                    </Link>
+                    <Link
+                      href="/shop?gender=children&category=sweaters"
+                      className="block px-4 py-2 text-white text-[14px] hover:text-white transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      სვიტრები/ჯემპრები
+                    </Link>
+                    <Link
+                      href="/shop?gender=children&category=bottoms"
+                      className="block px-4 py-2 text-white text-[14px] hover:text-white transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      ქვედა ტანსაცმელი(შარვლები, ქვედაკაბები)
+                    </Link>
+                    <Link
+                      href="/shop?gender=children&category=dresses"
+                      className="block px-4 py-2 text-white text-[14px] hover:text-white transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      კაბები(გოგონებისთვის)
+                    </Link>
+                    <Link
+                      href="/shop?gender=children&category=traditional"
+                      className="block px-4 py-2 text-white text-[14px] hover:text-white transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      ტრადიციული ტანსაცმელი
+                    </Link>
+                  </div>
+                )}
+              </div>
+
+              {/* Authentication Section */}
+              <div className="border-t border-gray-600 pt-4 mt-4">
+                {session ? (
+                  session.user.role === 'ADMIN' ? (
+                    <div className="space-y-2">
+                      <Link
+                        href="/admin"
+                        className="block px-4 py-3 bg-black text-white text-[16px] font-bold uppercase tracking-wide rounded-lg text-center transition-colors"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        ადმინ პანელი
+                      </Link>
+                      <button
+                        onClick={() => {
+                          signOut()
+                          setIsMobileMenuOpen(false)
+                        }}
+                        className="w-full px-4 py-3 text-[16px] font-bold uppercase tracking-wide text-white border border-white rounded-lg transition-colors"
+                      >
+                        გასვლა
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="px-4 py-2 border-b border-gray-600">
+                        <p className="text-[16px] font-medium text-white">{session.user.name}</p>
+                        <p className="text-[14px] text-gray-300">{session.user.email}</p>
+                      </div>
+                      
+                      <Link
+                        href="/account"
+                        className="block px-4 py-3 text-white text-[16px] hover:bg-gray-700 rounded-lg transition-colors"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        პროფილი
+                      </Link>
+                      
+                      <button
+                        onClick={() => {
+                          signOut()
+                          setIsMobileMenuOpen(false)
+                        }}
+                        className="w-full px-4 py-3 text-[16px] text-white font-bold uppercase tracking-wide hover:bg-gray-700 rounded-lg transition-colors flex items-center justify-center space-x-2"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        <span>გასვლა</span>
+                      </button>
+                    </div>
+                  )
+                ) : (
+                  <div className="space-y-2">
+                    <Link
+                      href="/auth/signin"
+                      className="block px-4 py-3 text-white text-[16px] font-medium border border-white rounded-lg text-center transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      შესვლა
+                    </Link>
+                    <Link
+                      href="/auth/signup"
+                      className="block px-4 py-3 bg-white text-[#1B3729] text-[16px] font-medium rounded-lg text-center transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      რეგისტრაცია
+                    </Link>
+                  </div>
+                )}
+              </div>
             </div>
           </nav>
         </div>

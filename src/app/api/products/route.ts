@@ -9,18 +9,20 @@ const productSchema = z.object({
   name: z.string().min(1, 'სახელი აუცილებელია'),
   slug: z.string().min(1, 'Slug აუცილებელია'),
   description: z.string().optional(),
-  currentPrice: z.number().min(0, 'ფასი უნდა იყოს დადებითი'),
-  originalPrice: z.number().min(0, 'ორიგინალური ფასი უნდა იყოს დადებითი').nullable().optional(),
   stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი').default(0),
   gender: z.enum(['MEN', 'WOMEN', 'CHILDREN', 'UNISEX']).default('UNISEX'),
   isNew: z.boolean().default(false),
   hasSale: z.boolean().default(false),
   rating: z.number().min(0).max(5).optional(),
   categoryId: z.number().optional(),
+  isRentable: z.boolean().default(false),
+  pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional(),
+  maxRentalDays: z.number().min(1, 'მინიმუმ 1 დღე').optional(),
+  deposit: z.number().min(0, 'გირაო უნდა იყოს დადებითი').optional(),
   variants: z.array(z.object({
     size: z.string().min(1, 'ზომა აუცილებელია'),
     stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი'),
-    price: z.number().min(0, 'ფასი უნდა იყოს დადებითი').nullable().optional()
+    price: z.number().min(0, 'ფასი უნდა იყოს დადებითი')
   })).default([]),
   imageUrls: z.array(z.string().min(1, 'URL აუცილებელია')).default([])
 })
@@ -100,14 +102,16 @@ export async function POST(request: NextRequest) {
         name: validatedData.name,
         slug: validatedData.slug,
         description: validatedData.description,
-        currentPrice: validatedData.currentPrice,
-        originalPrice: validatedData.originalPrice,
         sku: `SKU-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Generate unique SKU
         gender: validatedData.gender,
         isNew: validatedData.isNew,
         hasSale: validatedData.hasSale,
         rating: validatedData.rating,
         categoryId: validatedData.categoryId,
+        isRentable: validatedData.isRentable,
+        pricePerDay: validatedData.pricePerDay,
+        maxRentalDays: validatedData.maxRentalDays,
+        deposit: validatedData.deposit,
         userId: session.user.id, // Associate product with user
         // Create product images
         images: {

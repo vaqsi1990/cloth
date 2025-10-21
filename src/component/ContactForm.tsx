@@ -90,8 +90,8 @@ const ContactForm = () => {
                                 </div>
                                 <div>
                                     <h4 className="font-semibold text-gray-900 mb-1">ტელეფონი</h4>
-                                    <p className="text-gray-600">+995 555 123 456</p>
-                                    <p className="text-gray-600">+995 555 789 012</p>
+                                    <p className="text-black">+995 555 123 456</p>
+                                    <p className="text-black">+995 555 789 012</p>
                                 </div>
                             </div>
 
@@ -101,8 +101,8 @@ const ContactForm = () => {
                                 </div>
                                 <div>
                                     <h4 className="font-semibold text-gray-900 mb-1">მისამართი</h4>
-                                    <p className="text-gray-600">თბილისი, საქართველო</p>
-                                    <p className="text-gray-600">რუსთაველის გამზირი 15</p>
+                                    <p className="text-black">თბილისი, საქართველო</p>
+                                    <p className="text-black">რუსთაველის გამზირი 15</p>
                                 </div>
                             </div>
                         </div>
@@ -127,7 +127,7 @@ const ContactForm = () => {
                         <form onSubmit={handleSubmit} className="space-y-6">
                             {/* Name */}
                             <div>
-                                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="name" className="block text-[16px] font-medium text-black mb-2">
                                     სახელი *
                                 </label>
                                 <div className="relative">
@@ -147,7 +147,7 @@ const ContactForm = () => {
 
                             {/* Email */}
                             <div>
-                                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="email" className="block text-[16px] font-medium text-black mb-2">
                                     ელფოსტა *
                                 </label>
                                 <div className="relative">
@@ -167,7 +167,7 @@ const ContactForm = () => {
 
                             {/* Phone */}
                             <div>
-                                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="phone" className="block text-[16px] font-medium text-black mb-2">
                                     ტელეფონი
                                 </label>
                                 <div className="relative">
@@ -186,7 +186,7 @@ const ContactForm = () => {
 
                             {/* Subject */}
                             <div>
-                                <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="subject" className="block text-[16px] font-medium text-black mb-2">
                                     თემა *
                                 </label>
                                 <input
@@ -203,7 +203,7 @@ const ContactForm = () => {
 
                             {/* Message */}
                             <div>
-                                <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="message" className="block text-[16px] font-medium text-black mb-2">
                                     შეტყობინება *
                                 </label>
                                 <div className="relative">

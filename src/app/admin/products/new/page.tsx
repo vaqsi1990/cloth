@@ -6,26 +6,30 @@ import Link from 'next/link'
 import { z } from 'zod'
 import ImageUpload from '@/component/CloudinaryUploader'
 
-// Zod validation schema based on Prisma models
 const productSchema = z.object({
   name: z.string().min(1, 'სახელი აუცილებელია'),
   slug: z.string().min(1, 'Slug აუცილებელია').regex(/^[a-z0-9-]+$/, 'Slug უნდა შეიცავდეს მხოლოდ პატარა ასოებს, ციფრებს და ტირეებს'),
   description: z.string().optional(),
-  currentPrice: z.number().min(0, 'ფასი უნდა იყოს დადებითი'),
-  originalPrice: z.number().min(0, 'ორიგინალური ფასი უნდა იყოს დადებითი').optional(),
   stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი').default(0),
   gender: z.enum(['MEN', 'WOMEN', 'CHILDREN', 'UNISEX']).default('UNISEX'),
   isNew: z.boolean().default(false),
   hasSale: z.boolean().default(false),
   rating: z.number().min(0).max(5).optional(),
   categoryId: z.number().optional(),
-  variants: z.array(z.object({
-    size: z.string().min(1, 'ზომა აუცილებელია'),
-    stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი'),
-    price: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional()
-  })).default([]),
-  imageUrls: z.array(z.string().url('არასწორი URL')).default([])
+  isRentable: z.boolean().default(false), // 🆕
+  pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional(), // 🆕
+  maxRentalDays: z.number().min(1, 'მინიმუმ 1 დღე').optional(), // 🆕
+  deposit: z.number().min(0, 'გირაო უნდა იყოს დადებითი').optional(), // 🆕
+  variants: z.array(
+    z.object({
+      size: z.string().min(1, 'ზომა აუცილებელია'),
+      stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი'),
+      price: z.number().min(0, 'ფასი უნდა იყოს დადებითი')
+    })
+  ).default([]),
+  imageUrls: z.array(z.string().url('არასწორი URL')).default([]),
 })
+
 
 type ProductFormData = z.infer<typeof productSchema>
 
@@ -35,18 +39,21 @@ const NewProductPage = () => {
     name: '',
     slug: '',
     description: '',
-    currentPrice: 0,
-    originalPrice: undefined,
     stock: 0,
     gender: 'UNISEX',
     isNew: false,
     hasSale: false,
     rating: 0,
     categoryId: undefined,
+    isRentable: false, // 🆕
+    pricePerDay: undefined,
+    maxRentalDays: undefined,
+    deposit: undefined,
     variants: [],
-    imageUrls: []
+    imageUrls: [],
   })
-  
+
+
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -65,7 +72,7 @@ const NewProductPage = () => {
       ...prev,
       [field]: value
     }))
-    
+
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({
@@ -84,7 +91,7 @@ const NewProductPage = () => {
       'ქ': 'q', 'ღ': 'gh', 'ყ': 'k', 'შ': 'sh', 'ჩ': 'ch', 'ც': 'ts', 'ძ': 'dz',
       'წ': 'ts', 'ჭ': 'ch', 'ხ': 'kh', 'ჯ': 'j', 'ჰ': 'h'
     }
-    
+
     return name
       .toLowerCase()
       .split('')
@@ -103,7 +110,7 @@ const NewProductPage = () => {
       name: name,
       slug: slug
     }))
-    
+
     // Clear errors when user starts typing
     if (errors.name) {
       setErrors(prev => ({
@@ -116,7 +123,7 @@ const NewProductPage = () => {
   const addVariant = () => {
     setFormData(prev => ({
       ...prev,
-      variants: [...prev.variants, { size: '', stock: 0, price: undefined }]
+      variants: [...prev.variants, { size: '', stock: 0, price: 0 }]
     }))
   }
 
@@ -130,7 +137,7 @@ const NewProductPage = () => {
   const updateVariant = (index: number, field: string, value: string | number | undefined) => {
     setFormData(prev => ({
       ...prev,
-      variants: prev.variants.map((variant, i) => 
+      variants: prev.variants.map((variant, i) =>
         i === index ? { ...variant, [field]: value } : variant
       )
     }))
@@ -151,7 +158,7 @@ const NewProductPage = () => {
     try {
       // Validate form data
       const validatedData = productSchema.parse(formData)
-      
+
       // Send data to API
       const response = await fetch('/api/products', {
         method: 'POST',
@@ -160,9 +167,9 @@ const NewProductPage = () => {
         },
         body: JSON.stringify(validatedData),
       })
-      
+
       const result = await response.json()
-      
+
       if (result.success) {
         alert('პროდუქტი წარმატებით შეიქმნა!')
         router.push('/admin')
@@ -179,7 +186,7 @@ const NewProductPage = () => {
           alert(result.message || 'შეცდომა პროდუქტის შექმნისას')
         }
       }
-      
+
     } catch (error) {
       console.error('Error:', error)
       if (error instanceof z.ZodError) {
@@ -204,7 +211,7 @@ const NewProductPage = () => {
       <div className="bg-white shadow-sm border-b">
         <div className="px-6 py-4">
           <div className="flex items-center space-x-4">
-            <Link 
+            <Link
               href="/admin"
               className="flex items-center text-[20px] text-black hover:text-gray-600"
             >
@@ -221,7 +228,7 @@ const NewProductPage = () => {
           {/* Basic Information */}
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h2 className="text-[20px] text-black font-semibold mb-6">ძირითადი ინფორმაცია</h2>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-[20px] text-black font-medium mb-2">
@@ -231,9 +238,8 @@ const NewProductPage = () => {
                   type="text"
                   value={formData.name}
                   onChange={(e) => handleNameChange(e.target.value)}
-                  className={`w-full px-4 py-3 border rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black ${
-                    errors.name ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-4 py-3 border rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black ${errors.name ? 'border-red-500' : 'border-gray-300'
+                    }`}
                 />
                 {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
               </div>
@@ -251,50 +257,21 @@ const NewProductPage = () => {
                 <p className="text-gray-500 text-sm mt-1">Slug ავტომატურად გენერირდება სახელიდან</p>
               </div>
 
-              <div>
+              {/* <div>
                 <label className="block text-[20px] text-black font-medium mb-2">
-                  მიმდინარე ფასი *
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.currentPrice}
-                  onChange={(e) => handleInputChange('currentPrice', parseFloat(e.target.value) || 0)}
-                  className={`w-full px-4 py-3 border rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black ${
-                    errors.currentPrice ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                />
-                {errors.currentPrice && <p className="text-red-500 text-sm mt-1">{errors.currentPrice}</p>}
-              </div>
-
-              <div>
-                <label className="block text-[20px] text-black font-medium mb-2">
-                  ორიგინალური ფასი
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.originalPrice || ''}
-                  onChange={(e) => handleInputChange('originalPrice', e.target.value ? parseFloat(e.target.value) : undefined)}
-                  className={`w-full px-4 py-3 border rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black ${
-                    errors.originalPrice ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                />
-                {errors.originalPrice && <p className="text-red-500 text-sm mt-1">{errors.originalPrice}</p>}
-              </div>
-
-              <div>
-                <label className="block text-[20px] text-black font-medium mb-2">
-                  საწყობის რაოდენობა
+                  საწყობი *
                 </label>
                 <input
                   type="number"
                   value={formData.stock}
                   onChange={(e) => handleInputChange('stock', parseInt(e.target.value) || 0)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  className={`w-full px-4 py-3 border rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black ${errors.stock ? 'border-red-500' : 'border-gray-300'
+                    }`}
                 />
-              </div>
+                {errors.stock && <p className="text-red-500 text-sm mt-1">{errors.stock}</p>}
+              </div> */}
 
+           
               <div>
                 <label className="block text-[20px] text-black font-medium mb-2">
                   კატეგორია
@@ -352,7 +329,7 @@ const NewProductPage = () => {
                 />
                 <span className="text-[20px] text-black">ახალი პროდუქტი</span>
               </label>
-              
+
               <label className="flex items-center">
                 <input
                   type="checkbox"
@@ -394,7 +371,7 @@ const NewProductPage = () => {
                     ))}
                   </select>
                 </div>
-                
+
                 <div>
                   <label className="block text-[20px] text-black font-medium mb-2">საწყობი</label>
                   <input
@@ -404,7 +381,7 @@ const NewProductPage = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-[20px] text-black font-medium mb-2">ფასი (ოფციონალური)</label>
                   <input
@@ -415,7 +392,7 @@ const NewProductPage = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                   />
                 </div>
-                
+
                 <div className="flex items-end">
                   <button
                     type="button"
@@ -429,6 +406,58 @@ const NewProductPage = () => {
               </div>
             ))}
           </div>
+
+          {/* Rental Options */}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-[20px] text-black font-semibold mb-6">გაქირავების პარამეტრები</h2>
+
+            <label className="flex items-center mb-4">
+              <input
+                type="checkbox"
+                checked={formData.isRentable}
+                onChange={(e) => handleInputChange('isRentable', e.target.checked)}
+                className="mr-2"
+              />
+              <span className="text-[20px] text-black">პროდუქტის გაქირავება შესაძლებელია</span>
+            </label>
+
+            {formData.isRentable && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label className="block text-[20px] text-black font-medium mb-2">ფასი დღეში *</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.pricePerDay || ''}
+                    onChange={(e) => handleInputChange('pricePerDay', e.target.value ? parseFloat(e.target.value) : undefined)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[20px] text-black font-medium mb-2">მაქსიმალური დღეების რაოდენობა</label>
+                  <input
+                    type="number"
+                    value={formData.maxRentalDays || ''}
+                    onChange={(e) => handleInputChange('maxRentalDays', e.target.value ? parseInt(e.target.value) : undefined)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[20px] text-black font-medium mb-2">გირაოს თანხა</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.deposit || ''}
+                    onChange={(e) => handleInputChange('deposit', e.target.value ? parseFloat(e.target.value) : undefined)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
 
           {/* Images */}
           <div className="bg-white rounded-lg shadow-sm p-6">

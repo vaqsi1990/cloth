@@ -9,8 +9,16 @@ export interface ProductVariant {
   id: number
   size: string
   stock: number
-  price?: number
+  price: number  // required price for this variant
   sku?: string
+  activeRentals?: RentalPeriod[]
+  isAvailable?: boolean
+}
+
+export interface RentalPeriod {
+  startDate: string
+  endDate: string
+  status: string
 }
 
 export interface Category {
@@ -24,8 +32,6 @@ export interface Product {
   name: string
   slug: string
   description?: string
-  currentPrice: number
-  originalPrice?: number
   sku?: string
   gender: 'MEN' | 'WOMEN' | 'CHILDREN' | 'UNISEX'
   isNew: boolean
@@ -33,6 +39,10 @@ export interface Product {
   rating?: number
   categoryId?: number
   category?: Category
+  isRentable?: boolean
+  pricePerDay?: number
+  maxRentalDays?: number
+  deposit?: number
   images: ProductImage[]
   variants: ProductVariant[]
   createdAt: string

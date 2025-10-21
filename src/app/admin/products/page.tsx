@@ -5,7 +5,13 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Plus, Edit, Trash2, Eye, Search, Filter, Package } from 'lucide-react'
+import { Plus, Edit, Trash2, Eye, Search, Filter, Package, Calendar, Clock } from 'lucide-react'
+
+interface RentalPeriod {
+  startDate: string
+  endDate: string
+  status: string
+}
 
 interface Product {
   id: number
@@ -34,6 +40,7 @@ interface Product {
     url: string
     alt?: string
   }>
+  rentalStatus?: {[size: string]: RentalPeriod[]}
 }
 
 const AdminProductsPage = () => {
@@ -64,7 +71,27 @@ const AdminProductsPage = () => {
       const data = await response.json()
       
       if (data.success) {
-        setProducts(data.products)
+        // Fetch rental status for each product
+        const productsWithRentalStatus = await Promise.all(
+          data.products.map(async (product: Product) => {
+            try {
+              const rentalResponse = await fetch(`/api/products/${product.id}/rental-status`)
+              const rentalData = await rentalResponse.json()
+              if (rentalData.success) {
+                const statusMap: {[size: string]: RentalPeriod[]} = {}
+                rentalData.variants.forEach((variant: any) => {
+                  statusMap[variant.size] = variant.activeRentals || []
+                })
+                return { ...product, rentalStatus: statusMap }
+              }
+              return product
+            } catch (error) {
+              console.error(`Error fetching rental status for product ${product.id}:`, error)
+              return product
+            }
+          })
+        )
+        setProducts(productsWithRentalStatus)
       }
     } catch (error) {
       console.error('Error fetching products:', error)
@@ -92,6 +119,26 @@ const AdminProductsPage = () => {
       console.error('Error deleting product:', error)
       alert('შეცდომა პროდუქტის წაშლისას')
     }
+  }
+
+  // Helper functions for rental status
+  const hasActiveRentals = (product: Product) => {
+    return product.rentalStatus && Object.keys(product.rentalStatus).some(size => 
+      product.rentalStatus![size] && product.rentalStatus![size].length > 0
+    )
+  }
+
+  const getRentalPeriods = (product: Product, size: string) => {
+    return product.rentalStatus?.[size] || []
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('ka-GE', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
   }
 
   const filteredProducts = products.filter(product => {
@@ -261,10 +308,7 @@ const AdminProductsPage = () => {
                          </h3>
                          
                          <div className="flex items-center space-x-4 text-sm text-gray-600 mb-2">
-                           <span>₾{product.currentPrice}</span>
-                           {product.originalPrice && (
-                             <span className="line-through">₾{product.originalPrice}</span>
-                           )}
+                           <span>₾{product.variants?.[0]?.price || 0}</span>
                            <span>{product.gender}</span>
                            {product.category && (
                              <span>{product.category.name}</span>
@@ -282,12 +326,52 @@ const AdminProductsPage = () => {
                                ფასდაკლება
                              </span>
                            )}
+                           {hasActiveRentals(product) && (
+                             <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full flex items-center">
+                               <Clock className="w-3 h-3 mr-1" />
+                               გაქირავებული
+                             </span>
+                           )}
                            {product.user && (
                              <span className="text-xs text-gray-500">
                                {product.user.name}
                              </span>
                            )}
                          </div>
+                         
+                         {/* Rental Status Details */}
+                         {hasActiveRentals(product) && (
+                           <div className="mt-2 p-2 bg-orange-50 border border-orange-200 rounded text-xs">
+                             <div className="flex items-center text-orange-800 font-medium mb-1">
+                               <Calendar className="w-3 h-3 mr-1" />
+                               აქტიური გაქირავებები:
+                             </div>
+                             <div className="space-y-1">
+                               {Object.keys(product.rentalStatus || {}).map(size => {
+                                 const periods = getRentalPeriods(product, size)
+                                 if (periods.length === 0) return null
+                                 
+                                 return (
+                                   <div key={size} className="text-orange-700">
+                                     <span className="font-medium">{size}:</span>
+                                     {periods.map((period, index) => (
+                                       <span key={index} className="ml-2">
+                                         {formatDate(period.startDate)}-{formatDate(period.endDate)}
+                                         <span className={`ml-1 px-1 py-0.5 rounded text-xs ${
+                                           period.status === 'ACTIVE' 
+                                             ? 'bg-green-100 text-green-800' 
+                                             : 'bg-blue-100 text-blue-800'
+                                         }`}>
+                                           {period.status === 'ACTIVE' ? 'აქტიური' : 'დაჯავშნული'}
+                                         </span>
+                                       </span>
+                                     ))}
+                                   </div>
+                                 )
+                               })}
+                             </div>
+                           </div>
+                         )}
                        </div>
 
                        {/* Actions */}

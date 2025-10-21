@@ -28,6 +28,19 @@ enum UserRole {
   ADMIN
 }
 
+enum TransactionType {
+  SALE
+  RENT
+}
+
+enum RentalStatus {
+  RESERVED
+  ACTIVE
+  RETURNED
+  LATE
+  CANCELED
+}
+
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
@@ -43,6 +56,8 @@ model User {
   sessions      Session[]
   products      Product[]
   orders        Order[]
+  rentals       Rental[]
+  transactions  Transaction[]
 }
 
 model Account {
@@ -95,13 +110,15 @@ model Product {
   name          String
   slug          String           @unique
   description   String?
-  currentPrice  Float
-  originalPrice Float?
   sku           String?          @unique
   gender        Gender           @default(UNISEX)
   isNew         Boolean          @default(false)
   hasSale       Boolean          @default(false)
   rating        Float?           @default(0)
+  isRentable    Boolean          @default(false)
+  pricePerDay   Float?
+  maxRentalDays Int?
+  deposit       Float?
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
 
@@ -114,6 +131,7 @@ model Product {
   images        ProductImage[]
   variants      ProductVariant[]
   orderItems    OrderItem[]      // history relation (for denormalized order items)
+  rentals       Rental[]
 }
 
 model ProductImage {
@@ -132,9 +150,11 @@ model ProductVariant {
   size      String
   stock     Int     @default(0)
   sku       String? 
-  price     Float?  // optional override price for this variant
+  price     Float   // required price for this variant
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  rentals   Rental[]
 
   @@unique([productId, size])
 }
@@ -164,6 +184,7 @@ model Order {
   user          User?       @relation(fields: [userId], references: [id])
 
   items         OrderItem[]
+  transactions  Transaction[]
 }
 
 model OrderItem {
@@ -179,4 +200,44 @@ model OrderItem {
   size        String?
   price       Float
   quantity    Int
+}
+
+model Transaction {
+  id             Int              @id @default(autoincrement())
+  type           TransactionType  @default(SALE) // SALE ან RENT
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  total          Float
+
+  userId         String?
+  user           User?            @relation(fields: [userId], references: [id])
+
+  orderId        Int?             // თუ გაყიდვაა, უკავშირდება Order-ს
+  order          Order?           @relation(fields: [orderId], references: [id])
+
+  rentalId       Int?             // თუ გაქირავებაა, უკავშირდება Rental-ს
+  rental         Rental?          @relation(fields: [rentalId], references: [id])
+}
+
+model Rental {
+  id             Int            @id @default(autoincrement())
+  productId      Int
+  product        Product        @relation(fields: [productId], references: [id])
+
+  variantId      Int?
+  variant        ProductVariant? @relation(fields: [variantId], references: [id])
+
+  userId         String?
+  user           User?          @relation(fields: [userId], references: [id])
+
+  startDate      DateTime
+  endDate        DateTime
+  pricePerDay    Float
+  totalPrice     Float
+  status         RentalStatus   @default(RESERVED)
+
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  transactions   Transaction[]
 }

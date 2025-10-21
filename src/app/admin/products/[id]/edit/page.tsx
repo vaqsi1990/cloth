@@ -10,18 +10,20 @@ const productSchema = z.object({
   name: z.string().min(1, 'სახელი აუცილებელია'),
   slug: z.string().min(1, 'Slug აუცილებელია').regex(/^[a-z0-9-]+$/, 'Slug უნდა შეიცავდეს მხოლოდ პატარა ასოებს, ციფრებს და ტირეებს'),
   description: z.string().optional(),
-  currentPrice: z.number().min(0, 'ფასი უნდა იყოს დადებითი'),
-  originalPrice: z.number().min(0, 'ორიგინალური ფასი უნდა იყოს დადებითი').nullable().optional(),
   stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი').default(0),
   gender: z.enum(['MEN', 'WOMEN', 'CHILDREN', 'UNISEX']).default('UNISEX'),
   isNew: z.boolean().default(false),
   hasSale: z.boolean().default(false),
   rating: z.number().min(0).max(5).optional(),
   categoryId: z.number().optional(),
+  isRentable: z.boolean().default(false),
+  pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional(),
+  maxRentalDays: z.number().min(1, 'მინიმუმ 1 დღე').optional(),
+  deposit: z.number().min(0, 'გირაო უნდა იყოს დადებითი').optional(),
   variants: z.array(z.object({
     size: z.string().min(1, 'ზომა აუცილებელია'),
     stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი'),
-    price: z.number().min(0, 'ფასი უნდა იყოს დადებითი').nullable().optional()
+    price: z.number().min(0, 'ფასი უნდა იყოს დადებითი')
   })).default([]),
   imageUrls: z.array(z.string().min(1, 'URL აუცილებელია')).default([])
 })
@@ -40,14 +42,16 @@ const EditProductPage = () => {
     name: '',
     slug: '',
     description: '',
-    currentPrice: 0,
-    originalPrice: undefined,
     stock: 0,
     gender: 'UNISEX',
     isNew: false,
     hasSale: false,
     rating: 0,
     categoryId: undefined,
+    isRentable: false,
+    pricePerDay: undefined,
+    maxRentalDays: undefined,
+    deposit: undefined,
     variants: [],
     imageUrls: []
   })
@@ -91,14 +95,16 @@ const EditProductPage = () => {
             name: product.name,
             slug: product.slug,
             description: product.description || '',
-            currentPrice: product.currentPrice,
-            originalPrice: product.originalPrice,
             stock: parseInt(product.sku) || 0,
             gender: product.gender || 'UNISEX',
             isNew: product.isNew,
             hasSale: product.hasSale,
             rating: product.rating || 0,
             categoryId: product.categoryId,
+            isRentable: product.isRentable || false,
+            pricePerDay: product.pricePerDay,
+            maxRentalDays: product.maxRentalDays,
+            deposit: product.deposit,
             variants: product.variants || [],
             imageUrls: imageUrls
           })
@@ -166,7 +172,7 @@ const EditProductPage = () => {
   const addVariant = () => {
     setFormData(prev => ({
       ...prev,
-      variants: [...prev.variants, { size: '', stock: 0, price: prev.currentPrice }]
+      variants: [...prev.variants, { size: '', stock: 0, price: 0 }]
     }))
   }
 
@@ -387,46 +393,22 @@ const EditProductPage = () => {
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              {/* <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[20px] text-black font-medium mb-2">
-                    მიმდინარე ფასი *
+                    საწყობი *
                   </label>
                   <input
                     type="number"
-                    step="0.01"
-                    value={formData.currentPrice}
-                    onChange={(e) => handleInputChange('currentPrice', parseFloat(e.target.value) || 0)}
+                    value={formData.stock}
+                    onChange={(e) => handleInputChange('stock', parseInt(e.target.value) || 0)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                   />
-                  {errors.currentPrice && <p className="text-red-500 text-sm mt-1">{errors.currentPrice}</p>}
+                  {errors.stock && <p className="text-red-500 text-sm mt-1">{errors.stock}</p>}
                 </div>
+              </div> */}
 
-                <div>
-                  <label className="block text-[20px] text-black font-medium mb-2">
-                    ორიგინალური ფასი
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.originalPrice || ''}
-                    onChange={(e) => handleInputChange('originalPrice', e.target.value ? parseFloat(e.target.value) : undefined)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[20px] text-black font-medium mb-2">
-                  საწყობის რაოდენობა
-                </label>
-                <input
-                  type="number"
-                  value={formData.stock}
-                  onChange={(e) => handleInputChange('stock', parseInt(e.target.value) || 0)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                />
-              </div>
+             
 
               <div className="flex space-x-4">
                 <label className="flex items-center">
@@ -515,6 +497,56 @@ const EditProductPage = () => {
                 >
                   + ვარიანტის დამატება
                 </button>
+              </div>
+
+              <h2 className="text-[20px] text-black font-semibold">გაქირავების პარამეტრები</h2>
+              
+              <div className="space-y-4">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={formData.isRentable}
+                    onChange={(e) => handleInputChange('isRentable', e.target.checked)}
+                    className="mr-2"
+                  />
+                  <span className="text-[20px] text-black">პროდუქტის გაქირავება შესაძლებელია</span>
+                </label>
+
+                {formData.isRentable && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-[20px] text-black font-medium mb-2">ფასი დღეში *</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={formData.pricePerDay || ''}
+                        onChange={(e) => handleInputChange('pricePerDay', e.target.value ? parseFloat(e.target.value) : undefined)}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[20px] text-black font-medium mb-2">მაქსიმალური დღეების რაოდენობა</label>
+                      <input
+                        type="number"
+                        value={formData.maxRentalDays || ''}
+                        onChange={(e) => handleInputChange('maxRentalDays', e.target.value ? parseInt(e.target.value) : undefined)}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[20px] text-black font-medium mb-2">გირაოს თანხა</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={formData.deposit || ''}
+                        onChange={(e) => handleInputChange('deposit', e.target.value ? parseFloat(e.target.value) : undefined)}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
