@@ -6,7 +6,7 @@ import { RentalStatus } from '@prisma/client'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -15,7 +15,8 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const rentalId = parseInt(params.id)
+    const resolvedParams = await params
+    const rentalId = parseInt(resolvedParams.id)
     
     if (isNaN(rentalId)) {
       return NextResponse.json(
@@ -61,7 +62,7 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -70,7 +71,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const rentalId = parseInt(params.id)
+    const resolvedParams = await params
+    const rentalId = parseInt(resolvedParams.id)
     
     if (isNaN(rentalId)) {
       return NextResponse.json(
@@ -160,7 +162,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -169,7 +171,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const rentalId = parseInt(params.id)
+    const resolvedParams = await params
+    const rentalId = parseInt(resolvedParams.id)
     
     if (isNaN(rentalId)) {
       return NextResponse.json(
