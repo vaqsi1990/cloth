@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Image from 'next/image'
-import { Star, ShoppingCart, Heart, Truck, Shield, RotateCcw, ArrowLeft, Share2, Eye, MessageCircle, CheckCircle, Calendar, Clock, CreditCard, CalendarDays } from 'lucide-react'
+import { Truck, Shield, RotateCcw, ArrowLeft, Eye, MessageCircle, CheckCircle, CreditCard, CalendarDays } from 'lucide-react'
 import Link from 'next/link'
 import { useCart } from '@/context/CartContext'
 import { Product, RentalPeriod } from '@/types/product'
@@ -47,7 +47,7 @@ const ProductPage = () => {
                 const data = await response.json()
                 if (data.success) {
                     const statusMap: { [size: string]: RentalPeriod[] } = {}
-                    data.variants.forEach((variant: any) => {
+                    data.variants.forEach((variant: { size: string; activeRentals?: RentalPeriod[] }) => {
                         statusMap[variant.size] = variant.activeRentals || []
                     })
                     setRentalStatus(statusMap)

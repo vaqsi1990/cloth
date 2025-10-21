@@ -71,7 +71,7 @@ const SignUpPage = () => {
       } else {
         setError(data.error || 'შეცდომა ანგარიშის შექმნისას')
       }
-    } catch (error) {
+    } catch {
       setError('შეცდომა სერვერთან კავშირისას')
     } finally {
       setIsLoading(false)
