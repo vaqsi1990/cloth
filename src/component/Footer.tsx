@@ -14,10 +14,13 @@ const Footer = () => {
             {/* Logo & Company Info */}
             <div className="space-y-4 flex flex-col items-center">
               <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-                  <span className="text-[#1B3729] font-bold text-lg">S</span>
-                </div>
-                <h3 className="text-xl font-bold text-white">STYLE</h3>
+              <Image
+                src="/logo.jpg"
+                className='rounded-full transition-transform duration-300 group-hover:scale-110'
+                alt="logo"
+                width={80}
+                height={80}
+              />
               </div>
 
               <div className="flex items-center justify-around space-x-4">
