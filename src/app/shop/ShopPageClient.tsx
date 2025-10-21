@@ -107,7 +107,11 @@ const ShopPageClient = () => {
         const activeCategoryMatch = activeCategory === "ALL" || product.category?.name === activeCategory
         
         // Price filter
-        const priceMatch = product.currentPrice >= priceRange[0] && product.currentPrice <= priceRange[1]
+        const minPrice = getMinPrice(product)
+        const maxPrice = getMaxPrice(product)
+        const priceMatch = (minPrice >= priceRange[0] && minPrice <= priceRange[1]) || 
+                          (maxPrice >= priceRange[0] && maxPrice <= priceRange[1]) ||
+                          (minPrice <= priceRange[0] && maxPrice >= priceRange[1])
         
         // Size filter
         const sizeMatch = selectedSizes.length === 0 || 
@@ -128,9 +132,9 @@ const ShopPageClient = () => {
     const sortedProducts = [...filteredProducts].sort((a, b) => {
         switch (sortBy) {
             case "price-low":
-                return a.currentPrice - b.currentPrice
+                return getMinPrice(a) - getMinPrice(b)
             case "price-high":
-                return b.currentPrice - a.currentPrice
+                return getMaxPrice(b) - getMaxPrice(a)
             case "rating":
                 return (b.rating || 0) - (a.rating || 0)
             case "newest":
@@ -165,22 +169,24 @@ const ShopPageClient = () => {
         setSelectedColors([])
     }
 
+    // Get minimum price from variants
+    const getMinPrice = (product: Product) => {
+        if (!product.variants || product.variants.length === 0) return 0
+        return Math.min(...product.variants.map(v => v.price))
+    }
+
+    // Get maximum price from variants
+    const getMaxPrice = (product: Product) => {
+        if (!product.variants || product.variants.length === 0) return 0
+        return Math.max(...product.variants.map(v => v.price))
+    }
+
     // Get main product image
     const getMainImage = (product: Product) => {
         if (product.images && product.images.length > 0) {
             return product.images[0].url
         }
         return '/placeholder.jpg'
-    }
-
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center">
-                <div className="text-center">
-                    <h1 className="text-2xl font-bold text-black mb-4">იტვირთება...</h1>
-                </div>
-            </div>
-        )
     }
 
     return (
@@ -389,13 +395,11 @@ const ShopPageClient = () => {
                                         {/* Pricing */}
                                         <div className="flex items-center space-x-2 mb-4">
                                             <span className="md:text-[18px] text-[16px] font-bold text-black">
-                                                ₾{product.currentPrice.toFixed(2)}
+                                                ₾{getMinPrice(product).toFixed(2)}
+                                                {getMinPrice(product) !== getMaxPrice(product) && (
+                                                    <span className="text-sm"> - ₾{getMaxPrice(product).toFixed(2)}</span>
+                                                )}
                                             </span>
-                                            {product.originalPrice && product.originalPrice > product.currentPrice && (
-                                                <span className="md:text-[18px] text-[16px] text-black line-through">
-                                                    ₾{product.originalPrice.toFixed(2)}
-                                                </span>
-                                            )}
                                         </div>
 
                                         {/* Action Button */}
