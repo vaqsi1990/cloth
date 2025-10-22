@@ -32,6 +32,29 @@ export async function GET(
       }
     })
 
+    // Get all active orders with rental items for this product
+    const activeOrders = await prisma.order.findMany({
+      where: {
+        status: {
+          in: ['PENDING', 'PAID', 'SHIPPED']
+        },
+        items: {
+          some: {
+            productId: productId,
+            isRental: true
+          }
+        }
+      },
+      include: {
+        items: {
+          where: {
+            productId: productId,
+            isRental: true
+          }
+        }
+      }
+    })
+
     // Group rentals by variant/size
     const rentalStatusBySize: { [size: string]: Array<{ startDate: Date, endDate: Date, status: string }> } = {}
 
@@ -44,6 +67,23 @@ export async function GET(
         startDate: rental.startDate,
         endDate: rental.endDate,
         status: rental.status
+      })
+    })
+
+    // Also add rental items from orders
+    activeOrders.forEach(order => {
+      order.items.forEach(item => {
+        if (item.isRental && item.rentalStartDate && item.rentalEndDate) {
+          const size = item.size || 'UNKNOWN'
+          if (!rentalStatusBySize[size]) {
+            rentalStatusBySize[size] = []
+          }
+          rentalStatusBySize[size].push({
+            startDate: item.rentalStartDate,
+            endDate: item.rentalEndDate,
+            status: order.status
+          })
+        }
       })
     })
 
@@ -75,7 +115,8 @@ export async function GET(
       success: true,
       productId: productId,
       variants: variantRentalStatus,
-      totalActiveRentals: activeRentals.length
+      totalActiveRentals: activeRentals.length,
+      totalActiveOrders: activeOrders.length
     })
 
   } catch (error) {

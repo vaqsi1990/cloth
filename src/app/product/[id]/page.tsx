@@ -127,12 +127,58 @@ const ProductPage = () => {
 
     // Check if a size has active rentals
     const hasActiveRentals = (size: string) => {
-        return rentalStatus[size] && rentalStatus[size].length > 0
+        // Check if rentalStatus is loaded
+        if (Object.keys(rentalStatus).length === 0) {
+            return false
+        }
+        
+        const hasRentals = rentalStatus[size] && rentalStatus[size].length > 0
+        return hasRentals
     }
 
     // Get rental periods for a specific size
     const getRentalPeriods = (size: string) => {
         return rentalStatus[size] || []
+    }
+
+    // Get rental end date for a specific size (when it will be available)
+    const getRentalEndDate = (size: string) => {
+        const periods = getRentalPeriods(size)
+        if (periods.length === 0) return null
+        
+        // Find the latest end date among all rental periods
+        const latestEndDate = periods.reduce((latest, period) => {
+            const endDate = new Date(period.endDate)
+            return endDate > latest ? endDate : latest
+        }, new Date(periods[0].endDate))
+        
+        return latestEndDate
+    }
+
+    // Format date for display
+    const formatDate = (date: Date | string) => {
+        if (!date) return ''
+        const d = new Date(date)
+        return d.toLocaleDateString('ka-GE', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        })
+    }
+
+    // Get detailed rental message for a size
+    const getRentalMessage = (size: string) => {
+        const periods = getRentalPeriods(size)
+        if (periods.length === 0) return null
+        
+        const endDate = getRentalEndDate(size)
+        if (!endDate) return null
+        
+        return {
+            message: `ზომა ${size} გაქირავებულია ${formatDate(endDate)}-მდე`,
+            availableFrom: formatDate(endDate),
+            isRented: true
+        }
     }
 
     // Get earliest available date for any size
@@ -152,15 +198,6 @@ const ProductPage = () => {
         return allEndDates[0]
     }
 
-    // Format date for display
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString)
-        return date.toLocaleDateString('ka-GE', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-        })
-    }
     // Get main product image
     const getMainImage = () => {
         if (!product || !product.images || product.images.length === 0) return '/placeholder.jpg'
@@ -182,7 +219,12 @@ const ProductPage = () => {
             return
         }
         if (hasActiveRentals(selectedSize)) {
-            alert('ეს ზომა ამჟამად გაქირავებულია და ვერ დაემატება კალათაში')
+            const rentalInfo = getRentalMessage(selectedSize)
+            if (rentalInfo) {
+                alert(`ეს ზომა ამჟამად გაქირავებულია!\n\n${rentalInfo.message}\n\nხელმისაწვდომი იქნება: ${rentalInfo.availableFrom}`)
+            } else {
+                alert('ეს ზომა ამჟამად გაქირავებულია და ვერ დაემატება კალათაში')
+            }
             return
         }
 
@@ -435,27 +477,38 @@ const ProductPage = () => {
                                     const variantPrice = variant?.price || 0
                                     const hasRentals = hasActiveRentals(size)
                                     const rentalPeriods = getRentalPeriods(size)
+                                    const rentalInfo = getRentalMessage(size)
                                     
                                     return (
-                                        <button
-                                            key={size}
-                                            onClick={() => handleSizeSelect(size)}
-                                            disabled={hasRentals}
-                                            className={`py-3 cursor-pointer rounded-xl border-2 text-[16px] font-medium transition ${selectedSize === size
-                                                    ? "border-[#1B3729] bg-[#1B3729] text-white"
-                                                    : hasRentals 
-                                                        ? "border-red-300 bg-red-50 text-red-600 cursor-not-allowed"
-                                                        : "border-gray-300 hover:border-black"
-                                                }`}
-                                        >
-                                            <div>{size}</div>
-                                            <div className="text-xs opacity-75">₾{variantPrice.toFixed(2)}</div>
-                                            {hasRentals && (
-                                                <div className="text-xs text-red-600 font-semibold mt-1">
-                                                    გაქირავებული
+                                        <div key={size} className="relative group">
+                                            <button
+                                                onClick={() => handleSizeSelect(size)}
+                                                disabled={hasRentals}
+                                                className={`w-full py-3 cursor-pointer rounded-xl border-2 text-[18px] font-bold transition ${selectedSize === size
+                                                        ? "border-[#1B3729] bg-[#1B3729] text-white"
+                                                        : hasRentals 
+                                                            ? "border-red-300 bg-red-50 text-red-600 cursor-not-allowed"
+                                                            : "border-gray-300 hover:border-black"
+                                                    }`}
+                                            >
+                                                <div>{size}</div>
+                                                <div className="text-[18px] ">₾{variantPrice.toFixed(2)}</div>
+                                                {hasRentals && (
+                                                    <div className="text-xs text-red-600 font-semibold mt-1">
+                                                        გაქირავებული
+                                                    </div>
+                                                )}
+                                            </button>
+                                            
+                                            {/* Rental info tooltip */}
+                                            {hasRentals && rentalInfo && (
+                                                <div className="absolute top-full left-0 right-0 mt-2 p-3 bg-red-100 border border-red-300 rounded-lg text-xs text-red-700 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                                    <div className="font-semibold mb-1">გაქირავებულია</div>
+                                                    <div>ხელმისაწვდომი იქნება:</div>
+                                                    <div className="font-semibold">{rentalInfo.availableFrom}</div>
                                                 </div>
                                             )}
-                                        </button>
+                                        </div>
                                     )
                                 })}
                             </div>
@@ -470,7 +523,7 @@ const ProductPage = () => {
                                                 <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
                                                 <span className="font-semibold text-blue-800">ქირაობის სტატუსი</span>
                                             </div>
-                                            <div className="text-sm text-blue-700">
+                                            <div className="text-[18px] text-blue-700">
                                                 <span className="font-medium">ყველაზე ადრინდელი მისაწვდომი თარიღი:</span> {formatDate(getEarliestAvailableDate() || '')}
                                             </div>
                                         </div>
@@ -491,7 +544,7 @@ const ProductPage = () => {
                                                 </div>
                                                 <div className="space-y-1">
                                                     {rentalPeriods.map((period, index) => (
-                                                        <div key={index} className="text-sm text-red-700">
+                                                        <div key={index} className="text-[18px] text-red-700">
                                                             <span className="font-medium">ქირაობის პერიოდი:</span> {formatDate(period.startDate)} - {formatDate(period.endDate)}
                                                             <br />
                                                             <span className="font-medium">მისაწვდომი იქნება:</span> {formatDate(period.endDate)}-ის შემდეგ
@@ -577,16 +630,34 @@ const ProductPage = () => {
 
                         {/* Add to Cart / Rent */}
                         <button
-                            onClick={
-                                purchaseMode === "buy" ? handleAddToCart : handleRental
-                            }
-                            disabled={isAdding || !selectedSize || hasActiveRentals(selectedSize) || (purchaseMode === "rent" && (!rentalStartDate || !rentalEndDate || !isSizeAvailableForRental(selectedSize)))}
-                            className={`w-full cursor-pointer py-5 text-white md:text-[20px] font-bold text-[18px] rounded-xl shadow-md transition disabled:bg-gray-400 disabled:cursor-not-allowed ${purchaseMode === "buy"
+                            onClick={() => {
+                                // Check if size is rented before proceeding
+                                if (hasActiveRentals(selectedSize)) {
+                                    const rentalInfo = getRentalMessage(selectedSize)
+                                    if (rentalInfo) {
+                                        alert(`ეს ზომა ამჟამად გაქირავებულია!\n\n${rentalInfo.message}\n\nხელმისაწვდომი იქნება: ${rentalInfo.availableFrom}`)
+                                    } else {
+                                        alert('ეს ზომა ამჟამად გაქირავებულია და ვერ დაემატება კალათაში')
+                                    }
+                                    return
+                                }
+                                
+                                // Proceed with normal action
+                                if (purchaseMode === "buy") {
+                                    handleAddToCart()
+                                } else {
+                                    handleRental()
+                                }
+                            }}
+                            disabled={isAdding || !selectedSize || (purchaseMode === "rent" && (!rentalStartDate || !rentalEndDate || !isSizeAvailableForRental(selectedSize)))}
+                            className={`w-full cursor-pointer py-5 text-white md:text-[20px] font-bold text-[18px] rounded-xl shadow-md transition disabled:bg-gray-400 disabled:cursor-not-allowed ${hasActiveRentals(selectedSize) 
+                                ? "bg-red-500 hover:bg-red-600" 
+                                : purchaseMode === "buy"
                                     ? "bg-[#1B3729] text-white"
                                     : "bg-blue-600 hover:bg-blue-700"
                                 }`}
                         >
-                            {isAdding ? 'მუშავდება...' : (purchaseMode === "buy" ? "კალათაში დამატება" : "ქირაობა")}
+                            {isAdding ? 'მუშავდება...' : hasActiveRentals(selectedSize) ? 'გაქირავებულია - ვერ დაემატება' : (purchaseMode === "buy" ? "კალათაში დამატება" : "ქირაობა")}
                         </button>
 
                         {/* Benefits */}

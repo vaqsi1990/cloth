@@ -1,10 +1,9 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ShoppingBag, Search, Menu, User, ChevronDown, LogOut } from 'lucide-react'
 import Image from 'next/image'
-import { useCart } from '@/hooks/useCart'
 import { useSession, signOut } from 'next-auth/react'
 
 const Header = () => {
@@ -12,8 +11,50 @@ const Header = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
   const [mobileDropdownOpen, setMobileDropdownOpen] = useState<string | null>(null)
-  const { getTotalItems } = useCart()
+  const [cartItemCount, setCartItemCount] = useState(0)
   const { data: session, status } = useSession()
+
+  // Fetch cart count from API
+  const fetchCartCount = async () => {
+    if (!session?.user?.id) {
+      setCartItemCount(0)
+      return
+    }
+
+    try {
+      const response = await fetch('/api/cart')
+      const data = await response.json()
+      
+      if (data.success && data.cart) {
+        setCartItemCount(data.cart.totalItems || 0)
+      }
+    } catch (error) {
+      console.error('Error fetching cart count:', error)
+    }
+  }
+
+  // Poll cart count every 2 seconds when user is logged in
+  useEffect(() => {
+    if (session?.user?.id) {
+      fetchCartCount() // Initial fetch
+      const interval = setInterval(fetchCartCount, 2000) // Poll every 2 seconds
+      return () => clearInterval(interval)
+    } else {
+      setCartItemCount(0)
+    }
+  }, [session?.user?.id])
+
+  // Listen for storage events to update cart count when items are added from other tabs
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'cart-updated') {
+        fetchCartCount()
+      }
+    }
+
+    window.addEventListener('storage', handleStorageChange)
+    return () => window.removeEventListener('storage', handleStorageChange)
+  }, [])
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen)
@@ -407,9 +448,9 @@ const Header = () => {
               className="group relative cursor-pointer p-3 rounded-full text-white   transition-all duration-300 hover:shadow-sm"
             >
               <ShoppingBag className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
-              {getTotalItems() > 0 && (
+              {cartItemCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium shadow-lg animate-pulse">
-                  {getTotalItems()}
+                  {cartItemCount}
                 </span>
               )}
             </Link>

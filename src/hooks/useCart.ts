@@ -74,6 +74,8 @@ export const useCart = () => {
       
       if (data.success) {
         await fetchCart() // Refresh cart
+        // Trigger cart update notification for other components
+        localStorage.setItem('cart-updated', Date.now().toString())
         return true
       }
       return false
@@ -100,6 +102,8 @@ export const useCart = () => {
       
       if (data.success) {
         await fetchCart() // Refresh cart
+        // Trigger cart update notification for other components
+        localStorage.setItem('cart-updated', Date.now().toString())
         return true
       }
       return false
@@ -122,6 +126,8 @@ export const useCart = () => {
       
       if (data.success) {
         await fetchCart() // Refresh cart
+        // Trigger cart update notification for other components
+        localStorage.setItem('cart-updated', Date.now().toString())
         return true
       }
       return false
@@ -144,6 +150,8 @@ export const useCart = () => {
       
       if (data.success) {
         await fetchCart() // Refresh cart
+        // Trigger cart update notification for other components
+        localStorage.setItem('cart-updated', Date.now().toString())
         return true
       }
       return false
