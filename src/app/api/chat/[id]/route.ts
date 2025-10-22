@@ -12,7 +12,7 @@ const sendMessageSchema = z.object({
 // GET - Get messages for a chat room
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params
