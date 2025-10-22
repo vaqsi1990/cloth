@@ -5,6 +5,7 @@ import { useCart } from '@/hooks/useCart'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, CreditCard, MapPin, Phone, Mail, User } from 'lucide-react'
 import Link from 'next/link'
+import { formatDate } from '@/utils/dateUtils'
 
 const CheckoutPage = () => {
     const { cartItems, getTotalPrice, getTotalItems, clearCart } = useCart()
@@ -270,7 +271,7 @@ const CheckoutPage = () => {
                                         {/* Rental Information */}
                                         {item.isRental && item.rentalStartDate && item.rentalEndDate && (
                                             <div className="text-sm text-blue-600 mt-1">
-                                                <p>ქირაობის პერიოდი: {new Date(item.rentalStartDate).toLocaleDateString('ka-GE')} - {new Date(item.rentalEndDate).toLocaleDateString('ka-GE')}</p>
+                                                <p>ქირაობის პერიოდი: {formatDate(item.rentalStartDate)} - {formatDate(item.rentalEndDate)}</p>
                                                 <p>დღეების რაოდენობა: {item.rentalDays} დღე</p>
                                                 {item.deposit && item.deposit > 0 && (
                                                     <p>გირაო: ₾{item.deposit.toFixed(2)}</p>

@@ -4,6 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { ShoppingCart, Plus, Minus, Trash2, ArrowLeft } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
+import { formatDate } from '@/utils/dateUtils'
 
 const CartPage = () => {
     const { cartItems, removeFromCart, updateQuantity, getTotalPrice, clearCart } = useCart()
@@ -98,7 +99,7 @@ const CartPage = () => {
                                                 {/* Rental Information */}
                                                 {item.isRental && item.rentalStartDate && item.rentalEndDate && (
                                                     <div className="text-sm text-blue-600 mb-1">
-                                                        <p>ქირაობის პერიოდი: {new Date(item.rentalStartDate).toLocaleDateString('ka-GE')} - {new Date(item.rentalEndDate).toLocaleDateString('ka-GE')}</p>
+                                                        <p>ქირაობის პერიოდი: {formatDate(item.rentalStartDate)} - {formatDate(item.rentalEndDate)}</p>
                                                         <p>დღეების რაოდენობა: {item.rentalDays}</p>
                                                         {item.deposit && item.deposit > 0 && (
                                                             <p>გირაო: ₾{item.deposit.toFixed(2)}</p>

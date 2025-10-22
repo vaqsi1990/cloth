@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { useCart } from '@/hooks/useCart'
 import { Product, RentalPeriod } from '@/types/product'
 import { useSession } from 'next-auth/react'
+import { formatDate } from '@/utils/dateUtils'
 
 const ProductPage = () => {
     const params = useParams()
@@ -153,17 +154,6 @@ const ProductPage = () => {
         }, new Date(periods[0].endDate))
         
         return latestEndDate
-    }
-
-    // Format date for display
-    const formatDate = (date: Date | string) => {
-        if (!date) return ''
-        const d = new Date(date)
-        return d.toLocaleDateString('ka-GE', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        })
     }
 
     // Get detailed rental message for a size

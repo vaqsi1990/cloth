@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import { formatDate, formatDateTime } from '@/utils/dateUtils'
 import Link from 'next/link'
 import { ArrowLeft, Search, Filter, ShoppingCart, Package, User, MapPin, Phone, Mail, CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
 
@@ -324,7 +325,7 @@ const AdminOrdersPage = () => {
                       <div>
                         <h3 className="font-semibold text-gray-900">შეკვეთა #{order.id}</h3>
                         <p className="text-sm text-gray-600">
-                          {new Date(order.createdAt).toLocaleDateString('ka-GE')}
+                          {formatDate(order.createdAt)}
                         </p>
                       </div>
                     </div>
@@ -411,7 +412,7 @@ const AdminOrdersPage = () => {
                                 {/* Show rental information if it's a rental item */}
                                 {item.isRental && item.rentalStartDate && item.rentalEndDate && (
                                   <div className="text-xs text-blue-600 mt-1 space-y-1">
-                                    <p>📅 ქირაობის პერიოდი: {new Date(item.rentalStartDate).toLocaleDateString('ka-GE')} - {new Date(item.rentalEndDate).toLocaleDateString('ka-GE')}</p>
+                                    <p>📅 ქირაობის პერიოდი: {formatDate(item.rentalStartDate)} - {formatDate(item.rentalEndDate)}</p>
                                     <p>⏱️ დღეების რაოდენობა: {item.rentalDays} დღე</p>
                                     {item.deposit && item.deposit > 0 && (
                                       <p>💰 გირაო: ₾{item.deposit.toFixed(2)}</p>
@@ -470,7 +471,7 @@ const AdminOrdersPage = () => {
                         
                         <div className="flex items-center space-x-3">
                           <span className="text-xs text-gray-500">
-                            განახლდა: {new Date(order.updatedAt).toLocaleDateString('ka-GE')}
+                            განახლდა: {formatDate(order.updatedAt)}
                           </span>
                         </div>
                           <button
