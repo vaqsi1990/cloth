@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { MessageCircle, Send, Clock, XCircle, Play, Trash2 } from 'lucide-react'
@@ -42,32 +42,6 @@ const AdminChatPage = () => {
   const [chatRoomToDelete, setChatRoomToDelete] = useState<ChatRoom | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    if (status === 'loading') return
-    
-    if (!session || session.user.role !== 'ADMIN') {
-      router.push('/auth/signin')
-      return
-    }
-
-    fetchChatRooms()
-  }, [session, status, router, filterStatus])
-
-  useEffect(() => {
-    if (selectedChatRoom) {
-      fetchMessages()
-      // Poll for new messages every 2 seconds
-      const interval = setInterval(() => {
-        fetchMessages()
-      }, 2000)
-      return () => clearInterval(interval)
-    }
-  }, [selectedChatRoom])
-
-  useEffect(() => {
-    scrollToBottom()
-  }, [messages])
-
   const scrollToBottom = () => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ 
@@ -78,7 +52,7 @@ const AdminChatPage = () => {
     }
   }
 
-  const fetchChatRooms = async () => {
+  const fetchChatRooms = useCallback(async () => {
     try {
       const url = filterStatus ? `/api/admin/chat?status=${filterStatus}` : '/api/admin/chat'
       const response = await fetch(url, {
@@ -100,9 +74,9 @@ const AdminChatPage = () => {
     } catch (error) {
       console.error('Error fetching chat rooms:', error)
     }
-  }
+  }, [filterStatus])
 
-  const fetchMessages = async () => {
+  const fetchMessages = useCallback(async () => {
     if (!selectedChatRoom) return
 
     try {
@@ -149,7 +123,33 @@ const AdminChatPage = () => {
     } catch (error) {
       console.error('Error fetching messages:', error)
     }
-  }
+  }, [selectedChatRoom])
+
+  useEffect(() => {
+    if (status === 'loading') return
+    
+    if (!session || session.user.role !== 'ADMIN') {
+      router.push('/auth/signin')
+      return
+    }
+
+    fetchChatRooms()
+  }, [session, status, router, filterStatus, fetchChatRooms])
+
+  useEffect(() => {
+    if (selectedChatRoom) {
+      fetchMessages()
+      // Poll for new messages every 2 seconds
+      const interval = setInterval(() => {
+        fetchMessages()
+      }, 2000)
+      return () => clearInterval(interval)
+    }
+  }, [selectedChatRoom, fetchMessages])
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedChatRoom) return
@@ -532,7 +532,7 @@ const AdminChatPage = () => {
             </p>
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                დასადასტურებლად შეიყვანეთ "DELETE":
+                დასადასტურებლად შეიყვანეთ &quot;DELETE&quot;:
               </label>
               <input
                 type="text"
