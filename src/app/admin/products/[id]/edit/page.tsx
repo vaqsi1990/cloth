@@ -211,21 +211,21 @@ const EditProductPage = () => {
   const addRentalPriceTier = () => {
     setFormData(prev => ({
       ...prev,
-      rentalPriceTiers: [...prev.rentalPriceTiers, { minDays: 1, pricePerDay: 0 }]
+      rentalPriceTiers: [...(prev.rentalPriceTiers || []), { minDays: 1, pricePerDay: 0 }]
     }))
   }
 
   const removeRentalPriceTier = (index: number) => {
     setFormData(prev => ({
       ...prev,
-      rentalPriceTiers: prev.rentalPriceTiers.filter((_, i) => i !== index)
+      rentalPriceTiers: (prev.rentalPriceTiers || []).filter((_, i) => i !== index)
     }))
   }
 
   const updateRentalPriceTier = (index: number, field: string, value: number) => {
     setFormData(prev => ({
       ...prev,
-      rentalPriceTiers: prev.rentalPriceTiers.map((tier, i) =>
+      rentalPriceTiers: (prev.rentalPriceTiers || []).map((tier, i) =>
         i === index ? { ...tier, [field]: value } : tier
       )
     }))
@@ -607,7 +607,7 @@ const EditProductPage = () => {
                         </button>
                       </div>
 
-                      {formData.rentalPriceTiers.map((tier, index) => (
+                      {(formData.rentalPriceTiers || []).map((tier, index) => (
                         <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border border-gray-200 rounded-lg mb-4">
                           <div>
                             <label className="block text-sm font-medium text-black mb-2">მინიმალური დღეები</label>
@@ -645,7 +645,7 @@ const EditProductPage = () => {
                         </div>
                       ))}
 
-                      {formData.rentalPriceTiers.length === 0 && (
+                      {(formData.rentalPriceTiers || []).length === 0 && (
                         <p className="text-gray-500 text-sm">ფასების ტირები არ არის განსაზღვრული</p>
                       )}
                     </div>
