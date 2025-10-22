@@ -125,7 +125,7 @@ const PopularProducts = () => {
     }
 
     return (
-        <section className="pb-14 ">
+        <section className="pb-14 mt-14 ">
             <div className="container max-w-7xl mx-auto px-4">
                 {/* Header */}
                 <div className="text-center mb-12">
