@@ -258,7 +258,7 @@ const Header = () => {
                   </div>
                 </div>
               ) : (
-                <Link href="/auth/signin" className="text-[18px]  md:text-[20px] font-bold hover:text-gray-200">
+                <Link href="/auth/signin" className="text-[18px]  md:text-[20px] font-medium hover:text-gray-200">
                   შესვლა
                 </Link>
               )}
