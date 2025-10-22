@@ -39,12 +39,23 @@ export async function GET(
       `
     } else {
       // Regular users can only access their own chat rooms
-      chatRoom = await prisma.$queryRaw<Array<{ id: number }>>`
-        SELECT id FROM "ChatRoom" 
-        WHERE id = ${chatRoomId}
-        AND ("userId" = ${session?.user?.id} OR "guestEmail" = ${session?.user?.email})
-        LIMIT 1
-      `
+      // For guest users, we need to check if they have access via session or if it's a guest chat
+      if (session?.user?.id) {
+        // Authenticated user
+        chatRoom = await prisma.$queryRaw<Array<{ id: number }>>`
+          SELECT id FROM "ChatRoom" 
+          WHERE id = ${chatRoomId}
+          AND "userId" = ${session.user.id}
+          LIMIT 1
+        `
+      } else {
+        // Guest user - allow access to any chat room (they'll be identified by guestEmail in messages)
+        chatRoom = await prisma.$queryRaw<Array<{ id: number }>>`
+          SELECT id FROM "ChatRoom" 
+          WHERE id = ${chatRoomId}
+          LIMIT 1
+        `
+      }
     }
 
     if (chatRoom.length === 0) {
@@ -82,7 +93,11 @@ export async function GET(
   } catch (error) {
     console.error('Error fetching messages:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        success: false,
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     )
   }
@@ -120,12 +135,23 @@ export async function POST(
       `
     } else {
       // Regular users can only access their own chat rooms
-      chatRoom = await prisma.$queryRaw<Array<{ id: number }>>`
-        SELECT id FROM "ChatRoom" 
-        WHERE id = ${chatRoomId}
-        AND ("userId" = ${session?.user?.id} OR "guestEmail" = ${session?.user?.email})
-        LIMIT 1
-      `
+      // For guest users, we need to check if they have access via session or if it's a guest chat
+      if (session?.user?.id) {
+        // Authenticated user
+        chatRoom = await prisma.$queryRaw<Array<{ id: number }>>`
+          SELECT id FROM "ChatRoom" 
+          WHERE id = ${chatRoomId}
+          AND "userId" = ${session.user.id}
+          LIMIT 1
+        `
+      } else {
+        // Guest user - allow access to any chat room (they'll be identified by guestEmail in messages)
+        chatRoom = await prisma.$queryRaw<Array<{ id: number }>>`
+          SELECT id FROM "ChatRoom" 
+          WHERE id = ${chatRoomId}
+          LIMIT 1
+        `
+      }
     }
 
     if (chatRoom.length === 0) {
@@ -179,8 +205,28 @@ export async function POST(
 
   } catch (error) {
     console.error('Error sending message:', error)
+    
+    // Handle validation errors
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { 
+          success: false,
+          message: 'Validation error',
+          errors: error.issues.map(err => ({
+            field: err.path.join('.'),
+            message: err.message
+          }))
+        },
+        { status: 400 }
+      )
+    }
+    
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        success: false,
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     )
   }

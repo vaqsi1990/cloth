@@ -42,16 +42,7 @@ const AdminChatPage = () => {
   const [chatRoomToDelete, setChatRoomToDelete] = useState<ChatRoom | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  const scrollToBottom = () => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ 
-        behavior: 'smooth',
-        block: 'end',
-        inline: 'nearest'
-      })
-    }
-  }
-
+ 
   const fetchChatRooms = useCallback(async () => {
     try {
       const url = filterStatus ? `/api/admin/chat?status=${filterStatus}` : '/api/admin/chat'
@@ -147,9 +138,7 @@ const AdminChatPage = () => {
     }
   }, [selectedChatRoom, fetchMessages])
 
-  useEffect(() => {
-    scrollToBottom()
-  }, [messages])
+
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedChatRoom) return
@@ -313,14 +302,14 @@ const AdminChatPage = () => {
   }
 
   return (
-    <div className="h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       <div className="flex-shrink-0 px-4 sm:px-6 lg:px-8 py-6 bg-white border-b border-gray-200">
         <h1 className="text-3xl font-bold text-gray-900">Live Chat მართვა</h1>
         <p className="mt-2 text-gray-600">მომხმარებლებთან საუბარი და მხარდაჭერა</p>
       </div>
 
-      <div className="flex-1 px-4 sm:px-6 lg:px-8 py-6 overflow-hidden">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+      <div className="flex-1 px-4 sm:px-6 lg:px-8 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-200px)]">
           {/* Chat Rooms List */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col">
             <div className="p-4 border-b border-gray-200">
@@ -467,6 +456,17 @@ const AdminChatPage = () => {
                                   : 'bg-white text-gray-800 border border-gray-200'
                               }`}
                             >
+                              {/* Show sender name */}
+                              <div className="flex items-center justify-between mb-1">
+                                <p className={`text-xs font-medium ${
+                                  message.isFromAdmin ? 'text-gray-300' : 'text-gray-600'
+                                }`}>
+                                  {message.isFromAdmin 
+                                    ? (message.admin?.name || 'ადმინისტრატორი')
+                                    : (message.user?.name || selectedChatRoom?.guestName || 'მომხმარებელი')
+                                  }
+                                </p>
+                              </div>
                               <p className="text-sm">{message.content}</p>
                               <p className={`text-xs mt-1 ${
                                 message.isFromAdmin ? 'text-gray-300' : 'text-gray-500'

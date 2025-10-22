@@ -241,12 +241,18 @@ const Header = () => {
                   <button className="p-2 text-white hover:text-gray-200">
                     <User className="w-5 h-5" />
                   </button>
-                  <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-xl z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300">
+                  <div className="absolute -right-20 top-full mt-2 w-54 bg-white border border-gray-200 rounded-xl shadow-xl z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300">
                     <div className="py-2 text-black">
                       <p className="px-4 font-semibold">{session.user.name}</p>
-                      <Link href="/account" className="block px-4 py-2 hover:bg-gray-100">
-                        პროფილი
-                      </Link>
+                      {session.user.role === 'ADMIN' ? (
+                        <Link href="/admin" className="block px-4 py-2 hover:bg-gray-100">
+                          ადმინისტრატორი
+                        </Link>
+                      ) : (
+                        <Link href="/account" className="block px-4 py-2 hover:bg-gray-100">
+                          პროფილი
+                        </Link>
+                      )}
                       <button
                         onClick={() => signOut()}
                         className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
@@ -288,9 +294,15 @@ const Header = () => {
                 <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-xl z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300">
                   <div className="py-2 text-black">
                     <p className="px-4 font-semibold">{session.user.name}</p>
-                    <Link href="/account" className="block px-4 py-2 hover:bg-gray-100">
-                      პროფილი
-                    </Link>
+                    {session.user.role === 'ADMIN' ? (
+                      <Link href="/admin" className="block px-4 py-2 hover:bg-gray-100">
+                        ადმინისტრატორი
+                      </Link>
+                    ) : (
+                      <Link href="/account" className="block px-4 py-2 hover:bg-gray-100">
+                        პროფილი
+                      </Link>
+                    )}
                     <button
                       onClick={() => signOut()}
                       className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"

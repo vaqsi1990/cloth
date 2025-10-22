@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { MessageCircle, Send, X, Minimize2, Maximize2 } from 'lucide-react'
 import { formatDateTime } from '@/utils/dateUtils'
+import { useSession } from 'next-auth/react'
 
 interface ChatMessage {
   id: number
@@ -33,15 +34,12 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [guestName, setGuestName] = useState('')
   const [guestEmail, setGuestEmail] = useState('')
-  const [showGuestForm, setShowGuestForm] = useState(false)
+  const [showGuestForm, setShowGuestForm] = useState(true)
+  const { data: session } = useSession()
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
+ 
 
-  useEffect(() => {
-    scrollToBottom()
-  }, [messages])
+
 
   useEffect(() => {
     if (chatRoomId && isOpen) {
@@ -64,7 +62,30 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
       })
       
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        let errorData = {}
+        try {
+          errorData = await response.json()
+        } catch (e) {
+          console.log('Could not parse error response as JSON')
+        }
+        
+        // If chat room not found, reset chat room ID to allow creating new one
+        if (response.status === 404) {
+          console.log('Chat room not found, resetting chat room ID')
+          onChatRoomCreated(0)
+          setMessages([])
+          return
+        }
+        
+        // Log other errors for debugging
+        console.error('Fetch messages error:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorData,
+          url: response.url,
+          chatRoomId
+        })
+        return
       }
       
       const data = await response.json()
@@ -88,15 +109,28 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
           user: msg.user_name ? { name: msg.user_name, email: msg.user_email } : undefined,
           admin: msg.admin_name ? { name: msg.admin_name, email: msg.admin_email } : undefined
         }))
-        setMessages(transformedMessages)
+        
+        // Remove duplicates based on message ID
+        const uniqueMessages = transformedMessages.filter((msg: ChatMessage, index: number, self: ChatMessage[]) => 
+          index === self.findIndex(m => m.id === msg.id)
+        )
+        
+        setMessages(uniqueMessages)
       }
     } catch (error) {
       console.error('Error fetching messages:', error)
+      // Don't show error to user for fetch failures, just log them
     }
-  }, [chatRoomId])
+  }, [chatRoomId, onChatRoomCreated])
 
   const sendMessage = async () => {
     if (!newMessage.trim()) return
+
+    // Client-side validation
+    if (newMessage.trim().length > 1000) {
+      alert('მესიჯი ძალიან გრძელია. მაქსიმუმ 1000 სიმბოლო.')
+      return
+    }
 
     setIsLoading(true)
     const messageToSend = newMessage.trim()
@@ -105,42 +139,62 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
     try {
       if (!chatRoomId) {
         // Create new chat room
+        const requestBody = {
+          message: messageToSend,
+          guestName: guestName || undefined,
+          guestEmail: guestEmail || undefined
+        }
+        
+        console.log('Creating chat room with:', requestBody)
+        
         const response = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            message: messageToSend,
-            guestName: guestName || undefined,
-            guestEmail: guestEmail || undefined
-          })
+          body: JSON.stringify(requestBody)
         })
         
+        console.log('Create chat room response status:', response.status)
+        
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
+          const errorData = await response.json().catch(() => ({}))
+          console.error('Create chat room error:', errorData)
+          throw new Error(`HTTP error! status: ${response.status} - ${errorData.message || errorData.error || 'Unknown error'}`)
         }
         
         const data = await response.json()
+        console.log('Create chat room success:', data)
+        
         if (data.success) {
           onChatRoomCreated(data.chatRoomId)
           setShowGuestForm(false)
-          // Fetch messages immediately after creating room
-          setTimeout(() => fetchMessages(), 500)
+          // Clear messages and let the useEffect handle fetching
+          setMessages([])
         } else {
           throw new Error(data.message || 'Failed to create chat room')
         }
       } else {
         // Send message to existing chat room
+        const requestBody = { content: messageToSend }
+        
+        console.log('Sending message to chat room:', chatRoomId, requestBody)
+        
         const response = await fetch(`/api/chat/${chatRoomId}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: messageToSend })
+          body: JSON.stringify(requestBody)
         })
         
+        console.log('Send message response status:', response.status)
+        
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
+          const errorData = await response.json().catch(() => ({}))
+          console.error('Send message error:', errorData)
+          throw new Error(`HTTP error! status: ${response.status} - ${errorData.message || errorData.error || 'Unknown error'}`)
         }
         
         const data = await response.json()
+        console.log('Send message success:', data)
+        
         if (data.success && data.message) {
           // Transform the message to match expected format
           const transformedMessage = {
@@ -151,7 +205,15 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
             user: data.message.user_name ? { name: data.message.user_name, email: data.message.user_email } : undefined,
             admin: data.message.admin_name ? { name: data.message.admin_name, email: data.message.admin_email } : undefined
           }
-          setMessages(prev => [...prev, transformedMessage])
+          
+          // Add message only if it doesn't already exist
+          setMessages(prev => {
+            const exists = prev.some(msg => msg.id === transformedMessage.id)
+            if (exists) {
+              return prev
+            }
+            return [...prev, transformedMessage]
+          })
         } else {
           throw new Error(data.message || 'Failed to send message')
         }
@@ -160,7 +222,10 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
       console.error('Error sending message:', error)
       // Restore message if sending failed
       setNewMessage(messageToSend)
-      alert('შეცდომა მესიჯის გაგზავნისას. სცადეთ კვლავ.')
+      
+      // Show more specific error message
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      alert(`შეცდომა მესიჯის გაგზავნისას: ${errorMessage}`)
     } finally {
       setIsLoading(false)
     }
@@ -174,7 +239,9 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
   }
 
   const startNewChat = () => {
-    setShowGuestForm(true)
+    if (!session) {
+      setShowGuestForm(true)
+    }
     setMessages([])
     onChatRoomCreated(0) // Reset chat room ID
   }
@@ -231,6 +298,17 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
                           : 'bg-[#1B3729] text-white'
                       }`}
                     >
+                      {/* Show sender name */}
+                      <div className="flex items-center justify-between mb-1">
+                        <p className={`text-xs font-medium ${
+                          message.isFromAdmin ? 'text-blue-600' : 'text-gray-300'
+                        }`}>
+                          {message.isFromAdmin 
+                            ? ( 'ადმინისტრატორი')
+                            : (message.user?.name || guestName || 'მომხმარებელი')
+                          }
+                        </p>
+                      </div>
                       <p className="text-sm">{message.content}</p>
                       <p className={`text-xs mt-1 ${
                         message.isFromAdmin ? 'text-gray-500' : 'text-gray-300'
@@ -246,7 +324,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
           </div>
 
           {/* Guest Form */}
-          {showGuestForm && !chatRoomId && (
+          {showGuestForm && !chatRoomId && !session && (
             <div className="p-4 border-t border-gray-200 bg-white">
               <div className="space-y-3">
                 <div>
@@ -298,7 +376,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
               </button>
             </div>
             
-            {!chatRoomId && !showGuestForm && (
+            {!chatRoomId && !showGuestForm && !session && (
               <button
                 onClick={startNewChat}
                 className="mt-2 text-sm text-[#1B3729] hover:text-[#2a4d3a] transition-colors"
