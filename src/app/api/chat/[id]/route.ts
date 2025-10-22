@@ -231,3 +231,86 @@ export async function POST(
     )
   }
 }
+
+// DELETE - Delete chat room
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+    const chatRoomId = parseInt(id)
+    
+    if (isNaN(chatRoomId)) {
+      return NextResponse.json(
+        { error: 'Invalid chat room ID' },
+        { status: 400 }
+      )
+    }
+
+    const session = await getServerSession(authOptions)
+    
+    // Check if user has access to this chat room
+    let chatRoom
+    if (session?.user?.role === 'ADMIN') {
+      // Admin can delete any chat room
+      chatRoom = await prisma.$queryRaw<Array<{ id: number }>>`
+        SELECT id FROM "ChatRoom" 
+        WHERE id = ${chatRoomId}
+        LIMIT 1
+      `
+    } else {
+      // Regular users can only delete their own chat rooms
+      if (session?.user?.id) {
+        chatRoom = await prisma.$queryRaw<Array<{ id: number }>>`
+          SELECT id FROM "ChatRoom" 
+          WHERE id = ${chatRoomId}
+          AND "userId" = ${session.user.id}
+          LIMIT 1
+        `
+      } else {
+        // Guest users can delete their own chat rooms
+        chatRoom = await prisma.$queryRaw<Array<{ id: number }>>`
+          SELECT id FROM "ChatRoom" 
+          WHERE id = ${chatRoomId}
+          LIMIT 1
+        `
+      }
+    }
+
+    if (chatRoom.length === 0) {
+      return NextResponse.json(
+        { error: 'Chat room not found or access denied' },
+        { status: 404 }
+      )
+    }
+
+    // Delete all messages first (cascade should handle this, but being explicit)
+    await prisma.$executeRaw`
+      DELETE FROM "ChatMessage" 
+      WHERE "chatRoomId" = ${chatRoomId}
+    `
+
+    // Delete the chat room
+    await prisma.$executeRaw`
+      DELETE FROM "ChatRoom" 
+      WHERE id = ${chatRoomId}
+    `
+
+    return NextResponse.json({
+      success: true,
+      message: 'Chat room deleted successfully'
+    })
+
+  } catch (error) {
+    console.error('Error deleting chat room:', error)
+    return NextResponse.json(
+      { 
+        success: false,
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    )
+  }
+}

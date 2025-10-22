@@ -35,7 +35,26 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
   const [guestName, setGuestName] = useState('')
   const [guestEmail, setGuestEmail] = useState('')
   const [showGuestForm, setShowGuestForm] = useState(true)
+  const [isEndingChat, setIsEndingChat] = useState(false)
   const { data: session } = useSession()
+
+  // Load guest info from localStorage on component mount
+  useEffect(() => {
+    const savedName = localStorage.getItem('chatGuestName')
+    const savedEmail = localStorage.getItem('chatGuestEmail')
+    const savedChatRoomId = localStorage.getItem('chatRoomId')
+    
+    if (savedName && savedEmail) {
+      setGuestName(savedName)
+      setGuestEmail(savedEmail)
+      setShowGuestForm(false)
+      
+      // If there's a saved chat room ID, try to restore it
+      if (savedChatRoomId && savedChatRoomId !== '0') {
+        onChatRoomCreated(parseInt(savedChatRoomId))
+      }
+    }
+  }, [onChatRoomCreated])
 
  
 
@@ -167,6 +186,10 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
         if (data.success) {
           onChatRoomCreated(data.chatRoomId)
           setShowGuestForm(false)
+          // Save guest info and chat room ID to localStorage
+          localStorage.setItem('chatGuestName', guestName)
+          localStorage.setItem('chatGuestEmail', guestEmail)
+          localStorage.setItem('chatRoomId', data.chatRoomId.toString())
           // Clear messages and let the useEffect handle fetching
           setMessages([])
         } else {
@@ -244,6 +267,40 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
     }
     setMessages([])
     onChatRoomCreated(0) // Reset chat room ID
+  }
+
+  const endChat = async () => {
+    if (!chatRoomId) return
+    
+    setIsEndingChat(true)
+    try {
+      const response = await fetch(`/api/chat/${chatRoomId}`, {
+        method: 'DELETE'
+      })
+      
+      if (response.ok) {
+        // Clear localStorage
+        localStorage.removeItem('chatGuestName')
+        localStorage.removeItem('chatGuestEmail')
+        localStorage.removeItem('chatRoomId')
+        
+        // Reset state
+        setMessages([])
+        onChatRoomCreated(0)
+        setShowGuestForm(true)
+        setGuestName('')
+        setGuestEmail('')
+        
+        alert('ლაპარაკი წარმატებით დასრულდა')
+      } else {
+        alert('შეცდომა ლაპარაკის დასრულებისას')
+      }
+    } catch (error) {
+      console.error('Error ending chat:', error)
+      alert('შეცდომა ლაპარაკის დასრულებისას')
+    } finally {
+      setIsEndingChat(false)
+    }
   }
 
   if (!isOpen) return null
@@ -382,6 +439,16 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
                 className="mt-2 text-sm text-[#1B3729] hover:text-[#2a4d3a] transition-colors"
               >
                 ახალი საუბრის დაწყება
+              </button>
+            )}
+            
+            {chatRoomId && !session && (
+              <button
+                onClick={endChat}
+                disabled={isEndingChat}
+                className="mt-2 text-[16px] cursor-pointer text-red-600 hover:text-red-800 transition-colors disabled:opacity-50"
+              >
+                {isEndingChat ? 'დასრულდება...' : 'ლაპარაკის დასრულება'}
               </button>
             )}
           </div>
