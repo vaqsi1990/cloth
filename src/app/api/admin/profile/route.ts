@@ -6,23 +6,24 @@ import { z } from 'zod'
 
 const profileSchema = z.object({
   name: z.string().min(1, 'სახელი აუცილებელია'),
-  email: z.string().email('არასწორი ელფოსტა')
+  email: z.string().email('არასწორი ელფოსტა'),
+  image: z.string().nullable().optional()
 })
 
-// PUT - Update admin profile
+// PUT - Update user profile
 export async function PUT(request: NextRequest) {
   try {
-    // Check authentication and admin role
+    // Check authentication
     const session = await getServerSession(authOptions)
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!session) {
       return NextResponse.json(
-        { success: false, error: 'Admin access required' },
-        { status: 403 }
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
       )
     }
 
     const body = await request.json()
-    const { name, email } = profileSchema.parse(body)
+    const { name, email, image } = profileSchema.parse(body)
 
     // Check if email is already taken by another user
     const existingUser = await prisma.user.findFirst({
@@ -44,13 +45,15 @@ export async function PUT(request: NextRequest) {
       where: { id: session.user.id },
       data: {
         name,
-        email
+        email,
+        image: image || null
       },
       select: {
         id: true,
         name: true,
         email: true,
-        role: true
+        role: true,
+        image: true
       }
     })
 

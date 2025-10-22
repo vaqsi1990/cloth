@@ -25,7 +25,11 @@ const productSchema = z.object({
     stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი'),
     price: z.number().min(0, 'ფასი უნდა იყოს დადებითი')
   })).default([]),
-  imageUrls: z.array(z.string().min(1, 'URL აუცილებელია')).default([])
+  imageUrls: z.array(z.string().min(1, 'URL აუცილებელია')).default([]),
+  rentalPriceTiers: z.array(z.object({
+    minDays: z.number().int().min(1, 'მინიმალური დღეები უნდა იყოს დადებითი'),
+    pricePerDay: z.number().positive('ფასი დღეში უნდა იყოს დადებითი')
+  })).optional()
 })
 
 // GET - Fetch single product by ID
@@ -51,7 +55,10 @@ export async function GET(
         images: {
           orderBy: { position: 'asc' }
         },
-        variants: true
+        variants: true,
+        rentalPriceTiers: {
+          orderBy: { minDays: 'asc' }
+        }
       }
     })
 
@@ -156,9 +163,24 @@ export async function PUT(
             stock: variant.stock,
             price: variant.price
           }))
-        }
+        },
+        // Update rental price tiers if provided
+        rentalPriceTiers: validatedData.rentalPriceTiers ? {
+          deleteMany: {}, // Delete existing tiers
+          create: validatedData.rentalPriceTiers.map(tier => ({
+            minDays: tier.minDays,
+            pricePerDay: tier.pricePerDay
+          }))
+        } : undefined
       },
-      include: { images: true, variants: true, category: true }
+      include: { 
+        images: true, 
+        variants: true, 
+        category: true,
+        rentalPriceTiers: {
+          orderBy: { minDays: 'asc' }
+        }
+      }
     })
     
     console.log('=== PRODUCT UPDATED SUCCESSFULLY ===')

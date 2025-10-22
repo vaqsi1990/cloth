@@ -34,7 +34,10 @@ export async function GET(
         product: {
           include: {
             images: true,
-            category: true
+            category: true,
+            rentalPriceTiers: {
+              orderBy: { minDays: 'asc' }
+            }
           }
         },
         variant: true,
@@ -138,7 +141,10 @@ export async function PATCH(
         product: {
           include: {
             images: true,
-            category: true
+            category: true,
+            rentalPriceTiers: {
+              orderBy: { minDays: 'asc' }
+            }
           }
         },
         variant: true,
@@ -212,7 +218,10 @@ export async function DELETE(
         product: {
           include: {
             images: true,
-            category: true
+            category: true,
+            rentalPriceTiers: {
+              orderBy: { minDays: 'asc' }
+            }
           }
         },
         variant: true,

@@ -49,16 +49,28 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt"
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.role = user.role
+        token.image = user.image
       }
+      
+      // Update token when profile is updated
+      if (trigger === "update" && session) {
+        token.image = session.image
+        token.name = session.name
+        token.email = session.email
+      }
+      
       return token
     },
     async session({ session, token }) {
       if (token) {
         session.user.id = token.sub!
         session.user.role = token.role as string
+        session.user.image = token.image as string
+        session.user.name = token.name as string
+        session.user.email = token.email as string
       }
       return session
     }

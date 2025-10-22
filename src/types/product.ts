@@ -21,6 +21,13 @@ export interface RentalPeriod {
   status: string
 }
 
+export interface RentalPriceTier {
+  id: number
+  minDays: number
+  pricePerDay: number
+  createdAt: string
+}
+
 export interface Category {
   id: number
   name: string
@@ -45,6 +52,7 @@ export interface Product {
   deposit?: number
   images: ProductImage[]
   variants: ProductVariant[]
+  rentalPriceTiers?: RentalPriceTier[]
   createdAt: string
   updatedAt: string
 }

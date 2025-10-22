@@ -4,14 +4,18 @@ import React, { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Save, User, Mail, Lock, AlertTriangle, Eye, EyeOff } from 'lucide-react'
+import { ArrowLeft, Save, User, Mail, Lock, AlertTriangle, Eye, EyeOff, Camera } from 'lucide-react'
+import ImageUpload from '@/component/CloudinaryUploader'
 
 const AdminSettingsPage = () => {
-  const { data: session, status } = useSession()
+  const { data: session, status, update } = useSession()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isEditingProfile, setIsEditingProfile] = useState(false)
+  const [profileImage, setProfileImage] = useState<string | null>(null)
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
   const [showPasswords, setShowPasswords] = useState({
     currentPassword: false,
     newPassword: false,
@@ -41,6 +45,7 @@ const AdminSettingsPage = () => {
         newPassword: '',
         confirmPassword: ''
       })
+      setProfileImage(session.user.image || null)
     }
   }, [session])
 
@@ -72,13 +77,21 @@ const AdminSettingsPage = () => {
         },
         body: JSON.stringify({
           name: profileData.name,
-          email: profileData.email
+          email: profileData.email,
+          image: profileImage
         }),
       })
 
       const data = await response.json()
 
       if (response.ok) {
+        // Update the session with new profile data
+        await update({
+          name: profileData.name,
+          email: profileData.email,
+          image: profileImage
+        })
+        
         setIsSubmitted(true)
         setTimeout(() => setIsSubmitted(false), 3000)
       } else {
@@ -141,6 +154,51 @@ const AdminSettingsPage = () => {
     }
   }
 
+  const handleImageUpload = async (urls: string[]) => {
+    if (urls.length === 0) return
+    
+    setIsUploadingImage(true)
+    try {
+      console.log('Uploading image:', urls[0])
+      const response = await fetch('/api/admin/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          name: profileData.name,
+          email: profileData.email,
+          image: urls[0] || null
+        }),
+      })
+
+      const result = await response.json()
+      console.log('Profile update response:', result)
+
+      if (response.ok && result.success) {
+        setProfileImage(urls[0])
+        
+        // Update the session with new image
+        await update({
+          image: urls[0],
+          name: profileData.name,
+          email: profileData.email
+        })
+        
+        alert('პროფილის სურათი წარმატებით განახლდა!')
+        setIsEditingProfile(false)
+      } else {
+        console.error('Profile update failed:', result)
+        alert(`შეცდომა სურათის ატვირთვისას: ${result.error || 'Unknown error'}`)
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error)
+      alert('შეცდომა სურათის ატვირთვისას')
+    } finally {
+      setIsUploadingImage(false)
+    }
+  }
+
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -180,10 +238,7 @@ const AdminSettingsPage = () => {
                 <ArrowLeft className="w-5 h-5" />
                 <span>ადმინ პანელი</span>
               </Link>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">პარამეტრები</h1>
-                <p className="text-gray-600 mt-1">მართე თქვენი პროფილი და პარამეტრები</p>
-              </div>
+              
             </div>
           </div>
         </div>
@@ -198,6 +253,55 @@ const AdminSettingsPage = () => {
                 <User className="w-5 h-5 text-blue-600" />
               </div>
               <h2 className="text-2xl font-bold text-gray-900">პროფილის ინფორმაცია</h2>
+            </div>
+
+            {/* Profile Image Section */}
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-4 mb-4">
+                <div className="relative">
+                  <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+                    {profileImage ? (
+                      <img
+                        src={profileImage}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <User className="w-8 h-8 text-gray-600" />
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setIsEditingProfile(!isEditingProfile)}
+                    className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors"
+                  >
+                    <Camera className="w-3 h-3" />
+                  </button>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">პროფილის სურათი</h3>
+                  <p className="text-sm text-gray-600">ატვირთეთ თქვენი პროფილის სურათი</p>
+                </div>
+              </div>
+
+              {isEditingProfile && (
+                <div className="mt-4">
+                  <ImageUpload
+                    value={profileImage ? [profileImage] : []}
+                    onChange={handleImageUpload}
+                  />
+                  {isUploadingImage && (
+                    <p className="text-sm text-gray-600 mt-2">სურათი იტვირთება...</p>
+                  )}
+                  <div className="mt-3 flex space-x-2">
+                    <button
+                      onClick={() => setIsEditingProfile(false)}
+                      className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                    >
+                      გაუქმება
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {isSubmitted && (

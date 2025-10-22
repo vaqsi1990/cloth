@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { User, Package, ShoppingCart, Settings, LogOut, Edit3, MapPin, Phone, Mail } from 'lucide-react'
+import { User, Package, ShoppingCart, Settings, LogOut, Edit3, MapPin, Phone, Mail, Upload, Camera } from 'lucide-react'
+import ImageUpload from '@/component/CloudinaryUploader'
 
 interface Order {
   id: number
@@ -30,6 +31,9 @@ const AccountPage = () => {
     productsCount: 0
   })
   const [loading, setLoading] = useState(false)
+  const [isEditingProfile, setIsEditingProfile] = useState(false)
+  const [profileImage, setProfileImage] = useState<string | null>(session?.user?.image || null)
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -69,6 +73,44 @@ const AccountPage = () => {
       console.error('Error fetching user stats:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleImageUpload = async (urls: string[]) => {
+    if (urls.length === 0) return
+    
+    setIsUploadingImage(true)
+    try {
+      const response = await fetch('/api/admin/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          name: session?.user?.name || '',
+          email: session?.user?.email || '',
+          image: urls[0] || null
+        }),
+      })
+
+      if (response.ok) {
+        setProfileImage(urls[0])
+        // Update session with new image
+        if (session?.user) {
+          session.user.image = urls[0]
+        }
+        alert('პროფილის სურათი წარმატებით განახლდა!')
+        setIsEditingProfile(false)
+        // Refresh the page to update session
+        window.location.reload()
+      } else {
+        alert('შეცდომა სურათის ატვირთვისას')
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error)
+      alert('შეცდომა სურათის ატვირთვისას')
+    } finally {
+      setIsUploadingImage(false)
     }
   }
 
@@ -135,8 +177,24 @@ const AccountPage = () => {
     <div className="space-y-6">
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <div className="flex items-center space-x-4 mb-6">
-          <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
-            <User className="w-8 h-8 text-black" />
+          <div className="relative">
+            <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+              {profileImage ? (
+                <img
+                  src={profileImage}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User className="w-8 h-8 text-black" />
+              )}
+            </div>
+            <button
+              onClick={() => setIsEditingProfile(!isEditingProfile)}
+              className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors"
+            >
+              <Camera className="w-3 h-3" />
+            </button>
           </div>
           <div>
             <h3 className="text-xl font-bold text-black">{session.user.name}</h3>
@@ -146,6 +204,27 @@ const AccountPage = () => {
             </span>
           </div>
         </div>
+
+        {isEditingProfile && (
+          <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+            <h4 className="text-lg font-semibold text-black mb-3">პროფილის სურათის ატვირთვა</h4>
+            <ImageUpload
+              value={profileImage ? [profileImage] : []}
+              onChange={handleImageUpload}
+            />
+            {isUploadingImage && (
+              <p className="text-sm text-gray-600 mt-2">სურათი იტვირთება...</p>
+            )}
+            <div className="mt-3 flex space-x-2">
+              <button
+                onClick={() => setIsEditingProfile(false)}
+                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                გაუქმება
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-4">

@@ -24,7 +24,10 @@ export async function GET(request: NextRequest) {
           include: {
             product: {
               include: {
-                images: true
+                images: true,
+                rentalPriceTiers: {
+                  orderBy: { minDays: 'asc' }
+                }
               }
             }
           }

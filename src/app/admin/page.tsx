@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -52,6 +52,7 @@ interface RecentActivity {
 const AdminDashboard = () => {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const isMountedRef = useRef(true)
   const [stats, setStats] = useState<AdminStats>({
     totalProducts: 0,
     totalUsers: 0,
@@ -60,6 +61,13 @@ const AdminDashboard = () => {
   })
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -71,9 +79,12 @@ const AdminDashboard = () => {
     if (session?.user?.role === 'ADMIN') {
       fetchAdminStats()
     }
-  }, [session])
+  }, [session?.user?.role]) // Only depend on the role, not the entire session object
 
   const fetchAdminStats = async () => {
+    // Prevent multiple simultaneous calls
+    if (loading) return
+    
     try {
       setLoading(true)
       
@@ -97,19 +108,25 @@ const AdminDashboard = () => {
         ? ordersData.orders.reduce((sum: number, order: Order) => sum + order.total, 0)
         : 0
 
-      setStats({
-        totalProducts,
-        totalUsers,
-        totalOrders,
-        totalRevenue
-      })
+      // Only update state if component is still mounted
+      if (isMountedRef.current) {
+        setStats({
+          totalProducts,
+          totalUsers,
+          totalOrders,
+          totalRevenue
+        })
 
-      // Fetch recent activity
-      await fetchRecentActivity(productsData, usersData, ordersData)
+        // Fetch recent activity
+        await fetchRecentActivity(productsData, usersData, ordersData)
+      }
     } catch (error) {
       console.error('Error fetching admin stats:', error)
     } finally {
-      setLoading(false)
+      // Only update loading state if component is still mounted
+      if (isMountedRef.current) {
+        setLoading(false)
+      }
     }
   }
 
@@ -163,7 +180,11 @@ const AdminDashboard = () => {
 
       // Sort by timestamp (most recent first) and take last 3
       activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-      setRecentActivity(activities.slice(0, 3))
+      
+      // Only update state if component is still mounted
+      if (isMountedRef.current) {
+        setRecentActivity(activities.slice(0, 3))
+      }
     } catch (error) {
       console.error('Error fetching recent activity:', error)
     }
