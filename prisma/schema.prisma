@@ -58,6 +58,12 @@ model User {
   orders        Order[]
   rentals       Rental[]
   transactions  Transaction[]
+  
+  // Chat relations
+  chatRooms     ChatRoom[]
+  adminChats    ChatRoom[] @relation("AdminChats")
+  chatMessages  ChatMessage[]
+  adminMessages ChatMessage[] @relation("AdminMessages")
 }
 
 model Account {
@@ -289,4 +295,57 @@ model Rental {
   updatedAt      DateTime       @updatedAt
 
   transactions   Transaction[]
+}
+
+enum ChatStatus {
+  ACTIVE
+  CLOSED
+  PENDING
+}
+
+model ChatRoom {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  status    ChatStatus @default(PENDING)
+  
+  // User who started the chat (can be null for guest users)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  
+  // Guest user info (for non-registered users)
+  guestName String?
+  guestEmail String?
+  
+  // Admin who is handling the chat
+  adminId   String?
+  admin     User?    @relation("AdminChats", fields: [adminId], references: [id])
+  
+  messages  ChatMessage[]
+  
+  @@index([status])
+  @@index([userId])
+  @@index([adminId])
+}
+
+model ChatMessage {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  content   String
+  isFromAdmin Boolean @default(false)
+  
+  // Chat room this message belongs to
+  chatRoomId Int
+  chatRoom   ChatRoom @relation(fields: [chatRoomId], references: [id], onDelete: Cascade)
+  
+  // User who sent the message (can be null for admin messages)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  
+  // Admin who sent the message (for admin messages)
+  adminId   String?
+  admin     User?    @relation("AdminMessages", fields: [adminId], references: [id])
+  
+  @@index([chatRoomId])
+  @@index([createdAt])
 }

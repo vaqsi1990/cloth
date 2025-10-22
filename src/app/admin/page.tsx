@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Plus, Users, Package, ShoppingCart, BarChart3, User } from 'lucide-react'
+import { Plus, Users, Package, ShoppingCart, BarChart3, User, MessageCircle } from 'lucide-react'
 
 interface AdminStats {
   totalProducts: number
@@ -249,6 +249,13 @@ const AdminDashboard = () => {
       href: '/admin/orders',
       icon: ShoppingCart,
       color: 'bg-purple-600'
+    },
+    {
+      title: 'Live Chat',
+      description: 'მომხმარებლებთან საუბარი',
+      href: '/admin/chat',
+      icon: MessageCircle,
+      color: 'bg-indigo-600'
     },
     {
       title: 'პარამეტრები',
