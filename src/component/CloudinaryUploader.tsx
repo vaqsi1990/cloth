@@ -21,7 +21,7 @@ const ImageUpload = ({ onChange, value }: ImageUploadProps): React.JSX.Element =
     setImageUrls(newUrls);
     onChange(newUrls);
     setIsUploading(false);
-    alert("Files uploaded successfully!");
+    alert("სურათი აიტვირთა");
   };
 
   const handleUploadError = (error: Error) => {
@@ -49,12 +49,12 @@ const ImageUpload = ({ onChange, value }: ImageUploadProps): React.JSX.Element =
               disabled={isUploading}
             />
             {isUploading && (
-              <p className="text-sm text-gray-600 mt-2">Uploading images...</p>
+              <p className="text-sm text-gray-600 mt-2">სურათები იტვირთება...</p>
             )}
           </div>
         ) : (
           <div className="text-center py-4 text-gray-500">
-            <p className="mb-2">Images uploaded successfully!</p>
+            <p className="mb-2">სურათები წარმატებით აიტვირთა!</p>
             <button
               onClick={() => {
                 setImageUrls([]);
@@ -62,7 +62,7 @@ const ImageUpload = ({ onChange, value }: ImageUploadProps): React.JSX.Element =
               }}
               className="block mx-auto mt-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
             >
-              Remove All Images
+             სურათების წაშლა
             </button>
           </div>
         )}
@@ -71,7 +71,7 @@ const ImageUpload = ({ onChange, value }: ImageUploadProps): React.JSX.Element =
       {imageUrls.length > 0 ? (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-800">Uploaded Images</h3>
+            <h3 className="text-lg font-semibold text-gray-800">აიტვირთა სურათები</h3>
             <span className="bg-pink-100 text-pink-800 px-3 py-1 rounded-full text-sm font-medium">
               {imageUrls.length} image{imageUrls.length !== 1 ? 's' : ''}
             </span>
@@ -110,8 +110,8 @@ const ImageUpload = ({ onChange, value }: ImageUploadProps): React.JSX.Element =
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </div>
-          <p className="text-gray-500 text-sm">No images uploaded yet</p>
-          <p className="text-gray-400 text-xs mt-1">Click the button above to upload images</p>
+          <p className="text-gray-500 text-sm">სურათები არ არის ჯერ ატვირთული</p>
+          <p className="text-gray-400 text-xs mt-1">დააჭირეთ ღილაკზე სურათების ატვირთვისთვის</p>
         </div>
       )}
     </div>

@@ -22,7 +22,7 @@ interface Product {
 }
 
 const AccountPage = () => {
-  const { data: session, status } = useSession()
+  const { data: session, status, update } = useSession()
   const router = useRouter()
   const [activeTab, setActiveTab] = useState('profile')
   const [userStats, setUserStats] = useState({
@@ -46,6 +46,12 @@ const AccountPage = () => {
       fetchUserStats()
     }
   }, [session])
+
+  useEffect(() => {
+    if (session?.user?.image) {
+      setProfileImage(session.user.image)
+    }
+  }, [session?.user?.image])
 
   const fetchUserStats = async () => {
     try {
@@ -81,7 +87,8 @@ const AccountPage = () => {
     
     setIsUploadingImage(true)
     try {
-      const response = await fetch('/api/admin/profile', {
+      console.log('Uploading image:', urls[0])
+      const response = await fetch('/api/user/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -93,18 +100,24 @@ const AccountPage = () => {
         }),
       })
 
-      if (response.ok) {
+      const result = await response.json()
+      console.log('Profile update response:', result)
+
+      if (response.ok && result.success) {
         setProfileImage(urls[0])
-        // Update session with new image
-        if (session?.user) {
-          session.user.image = urls[0]
-        }
+        
+        // Update the session with new image
+        await update({
+          image: urls[0],
+          name: session?.user?.name || '',
+          email: session?.user?.email || ''
+        })
+        
         alert('პროფილის სურათი წარმატებით განახლდა!')
         setIsEditingProfile(false)
-        // Refresh the page to update session
-        window.location.reload()
       } else {
-        alert('შეცდომა სურათის ატვირთვისას')
+        console.error('Profile update failed:', result)
+        alert(`შეცდომა სურათის ატვირთვისას: ${result.error || 'Unknown error'}`)
       }
     } catch (error) {
       console.error('Error uploading image:', error)
