@@ -23,7 +23,6 @@ const ProductPage = () => {
     const productId = params.id as string
 
     const { addToCart } = useCart()
-    const { data: session } = useSession()
 
     const [product, setProduct] = useState<Product | null>(null)
     const [loading, setLoading] = useState(true)
@@ -75,7 +74,7 @@ const ProductPage = () => {
     // Helpers
     // -------------------------
     const tiers: Tier[] =
-        ((product as any)?.rentalPriceTiers as Tier[] | undefined)?.sort(
+        (product?.rentalPriceTiers as Tier[] | undefined)?.sort(
             (a, b) => a.minDays - b.minDays
         ) ||
         [
