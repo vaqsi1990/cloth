@@ -5,6 +5,7 @@ import { ArrowLeft, Plus, X } from 'lucide-react'
 import Link from 'next/link'
 import { z } from 'zod'
 import ImageUpload from '@/component/CloudinaryUploader'
+import ImageUploadForProduct from '@/component/productimage'
 
 const productSchema = z.object({
   name: z.string().min(1, 'სახელი აუცილებელია'),
@@ -165,12 +166,18 @@ const NewProductPage = () => {
   }
 
   const updateRentalPriceTier = (index: number, field: string, value: number) => {
-    setFormData(prev => ({
-      ...prev,
-      rentalPriceTiers: (prev.rentalPriceTiers || []).map((tier, i) =>
-        i === index ? { ...tier, [field]: value } : tier
-      )
-    }))
+    setFormData(prev => {
+      const currentTiers = prev.rentalPriceTiers || []
+      // If no tiers exist, create a default one
+      const tiers = currentTiers.length === 0 ? [{ minDays: 1, pricePerDay: 0 }] : currentTiers
+      
+      return {
+        ...prev,
+        rentalPriceTiers: tiers.map((tier, i) =>
+          i === index ? { ...tier, [field]: value } : tier
+        )
+      }
+    })
   }
 
   const handleImageChange = (urls: string[]) => {
@@ -466,18 +473,52 @@ const NewProductPage = () => {
 
             {formData.isRentable && (
               <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div>
-                    <label className="block text-[20px] text-black font-medium mb-2">ფასი დღეში *</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={formData.pricePerDay || ''}
-                      onChange={(e) => handleInputChange('pricePerDay', e.target.value ? parseFloat(e.target.value) : undefined)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                    />
-                  </div>
+                {/* Rental Price Tiers */}
+                <div>
+                  <h3 className="text-lg font-medium text-black mb-4">ფასის გეგმა</h3>
 
+                  {/* Always show at least one price tier */}
+                  {(formData.rentalPriceTiers && formData.rentalPriceTiers.length > 0 ? formData.rentalPriceTiers : [{ minDays: 1, pricePerDay: 0 }]).map((tier, index) => (
+                    <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border border-gray-200 rounded-lg mb-4">
+                      <div>
+                        <label className="block text-[20px] font-medium text-black mb-2">მინიმალური დღეები</label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={tier.minDays}
+                          onChange={(e) => updateRentalPriceTier(index, 'minDays', parseInt(e.target.value) || 1)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[20px] font-medium text-black mb-2">ფასი დღეში</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={tier.pricePerDay}
+                          onChange={(e) => updateRentalPriceTier(index, 'pricePerDay', parseFloat(e.target.value) || 0)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+
+                      <div className="flex items-end">
+                        <button
+                          type="button"
+                          onClick={() => removeRentalPriceTier(index)}
+                          className="bg-red-500 text-white px-3 py-2 rounded-lg text-[20px] flex items-center space-x-2"
+                        >
+                          <X className="w-4 h-4" />
+                          <span>წაშლა</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Additional Rental Parameters */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-[20px] text-black font-medium mb-2">მაქს დღეების რაოდენობა(არასავალდებულო)</label>
                     <input
@@ -499,63 +540,6 @@ const NewProductPage = () => {
                     />
                   </div>
                 </div>
-
-                {/* Rental Price Tiers */}
-                <div>
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-medium text-black">ფასების ტირები</h3>
-                    <button
-                      type="button"
-                      onClick={addRentalPriceTier}
-                      className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm flex items-center space-x-2"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>ტირის დამატება</span>
-                    </button>
-                  </div>
-
-                  {(formData.rentalPriceTiers || []).map((tier, index) => (
-                    <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border border-gray-200 rounded-lg mb-4">
-                      <div>
-                        <label className="block text-sm font-medium text-black mb-2">მინიმალური დღეები</label>
-                        <input
-                          type="number"
-                          min="1"
-                          value={tier.minDays}
-                          onChange={(e) => updateRentalPriceTier(index, 'minDays', parseInt(e.target.value) || 1)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-black mb-2">ფასი დღეში</label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={tier.pricePerDay}
-                          onChange={(e) => updateRentalPriceTier(index, 'pricePerDay', parseFloat(e.target.value) || 0)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-
-                      <div className="flex items-end">
-                        <button
-                          type="button"
-                          onClick={() => removeRentalPriceTier(index)}
-                          className="bg-red-500 text-white px-3 py-2 rounded-lg text-sm flex items-center space-x-2"
-                        >
-                          <X className="w-4 h-4" />
-                          <span>წაშლა</span>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-
-                  {(formData.rentalPriceTiers || []).length === 0 && (
-                    <p className="text-gray-500 text-sm">ფასების ტირები არ არის განსაზღვრული</p>
-                  )}
-                </div>
               </div>
             )}
           </div>
@@ -564,7 +548,7 @@ const NewProductPage = () => {
           {/* Images */}
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h2 className="text-[20px] text-black font-semibold mb-6">სურათები</h2>
-            <ImageUpload
+            <ImageUploadForProduct
               value={formData.imageUrls}
               onChange={handleImageChange}
             />
