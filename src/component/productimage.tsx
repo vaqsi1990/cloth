@@ -4,7 +4,7 @@
 import { UploadButton } from "@/utils/uploadthing";
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import ImageModal from "./ImageModal";
+import ImageModal from "@/component/ImageModal";
 
 
 type ImageUploadProps = {
