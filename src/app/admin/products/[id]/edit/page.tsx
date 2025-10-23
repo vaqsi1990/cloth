@@ -18,9 +18,9 @@ const productSchema = z.object({
   rating: z.number().min(0).max(5).optional(),
   categoryId: z.number().optional(),
   isRentable: z.boolean().default(false),
-  pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional(),
-  maxRentalDays: z.number().optional(),
-  deposit: z.number().min(0, 'გირაო უნდა იყოს დადებითი').optional(),
+  pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').nullable().optional(),
+  maxRentalDays: z.number().nullable().optional(),
+  deposit: z.number().min(0, 'გირაო უნდა იყოს დადებითი').nullable().optional(),
   variants: z.array(z.object({
     size: z.string().min(1, 'ზომა აუცილებელია'),
     stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი'),
@@ -30,7 +30,7 @@ const productSchema = z.object({
   rentalPriceTiers: z.array(z.object({
     minDays: z.number().int().min(1, 'მინიმალური დღეები უნდა იყოს დადებითი'),
     pricePerDay: z.number().positive('ფასი დღეში უნდა იყოს დადებითი')
-  })).optional()
+  })).default([])
 })
 
 type ProductFormData = z.infer<typeof productSchema>
@@ -110,9 +110,9 @@ const EditProductPage = () => {
             rating: product.rating || 0,
             categoryId: product.categoryId,
             isRentable: product.isRentable || false,
-            pricePerDay: product.pricePerDay,
-            maxRentalDays: product.maxRentalDays,
-            deposit: product.deposit,
+            pricePerDay: product.pricePerDay || undefined,
+            maxRentalDays: product.maxRentalDays || undefined,
+            deposit: product.deposit || undefined,
             variants: product.variants || [],
             imageUrls: imageUrls,
             rentalPriceTiers: product.rentalPriceTiers || []
@@ -211,7 +211,7 @@ const EditProductPage = () => {
   const addRentalPriceTier = () => {
     setFormData(prev => ({
       ...prev,
-      rentalPriceTiers: [...(prev.rentalPriceTiers || []), { minDays: 1, pricePerDay: 0 }]
+      rentalPriceTiers: [...(prev.rentalPriceTiers || []), { minDays: 1, pricePerDay: 1 }]
     }))
   }
 
@@ -226,7 +226,7 @@ const EditProductPage = () => {
     setFormData(prev => {
       const currentTiers = prev.rentalPriceTiers || []
       // If no tiers exist, create a default one
-      const tiers = currentTiers.length === 0 ? [{ minDays: 1, pricePerDay: 0 }] : currentTiers
+      const tiers = currentTiers.length === 0 ? [{ minDays: 1, pricePerDay: 1 }] : currentTiers
       
       return {
         ...prev,
@@ -251,7 +251,19 @@ const EditProductPage = () => {
       console.log('About to validate form data...')
       console.log('Form data before validation:', JSON.stringify(formData, null, 2))
       console.log('Image URLs in form data:', formData.imageUrls)
-      const validatedData = productSchema.parse(formData)
+      console.log('Rental price tiers:', formData.rentalPriceTiers)
+      
+      // Ensure rentalPriceTiers is properly formatted and handle null values
+      const dataToValidate = {
+        ...formData,
+        pricePerDay: formData.pricePerDay || undefined,
+        maxRentalDays: formData.maxRentalDays || undefined,
+        deposit: formData.deposit || undefined,
+        rentalPriceTiers: formData.rentalPriceTiers || []
+      }
+      
+      console.log('Data to validate:', JSON.stringify(dataToValidate, null, 2))
+      const validatedData = productSchema.parse(dataToValidate)
       console.log('Validation successful, sending update request:', validatedData)
       
       const response = await fetch(`/api/products/${productId}`, {
@@ -567,10 +579,20 @@ const EditProductPage = () => {
                   <div className="space-y-6">
                     {/* Rental Price Tiers */}
                     <div>
-                      <h3 className="text-lg font-medium text-black mb-4">ფასის გეგმა</h3>
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-medium text-black">ფასის გეგმა</h3>
+                        <button
+                          type="button"
+                          onClick={addRentalPriceTier}
+                          className="bg-black text-white px-4 py-2 rounded-lg text-[20px] flex items-center space-x-2"
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span>ფასის გეგმის დამატება</span>
+                        </button>
+                      </div>
 
                       {/* Always show at least one price tier */}
-                      {(formData.rentalPriceTiers && formData.rentalPriceTiers.length > 0 ? formData.rentalPriceTiers : [{ minDays: 1, pricePerDay: 0 }]).map((tier, index) => (
+                      {(formData.rentalPriceTiers && formData.rentalPriceTiers.length > 0 ? formData.rentalPriceTiers : [{ minDays: 1, pricePerDay: 1 }]).map((tier, index) => (
                         <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border border-gray-200 rounded-lg mb-4">
                           <div>
                             <label className="block text-[20px] font-medium text-black mb-2">მინიმალური დღეები</label>

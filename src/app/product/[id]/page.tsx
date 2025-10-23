@@ -1,351 +1,217 @@
 "use client"
-import React, { useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
-import Image from 'next/image'
-import {  Shield, RotateCcw, ArrowLeft, Eye, MessageCircle, CheckCircle, CreditCard, CalendarDays } from 'lucide-react'
-import Link from 'next/link'
-import { useCart } from '@/hooks/useCart'
-import { Product, RentalPeriod } from '@/types/product'
-import { useSession } from 'next-auth/react'
-import { formatDate } from '@/utils/dateUtils'
+import React, { useEffect, useState } from "react"
+import { useParams } from "next/navigation"
+import Image from "next/image"
+import Link from "next/link"
+import {
+    ArrowLeft,
+    CalendarDays,
+    CheckCircle,
+    CreditCard,
+    RotateCcw,
+    Shield,
+} from "lucide-react"
+import { useCart } from "@/hooks/useCart"
+import { useSession } from "next-auth/react"
+import { Product, RentalPeriod } from "@/types/product"
+import { formatDate } from "@/utils/dateUtils"
+
+type Tier = { minDays: number; pricePerDay: number }
 
 const ProductPage = () => {
     const params = useParams()
     const productId = params.id as string
+
     const { addToCart } = useCart()
     const { data: session } = useSession()
 
     const [product, setProduct] = useState<Product | null>(null)
     const [loading, setLoading] = useState(true)
-    const [selectedSize, setSelectedSize] = useState<string>('')
-    const [quantity, setQuantity] = useState(1)
     const [activeImage, setActiveImage] = useState(0)
-    const [activeTab, setActiveTab] = useState('description')
-    const [isWishlisted, setIsWishlisted] = useState(false)
-    const [rentalStatus, setRentalStatus] = useState<{ [size: string]: RentalPeriod[] }>({})
-    const [purchaseMode, setPurchaseMode] = useState<'buy' | 'rent'>('buy')
-    const [rentalStartDate, setRentalStartDate] = useState('')
-    const [rentalEndDate, setRentalEndDate] = useState('')
+
+    const [selectedSize, setSelectedSize] = useState<string>("")
+    const [quantity, setQuantity] = useState(1)
+
+    const [purchaseMode, setPurchaseMode] = useState<"buy" | "rent">("rent")
+    const [rentalStartDate, setRentalStartDate] = useState("")
+    const [rentalEndDate, setRentalEndDate] = useState("")
     const [isAdding, setIsAdding] = useState(false)
 
-    // Fetch product from API
+    // size => busy periods
+    const [rentalStatus, setRentalStatus] = useState<Record<string, RentalPeriod[]>>({})
+
+    // -------------------------
+    // Fetch product + rental status
+    // -------------------------
     useEffect(() => {
-        const fetchProduct = async () => {
+        const fetchData = async () => {
             try {
-                const response = await fetch(`/api/products/${productId}`)
-                const data = await response.json()
-                if (data.success) {
-                    setProduct(data.product)
-                    // Auto-select first available size will be handled after rental status is fetched
+                const [pRes, rRes] = await Promise.all([
+                    fetch(`/api/products/${productId}`),
+                    fetch(`/api/products/${productId}/rental-status`),
+                ])
+                const pJson = await pRes.json()
+                const rJson = await rRes.json()
+
+                if (pJson?.success) setProduct(pJson.product)
+                if (rJson?.success) {
+                    const map: Record<string, RentalPeriod[]> = {}
+                    rJson.variants?.forEach(
+                        (v: { size: string; activeRentals?: RentalPeriod[] }) =>
+                            (map[v.size] = v.activeRentals || [])
+                    )
+                    setRentalStatus(map)
                 }
-            } catch (error) {
-                console.error('Error fetching product:', error)
+            } catch (e) {
+                console.error(e)
             } finally {
                 setLoading(false)
             }
         }
-
-        const fetchRentalStatus = async () => {
-            try {
-                const response = await fetch(`/api/products/${productId}/rental-status`)
-                const data = await response.json()
-                if (data.success) {
-                    const statusMap: { [size: string]: RentalPeriod[] } = {}
-                    data.variants.forEach((variant: { size: string; activeRentals?: RentalPeriod[] }) => {
-                        statusMap[variant.size] = variant.activeRentals || []
-                    })
-                    setRentalStatus(statusMap)
-                }
-            } catch (error) {
-                console.error('Error fetching rental status:', error)
-            }
-        }
-
-        if (productId) {
-            fetchProduct()
-            fetchRentalStatus()
-        }
+        if (productId) fetchData()
     }, [productId])
 
-    // Auto-select first available size after rental status is loaded
+    // -------------------------
+    // Helpers
+    // -------------------------
+    const tiers: Tier[] =
+        ((product as any)?.rentalPriceTiers as Tier[] | undefined)?.sort(
+            (a, b) => a.minDays - b.minDays
+        ) ||
+        [
+            // fallback თუ API-დან არ მოდის ტირები
+            { minDays: 4, pricePerDay: product?.pricePerDay || 20 },
+            { minDays: 7, pricePerDay: (product?.pricePerDay || 20) * 0.6 },
+            { minDays: 28, pricePerDay: (product?.pricePerDay || 20) * 0.4 },
+        ]
+
+    const minDaysGlobal = tiers.length ? Math.min(...tiers.map(t => t.minDays)) : 4
+
+    const getMainImage = () =>
+        product?.images?.[activeImage]?.url || product?.images?.[0]?.url || "/placeholder.jpg"
+
+    const getAvailableSizes = () => product?.variants?.map(v => v.size) || []
+
+    const hasActiveRentals = (size: string) => (rentalStatus[size] || []).length > 0
+
+    const getRentalPeriods = (size: string) => rentalStatus[size] || []
+
+    const firstAvailableSize = () =>
+        product?.variants?.find(v => !hasActiveRentals(v.size))?.size || null
+
     useEffect(() => {
-        if (product && Object.keys(rentalStatus).length > 0 && !selectedSize) {
-            const firstAvailableSize = getFirstAvailableSize()
-            if (firstAvailableSize) {
-                setSelectedSize(firstAvailableSize)
-            }
+        if (product && !selectedSize) {
+            const sz = firstAvailableSize() || product.variants?.[0]?.size
+            if (sz) setSelectedSize(sz)
         }
     }, [product, rentalStatus, selectedSize])
 
-    // Handle size selection
-    const handleSizeSelect = (size: string) => {
-        // Don't allow selection of rented sizes
-        if (hasActiveRentals(size)) {
-            return
-        }
-        setSelectedSize(size)
+    const selectedVariant = product?.variants?.find(v => v.size === selectedSize)
+    const selectedPrice = selectedVariant?.price ?? 0
+    const selectedStock = selectedVariant?.stock ?? 0
+
+    const handleSizeClick = (size: string) => {
+        if (!hasActiveRentals(size)) setSelectedSize(size)
     }
 
-    // Handle quantity change
-    const handleQuantityChange = (newQuantity: number) => {
-        if (newQuantity >= 1 && newQuantity <= (getMaxStock() || 0)) {
-            setQuantity(newQuantity)
-        }
+    const handleQuantity = (q: number) => {
+        if (q >= 1 && q <= selectedStock) setQuantity(q)
     }
 
-    // Get price for selected size
-    const getSelectedPrice = () => {
-        if (!product || !product.variants) return 0
-        const selectedVariant = product.variants.find((v) => v.size === selectedSize)
-        return selectedVariant?.price || 0
+    const earliestAvailableGlobal = () => {
+        const all = Object.values(rentalStatus).flat()
+        if (!all.length) return null
+        const sorted = [...all].sort(
+            (a, b) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime()
+        )
+        return sorted[0].endDate
     }
 
-    // Get max stock from variants
-    const getMaxStock = () => {
-        if (!product || !product.variants) return 0
-        const selectedVariant = product.variants.find((v) => v.size === selectedSize)
-        if (!selectedVariant) return 0
-
-        return selectedVariant.stock || 0
+    const calcDays = () => {
+        if (!rentalStartDate || !rentalEndDate) return 0
+        const s = new Date(rentalStartDate).getTime()
+        const e = new Date(rentalEndDate).getTime()
+        const diff = Math.ceil((e - s) / (1000 * 60 * 60 * 24))
+        return Math.max(0, diff)
     }
 
-    // Check if size is available for rental
-    const isSizeAvailableForRental = (size: string) => {
-        return !hasActiveRentals(size)
+    // price from tiers by days
+    const priceForDays = (days: number) => {
+        if (!days || tiers.length === 0) return 0
+        const tier =
+            [...tiers]
+                .sort((a, b) => b.minDays - a.minDays)
+                .find(t => days >= t.minDays) || tiers[0]
+        return tier ? tier.pricePerDay * days : 0
     }
 
-    // Get available sizes from variants
-    const getAvailableSizes = () => {
-        if (!product || !product.variants) return []
-        return product.variants.map((v) => v.size)
-    }
+    const fromAmount = (t: Tier) => t.minDays * t.pricePerDay
 
-    // Get first available (non-rented) size
-    const getFirstAvailableSize = () => {
-        if (!product || !product.variants) return null
-        return product.variants.find(v => !hasActiveRentals(v.size))?.size || null
-    }
-
-    // Check if a size has active rentals
-    const hasActiveRentals = (size: string) => {
-        // Check if rentalStatus is loaded
-        if (Object.keys(rentalStatus).length === 0) {
-            return false
-        }
-        
-        const hasRentals = rentalStatus[size] && rentalStatus[size].length > 0
-        return hasRentals
-    }
-
-    // Get rental periods for a specific size
-    const getRentalPeriods = (size: string) => {
-        return rentalStatus[size] || []
-    }
-
-    // Get rental end date for a specific size (when it will be available)
-    const getRentalEndDate = (size: string) => {
-        const periods = getRentalPeriods(size)
-        if (periods.length === 0) return null
-        
-        // Find the latest end date among all rental periods
-        const latestEndDate = periods.reduce((latest, period) => {
-            const endDate = new Date(period.endDate)
-            return endDate > latest ? endDate : latest
-        }, new Date(periods[0].endDate))
-        
-        return latestEndDate
-    }
-
-    // Get detailed rental message for a size
-    const getRentalMessage = (size: string) => {
-        const periods = getRentalPeriods(size)
-        if (periods.length === 0) return null
-        
-        const endDate = getRentalEndDate(size)
-        if (!endDate) return null
-        
-        return {
-            message: `ზომა ${size} გაქირავებულია ${formatDate(endDate)}-მდე`,
-            availableFrom: formatDate(endDate),
-            isRented: true
-        }
-    }
-
-    // Get earliest available date for any size
-    const getEarliestAvailableDate = () => {
-        const allEndDates: string[] = []
-        Object.keys(rentalStatus).forEach(size => {
-            const periods = rentalStatus[size] || []
-            periods.forEach(period => {
-                allEndDates.push(period.endDate)
-            })
-        })
-        
-        if (allEndDates.length === 0) return null
-        
-        // Sort dates and return the earliest one
-        allEndDates.sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
-        return allEndDates[0]
-    }
-
-    // Get main product image
-    const getMainImage = () => {
-        if (!product || !product.images || product.images.length === 0) return '/placeholder.jpg'
-        return product.images[activeImage]?.url || product.images[0]?.url
-    }
-
+    // -------------------------
+    // Cart actions
+    // -------------------------
     const handleAddToCart = async () => {
-        console.log('handleAddToCart called at:', Date.now())
-        console.log('Product:', product)
-        console.log('Selected size:', selectedSize)
-        console.log('Session:', session)
+        if (!product || !selectedSize) return
+        if (isAdding) return
+        setIsAdding(true)
 
-        if (!product) {
-            console.log('No product found')
-            return
-        }
-        if (!selectedSize) {
-            alert('გთხოვთ აირჩიოთ ზომა')
+        const ok = await addToCart({
+            productId: product.id,
+            productName: product.name,
+            image: getMainImage(),
+            size: selectedSize,
+            quantity,
+            price: selectedPrice,
+            isRental: false,
+        })
+
+        if (!ok) alert("შეცდომა კალათაში დამატებისას")
+        setIsAdding(false)
+    }
+
+    const handleRental = async () => {
+        if (!product || !selectedSize) return
+        if (!rentalStartDate || !rentalEndDate) {
+            alert("აირჩიე ქირაობის თარიღები")
             return
         }
         if (hasActiveRentals(selectedSize)) {
-            const rentalInfo = getRentalMessage(selectedSize)
-            if (rentalInfo) {
-                alert(`ეს ზომა ამჟამად გაქირავებულია!\n\n${rentalInfo.message}\n\nხელმისაწვდომი იქნება: ${rentalInfo.availableFrom}`)
-            } else {
-                alert('ეს ზომა ამჟამად გაქირავებულია და ვერ დაემატება კალათაში')
-            }
+            alert("ეს ზომა ამჟამად გაქირავებულია")
             return
         }
-
-        if (isAdding) {
-          
-            return 
-        }
-
-       
+        if (isAdding) return
         setIsAdding(true)
 
-        const cartItem = {
+        const days = calcDays()
+        const total = priceForDays(days)
+
+        const ok = await addToCart({
             productId: product.id,
             productName: product.name,
             image: getMainImage(),
-            price: getSelectedPrice(),
-            size: selectedSize,
-            quantity,
-            isRental: false,
-        }
-
-        console.log('Calling addToCart with:', cartItem)
-        const success = await addToCart(cartItem)
-        
-        if (success) {
-            setQuantity(1)
-         
-        } else {
-            alert('შეცდომა კალათაში დამატებისას')
-        }
-
-        setTimeout(() => {
-          
-            setIsAdding(false)
-        }, 400)
-    }
-
-
-    // Toggle wishlist
-    const toggleWishlist = () => {
-        setIsWishlisted(!isWishlisted)
-        alert(isWishlisted ? 'პროდუქტი წაიშალა ფავორიტებიდან' : 'პროდუქტი დაემატა ფავორიტებში')
-    }
-
-    // Share product
-    const shareProduct = () => {
-        if (navigator.share) {
-            navigator.share({
-                title: product?.name,
-                url: window.location.href
-            })
-        } else {
-            navigator.clipboard.writeText(window.location.href)
-            alert('ბმული დაკოპირებულია!')
-        }
-    }
-
-    // Handle rental
-    const handleRental = async () => {
-        if (!product) return
-        if (!selectedSize) {
-            alert('გთხოვთ აირჩიოთ ზომა')
-            return
-        }
-        if (!rentalStartDate || !rentalEndDate) {
-            alert('გთხოვთ აირჩიოთ გაქირავების თარიღები')
-            return
-        }
-
-        if (isAdding) {
-          
-            return 
-        }
-
-      
-        setIsAdding(true)
-
-        // Calculate rental price
-        const startDate = new Date(rentalStartDate)
-        const endDate = new Date(rentalEndDate)
-        const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
-        const pricePerDay = product.pricePerDay || getSelectedPrice() * 0.1
-        const totalPrice = daysDiff * pricePerDay
-
-        const rentalItem = {
-            productId: product.id,
-            productName: product.name,
-            image: getMainImage(),
-            price: totalPrice,
             size: selectedSize,
             quantity: 1,
             isRental: true,
-            rentalStartDate: rentalStartDate,
-            rentalEndDate: rentalEndDate,
-            rentalDays: daysDiff,
+            rentalStartDate,
+            rentalEndDate,
+            rentalDays: days,
+            price: total,
             deposit: product.deposit || 0,
-        }
+        })
 
-        console.log('Adding rental to cart:', rentalItem)
-        const success = await addToCart(rentalItem)
-        
-        if (success) {
-            // Reset rental dates
-            setRentalStartDate('')
-            setRentalEndDate('')
-         
-        } else {
-            alert('შეცდომა ')
-        }
-
-        setTimeout(() => {
-            console.log('Setting isAdding to false for rental')
-            setIsAdding(false)
-        }, 400)
+        if (!ok) alert("შეცდომა ქირაობის დამატებისას")
+        setIsAdding(false)
     }
 
-    // Calculate rental price
-    const calculateRentalPrice = () => {
-        if (!product || !rentalStartDate || !rentalEndDate) return 0
-        const startDate = new Date(rentalStartDate)
-        const endDate = new Date(rentalEndDate)
-        const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
-        const pricePerDay = product.pricePerDay || getSelectedPrice() * 0.1
-        return daysDiff * pricePerDay
-    }
-
+    // -------------------------
+    // Render
+    // -------------------------
     if (loading) {
         return (
-            <div className="min-h-screen  flex items-center justify-center">
+            <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
-                    <h1 className="text-2xl font-bold text-black mb-4">იტვირთება...</h1>
+                    <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                    <p className="text-gray-600">იტვირთება...</p>
                 </div>
             </div>
         )
@@ -353,10 +219,10 @@ const ProductPage = () => {
 
     if (!product) {
         return (
-            <div className="min-h-screen  flex items-center justify-center">
+            <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
                     <h1 className="text-2xl font-bold text-black mb-4">პროდუქტი ვერ მოიძებნა</h1>
-                    <Link href="/shop" className="text-black hover:text-black">
+                    <Link href="/shop" className="underline">
                         დაბრუნდი მაღაზიაში
                     </Link>
                 </div>
@@ -364,304 +230,296 @@ const ProductPage = () => {
         )
     }
 
-
     return (
-        <div className="min-h-screen ">
-            {/* Header */}
-            <header className="sticky top-0 z-40 bg-white/70 backdrop-blur-md border-b border-gray-200">
-                <div className="container mx-auto max-w-[1320px] flex items-center justify-between px-4 py-5">
-                    <Link
-                        href="/"
-                        className="flex items-center text-black font-medium hover:opacity-80 transition"
-                    >
+        <div className="min-h-screen">
+            {/* Header (Back) */}
+            <header className="sticky top-0 z-30 bg-white/70 backdrop-blur border-b">
+                <div className="max-w-[1200px] mx-auto px-4 py-4">
+                    <Link href="/" className="flex items-center text-black hover:opacity-80">
                         <ArrowLeft className="w-5 h-5 mr-2" />
                         უკან დაბრუნება
                     </Link>
                 </div>
             </header>
 
-            {/* Main Content */}
-            <main className="container mx-auto max-w-[1320px] px-4 py-12">
-                <div className="grid xl:grid-cols-2 gap-12">
-                    {/* Product Images */}
-                    <section className="space-y-6">
-                        <div className="relative w-full h-[500px] aspect-square bg-white rounded-2xl overflow-hidden shadow-lg border border-gray-100">
+            <main className="max-w-[1200px] mx-auto px-4 py-10">
+                <div className="grid lg:grid-cols-2 gap-10">
+                    {/* LEFT — Gallery */}
+                    <section>
+                        <div className="relative w-full aspect-[3/4] bg-white rounded-2xl overflow-hidden shadow border">
                             <Image
                                 src={getMainImage()}
                                 alt={product.name}
                                 fill
-                                className="object-cover transition-transform duration-700 hover:scale-105"
+                                className="object-cover"
                                 priority
                             />
-
-                            {/* Badges */}
-                            <div className="absolute top-4 left-4 flex flex-col gap-2">
+                            <div className="absolute top-4 left-4 flex gap-2">
                                 {product.hasSale && (
-                                    <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold shadow">
+                                    <span className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
                                         ფასდაკლება
                                     </span>
                                 )}
                                 {product.isNew && (
-                                    <span className="bg-black text-white px-3 py-1 rounded-full text-sm font-semibold shadow">
+                                    <span className="bg-black text-white px-3 py-1 rounded-full text-xs font-semibold">
                                         ახალი
                                     </span>
                                 )}
                             </div>
                         </div>
 
-                        {/* Thumbnails */}
-                        <div className="grid grid-cols-4 gap-3">
+                        <div className="grid grid-cols-4 gap-3 mt-3">
                             {product.images?.map((img, i) => (
                                 <button
                                     key={i}
                                     onClick={() => setActiveImage(i)}
-                                    className={`relative w-full h-20 rounded-lg overflow-hidden border-2 transition ${activeImage === i
-                                            ? "border-black shadow-lg ring-2 ring-black"
-                                            : "border-gray-200 hover:border-black hover:shadow-md"
+                                    className={`relative aspect-square rounded-xl overflow-hidden border-2 transition ${activeImage === i
+                                            ? "border-black"
+                                            : "border-gray-200 hover:border-black"
                                         }`}
                                 >
-                                    <Image
-                                        src={img.url}
-                                        alt={`${product.name} ${i + 1}`}
-                                        fill
-                                        className="object-cover"
-                                    />
+                                    <Image src={img.url} alt={`${product.name}-${i}`} fill className="object-cover" />
                                 </button>
                             ))}
                         </div>
                     </section>
 
-                    {/* Product Info */}
-                    <section className="space-y-8">
-                        {/* Title & Price */}
+                    {/* RIGHT — Details */}
+                    <section className="space-y-6">
+                        {/* Title */}
                         <div className="bg-white rounded-2xl p-6 shadow-sm">
-                            <h1 className="text-3xl font-bold text-gray-900 mb-4">{product.name}</h1>
-                            <div className="flex items-center gap-3 mb-4">
-                                <span className="text-3xl font-bold text-black">
-                                    ₾{getSelectedPrice().toFixed(2)}
-                                </span>
-                            </div>
-                            <p className="text-gray-700 leading-relaxed">{product.description}</p>
-                            
-                            {/* Rental Status Alert */}
-                            {product.isRentable && Object.keys(rentalStatus).some(size => hasActiveRentals(size)) && (
-                                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                                        <span className="font-semibold text-yellow-800">ყურადღება!</span>
-                                    </div>
-                                    <p className="text-sm text-yellow-700">
-                                        ამ პროდუქტის ზოგიერთი ზომა ამჟამად გაქირავებულია. 
-                                        ქვემოთ ნახავთ რომელი ზომებია მისაწვდომი ქირაობისთვის.
-                                    </p>
-                                </div>
+                            <h1 className="text-3xl font-bold text-gray-900">{product.name}</h1>
+                            {product.description && (
+                                <p className="text-gray-700 mt-2 leading-relaxed">{product.description}</p>
                             )}
                         </div>
 
-                        {/* Size & Quantity */}
-                        <div className="bg-white rounded-2xl p-6 shadow-sm space-y-6">
-                            <h3 className="text-[18px] md:text-[20px] font-bold text-black">ზომა:</h3>
+                        {/* Pricing plans (4+/7+/28+) */}
+                        {product.isRentable && tiers.length > 0 && (
+                            <div className="bg-white rounded-2xl p-6 shadow-sm">
+                                <div className="grid sm:grid-cols-3 gap-4">
+                                    {/* 4+ days */}
+                                    {tiers[0] && (
+                                        <div className="border border-gray-200 rounded-xl p-4">
+                                            <p className="text-sm text-gray-600">4+ days</p>
+                                            <p className="text-xl font-bold text-gray-900">₾{tiers[0].pricePerDay.toFixed(2)}/დღე</p>
+                                            <p className="text-sm text-gray-600">From ₾{fromAmount(tiers[0]).toFixed(2)}</p>
+                                        </div>
+                                    )}
+
+                                    {/* 7+ days - Recommended */}
+                                    {tiers[1] && (
+                                        <div className="border border-emerald-400 rounded-xl p-4 ring-2 ring-emerald-400 bg-emerald-50">
+                                            <span className="inline-block bg-emerald-100 text-emerald-800 text-xs font-semibold px-2 py-1 rounded mb-2">
+                                                Recommended
+                                            </span>
+                                            <p className="text-sm text-gray-600">7+ days</p>
+                                            <p className="text-xl font-bold text-gray-900">₾{tiers[1].pricePerDay.toFixed(2)}/დღე</p>
+                                            <p className="text-sm text-gray-600">From ₾{fromAmount(tiers[1]).toFixed(2)}</p>
+                                        </div>
+                                    )}
+
+                                    {/* 28+ days */}
+                                    {tiers[2] && (
+                                        <div className="border border-gray-200 rounded-xl p-4">
+                                            <p className="text-sm text-gray-600">28+ days</p>
+                                            <p className="text-xl font-bold text-gray-900">₾{tiers[2].pricePerDay.toFixed(2)}/დღე</p>
+                                            <p className="text-sm text-gray-600">From ₾{fromAmount(tiers[2]).toFixed(2)}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Size selector */}
+                        <div className="bg-white rounded-2xl p-6 shadow-sm space-y-3">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-lg font-semibold text-black">ზომა</h3>
+                                {!!selectedStock && (
+                                    <span className="text-sm text-gray-600">საწყობი: {selectedStock} ც</span>
+                                )}
+                            </div>
+
                             <div className="grid grid-cols-4 gap-3">
-                                {getAvailableSizes().map((size) => {
-                                    const variant = product.variants.find(v => v.size === size)
-                                    const variantPrice = variant?.price || 0
-                                    const hasRentals = hasActiveRentals(size)
-                                    const rentalPeriods = getRentalPeriods(size)
-                                    const rentalInfo = getRentalMessage(size)
-                                    
+                                {getAvailableSizes().map(size => {
+                                    const variant = product.variants?.find(v => v.size === size)
+                                    const price = variant?.price || 0
+                                    const rented = hasActiveRentals(size)
+                                    const firstEnd =
+                                        getRentalPeriods(size).length > 0
+                                            ? formatDate(
+                                                getRentalPeriods(size)
+                                                    .map(p => p.endDate)
+                                                    .sort(
+                                                        (a, b) =>
+                                                            new Date(a).getTime() - new Date(b).getTime()
+                                                    )[0]
+                                            )
+                                            : null
+
                                     return (
-                                        <div key={size} className="relative group">
-                                            <button
-                                                onClick={() => handleSizeSelect(size)}
-                                                disabled={hasRentals}
-                                                className={`w-full py-3 cursor-pointer rounded-xl border-2 text-[18px] font-bold transition ${selectedSize === size
-                                                        ? "border-[#1B3729] bg-[#1B3729] text-white"
-                                                        : hasRentals 
-                                                            ? "border-red-300 bg-red-50 text-red-600 cursor-not-allowed"
-                                                            : "border-gray-300 hover:border-black"
-                                                    }`}
-                                            >
-                                                <div>{size}</div>
-                                                <div className="text-[18px] ">₾{variantPrice.toFixed(2)}</div>
-                                                {hasRentals && (
-                                                    <div className="text-xs text-red-600 font-semibold mt-1">
-                                                        გაქირავებული
-                                                    </div>
-                                                )}
-                                            </button>
-                                            
-                                            {/* Rental info tooltip */}
-                                            {hasRentals && rentalInfo && (
-                                                <div className="absolute top-full left-0 right-0 mt-2 p-3 bg-red-100 border border-red-300 rounded-lg text-xs text-red-700 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                                    <div className="font-semibold mb-1">გაქირავებულია</div>
-                                                    <div>ხელმისაწვდომი იქნება:</div>
-                                                    <div className="font-semibold">{rentalInfo.availableFrom}</div>
+                                        <button
+                                            key={size}
+                                            onClick={() => handleSizeClick(size)}
+                                            disabled={rented}
+                                            className={`rounded-xl border-2 p-3 text-center transition ${selectedSize === size
+                                                    ? "border-[#1B3729] bg-[#1B3729] text-white"
+                                                    : rented
+                                                        ? "border-red-300 bg-red-50 text-red-600 cursor-not-allowed"
+                                                        : "border-gray-300 hover:border-black"
+                                                }`}
+                                        >
+                                            <div className="font-semibold">{size}</div>
+                                            <div className="text-sm">{`₾${price.toFixed(2)}`}</div>
+                                            {rented && (
+                                                <div className="text-[11px] mt-1">
+                                                    გაქირავებულია {firstEnd ? `— ${firstEnd}-მდე` : ""}
                                                 </div>
                                             )}
-                                        </div>
+                                        </button>
                                     )
                                 })}
                             </div>
-
-                            {/* Rental Status Information */}
-                            {purchaseMode === 'rent' && (
-                                <div className="space-y-3">
-                                    {/* Summary of rental status */}
-                                    {Object.keys(rentalStatus).some(size => hasActiveRentals(size)) && (
-                                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                                                <span className="font-semibold text-blue-800">ქირაობის სტატუსი</span>
-                                            </div>
-                                            <div className="text-[18px] text-blue-700">
-                                                <span className="font-medium">ყველაზე ადრინდელი მისაწვდომი თარიღი:</span> {formatDate(getEarliestAvailableDate() || '')}
-                                            </div>
-                                        </div>
-                                    )}
-                                    
-                                    {/* Individual size rental status */}
-                                    {getAvailableSizes().map((size) => {
-                                        const hasRentals = hasActiveRentals(size)
-                                        const rentalPeriods = getRentalPeriods(size)
-                                        
-                                        if (!hasRentals) return null
-                                        
-                                        return (
-                                            <div key={size} className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                                                    <span className="font-semibold text-red-800">ზომა {size} - გაქირავებული</span>
-                                                </div>
-                                                <div className="space-y-1">
-                                                    {rentalPeriods.map((period, index) => (
-                                                        <div key={index} className="text-[18px] text-red-700">
-                                                            <span className="font-medium">ქირაობის პერიოდი:</span> {formatDate(period.startDate)} - {formatDate(period.endDate)}
-                                                            <br />
-                                                            <span className="font-medium">მისაწვდომი იქნება:</span> {formatDate(period.endDate)}-ის შემდეგ
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )
-                                    })}
-                                </div>
-                            )}
                         </div>
 
-                        {/* Buy / Rent Section */}
+                        {/* Purchase / Rent toggle + calendars */}
                         <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4">
-                            <h3 className="text-lg font-semibold text-black">შეძენის ტიპი</h3>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 gap-3">
                                 <button
                                     onClick={() => setPurchaseMode("buy")}
-                                    className={`p-4 rounded-xl border-2 ${purchaseMode === "buy"
+                                    className={`p-4 rounded-xl border-2 flex items-center justify-center gap-2 ${purchaseMode === "buy"
                                             ? "border-[#1B3729] bg-[#1B3729] text-white"
-                                            : "border-gray-300 hover:border-green-400"
+                                            : "border-gray-300"
                                         }`}
                                 >
-                                    <CreditCard className="w-6 h-6 mx-auto mb-1" />
-                                  ყიდვა
+                                    <CreditCard className="w-5 h-5" />
+                                    ყიდვა
                                 </button>
                                 {product.isRentable && (
                                     <button
                                         onClick={() => setPurchaseMode("rent")}
-                                        className={`p-4 rounded-xl border-2 ${purchaseMode === "rent"
-                                                ? "border-[#BFD8C1] bg-[#BFD8C1] text-black"
-                                                : "border-gray-300 "
+                                        className={`p-4 rounded-xl border-2 flex items-center justify-center gap-2 ${purchaseMode === "rent"
+                                                ? "border-emerald-400 bg-emerald-100 text-black"
+                                                : "border-gray-300"
                                             }`}
                                     >
-                                        <CalendarDays className="w-6 h-6 mx-auto mb-1" />
-                                    ქირაობა
+                                        <CalendarDays className="w-5 h-5" />
+                                        ქირაობა
                                     </button>
                                 )}
                             </div>
 
-                            {/* Rental Date Selection */}
-                            {purchaseMode === 'rent' && product.isRentable && (
-                                <div className="space-y-4 p-4 bg-[#BFD8C1] rounded-lg border border-[#BFD8C1]">
-                                    <h4 className="font-bold text-[20px] text-black">ქირაობის თარიღები</h4>
+                            {purchaseMode === "rent" && product.isRentable && (
+                                <div className="space-y-3 p-4 bg-emerald-50 rounded-xl border border-emerald-200">
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-[16px] font-medium text-black mb-2">დაწყების თარიღი</label>
+                                            <label className="block text-sm font-medium mb-1">დაწყება</label>
                                             <input
                                                 type="date"
                                                 value={rentalStartDate}
-                                                onChange={(e) => setRentalStartDate(e.target.value)}
-                                                min={new Date().toISOString().split('T')[0]}
-                                                className="w-full px-3 py-2 border border-black rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                onChange={e => setRentalStartDate(e.target.value)}
+                                                min={new Date().toISOString().split("T")[0]}
+                                                className="w-full px-3 py-2 border rounded-lg"
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-[16px] font-medium text-black mb-2">დასრულების თარიღი</label>
+                                            <label className="block text-sm font-medium mb-1">დასრულება</label>
                                             <input
                                                 type="date"
                                                 value={rentalEndDate}
-                                                onChange={(e) => setRentalEndDate(e.target.value)}
-                                                min={rentalStartDate || new Date().toISOString().split('T')[0]}
-                                                className="w-full px-3 py-2 border border-black rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                onChange={e => setRentalEndDate(e.target.value)}
+                                                min={rentalStartDate || new Date().toISOString().split("T")[0]}
+                                                className="w-full px-3 py-2 border rounded-lg"
                                             />
                                         </div>
                                     </div>
-                                    {calculateRentalPrice() > 0 && (
-                                        <div className="text-center p-3 bg-white rounded-lg border border-black">
-                                            <div className="text-lg font-bold text-black">
-                                                ჯამური ფასი: ₾{calculateRentalPrice().toFixed(2)}
+
+                                    {!!calcDays() && (
+                                        <div className="text-center bg-white rounded-lg border p-3">
+                                            <div className="text-lg font-semibold">
+                                                ჯამური ფასი: ₾{priceForDays(calcDays()).toFixed(2)}
                                             </div>
-                                            {product.deposit && (
-                                                <div className="text-sm text-black">
+                                            {product.deposit ? (
+                                                <div className="text-sm text-gray-700">
                                                     + გირაო: ₾{product.deposit.toFixed(2)}
                                                 </div>
-                                            )}
+                                            ) : null}
+                                        </div>
+                                    )}
+
+                                    {Object.keys(rentalStatus).some(s => hasActiveRentals(s)) && (
+                                        <div className="text-sm text-gray-700">
+                                            ყველაზე ადრინდელი ხელმისაწვდომობა:{" "}
+                                            <b>
+                                                {earliestAvailableGlobal()
+                                                    ? formatDate(earliestAvailableGlobal()!)
+                                                    : "მაშინვე"}
+                                            </b>
                                         </div>
                                     )}
                                 </div>
                             )}
                         </div>
 
-                        {/* Add to Cart / Rent */}
-                        <button
-                            onClick={() => {
-                                // Check if size is rented before proceeding
-                                if (hasActiveRentals(selectedSize)) {
-                                    const rentalInfo = getRentalMessage(selectedSize)
-                                    if (rentalInfo) {
-                                        alert(`ეს ზომა ამჟამად გაქირავებულია!\n\n${rentalInfo.message}\n\nხელმისაწვდომი იქნება: ${rentalInfo.availableFrom}`)
-                                    } else {
-                                        alert('ეს ზომა ამჟამად გაქირავებულია და ვერ დაემატება კალათაში')
-                                    }
-                                    return
+                        {/* Action button */}
+                        <div>
+                            <button
+                                onClick={() =>
+                                    purchaseMode === "buy" ? handleAddToCart() : handleRental()
                                 }
-                                
-                                // Proceed with normal action
-                                if (purchaseMode === "buy") {
-                                    handleAddToCart()
-                                } else {
-                                    handleRental()
+                                disabled={
+                                    isAdding ||
+                                    !selectedSize ||
+                                    (purchaseMode === "rent" && (!rentalStartDate || !rentalEndDate))
                                 }
-                            }}
-                            disabled={isAdding || !selectedSize || (purchaseMode === "rent" && (!rentalStartDate || !rentalEndDate || !isSizeAvailableForRental(selectedSize)))}
-                            className={`w-full cursor-pointer py-5 text-white md:text-[20px] font-bold text-[18px] rounded-xl shadow-md transition disabled:bg-gray-400 disabled:cursor-not-allowed ${hasActiveRentals(selectedSize) 
-                                ? "bg-red-500 hover:bg-red-600" 
-                                : purchaseMode === "buy"
-                                    ? "bg-[#1B3729] text-white"
-                                    : "bg-blue-600 hover:bg-blue-700"
-                                }`}
-                        >
-                            {isAdding ? 'მუშავდება...' : hasActiveRentals(selectedSize) ? 'გაქირავებულია - ვერ დაემატება' : (purchaseMode === "buy" ? "კალათაში დამატება" : "ქირაობა")}
-                        </button>
+                                className={`w-full py-4 rounded-xl text-white font-bold transition disabled:bg-gray-400 ${purchaseMode === "buy"
+                                        ? "bg-[#1B3729] hover:opacity-95"
+                                        : "bg-emerald-600 hover:bg-emerald-700"
+                                    }`}
+                            >
+                                {isAdding
+                                    ? "მუშავდება..."
+                                    : purchaseMode === "buy"
+                                        ? "კალათაში დამატება"
+                                        : "ქირაობა ახლა"}
+                            </button>
+                        </div>
+
+                        {/* Facts block (Brand/Size/Location/Colour/Minimal days) */}
+                        <div className="bg-white rounded-2xl p-6 shadow-sm">
+                            <ul className="text-sm text-gray-800 space-y-2">
+                                <li>
+                                    <span className="font-semibold">Brand: </span>
+                                    {product.category?.name || "—"}
+                                </li>
+                                <li>
+                                    <span className="font-semibold">Size: </span>
+                                    {selectedSize || "—"}
+                                </li>
+                                <li>
+                                    <span className="font-semibold">Location: </span>
+                                    Tbilisi, GE
+                                </li>
+
+                                <li>
+                                    <span className="font-semibold">Minimal rental period: </span>
+                                    {minDaysGlobal} days
+                                </li>
+                            </ul>
+                        </div>
 
                         {/* Benefits */}
                         <div className="bg-white rounded-2xl p-6 shadow-sm space-y-3">
                             {[
-                              
                                 { icon: Shield, title: "უსაფრთხო გადახდა", desc: "SSL დაცული გადახდები" },
-                                { icon: RotateCcw, title: "30 დღიანი დაბრუნება", desc: "უფასო დაბრუნება" },
-                            ].map((item, i) => (
-                                <div key={i} className="flex items-center text-black">
-                                    <item.icon className="w-6 h-6 mr-4" />
+                                { icon: RotateCcw, title: "დაბრუნება", desc: "მოხერხებული პოლისი" },
+                                { icon: CheckCircle, title: "შემოწმებული ნივთები", desc: "ხარისხის კონტროლი" },
+                            ].map((i, idx) => (
+                                <div key={idx} className="flex items-center">
+                                    <i.icon className="w-5 h-5 mr-3 text-black" />
                                     <div>
-                                        <div className="font-medium">{item.title}</div>
-                                        <div className="text-sm">{item.desc}</div>
+                                        <div className="font-medium text-black">{i.title}</div>
+                                        <div className="text-sm text-gray-700">{i.desc}</div>
                                     </div>
                                 </div>
                             ))}
@@ -669,65 +527,20 @@ const ProductPage = () => {
                     </section>
                 </div>
 
-                {/* Tabs */}
-                <section className="bg-white rounded-2xl shadow-sm mt-16">
-                    <nav className="flex border-b border-gray-200 px-6">
-                        {[
-                            { id: "description", label: "აღწერა", icon: Eye },
-                            { id: "features", label: "მახასიათებლები", icon: CheckCircle },
-                            { id: "specifications", label: "სპეციფიკაციები", icon: MessageCircle },
-                        ].map((tab) => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={`py-4 px-3 border-b-2 text-sm font-medium transition ${activeTab === tab.id
-                                        ? "border-black text-black"
-                                        : "border-transparent hover:border-black"
-                                    }`}
-                            >
-                                <tab.icon className="inline w-4 h-4 mr-2" />
-                                {tab.label}
-                            </button>
-                        ))}
-                    </nav>
-
-                    <div className="p-6">
-                        {activeTab === "description" && (
-                            <p className="text-gray-800 leading-relaxed text-lg">
-                                {product.description}
-                            </p>
-                        )}
-
-                        {activeTab === "features" && (
-                            <div className="grid md:grid-cols-2 gap-4">
-                                {["უმაღლესი ხარისხი", "სწრაფი მიწოდება", "დაცული გადახდა", "დაბრუნება"].map(
-                                    (f, i) => (
-                                        <div key={i} className="p-4 bg-gray-50 rounded-lg flex items-center">
-                                            <CheckCircle className="w-5 h-5 text-black mr-3" />
-                                            <span className="text-black">{f}</span>
-                                        </div>
-                                    )
-                                )}
-                            </div>
-                        )}
-
-                        {activeTab === "specifications" && (
-                            <div className="divide-y divide-gray-200">
-                                <div className="flex justify-between py-3 text-black">
-                                    <span className="font-medium">კატეგორია</span>
-                                    <span>{product.category?.name || "უცნობი"}</span>
-                                </div>
-                                <div className="flex justify-between py-3 text-black">
-                                    <span className="font-medium">ფასი</span>
-                                    <span>₾{getSelectedPrice().toFixed(2)}</span>
-                                </div>
-                            </div>
-                        )}
-                    </div>
+                {/* Why rent instead of buying new? */}
+                <section className="mt-16 bg-gray-50 p-8 rounded-2xl border">
+                    <h2 className="text-2xl font-bold mb-4">რატომ ქირაობა უფრო უკეთესია, ვიდრე ყიდვა?</h2>
+                    <ul className="list-disc pl-6 space-y-2 text-gray-800">
+                        <li>დაზოგე ფული — ატარე მაღალი ბრენდები მცირე ფასად</li>
+                        <li>გარემოს დაცვა — გაზიარების ეკონომიკა, ნაკლები ნარჩენი</li>
+                        <li>ყოველ ღონისძიებაზე განსხვავებული ლუქი — არც ზედმეტი ყიდვები</li>
+                    </ul>
+                    <button className="mt-4 px-5 py-3 rounded-lg bg-black text-white font-semibold">
+                        იხილე დამატებითი ინფორმაცია
+                    </button>
                 </section>
             </main>
         </div>
-
     )
 }
 
