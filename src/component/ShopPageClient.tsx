@@ -9,7 +9,7 @@ import { Product } from '@/types/product'
 const ShopPageClient = () => {
     const searchParams = useSearchParams()
     const genderParam = searchParams.get('gender')
-    
+
     const [products, setProducts] = useState<Product[]>([])
     const [loading, setLoading] = useState(true)
     const [activeCategory, setActiveCategory] = useState("ALL")
@@ -57,7 +57,7 @@ const ShopPageClient = () => {
                 if (genderParam) {
                     params.append('gender', genderParam)
                 }
-                
+
                 const response = await fetch(`/api/products?${params.toString()}`)
                 const data = await response.json()
                 if (data.success) {
@@ -117,21 +117,21 @@ const ShopPageClient = () => {
     const filteredProducts = products.filter(product => {
         // Active Category filter (from sidebar)
         const activeCategoryMatch = activeCategory === "ALL" || product.category?.name === activeCategory
-        
+
         // Price filter
         const minPrice = getMinPrice(product)
         const maxPrice = getMaxPrice(product)
-        const priceMatch = (minPrice >= priceRange[0] && minPrice <= priceRange[1]) || 
-                          (maxPrice >= priceRange[0] && maxPrice <= priceRange[1]) ||
-                          (minPrice <= priceRange[0] && maxPrice >= priceRange[1])
-        
+        const priceMatch = (minPrice >= priceRange[0] && minPrice <= priceRange[1]) ||
+            (maxPrice >= priceRange[0] && maxPrice <= priceRange[1]) ||
+            (minPrice <= priceRange[0] && maxPrice >= priceRange[1])
+
         // Size filter
-        const sizeMatch = selectedSizes.length === 0 || 
+        const sizeMatch = selectedSizes.length === 0 ||
             product.variants.some(variant => selectedSizes.includes(variant.size))
-        
+
         // Color filter (skip for now as we don't have colors in database)
         const colorMatch = selectedColors.length === 0
-        
+
         return activeCategoryMatch && priceMatch && sizeMatch && colorMatch
     })
 
@@ -157,8 +157,8 @@ const ShopPageClient = () => {
 
     // Handle size selection
     const toggleSize = (size: string) => {
-        setSelectedSizes(prev => 
-            prev.includes(size) 
+        setSelectedSizes(prev =>
+            prev.includes(size)
                 ? prev.filter(s => s !== size)
                 : [...prev, size]
         )
@@ -166,8 +166,8 @@ const ShopPageClient = () => {
 
     // Handle color selection
     const toggleColor = (color: string) => {
-        setSelectedColors(prev => 
-            prev.includes(color) 
+        setSelectedColors(prev =>
+            prev.includes(color)
                 ? prev.filter(c => c !== color)
                 : [...prev, color]
         )
@@ -247,11 +247,10 @@ const ShopPageClient = () => {
                                         <button
                                             key={category.id}
                                             onClick={() => setActiveCategory(category.id)}
-                                            className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                                                activeCategory === category.id
-                                                    ? "bg-black text-white"
-                                                    : "text-gray-600 hover:bg-gray-100"
-                                            }`}
+                                            className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${activeCategory === category.id
+                                                ? "bg-black text-white"
+                                                : "text-gray-600 hover:bg-gray-100"
+                                                }`}
                                         >
                                             {category.label}
                                         </button>
@@ -288,11 +287,10 @@ const ShopPageClient = () => {
                                         <button
                                             key={size.id}
                                             onClick={() => toggleSize(size.id)}
-                                            className={`px-3 py-2 text-sm rounded-md border transition-colors ${
-                                                selectedSizes.includes(size.id)
-                                                    ? "bg-black text-white border-black"
-                                                    : "bg-white text-gray-700 border-gray-300 hover:border-black"
-                                            }`}
+                                            className={`px-3 py-2 text-sm rounded-md border transition-colors ${selectedSizes.includes(size.id)
+                                                ? "bg-black text-white border-black"
+                                                : "bg-white text-gray-700 border-gray-300 hover:border-black"
+                                                }`}
                                         >
                                             {size.label}
                                         </button>
@@ -300,7 +298,7 @@ const ShopPageClient = () => {
                                 </div>
                             </div>
 
-                          
+
                             {/* Results Count */}
                             <div className="pt-4 border-t border-gray-200">
                                 <p className="md:text-[18px] text-[16px] text-black">
@@ -328,7 +326,7 @@ const ShopPageClient = () => {
                                         <option value="rating">რეიტინგი</option>
                                     </select>
                                 </div>
-                                
+
                                 <div className="md:text-[18px] text-[16px] text-black">
                                     ნაპოვნია {sortedProducts.length} პროდუქტი
                                 </div>
@@ -343,40 +341,15 @@ const ShopPageClient = () => {
                                     className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 group"
                                 >
                                     {/* Product Image */}
-                                    <div className="relative aspect-square overflow-hidden rounded-t-lg bg-white">
+                                    <div className="relative aspect-[3/4] bg-gray-100">
                                         <Image
-                                            src={getMainImage(product)}
+                                            src={product.images?.[0]?.url || "/placeholder.jpg"}
                                             alt={product.name}
                                             fill
-                                            className="object-cover group-hover:scale-110 transition-transform duration-500"
-                                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                            className="object-cover  transition-transform duration-300"
                                         />
-
-                                        {/* Badges */}
-                                        <div className="absolute top-3 left-3 flex flex-col space-y-2">
-                                            {product.hasSale && (
-                                                <div className="bg-black text-white px-2 py-1 rounded md:text-[18px] text-[16px] font-semibold">
-                                                   ფასდაკლება
-                                                </div>
-                                            )}
-                                            {product.isNew && (
-                                                <div className="bg-black text-white px-2 py-1 rounded md:text-[18px] text-[16px] font-semibold">
-                                                   ახალი
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Quick Actions */}
-                                        <div className="absolute top-3 right-3 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                            <button className="bg-white p-2 rounded-full shadow-lg hover:bg-gray-50 transition-colors">
-                                                <Heart className="w-4 h-4 text-black" />
-                                            </button>
-                                            <button className="bg-white p-2 rounded-full shadow-lg hover:bg-gray-50 transition-colors">
-                                                <ShoppingCart className="w-4 h-4 text-black" />
-                                            </button>
-                                        </div>
+                                        
                                     </div>
-
                                     {/* Product Info */}
                                     <div className="p-4">
                                         {/* Category */}
@@ -391,7 +364,7 @@ const ShopPageClient = () => {
                                             {product.name}
                                         </h3>
 
-                                    
+
                                         {/* Pricing */}
                                         <div className="flex items-center space-x-2 mb-4">
                                             <span className="md:text-[18px] text-[16px] font-bold text-black">

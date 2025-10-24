@@ -39,7 +39,7 @@ const SimilarProducts: React.FC<SimilarProductsProps> = ({ productId, categoryNa
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
             <div key={i} className="animate-pulse">
-              <div className="aspect-[3/4] bg-gray-200 rounded-xl mb-3"></div>
+               <div className="aspect-[2/3] bg-gray-200 rounded-xl mb-3"></div>
               <div className="h-4 bg-gray-200 rounded mb-2"></div>
               <div className="h-3 bg-gray-200 rounded w-2/3"></div>
             </div>
@@ -72,7 +72,7 @@ const SimilarProducts: React.FC<SimilarProductsProps> = ({ productId, categoryNa
               href={`/product/${product.id}`}
               className="group block"
             >
-              <div className="relative aspect-[3/4] bg-gray-100 rounded-xl overflow-hidden mb-3">
+               <div className="relative aspect-[2/3] bg-gray-100 rounded-xl overflow-hidden mb-3">
                 <Image
                   src={firstImage}
                   alt={product.name}
