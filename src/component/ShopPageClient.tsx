@@ -15,7 +15,8 @@ const ShopPageClient = () => {
     const [activeCategory, setActiveCategory] = useState("ALL")
     const [sortBy, setSortBy] = useState("newest")
     const [isFilterOpen, setIsFilterOpen] = useState(false)
-    const [priceRange, setPriceRange] = useState([0, 200])
+    const [priceRange, setPriceRange] = useState([0, 0])
+    const [maxPrice, setMaxPrice] = useState(0)
     const [selectedSizes, setSelectedSizes] = useState<string[]>([])
     const [selectedColors, setSelectedColors] = useState<string[]>([])
     const [selectedLocations, setSelectedLocations] = useState<string[]>([])
@@ -70,6 +71,18 @@ const ShopPageClient = () => {
                 const data = await response.json()
                 if (data.success) {
                     setProducts(data.products)
+                    
+                    // Calculate maximum price from products
+                    const allPrices = data.products.flatMap((product: Product) => 
+                        product.variants?.map(variant => variant.price) || []
+                    )
+                    const calculatedMaxPrice = allPrices.length > 0 ? Math.max.apply(null, allPrices) : 200
+                    setMaxPrice(calculatedMaxPrice)
+                    
+                    // Update price range if current max is higher than calculated max
+                    if (calculatedMaxPrice > priceRange[1]) {
+                        setPriceRange([0, calculatedMaxPrice])
+                    }
                 }
             } catch (error) {
                 console.error('Error fetching products:', error)
@@ -215,7 +228,7 @@ const ShopPageClient = () => {
     // Clear all filters
     const clearFilters = () => {
         setActiveCategory("ALL")
-        setPriceRange([0, 200])
+        setPriceRange([0, maxPrice])
         setSelectedSizes([])
         setSelectedColors([])
         setSelectedLocations([])
@@ -308,7 +321,7 @@ const ShopPageClient = () => {
                                         <input
                                             type="range"
                                             min="0"
-                                            max="1000"
+                                            max={maxPrice}
                                             value={priceRange[1]}
                                             onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
                                             className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"

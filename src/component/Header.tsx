@@ -227,6 +227,8 @@ const Header = () => {
                       )}
                     </div>
                   ))}
+                  <Link href="/about" className="block text-black text-[17px] px-4 py-2 hover:bg-gray-100">ჩვენს შესახებ</Link>
+                  <Link href="/politics" className="block text-black text-[17px] px-4 py-2 hover:bg-gray-100">საიტის პოლიტიკა</Link>
                 </div>
               )}
             </div>
