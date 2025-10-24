@@ -67,6 +67,19 @@ const EditProductPage = () => {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  const colors = [
+    { id: "black", label: "შავი", color: "#000000" },
+    { id: "white", label: "თეთრი", color: "#FFFFFF" },
+    { id: "red", label: "წითელი", color: "#FF0000" },
+    { id: "blue", label: "ლურჯი", color: "#0000FF" },
+    { id: "green", label: "მწვანე", color: "#008000" },
+    { id: "yellow", label: "ყვითელი", color: "#FFFF00" },
+    { id: "pink", label: "ვარდისფერი", color: "#FFC0CB" },
+    { id: "purple", label: "იისფერი", color: "#800080" },
+    { id: "gray", label: "ნაცრისფერი", color: "#A52A2A" },
+    { id: "beige", label: "ბეჟი", color: "#8B4513" }
+  ]
+
   // Fetch categories
   const fetchCategories = async () => {
     try {
@@ -449,13 +462,18 @@ const EditProductPage = () => {
                 <label className="block text-[20px] text-black font-medium mb-2">
                   ფერი
                 </label>
-                <input
-                  type="text"
-                  value={formData.color}
+                <select
+                  value={formData.color || ''}
                   onChange={(e) => handleInputChange('color', e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                  placeholder="მაგ: შავი, თეთრი, ლურჯი"
-                />
+                >
+                  <option value="">აირჩიეთ ფერი</option>
+                  {colors.map(color => (
+                    <option key={color.id} value={color.label}>
+                      {color.label}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>

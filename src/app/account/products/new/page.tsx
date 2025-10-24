@@ -4,7 +4,6 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, Plus, X } from 'lucide-react'
 import Link from 'next/link'
 import { z } from 'zod'
-import ImageUpload from '@/component/CloudinaryUploader'
 import ImageUploadForProduct from '@/component/productimage'
 
 const productSchema = z.object({
@@ -19,10 +18,10 @@ const productSchema = z.object({
   hasSale: z.boolean().default(false),
   rating: z.number().min(0).max(5).optional(),
   categoryId: z.number().optional(),
-  isRentable: z.boolean().default(false), // 🆕
-  pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional(), // 🆕
-  maxRentalDays: z.number().optional(), // 🆕
-  deposit: z.number().min(0, 'გირაო უნდა იყოს დადებითი').optional(), // 🆕
+  isRentable: z.boolean().default(false),
+  pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional(),
+  maxRentalDays: z.number().optional(),
+  deposit: z.number().min(0, 'გირაო უნდა იყოს დადებითი').optional(),
   variants: z.array(
     z.object({
       size: z.string().min(1, 'ზომა აუცილებელია'),
@@ -36,7 +35,6 @@ const productSchema = z.object({
     pricePerDay: z.number().positive('ფასი დღეში უნდა იყოს დადებითი')
   })).optional()
 })
-
 
 type ProductFormData = z.infer<typeof productSchema>
 
@@ -54,7 +52,7 @@ const NewProductPage = () => {
     hasSale: false,
     rating: 0,
     categoryId: undefined,
-    isRentable: false, // 🆕
+    isRentable: false,
     pricePerDay: undefined,
     maxRentalDays: undefined,
     deposit: undefined,
@@ -62,7 +60,6 @@ const NewProductPage = () => {
     imageUrls: [],
     rentalPriceTiers: [],
   })
-
 
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -224,7 +221,7 @@ const NewProductPage = () => {
 
       if (result.success) {
         alert('პროდუქტი წარმატებით შეიქმნა!')
-        router.push('/admin')
+        router.push('/account')
       } else {
         if (result.errors) {
           const newErrors: Record<string, string> = {}
@@ -264,7 +261,7 @@ const NewProductPage = () => {
         <div className="px-6 py-4">
           <div className="flex items-center space-x-4">
             <Link
-              href="/admin"
+              href="/account"
               className="flex items-center text-[20px] text-black hover:text-gray-600"
             >
               <ArrowLeft className="w-5 h-5 mr-2" />
@@ -309,21 +306,6 @@ const NewProductPage = () => {
                 <p className="text-gray-500 text-sm mt-1">Slug ავტომატურად გენერირდება სახელიდან</p>
               </div>
 
-              {/* <div>
-                <label className="block text-[20px] text-black font-medium mb-2">
-                  საწყობი *
-                </label>
-                <input
-                  type="number"
-                  value={formData.stock}
-                  onChange={(e) => handleInputChange('stock', parseInt(e.target.value) || 0)}
-                  className={`w-full px-4 py-3 border rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black ${errors.stock ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                />
-                {errors.stock && <p className="text-red-500 text-sm mt-1">{errors.stock}</p>}
-              </div> */}
-
-           
               <div>
                 <label className="block text-[20px] text-black font-medium mb-2">
                   კატეგორია
@@ -581,7 +563,6 @@ const NewProductPage = () => {
             )}
           </div>
 
-
           {/* Images */}
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h2 className="text-[20px] text-black font-semibold mb-6">სურათები</h2>
@@ -594,7 +575,7 @@ const NewProductPage = () => {
           {/* Submit Button */}
           <div className="flex justify-end space-x-4">
             <Link
-              href="/admin"
+              href="/account"
               className="bg-gray-500 text-white px-6 py-3 rounded-lg text-[20px] text-black hover:bg-gray-600 transition-colors"
             >
               გაუქმება

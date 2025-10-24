@@ -375,7 +375,7 @@ const AccountPage = () => {
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-bold text-black">ჩემი პროდუქტები</h3>
           <Link
-            href="/admin/products/new"
+            href="/account/products/new"
             className="flex items-center space-x-2 px-4 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
           >
             <Package className="w-4 h-4" />
@@ -388,7 +388,7 @@ const AccountPage = () => {
             <Package className="w-12 h-12 text-black mx-auto mb-4" />
             <p className="text-black">ჯერ არ გაქვთ პროდუქტები</p>
             <Link
-              href="/admin/products/new"
+              href="/account/products/new"
               className="inline-block mt-4 px-6 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
             >
               პირველი პროდუქტის დამატება
@@ -419,9 +419,12 @@ const AccountPage = () => {
                   <p className="text-sm text-black">დამატებული: {product.createdAt}</p>
                   
                   <div className="mt-4 flex space-x-2">
-                    <button className="flex-1 px-3 py-2 bg-black text-white rounded-lg hover:bg-gray-200 transition-colors text-sm">
+                    <Link
+                      href={`/account/products/${product.id}/edit`}
+                      className="flex-1 px-3 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors text-sm text-center"
+                    >
                       რედაქტირება
-                    </button>
+                    </Link>
                     <button className="flex-1 px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm">
                       წაშლა
                     </button>

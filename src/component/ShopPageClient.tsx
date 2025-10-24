@@ -47,7 +47,9 @@ const ShopPageClient = () => {
         { id: "green", label: "მწვანე", color: "#008000" },
         { id: "yellow", label: "ყვითელი", color: "#FFFF00" },
         { id: "pink", label: "ვარდისფერი", color: "#FFC0CB" },
-        { id: "purple", label: "იისფერი", color: "#800080" }
+        { id: "purple", label: "იისფერი", color: "#800080" },
+        { id: "gray", label: "ნაცრისფერი", color: "#A52A2A" },
+        { id: "beige", label: "ბეჟი", color: "#8B4513" }
     ]
 
     const locations = [

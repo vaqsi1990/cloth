@@ -1,10 +1,9 @@
 "use client"
-import React, { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { ArrowLeft, Plus, X } from 'lucide-react'
-import Link from 'next/link'
+import React, { useState, useEffect } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import { ArrowLeft, Save, X, Plus } from 'lucide-react'
 import { z } from 'zod'
-import ImageUpload from '@/component/CloudinaryUploader'
+import { Product } from '@/types/product'
 import ImageUploadForProduct from '@/component/productimage'
 
 const productSchema = z.object({
@@ -19,29 +18,32 @@ const productSchema = z.object({
   hasSale: z.boolean().default(false),
   rating: z.number().min(0).max(5).optional(),
   categoryId: z.number().optional(),
-  isRentable: z.boolean().default(false), // 🆕
-  pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional(), // 🆕
-  maxRentalDays: z.number().optional(), // 🆕
-  deposit: z.number().min(0, 'გირაო უნდა იყოს დადებითი').optional(), // 🆕
-  variants: z.array(
-    z.object({
-      size: z.string().min(1, 'ზომა აუცილებელია'),
-      stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი'),
-      price: z.number().min(0, 'ფასი უნდა იყოს დადებითი')
-    })
-  ).default([]),
-  imageUrls: z.array(z.string().url('არასწორი URL')).default([]),
+  isRentable: z.boolean().default(false),
+  pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').nullable().optional(),
+  maxRentalDays: z.number().nullable().optional(),
+  deposit: z.number().min(0, 'გირაო უნდა იყოს დადებითი').nullable().optional(),
+  variants: z.array(z.object({
+    size: z.string().min(1, 'ზომა აუცილებელია'),
+    stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი'),
+    price: z.number().min(0, 'ფასი უნდა იყოს დადებითი')
+  })).default([]),
+  imageUrls: z.array(z.string().min(1, 'URL აუცილებელია')).default([]),
   rentalPriceTiers: z.array(z.object({
     minDays: z.number().int().min(1, 'მინიმალური დღეები უნდა იყოს დადებითი'),
     pricePerDay: z.number().positive('ფასი დღეში უნდა იყოს დადებითი')
-  })).optional()
+  })).default([])
 })
-
 
 type ProductFormData = z.infer<typeof productSchema>
 
-const NewProductPage = () => {
+const EditProductPage = () => {
+  const params = useParams()
   const router = useRouter()
+  const productId = params.id as string
+
+  const [product, setProduct] = useState<Product | null>(null)
+  const [categories, setCategories] = useState<{ id: number; name: string; slug: string }[]>([])
+  const [loading, setLoading] = useState(true)
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
     slug: '',
@@ -54,7 +56,7 @@ const NewProductPage = () => {
     hasSale: false,
     rating: 0,
     categoryId: undefined,
-    isRentable: false, // 🆕
+    isRentable: false,
     pricePerDay: undefined,
     maxRentalDays: undefined,
     deposit: undefined,
@@ -62,20 +64,8 @@ const NewProductPage = () => {
     imageUrls: [],
     rentalPriceTiers: [],
   })
-
-
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const categories = [
-    { id: 1, name: 'კაბები', slug: 'dresses' },
-    { id: 2, name: 'ბლუზები', slug: 'tops' },
-    { id: 3, name: 'შარვლები', slug: 'bottoms' },
-    { id: 4, name: 'ზედა ტანსაცმელი', slug: 'outerwear' },
-    { id: 5, name: 'აქსესუარები', slug: 'accessories' }
-  ]
-
-  const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
 
   const colors = [
     { id: "black", label: "შავი", color: "#000000" },
@@ -90,23 +80,66 @@ const NewProductPage = () => {
     { id: "beige", label: "ბეჟი", color: "#8B4513" }
   ]
 
-  const handleInputChange = (field: keyof ProductFormData, value: string | number | boolean | undefined) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }))
+  const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
 
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({
-        ...prev,
-        [field]: ''
-      }))
+  // Fetch categories
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch('/api/categories')
+      const data = await response.json()
+      if (data.success) {
+        setCategories(data.categories)
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error)
     }
   }
 
+  // Fetch product data
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        const response = await fetch(`/api/products/${productId}`)
+        const data = await response.json()
+        if (data.success) {
+          const product = data.product
+          const imageUrls = product.images?.map((img: { url: string }) => img.url) || []
+          setProduct(product)
+          setFormData({
+            name: product.name,
+            slug: product.slug,
+            description: product.description || '',
+            stock: parseInt(product.sku) || 0,
+            gender: product.gender || 'UNISEX',
+            color: product.color || '',
+            location: product.location || '',
+            isNew: product.isNew,
+            hasSale: product.hasSale,
+            rating: product.rating || 0,
+            categoryId: product.categoryId,
+            isRentable: product.isRentable || false,
+            pricePerDay: product.pricePerDay || undefined,
+            maxRentalDays: product.maxRentalDays || undefined,
+            deposit: product.deposit || undefined,
+            variants: product.variants || [],
+            imageUrls: imageUrls,
+            rentalPriceTiers: product.rentalPriceTiers || []
+          })
+        }
+      } catch (error) {
+        console.error('Error fetching product:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (productId) {
+      fetchProduct()
+      fetchCategories()
+    }
+  }, [productId])
+
   const generateSlug = (name: string) => {
-    // Convert Georgian characters to Latin equivalents
     const georgianToLatin: { [key: string]: string } = {
       'ა': 'a', 'ბ': 'b', 'გ': 'g', 'დ': 'd', 'ე': 'e', 'ვ': 'v', 'ზ': 'z',
       'თ': 't', 'ი': 'i', 'კ': 'k', 'ლ': 'l', 'მ': 'm', 'ნ': 'n', 'ო': 'o',
@@ -114,7 +147,7 @@ const NewProductPage = () => {
       'ქ': 'q', 'ღ': 'gh', 'ყ': 'k', 'შ': 'sh', 'ჩ': 'ch', 'ც': 'ts', 'ძ': 'dz',
       'წ': 'ts', 'ჭ': 'ch', 'ხ': 'kh', 'ჯ': 'j', 'ჰ': 'h'
     }
-
+    
     return name
       .toLowerCase()
       .split('')
@@ -133,13 +166,18 @@ const NewProductPage = () => {
       name: name,
       slug: slug
     }))
-
-    // Clear errors when user starts typing
     if (errors.name) {
-      setErrors(prev => ({
-        ...prev,
-        name: ''
-      }))
+      setErrors(prev => ({ ...prev, name: '' }))
+    }
+  }
+
+  const handleInputChange = (field: keyof ProductFormData, value: string | number | boolean | undefined) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }))
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }))
     }
   }
 
@@ -160,16 +198,23 @@ const NewProductPage = () => {
   const updateVariant = (index: number, field: string, value: string | number | undefined) => {
     setFormData(prev => ({
       ...prev,
-      variants: prev.variants.map((variant, i) =>
+      variants: prev.variants.map((variant, i) => 
         i === index ? { ...variant, [field]: value } : variant
       )
+    }))
+  }
+
+  const handleImageChange = (urls: string[]) => {
+    setFormData(prev => ({
+      ...prev,
+      imageUrls: urls
     }))
   }
 
   const addRentalPriceTier = () => {
     setFormData(prev => ({
       ...prev,
-      rentalPriceTiers: [...(prev.rentalPriceTiers || []), { minDays: 1, pricePerDay: 0 }]
+      rentalPriceTiers: [...(prev.rentalPriceTiers || []), { minDays: 1, pricePerDay: 1 }]
     }))
   }
 
@@ -183,8 +228,7 @@ const NewProductPage = () => {
   const updateRentalPriceTier = (index: number, field: string, value: number) => {
     setFormData(prev => {
       const currentTiers = prev.rentalPriceTiers || []
-      // If no tiers exist, create a default one
-      const tiers = currentTiers.length === 0 ? [{ minDays: 1, pricePerDay: 0 }] : currentTiers
+      const tiers = currentTiers.length === 0 ? [{ minDays: 1, pricePerDay: 1 }] : currentTiers
       
       return {
         ...prev,
@@ -195,36 +239,33 @@ const NewProductPage = () => {
     })
   }
 
-  const handleImageChange = (urls: string[]) => {
-    setFormData(prev => ({
-      ...prev,
-      imageUrls: urls
-    }))
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
     setErrors({})
 
     try {
-      // Validate form data
-      const validatedData = productSchema.parse(formData)
-
-      // Send data to API
-      const response = await fetch('/api/products', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const dataToValidate = {
+        ...formData,
+        pricePerDay: formData.pricePerDay || undefined,
+        maxRentalDays: formData.maxRentalDays || undefined,
+        deposit: formData.deposit || undefined,
+        rentalPriceTiers: formData.rentalPriceTiers || []
+      }
+      
+      const validatedData = productSchema.parse(dataToValidate)
+      
+      const response = await fetch(`/api/products/${productId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(validatedData),
       })
-
+      
       const result = await response.json()
-
+      
       if (result.success) {
-        alert('პროდუქტი წარმატებით შეიქმნა!')
-        router.push('/admin')
+        alert('პროდუქტი წარმატებით განახლდა!')
+        router.push('/account')
       } else {
         if (result.errors) {
           const newErrors: Record<string, string> = {}
@@ -235,12 +276,11 @@ const NewProductPage = () => {
           })
           setErrors(newErrors)
         } else {
-          alert(result.message || 'შეცდომა პროდუქტის შექმნისას')
+          alert(result.message || 'შეცდომა პროდუქტის განახლებისას')
         }
       }
-
     } catch (error) {
-      console.error('Error:', error)
+      console.error('Error updating product:', error)
       if (error instanceof z.ZodError) {
         const newErrors: Record<string, string> = {}
         error.issues.forEach(err => {
@@ -250,11 +290,37 @@ const NewProductPage = () => {
         })
         setErrors(newErrors)
       } else {
-        alert('მოულოდნელი შეცდომა')
+        alert('შეცდომა პროდუქტის განახლებისას')
       }
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-black mb-4">იტვირთება...</h1>
+        </div>
+      </div>
+    )
+  }
+
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-black mb-4">პროდუქტი ვერ მოიძებნა</h1>
+          <button 
+            onClick={() => router.push('/account')}
+            className="text-black hover:text-gray-600"
+          >
+            დაბრუნდი ანგარიშში
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -263,14 +329,14 @@ const NewProductPage = () => {
       <div className="bg-white shadow-sm border-b">
         <div className="px-6 py-4">
           <div className="flex items-center space-x-4">
-            <Link
-              href="/admin"
+            <button
+              onClick={() => router.push('/account')}
               className="flex items-center text-[20px] text-black hover:text-gray-600"
             >
               <ArrowLeft className="w-5 h-5 mr-2" />
               დაბრუნება
-            </Link>
-            <h1 className="text-[20px] text-black font-bold">ახალი პროდუქტის დამატება</h1>
+            </button>
+            <h1 className="text-[20px] text-black font-bold">პროდუქტის რედაქტირება</h1>
           </div>
         </div>
       </div>
@@ -306,24 +372,8 @@ const NewProductPage = () => {
                   readOnly
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black bg-gray-50 cursor-not-allowed"
                 />
-                <p className="text-gray-500 text-sm mt-1">Slug ავტომატურად გენერირდება სახელიდან</p>
               </div>
 
-              {/* <div>
-                <label className="block text-[20px] text-black font-medium mb-2">
-                  საწყობი *
-                </label>
-                <input
-                  type="number"
-                  value={formData.stock}
-                  onChange={(e) => handleInputChange('stock', parseInt(e.target.value) || 0)}
-                  className={`w-full px-4 py-3 border rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black ${errors.stock ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                />
-                {errors.stock && <p className="text-red-500 text-sm mt-1">{errors.stock}</p>}
-              </div> */}
-
-           
               <div>
                 <label className="block text-[20px] text-black font-medium mb-2">
                   კატეგორია
@@ -581,7 +631,6 @@ const NewProductPage = () => {
             )}
           </div>
 
-
           {/* Images */}
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h2 className="text-[20px] text-black font-semibold mb-6">სურათები</h2>
@@ -593,18 +642,20 @@ const NewProductPage = () => {
 
           {/* Submit Button */}
           <div className="flex justify-end space-x-4">
-            <Link
-              href="/admin"
+            <button
+              type="button"
+              onClick={() => router.push('/account')}
               className="bg-gray-500 text-white px-6 py-3 rounded-lg text-[20px] text-black hover:bg-gray-600 transition-colors"
             >
               გაუქმება
-            </Link>
+            </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="bg-black text-white px-6 py-3 rounded-lg text-[20px] text-black hover:bg-gray-800 transition-colors disabled:bg-gray-400"
+              className="bg-black text-white px-6 py-3 rounded-lg text-[20px] text-black hover:bg-gray-800 transition-colors disabled:bg-gray-400 flex items-center"
             >
-              {isSubmitting ? 'მუშავდება...' : 'პროდუქტის დამატება'}
+              <Save className="w-5 h-5 mr-2" />
+              {isSubmitting ? 'მუშავდება...' : 'პროდუქტის განახლება'}
             </button>
           </div>
         </form>
@@ -613,4 +664,4 @@ const NewProductPage = () => {
   )
 }
 
-export default NewProductPage
+export default EditProductPage

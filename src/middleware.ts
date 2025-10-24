@@ -11,6 +11,10 @@ export default withAuth(
         if (req.nextUrl.pathname.startsWith("/admin")) {
           return token?.role === "ADMIN"
         }
+        // Allow authenticated users to access account routes
+        if (req.nextUrl.pathname.startsWith("/account")) {
+          return !!token
+        }
         return true
       },
     },
@@ -18,5 +22,5 @@ export default withAuth(
 )
 
 export const config = {
-  matcher: ["/admin/:path*"]
+  matcher: ["/admin/:path*", "/account/:path*"]
 }
