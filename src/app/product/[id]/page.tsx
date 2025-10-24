@@ -15,6 +15,7 @@ import { useCart } from "@/hooks/useCart"
 import { useSession } from "next-auth/react"
 import { Product, RentalPeriod } from "@/types/product"
 import { formatDate } from "@/utils/dateUtils"
+import SimilarProducts from "@/components/SimilarProducts"
 
 type Tier = { minDays: number; pricePerDay: number }
 
@@ -253,41 +254,45 @@ const ProductPage = () => {
                 <div className="grid lg:grid-cols-2 gap-10">
                     {/* LEFT — Gallery */}
                     <section>
-                        <div className="relative w-full aspect-[3/4] bg-white rounded-2xl overflow-hidden shadow border">
-                            <Image
-                                src={getMainImage()}
-                                alt={product.name}
-                                fill
-                                className="object-cover"
-                                priority
-                            />
-                            <div className="absolute top-4 left-4 flex gap-2">
-                                {product.hasSale && (
-                                    <span className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
-                                        ფასდაკლება
-                                    </span>
-                                )}
-                                {product.isNew && (
-                                    <span className="bg-black text-white px-3 py-1 rounded-full text-xs font-semibold">
-                                        ახალი
-                                    </span>
-                                )}
+                        <div className="flex gap-4">
+                            {/* Small images on the left */}
+                            <div className="flex flex-col gap-3">
+                                {product.images?.map((img, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => setActiveImage(i)}
+                                        className={`relative w-20 h-20 rounded-xl overflow-hidden border-2 transition ${activeImage === i
+                                                ? "border-black"
+                                                : "border-gray-200 hover:border-black"
+                                            }`}
+                                    >
+                                        <Image src={img.url} alt={`${product.name}-${i}`} fill className="object-cover" />
+                                    </button>
+                                ))}
                             </div>
-                        </div>
 
-                        <div className="grid grid-cols-4 gap-3 mt-3">
-                            {product.images?.map((img, i) => (
-                                <button
-                                    key={i}
-                                    onClick={() => setActiveImage(i)}
-                                    className={`relative aspect-square rounded-xl overflow-hidden border-2 transition ${activeImage === i
-                                            ? "border-black"
-                                            : "border-gray-200 hover:border-black"
-                                        }`}
-                                >
-                                    <Image src={img.url} alt={`${product.name}-${i}`} fill className="object-cover" />
-                                </button>
-                            ))}
+                            {/* Main image */}
+                            <div className="relative flex-1 aspect-[3/4] bg-white rounded-2xl overflow-hidden shadow border">
+                                <Image
+                                    src={getMainImage()}
+                                    alt={product.name}
+                                    fill
+                                    className="object-cover"
+                                    priority
+                                />
+                                <div className="absolute top-4 left-4 flex gap-2">
+                                    {product.hasSale && (
+                                        <span className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                                            ფასდაკლება
+                                        </span>
+                                    )}
+                                    {product.isNew && (
+                                        <span className="bg-black text-white px-3 py-1 rounded-full text-xs font-semibold">
+                                            ახალი
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     </section>
 
@@ -577,7 +582,13 @@ const ProductPage = () => {
                     </section>
                 </div>
 
-            
+                {/* Similar Products */}
+                <div className="mt-12">
+                    <SimilarProducts 
+                        productId={product.id} 
+                        categoryName={product.category?.name}
+                    />
+                </div>
             
             </main>
         </div>
