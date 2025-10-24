@@ -14,6 +14,7 @@ const productSchema = z.object({
   stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი').default(0),
   gender: z.enum(['MEN', 'WOMEN', 'CHILDREN', 'UNISEX']).default('UNISEX'),
   color: z.string().optional(),
+  location: z.string().optional(),
   isNew: z.boolean().default(false),
   hasSale: z.boolean().default(false),
   rating: z.number().min(0).max(5).optional(),
@@ -48,6 +49,7 @@ const NewProductPage = () => {
     stock: 0,
     gender: 'UNISEX',
     color: '',
+    location: '',
     isNew: false,
     hasSale: false,
     rating: 0,
@@ -355,6 +357,23 @@ const NewProductPage = () => {
                   placeholder="მაგ: შავი, თეთრი, ლურჯი"
                 />
               </div>
+
+              <div>
+                <label className="block text-[20px] text-black font-medium mb-2">
+                  მდებარეობა
+                </label>
+                <select
+                  value={formData.location || ''}
+                  onChange={(e) => handleInputChange('location', e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                >
+                  <option value="">მდებარეობის არჩევა</option>
+                  <option value="თბილისი">თბილისი</option>
+                  <option value="ქუთაისი">ქუთაისი</option>
+                  <option value="რუსთავი">რუსთავი</option>
+                  <option value="ბათუმი">ბათუმი</option>
+                </select>
+              </div>
             </div>
 
             <div className="mt-6">
@@ -520,7 +539,7 @@ const NewProductPage = () => {
                 {/* Additional Rental Parameters */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-[20px] text-black font-medium mb-2">მაქს დღეების რაოდენობა(არასავალდებულო)</label>
+                    <label className="block text-[20px] text-black font-medium mb-2">მაქს დღეები(არასავალდებულო)</label>
                     <input
                       type="number"
                       value={formData.maxRentalDays || ''}

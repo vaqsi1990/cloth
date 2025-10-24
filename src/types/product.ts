@@ -48,6 +48,7 @@ export interface Product {
   sku?: string
   gender: 'MEN' | 'WOMEN' | 'CHILDREN' | 'UNISEX'
   color?: string
+  location?: string
   isNew: boolean
   hasSale: boolean
   rating?: number

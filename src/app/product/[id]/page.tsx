@@ -552,7 +552,7 @@ const ProductPage = () => {
                                 </li>
                                 <li>
                                     <span className="font-semibold">მდებარეობა: </span>
-                                    Tbilisi, GE
+                                    {product.location || "Tbilisi, GE"}
                                 </li>
 
                                 <li>

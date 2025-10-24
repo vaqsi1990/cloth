@@ -18,6 +18,7 @@ const ShopPageClient = () => {
     const [priceRange, setPriceRange] = useState([0, 200])
     const [selectedSizes, setSelectedSizes] = useState<string[]>([])
     const [selectedColors, setSelectedColors] = useState<string[]>([])
+    const [selectedLocations, setSelectedLocations] = useState<string[]>([])
 
     const categories = [
         { id: "ALL", label: "ყველა" },
@@ -46,6 +47,13 @@ const ShopPageClient = () => {
         { id: "yellow", label: "ყვითელი", color: "#FFFF00" },
         { id: "pink", label: "ვარდისფერი", color: "#FFC0CB" },
         { id: "purple", label: "იისფერი", color: "#800080" }
+    ]
+
+    const locations = [
+        { id: "თბილისი", label: "თბილისი" },
+        { id: "ქუთაისი", label: "ქუთაისი" },
+        { id: "რუსთავი", label: "რუსთავი" },
+        { id: "ბათუმი", label: "ბათუმი" }
     ]
 
     // Fetch products from API
@@ -132,7 +140,11 @@ const ShopPageClient = () => {
         // Color filter (skip for now as we don't have colors in database)
         const colorMatch = selectedColors.length === 0
 
-        return activeCategoryMatch && priceMatch && sizeMatch && colorMatch
+        // Location filter
+        const locationMatch = selectedLocations.length === 0 || 
+            selectedLocations.includes(product.location || '')
+
+        return activeCategoryMatch && priceMatch && sizeMatch && colorMatch && locationMatch
     })
 
     // Debug: Log filtering results
@@ -173,12 +185,22 @@ const ShopPageClient = () => {
         )
     }
 
+    // Handle location selection
+    const toggleLocation = (location: string) => {
+        setSelectedLocations(prev =>
+            prev.includes(location)
+                ? prev.filter(l => l !== location)
+                : [...prev, location]
+        )
+    }
+
     // Clear all filters
     const clearFilters = () => {
         setActiveCategory("ALL")
         setPriceRange([0, 200])
         setSelectedSizes([])
         setSelectedColors([])
+        setSelectedLocations([])
     }
 
     // Get main product image
@@ -191,19 +213,7 @@ const ShopPageClient = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50">
-            {/* Header */}
-            {genderParam && (
-                <div className="bg-white shadow-sm border-b">
-                    <div className="container mx-auto px-4 py-6">
-                        <h1 className="md:text-[18px] text-[16px] font-bold text-black">
-                            {genderInfo.title} <span className="text-black">ტანსაცმელი</span>
-                        </h1>
-                        {genderInfo.description && (
-                            <p className="md:text-[18px] text-[16px] text-black mt-2">{genderInfo.description}</p>
-                        )}
-                    </div>
-                </div>
-            )}
+         
 
             <div className="container mx-auto px-4 py-8">
                 {/* Mobile Filter Toggle */}
@@ -266,7 +276,7 @@ const ShopPageClient = () => {
                                         <input
                                             type="range"
                                             min="0"
-                                            max="200"
+                                            max="1000"
                                             value={priceRange[1]}
                                             onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
                                             className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
@@ -293,6 +303,25 @@ const ShopPageClient = () => {
                                                 }`}
                                         >
                                             {size.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Location Filter */}
+                            <div className="mb-6">
+                                <h4 className="font-medium text-gray-900 mb-3">მდებარეობა</h4>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {locations.map((location) => (
+                                        <button
+                                            key={location.id}
+                                            onClick={() => toggleLocation(location.id)}
+                                            className={`px-3 py-2 text-sm rounded-md border transition-colors ${selectedLocations.includes(location.id)
+                                                ? "bg-black text-white border-black"
+                                                : "bg-white text-gray-700 border-gray-300 hover:border-black"
+                                                }`}
+                                        >
+                                            {location.label}
                                         </button>
                                     ))}
                                 </div>

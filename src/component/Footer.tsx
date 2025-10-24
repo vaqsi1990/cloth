@@ -43,7 +43,7 @@ const Footer = () => {
               <h4 className="text-white font-bold text-[18px] font-semibold text-white mb-4">ნავიგაცია</h4>
               <ul className="space-y-2 text-center">
                 <li><Link href="/" className="text-white font-normal text-[18px] transition-colors text-sm">მთავარი</Link></li>
-                <li><Link href="/shop" className="text-white font-normal text-[18px] transition-colors text-sm">მაღაზია</Link></li>
+                <li><Link href="/shop?gender=women&category=dresses" className="text-white font-normal text-[18px] transition-colors text-sm">მაღაზია</Link></li>
                 <li><Link href="/shop?category=women" className="text-white font-normal text-[18px] transition-colors text-sm">ქალების კოლექცია</Link></li>
                 <li><Link href="/shop?category=men" className="text-white font-normal text-[18px] transition-colors text-sm">კაცების კოლექცია</Link></li>
                 <li><Link href="/shop?category=children" className="text-white font-normal text-[18px] transition-colors text-sm">ბავშვების კოლექცია</Link></li>

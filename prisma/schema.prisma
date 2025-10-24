@@ -119,6 +119,7 @@ model Product {
   sku           String?          @unique
   gender        Gender           @default(UNISEX)
   color         String?
+  location      String?
   isNew         Boolean          @default(false)
   hasSale       Boolean          @default(false)
   rating        Float?           @default(0)

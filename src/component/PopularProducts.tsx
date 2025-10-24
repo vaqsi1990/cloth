@@ -241,7 +241,7 @@ const PopularProducts = () => {
                 {/* View All Button */}
                 <div className="text-center ">
                     <Link
-                        href="/shop"
+                        href="/shop?gender=women&category=dresses"
                         className="flex md:text-[20px] text-[18px] font-bold justify-center  items-center w-[200px] mx-auto mt-4 bg-[#1B3729] text-white px-8 py-4 rounded-lg font-bold uppercase tracking-wide  transition-colors duration-300"
                     >
                         დაათვალიერე
