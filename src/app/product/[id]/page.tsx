@@ -293,8 +293,11 @@ const ProductPage = () => {
 
                     {/* RIGHT — Details */}
                     <section className="space-y-6">
+                        <div className="bg-white  p-6">
+
+                        
                         {/* Author Info */}
-                        <div className="bg-white rounded-2xl p-6 shadow-sm">
+                        <div className="bg-white  p-6 ">
                             <div className="flex items-center space-x-4">
                                 <div className="relative w-16 h-16 rounded-full overflow-hidden bg-gray-200">
                                     {product.user?.image ? (
@@ -330,7 +333,7 @@ const ProductPage = () => {
                             </div>
                         </div>
                         {/* Title */}
-                        <div className="bg-white rounded-2xl p-6 shadow-sm">
+                        <div className="bg-white  p-6 s">
                             <h1 className="text-3xl font-bold text-gray-900">{product.name}</h1>
                             {product.description && (
                                 <p className="text-gray-700 mt-2 leading-relaxed">{product.description}</p>
@@ -339,7 +342,7 @@ const ProductPage = () => {
 
                         {/* Pricing plans (4+/7+/28+) */}
                         {product.isRentable && tiers.length > 0 && (
-                            <div className="bg-white rounded-2xl p-6 shadow-sm">
+                            <div className="bg-white  p-6 ">
                                 <div className="grid sm:grid-cols-3 gap-4">
                                     {/* 4+ days */}
                                     {tiers[0] && (
@@ -375,7 +378,7 @@ const ProductPage = () => {
                         )}
 
                         {/* Size selector */}
-                        <div className="bg-white rounded-2xl p-6 shadow-sm space-y-3">
+                        <div className="p-6  space-y-3">
                             <div className="flex items-center justify-between">
                                 <h3 className="md:text-[18px] text-[16px] font-semibold text-black">ზომა:</h3>
                                
@@ -424,7 +427,7 @@ const ProductPage = () => {
                         </div>
 
                         {/* Purchase / Rent toggle + calendars */}
-                        <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4">
+                        <div className=" p-6  space-y-4">
                             <div className="grid grid-cols-2 gap-3">
                                 <button
                                     onClick={() => setPurchaseMode("buy")}
@@ -528,7 +531,7 @@ const ProductPage = () => {
                         </div>
 
                         {/* Facts block (Brand/Size/Location/Colour/Minimal days) */}
-                        <div className="bg-white rounded-2xl p-6 shadow-sm">
+                        <div className="  p-6 ">
                             <ul className="md:text-[18px] text-[16px] text-black space-y-2">
                                 <li>
                                     <span className="font-semibold">კატეგორია: </span>
@@ -555,7 +558,7 @@ const ProductPage = () => {
                         </div>
 
                         {/* Benefits */}
-                        <div className="bg-white rounded-2xl p-6 shadow-sm space-y-3">
+                        <div className=" p-6  space-y-3">
                             {[
                                 { icon: Shield, title: "უსაფრთხო გადახდა", desc: "SSL დაცული გადახდები" },
                                 { icon: RotateCcw, title: "დაბრუნება", desc: "მოხერხებული პოლისი" },
@@ -569,6 +572,7 @@ const ProductPage = () => {
                                     </div>
                                 </div>
                             ))}
+                        </div>
                         </div>
                     </section>
                 </div>
