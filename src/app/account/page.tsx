@@ -4,8 +4,9 @@ import React, { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { User, Package, ShoppingCart, Settings, LogOut, Edit3, MapPin, Phone, Mail, Upload, Camera } from 'lucide-react'
+import { User, Package, ShoppingCart, Settings, LogOut, Edit3, MapPin, Phone, Mail, Upload, Camera, MessageCircle } from 'lucide-react'
 import ImageUpload from '@/component/CloudinaryUploader'
+import ContactForm from '@/component/ContactForm'
 
 interface Order {
   id: number
@@ -142,6 +143,7 @@ const AccountPage = () => {
   const tabs = [
     { id: 'profile', label: 'პროფილი', icon: User },
     { id: 'orders', label: 'შეკვეთები', icon: ShoppingCart },
+    { id: 'Contact', label: 'კონტაქტი', icon: MessageCircle },
     { id: 'products', label: 'ჩემი პროდუქტები', icon: Package },
     { id: 'settings', label: 'პარამეტრები', icon: Settings },
   ]
@@ -483,6 +485,13 @@ const AccountPage = () => {
         return renderProfileTab()
       case 'orders':
         return renderOrdersTab()
+      case 'Contact':
+        return (
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-2xl font-bold text-black mb-6">კონტაქტი</h2>
+            <ContactForm />
+          </div>
+        )
       case 'products':
         return renderProductsTab()
       case 'settings':
