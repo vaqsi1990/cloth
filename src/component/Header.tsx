@@ -91,8 +91,8 @@ const Header = () => {
                 src="/logo.jpg"
                 className="rounded-full transition-transform duration-300 group-hover:scale-110"
                 alt="logo"
-                width={50}
-                height={50}
+                width={80}
+                height={80}
               />
             </div>
 

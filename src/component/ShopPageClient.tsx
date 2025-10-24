@@ -137,8 +137,25 @@ const ShopPageClient = () => {
         const sizeMatch = selectedSizes.length === 0 ||
             product.variants.some(variant => selectedSizes.includes(variant.size))
 
-        // Color filter (skip for now as we don't have colors in database)
-        const colorMatch = selectedColors.length === 0
+        // Color filter
+        const colorMatch = selectedColors.length === 0 || 
+            selectedColors.some(selectedColor => {
+                const colorMapping: Record<string, string[]> = {
+                    'black': ['შავი', 'black'],
+                    'white': ['თეთრი', 'white'],
+                    'red': ['წითელი', 'red'],
+                    'blue': ['ლურჯი', 'blue'],
+                    'green': ['მწვანე', 'green'],
+                    'yellow': ['ყვითელი', 'yellow'],
+                    'pink': ['ვარდისფერი', 'pink'],
+                    'purple': ['იისფერი', 'purple']
+                };
+                
+                const colorVariations = colorMapping[selectedColor] || [selectedColor];
+                return colorVariations.some(color => 
+                    product.color?.toLowerCase().includes(color.toLowerCase())
+                );
+            })
 
         // Location filter
         const locationMatch = selectedLocations.length === 0 || 
@@ -150,6 +167,7 @@ const ShopPageClient = () => {
     // Debug: Log filtering results
     console.log('Total products:', products.length)
     console.log('Filtered products:', filteredProducts.length)
+    console.log('Selected colors:', selectedColors)
     console.log('Gender param:', genderParam)
 
     // Sort products
@@ -243,7 +261,7 @@ const ShopPageClient = () => {
                                 <h3 className="text-lg font-semibold text-gray-900">ფილტრები</h3>
                                 <button
                                     onClick={clearFilters}
-                                    className="text-sm text-black hover:text-black font-medium"
+                                    className="text-[16px] cursor-pointer text-black hover:text-black font-medium"
                                 >
                                     გაწმენდა
                                 </button>
@@ -253,18 +271,32 @@ const ShopPageClient = () => {
                             <div className="mb-6">
                                 <h4 className="font-medium text-gray-900 mb-3">კატეგორია</h4>
                                 <div className="space-y-2">
-                                    {categories.map((category) => (
-                                        <button
-                                            key={category.id}
-                                            onClick={() => setActiveCategory(category.id)}
-                                            className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${activeCategory === category.id
-                                                ? "bg-black text-white"
-                                                : "text-gray-600 hover:bg-gray-100"
-                                                }`}
-                                        >
-                                            {category.label}
-                                        </button>
-                                    ))}
+                                    {categories.map((category) => {
+                                        const categoryCount = products.filter(product => 
+                                            category.id === "ALL" || product.category?.name === category.label
+                                        ).length;
+                                        
+                                        return (
+                                            <button
+                                                key={category.id}
+                                                onClick={() => setActiveCategory(category.id)}
+                                                className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex justify-between items-center ${activeCategory === category.id
+                                                    ? "bg-black text-white"
+                                                    : "text-gray-600 hover:bg-gray-100"
+                                                    }`}
+                                            >
+                                                <span>{category.label}</span>
+                                                {category.id !== "ALL" && (
+                                                    <span className={`text-xs px-2 py-1 rounded-full ${activeCategory === category.id
+                                                        ? "bg-gray-600 text-white"
+                                                        : "bg-gray-200 text-gray-600"
+                                                        }`}>
+                                                        {categoryCount}
+                                                    </span>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
 
@@ -306,6 +338,29 @@ const ShopPageClient = () => {
                                         </button>
                                     ))}
                                 </div>
+                            </div>
+
+                            {/* Color Filter */}
+                            <div className="mb-6">
+                                <h4 className="font-medium text-gray-900 mb-3">ფერი</h4>
+                                <select
+                                    value={selectedColors.length > 0 ? selectedColors[0] : ''}
+                                    onChange={(e) => {
+                                        if (e.target.value) {
+                                            setSelectedColors([e.target.value])
+                                        } else {
+                                            setSelectedColors([])
+                                        }
+                                    }}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                                >
+                                    <option value="">ყველა ფერი</option>
+                                    {colors.map((color) => (
+                                        <option key={color.id} value={color.id}>
+                                            {color.label}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
 
                             {/* Location Filter */}
