@@ -52,6 +52,13 @@ export async function GET(
       where: { id: productId },
       include: {
         category: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            image: true
+          }
+        },
         images: {
           orderBy: { position: 'asc' }
         },

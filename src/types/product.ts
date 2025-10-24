@@ -34,6 +34,12 @@ export interface Category {
   slug: string
 }
 
+export interface User {
+  id: string
+  name?: string
+  image?: string
+}
+
 export interface Product {
   id: number
   name: string
@@ -41,11 +47,14 @@ export interface Product {
   description?: string
   sku?: string
   gender: 'MEN' | 'WOMEN' | 'CHILDREN' | 'UNISEX'
+  color?: string
   isNew: boolean
   hasSale: boolean
   rating?: number
   categoryId?: number
   category?: Category
+  userId?: string
+  user?: User
   isRentable?: boolean
   pricePerDay?: number
   maxRentalDays?: number

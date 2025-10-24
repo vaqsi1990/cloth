@@ -128,10 +128,18 @@ const ProductPage = () => {
 
     const calcDays = () => {
         if (!rentalStartDate || !rentalEndDate) return 0
-        const s = new Date(rentalStartDate).getTime()
-        const e = new Date(rentalEndDate).getTime()
-        const diff = Math.ceil((e - s) / (1000 * 60 * 60 * 24))
-        return Math.max(0, diff)
+        const start = new Date(rentalStartDate)
+        const end = new Date(rentalEndDate)
+        
+        // Set time to start of day to avoid timezone issues
+        start.setHours(0, 0, 0, 0)
+        end.setHours(0, 0, 0, 0)
+        
+        const diffTime = end.getTime() - start.getTime()
+        const diffDays = diffTime / (1000 * 60 * 60 * 24)
+        
+        // Add 1 to include both start and end days
+        return Math.max(1, Math.floor(diffDays) + 1)
     }
 
     // price from tiers by days
@@ -285,6 +293,42 @@ const ProductPage = () => {
 
                     {/* RIGHT — Details */}
                     <section className="space-y-6">
+                        {/* Author Info */}
+                        <div className="bg-white rounded-2xl p-6 shadow-sm">
+                            <div className="flex items-center space-x-4">
+                                <div className="relative w-16 h-16 rounded-full overflow-hidden bg-gray-200">
+                                    {product.user?.image ? (
+                                        <Image
+                                            src={product.user.image}
+                                            alt={product.user.name || "ავტორი"}
+                                            fill
+                                            className="object-cover"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center bg-gray-300 text-gray-600 font-semibold">
+                                            {product.user?.name ? product.user.name.charAt(0).toUpperCase() : "?"}
+                                        </div>
+                                    )}
+                                </div>
+                                <div>
+                                    {product.user ? (
+                                        <Link 
+                                            href={`/author/${product.user.id}`}
+                                            className="hover:opacity-80 transition-opacity"
+                                        >
+                                            <h3 className="md:text-[18px] text-[16px] font-semibold text-gray-900 hover:text-underline transition-colors">
+                                                {product.user.name || "უცნობი ავტორი"}
+                                            </h3>
+                                        </Link>
+                                    ) : (
+                                        <h3 className="md:text-[18px] text-[16px] font-semibold text-gray-900">
+                                            უცნობი ავტორი
+                                        </h3>
+                                    )}
+                                    <p className="text-sm text-gray-600">პროდუქტის ავტორი</p>
+                                </div>
+                            </div>
+                        </div>
                         {/* Title */}
                         <div className="bg-white rounded-2xl p-6 shadow-sm">
                             <h1 className="text-3xl font-bold text-gray-900">{product.name}</h1>
@@ -300,30 +344,30 @@ const ProductPage = () => {
                                     {/* 4+ days */}
                                     {tiers[0] && (
                                         <div className="border border-gray-200 rounded-xl p-4">
-                                            <p className="text-sm text-gray-600">4+ days</p>
+                                            <p className="text-sm text-gray-600">{tiers[0].minDays} + დღე</p>
                                             <p className="text-xl font-bold text-gray-900">₾{tiers[0].pricePerDay.toFixed(2)}/დღე</p>
-                                            <p className="text-sm text-gray-600">From ₾{fromAmount(tiers[0]).toFixed(2)}</p>
+                                          
                                         </div>
                                     )}
 
                                     {/* 7+ days - Recommended */}
                                     {tiers[1] && (
-                                        <div className="border border-emerald-400 rounded-xl p-4 ring-2 ring-emerald-400 bg-emerald-50">
-                                            <span className="inline-block bg-emerald-100 text-emerald-800 text-xs font-semibold px-2 py-1 rounded mb-2">
-                                                Recommended
+                                        <div className="border relative border-emerald-400 rounded-xl p-4 ring-2 ring-emerald-400 bg-emerald-50">
+                                            <span className="absolute -top-2 right-0 bg-emerald-100 text-emerald-800 text-xs font-semibold px-2 py-1 rounded">
+                                                რეკომენდირებული
                                             </span>
-                                            <p className="text-sm text-gray-600">7+ days</p>
+                                            <p className="text-sm text-gray-600">{tiers[1].minDays} + დღე</p>
                                             <p className="text-xl font-bold text-gray-900">₾{tiers[1].pricePerDay.toFixed(2)}/დღე</p>
-                                            <p className="text-sm text-gray-600">From ₾{fromAmount(tiers[1]).toFixed(2)}</p>
+                                          
                                         </div>
                                     )}
 
                                     {/* 28+ days */}
                                     {tiers[2] && (
                                         <div className="border border-gray-200 rounded-xl p-4">
-                                            <p className="text-sm text-gray-600">28+ days</p>
+                                            <p className="text-sm text-gray-600">{tiers[2].minDays} + დღე</p>
                                             <p className="text-xl font-bold text-gray-900">₾{tiers[2].pricePerDay.toFixed(2)}/დღე</p>
-                                            <p className="text-sm text-gray-600">From ₾{fromAmount(tiers[2]).toFixed(2)}</p>
+                                          
                                         </div>
                                     )}
                                 </div>
@@ -333,10 +377,8 @@ const ProductPage = () => {
                         {/* Size selector */}
                         <div className="bg-white rounded-2xl p-6 shadow-sm space-y-3">
                             <div className="flex items-center justify-between">
-                                <h3 className="text-lg font-semibold text-black">ზომა</h3>
-                                {!!selectedStock && (
-                                    <span className="text-sm text-gray-600">საწყობი: {selectedStock} ც</span>
-                                )}
+                                <h3 className="md:text-[18px] text-[16px] font-semibold text-black">ზომა:</h3>
+                               
                             </div>
 
                             <div className="grid grid-cols-4 gap-3">
@@ -438,6 +480,7 @@ const ProductPage = () => {
                                             <div className="text-lg font-semibold">
                                                 ჯამური ფასი: ₾{priceForDays(calcDays()).toFixed(2)}
                                             </div>
+                                           
                                             {product.deposit ? (
                                                 <div className="text-sm text-gray-700">
                                                     + გირაო: ₾{product.deposit.toFixed(2)}
@@ -486,22 +529,26 @@ const ProductPage = () => {
 
                         {/* Facts block (Brand/Size/Location/Colour/Minimal days) */}
                         <div className="bg-white rounded-2xl p-6 shadow-sm">
-                            <ul className="text-sm text-gray-800 space-y-2">
+                            <ul className="md:text-[18px] text-[16px] text-black space-y-2">
                                 <li>
-                                    <span className="font-semibold">Brand: </span>
+                                    <span className="font-semibold">კატეგორია: </span>
                                     {product.category?.name || "—"}
                                 </li>
                                 <li>
-                                    <span className="font-semibold">Size: </span>
+                                    <span className="font-semibold">ზომა: </span>
                                     {selectedSize || "—"}
                                 </li>
                                 <li>
-                                    <span className="font-semibold">Location: </span>
+                                    <span className="font-semibold">ფერი: </span>
+                                    {product.color || "—"}
+                                </li>
+                                <li>
+                                    <span className="font-semibold">მდებარეობა: </span>
                                     Tbilisi, GE
                                 </li>
 
                                 <li>
-                                    <span className="font-semibold">Minimal rental period: </span>
+                                    <span className="font-semibold">მინიმალური ქირაობის დღეები: </span>
                                     {minDaysGlobal} days
                                 </li>
                             </ul>
@@ -526,18 +573,8 @@ const ProductPage = () => {
                     </section>
                 </div>
 
-                {/* Why rent instead of buying new? */}
-                <section className="mt-16 bg-gray-50 p-8 rounded-2xl border">
-                    <h2 className="text-2xl font-bold mb-4">რატომ ქირაობა უფრო უკეთესია, ვიდრე ყიდვა?</h2>
-                    <ul className="list-disc pl-6 space-y-2 text-gray-800">
-                        <li>დაზოგე ფული — ატარე მაღალი ბრენდები მცირე ფასად</li>
-                        <li>გარემოს დაცვა — გაზიარების ეკონომიკა, ნაკლები ნარჩენი</li>
-                        <li>ყოველ ღონისძიებაზე განსხვავებული ლუქი — არც ზედმეტი ყიდვები</li>
-                    </ul>
-                    <button className="mt-4 px-5 py-3 rounded-lg bg-black text-white font-semibold">
-                        იხილე დამატებითი ინფორმაცია
-                    </button>
-                </section>
+            
+            
             </main>
         </div>
     )
