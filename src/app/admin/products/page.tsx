@@ -143,7 +143,7 @@ const AdminProductsPage = () => {
       if (!product) return
 
       // Include existing rental price tiers to preserve them
-      const existingTiers = (product.rentalPriceTiers || []).map((tier: any) => ({
+      const existingTiers = (product.rentalPriceTiers || []).map((tier) => ({
         minDays: tier.minDays,
         pricePerDay: tier.pricePerDay
       }))
@@ -165,7 +165,7 @@ const AdminProductsPage = () => {
         maxRentalDays: product.maxRentalDays || undefined,
         deposit: product.deposit || undefined,
         status: newStatus,
-        variants: (product.variants || []).map((v: any) => ({
+        variants: (product.variants || []).map((v) => ({
           size: v.size,
           stock: v.stock,
           price: v.price
@@ -186,7 +186,7 @@ const AdminProductsPage = () => {
       
       if (response.ok && result.success) {
         setProducts(products.map(p => 
-          p.id === productId ? { ...p, status: newStatus as any } : p
+          p.id === productId ? { ...p, status: newStatus as 'AVAILABLE' | 'RENTED' | 'RESERVED' | 'MAINTENANCE' } : p
         ))
       } else {
         alert(result.message || 'შეცდომა სტატუსის შეცვლისას')
