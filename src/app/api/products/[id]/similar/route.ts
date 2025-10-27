@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 
 // GET - Fetch similar products by category
 export async function GET(
@@ -7,6 +9,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getServerSession(authOptions)
     const resolvedParams = await params
     const productId = parseInt(resolvedParams.id)
     
@@ -34,12 +37,16 @@ export async function GET(
       }, { status: 404 })
     }
 
+    // Only show AVAILABLE products to non-admin users
+    const isAdmin = session?.user?.role === 'ADMIN'
+
     // Fetch similar products from the same category, excluding current product
     const similarProducts = await prisma.product.findMany({
       where: {
         categoryId: currentProduct.categoryId,
         id: { not: productId }, // Exclude current product
-        gender: currentProduct.gender // Same gender
+        gender: currentProduct.gender, // Same gender
+        ...(isAdmin ? {} : { status: 'AVAILABLE' })
       },
       include: {
         category: true,

@@ -14,7 +14,7 @@ import {
 import { useCart } from "@/hooks/useCart"
 import { useSession } from "next-auth/react"
 import { Product, RentalPeriod } from "@/types/product"
-import { formatDate } from "@/utils/dateUtils"
+import { formatDate, formatMonth } from "@/utils/dateUtils"
 import SimilarProducts from "@/components/SimilarProducts"
 
 type Tier = { minDays: number; pricePerDay: number }
@@ -32,10 +32,17 @@ const ProductPage = () => {
     const [selectedSize, setSelectedSize] = useState<string>("")
     const [quantity, setQuantity] = useState(1)
 
-    const [purchaseMode, setPurchaseMode] = useState<"buy" | "rent">("rent")
+    const [purchaseMode, setPurchaseMode] = useState<"buy" | "rent">("buy")
     const [rentalStartDate, setRentalStartDate] = useState("")
     const [rentalEndDate, setRentalEndDate] = useState("")
     const [isAdding, setIsAdding] = useState(false)
+
+    // Auto-switch to rent mode if product is rented
+    useEffect(() => {
+        if (product?.status === 'RENTED' && purchaseMode === 'buy') {
+            setPurchaseMode('rent')
+        }
+    }, [product?.status, purchaseMode])
 
     // size => busy periods
     const [rentalStatus, setRentalStatus] = useState<Record<string, RentalPeriod[]>>({})
@@ -53,7 +60,9 @@ const ProductPage = () => {
                 const pJson = await pRes.json()
                 const rJson = await rRes.json()
 
-                if (pJson?.success) setProduct(pJson.product)
+                if (pJson?.success) {
+                    setProduct(pJson.product)
+                }
                 if (rJson?.success) {
                     const map: Record<string, RentalPeriod[]> = {}
                     rJson.variants?.forEach(
@@ -101,17 +110,29 @@ const ProductPage = () => {
 
     useEffect(() => {
         if (product && !selectedSize) {
+            // First try to find a size without active rentals, otherwise just pick the first size
             const sz = firstAvailableSize() || product.variants?.[0]?.size
-            if (sz) setSelectedSize(sz)
+            if (sz) {
+                setSelectedSize(sz)
+            }
         }
     }, [product, rentalStatus, selectedSize])
+
+    // Debug product status
+    useEffect(() => {
+        if (product) {
+            console.log('Product status:', product.status)
+        }
+    }, [product])
 
     const selectedVariant = product?.variants?.find(v => v.size === selectedSize)
     const selectedPrice = selectedVariant?.price ?? 0
     const selectedStock = selectedVariant?.stock ?? 0
 
     const handleSizeClick = (size: string) => {
-        if (!hasActiveRentals(size)) setSelectedSize(size)
+        if (product?.status === 'AVAILABLE') {
+            setSelectedSize(size)
+        }
     }
 
     const handleQuantity = (q: number) => {
@@ -179,6 +200,10 @@ const ProductPage = () => {
 
     const handleRental = async () => {
         if (!product || !selectedSize) return
+        if (product.status !== 'AVAILABLE') {
+            alert("პროდუქტი ამჟამად ხელმისაწვდომი არ არის")
+            return
+        }
         if (!rentalStartDate || !rentalEndDate) {
             alert("აირჩიე ქირაობის თარიღები")
             return
@@ -237,7 +262,26 @@ const ProductPage = () => {
             </div>
         )
     }
-
+    console.log('product', product.status);
+    console.log('Debug button state:', {
+        isAdding,
+        selectedSize,
+        productStatus: product.status,
+        purchaseMode,
+        rentalStartDate,
+        rentalEndDate,
+        hasActiveRentalsForSize: selectedSize ? hasActiveRentals(selectedSize) : 'no size',
+        rentalStatus,
+        isRentable: product?.isRentable,
+        buttonDisabledReason: 
+            isAdding ? 'isAdding' :
+            !selectedSize ? 'no size' :
+            product.status !== 'AVAILABLE' ? 'status not available' :
+            (purchaseMode === "rent" && (!rentalStartDate || !rentalEndDate)) ? 'no rental dates' :
+            (purchaseMode === "rent" && hasActiveRentals(selectedSize)) ? 'size has active rentals' :
+            'enabled'
+    });
+    
     return (
         <div className="min-h-screen">
             {/* Header (Back) */}
@@ -353,8 +397,8 @@ const ProductPage = () => {
                                     {tiers[0] && (
                                         <div className="border border-gray-200 rounded-xl p-4">
                                             <p className="text-sm text-gray-600">{tiers[0].minDays} + დღე</p>
-                                            <p className="text-xl font-bold text-gray-900">₾{tiers[0].pricePerDay.toFixed(2)}/დღე</p>
-                                          
+                                            <p className="text-[16px] font-bold text-gray-900">₾{tiers[0].pricePerDay.toFixed(2)}/დღე</p>
+                                            <p className="text-sm text-gray-500 mt-1">ჯამი: ₾{fromAmount(tiers[0]).toFixed(2)}</p>
                                         </div>
                                     )}
 
@@ -365,8 +409,8 @@ const ProductPage = () => {
                                                 რეკომენდირებული
                                             </span>
                                             <p className="text-sm text-gray-600">{tiers[1].minDays} + დღე</p>
-                                            <p className="text-xl font-bold text-gray-900">₾{tiers[1].pricePerDay.toFixed(2)}/დღე</p>
-                                          
+                                            <p className="text-[16px] font-bold text-gray-900">₾{tiers[1].pricePerDay.toFixed(2)}/დღე</p>
+                                            <p className="text-sm text-emerald-700 mt-1 font-medium">ჯამი: ₾{fromAmount(tiers[1]).toFixed(2)}</p>
                                         </div>
                                     )}
 
@@ -374,8 +418,8 @@ const ProductPage = () => {
                                     {tiers[2] && (
                                         <div className="border border-gray-200 rounded-xl p-4">
                                             <p className="text-sm text-gray-600">{tiers[2].minDays} + დღე</p>
-                                            <p className="text-xl font-bold text-gray-900">₾{tiers[2].pricePerDay.toFixed(2)}/დღე</p>
-                                          
+                                            <p className="text-[16px] font-bold text-gray-900">₾{tiers[2].pricePerDay.toFixed(2)}/დღე</p>
+                                            <p className="text-sm text-gray-500 mt-1">ჯამი: ₾{fromAmount(tiers[2]).toFixed(2)}</p>
                                         </div>
                                     )}
                                 </div>
@@ -389,7 +433,7 @@ const ProductPage = () => {
                                
                             </div>
 
-                            <div className="grid grid-cols-4 gap-3">
+                            <div className="grid grid-cols-3 gap-3">
                                 {getAvailableSizes().map(size => {
                                     const variant = product.variants?.find(v => v.size === size)
                                     const price = variant?.price || 0
@@ -410,19 +454,37 @@ const ProductPage = () => {
                                         <button
                                             key={size}
                                             onClick={() => handleSizeClick(size)}
-                                            disabled={rented}
-                                            className={`rounded-xl border-2 p-3 text-center transition ${selectedSize === size
-                                                    ? "border-[#1B3729] bg-[#1B3729] text-white"
-                                                    : rented
-                                                        ? "border-red-300 bg-red-50 text-red-600 cursor-not-allowed"
+                                            disabled={product.status !== 'AVAILABLE'}
+                                            className={`rounded-xl border-2 p-3 text-center transition ${
+                                                selectedSize === size
+                                                    ? rented
+                                                        ? " bg-[#1B3729] text-white"
+                                                        : " bg-[#1B3729] text-white"
+                                                    : rented || (product.status && product.status !== 'AVAILABLE')
+                                                        ? product.status === 'MAINTENANCE'
+                                                            ? "border-orange-300  bg-[#1B3729] text-orange-600 cursor-not-allowed"
+                                                            : product.status === 'RENTED'
+                                                                ? "border-blue-300 bg-[#1B3729]0 text-white cursor-not-allowed"
+                                                                : "border-red-300 bg-[#1B3729] text-white"
                                                         : "border-gray-300 hover:border-black"
                                                 }`}
                                         >
                                             <div className="font-semibold">{size}</div>
-                                            <div className="text-sm">{`₾${price.toFixed(2)}`}</div>
-                                            {rented && (
-                                                <div className="text-[11px] mt-1">
-                                                    გაქირავებულია {firstEnd ? `— ${firstEnd}-მდე` : ""}
+                                            <div className="text-[16px]">{`₾${price.toFixed(2)}`}</div>
+                                            {product.status === 'MAINTENANCE' && (
+                                                <div className="mt-1 text-orange-600 text-[16px]">
+                                                    რესტავრაციაზე
+                                                </div>
+                                            )}
+                                            
+                                            {product.status === 'RENTED' && (
+                                                <div className="mt-1 text-white text-[16px]">
+                                                   იქნება ხელმისაწვდომი {firstEnd}
+                                                </div>
+                                            )}
+                                            {rented && firstEnd && product.status === 'AVAILABLE' && (
+                                                <div className="mt-1 positive text-white">
+                                                    თავისუფალია 
                                                 </div>
                                             )}
                                         </button>
@@ -436,7 +498,8 @@ const ProductPage = () => {
                             <div className="grid grid-cols-2 gap-3">
                                 <button
                                     onClick={() => setPurchaseMode("buy")}
-                                    className={`p-4 rounded-xl border-2 flex items-center justify-center gap-2 ${purchaseMode === "buy"
+                                    disabled={product.status === 'RENTED'}
+                                    className={`p-4 rounded-xl border-2 flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed ${purchaseMode === "buy"
                                             ? "border-[#1B3729] bg-[#1B3729] text-white"
                                             : "border-gray-300"
                                         }`}
@@ -444,18 +507,18 @@ const ProductPage = () => {
                                     <CreditCard className="w-5 h-5" />
                                     ყიდვა
                                 </button>
-                                {product.isRentable && (
-                                    <button
-                                        onClick={() => setPurchaseMode("rent")}
-                                        className={`p-4 rounded-xl border-2 flex items-center justify-center gap-2 ${purchaseMode === "rent"
-                                                ? "border-emerald-400 bg-emerald-100 text-black"
-                                                : "border-gray-300"
-                                            }`}
-                                    >
-                                        <CalendarDays className="w-5 h-5" />
-                                        ქირაობა
-                                    </button>
-                                )}
+                                    {product.isRentable && product.status === 'AVAILABLE' && (
+                                        <button
+                                            onClick={() => setPurchaseMode("rent")}
+                                            className={`p-4 rounded-xl border-2 flex items-center justify-center gap-2 ${purchaseMode === "rent"
+                                                    ? "border-emerald-400 bg-emerald-100 text-black"
+                                                    : "border-gray-300"
+                                                }`}
+                                        >
+                                            <CalendarDays className="w-5 h-5" />
+                                            ქირაობა
+                                        </button>
+                                    )}
                             </div>
 
                             {purchaseMode === "rent" && product.isRentable && (
@@ -512,7 +575,25 @@ const ProductPage = () => {
                         </div>
 
                         {/* Action button */}
-                        <div>
+                        <div className="space-y-2">
+                            {product.status !== 'AVAILABLE' && (
+                                <p className="text-sm text-white font-medium text-center">
+                                     {product.status === 'RENTED' && 'ნივთი გაქირავებულია'}
+                                    {product.status === 'RESERVED' && 'ნივთი დაჯავშნილია'}
+                                    {product.status === 'MAINTENANCE' && 'ნივთი რესტავრაციაზეა'}
+                                </p>
+                            )}
+                            {(purchaseMode === "rent" && (!rentalStartDate || !rentalEndDate)) && product.status === 'AVAILABLE' && (
+                                <p className="text-sm text-orange-600 font-medium text-center">
+                                     გთხოვთ აირჩიოთ ქირაობის დაწყების და დასრულების თარიღები
+                                </p>
+                            )}
+                            {(purchaseMode === "rent" && rentalStartDate && rentalEndDate && hasActiveRentals(selectedSize)) && product.status === 'AVAILABLE' && (
+                                <p className="text-[16px] text-black font-medium text-center">
+                                     ემ ზომა ამჟამად გაქირავებულია
+                                </p>
+                            )}
+                          
                             <button
                                 onClick={() =>
                                     purchaseMode === "buy" ? handleAddToCart() : handleRental()
@@ -520,7 +601,9 @@ const ProductPage = () => {
                                 disabled={
                                     isAdding ||
                                     !selectedSize ||
-                                    (purchaseMode === "rent" && (!rentalStartDate || !rentalEndDate))
+                                    product.status !== 'AVAILABLE' ||
+                                    (purchaseMode === "rent" && (!rentalStartDate || !rentalEndDate)) ||
+                                    (purchaseMode === "rent" && hasActiveRentals(selectedSize))
                                 }
                                 className={`w-full py-4 rounded-xl text-white font-bold transition disabled:bg-gray-400 ${purchaseMode === "buy"
                                         ? "bg-[#1B3729] hover:opacity-95"

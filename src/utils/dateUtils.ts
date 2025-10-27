@@ -15,6 +15,19 @@ export const formatDate = (date: Date | string) => {
     return `${day} ${month} ${year}`
 }
 
+// Format date with only month
+export const formatMonth = (date: Date | string) => {
+    if (!date) return ''
+    const d = new Date(date)
+    
+    const months = [
+        'იანვარი', 'თებერვალი', 'მარტი', 'აპრილი', 'მაისი', 'ივნისი',
+        'ივლისი', 'აგვისტო', 'სექტემბერი', 'ოქტომბერი', 'ნოემბერი', 'დეკემბერი'
+    ]
+    
+    return months[d.getMonth()]
+}
+
 // Format date with time
 export const formatDateTime = (date: Date | string) => {
     if (!date) return ''

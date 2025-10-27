@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
-import {  Search, Menu, User,  LogOut, Mail, ChevronRight } from 'lucide-react'
+import { Search, Menu, User, LogOut, ShoppingCart, ChevronRight } from 'lucide-react'
 import Image from 'next/image'
 import { useSession, signOut } from 'next-auth/react'
 
@@ -271,9 +271,14 @@ const Header = () => {
                 </Link>
               )}
 
-              <button className="p-2 text-white hover:text-gray-200">
-                <Mail className="w-5 h-5" />
-              </button>
+              <Link href="/cart" className="relative p-2 text-white hover:text-gray-200">
+                <ShoppingCart className="w-5 h-5" />
+                {cartItemCount > 0 && (
+                  <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {cartItemCount}
+                  </span>
+                )}
+              </Link>
 
               <button onClick={toggleMobileMenu} className="md:hidden p-2 text-white hover:text-gray-200">
                 <Menu className="w-6 h-6" />
@@ -321,9 +326,14 @@ const Header = () => {
               </Link>
             )}
 
-            <button className="p-2 text-white hover:text-gray-200">
-              <Mail className="w-5 h-5" />
-            </button>
+            <Link href="/cart" className="relative p-2 text-white hover:text-gray-200">
+              <ShoppingCart className="w-5 h-5" />
+              {cartItemCount > 0 && (
+                <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  {cartItemCount}
+                </span>
+              )}
+            </Link>
 
             <button onClick={toggleMobileMenu} className="md:hidden p-2 text-white hover:text-gray-200">
               <Menu className="w-6 h-6" />

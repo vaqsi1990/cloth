@@ -16,12 +16,19 @@ export async function GET(
       )
     }
 
+    // Get the current date to filter active rentals
+    const now = new Date()
+    
     // Get all active rentals for this product
+    // Only consider rentals that haven't been returned/canceled and are within date range
     const activeRentals = await prisma.rental.findMany({
       where: {
         productId: productId,
         status: {
           in: ['RESERVED', 'ACTIVE']
+        },
+        endDate: {
+          gte: now // Rental hasn't ended yet
         }
       },
       include: {
@@ -33,6 +40,7 @@ export async function GET(
     })
 
     // Get all active orders with rental items for this product
+    // Filter for orders that have rental periods that haven't ended yet
     const activeOrders = await prisma.order.findMany({
       where: {
         status: {
@@ -41,7 +49,10 @@ export async function GET(
         items: {
           some: {
             productId: productId,
-            isRental: true
+            isRental: true,
+            rentalEndDate: {
+              gte: now // Rental period hasn't ended yet
+            }
           }
         }
       },
@@ -49,14 +60,17 @@ export async function GET(
         items: {
           where: {
             productId: productId,
-            isRental: true
+            isRental: true,
+            rentalEndDate: {
+              gte: now // Only include items with active rental periods
+            }
           }
         }
       }
     })
 
     // Group rentals by variant/size
-    const rentalStatusBySize: { [size: string]: Array<{ startDate: Date, endDate: Date, status: string }> } = {}
+    const rentalStatusBySize: { [size: string]: Array<{ startDate: string, endDate: string, status: string }> } = {}
 
     activeRentals.forEach(rental => {
       const size = rental.variant?.size || 'UNKNOWN'
@@ -64,8 +78,8 @@ export async function GET(
         rentalStatusBySize[size] = []
       }
       rentalStatusBySize[size].push({
-        startDate: rental.startDate,
-        endDate: rental.endDate,
+        startDate: rental.startDate.toISOString(),
+        endDate: rental.endDate.toISOString(),
         status: rental.status
       })
     })
@@ -79,8 +93,8 @@ export async function GET(
             rentalStatusBySize[size] = []
           }
           rentalStatusBySize[size].push({
-            startDate: item.rentalStartDate,
-            endDate: item.rentalEndDate,
+            startDate: item.rentalStartDate.toISOString(),
+            endDate: item.rentalEndDate.toISOString(),
             status: order.status
           })
         }

@@ -152,6 +152,31 @@ export async function PATCH(
       }
     })
 
+    // If rental is returned, set product status back to AVAILABLE (but keep isRentable flag)
+    if (status === 'RETURNED') {
+      const product = await prisma.product.findUnique({
+        where: { id: existingRental.productId }
+      })
+      
+      if (product && product.isRentable) {
+        // Set product status to AVAILABLE
+        await prisma.product.update({
+          where: { id: existingRental.productId },
+          data: { status: 'AVAILABLE' }
+        })
+        console.log(`Set product ${existingRental.productId} status back to AVAILABLE`)
+        
+        // Delete all order items for this product
+        await prisma.orderItem.deleteMany({
+          where: {
+            productId: existingRental.productId,
+            isRental: true
+          }
+        })
+        console.log(`Deleted order items for product ${existingRental.productId}`)
+      }
+    }
+
     return NextResponse.json({
       success: true,
       rental: updatedRental

@@ -19,6 +19,8 @@ interface Product {
   slug: string
   description?: string
   gender: string
+  color?: string
+  location?: string
   isNew: boolean
   hasSale: boolean
   rating?: number
@@ -45,6 +47,16 @@ interface Product {
     price: number
   }>
   rentalStatus?: {[size: string]: RentalPeriod[]}
+  status?: 'AVAILABLE' | 'RENTED' | 'RESERVED' | 'MAINTENANCE'
+  isRentable?: boolean
+  pricePerDay?: number
+  maxRentalDays?: number
+  deposit?: number
+  rentalPriceTiers?: Array<{
+    id: number
+    minDays: number
+    pricePerDay: number
+  }>
 }
 
 const AdminProductsPage = () => {
@@ -125,6 +137,66 @@ const AdminProductsPage = () => {
     }
   }
 
+  const handleStatusChange = async (productId: number, newStatus: string) => {
+    try {
+      const product = products.find(p => p.id === productId)
+      if (!product) return
+
+      // Include existing rental price tiers to preserve them
+      const existingTiers = (product.rentalPriceTiers || []).map((tier: any) => ({
+        minDays: tier.minDays,
+        pricePerDay: tier.pricePerDay
+      }))
+
+      const requestBody = {
+        name: product.name,
+        slug: product.slug,
+        description: product.description || '',
+        stock: 0,
+        gender: product.gender as 'MEN' | 'WOMEN' | 'CHILDREN' | 'UNISEX',
+        color: product.color || '',
+        location: product.location || '',
+        isNew: product.isNew,
+        hasSale: product.hasSale,
+        rating: product.rating || 0,
+        categoryId: product.category?.id,
+        isRentable: product.isRentable || false,
+        pricePerDay: product.pricePerDay || undefined,
+        maxRentalDays: product.maxRentalDays || undefined,
+        deposit: product.deposit || undefined,
+        status: newStatus,
+        variants: (product.variants || []).map((v: any) => ({
+          size: v.size,
+          stock: v.stock,
+          price: v.price
+        })),
+        imageUrls: product.images.map(img => img.url),
+        rentalPriceTiers: existingTiers
+      }
+
+      const response = await fetch(`/api/products/${productId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
+      })
+      
+      const result = await response.json()
+      
+      if (response.ok && result.success) {
+        setProducts(products.map(p => 
+          p.id === productId ? { ...p, status: newStatus as any } : p
+        ))
+      } else {
+        alert(result.message || 'შეცდომა სტატუსის შეცვლისას')
+      }
+    } catch (error) {
+      console.error('Error updating status:', error)
+      alert('შეცდომა სტატუსის შეცვლისას')
+    }
+  }
+
   // Helper functions for rental status
   const hasActiveRentals = (product: Product) => {
     return product.rentalStatus && Object.keys(product.rentalStatus).some(size => 
@@ -143,6 +215,16 @@ const AdminProductsPage = () => {
       month: 'short',
       day: 'numeric'
     })
+  }
+
+  const getStatusLabel = (status?: string) => {
+    const statusMap: { [key: string]: string } = {
+      'AVAILABLE': 'თავისუფალია',
+      'RENTED': 'გაქირავებულია',
+      'RESERVED': 'დაჯავშნილია',
+      'MAINTENANCE': 'რესტავრაციაზე'
+    }
+    return statusMap[status || ''] || 'თავისუფალია'
   }
 
   const filteredProducts = products.filter(product => {
@@ -311,6 +393,20 @@ const AdminProductsPage = () => {
                            {product.name}
                          </h3>
                          
+                       
+                        <div className="flex items-center space-x-2 mb-2">
+                          <select
+                            value={product.status || 'AVAILABLE'}
+                            onChange={(e) => handleStatusChange(product.id, e.target.value)}
+                            className="text-sm border border-gray-300 rounded px-2 py-1 text-gray-700 focus:outline-none focus:ring-1 focus:ring-black"
+                          >
+                            <option value="AVAILABLE">თავისუფალია</option>
+                            <option value="RENTED">გაქირავებულია</option>
+                            <option value="RESERVED">დაჯავშნილია</option>
+                            <option value="MAINTENANCE">რესტავრაციაზე</option>
+                          </select>
+                         
+                        </div>
                          <div className="flex items-center space-x-4 text-sm text-gray-600 mb-2">
                            <span>₾{product.variants?.[0]?.price || 0}</span>
                            <span>{product.gender}</span>

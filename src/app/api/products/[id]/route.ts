@@ -21,6 +21,7 @@ const productSchema = z.object({
   pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional(),
   maxRentalDays: z.number().optional(),
   deposit: z.number().min(0, 'გირაო უნდა იყოს დადებითი').optional(),
+  status: z.enum(['AVAILABLE', 'RENTED', 'RESERVED', 'MAINTENANCE']).default('AVAILABLE'),
   variants: z.array(z.object({
     size: z.string().min(1, 'ზომა აუცილებელია'),
     stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი'),
@@ -157,6 +158,7 @@ export async function PUT(
         pricePerDay: validatedData.pricePerDay,
         maxRentalDays: validatedData.maxRentalDays,
         deposit: validatedData.deposit,
+        status: validatedData.status,
         // Create new images
         images: {
           create: validatedData.imageUrls.map((url, index) => ({
@@ -194,6 +196,17 @@ export async function PUT(
     
     console.log('=== PRODUCT UPDATED SUCCESSFULLY ===')
     console.log('Updated product:', JSON.stringify(updatedProduct, null, 2))
+
+    // If product status is AVAILABLE, delete all order items for this product
+    if (validatedData.status === 'AVAILABLE' && existingProduct.status !== 'AVAILABLE') {
+      const deletedCount = await prisma.orderItem.deleteMany({
+        where: {
+          productId: productId,
+          isRental: true
+        }
+      })
+      console.log(`Deleted ${deletedCount.count} order items for product ${productId}`)
+    }
 
     return NextResponse.json({
       success: true,

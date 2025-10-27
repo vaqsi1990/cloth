@@ -23,6 +23,7 @@ const productSchema = z.object({
   pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional(), // 🆕
   maxRentalDays: z.number().optional(), // 🆕
   deposit: z.number().min(0, 'გირაო უნდა იყოს დადებითი').optional(), // 🆕
+  status: z.enum(['AVAILABLE', 'RENTED', 'RESERVED', 'MAINTENANCE']).default('AVAILABLE'),
   variants: z.array(
     z.object({
       size: z.string().min(1, 'ზომა აუცილებელია'),
@@ -58,6 +59,7 @@ const NewProductPage = () => {
     pricePerDay: undefined,
     maxRentalDays: undefined,
     deposit: undefined,
+    status: 'AVAILABLE',
     variants: [],
     imageUrls: [],
     rentalPriceTiers: [],
@@ -512,7 +514,17 @@ const NewProductPage = () => {
               <div className="space-y-6">
                 {/* Rental Price Tiers */}
                 <div>
-                  <h3 className="text-lg font-medium text-black mb-4">ფასის გეგმა</h3>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-medium text-black">ფასის გეგმა</h3>
+                    <button
+                      type="button"
+                      onClick={addRentalPriceTier}
+                      className="bg-black text-white px-4 py-2 rounded-lg text-[20px] flex items-center space-x-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>ფასის გეგმის დამატება</span>
+                    </button>
+                  </div>
 
                   {/* Always show at least one price tier */}
                   {(formData.rentalPriceTiers && formData.rentalPriceTiers.length > 0 ? formData.rentalPriceTiers : [{ minDays: 1, pricePerDay: 0 }]).map((tier, index) => (
@@ -541,21 +553,37 @@ const NewProductPage = () => {
                       </div>
 
                       <div className="flex items-end">
-                        <button
-                          type="button"
-                          onClick={() => removeRentalPriceTier(index)}
-                          className="bg-red-500 text-white px-3 py-2 rounded-lg text-[20px] flex items-center space-x-2"
-                        >
-                          <X className="w-4 h-4" />
-                          <span>წაშლა</span>
-                        </button>
+                        {(formData.rentalPriceTiers && formData.rentalPriceTiers.length > 0 ? formData.rentalPriceTiers.length : 1) > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeRentalPriceTier(index)}
+                            className="bg-red-500 text-white px-3 py-2 rounded-lg text-[20px] flex items-center space-x-2"
+                          >
+                            <X className="w-4 h-4" />
+                            <span>წაშლა</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
                 </div>
 
                 {/* Additional Rental Parameters */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="block text-[20px] text-black font-medium mb-2">სტატუსი</label>
+                    <select
+                      value={formData.status}
+                      onChange={(e) => handleInputChange('status', e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                    >
+                      <option value="AVAILABLE">თავისუფალია</option>
+                      <option value="RENTED">გაქირავებულია</option>
+                      <option value="RESERVED">დაჯავშნილია</option>
+                      <option value="MAINTENANCE">რესტავრაციაზე</option>
+                    </select>
+                  </div>
+                  
                   <div>
                     <label className="block text-[20px] text-black font-medium mb-2">მაქს დღეები(არასავალდებულო)</label>
                     <input

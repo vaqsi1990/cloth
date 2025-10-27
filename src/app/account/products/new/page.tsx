@@ -22,6 +22,7 @@ const productSchema = z.object({
   pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional(),
   maxRentalDays: z.number().optional(),
   deposit: z.number().min(0, 'გირაო უნდა იყოს დადებითი').optional(),
+  status: z.enum(['AVAILABLE', 'RENTED', 'RESERVED', 'MAINTENANCE']).default('AVAILABLE'),
   variants: z.array(
     z.object({
       size: z.string().min(1, 'ზომა აუცილებელია'),
@@ -56,6 +57,7 @@ const NewProductPage = () => {
     pricePerDay: undefined,
     maxRentalDays: undefined,
     deposit: undefined,
+    status: 'AVAILABLE',
     variants: [],
     imageUrls: [],
     rentalPriceTiers: [],

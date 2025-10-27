@@ -83,6 +83,28 @@ export async function POST(request: NextRequest) {
     
     console.log('Order created successfully:', newOrder)
     
+    // Update product status to RENTED if the order contains rental items
+    const hasRentalItems = newOrder.items.some(item => item.isRental)
+    if (hasRentalItems) {
+      const productIds = [...new Set(newOrder.items.filter(item => item.isRental && item.productId).map(item => item.productId))]
+      
+      console.log('Found rental items, updating product status:', productIds)
+      
+      for (const productId of productIds) {
+        if (productId) {
+          try {
+            await prisma.product.update({
+              where: { id: productId },
+              data: { status: 'RENTED' }
+            })
+            console.log(`Successfully updated product ${productId} status to RENTED`)
+          } catch (error) {
+            console.error(`Error updating product ${productId}:`, error)
+          }
+        }
+      }
+    }
+    
     return NextResponse.json({
       success: true,
       message: 'შეკვეთა წარმატებით გაფორმდა',
@@ -131,16 +153,36 @@ export async function GET(request: NextRequest) {
         userId: session.user.id
       },
       include: {
-        items: true
+        items: {
+          include: {
+            product: {
+              select: {
+                status: true
+              }
+            }
+          }
+        }
       },
       orderBy: {
         createdAt: 'desc'
       }
     })
 
+    // Filter items to exclude those with AVAILABLE product status
+    const filteredOrders = orders.map(order => ({
+      ...order,
+      items: order.items.filter(item => {
+        // If product relationship exists and product status is AVAILABLE, exclude the item
+        if (item.product && item.product.status === 'AVAILABLE') {
+          return false
+        }
+        return true
+      })
+    }))
+
     return NextResponse.json({
       success: true,
-      orders: orders
+      orders: filteredOrders
     })
     
   } catch (error) {

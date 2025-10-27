@@ -22,6 +22,7 @@ const productSchema = z.object({
   pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').nullable().optional(),
   maxRentalDays: z.number().nullable().optional(),
   deposit: z.number().min(0, 'გირაო უნდა იყოს დადებითი').nullable().optional(),
+  status: z.enum(['AVAILABLE', 'RENTED', 'RESERVED', 'MAINTENANCE']).default('AVAILABLE'),
   variants: z.array(z.object({
     size: z.string().min(1, 'ზომა აუცილებელია'),
     stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი'),
@@ -60,6 +61,7 @@ const EditProductPage = () => {
     pricePerDay: undefined,
     maxRentalDays: undefined,
     deposit: undefined,
+    status: 'AVAILABLE',
     variants: [],
     imageUrls: [],
     rentalPriceTiers: [],
@@ -128,6 +130,7 @@ const EditProductPage = () => {
             pricePerDay: product.pricePerDay || undefined,
             maxRentalDays: product.maxRentalDays || undefined,
             deposit: product.deposit || undefined,
+            status: product.status || 'AVAILABLE',
             variants: product.variants || [],
             imageUrls: imageUrls,
             rentalPriceTiers: product.rentalPriceTiers || []
@@ -669,7 +672,21 @@ const EditProductPage = () => {
                     </div>
 
                     {/* Additional Rental Parameters */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div>
+                        <label className="block text-[20px] text-black font-medium mb-2">სტატუსი</label>
+                        <select
+                          value={formData.status}
+                          onChange={(e) => handleInputChange('status', e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                        >
+                          <option value="AVAILABLE">თავისუფალია</option>
+                          <option value="RENTED">გაქირავებულია</option>
+                          <option value="RESERVED">დაჯავშნილია</option>
+                          <option value="MAINTENANCE">რესტავრაციაზე</option>
+                        </select>
+                      </div>
+                      
                       <div>
                         <label className="block text-[20px] text-black font-medium mb-2">მაქს დღეები(არასავალდებულო)</label>
                         <input

@@ -41,6 +41,13 @@ enum RentalStatus {
   CANCELED
 }
 
+enum ProductStatus {
+  AVAILABLE      // თავისუფალია
+  RENTED         // გაქირავებულია 
+  RESERVED       // დაჯავშნილია
+  MAINTENANCE    // საგამშრალებლად ან რესტავრაციაზეა
+}
+
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
@@ -127,6 +134,7 @@ model Product {
   pricePerDay   Float?
   maxRentalDays Int?
   deposit       Float?
+  status        ProductStatus    @default(AVAILABLE)
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
 

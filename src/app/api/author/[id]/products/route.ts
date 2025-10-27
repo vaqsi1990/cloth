@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 
 // GET - Fetch all products by author/user ID
 export async function GET(
@@ -7,6 +9,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getServerSession(authOptions)
     const resolvedParams = await params
     const userId = resolvedParams.id
     
@@ -34,9 +37,13 @@ export async function GET(
       }, { status: 404 })
     }
 
+    // Only show AVAILABLE products to non-admin users
+    const isAdmin = session?.user?.role === 'ADMIN'
+
     const products = await prisma.product.findMany({
       where: { 
-        userId: userId 
+        userId: userId,
+        ...(isAdmin ? {} : { status: 'AVAILABLE' })
       },
       include: {
         category: true,

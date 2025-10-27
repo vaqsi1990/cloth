@@ -21,6 +21,7 @@ const productSchema = z.object({
   pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional(),
   maxRentalDays: z.number().optional(),
   deposit: z.number().min(0, 'გირაო უნდა იყოს დადებითი').optional(),
+  status: z.enum(['AVAILABLE', 'RENTED', 'RESERVED', 'MAINTENANCE']).default('AVAILABLE'),
   variants: z.array(z.object({
     size: z.string().min(1, 'ზომა აუცილებელია'),
     stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი'),
@@ -36,13 +37,18 @@ const productSchema = z.object({
 // GET - Fetch all products
 export async function GET(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions)
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category')
     const gender = searchParams.get('gender')
     const isNew = searchParams.get('isNew')
     
+    // Only show AVAILABLE products to non-admin users
+    const isAdmin = session?.user?.role === 'ADMIN'
+    
     const products = await prisma.product.findMany({
       where: {
+        ...(isAdmin ? {} : { status: 'AVAILABLE' }),
         ...(category && category !== 'ALL' ? { 
           category: { 
             slug: category === 'DRESSES' ? 'dresses' :
@@ -123,6 +129,7 @@ export async function POST(request: NextRequest) {
         pricePerDay: validatedData.pricePerDay,
         maxRentalDays: validatedData.maxRentalDays,
         deposit: validatedData.deposit,
+        status: validatedData.status,
         userId: session.user.id, // Associate product with user
         // Create product images
         images: {

@@ -60,6 +60,7 @@ export interface Product {
   pricePerDay?: number
   maxRentalDays?: number
   deposit?: number
+  status?: 'AVAILABLE' | 'RENTED' | 'RESERVED' | 'MAINTENANCE'
   images: ProductImage[]
   variants: ProductVariant[]
   rentalPriceTiers?: RentalPriceTier[]
