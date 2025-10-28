@@ -2,9 +2,11 @@
 import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Star, ShoppingCart, Heart, Filter, X, ChevronDown } from 'lucide-react'
+import { Star, ShoppingCart, Heart, Filter, X, ChevronDown, Calendar } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 import { Product } from '@/types/product'
+import DatePicker from "react-datepicker"
+import "react-datepicker/dist/react-datepicker.css"
 
 const ShopPageClient = () => {
     const searchParams = useSearchParams()
@@ -20,6 +22,9 @@ const ShopPageClient = () => {
     const [selectedSizes, setSelectedSizes] = useState<string[]>([])
     const [selectedColors, setSelectedColors] = useState<string[]>([])
     const [selectedLocations, setSelectedLocations] = useState<string[]>([])
+    const [rentalStartDate, setRentalStartDate] = useState<Date | null>(null)
+    const [rentalEndDate, setRentalEndDate] = useState<Date | null>(null)
+    const [productRentalStatus, setProductRentalStatus] = useState<Record<number, any>>({})
 
     const categories = [
         { id: "ALL", label: "ყველა" },
@@ -96,6 +101,32 @@ const ShopPageClient = () => {
         fetchProducts()
     }, [genderParam])
 
+    // Fetch rental status for rentable products
+    useEffect(() => {
+        const fetchRentalStatus = async () => {
+            const rentableProducts = products.filter(p => p.isRentable)
+            
+            for (const product of rentableProducts) {
+                try {
+                    const response = await fetch(`/api/products/${product.id}/rental-status`)
+                    const data = await response.json()
+                    if (data.success) {
+                        setProductRentalStatus(prev => ({
+                            ...prev,
+                            [product.id]: data.variants
+                        }))
+                    }
+                } catch (error) {
+                    console.error(`Error fetching rental status for product ${product.id}:`, error)
+                }
+            }
+        }
+
+        if (products.length > 0) {
+            fetchRentalStatus()
+        }
+    }, [products])
+
     // Get gender title and description
     const getGenderInfo = (gender: string) => {
         switch (gender) {
@@ -134,6 +165,33 @@ const ShopPageClient = () => {
     const getMaxPrice = (product: Product) => {
         if (!product.variants || product.variants.length === 0) return 0
         return Math.max(...product.variants.map(v => v.price))
+    }
+
+    // Check if product is available during selected dates
+    const isProductAvailable = (product: Product): boolean => {
+        if (!rentalStartDate || !rentalEndDate || !product.isRentable) return true
+        
+        const variants = productRentalStatus[product.id]
+        if (!variants || variants.length === 0) return true
+
+        const start = new Date(rentalStartDate)
+        const end = new Date(rentalEndDate)
+
+        // Check if any variant has availability for the selected dates
+        return variants.some((variant: any) => {
+            const activeRentals = variant.activeRentals || []
+            
+            // Check if there are any conflicts
+            const hasConflict = activeRentals.some((period: any) => {
+                const periodStart = new Date(period.startDate)
+                const periodEnd = new Date(period.endDate)
+                const periodLastBlockedDate = new Date(periodEnd.getTime() + 24 * 60 * 60 * 1000)
+                
+                return start < periodLastBlockedDate && end >= periodStart
+            })
+            
+            return !hasConflict
+        })
     }
 
     // Filter products by all criteria (excluding gender since it's handled by API)
@@ -176,7 +234,10 @@ const ShopPageClient = () => {
         const locationMatch = selectedLocations.length === 0 || 
             selectedLocations.includes(product.location || '')
 
-        return activeCategoryMatch && priceMatch && sizeMatch && colorMatch && locationMatch
+        // Rental availability filter
+        const rentalAvailabilityMatch = isProductAvailable(product)
+
+        return activeCategoryMatch && priceMatch && sizeMatch && colorMatch && locationMatch && rentalAvailabilityMatch
     })
 
     // Debug: Log filtering results
@@ -234,6 +295,8 @@ const ShopPageClient = () => {
         setSelectedSizes([])
         setSelectedColors([])
         setSelectedLocations([])
+        setRentalStartDate(null)
+        setRentalEndDate(null)
     }
 
     // Get main product image
@@ -397,6 +460,38 @@ const ShopPageClient = () => {
                                 </div>
                             </div>
 
+                            {/* Rental Date Filter */}
+                            <div className="mb-6">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <Calendar className="w-5 h-5 text-gray-700" />
+                                    <h4 className="font-medium text-gray-900">გაქირავების თარიღი</h4>
+                                </div>
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="block text-sm text-gray-600 mb-1">დაწყება</label>
+                                        <DatePicker
+                                            selected={rentalStartDate}
+                                            onChange={(date: Date | null) => setRentalStartDate(date)}
+                                            minDate={new Date()}
+                                            placeholderText="აირჩიე თარიღი"
+                                            dateFormat="dd/MM/yyyy"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm text-gray-600 mb-1">დასრულება</label>
+                                        <DatePicker
+                                            selected={rentalEndDate}
+                                            onChange={(date: Date | null) => setRentalEndDate(date)}
+                                            minDate={rentalStartDate || new Date()}
+                                            placeholderText="აირჩიე თარიღი"
+                                            dateFormat="dd/MM/yyyy"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                                        />
+                                    </div>
+                                   
+                                </div>
+                            </div>
 
                             {/* Results Count */}
                             <div className="pt-4 border-t border-gray-200">
