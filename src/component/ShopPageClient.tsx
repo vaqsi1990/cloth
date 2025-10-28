@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Star, ShoppingCart, Heart, Filter, X, ChevronDown, Calendar } from 'lucide-react'
+import { Filter, X, ChevronDown, Calendar } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 import { Product } from '@/types/product'
 import DatePicker from "react-datepicker"
@@ -13,7 +13,6 @@ const ShopPageClient = () => {
     const genderParam = searchParams.get('gender')
 
     const [products, setProducts] = useState<Product[]>([])
-    const [loading, setLoading] = useState(true)
     const [activeCategory, setActiveCategory] = useState("ALL")
     const [sortBy, setSortBy] = useState("newest")
     const [isFilterOpen, setIsFilterOpen] = useState(false)
@@ -24,7 +23,13 @@ const ShopPageClient = () => {
     const [selectedLocations, setSelectedLocations] = useState<string[]>([])
     const [rentalStartDate, setRentalStartDate] = useState<Date | null>(null)
     const [rentalEndDate, setRentalEndDate] = useState<Date | null>(null)
-    const [productRentalStatus, setProductRentalStatus] = useState<Record<number, any>>({})
+    const [productRentalStatus, setProductRentalStatus] = useState<Record<number, {
+        variantId: number;
+        size: string;
+        stock: number;
+        activeRentals: Array<{ startDate: string; endDate: string; status: string }>;
+        isAvailable: boolean;
+    }[]>>({})
 
     const categories = [
         { id: "ALL", label: "ყველა" },
@@ -93,13 +98,11 @@ const ShopPageClient = () => {
                 }
             } catch (error) {
                 console.error('Error fetching products:', error)
-            } finally {
-                setLoading(false)
             }
         }
 
         fetchProducts()
-    }, [genderParam])
+    }, [genderParam, maxPrice])
 
     // Fetch rental status for rentable products
     useEffect(() => {
@@ -152,8 +155,6 @@ const ShopPageClient = () => {
                 }
         }
     }
-
-    const genderInfo = getGenderInfo(genderParam || '')
 
     // Get minimum price from variants
     const getMinPrice = (product: Product) => {
