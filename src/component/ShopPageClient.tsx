@@ -13,6 +13,7 @@ const ShopPageClient = () => {
     const genderParam = searchParams.get('gender')
 
     const [products, setProducts] = useState<Product[]>([])
+    const [loading, setLoading] = useState(true)
     const [activeCategory, setActiveCategory] = useState("ALL")
     const [sortBy, setSortBy] = useState("newest")
     const [isFilterOpen, setIsFilterOpen] = useState(false)
@@ -72,6 +73,7 @@ const ShopPageClient = () => {
     // Fetch products from API
     useEffect(() => {
         const fetchProducts = async () => {
+            setLoading(true)
             try {
                 // Build query parameters
                 const params = new URLSearchParams()
@@ -98,11 +100,13 @@ const ShopPageClient = () => {
                 }
             } catch (error) {
                 console.error('Error fetching products:', error)
+            } finally {
+                setLoading(false)
             }
         }
 
         fetchProducts()
-    }, [genderParam, maxPrice])
+    }, [genderParam])
 
     // Fetch rental status for rentable products
     useEffect(() => {

@@ -43,12 +43,19 @@ export async function GET(request: NextRequest) {
     const gender = searchParams.get('gender')
     const isNew = searchParams.get('isNew')
     
-    // Only show AVAILABLE products to non-admin users
+    // Show products based on status
+    // Non-admin users see only AVAILABLE products
+    // Admins see all products
     const isAdmin = session?.user?.role === 'ADMIN'
     
     const products = await prisma.product.findMany({
       where: {
-        ...(isAdmin ? {} : { status: 'AVAILABLE' }),
+        ...(isAdmin ? {} : { 
+          OR: [
+            { status: 'AVAILABLE' },
+            { status: 'RENTED' }
+          ]
+        }),
         ...(category && category !== 'ALL' ? { 
           category: { 
             slug: category === 'DRESSES' ? 'dresses' :
@@ -73,6 +80,13 @@ export async function GET(request: NextRequest) {
         variants: true,
         rentalPriceTiers: {
           orderBy: { minDays: 'asc' }
+        },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            image: true
+          }
         }
       },
       orderBy: { createdAt: 'desc' }
