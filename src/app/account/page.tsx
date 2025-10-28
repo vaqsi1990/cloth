@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { User, Package, ShoppingCart, Settings, LogOut, Edit3, MapPin, Phone, Mail, Upload, Camera, MessageCircle } from 'lucide-react'
+import { User, Package, ShoppingCart, Settings, MapPin, Phone, Mail, Camera, MessageCircle } from 'lucide-react'
 import ImageUpload from '@/component/CloudinaryUploader'
 import ContactForm from '@/component/ContactForm'
 
@@ -13,13 +13,16 @@ interface Order {
   total: number
   status: string
   createdAt: string
+  items?: Array<{ productName: string; size: string; price: number }>
 }
 
-interface Product {
+interface ProductItem {
   id: number
   name: string
-  currentPrice: number
+  status: string
   createdAt: string
+  images?: Array<{ url: string }>
+  variants?: Array<{ price: number; size: string; stock: number; id: number }>
 }
 
 const AccountPage = () => {
@@ -35,8 +38,8 @@ const AccountPage = () => {
   const [isEditingProfile, setIsEditingProfile] = useState(false)
   const [profileImage, setProfileImage] = useState<string | null>(session?.user?.image || null)
   const [isUploadingImage, setIsUploadingImage] = useState(false)
-  const [orders, setOrders] = useState<any[]>([])
-  const [products, setProducts] = useState<any[]>([])
+  const [orders, setOrders] = useState<Order[]>([])
+  const [products, setProducts] = useState<ProductItem[]>([])
   const [loadingOrders, setLoadingOrders] = useState(false)
   const [loadingProducts, setLoadingProducts] = useState(false)
 
