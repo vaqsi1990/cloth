@@ -130,32 +130,6 @@ const ShopPageClient = () => {
         }
     }, [products])
 
-    // Get gender title and description
-    const getGenderInfo = (gender: string) => {
-        switch (gender) {
-            case 'women':
-                return {
-                    title: "ქალის",
-                    description: "აღმოაჩინეთ ულამაზესი ქალის ტანსაცმელი"
-                }
-            case 'men':
-                return {
-                    title: "მამაკაცის",
-                    description: "აღმოაჩინეთ მამაკაცის ტანსაცმელი"
-                }
-            case 'children':
-                return {
-                    title: "ბავშვის",
-                    description: "აღმოაჩინეთ ბავშვის ტანსაცმელი"
-                }
-            default:
-                return {
-                    title: "",
-                    description: ""
-                }
-        }
-    }
-
     // Get minimum price from variants
     const getMinPrice = (product: Product) => {
         if (!product.variants || product.variants.length === 0) return 0
@@ -179,11 +153,17 @@ const ShopPageClient = () => {
         const end = new Date(rentalEndDate)
 
         // Check if any variant has availability for the selected dates
-        return variants.some((variant: any) => {
+        return variants.some((variant: {
+            variantId: number;
+            size: string;
+            stock: number;
+            activeRentals: Array<{ startDate: string; endDate: string; status: string }>;
+            isAvailable: boolean;
+        }) => {
             const activeRentals = variant.activeRentals || []
             
             // Check if there are any conflicts
-            const hasConflict = activeRentals.some((period: any) => {
+            const hasConflict = activeRentals.some((period: { startDate: string; endDate: string; status: string }) => {
                 const periodStart = new Date(period.startDate)
                 const periodEnd = new Date(period.endDate)
                 const periodLastBlockedDate = new Date(periodEnd.getTime() + 24 * 60 * 60 * 1000)
