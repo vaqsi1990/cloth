@@ -35,6 +35,10 @@ const AccountPage = () => {
   const [isEditingProfile, setIsEditingProfile] = useState(false)
   const [profileImage, setProfileImage] = useState<string | null>(session?.user?.image || null)
   const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const [orders, setOrders] = useState<any[]>([])
+  const [products, setProducts] = useState<any[]>([])
+  const [loadingOrders, setLoadingOrders] = useState(false)
+  const [loadingProducts, setLoadingProducts] = useState(false)
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -53,6 +57,18 @@ const AccountPage = () => {
       setProfileImage(session.user.image)
     }
   }, [session?.user?.image])
+
+  useEffect(() => {
+    if (activeTab === 'orders' && session?.user?.id) {
+      fetchOrders()
+    }
+  }, [activeTab, session])
+
+  useEffect(() => {
+    if (activeTab === 'products' && session?.user?.id) {
+      fetchProducts()
+    }
+  }, [activeTab, session])
 
   const fetchUserStats = async () => {
     try {
@@ -148,45 +164,94 @@ const AccountPage = () => {
     { id: 'settings', label: 'პარამეტრები', icon: Settings },
   ]
 
-  const mockOrders = [
-    {
-      id: 'ORD-001',
-      date: '2024-01-15',
-      status: 'მიღებული',
-      total: 45,
-      items: [
-        { name: 'შავი ელეგანტური კაბა', size: 'S', price: 45 }
-      ]
-    },
-    {
-      id: 'ORD-002',
-      date: '2024-01-10',
-      status: 'მიწოდება',
-      total: 69,
-      items: [
-        { name: 'თეთრი მინიმალისტური კაბა', size: 'M', price: 69 }
-      ]
+  const fetchOrders = async () => {
+    try {
+      setLoadingOrders(true)
+      const response = await fetch('/api/user/orders')
+      const data = await response.json()
+      if (data.success) {
+        setOrders(data.orders || [])
+      }
+    } catch (error) {
+      console.error('Error fetching orders:', error)
+    } finally {
+      setLoadingOrders(false)
     }
-  ]
+  }
 
-  const mockProducts = [
-    {
-      id: 1,
-      name: 'შავი ელეგანტური კაბა',
-      price: 45,
-      status: 'აქტიური',
-      image: '/hero/1.jpg',
-      createdAt: '2024-01-15'
-    },
-    {
-      id: 2,
-      name: 'ოქროსფერი საღამოს კაბა',
-      price: 36,
-      status: 'აქტიური',
-      image: '/hero/2.jpg',
-      createdAt: '2024-01-10'
+  const fetchProducts = async () => {
+    try {
+      setLoadingProducts(true)
+      const response = await fetch('/api/user/products')
+      const data = await response.json()
+      if (data.success) {
+        setProducts(data.products || [])
+      }
+    } catch (error) {
+      console.error('Error fetching products:', error)
+    } finally {
+      setLoadingProducts(false)
     }
-  ]
+  }
+
+  const handleDeleteProduct = async (productId: number) => {
+    if (!confirm('ნამდვილად გსურთ პროდუქტის წაშლა?')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/user/products?id=${productId}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        // Remove product from list
+        setProducts(products.filter(p => p.id !== productId))
+        // Update stats
+        fetchUserStats()
+        alert('პროდუქტი წარმატებით წაიშალა')
+      } else {
+        alert('შეცდომა პროდუქტის წაშლისას')
+      }
+    } catch (error) {
+      console.error('Error deleting product:', error)
+      alert('შეცდომა პროდუქტის წაშლისას')
+    }
+  }
+
+  const handleStatusChange = async (productId: number, newStatus: string) => {
+    try {
+      const response = await fetch(`/api/products/${productId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: newStatus })
+      })
+
+      if (response.ok) {
+        // Update product status in the list
+        setProducts(products.map(p => 
+          p.id === productId ? { ...p, status: newStatus } : p
+        ))
+      } else {
+        alert('შეცდომა სტატუსის შეცვლისას')
+      }
+    } catch (error) {
+      console.error('Error updating status:', error)
+        alert('შეცდომა სტატუსის შეცვლისას')
+    }
+  }
+
+  const getStatusLabel = (status: string) => {
+    const statusMap: Record<string, string> = {
+      'AVAILABLE': 'თავისუფალია',
+      'RENTED': 'გაქირავებულია',
+      'RESERVED': 'დაჯავშნილია',
+      'MAINTENANCE': 'რესტავრაციაზეა'
+    }
+    return statusMap[status] || status
+  }
 
   const renderProfileTab = () => (
     <div className="space-y-6">
@@ -315,7 +380,12 @@ const AccountPage = () => {
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <h3 className="text-lg font-bold text-black mb-6">შეკვეთების ისტორია</h3>
         
-        {mockOrders.length === 0 ? (
+        {loadingOrders ? (
+          <div className="text-center py-12">
+            <div className="w-12 h-12 border-4 border-gray-300 border-t-[#1B3729] rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600">იტვირთება...</p>
+          </div>
+        ) : orders.length === 0 ? (
           <div className="text-center py-8">
             <ShoppingCart className="w-12 h-12 text-black mx-auto mb-4" />
             <p className="text-black">ჯერ არ გაქვთ შეკვეთები</p>
@@ -328,18 +398,18 @@ const AccountPage = () => {
           </div>
         ) : (
           <div className="space-y-4">
-            {mockOrders.map((order) => (
+            {orders.map((order) => (
               <div key={order.id} className="border border-black rounded-lg p-4 hover:shadow-md transition-shadow">
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <h4 className="font-semibold text-black">შეკვეთა #{order.id}</h4>
-                    <p className="text-sm text-black">{order.date}</p>
+                    <p className="text-sm text-black">{new Date(order.createdAt).toLocaleDateString('ka-GE')}</p>
                   </div>
                   <div className="text-right">
                     <p className="font-bold text-black">₾{order.total}</p>
                     <span className={`inline-block px-2 py-1 text-xs rounded-full ${
-                      order.status === 'მიღებული' ? 'bg-green-100 text-green-800' :
-                      order.status === 'მიწოდება' ? 'bg-blue-100 text-blue-800' :
+                      order.status === 'PAID' ? 'bg-green-100 text-green-800' :
+                      order.status === 'SHIPPED' ? 'bg-blue-100 text-blue-800' :
                       'bg-gray-100 text-black'
                     }`}>
                       {order.status}
@@ -348,9 +418,9 @@ const AccountPage = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  {order.items.map((item, index) => (
+                  {order.items?.map((item: { productName: string; size: string; price: number }, index: number) => (
                     <div key={index} className="flex items-center justify-between text-sm">
-                      <span className="text-black">{item.name} ({item.size})</span>
+                      <span className="text-black">{item.productName} ({item.size})</span>
                       <span className="font-medium">₾{item.price}</span>
                     </div>
                   ))}
@@ -383,7 +453,12 @@ const AccountPage = () => {
           </Link>
         </div>
         
-        {mockProducts.length === 0 ? (
+        {loadingProducts ? (
+          <div className="text-center py-12">
+            <div className="w-12 h-12 border-4 border-gray-300 border-t-[#1B3729] rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600">იტვირთება...</p>
+          </div>
+        ) : products.length === 0 ? (
           <div className="text-center py-8">
             <Package className="w-12 h-12 text-black mx-auto mb-4" />
             <p className="text-black">ჯერ არ გაქვთ პროდუქტები</p>
@@ -396,27 +471,63 @@ const AccountPage = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {mockProducts.map((product) => (
+            {products.map((product) => (
               <div key={product.id} className="border border-black rounded-lg overflow-hidden hover:shadow-md transition-shadow">
                 <div className="aspect-[3/4] bg-gray-200 relative">
                   <img
-                    src={product.image}
+                    src={product.images?.[0]?.url || '/placeholder.jpg'}
                     alt={product.name}
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute top-2 right-2">
                     <span className={`px-2 py-1 text-xs rounded-full ${
-                      product.status === 'აქტიური' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                      product.status === 'AVAILABLE' ? 'bg-green-100 text-green-800' :
+                      product.status === 'RENTED' ? 'bg-blue-100 text-blue-800' :
+                      product.status === 'RESERVED' ? 'bg-yellow-100 text-yellow-800' :
+                      product.status === 'MAINTENANCE' ? 'bg-red-100 text-red-800' :
+                      'bg-gray-100 text-gray-800'
                     }`}>
-                      {product.status}
+                      {getStatusLabel(product.status)}
                     </span>
                   </div>
                 </div>
                 
                 <div className="p-4">
                       <h4 className="font-semibold text-black mb-2">{product.name}</h4>
-                  <p className="text-lg font-bold text-black mb-2">₾{product.price}</p>
-                  <p className="text-sm text-black">დამატებული: {product.createdAt}</p>
+                  <p className="text-lg font-bold text-black mb-2">
+                    {(() => {
+                      if (!product.variants || product.variants.length === 0) return '₾0.00'
+                      
+                      const variantPrices = product.variants as Array<{ price: number; size: string; stock: number; id: number }>
+                      const prices = variantPrices
+                        .filter((v: { price: number; size: string; stock: number; id: number }) => typeof v.price === 'number')
+                        .map((v: { price: number }) => v.price)
+                      
+                      if (prices.length === 0) return '₾0.00'
+                      
+                      const minPrice = Math.min(...prices)
+                      const maxPrice = Math.max(...prices)
+                      
+                      return minPrice === maxPrice 
+                        ? `₾${minPrice.toFixed(2)}` 
+                        : `₾${minPrice.toFixed(2)} - ₾${maxPrice.toFixed(2)}`
+                    })()}
+                  </p>
+                  <p className="text-sm text-black mb-3">დამატებული: {new Date(product.createdAt).toLocaleDateString('ka-GE')}</p>
+                  
+                  <div className="mb-3">
+                    <label className="block text-[16px] font-medium text-gray-700 mb-1">სტატუსი</label>
+                    <select
+                      value={product.status}
+                      onChange={(e) => handleStatusChange(product.id, e.target.value)}
+                      className="w-full px-2 py-1 text-[16px] border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-black"
+                    >
+                      <option className="text-[16px]" value="AVAILABLE">თავისუფალია</option>
+                      <option className="text-[16px]" value="RENTED">გაქირავებულია</option>
+                      <option className="text-[16px]" value="RESERVED">დაჯავშნილია</option>
+                      <option className="text-[16px]" value="MAINTENANCE">რესტავრაციაზეა</option>
+                    </select>
+                  </div>
                   
                   <div className="mt-4 flex space-x-2">
                     <Link
@@ -425,7 +536,10 @@ const AccountPage = () => {
                     >
                       რედაქტირება
                     </Link>
-                    <button className="flex-1 px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm">
+                    <button 
+                      onClick={() => handleDeleteProduct(product.id)}
+                      className="flex-1 cursor-pointer px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm"
+                    >
                       წაშლა
                     </button>
                   </div>

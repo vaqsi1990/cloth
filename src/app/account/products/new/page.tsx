@@ -90,10 +90,22 @@ const NewProductPage = () => {
   ]
 
   const handleInputChange = (field: keyof ProductFormData, value: string | number | boolean | undefined) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }))
+    setFormData(prev => {
+      // If enabling rental, initialize with at least one tier
+      if (field === 'isRentable' && value === true) {
+        return {
+          ...prev,
+          [field]: value,
+          rentalPriceTiers: prev.rentalPriceTiers && prev.rentalPriceTiers.length > 0 
+            ? prev.rentalPriceTiers 
+            : [{ minDays: 4, pricePerDay: 0 }]
+        }
+      }
+      return {
+        ...prev,
+        [field]: value
+      }
+    })
 
     // Clear error when user starts typing
     if (errors[field]) {
@@ -182,12 +194,17 @@ const NewProductPage = () => {
   const updateRentalPriceTier = (index: number, field: string, value: number) => {
     setFormData(prev => {
       const currentTiers = prev.rentalPriceTiers || []
-      // If no tiers exist, create a default one
-      const tiers = currentTiers.length === 0 ? [{ minDays: 1, pricePerDay: 0 }] : currentTiers
+      // Ensure we have at least one tier
+      if (currentTiers.length === 0) {
+        return {
+          ...prev,
+          rentalPriceTiers: [{ minDays: 1, pricePerDay: 0 }]
+        }
+      }
       
       return {
         ...prev,
-        rentalPriceTiers: tiers.map((tier, i) =>
+        rentalPriceTiers: currentTiers.map((tier, i) =>
           i === index ? { ...tier, [field]: value } : tier
         )
       }
@@ -496,10 +513,20 @@ const NewProductPage = () => {
               <div className="space-y-6">
                 {/* Rental Price Tiers */}
                 <div>
-                  <h3 className="text-lg font-medium text-black mb-4">ფასის გეგმა</h3>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-medium text-black">ფასის გეგმა</h3>
+                    <button
+                      type="button"
+                      onClick={addRentalPriceTier}
+                      className="bg-black text-white px-4 py-2 rounded-lg text-sm flex items-center space-x-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>გეგმის დამატება</span>
+                    </button>
+                  </div>
 
-                  {/* Always show at least one price tier */}
-                  {(formData.rentalPriceTiers && formData.rentalPriceTiers.length > 0 ? formData.rentalPriceTiers : [{ minDays: 1, pricePerDay: 0 }]).map((tier, index) => (
+                  {/* Show price tiers */}
+                  {(formData.rentalPriceTiers || []).map((tier, index) => (
                     <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border border-gray-200 rounded-lg mb-4">
                       <div>
                         <label className="block text-[20px] font-medium text-black mb-2">მინიმალური დღეები</label>
@@ -525,14 +552,17 @@ const NewProductPage = () => {
                       </div>
 
                       <div className="flex items-end">
-                        <button
-                          type="button"
-                          onClick={() => removeRentalPriceTier(index)}
-                          className="bg-red-500 text-white px-3 py-2 rounded-lg text-[20px] flex items-center space-x-2"
-                        >
-                          <X className="w-4 h-4" />
-                          <span>წაშლა</span>
-                        </button>
+                        {/* Only show delete button if there's more than one tier */}
+                        {formData.rentalPriceTiers && formData.rentalPriceTiers.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeRentalPriceTier(index)}
+                            className="bg-red-500 text-white px-3 py-2 rounded-lg text-sm flex items-center space-x-2"
+                          >
+                            <X className="w-4 h-4" />
+                            <span>წაშლა</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}

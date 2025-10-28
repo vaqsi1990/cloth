@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { Prisma } from '@prisma/client'
 
 // Product validation schema
 const productSchema = z.object({
@@ -223,6 +224,80 @@ export async function PUT(
       }, { status: 400 })
     }
     
+    console.error('Error updating product:', error)
+    return NextResponse.json({
+      success: false,
+      message: 'შეცდომა პროდუქტის განახლებისას'
+    }, { status: 500 })
+  }
+}
+
+// PATCH - Partially update product (e.g., just status)
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    // Check authentication
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
+    const resolvedParams = await params
+    const productId = parseInt(resolvedParams.id)
+    
+    if (isNaN(productId)) {
+      return NextResponse.json({
+        success: false,
+        message: 'არასწორი პროდუქტის ID'
+      }, { status: 400 })
+    }
+
+    const body = await request.json()
+
+    // Check if product exists
+    const existingProduct = await prisma.product.findUnique({
+      where: { id: productId }
+    })
+
+    if (!existingProduct) {
+      return NextResponse.json({
+        success: false,
+        message: 'პროდუქტი ვერ მოიძებნა'
+      }, { status: 404 })
+    }
+
+    // Check if user owns the product or is admin
+    if (session.user.role !== 'ADMIN' && existingProduct.userId !== session.user.id) {
+      return NextResponse.json(
+        { success: false, error: 'Permission denied' },
+        { status: 403 }
+      )
+    }
+
+    // Update only the fields provided
+    const updateData: Prisma.ProductUpdateInput = {}
+    
+    if (body.status && ['AVAILABLE', 'RENTED', 'RESERVED', 'MAINTENANCE'].includes(body.status)) {
+      updateData.status = body.status as 'AVAILABLE' | 'RENTED' | 'RESERVED' | 'MAINTENANCE'
+    }
+
+    const updatedProduct = await prisma.product.update({
+      where: { id: productId },
+      data: updateData
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: 'პროდუქტი წარმატებით განახლდა',
+      product: updatedProduct
+    })
+    
+  } catch (error) {
     console.error('Error updating product:', error)
     return NextResponse.json({
       success: false,

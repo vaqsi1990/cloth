@@ -587,33 +587,44 @@ const ProductPage = () => {
 
                             {/* Purchase / Rent toggle + calendars */}
                             <div className=" p-6  space-y-4">
-                                <div className="grid grid-cols-2 gap-3">
-                                    <button
-                                        onClick={() => setPurchaseMode("buy")}
-                                        disabled={product.status === 'RENTED'}
-                                        className={`p-4 rounded-xl border-2 flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed ${purchaseMode === "buy"
-                                            ? "border-[#1B3729] bg-[#1B3729] text-white"
-                                            : "border-gray-300"
-                                            }`}
-                                    >
-                                        <CreditCard className="w-5 h-5" />
-                                        ყიდვა
-                                    </button>
-                                    {product.isRentable && product.status === 'AVAILABLE' && (
+                                {product.status === 'MAINTENANCE' ? (
+                                    <div className="text-center p-6 bg-orange-50 border-2 border-orange-200 rounded-xl">
+                                        <div className="text-orange-700 font-semibold text-lg mb-2">
+                                            პროდუქტი რესტავრაციაზეა
+                                        </div>
+                                        <div className="text-orange-600">
+                                            ამჟამად ხელმისაწვდომი არ არის
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-2 gap-3">
                                         <button
-                                            onClick={() => setPurchaseMode("rent")}
-                                            className={`p-4 rounded-xl border-2 flex items-center justify-center gap-2 ${purchaseMode === "rent"
-                                                ? "border-emerald-400 bg-emerald-100 text-black"
+                                            onClick={() => setPurchaseMode("buy")}
+                                            disabled={product.status === 'RENTED'}
+                                            className={`p-4 rounded-xl border-2 flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed ${purchaseMode === "buy"
+                                                ? "border-[#1B3729] bg-[#1B3729] text-white"
                                                 : "border-gray-300"
                                                 }`}
                                         >
-                                            <CalendarDays className="w-5 h-5" />
-                                            ქირაობა
+                                            <CreditCard className="w-5 h-5" />
+                                            ყიდვა
                                         </button>
-                                    )}
-                                </div>
+                                        {product.isRentable && product.status === 'AVAILABLE' && (
+                                            <button
+                                                onClick={() => setPurchaseMode("rent")}
+                                                className={`p-4 rounded-xl border-2 flex items-center justify-center gap-2 ${purchaseMode === "rent"
+                                                    ? "border-emerald-400 bg-emerald-100 text-black"
+                                                    : "border-gray-300"
+                                                    }`}
+                                            >
+                                                <CalendarDays className="w-5 h-5" />
+                                                ქირაობა
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
 
-                                {purchaseMode === "rent" && product.isRentable && (
+                                {purchaseMode === "rent" && product.isRentable && product.status !== 'MAINTENANCE' && (
                                     <div className="space-y-3 p-4 bg-emerald-50 rounded-xl border border-emerald-200">
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
@@ -766,22 +777,24 @@ const ProductPage = () => {
                                     ) : null
                                 })()}
 
-                                <button
-                                    onClick={() =>
-                                        purchaseMode === "buy" ? handleAddToCart() : handleRental()
-                                    }
-                                
-                                    className={`w-full py-4 rounded-xl text-white font-bold transition disabled:bg-gray-400 ${purchaseMode === "buy"
-                                        ? "bg-[#1B3729] hover:opacity-95"
-                                        : "bg-emerald-600 hover:bg-emerald-700"
-                                        }`}
-                                >
-                                    {isAdding
-                                        ? "მუშავდება..."
-                                        : purchaseMode === "buy"
-                                            ? "კალათაში დამატება"
-                                            : "ქირაობა ახლა"}
-                                </button>
+                                {product.status !== 'MAINTENANCE' && (
+                                    <button
+                                        onClick={() =>
+                                            purchaseMode === "buy" ? handleAddToCart() : handleRental()
+                                        }
+                                    
+                                        className={`w-full py-4 rounded-xl text-white font-bold transition disabled:bg-gray-400 ${purchaseMode === "buy"
+                                            ? "bg-[#1B3729] hover:opacity-95"
+                                            : "bg-emerald-600 hover:bg-emerald-700"
+                                            }`}
+                                    >
+                                        {isAdding
+                                            ? "მუშავდება..."
+                                            : purchaseMode === "buy"
+                                                ? "კალათაში დამატება"
+                                                : "ქირაობა ახლა"}
+                                    </button>
+                                )}
                             </div>
 
                             {/* Facts block (Brand/Size/Location/Colour/Minimal days) */}
