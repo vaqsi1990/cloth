@@ -41,6 +41,92 @@ export async function POST(request: NextRequest) {
     
     console.log('Creating order with data:', validatedData)
     
+    // Validate rental dates don't conflict with existing rentals
+    for (const item of validatedData.items) {
+      if (item.isRental && item.rentalStartDate && item.rentalEndDate) {
+        const start = new Date(item.rentalStartDate)
+        const end = new Date(item.rentalEndDate)
+        
+        // Get variant by size
+        const variant = await prisma.productVariant.findFirst({
+          where: {
+            productId: item.productId,
+            size: item.size
+          }
+        })
+        
+        if (variant) {
+          // Check existing rentals from rental table
+          const existingRentals = await prisma.rental.findMany({
+            where: {
+              variantId: variant.id,
+              status: {
+                in: ['RESERVED', 'ACTIVE']
+              }
+            }
+          })
+          
+          // Check existing order items with active rentals
+          const existingOrders = await prisma.order.findMany({
+            where: {
+              status: {
+                in: ['PENDING', 'PAID', 'SHIPPED']
+              },
+              items: {
+                some: {
+                  productId: item.productId,
+                  isRental: true,
+                  rentalEndDate: {
+                    gte: new Date()
+                  }
+                }
+              }
+            },
+            include: {
+              items: {
+                where: {
+                  productId: item.productId,
+                  isRental: true
+                }
+              }
+            }
+          })
+          
+          // Check for conflicts with maintenance buffer (1 day)
+          for (const rental of existingRentals) {
+            const rentalStart = new Date(rental.startDate)
+            const rentalEnd = new Date(rental.endDate)
+            const rentalLastBlockedDate = new Date(rentalEnd.getTime() + 24 * 60 * 60 * 1000)
+            
+            if (start < rentalLastBlockedDate && end >= rentalStart) {
+              return NextResponse.json({
+                success: false,
+                message: `პროდუქტი ${item.productName} (${item.size}) არ არის ხელმისაწვდომი არჩეულ თარიღებზე`
+              }, { status: 409 })
+            }
+          }
+          
+          // Check order items
+          for (const order of existingOrders) {
+            for (const orderItem of order.items) {
+              if (orderItem.isRental && orderItem.rentalStartDate && orderItem.rentalEndDate && orderItem.size === item.size) {
+                const itemStart = new Date(orderItem.rentalStartDate)
+                const itemEnd = new Date(orderItem.rentalEndDate)
+                const itemLastBlockedDate = new Date(itemEnd.getTime() + 24 * 60 * 60 * 1000)
+                
+                if (start < itemLastBlockedDate && end >= itemStart) {
+                  return NextResponse.json({
+                    success: false,
+                    message: `პროდუქტი ${item.productName} (${item.size}) არ არის ხელმისაწვდომი არჩეულ თარიღებზე`
+                  }, { status: 409 })
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    
     // Calculate total
     const total = validatedData.items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
     

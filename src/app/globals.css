@@ -249,3 +249,16 @@ body {
     height: calc(100vh - 120px);
   }
 }
+
+/* React DatePicker blocked dates styling */
+.react-datepicker__day--excluded {
+  background-color: #f3f4f6 !important;
+  color: #9ca3af !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+}
+
+.react-datepicker__day--excluded:hover {
+  background-color: #f3f4f6 !important;
+  color: #9ca3af !important;
+}

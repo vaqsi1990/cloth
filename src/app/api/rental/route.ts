@@ -61,6 +61,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Also check for size-based rentals if variantId is not provided
+    // or if we need to validate by size from the variant
+    
     // If variantId is provided, check if variant exists and belongs to product
     if (variantId) {
       const variant = await prisma.productVariant.findFirst({
@@ -78,36 +81,78 @@ export async function POST(request: NextRequest) {
       }
 
       // Check if variant is available for rental during the requested period
-      const conflictingRentals = await prisma.rental.findMany({
+      // Need to check both rental table and order items with active rentals
+      
+      // 1. Check rental table
+      const existingRentals = await prisma.rental.findMany({
         where: {
           variantId: variantId,
           status: {
             in: ['RESERVED', 'ACTIVE']
-          },
-          OR: [
-            {
-              AND: [
-                { startDate: { lte: start } },
-                { endDate: { gte: start } }
-              ]
-            },
-            {
-              AND: [
-                { startDate: { lte: end } },
-                { endDate: { gte: end } }
-              ]
-            },
-            {
-              AND: [
-                { startDate: { gte: start } },
-                { endDate: { lte: end } }
-              ]
-            }
-          ]
+          }
         }
       })
 
-      if (conflictingRentals.length > 0) {
+      // 2. Check order items with active rentals for this product
+      const existingOrders = await prisma.order.findMany({
+        where: {
+          status: {
+            in: ['PENDING', 'PAID', 'SHIPPED']
+          },
+          items: {
+            some: {
+              productId: productId,
+              isRental: true,
+              rentalEndDate: {
+                gte: new Date()
+              }
+            }
+          }
+        },
+        include: {
+          items: {
+            where: {
+              productId: productId,
+              isRental: true
+            }
+          }
+        }
+      })
+
+      // Check for conflicts including maintenance buffer (1 day after rental ends)
+      const hasConflict = () => {
+        // Check existing rentals from rental table
+        for (const rental of existingRentals) {
+          const rentalStart = new Date(rental.startDate)
+          const rentalEnd = new Date(rental.endDate)
+          const rentalLastBlockedDate = new Date(rentalEnd.getTime() + 24 * 60 * 60 * 1000) // Add 1 day maintenance
+          
+          // Check if requested dates conflict with this rental period
+          if (start < rentalLastBlockedDate && end >= rentalStart) {
+            return true
+          }
+        }
+
+        // Check order items
+        for (const order of existingOrders) {
+          for (const item of order.items) {
+            if (item.isRental && item.rentalStartDate && item.rentalEndDate) {
+              const itemStart = new Date(item.rentalStartDate)
+              const itemEnd = new Date(item.rentalEndDate)
+              const itemLastBlockedDate = new Date(itemEnd.getTime() + 24 * 60 * 60 * 1000) // Add 1 day maintenance
+              
+              // Check if requested dates conflict with this rental period
+              if (start < itemLastBlockedDate && end >= itemStart) {
+                return true
+              }
+            }
+          }
+        }
+
+        return false
+      }
+
+      if (hasConflict()) {
         return NextResponse.json(
           { error: 'Product variant is not available for the selected dates' },
           { status: 409 }
