@@ -5,10 +5,11 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowLeft, Search, Filter, Users, Mail, Calendar, Package, ShoppingCart, Trash2, UserCheck, UserX } from 'lucide-react'
+import { ArrowLeft, Search, Filter, Users, Mail, Calendar, Package, ShoppingCart, Trash2, UserCheck, UserX, Phone, User } from 'lucide-react'
 
 interface User {
   personalId: string
+  phone: string
   id: string
   name: string
   email: string
@@ -298,8 +299,12 @@ const AdminUsersPage = () => {
                             <span>{new Date(user.createdAt).toLocaleDateString('ka-GE')}</span>
                           </div>
                           <div className="flex items-center space-x-1">
-                          
+                            <User className="w-4 h-4" />
                             <span>{user.personalId}</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Phone className="w-4 h-4" />
+                            <span>{user.phone}</span>
                           </div>
                         </div>
                         

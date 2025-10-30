@@ -63,22 +63,43 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user, trigger, session }) {
+      type AuthorizedUser = {
+        id: string
+        email: string
+        name?: string | null
+        image?: string | null
+        role?: string
+        phone?: string | null
+        location?: string | null
+        personalId?: string | null
+      }
+
       if (user) {
-        token.role = (user as any).role
-        token.image = (user as any).image
-        token.phone = (user as any).phone
-        token.location = (user as any).location
-        token.personalId = (user as any).personalId
+        const u = user as AuthorizedUser
+        if (typeof u.role === 'string') token.role = u.role
+        if (typeof u.image === 'string' || u.image === null) token.image = u.image
+        if (typeof u.phone === 'string' || u.phone === null) token.phone = u.phone
+        if (typeof u.location === 'string' || u.location === null) token.location = u.location
+        if (typeof u.personalId === 'string' || u.personalId === null) token.personalId = u.personalId
       }
 
       // Update token when profile is updated
       if (trigger === "update" && session) {
-        token.image = (session as any).image
-        token.name = (session as any).name
-        token.email = (session as any).email
-        token.phone = (session as any).phone ?? token.phone
-        token.location = (session as any).location ?? token.location
-        token.personalId = (session as any).personalId ?? token.personalId
+        type UpdatePayload = Partial<{
+          image: string | null
+          name: string | null
+          email: string
+          phone: string | null
+          location: string | null
+          personalId: string | null
+        }>
+        const s = session as UpdatePayload
+        token.image = s.image ?? token.image
+        token.name = s.name ?? token.name
+        token.email = s.email ?? token.email
+        token.phone = s.phone ?? token.phone
+        token.location = s.location ?? token.location
+        token.personalId = s.personalId ?? token.personalId
       }
 
       return token
@@ -86,13 +107,13 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (token) {
         session.user.id = token.sub!
-        session.user.role = token.role as string
-        session.user.image = token.image as string
-        session.user.name = token.name as string
-        session.user.email = token.email as string
-        ;(session.user as any).phone = token.phone as string | undefined
-        ;(session.user as any).location = token.location as string | undefined
-        ;(session.user as any).personalId = token.personalId as string | undefined
+        session.user.role = (typeof token.role === 'string' ? token.role : session.user.role)
+        session.user.image = (token.image as string | null) ?? session.user.image ?? null
+        session.user.name = (token.name as string | null) ?? session.user.name ?? null
+        session.user.email = (typeof token.email === 'string' ? token.email : session.user.email)
+        ;(session.user as { phone?: string | null }).phone = (token.phone as string | null | undefined) ?? undefined
+        ;(session.user as { location?: string | null }).location = (token.location as string | null | undefined) ?? undefined
+        ;(session.user as { personalId?: string | null }).personalId = (token.personalId as string | null | undefined) ?? undefined
       }
       return session
     }

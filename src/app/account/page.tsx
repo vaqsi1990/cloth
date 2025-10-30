@@ -866,10 +866,11 @@ function ProfileSettingsForm() {
         image: data.user.image,
         phone: data.user.phone,
         location: data.user.location,
-      } as any)
+      })
       setSuccess('პროფილი განახლდა')
-    } catch (err: any) {
-      setError(err.message || 'შეცდომა')
+    } catch (err: unknown) {
+      const message = typeof err === 'object' && err && 'message' in err ? String((err as { message?: string }).message) : 'შეცდომა'
+      setError(message)
     } finally {
       setSaving(false)
     }

@@ -28,6 +28,8 @@ export async function GET(request: NextRequest) {
         banned: true,
         banReason: true,
         bannedAt: true,
+        personalId: true,
+        phone: true,
         _count: {
           select: {
             products: true,
