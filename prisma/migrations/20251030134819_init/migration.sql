@@ -27,10 +27,16 @@ CREATE TABLE "public"."User" (
     "id" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "name" TEXT,
+    "phone" TEXT,
+    "location" TEXT,
+    "personalId" TEXT,
     "password" TEXT,
     "role" "public"."UserRole" NOT NULL DEFAULT 'USER',
     "emailVerified" TIMESTAMP(3),
     "image" TEXT,
+    "banned" BOOLEAN NOT NULL DEFAULT false,
+    "banReason" TEXT,
+    "bannedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -290,8 +296,25 @@ CREATE TABLE "public"."UserVerification" (
     CONSTRAINT "UserVerification_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "public"."password_reset_tokens" (
+    "id" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "token" TEXT NOT NULL,
+    "expires" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "password_reset_tokens_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "public"."User"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_phone_key" ON "public"."User"("phone");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_personalId_key" ON "public"."User"("personalId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Account_provider_providerAccountId_key" ON "public"."Account"("provider", "providerAccountId");
@@ -346,6 +369,12 @@ CREATE INDEX "RentalPriceTier_productId_idx" ON "public"."RentalPriceTier"("prod
 
 -- CreateIndex
 CREATE UNIQUE INDEX "UserVerification_userId_key" ON "public"."UserVerification"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "password_reset_tokens_email_key" ON "public"."password_reset_tokens"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "password_reset_tokens_token_key" ON "public"."password_reset_tokens"("token");
 
 -- AddForeignKey
 ALTER TABLE "public"."Account" ADD CONSTRAINT "Account_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
