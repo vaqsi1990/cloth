@@ -11,12 +11,7 @@ export async function POST(request: NextRequest) {
   try {
     console.log('Send verification API called')
     
-    // Check environment variables
-    console.log('Environment check:', {
-      EMAIL_USER: process.env.EMAIL_USER,
-      EMAIL_PASSWORD: process.env.EMAIL_PASSWORD ? 'SET' : 'NOT SET',
-      NEXTAUTH_URL: process.env.NEXTAUTH_URL
-    })
+  
     
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
       console.error('Missing email configuration')
@@ -54,16 +49,16 @@ export async function POST(request: NextRequest) {
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
     console.log('Expires at:', expiresAt)
     
-    // Delete any existing verification tokens for this email
+    // Delete any existing verification tokens for this email (identifier field in schema)
     await prisma.verificationToken.deleteMany({
-      where: { email: validatedData.email }
+      where: { identifier: validatedData.email }
     });
     console.log('Deleted existing tokens for:', validatedData.email)
     
     // Create new verification token
     const newToken = await prisma.verificationToken.create({
       data: {
-        email: validatedData.email,
+        identifier: validatedData.email,
         token: verificationCode,
         expires: expiresAt,
       }
