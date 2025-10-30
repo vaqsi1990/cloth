@@ -5,6 +5,9 @@ import { z } from "zod"
 
 const signupSchema = z.object({
   name: z.string().min(2, "სახელი უნდა იყოს მინიმუმ 2 სიმბოლო"),
+  phone: z.string().min(6, "ტელეფონის ნომერი საჭიროა"),
+  location: z.string().min(2, "ადგილმდებარეობა აუცილებელია"),
+  personalId: z.string().min(6, "პირადობის ნომერი აუცილებელია"),
   email: z.string().email("არასწორი ელფოსტა"),
   password: z.string().min(6, "პაროლი უნდა იყოს მინიმუმ 6 სიმბოლო"),
 })
@@ -35,6 +38,9 @@ export async function POST(request: NextRequest) {
     const user = await prisma.user.create({
       data: {
         name: validatedData.name,
+        phone: validatedData.phone,
+        location: validatedData.location,
+        personalId: validatedData.personalId,
         email: validatedData.email,
         password: hashedPassword,
         role: "USER"

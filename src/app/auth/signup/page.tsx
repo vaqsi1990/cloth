@@ -8,6 +8,9 @@ import { Mail, Lock, User, Eye, EyeOff } from 'lucide-react'
 const SignUpPage = () => {
   const [formData, setFormData] = useState({
     name: '',
+    phone: '', // ტელეფონის ნომერი
+    location: '', // ადგილმდებარეობა
+    personalId: '', // პირადობის ნომერი
     email: '',
     password: '',
     confirmPassword: ''
@@ -56,6 +59,9 @@ const SignUpPage = () => {
         },
         body: JSON.stringify({
           name: formData.name,
+          phone: formData.phone,
+          location: formData.location,
+          personalId: formData.personalId,
           email: formData.email,
           password: formData.password,
         }),
@@ -126,6 +132,60 @@ const SignUpPage = () => {
                   onChange={handleChange}
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
                   placeholder="შეიყვანეთ სახელი"
+                />
+              </div>
+            </div>
+            {/* Phone */}
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                ტელეფონის ნომერი
+              </label>
+              <div className="relative">
+                <input
+                  id="phone"
+                  name="phone"
+                  type="text"
+                  required
+                  value={formData.phone}
+                  onChange={handleChange}
+                  className="w-full pl-4 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                  placeholder="შეიყვანეთ ტელეფონის ნომერი"
+                />
+              </div>
+            </div>
+            {/* Location */}
+            <div>
+              <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
+                ადგილმდებარეობა
+              </label>
+              <div className="relative">
+                <input
+                  id="location"
+                  name="location"
+                  type="text"
+                  required
+                  value={formData.location}
+                  onChange={handleChange}
+                  className="w-full pl-4 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                  placeholder="შეიყვანეთ ადგილმდებარეობა"
+                />
+              </div>
+            </div>
+            {/* Personal ID */}
+            <div>
+              <label htmlFor="personalId" className="block text-sm font-medium text-gray-700 mb-2">
+                პირადობის ნომერი
+              </label>
+              <div className="relative">
+                <input
+                  id="personalId"
+                  name="personalId"
+                  type="text"
+                  required
+                  value={formData.personalId}
+                  onChange={handleChange}
+                  className="w-full pl-4 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                  placeholder="შეიყვანეთ პირადობის ნომერი"
                 />
               </div>
             </div>
