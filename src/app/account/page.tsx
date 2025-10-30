@@ -42,6 +42,17 @@ const AccountPage = () => {
   const [products, setProducts] = useState<ProductItem[]>([])
   const [loadingOrders, setLoadingOrders] = useState(false)
   const [loadingProducts, setLoadingProducts] = useState(false)
+  const [verification, setVerification] = useState<{
+    id?: number;
+    idFrontUrl?: string | null;
+    idBackUrl?: string | null;
+    status?: 'PENDING' | 'APPROVED' | 'REJECTED';
+    comment?: string | null;
+  } | null>(null)
+  const [verifLoading, setVerifLoading] = useState(false)
+  const [savingVerification, setSavingVerification] = useState(false)
+  const [idFrontUrl, setIdFrontUrl] = useState<string | null>(null)
+  const [idBackUrl, setIdBackUrl] = useState<string | null>(null)
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -72,6 +83,23 @@ const AccountPage = () => {
       fetchProducts()
     }
   }, [activeTab, session])
+
+  useEffect(() => {
+    if (activeTab === 'profile' && session?.user?.id) {
+      fetchVerification()
+    }
+  }, [activeTab, session])
+
+  useEffect(() => {
+    if (session?.user?.id) {
+      fetch('/api/user/me').then(r => r.json()).then(d => {
+        if (d?.user?.banned) {
+          alert(d.user.banReason ? `თქვენი ანგარიში დაბლოკილია: ${d.user.banReason}` : 'თქვენი ანგარიში დაბლოკილია')
+          router.push('/')
+        }
+      }).catch(() => {})
+    }
+  }, [session?.user?.id])
 
   const fetchUserStats = async () => {
     try {
@@ -144,6 +172,62 @@ const AccountPage = () => {
       alert('შეცდომა სურათის ატვირთვისას')
     } finally {
       setIsUploadingImage(false)
+    }
+  }
+
+  const fetchVerification = async () => {
+    try {
+      setVerifLoading(true)
+      const res = await fetch('/api/user/verification')
+      const data = await res.json()
+      if (data.success) {
+        setVerification(data.verification)
+        setIdFrontUrl(data.verification?.idFrontUrl || null)
+        setIdBackUrl(data.verification?.idBackUrl || null)
+      }
+    } catch (e) {
+      console.error('Error fetching verification:', e)
+    } finally {
+      setVerifLoading(false)
+    }
+  }
+
+  const handleIdFrontUpload = async (urls: string[]) => {
+    if (!urls.length) return
+    setIdFrontUrl(urls[0])
+  }
+
+  const handleIdBackUpload = async (urls: string[]) => {
+    if (!urls.length) return
+    setIdBackUrl(urls[0])
+  }
+
+  const saveVerification = async () => {
+    try {
+      if (!idFrontUrl || !idBackUrl) {
+        alert('გთხოვთ ატვირთოთ ორივე სურათი (წინა და უკან მხარე)')
+        return
+      }
+      setSavingVerification(true)
+      const res = await fetch('/api/user/verification', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idFrontUrl, idBackUrl })
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        setVerification(data.verification)
+        alert('დოკუმენტები წარმატებით გაიგზავნა ვალიდაციაზე')
+        setIdFrontUrl(null)
+        setIdBackUrl(null)
+      } else {
+        alert(data.error || 'შეცდომა გაგზავნისას')
+      }
+    } catch (e) {
+      console.error('Error saving verification:', e)
+      alert('შეცდომა ვერიფიკაციის შენახვისას')
+    } finally {
+      setSavingVerification(false)
     }
   }
 
@@ -256,6 +340,18 @@ const AccountPage = () => {
     return statusMap[status] || status
   }
 
+  const getVerificationStatusLabel = (
+    status?: 'PENDING' | 'APPROVED' | 'REJECTED'
+  ) => {
+    const statusMap: Record<string, string> = {
+      'PENDING': 'მოლოდინში',
+      'APPROVED': 'დამტკიცებულია',
+      'REJECTED': 'უარყოფილია'
+    }
+    if (!status) return statusMap['PENDING']
+    return statusMap[status] || status
+  }
+
   const renderProfileTab = () => (
     <div className="space-y-6">
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
@@ -341,10 +437,61 @@ const AccountPage = () => {
                 <p className="font-medium">თბილისი, საქართველო</p>
               </div>
             </div>
+            
           </div>
+         
         </div>
 
-        
+        {/* Verification Section for non-admin users */}
+        {session.user.role !== 'ADMIN' && (
+          <div className="mt-8 p-4 border border-black rounded-lg bg-gray-50">
+            <h4 className="text-lg font-semibold text-red mb-2">პირადობის ვერიფიკაცია </h4>
+            <p className="text-[18px] text-red-500">პირადობის სურათებით მოხდება თქვენი ვერიფიცირება, თუ არ ატვირთავთ სურათებს ვერ შეძლებთ ახალი პროდუქტის დამატებას ან ყიდვას და ქირაობას</p>
+            {verifLoading ? (
+              <p className="text-sm text-gray-600">იტვირთება...</p>
+            ) : verification?.status === 'APPROVED' ? (
+              <div className="mt-4 px-4 py-3 bg-green-100 text-green-900 font-bold rounded text-center">
+                დოკუმენტები დამტკიცებულია
+              </div>
+            ) : (
+              <>
+                <div className="mb-3">
+                  <span className={`inline-block px-3 py-1 text-sm rounded-full ${
+                    ['APPROVED'].includes(verification?.status ?? '')
+                      ? 'bg-green-100 text-green-800'
+                      : ['REJECTED'].includes(verification?.status ?? '')
+                      ? 'bg-red-100 text-red-800'
+                      : 'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    სტატუსი: {getVerificationStatusLabel(verification?.status)}
+                  </span>
+                </div>
+                {verification?.status === 'REJECTED' && verification?.comment && (
+                  <p className="text-sm text-red-700 mb-3">მიზეზი: {verification.comment}</p>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-black mb-2">დოკუმენტის წინა მხარე</p>
+                    <ImageUpload value={idFrontUrl ? [idFrontUrl] : []} onChange={handleIdFrontUpload} />
+                  </div>
+                  <div>
+                    <p className="text-sm text-black mb-2">დოკუმენტის შიდა მხარე</p>
+                    <ImageUpload value={idBackUrl ? [idBackUrl] : []} onChange={handleIdBackUpload} />
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <button
+                    onClick={saveVerification}
+                    disabled={savingVerification}
+                    className="px-4 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors disabled:opacity-60"
+                  >
+                    {savingVerification ? 'გაგზავნა...' : 'დასტური გაგზავნაზე'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
@@ -447,14 +594,30 @@ const AccountPage = () => {
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-bold text-black">ჩემი პროდუქტები</h3>
-          <Link
-            href="/account/products/new"
-            className="flex items-center space-x-2 px-4 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
-          >
-            <Package className="w-4 h-4" />
-            <span>ახალი პროდუქტი</span>
-          </Link>
+          {session.user.role === 'ADMIN' || verification?.status === 'APPROVED' ? (
+            <Link
+              href="/account/products/new"
+              className="flex items-center space-x-2 px-4 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
+            >
+              <Package className="w-4 h-4" />
+              <span>ახალი პროდუქტი</span>
+            </Link>
+          ) : (
+            <button
+              disabled
+              className="flex items-center space-x-2 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg font-bold uppercase tracking-wide cursor-not-allowed"
+              title="ახალი პროდუქტის დამატება შესაძლებელია მხოლოდ ვერიფიცირებული ანგარიშისთვის"
+            >
+              <Package className="w-4 h-4" />
+              <span>ახალი პროდუქტი</span>
+            </button>
+          )}
         </div>
+        {session.user.role !== 'ADMIN' && verification?.status !== 'APPROVED' && (
+          <div className="mb-4 p-3 border border-yellow-400 bg-yellow-50 text-yellow-800 rounded">
+            გთხოვთ დაადასტუროთ პირადობა პროფილის გვერდზე, რომ შეძლოთ პროდუქტის დამატება.
+          </div>
+        )}
         
         {loadingProducts ? (
           <div className="text-center py-12">
@@ -560,41 +723,11 @@ const AccountPage = () => {
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <h3 className="text-lg font-bold text-black mb-6">პარამეტრები</h3>
         
-        <div className="space-y-6">
-          <div>
-            <h4 className="font-semibold text-black mb-3">პაროლის შეცვლა</h4>
-            <div className="space-y-3">
-              <input
-                type="password"
-                placeholder="მიმდინარე პაროლი"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-              />
-              <input
-                type="password"
-                placeholder="ახალი პაროლი"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-              />
-              <input
-                type="password"
-                placeholder="ახალი პაროლის დადასტურება"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-              />
-              <button className="px-6 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors">
-                პაროლის შეცვლა
-              </button>
-            </div>
-          </div>
-          
-          <div className="pt-6 border-t border-gray-100">
-            <h4 className="font-semibold text-gray-900 mb-3">ანგარიშის წაშლა</h4>
-            <p className="text-sm text-gray-600 mb-4">
-              ეს მოქმედება შეუქცევადია. თქვენი ყველა მონაცემი და შეკვეთა წაიშლება.
-            </p>
-            <button className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
-              ანგარიშის წაშლა
-            </button>
-          </div>
-        </div>
+        <div className="text-center mt-2">
+                <Link href="/auth/forgot-password" className="text-[16px] text-blue-700 underline hover:text-blue-900">
+                  დაგავიწყდა პაროლი? აღადგინე
+                </Link>
+              </div>
       </div>
     </div>
   )

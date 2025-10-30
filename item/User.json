@@ -1,0 +1,58 @@
+[
+    {
+      "id": "cmh0rlj0l0000u5kwhsqvojki",
+      "email": "vaqsii23@gmail.com",
+      "name": "valerian margalitadze",
+      "password": "$2b$12$2W3qtu.AIr7MvdnQiGGmkuqYOuZrpSf6yq0qs74J1x20xrrR6VcLO",
+      "role": "ADMIN",
+      "emailVerified": null,
+      "image": "https://utfs.io/f/5gUwl0v6lSVjCGxbggRkgrDBLJIwTR8ZhFSO6AnUWdQaoYy3",
+      "createdAt": "2025-10-21T16:14:23.878Z",
+      "updatedAt": "2025-10-23T05:20:05.358Z"
+    },
+    {
+      "id": "cmh1mhqzs0000jgxsetmubvjh",
+      "email": "v.margalitadze90@gmail.com",
+      "name": "test",
+      "password": "$2b$12$rPNB7QJgXzKITnl/poGaNu44rMnYxHKgmZlDuPHgbDvGvXlzOktFG",
+      "role": "USER",
+      "emailVerified": null,
+      "image": "https://utfs.io/f/5gUwl0v6lSVjnOLOaXFLMIAHmuOCZPaqj3hDkrV91K50Fd4E",
+      "createdAt": "2025-10-22T06:39:15.686Z",
+      "updatedAt": "2025-10-22T19:09:25.990Z"
+    },
+    {
+      "id": "cmh1nijql0000jgosnqxpu1pv",
+      "email": "admin@example.com",
+      "name": "Admin",
+      "password": "$2b$10$c0YChXBlD2DE/F29bTPoxOgltLwUHFUz.VsHDu/rVtOzeg28DeKDO",
+      "role": "ADMIN",
+      "emailVerified": null,
+      "image": null,
+      "createdAt": "2025-10-22T07:07:52.555Z",
+      "updatedAt": "2025-10-22T07:08:35.310Z"
+    },
+    {
+      "id": "cmh2bkj240000jr0auoxlgheu",
+      "email": "megrela2222@gmail.com",
+      "name": "ქეთა",
+      "password": "$2b$12$/CDhkk8UMP80LLoRYdclgua1apGxGN4dM5sIplQzexMlu4G3g4iJe",
+      "role": "USER",
+      "emailVerified": null,
+      "image": null,
+      "createdAt": "2025-10-22T18:21:15.773Z",
+      "updatedAt": "2025-10-22T18:21:15.773Z"
+    },
+    {
+      "id": "cmh5ah9nv0000l70a51jgu357",
+      "email": "megrela22222@gmail.com",
+      "name": "ქეთა",
+      "password": "$2b$12$VNaoXdjlGWU/iSQKBm6ENeUN20j9wyAW4ynvS9IKW7ihndnN2Jhea",
+      "role": "USER",
+      "emailVerified": null,
+      "image": null,
+      "createdAt": "2025-10-24T20:14:02.539Z",
+      "updatedAt": "2025-10-24T20:14:02.539Z"
+    }
+  ]
+  

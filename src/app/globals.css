@@ -19,6 +19,107 @@
   }
 }
 
+/* UploadThing customizations */
+[data-ut-element="button"] {
+  background-color: #1B3729 !important;
+  width: 100% !important;
+  position: relative !important;
+}
+
+[data-ut-element="button"]:hover {
+  background-color: #1B3729 !important;
+}
+
+/* Hide ALL default UploadThing text */
+[data-ut-element="button"] label {
+  font-size: 0 !important;
+  color: transparent !important;
+  display: none !important;
+}
+
+/* Show only custom Georgian text */
+[data-ut-element="button"] label::after {
+  content: "აირჩიეთ ფაილი" !important;
+  color: white !important;
+  font-size: 16px !important;
+  position: absolute !important;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 10 !important;
+  white-space: nowrap !important;
+}
+ ::file-selector-button {
+  font: inherit;
+  /* font-feature-settings: inherit; */
+  /* font-variation-settings: inherit; */
+  letter-spacing: inherit;
+  color: inherit;
+  border-radius: 0;
+  background-color: #1B3729;
+  opacity: 1;
+  display: none !important;
+}
+input.sr-only {
+  display: none !important;
+}
+.ut-allowed-content {
+  font-size: 0 !important;
+  color: transparent !important;
+  line-height: 1.5rem !important;
+  height: auto !important;
+  display: block !important;
+  margin-top: 8px !important;
+}
+
+/* Show only custom Georgian message */
+.ut-allowed-content::after {
+  content: "ფაილი არ არის არჩეული" !important;
+  display: block !important;
+  color: black !important;
+  font-size: 20px !important;
+}
+
+/* Range Slider Styles */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: #1B3729;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: #1B3729;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+input[type="range"]::-webkit-slider-track {
+  height: 2px;
+}
+
+input[type="range"]::-moz-range-track {
+  height: 2px;
+  background: transparent;
+}
+
+
 body {
   background: #F1F8F4;
   color: var(--foreground);

@@ -247,271 +247,148 @@ const AdminSettingsPage = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Profile Settings */}
-          <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <User className="w-5 h-5 text-blue-600" />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900">პროფილის ინფორმაცია</h2>
-            </div>
-
-            {/* Profile Image Section */}
-            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center space-x-4 mb-4">
-                <div className="relative">
-                  <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
-                    {profileImage ? (
-                      <img
-                        src={profileImage}
-                        alt="Profile"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <User className="w-8 h-8 text-gray-600" />
-                    )}
-                  </div>
-                  <button
-                    onClick={() => setIsEditingProfile(!isEditingProfile)}
-                    className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors"
-                  >
-                    <Camera className="w-3 h-3" />
-                  </button>
+          <div className="w-full flex justify-center lg:col-span-2">
+            <div className="bg-white w-full max-w-xl rounded-2xl p-8 shadow-sm border border-gray-100">
+              <div className="flex items-center space-x-3 mb-6">
+                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <User className="w-5 h-5 text-blue-600" />
                 </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">პროფილის სურათი</h3>
-                  <p className="text-sm text-gray-600">ატვირთეთ თქვენი პროფილის სურათი</p>
-                </div>
+                <h2 className="text-2xl font-bold text-gray-900">პროფილის ინფორმაცია</h2>
               </div>
 
-              {isEditingProfile && (
-                <div className="mt-4">
-                  <ImageUpload
-                    value={profileImage ? [profileImage] : []}
-                    onChange={handleImageUpload}
-                  />
-                  {isUploadingImage && (
-                    <p className="text-sm text-gray-600 mt-2">სურათი იტვირთება...</p>
-                  )}
-                  <div className="mt-3 flex space-x-2">
+              {/* Profile Image Section */}
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-4 mb-4">
+                  <div className="relative">
+                    <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+                      {profileImage ? (
+                        <img
+                          src={profileImage}
+                          alt="Profile"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <User className="w-8 h-8 text-gray-600" />
+                      )}
+                    </div>
                     <button
-                      onClick={() => setIsEditingProfile(false)}
-                      className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                      onClick={() => setIsEditingProfile(!isEditingProfile)}
+                      className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors"
                     >
-                      გაუქმება
+                      <Camera className="w-3 h-3" />
                     </button>
                   </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">პროფილის სურათი</h3>
+                    <p className="text-sm text-gray-600">ატვირთეთ თქვენი პროფილის სურათი</p>
+                  </div>
+                </div>
+
+                {isEditingProfile && (
+                  <div className="mt-4">
+                    <ImageUpload
+                      value={profileImage ? [profileImage] : []}
+                      onChange={handleImageUpload}
+                    />
+                    {isUploadingImage && (
+                      <p className="text-sm text-gray-600 mt-2">სურათი იტვირთება...</p>
+                    )}
+                    <div className="mt-3 flex space-x-2">
+                      <button
+                        onClick={() => setIsEditingProfile(false)}
+                        className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                      >
+                        გაუქმება
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {isSubmitted && (
+                <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-green-800 font-medium">
+                    ✅ პროფილი წარმატებით განახლდა!
+                  </p>
                 </div>
               )}
+
+              {error && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-800 font-medium">{error}</p>
+                </div>
+              )}
+
+              <form onSubmit={handleProfileUpdate} className="space-y-6">
+                {/* Name */}
+                <div>
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                    სახელი
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="text"
+                      id="name"
+                      name="name"
+                      value={profileData.name}
+                      onChange={handleChange}
+                      required
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                      placeholder="შეიყვანეთ თქვენი სახელი"
+                    />
+                  </div>
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                    ელფოსტა
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="email"
+                      id="email"
+                      name="email"
+                      value={profileData.email}
+                      onChange={handleChange}
+                      required
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                      placeholder="შეიყვანეთ თქვენი ელფოსტა"
+                    />
+                  </div>
+                </div>
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-black text-white py-3 px-6 rounded-lg font-medium hover:bg-gray-800 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                >
+                  {loading ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>იგზავნება...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-5 h-5" />
+                      <span>პროფილის განახლება</span>
+                    </>
+                  )}
+                </button>
+              </form>
+              <div className="text-center mt-2">
+                <Link href="/auth/forgot-password" className="text-[16px] text-blue-700 underline hover:text-blue-900">
+                  დაგავიწყდა პაროლი? აღადგინე
+                </Link>
+              </div>
             </div>
-
-            {isSubmitted && (
-              <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-green-800 font-medium">
-                  ✅ პროფილი წარმატებით განახლდა!
-                </p>
-              </div>
-            )}
-
-            {error && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-800 font-medium">{error}</p>
-              </div>
-            )}
-
-            <form onSubmit={handleProfileUpdate} className="space-y-6">
-              {/* Name */}
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                  სახელი
-                </label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={profileData.name}
-                    onChange={handleChange}
-                    required
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
-                    placeholder="შეიყვანეთ თქვენი სახელი"
-                  />
-                </div>
-              </div>
-
-              {/* Email */}
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                  ელფოსტა
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={profileData.email}
-                    onChange={handleChange}
-                    required
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
-                    placeholder="შეიყვანეთ თქვენი ელფოსტა"
-                  />
-                </div>
-              </div>
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-black text-white py-3 px-6 rounded-lg font-medium hover:bg-gray-800 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-              >
-                {loading ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>იგზავნება...</span>
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-5 h-5" />
-                    <span>პროფილის განახლება</span>
-                  </>
-                )}
-              </button>
-            </form>
           </div>
 
           {/* Password Settings */}
-          <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                <Lock className="w-5 h-5 text-red-600" />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900">პაროლის შეცვლა</h2>
-            </div>
-
-            <form onSubmit={handlePasswordChange} className="space-y-6">
-              {/* Current Password */}
-              <div>
-                <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                  მიმდინარე პაროლი
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type={showPasswords.currentPassword ? "text" : "password"}
-                    id="currentPassword"
-                    name="currentPassword"
-                    value={profileData.currentPassword}
-                    onChange={handleChange}
-                    required
-                    className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
-                    placeholder="შეიყვანეთ მიმდინარე პაროლი"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => togglePasswordVisibility('currentPassword')}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    {showPasswords.currentPassword ? (
-                      <EyeOff className="w-5 h-5" />
-                    ) : (
-                      <Eye className="w-5 h-5" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* New Password */}
-              <div>
-                <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                  ახალი პაროლი
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type={showPasswords.newPassword ? "text" : "password"}
-                    id="newPassword"
-                    name="newPassword"
-                    value={profileData.newPassword}
-                    onChange={handleChange}
-                    required
-                    className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
-                    placeholder="შეიყვანეთ ახალი პაროლი"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => togglePasswordVisibility('newPassword')}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    {showPasswords.newPassword ? (
-                      <EyeOff className="w-5 h-5" />
-                    ) : (
-                      <Eye className="w-5 h-5" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* Confirm Password */}
-              <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                  პაროლის დადასტურება
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type={showPasswords.confirmPassword ? "text" : "password"}
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    value={profileData.confirmPassword}
-                    onChange={handleChange}
-                    required
-                    className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
-                    placeholder="დაადასტურეთ ახალი პაროლი"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => togglePasswordVisibility('confirmPassword')}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    {showPasswords.confirmPassword ? (
-                      <EyeOff className="w-5 h-5" />
-                    ) : (
-                      <Eye className="w-5 h-5" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* Warning */}
-              <div className="flex items-start space-x-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-                <div className="text-sm text-yellow-800">
-                  <p className="font-medium mb-1">ყურადღება!</p>
-                  <p>პაროლის შეცვლის შემდეგ თქვენ მოგიწევთ ახალი პაროლით შესვლა.</p>
-                </div>
-              </div>
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-red-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-red-700 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-              >
-                {loading ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>იგზავნება...</span>
-                  </>
-                ) : (
-                  <>
-                    <Lock className="w-5 h-5" />
-                    <span>პაროლის შეცვლა</span>
-                  </>
-                )}
-              </button>
-            </form>
-          </div>
+          
         </div>
       </div>
     </div>

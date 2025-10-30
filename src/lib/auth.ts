@@ -26,6 +26,16 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
+        if (user.banned) {
+          // Use a parsable, easily-detected error prefix
+          throw new Error(
+            "BANNED:" +
+            (user.banReason
+              ? ` თქვენი ანგარიში დაბლოკილია: ${user.banReason}`
+              : " თქვენი ანგარიში დაბლოკილია")
+          )
+        }
+
         const isPasswordValid = await bcrypt.compare(
           credentials.password,
           user.password
@@ -54,14 +64,14 @@ export const authOptions: NextAuthOptions = {
         token.role = user.role
         token.image = user.image
       }
-      
+
       // Update token when profile is updated
       if (trigger === "update" && session) {
         token.image = session.image
         token.name = session.name
         token.email = session.email
       }
-      
+
       return token
     },
     async session({ session, token }) {

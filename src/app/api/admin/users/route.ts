@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
     const users = await prisma.user.findMany({
       where: {
-        role: 'USER' // Only show regular users, exclude admins
+        role: 'USER',
       },
       select: {
         id: true,
@@ -25,22 +25,35 @@ export async function GET(request: NextRequest) {
         email: true,
         role: true,
         createdAt: true,
+        banned: true,
+        banReason: true,
+        bannedAt: true,
         _count: {
           select: {
             products: true,
-            orders: true
-          }
-        }
+            orders: true,
+          },
+        },
+        verification: {
+          select: {
+            status: true,
+            idFrontUrl: true,
+            idBackUrl: true,
+            comment: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
       },
       orderBy: {
-        createdAt: 'desc'
-      }
-    })
+        createdAt: 'desc',
+      },
+    });
 
     return NextResponse.json({
       success: true,
-      users
-    })
+      users,
+    });
 
   } catch (error) {
     console.error('Error fetching users:', error)
@@ -48,5 +61,42 @@ export async function GET(request: NextRequest) {
       { success: false, error: 'Error fetching users' },
       { status: 500 }
     )
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || session.user.role !== 'ADMIN') {
+      return NextResponse.json(
+        { success: false, error: 'Admin access required' },
+        { status: 403 }
+      );
+    }
+    const body = await request.json();
+    const { userId, status, comment } = body;
+    if (!userId || !['APPROVED', 'REJECTED'].includes(status)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid data' },
+        { status: 400 }
+      );
+    }
+    const verification = await prisma.userVerification.findUnique({ where: { userId } });
+    if (!verification) {
+      return NextResponse.json({ success: false, error: 'Verification not found' }, { status: 404 });
+    }
+    const updated = await prisma.userVerification.update({
+      where: { userId },
+      data: {
+        status,
+        comment: status === 'REJECTED' ? comment || null : null,
+      },
+    });
+    return NextResponse.json({ success: true, verification: updated });
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, error: 'Verification update failed' },
+      { status: 500 }
+    );
   }
 }

@@ -14,6 +14,7 @@ import {
     Shield,
 } from "lucide-react"
 import { useCart } from "@/hooks/useCart"
+import { useSession } from 'next-auth/react';
 
 import { Product, RentalPeriod } from "@/types/product"
 import { formatDate } from "@/utils/dateUtils"
@@ -36,6 +37,7 @@ const ProductPage = () => {
     const productId = params.id as string
 
     const { addToCart } = useCart()
+    const { data: session, status } = useSession();
 
     const [product, setProduct] = useState<Product | null>(null)
     const [loading, setLoading] = useState(true)
@@ -48,6 +50,7 @@ const ProductPage = () => {
     const [rentalStartDate, setRentalStartDate] = useState("")
     const [rentalEndDate, setRentalEndDate] = useState("")
     const [isAdding, setIsAdding] = useState(false)
+    const [userVerification, setUserVerification] = useState<{ status?: 'PENDING' | 'APPROVED' | 'REJECTED' } | null>(null);
 
     // Auto-switch to rent mode if product is rented
     useEffect(() => {
@@ -91,6 +94,17 @@ const ProductPage = () => {
         }
         if (productId) fetchData()
     }, [productId])
+
+    useEffect(() => {
+        // Fetch verification only if logged in
+        if (session?.user?.id) {
+            fetch('/api/user/verification')
+                .then((r) => r.json())
+                .then((d) => setUserVerification(d.verification || null));
+        } else {
+            setUserVerification(null);
+        }
+    }, [session?.user?.id]);
 
     // -------------------------
     // Helpers
@@ -746,56 +760,65 @@ const ProductPage = () => {
                             </div>
 
                             {/* Action button */}
-                            <div className="space-y-2">
-                                {product.status !== 'AVAILABLE' && (
-                                    <p className="text-sm text-white font-medium text-center">
-                                        {product.status === 'RENTED' && 'ნივთი გაქირავებულია'}
-                                        {product.status === 'RESERVED' && 'ნივთი დაჯავშნილია'}
-                                        {product.status === 'MAINTENANCE' && 'ნივთი რესტავრაციაზეა'}
-                                    </p>
-                                )}
-                                {(purchaseMode === "rent" && (!rentalStartDate || !rentalEndDate)) && product.status === 'AVAILABLE' && (
-                                    <p className="text-sm text-orange-600 font-medium text-center">
-                                        გთხოვთ აირჩიოთ ქირაობის დაწყების და დასრულების თარიღები
-                                    </p>
-                                )}
-                                {(purchaseMode === "rent" && rentalStartDate && rentalEndDate) && (() => {
-                                    // Check if the selected dates conflict with existing rentals
-                                    const start = new Date(rentalStartDate)
-                                    const end = new Date(rentalEndDate)
-                                    const conflicts = getRentalPeriods(selectedSize).filter(period => {
-                                        const periodStart = new Date(period.startDate)
-                                        const periodEnd = new Date(period.endDate)
-                                        const periodLastBlockedDate = new Date(periodEnd.getTime() + 24 * 60 * 60 * 1000)
-                                        return start < periodLastBlockedDate && end >= periodStart
-                                    })
-                                    
-                                    return conflicts.length > 0 ? (
-                                        <p className="text-[16px] text-red-600 font-medium text-center">
-                                            ⚠️ ამ თარიღებზე პროდუქტი დაკავებულია
+                            {(session && userVerification?.status === 'APPROVED') ? (
+                                <div className="space-y-2">
+                                    {product.status !== 'AVAILABLE' && (
+                                        <p className="text-sm text-white font-medium text-center">
+                                            {product.status === 'RENTED' && 'ნივთი გაქირავებულია'}
+                                            {product.status === 'RESERVED' && 'ნივთი დაჯავშნილია'}
+                                            {product.status === 'MAINTENANCE' && 'ნივთი რესტავრაციაზეა'}
                                         </p>
-                                    ) : null
-                                })()}
+                                    )}
+                                    {(purchaseMode === "rent" && (!rentalStartDate || !rentalEndDate)) && product.status === 'AVAILABLE' && (
+                                        <p className="text-sm text-orange-600 font-medium text-center">
+                                            გთხოვთ აირჩიოთ ქირაობის დაწყების და დასრულების თარიღები
+                                        </p>
+                                    )}
+                                    {(purchaseMode === "rent" && rentalStartDate && rentalEndDate) && (() => {
+                                        // Check if the selected dates conflict with existing rentals
+                                        const start = new Date(rentalStartDate)
+                                        const end = new Date(rentalEndDate)
+                                        const conflicts = getRentalPeriods(selectedSize).filter(period => {
+                                            const periodStart = new Date(period.startDate)
+                                            const periodEnd = new Date(period.endDate)
+                                            const periodLastBlockedDate = new Date(periodEnd.getTime() + 24 * 60 * 60 * 1000)
+                                            return start < periodLastBlockedDate && end >= periodStart
+                                        })
+                                        
+                                        return conflicts.length > 0 ? (
+                                            <p className="text-[16px] text-red-600 font-medium text-center">
+                                                ⚠️ ამ თარიღებზე პროდუქტი დაკავებულია
+                                            </p>
+                                        ) : null
+                                    })()}
 
-                                {product.status !== 'MAINTENANCE' && (
-                                    <button
-                                        onClick={() =>
-                                            purchaseMode === "buy" ? handleAddToCart() : handleRental()
-                                        }
-                                    
-                                        className={`w-full py-4 rounded-xl text-white font-bold transition disabled:bg-gray-400 ${purchaseMode === "buy"
-                                            ? "bg-[#1B3729] hover:opacity-95"
-                                            : "bg-emerald-600 hover:bg-emerald-700"
-                                            }`}
-                                    >
-                                        {isAdding
-                                            ? "მუშავდება..."
-                                            : purchaseMode === "buy"
-                                                ? "კალათაში დამატება"
-                                                : "ქირაობა ახლა"}
-                                    </button>
-                                )}
-                            </div>
+                                    {product.status !== 'MAINTENANCE' && (
+                                        <button
+                                            onClick={() =>
+                                                purchaseMode === "buy" ? handleAddToCart() : handleRental()
+                                            }
+                                        
+                                            className={`w-full py-4 rounded-xl text-white font-bold transition disabled:bg-gray-400 ${purchaseMode === "buy"
+                                                ? "bg-[#1B3729] hover:opacity-95"
+                                                : "bg-emerald-600 hover:bg-emerald-700"
+                                                }`}
+                                        >
+                                            {isAdding
+                                                ? "მუშავდება..."
+                                                : purchaseMode === "buy"
+                                                    ? "კალათაში დამატება"
+                                                    : "ქირაობა "}
+                                        </button>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    <div className="p-4 text-center bg-yellow-100 border border-yellow-300 text-yellow-900 rounded-lg font-bold">
+                                        პროდუქტის შეძენა ან ქირაობა შესაძლებელია მხოლოდ დამტკიცებული მომხმარებლისთვის.<br />
+                                        გთხოვთ გაიარეთ ავტორიზაცია და შემდეგვერიფიკაცია ანგარიშის გვერდზე!
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Facts block (Brand/Size/Location/Colour/Minimal days) */}
                             <div className="  p-6 ">

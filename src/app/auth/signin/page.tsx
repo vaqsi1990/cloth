@@ -38,7 +38,11 @@ const SignInPage = () => {
       })
 
       if (result?.error) {
-        setError('არასწორი ელფოსტა ან პაროლი')
+        if (result.error.startsWith('BANNED:')) {
+          setError(result.error.replace('BANNED:', '').trim())
+        } else {
+          setError('არასწორი ელფოსტა ან პაროლი')
+        }
       } else {
         // Get session to check user role
         const session = await getSession()
@@ -62,7 +66,7 @@ const SignInPage = () => {
           <h2 className="text-[20px] text-center md:text-[30px] font-semibold uppercase tracking-widesttext-black">
             შესვლა
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+          <p className="mt-2 text-center text-lg text-gray-600">
             ან{' '}
             <Link
               href="/auth/signup"
@@ -127,6 +131,13 @@ const SignInPage = () => {
                 </button>
               </div>
             </div>
+          </div>
+
+          {/* Password recovery */}
+          <div className="text-center mt-2">
+            <Link href="/auth/forgot-password" className="text-[16px] text-blue-700 underline hover:text-blue-900">
+              დაგავიწყდა პაროლი? აღადგინე
+            </Link>
           </div>
 
           <div>

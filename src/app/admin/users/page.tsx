@@ -12,6 +12,9 @@ interface User {
   name: string
   email: string
   role: string
+  banned?: boolean
+  banReason?: string | null
+  bannedAt?: string | null
   createdAt: string
   _count: {
     products: number
@@ -30,6 +33,14 @@ interface User {
       alt?: string
     }>
   }>
+  verification?: {
+    status: 'PENDING' | 'APPROVED' | 'REJECTED',
+    idFrontUrl?: string | null,
+    idBackUrl?: string | null,
+    comment?: string | null,
+    createdAt?: string,
+    updatedAt?: string
+  };
 }
 
 const AdminUsersPage = () => {
@@ -298,7 +309,7 @@ const AdminUsersPage = () => {
                           </div>
                           <button
                             onClick={() => toggleUserExpansion(user.id)}
-                            className="text-blue-600 hover:text-blue-800 text-xs font-medium"
+                            className="text-blue-600 hover:text-blue-800 text-[18px] font-medium"
                           >
                             {expandedUser === user.id ? 'პროდუქტების დამალვა' : 'პროდუქტების ნახვა'}
                           </button>
@@ -310,7 +321,7 @@ const AdminUsersPage = () => {
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleToggleRole(user.id, user.role)}
-                        className={`flex items-center space-x-1 px-3 py-2 rounded-lg text-sm transition-colors ${
+                        className={`flex items-center space-x-1 px-3 py-2 rounded-lg text-[18px] transition-colors ${
                           user.role === 'ADMIN'
                             ? 'bg-red-100 text-red-700 hover:bg-red-200'
                             : 'bg-green-100 text-green-700 hover:bg-green-200'
@@ -331,17 +342,118 @@ const AdminUsersPage = () => {
                       
                       <button
                         onClick={() => handleDeleteUser(user.id)}
-                        className="flex items-center space-x-1 px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm"
+                        className="flex items-center space-x-1 px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-[18px]"
                       >
                         <Trash2 className="w-4 h-4" />
                         <span>წაშლა</span>
                       </button>
                     </div>
+
+                    {/* Ban status badge */}
+                    {user.banned && (
+                      <span className="ml-2 px-2 py-1 bg-red-600 text-white rounded text-[18px]">დაბლოკილი</span>
+                    )}
+                    {/* Ban/Unban buttons */}
+                    <div className="flex items-center gap-2 mt-2">
+                      {!user.banned ? (
+                        <BanUserInline user={user} setUsers={setUsers} />
+                      ) : (
+                        <button
+                          className="px-3 py-2 bg-gray-200 text-gray-800 rounded text-[18px] hover:bg-gray-300"
+                          onClick={async () => {
+                            const res = await fetch(`/api/admin/users/${user.id}/ban`, {
+                              method: 'PUT',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ banned: false })
+                            })
+                            if (res.ok) {
+                              setUsers(prev => prev.map(u => u.id === user.id ? { ...u, banned: false, banReason: null, bannedAt: null } : u))
+                            }
+                          }}
+                        >გაუქმება</button>
+                      )}
+                    </div>
+                    {user.banned && user.banReason && (
+                      <div className="mt-2 text-red-700 bg-red-50 border border-red-200 rounded p-2 text-[18px]">მიზეზი: {user.banReason}</div>
+                    )}
                   </div>
 
-                  {/* User Products Section */}
+                  {/* User Expansion Section */}
                   {expandedUser === user.id && (
                     <div className="px-4 pb-4 border-t border-gray-200">
+                      {/* User Verification Section */}
+                      {user.verification && (
+                        <div className="mb-6">
+                          <h4 className="text-sm font-semibold text-gray-900 mt-4 mb-2">ვერიფიკაცია (პირადობის სურათები)</h4>
+                          <div className="flex flex-col md:flex-row gap-4 mb-2">
+                            {user.verification.idFrontUrl && (
+                              <div className="flex flex-col items-center">
+                                <span className="text-[18px] mb-1">წინა მხარე</span>
+                                <div className="w-[400px] h-[400px] relative border rounded overflow-hidden">
+                                  <Image
+                                    src={user.verification.idFrontUrl}
+                                    alt="ID Front"
+                                    fill
+                                    className="object-cover"
+                                  />
+                                </div>
+                              </div>
+                            )}
+                            {user.verification.idBackUrl && (
+                              <div className="flex flex-col items-center">
+                                <span className="text-[18px] mb-1">უკანა მხარე</span>
+                                <div className="w-[400px] h-[400px] relative border rounded overflow-hidden">
+                                  <Image
+                                    src={user.verification.idBackUrl}
+                                    alt="ID Back"
+                                    fill
+                                    className="object-cover"
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex items-center space-x-3 mb-2">
+                            <span className={`px-2 py-1 rounded-full text-[18px] font-semibold text-white bg-${
+                              user.verification.status === 'APPROVED' ? 'green-600' : user.verification.status === 'REJECTED' ? 'red-600' : 'yellow-500'
+                            }`}>
+                              {user.verification.status === 'PENDING' && 'მიმდინარეობს გადამოწმება'}
+                              {user.verification.status === 'APPROVED' && 'დამოწმებულია'}
+                              {user.verification.status === 'REJECTED' && 'უარყოფილია'}
+                            </span>
+                            {user.verification.updatedAt && (
+                              <span className="text-[18px] text-gray-500">{new Date(user.verification.updatedAt).toLocaleDateString('ka-GE')}</span>
+                            )}
+                          </div>
+                          {user.verification.comment && (
+                            <div className="bg-red-50 text-red-800 p-2 rounded mb-2 text-[18px]">
+                              {user.verification.comment}
+                            </div>
+                          )}
+                          {/* ADMIN CONTROLS for verification */}
+                          {session.user.role === 'ADMIN' && user.verification && ['PENDING', 'REJECTED'].includes(user.verification.status) && (
+                            <div className="flex flex-col md:flex-row items-stretch gap-2 mb-2">
+                              <button
+                                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-[18px]"
+                                onClick={async () => {
+                                  const res = await fetch('/api/admin/users', {
+                                    method: 'PATCH',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ userId: user.id, status: 'APPROVED' })
+                                  });
+                                  if (res.ok) {
+                                    const data = await res.json();
+                                    setUsers((users: User[]) => users.map((u: User) => u.id === user.id ? { ...u, verification: data.verification } : u));
+                                  }
+                                }}
+                                disabled={user.verification?.status === 'APPROVED'}
+                              >დამტკიცება</button>
+                              <RejectVerificationButton user={user} setUsers={setUsers} />
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {/* User Products Section */}
                       <h4 className="text-sm font-semibold text-gray-900 mb-3 mt-4">მომხმარებლის პროდუქტები</h4>
                       {user.products ? (
                         user.products.length > 0 ? (
@@ -373,23 +485,23 @@ const AdminUsersPage = () => {
                                     
                                     <div className="text-sm text-gray-600 mb-2">
                                       <span className="font-semibold">₾{product.currentPrice}</span>
-                                      <span className="ml-2 text-xs">{product.gender}</span>
+                                      <span className="ml-2 text-[18px]">{product.gender}</span>
                                     </div>
                                     
                                     <div className="flex items-center space-x-2 mb-2">
                                       {product.isNew && (
-                                        <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                                        <span className="px-2 py-1 bg-green-100 text-green-800 text-[18px] rounded-full">
                                           ახალი
                                         </span>
                                       )}
                                       {product.hasSale && (
-                                        <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">
+                                        <span className="px-2 py-1 bg-red-100 text-red-800 text-[18px] rounded-full">
                                           ფასდაკლება
                                         </span>
                                       )}
                                     </div>
                                     
-                                    <p className="text-xs text-gray-500">
+                                    <p className="text-[18px] text-gray-500">
                                       დამატებული: {new Date(product.createdAt).toLocaleDateString('ka-GE')}
                                     </p>
                                   </div>
@@ -398,15 +510,15 @@ const AdminUsersPage = () => {
                             ))}
                           </div>
                         ) : (
-                          <div className="text-center py-4 text-gray-500">
+                          <div className="text-center py-4 text-[18px] text-gray-500">
                             <Package className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                            <p className="text-sm">მომხმარებელს არ აქვს პროდუქტები</p>
+                            <p className="text-[18px]">მომხმარებელს არ აქვს პროდუქტები</p>
                           </div>
                         )
                       ) : (
                         <div className="text-center py-4">
                           <div className="w-6 h-6 border-2 border-gray-300 border-t-black rounded-full animate-spin mx-auto mb-2"></div>
-                          <p className="text-sm text-gray-500">პროდუქტების ჩატვირთვა...</p>
+                          <p className="text-[18px] text-gray-500">პროდუქტების ჩატვირთვა...</p>
                         </div>
                       )}
                     </div>
@@ -422,3 +534,102 @@ const AdminUsersPage = () => {
 }
 
 export default AdminUsersPage
+
+function RejectVerificationButton({ user, setUsers }: { user: User; setUsers: React.Dispatch<React.SetStateAction<User[]>> }) {
+  const [comment, setComment] = useState('');
+  const [showInput, setShowInput] = useState(false);
+  const [loading, setLoading] = useState(false);
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-[18px]"
+        disabled={user.verification?.status === 'REJECTED'}
+        onClick={() => setShowInput(v => !v)}
+        >უარყოფა</button>
+      {showInput && (
+        <form
+          onSubmit={async (e: React.FormEvent<HTMLFormElement>) => {
+            e.preventDefault();
+            setLoading(true);
+            const res = await fetch('/api/admin/users', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userId: user.id, status: 'REJECTED', comment })
+            });
+            setLoading(false);
+            if (res.ok) {
+              const data = await res.json();
+              setUsers((users: User[]) => users.map((u: User) => u.id === user.id ? { ...u, verification: data.verification } : u));
+              setShowInput(false);
+              setComment('');
+            }
+          }}
+          className="flex items-center gap-2"
+        >
+          <input
+            type="text"
+            value={comment}
+            disabled={loading}
+            onChange={e => setComment(e.target.value)}
+            placeholder="მიუთითეთ უარყოფის მიზეზი"
+            className="border px-2 py-1 text-[18px] rounded"
+            required
+          />
+          <button
+            type="submit"
+            className="px-3 py-1 bg-red-700 text-white font-bold rounded text-[18px]"
+            disabled={loading || !comment.trim()}
+          >დადასტურება</button>
+        </form>
+      )}
+    </div>
+  );
+}
+
+function BanUserInline({ user, setUsers }: { user: User; setUsers: React.Dispatch<React.SetStateAction<User[]>> }) {
+  const [open, setOpen] = useState(false)
+  const [reason, setReason] = useState('')
+  const [loading, setLoading] = useState(false)
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        className="px-3 py-2 bg-red-600 text-white rounded text-[18px] hover:bg-red-700"
+        onClick={() => setOpen(v => !v)}
+      >ბანი</button>
+      {open && (
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault()
+            setLoading(true)
+            const res = await fetch(`/api/admin/users/${user.id}/ban`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ banned: true, reason })
+            })
+            setLoading(false)
+            if (res.ok) {
+              setUsers(prev => prev.map(u => u.id === user.id ? { ...u, banned: true, banReason: reason, bannedAt: new Date().toISOString() } : u))
+              setOpen(false)
+              setReason('')
+            }
+          }}
+          className="flex items-center gap-2"
+        >
+          <input
+            value={reason}
+            onChange={e => setReason(e.target.value)}
+            placeholder="ბანის მიზეზი"
+            className="border px-2 py-1 rounded text-[18px]"
+            required
+            disabled={loading}
+          />
+          <button
+            type="submit"
+            className="px-3 py-2 bg-red-700 text-white rounded text-[18px]"
+            disabled={loading || !reason.trim()}
+          >დადასტურება</button>
+        </form>
+      )}
+    </div>
+  )
+}

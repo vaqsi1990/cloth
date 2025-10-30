@@ -4,102 +4,121 @@ import path from 'path'
 
 const prisma = new PrismaClient()
 
-async function main() {
-  console.log('🌱 Starting seed...')
-
-  // Read products data from JSON file
-  const productsPath = path.join(process.cwd(), 'src', 'data', 'products.json')
-  const productsData = JSON.parse(fs.readFileSync(productsPath, 'utf8'))
-
-  // Create categories first
-  const categories = [
-    { name: 'კაბები', slug: 'dresses' },
-    { name: 'ბლუზები', slug: 'tops' },
-    { name: 'შარვლები', slug: 'bottoms' },
-    { name: 'ზედა ტანსაცმელი', slug: 'outerwear' },
-    { name: 'აქსესუარები', slug: 'accessories' },
-    { name: 'ფეხსაცმელი', slug: 'shoes' }
-  ]
-
-  console.log('📁 Creating categories...')
-  for (const category of categories) {
-    await prisma.category.upsert({
-      where: { slug: category.slug },
-      update: {},
-      create: category
-    })
+// ✅ Helper — ასწორებს ყველა თარიღის ფორმატს ISO ფორმატში
+function fixDateFields<T extends Record<string, any>>(obj: T): T {
+  const fixed: Record<string, any> = {}
+  for (const key in obj) {
+    const value = obj[key]
+    // თუ თარიღია ფორმატში "2025-10-21 16:14:23.878"
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2} /.test(value)) {
+      fixed[key] = value.replace(' ', 'T') + 'Z'
+    } else {
+      fixed[key] = value
+    }
   }
+  return fixed as T
+}
 
-  // Get category mapping
-  const categoryMap: { [key: string]: number } = {}
-  const dbCategories = await prisma.category.findMany()
-  dbCategories.forEach(cat => {
-    if (cat.slug === 'dresses') categoryMap['DRESSES'] = cat.id
-    if (cat.slug === 'tops') categoryMap['TOPS'] = cat.id
-    if (cat.slug === 'bottoms') categoryMap['BOTTOMS'] = cat.id
-    if (cat.slug === 'outerwear') categoryMap['OUTERWEAR'] = cat.id
-    if (cat.slug === 'accessories') categoryMap['ACCESSORIES'] = cat.id
-    if (cat.slug === 'shoes') categoryMap['SHOES'] = cat.id
-  })
+async function main() {
+  console.log('🌱 Starting seed from item/*.json ...')
 
-  console.log('🛍️ Creating products...')
-  
-  for (const product of productsData.products) {
-    // Generate unique slug from name and ID
-    const baseSlug = product.name
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .trim()
-    const slug = `${baseSlug}-${product.id}`
-
+  const itemDir = path.join(process.cwd(), 'item')
+  const readJson = (filename: string) => {
+    const file = path.join(itemDir, filename)
+    if (!fs.existsSync(file)) return []
+    const raw = fs.readFileSync(file, 'utf8')
     try {
-      // Delete existing product if it exists
-      await prisma.product.deleteMany({
-        where: { slug: slug }
-      })
-
-      const createdProduct = await prisma.product.create({
-        data: {
-          name: product.name,
-          slug: slug,
-          description: product.description || '',
-       
-     
-          isNew: product.isNew || false,
-          hasSale: product.hasSale || false,
-          rating: product.rating || 0,
-          categoryId: categoryMap[product.category] || null,
-          sku: `SKU-${product.id}-${Date.now()}`,
-          // Create product images
-          images: {
-            create: product.images?.map((imageUrl: string, index: number) => ({
-              url: imageUrl,
-              alt: `${product.name} - სურათი ${index + 1}`,
-              position: index
-            })) || []
-          },
-          // Create product variants (sizes)
-          variants: {
-            create: product.sizes?.map((size: string) => ({
-              size: size,
-              stock: product.stockCount || 0,
-              price: product.currentPrice
-            })) || []
-          }
-        }
-      })
-
-      console.log(`✅ Created product: ${product.name} (ID: ${product.id})`)
-    } catch (error) {
-      console.error(`❌ Error creating product ${product.name}:`, error)
+      const parsed = JSON.parse(raw)
+      return Array.isArray(parsed) ? parsed : parsed?.data ?? []
+    } catch (e) {
+      console.warn(`⚠️ Could not parse ${filename}:`, e)
+      return []
     }
   }
 
-  console.log('🎉 Seed completed!')
+  const users = readJson('User.json')
+  const categories = readJson('Category.json')
+  const products = readJson('Product.json')
+  const productImages = readJson('ProductImage.json')
+  const productVariants = readJson('ProductVariant.json')
+  const priceTiers = readJson('RentalPriceTier.json')
+
+  // 👤 Users
+  if (users.length) {
+    console.log(`👤 Inserting users: ${users.length}`)
+    for (const u of users) {
+      const fixed = fixDateFields(u)
+      const where: any = fixed.email ? { email: fixed.email } : { id: fixed.id }
+      await prisma.user.upsert({
+        where,
+        update: fixed,
+        create: fixed,
+      })
+    }
+  }
+
+  // 🏷️ Categories
+  if (categories.length) {
+    console.log(`🏷️ Inserting categories: ${categories.length}`)
+    for (const c of categories) {
+      const fixed = fixDateFields(c)
+      const where: any = fixed.slug ? { slug: fixed.slug } : { id: fixed.id }
+      await prisma.category.upsert({
+        where,
+        update: fixed,
+        create: fixed,
+      })
+    }
+  }
+
+  // 🛍️ Products
+  if (products.length) {
+    console.log(`🛍️ Inserting products: ${products.length}`)
+    for (const p of products) {
+      const fixed = fixDateFields(p)
+      const where: any = fixed.slug ? { slug: fixed.slug } : { id: fixed.id }
+      await prisma.product.upsert({
+        where,
+        update: fixed,
+        create: fixed,
+      })
+    }
+  }
+
+  // 🖼️ Product Images
+  if (productImages.length) {
+    console.log(`🖼️ Inserting product images: ${productImages.length}`)
+    const fixedImages = productImages.map((img: any) => fixDateFields(img))
+    await prisma.productImage.createMany({
+      data: fixedImages as any[],
+      skipDuplicates: true,
+    })
+  }
+
+  // 📦 Product Variants
+  if (productVariants.length) {
+    console.log(`📦 Inserting product variants: ${productVariants.length}`)
+    const fixedVariants = productVariants.map((v: any) => fixDateFields(v))
+    await prisma.productVariant.createMany({
+      data: fixedVariants as any[],
+      skipDuplicates: true,
+    })
+  }
+
+  // 💵 Rental Price Tiers
+  if (priceTiers.length) {
+    console.log(`💵 Inserting rental price tiers: ${priceTiers.length}`)
+    const fixedTiers = priceTiers.map((t: any) => fixDateFields(t))
+    await prisma.rentalPriceTier.createMany({
+      data: fixedTiers as any[],
+      skipDuplicates: true,
+    })
+  }
+
+  console.log('🎉 Seed from item completed!')
 }
 
+// 🚀 Run the seeding
 main()
   .catch((e) => {
     console.error('❌ Seed failed:', e)
