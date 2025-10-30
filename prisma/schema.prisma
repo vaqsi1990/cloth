@@ -15,7 +15,26 @@ enum OrderStatus {
   CANCELED
   REFUNDED
 }
+model VerifiedEmail {
+  id         String   @id @default(cuid())
+  email      String   @unique
+  verifiedAt DateTime @default(now())
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
 
+  @@map("verified_emails")
+}
+model RegistrationCode {
+  id        String   @id @default(cuid())
+  email     String
+  code      String   @db.VarChar(6) // 6-character alphanumeric code
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@unique([email, code])
+  @@map("registration_codes")
+}
 enum Gender {
   MEN
   WOMEN
@@ -63,6 +82,7 @@ model User {
   personalId    String? @unique // პირადობის ნომერი
   password      String? 
   role          UserRole  @default(USER)
+    code                        String                 @unique @db.VarChar(6)
   emailVerified DateTime?
   image         String?
   // Ban fields

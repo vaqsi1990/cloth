@@ -14,11 +14,11 @@ export async function sendVerificationEmail(email: string, token: string) {
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
-      subject: 'ელ-ფოსტის ვერიფიკაცია - Scool პლატფორმა',
+      subject: 'ელ-ფოსტის ვერიფიკაცია ',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #333; text-align: center;">ელ-ფოსტის ვერიფიკაცია</h2>
-          <p>გმადლობთ Scool პლატფორმაზე რეგისტრაციისთვის!</p>
+          <p>გმადლობთ ჩვენ საიტზე რეგისტრაციისთვის!</p>
           <p>თქვენი ვერიფიკაციის კოდია:</p>
           <div style="background-color: #f4f4f4; padding: 20px; text-align: center; margin: 20px 0;">
             <h1 style="color: #007bff; font-size: 32px; margin: 0; letter-spacing: 5px;">${token}</h1>
@@ -28,7 +28,7 @@ export async function sendVerificationEmail(email: string, token: string) {
           <p>თუ თქვენ არ მოითხოვეთ ეს ვერიფიკაცია, გთხოვთ უგულებელყოთ ეს ელ-ფოსტა.</p>
           <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
           <p style="color: #666; font-size: 12px; text-align: center;">
-            ეს არის ავტომატური შეტყობინება Scool პლატფორმიდან. გთხოვთ არ უპასუხოთ ამ ელ-ფოსტას.
+            ეს არის ავტომატური შეტყობინება . გთხოვთ არ უპასუხოთ ამ ელ-ფოსტას.
           </p>
         </div>
       `

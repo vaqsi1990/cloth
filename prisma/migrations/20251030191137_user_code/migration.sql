@@ -23,6 +23,29 @@ CREATE TYPE "public"."VerificationStatus" AS ENUM ('PENDING', 'APPROVED', 'REJEC
 CREATE TYPE "public"."ChatStatus" AS ENUM ('ACTIVE', 'CLOSED', 'PENDING');
 
 -- CreateTable
+CREATE TABLE "public"."verified_emails" (
+    "id" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "verifiedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "verified_emails_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."registration_codes" (
+    "id" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "code" VARCHAR(6) NOT NULL,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "usedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "registration_codes_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "public"."User" (
     "id" TEXT NOT NULL,
     "email" TEXT NOT NULL,
@@ -32,6 +55,7 @@ CREATE TABLE "public"."User" (
     "personalId" TEXT,
     "password" TEXT,
     "role" "public"."UserRole" NOT NULL DEFAULT 'USER',
+    "code" VARCHAR(6) NOT NULL,
     "emailVerified" TIMESTAMP(3),
     "image" TEXT,
     "banned" BOOLEAN NOT NULL DEFAULT false,
@@ -308,6 +332,12 @@ CREATE TABLE "public"."password_reset_tokens" (
 );
 
 -- CreateIndex
+CREATE UNIQUE INDEX "verified_emails_email_key" ON "public"."verified_emails"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "registration_codes_email_code_key" ON "public"."registration_codes"("email", "code");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "public"."User"("email");
 
 -- CreateIndex
@@ -315,6 +345,9 @@ CREATE UNIQUE INDEX "User_phone_key" ON "public"."User"("phone");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_personalId_key" ON "public"."User"("personalId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_code_key" ON "public"."User"("code");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Account_provider_providerAccountId_key" ON "public"."Account"("provider", "providerAccountId");
