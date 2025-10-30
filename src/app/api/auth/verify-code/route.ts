@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     // Find the verification token
     const verificationToken = await prisma.verificationToken.findFirst({
       where: {
-        email: validatedData.email,
+        identifier: validatedData.email,
         token: validatedData.code,
         expires: {
           gt: new Date() // Token hasn't expired
@@ -42,9 +42,9 @@ export async function POST(request: NextRequest) {
       }
     });
     
-    // Delete the used verification token
+    // Delete the used verification token (composite unique: identifier + token)
     await prisma.verificationToken.delete({
-      where: { id: verificationToken.id }
+      where: { identifier_token: { identifier: verificationToken.identifier, token: verificationToken.token } }
     });
     
     return NextResponse.json({
