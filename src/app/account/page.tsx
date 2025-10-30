@@ -144,6 +144,8 @@ const AccountPage = () => {
         body: JSON.stringify({ 
           name: session?.user?.name || '',
           email: session?.user?.email || '',
+          phone: (session?.user as { phone?: string })?.phone || '',
+          location: (session?.user as { location?: string })?.location || '',
           image: urls[0] || null
         }),
       })
@@ -158,7 +160,9 @@ const AccountPage = () => {
         await update({
           image: urls[0],
           name: session?.user?.name || '',
-          email: session?.user?.email || ''
+          email: session?.user?.email || '',
+          phone: (session?.user as { phone?: string })?.phone || '',
+          location: (session?.user as { location?: string })?.location || '',
         })
         
         alert('პროფილის სურათი წარმატებით განახლდა!')
@@ -427,15 +431,16 @@ const AccountPage = () => {
               <Phone className="w-5 h-5 text-black" />
               <div>
                 <p className="text-sm text-black">ტელეფონი</p>
-                <p className="font-medium">+995 555 123 456</p>
+                <p className="font-medium">{session.user.phone ?? '-'}</p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
               <MapPin className="w-5 h-5 text-black" />
               <div>
                 <p className="text-sm text-black">მისამართი</p>
-                <p className="font-medium">თბილისი, საქართველო</p>
+                <p className="font-medium">{(session.user as { location?: string })?.location ?? '-'}</p>
               </div>
+             
             </div>
             
           </div>
@@ -722,12 +727,8 @@ const AccountPage = () => {
     <div className="space-y-6">
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <h3 className="text-lg font-bold text-black mb-6">პარამეტრები</h3>
-        
-        <div className="text-center mt-2">
-                <Link href="/auth/forgot-password" className="text-[16px] text-blue-700 underline hover:text-blue-900">
-                  დაგავიწყდა პაროლი? აღადგინე
-                </Link>
-              </div>
+        {/* Profile edit form */}
+        <ProfileSettingsForm />
       </div>
     </div>
   )
@@ -805,6 +806,113 @@ const AccountPage = () => {
         </div>
       </div>
     </div>
+  )
+}
+
+function ProfileSettingsForm() {
+  const { data: session, update } = useSession()
+  const [form, setForm] = useState({
+    name: session?.user?.name || '',
+    email: session?.user?.email || '',
+    phone: (session?.user as { phone?: string })?.phone || '',
+    location: (session?.user as { location?: string })?.location || '',
+    image: session?.user?.image || ''
+  })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+
+  useEffect(() => {
+    setForm(f => ({
+      ...f,
+      name: session?.user?.name || '',
+      email: session?.user?.email || '',
+      phone: (session?.user as { phone?: string })?.phone || '',
+      location: (session?.user as { location?: string })?.location || '',
+      image: session?.user?.image || ''
+    }))
+  }, [session?.user?.name, session?.user?.email, session?.user?.image])
+
+  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value })
+    setError(null)
+    setSuccess(null)
+  }
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSaving(true)
+    setError(null)
+    setSuccess(null)
+    try {
+      const res = await fetch('/api/user/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          image: form.image || null,
+          phone: form.phone,
+          location: form.location,
+        })
+      })
+      const data = await res.json()
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'შეცდომა')
+      }
+      await update({
+        name: data.user.name,
+        email: data.user.email,
+        image: data.user.image,
+        phone: data.user.phone,
+        location: data.user.location,
+      } as any)
+      setSuccess('პროფილი განახლდა')
+    } catch (err: any) {
+      setError(err.message || 'შეცდომა')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const onImageChange = async (urls: string[]) => {
+    setForm({ ...form, image: urls[0] || '' })
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="space-y-5">
+      {error && <div className="p-3 rounded bg-red-50 text-red-800 text-sm">{error}</div>}
+      {success && <div className="p-3 rounded bg-green-50 text-green-800 text-sm">{success}</div>}
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">სურათი</label>
+        <ImageUpload value={form.image ? [form.image] : []} onChange={onImageChange} />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">სახელი</label>
+        <input name="name" value={form.name} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">ელფოსტა</label>
+        <input type="email" name="email" value={form.email} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">ტელეფონი</label>
+        <input name="phone" value={form.phone} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">ადგილმდებარეობა</label>
+        <input name="location" value={form.location} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
+      </div>
+
+      <button type="submit" disabled={saving} className="w-full bg-black text-white py-3 px-6 rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50">
+        {saving ? 'ინახება...' : 'პროფილის შენახვა'}
+      </button>
+    </form>
   )
 }
 

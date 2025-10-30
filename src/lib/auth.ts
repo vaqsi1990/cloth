@@ -51,6 +51,9 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           role: user.role,
           image: user.image,
+          phone: user.phone,
+          location: user.location,
+          personalId: user.personalId,
         }
       }
     })
@@ -61,15 +64,21 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user, trigger, session }) {
       if (user) {
-        token.role = user.role
-        token.image = user.image
+        token.role = (user as any).role
+        token.image = (user as any).image
+        token.phone = (user as any).phone
+        token.location = (user as any).location
+        token.personalId = (user as any).personalId
       }
 
       // Update token when profile is updated
       if (trigger === "update" && session) {
-        token.image = session.image
-        token.name = session.name
-        token.email = session.email
+        token.image = (session as any).image
+        token.name = (session as any).name
+        token.email = (session as any).email
+        token.phone = (session as any).phone ?? token.phone
+        token.location = (session as any).location ?? token.location
+        token.personalId = (session as any).personalId ?? token.personalId
       }
 
       return token
@@ -81,6 +90,9 @@ export const authOptions: NextAuthOptions = {
         session.user.image = token.image as string
         session.user.name = token.name as string
         session.user.email = token.email as string
+        ;(session.user as any).phone = token.phone as string | undefined
+        ;(session.user as any).location = token.location as string | undefined
+        ;(session.user as any).personalId = token.personalId as string | undefined
       }
       return session
     }

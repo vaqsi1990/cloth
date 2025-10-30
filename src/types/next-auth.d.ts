@@ -3,6 +3,7 @@ import NextAuth from "next-auth"
 declare module "next-auth" {
   interface Session {
     user: {
+      phone: ReactNode
       id: string
       email: string
       name?: string | null
