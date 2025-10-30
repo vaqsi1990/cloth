@@ -8,6 +8,7 @@ import Image from 'next/image'
 import { ArrowLeft, Search, Filter, Users, Mail, Calendar, Package, ShoppingCart, Trash2, UserCheck, UserX } from 'lucide-react'
 
 interface User {
+  personalId: string
   id: string
   name: string
   email: string
@@ -295,6 +296,10 @@ const AdminUsersPage = () => {
                           <div className="flex items-center space-x-1">
                             <Calendar className="w-4 h-4" />
                             <span>{new Date(user.createdAt).toLocaleDateString('ka-GE')}</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                          
+                            <span>{user.personalId}</span>
                           </div>
                         </div>
                         
