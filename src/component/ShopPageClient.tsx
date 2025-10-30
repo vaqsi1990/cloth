@@ -31,6 +31,7 @@ const ShopPageClient = () => {
         activeRentals: Array<{ startDate: string; endDate: string; status: string }>;
         isAvailable: boolean;
     }[]>>({})
+    const [isCategoryOpen, setIsCategoryOpen] = useState(true)
 
     const categories = [
         { id: "ALL", label: "ყველა" },
@@ -332,7 +333,15 @@ const ShopPageClient = () => {
 
                             {/* Category Filters */}
                             <div className="mb-6">
-                                <h4 className="font-medium text-gray-900 mb-3">კატეგორია</h4>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsCategoryOpen(!isCategoryOpen)}
+                                    className="w-full flex items-center justify-between mb-3"
+                                >
+                                    <h4 className="font-medium text-gray-900">კატეგორია</h4>
+                                    <ChevronDown className={`w-5 h-5 text-gray-700 transition-transform ${isCategoryOpen ? "rotate-180" : "rotate-0"}`} />
+                                </button>
+                                {isCategoryOpen && (
                                 <div className="space-y-2">
                                     {categories.map((category) => {
                                         const categoryCount = products.filter(product => 
@@ -361,6 +370,7 @@ const ShopPageClient = () => {
                                         );
                                     })}
                                 </div>
+                                )}
                             </div>
 
                             {/* Price Range */}

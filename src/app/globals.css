@@ -63,61 +63,10 @@
 input.sr-only {
   display: none !important;
 }
-.ut-allowed-content {
-  font-size: 0 !important;
-  color: transparent !important;
-  line-height: 1.5rem !important;
-  height: auto !important;
-  display: block !important;
-  margin-top: 8px !important;
-}
 
-/* Show only custom Georgian message */
-.ut-allowed-content::after {
-  content: "ფაილი არ არის არჩეული" !important;
-  display: block !important;
-  color: black !important;
-  font-size: 20px !important;
-}
 
-/* Range Slider Styles */
-input[type="range"] {
-  -webkit-appearance: none;
-  appearance: none;
-  background: transparent;
-  cursor: pointer;
-}
 
-input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 18px;
-  height: 18px;
-  background: #1B3729;
-  border-radius: 50%;
-  cursor: pointer;
-  border: 2px solid #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
 
-input[type="range"]::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
-  background: #1B3729;
-  border-radius: 50%;
-  cursor: pointer;
-  border: 2px solid #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-input[type="range"]::-webkit-slider-track {
-  height: 2px;
-}
-
-input[type="range"]::-moz-range-track {
-  height: 2px;
-  background: transparent;
-}
 
 
 body {
@@ -363,3 +312,4 @@ body {
   background-color: #f3f4f6 !important;
   color: #9ca3af !important;
 }
+
