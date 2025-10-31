@@ -36,26 +36,11 @@ async function main() {
     }
   }
 
-  const users = readJson('User.json')
+ 
   const categories = readJson('Category.json')
-  const products = readJson('Product.json')
-  const productImages = readJson('ProductImage.json')
-  const productVariants = readJson('ProductVariant.json')
-  const priceTiers = readJson('RentalPriceTier.json')
 
-  // 👤 Users
-  if (users.length) {
-    console.log(`👤 Inserting users: ${users.length}`)
-    for (const u of users) {
-      const fixed = fixDateFields(u)
-      const where: any = fixed.email ? { email: fixed.email } : { id: fixed.id }
-      await prisma.user.upsert({
-        where,
-        update: fixed,
-        create: fixed,
-      })
-    }
-  }
+
+
 
   // 🏷️ Categories
   if (categories.length) {
@@ -71,49 +56,13 @@ async function main() {
     }
   }
 
-  // 🛍️ Products
-  if (products.length) {
-    console.log(`🛍️ Inserting products: ${products.length}`)
-    for (const p of products) {
-      const fixed = fixDateFields(p)
-      const where: any = fixed.slug ? { slug: fixed.slug } : { id: fixed.id }
-      await prisma.product.upsert({
-        where,
-        update: fixed,
-        create: fixed,
-      })
-    }
-  }
 
-  // 🖼️ Product Images
-  if (productImages.length) {
-    console.log(`🖼️ Inserting product images: ${productImages.length}`)
-    const fixedImages = productImages.map((img: any) => fixDateFields(img))
-    await prisma.productImage.createMany({
-      data: fixedImages as any[],
-      skipDuplicates: true,
-    })
-  }
+
 
   // 📦 Product Variants
-  if (productVariants.length) {
-    console.log(`📦 Inserting product variants: ${productVariants.length}`)
-    const fixedVariants = productVariants.map((v: any) => fixDateFields(v))
-    await prisma.productVariant.createMany({
-      data: fixedVariants as any[],
-      skipDuplicates: true,
-    })
-  }
+
 
   // 💵 Rental Price Tiers
-  if (priceTiers.length) {
-    console.log(`💵 Inserting rental price tiers: ${priceTiers.length}`)
-    const fixedTiers = priceTiers.map((t: any) => fixDateFields(t))
-    await prisma.rentalPriceTier.createMany({
-      data: fixedTiers as any[],
-      skipDuplicates: true,
-    })
-  }
 
   console.log('🎉 Seed from item completed!')
 }
