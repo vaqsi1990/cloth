@@ -21,6 +21,7 @@ const SignUpPage = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [isSendingCode, setIsSendingCode] = useState(false)
   const [codeSent, setCodeSent] = useState(false)
+  const [showCodeInput, setShowCodeInput] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   
@@ -38,10 +39,23 @@ const SignUpPage = () => {
   const handleSendCode = async () => {
     setError('')
     setSuccess('')
-    if (!formData.email) {
-      setError('გთხოვთ შეიყვანეთ ელფოსტა')
+    
+    // Validate required fields before sending code
+    if (!formData.name || !formData.phone || !formData.location || !formData.personalId || !formData.email || !formData.password || !formData.confirmPassword) {
+      setError('გთხოვთ შეავსეთ ყველა ველი')
       return
     }
+    
+    if (formData.password !== formData.confirmPassword) {
+      setError('პაროლები არ ემთხვევა')
+      return
+    }
+
+    if (formData.password.length < 6) {
+      setError('პაროლი უნდა იყოს მინიმუმ 6 სიმბოლო')
+      return
+    }
+    
     setIsSendingCode(true)
     try {
       const res = await fetch('/api/auth/send-registration-code', {
@@ -51,10 +65,11 @@ const SignUpPage = () => {
       })
       const data = await res.json()
       if (!res.ok) {
-        setError(data.error || 'వერიფიკაციის კოდის გაგზავნა ვერ მოხერხდა')
+        setError(data.error || 'ვერიფიკაციის კოდის გაგზავნა ვერ მოხერხდა')
         return
       }
       setCodeSent(true)
+      setShowCodeInput(true)
       setSuccess('ვერიფიკაციის კოდი გაიგზავნა ელფოსტაზე')
     } catch {
       setError('შეცდომა კოდის გაგზავნისას')
@@ -242,27 +257,6 @@ const SignUpPage = () => {
               </div>
             </div>
 
-          {/* Verification Code */}
-          <div>
-            <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-2">
-              ვერიფიკაციის კოდი
-            </label>
-            <div className="relative">
-              <input
-                id="code"
-                name="code"
-                type="text"
-                inputMode="numeric"
-                pattern="[A-Za-z0-9]{6}"
-                maxLength={6}
-                value={formData.code}
-                onChange={handleChange}
-                className="w-full pl-4 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
-                placeholder="შეიყვანეთ 6-ნიშნა კოდი"
-              />
-            </div>
-          </div>
-
             {/* Password */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
@@ -316,10 +310,33 @@ const SignUpPage = () => {
                 </button>
               </div>
             </div>
+
+            {/* Verification Code - only show after code is sent */}
+            {showCodeInput && (
+              <div>
+                <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-2">
+                  ვერიფიკაციის კოდი
+                </label>
+                <div className="relative">
+                  <input
+                    id="code"
+                    name="code"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[A-Za-z0-9]{6}"
+                    maxLength={6}
+                    value={formData.code}
+                    onChange={handleChange}
+                    className="w-full pl-4 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                    placeholder="შეიყვანეთ 6-ნიშნა კოდი"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="space-y-3">
-            {(!formData.code || !/^[A-Za-z0-9]{6}$/.test(formData.code)) && (
+            {!showCodeInput ? (
               <button
                 type="button"
                 onClick={handleSendCode}
@@ -332,15 +349,13 @@ const SignUpPage = () => {
                     <span>იგზავნება...</span>
                   </>
                 ) : (
-                  <span>ერთჯერადი კოდის გაგზავნა</span>
+                  <span>რეგისტრაცია</span>
                 )}
               </button>
-            )}
-
-            {codeSent && formData.code && /^[A-Za-z0-9]{6}$/.test(formData.code) && (
+            ) : (
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || !formData.code || !/^[A-Za-z0-9]{6}$/.test(formData.code)}
                 className="w-full bg-black cursor-pointer text-white py-3 px-6 rounded-lg font-medium hover:bg-gray-800 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
               >
                 {isLoading ? (
@@ -349,7 +364,7 @@ const SignUpPage = () => {
                     <span>რეგისტრაცია...</span>
                   </>
                 ) : (
-                  <span>რეგისტრაცია</span>
+                  <span>რეგისტრაციის დასრულება</span>
                 )}
               </button>
             )}
