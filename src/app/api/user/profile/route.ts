@@ -10,7 +10,12 @@ const profileSchema = z.object({
   image: z.string().nullable().optional(),
   phone: z.string().min(6, 'ტელეფონის ნომერი არასწორია').optional(),
   location: z.string().min(2, 'ადგილმდებარეობა არასწორია').optional(),
-  personalId: z.string().min(6, 'პირადობის ნომერი არასწორია').optional(),
+  lastName: z.string().min(2, 'გვარი არასწორია').optional(),
+  address: z.string().min(2, 'მისამართი არასწორია').optional(),
+  postalIndex: z.string().min(2, 'საფოსტო ინდექსი არასწორია').optional(),
+  gender: z.enum(["MALE", "FEMALE", "OTHER"], { message: "სქესი არასწორია" }).optional(),
+  dateOfBirth: z.string().optional(),
+  // personalId is not included in schema - should not be updatable
 })
 
 // PUT - Update user profile
@@ -26,7 +31,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, email, image, phone, location, personalId } = profileSchema.parse(body)
+    const { name, email, image, phone, location, lastName, address, postalIndex, gender, dateOfBirth } = profileSchema.parse(body)
 
     // Check if email is already taken by another user
     const existingUser = await prisma.user.findFirst({
@@ -60,20 +65,8 @@ export async function PUT(request: NextRequest) {
     }
 
     // Check if personalId is already taken by another user
-    if (personalId) {
-      const existingPid = await prisma.user.findFirst({
-        where: {
-          personalId: personalId,
-          id: { not: session.user.id }
-        }
-      })
-      if (existingPid) {
-        return NextResponse.json(
-          { success: false, error: 'პირადობის ნომერი უკვე გამოიყენება' },
-          { status: 409 }
-        )
-      }
-    }
+    // Note: personalId cannot be updated through this endpoint
+    // It's only set during registration
 
     // Update user profile
     const updatedUser = await prisma.user.update({
@@ -84,7 +77,11 @@ export async function PUT(request: NextRequest) {
         image: image || null,
         phone: phone ?? undefined,
         location: location ?? undefined,
-        personalId: personalId ?? undefined,
+        lastName: lastName ?? undefined,
+        address: address ?? undefined,
+        postalIndex: postalIndex ?? undefined,
+        gender: gender ?? undefined,
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
       },
       select: {
         id: true,
@@ -95,6 +92,11 @@ export async function PUT(request: NextRequest) {
         phone: true,
         location: true,
         personalId: true,
+        lastName: true,
+        address: true,
+        postalIndex: true,
+        gender: true,
+        dateOfBirth: true,
       }
     })
 
@@ -145,6 +147,11 @@ export async function GET(request: NextRequest) {
         phone: true,
         location: true,
         personalId: true,
+        lastName: true,
+        address: true,
+        postalIndex: true,
+        gender: true,
+        dateOfBirth: true,
       }
     })
 

@@ -6,8 +6,13 @@ import { Prisma } from "@prisma/client"
 
 const signupSchema = z.object({
   name: z.string().min(2, "სახელი უნდა იყოს მინიმუმ 2 სიმბოლო"),
+  lastName: z.string().min(2, "გვარი უნდა იყოს მინიმუმ 2 სიმბოლო"),
   phone: z.string().min(6, "ტელეფონის ნომერი საჭიროა"),
   location: z.string().min(2, "ადგილმდებარეობა აუცილებელია"),
+  address: z.string().min(2, "მისამართი აუცილებელია"),
+  postalIndex: z.string().min(2, "საფოსტო ინდექსი აუცილებელია"),
+  gender: z.enum(["MALE", "FEMALE"], { message: "სქესი აუცილებელია" }),
+  dateOfBirth: z.string().min(1, "დაბადების თარიღი აუცილებელია"),
   personalId: z.string().min(6, "პირადობის ნომერი აუცილებელია"),
   email: z.string().email("არასწორი ელფოსტა"),
   password: z.string().min(6, "პაროლი უნდა იყოს მინიმუმ 6 სიმბოლო"),
@@ -57,8 +62,13 @@ export async function POST(request: NextRequest) {
     const user = await prisma.user.create({
       data: {
         name: validatedData.name,
+        lastName: validatedData.lastName,
         phone: validatedData.phone,
         location: validatedData.location,
+        address: validatedData.address,
+        postalIndex: validatedData.postalIndex,
+        gender: validatedData.gender,
+        dateOfBirth: new Date(validatedData.dateOfBirth),
         personalId: validatedData.personalId,
         email: validatedData.email,
         password: hashedPassword,

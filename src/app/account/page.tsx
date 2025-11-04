@@ -812,28 +812,53 @@ const AccountPage = () => {
 function ProfileSettingsForm() {
   const { data: session, update } = useSession()
   const [form, setForm] = useState({
-    name: session?.user?.name || '',
-    email: session?.user?.email || '',
-    phone: (session?.user as { phone?: string })?.phone || '',
-    location: (session?.user as { location?: string })?.location || '',
-    image: session?.user?.image || ''
+    name: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    location: '',
+    address: '',
+    postalIndex: '',
+    gender: '',
+    dateOfBirth: '',
+    personalId: '',
+    image: ''
   })
   const [saving, setSaving] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
   useEffect(() => {
-    setForm(f => ({
-      ...f,
-      name: session?.user?.name || '',
-      email: session?.user?.email || '',
-      phone: (session?.user as { phone?: string })?.phone || '',
-      location: (session?.user as { location?: string })?.location || '',
-      image: session?.user?.image || ''
-    }))
-  }, [session?.user?.name, session?.user?.email, session?.user?.image])
+    const fetchUserData = async () => {
+      try {
+        const res = await fetch('/api/user/profile')
+        const data = await res.json()
+        if (data.success && data.user) {
+          setForm({
+            name: data.user.name || '',
+            lastName: data.user.lastName || '',
+            email: data.user.email || '',
+            phone: data.user.phone || '',
+            location: data.user.location || '',
+            address: data.user.address || '',
+            postalIndex: data.user.postalIndex || '',
+            gender: data.user.gender || '',
+            dateOfBirth: data.user.dateOfBirth ? new Date(data.user.dateOfBirth).toISOString().split('T')[0] : '',
+            personalId: data.user.personalId || '',
+            image: data.user.image || ''
+          })
+        }
+      } catch (err) {
+        console.error('Error fetching user data:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchUserData()
+  }, [])
 
-  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value })
     setError(null)
     setSuccess(null)
@@ -850,10 +875,15 @@ function ProfileSettingsForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: form.name,
+          lastName: form.lastName,
           email: form.email,
           image: form.image || null,
           phone: form.phone,
           location: form.location,
+          address: form.address,
+          postalIndex: form.postalIndex,
+          gender: form.gender || undefined,
+          dateOfBirth: form.dateOfBirth || undefined,
         })
       })
       const data = await res.json()
@@ -880,6 +910,15 @@ function ProfileSettingsForm() {
     setForm({ ...form, image: urls[0] || '' })
   }
 
+  if (loading) {
+    return (
+      <div className="text-center py-8">
+        <div className="w-8 h-8 border-4 border-gray-300 border-t-black rounded-full animate-spin mx-auto"></div>
+        <p className="text-gray-600 mt-2">იტვირთება...</p>
+      </div>
+    )
+  }
+
   return (
     <form onSubmit={onSubmit} className="space-y-5">
       {error && <div className="p-3 rounded bg-red-50 text-red-800 text-sm">{error}</div>}
@@ -890,9 +929,16 @@ function ProfileSettingsForm() {
         <ImageUpload value={form.image ? [form.image] : []} onChange={onImageChange} />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">სახელი</label>
-        <input name="name" value={form.name} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">სახელი</label>
+          <input name="name" value={form.name} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">გვარი</label>
+          <input name="lastName" value={form.lastName} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
+        </div>
       </div>
 
       <div>
@@ -908,6 +954,39 @@ function ProfileSettingsForm() {
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">ადგილმდებარეობა</label>
         <input name="location" value={form.location} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">მისამართი</label>
+        <input name="address" value={form.address} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">საფოსტო ინდექსი</label>
+        <input name="postalIndex" value={form.postalIndex} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">სქესი</label>
+          <select name="gender" value={form.gender} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+            <option value="">აირჩიეთ სქესი</option>
+            <option value="MALE">კაცი</option>
+            <option value="FEMALE">ქალი</option>
+           
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">დაბადების თარიღი</label>
+          <input type="date" name="dateOfBirth" value={form.dateOfBirth} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">პირადობის ნომერი</label>
+        <input name="personalId" value={form.personalId} disabled className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed" />
+        <p className="text-xs text-gray-500 mt-1">პირადობის ნომერი არ შეიძლება შეიცვალოს</p>
       </div>
 
       <button type="submit" disabled={saving} className="w-full bg-black text-white py-3 px-6 rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50">

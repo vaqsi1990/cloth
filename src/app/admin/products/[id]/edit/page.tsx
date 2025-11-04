@@ -447,7 +447,7 @@ const EditProductPage = () => {
 
               <div>
                 <label className="block text-[20px] text-black font-medium mb-2">
-                  სქესი/მიზანობრივი აუდიტორია
+                  სქესი
                 </label>
                 <select
                   value={formData.gender}

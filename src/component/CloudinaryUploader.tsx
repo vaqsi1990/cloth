@@ -41,7 +41,7 @@ const ImageUpload = ({ onChange, value }: ImageUploadProps): React.JSX.Element =
         {imageUrls.length === 0 ? (
           <div>
             <UploadButton
-              className="bg-[#d90b6b] hover:bg-pink-700 text-white font-medium py-3 px-6 rounded-xl transition-colors flex items-center space-x-2 disabled:opacity-50"
+              className=" hover:bg-pink-700 text-white font-medium py-3 px-6 rounded-xl transition-colors flex items-center space-x-2 disabled:opacity-50"
               endpoint="imageUploader"
               onClientUploadComplete={handleUploadComplete}
               onUploadError={handleUploadError}
