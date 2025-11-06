@@ -1164,6 +1164,7 @@ const ProductPage = () => {
                                                     setReviewRating(rating)
                                                 }}
                                                 size="md"
+                                                color="gold"
                                             />
                                         </div>
                                         <div>
@@ -1227,6 +1228,8 @@ const ProductPage = () => {
                                     const isAdmin = session?.user?.role === 'ADMIN'
                                     const isEditing = editingReviewId === review.id
                                     const isReplying = replyingToReviewId === review.id
+                                    // Determine star color: gold for renters, silver for product owners
+                                    const starColor = product?.userId === review.user.id ? 'silver' : 'gold'
                                     
                                     return (
                                         <div key={review.id} className="border-b border-gray-200 pb-6 last:border-b-0">
@@ -1255,7 +1258,7 @@ const ProductPage = () => {
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-2">
-                                                    <StarRating rating={review.rating} readonly size="sm" />
+                                                    <StarRating rating={review.rating} readonly size="sm" color={starColor} />
                                                     {(isOwnReview || isAdmin) && !isEditing && (
                                                         <div className="flex gap-2 ml-2">
                                                             {isOwnReview && (
@@ -1291,6 +1294,7 @@ const ProductPage = () => {
                                                             rating={editingRating}
                                                             onRatingChange={(rating) => setEditingRating(rating)}
                                                             size="md"
+                                                            color={starColor}
                                                         />
                                                     </div>
                                                     <div>

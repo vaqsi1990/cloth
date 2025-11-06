@@ -8,6 +8,7 @@ interface StarRatingProps {
   onRatingChange?: (rating: number) => void
   readonly?: boolean
   size?: 'sm' | 'md' | 'lg'
+  color?: 'gold' | 'silver' | 'default'
 }
 
 const StarRating: React.FC<StarRatingProps> = ({
@@ -15,6 +16,7 @@ const StarRating: React.FC<StarRatingProps> = ({
   onRatingChange,
   readonly = false,
   size = 'md',
+  color = 'default',
 }) => {
   const [hoverRating, setHoverRating] = useState(0)
 
@@ -22,6 +24,21 @@ const StarRating: React.FC<StarRatingProps> = ({
     sm: 'w-4 h-4',
     md: 'w-5 h-5',
     lg: 'w-6 h-6',
+  }
+
+  const getColorClasses = (isFilled: boolean) => {
+    if (!isFilled) {
+      return 'fill-gray-200 text-gray-300'
+    }
+    
+    switch (color) {
+      case 'gold':
+        return 'fill-amber-500 text-amber-500'
+      case 'silver':
+        return 'fill-gray-400 text-gray-400'
+      default:
+        return 'fill-yellow-400 text-yellow-400'
+    }
   }
 
   const handleClick = (value: number) => {
@@ -59,11 +76,7 @@ const StarRating: React.FC<StarRatingProps> = ({
           } transition-all duration-150`}
         >
           <Star
-            className={`${sizeClasses[size]} ${
-              star <= displayRating
-                ? 'fill-yellow-400 text-yellow-400'
-                : 'fill-gray-200 text-gray-300'
-            } transition-colors`}
+            className={`${sizeClasses[size]} ${getColorClasses(star <= displayRating)} transition-colors`}
           />
         </button>
       ))}
