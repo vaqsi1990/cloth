@@ -30,76 +30,43 @@ export async function GET(
 
     // Check if user can review (has rented the product)
     if (session?.user?.id) {
-      // Get product to check its status
+      // Get product to check its status and userId
       const product = await prisma.product.findUnique({
         where: { id: productId },
-        select: { status: true },
+        select: { status: true, userId: true },
       })
 
-      // Check Rental table - user must have rented (any status except CANCELED)
-      const userRental = await prisma.rental.findFirst({
-        where: {
-          productId,
-          userId: session.user.id,
-          status: {
-            not: 'CANCELED', // Exclude canceled rentals
-          },
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-      })
-
-      // Check OrderItem table - user must have ordered rental
-      // Allow all order statuses except CANCELED and REFUNDED
-      // Also check by email or phone if userId is null (for old orders)
-      const userOrderRental = await prisma.orderItem.findFirst({
-        where: {
-          productId,
-          isRental: true,
-          OR: [
-            {
-              order: {
-                userId: session.user.id,
-                status: {
-                  notIn: ['CANCELED', 'REFUNDED'],
-                },
-              },
-            },
-            // Fallback: check by email or phone if userId is null
-            {
-              order: {
-                userId: null,
-                OR: [
-                  { email: session.user.email || undefined },
-                  { phone: session.user.phone || undefined },
-                ],
-                status: {
-                  notIn: ['CANCELED', 'REFUNDED'],
-                },
-              },
-            },
-          ],
-        },
-      })
-
-      // If product status is RENTED, check if user has any orderItem for this product (rental or purchase)
-      // This allows users who rented the product to review it
-      // Check ALL order statuses except CANCELED and REFUNDED
-      // Also check by email or phone if userId is null (for old orders)
-      // IMPORTANT: If product is RENTED, we should be more lenient and check ALL orders for this product
-      let userOrderItem = null
-      if (product?.status === 'RENTED') {
-        // First, try to find order items by userId/email/phone
-        userOrderItem = await prisma.orderItem.findFirst({
+      // If user is the product owner, allow review regardless of rental status
+      if (product?.userId === session.user.id) {
+        canReview = true
+      } else {
+        // Check Rental table - user must have rented (any status except CANCELED)
+        const userRental = await prisma.rental.findFirst({
           where: {
             productId,
+            userId: session.user.id,
+            status: {
+              not: 'CANCELED', // Exclude canceled rentals
+            },
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        })
+
+        // Check OrderItem table - user must have ordered rental
+        // Allow all order statuses except CANCELED and REFUNDED
+        // Also check by email or phone if userId is null (for old orders)
+        const userOrderRental = await prisma.orderItem.findFirst({
+          where: {
+            productId,
+            isRental: true,
             OR: [
               {
                 order: {
                   userId: session.user.id,
                   status: {
-                    notIn: ['CANCELED', 'REFUNDED'], // Allow all statuses except canceled/refunded
+                    notIn: ['CANCELED', 'REFUNDED'],
                   },
                 },
               },
@@ -119,56 +86,94 @@ export async function GET(
             ],
           },
         })
-        
-        // If still not found, check ALL orders for this product (more lenient check)
-        // This handles cases where email/phone don't match exactly
-        if (!userOrderItem) {
-          const allOrderItemsForProduct = await prisma.orderItem.findMany({
+
+        // If product status is RENTED, check if user has any orderItem for this product (rental or purchase)
+        // This allows users who rented the product to review it
+        // Check ALL order statuses except CANCELED and REFUNDED
+        // Also check by email or phone if userId is null (for old orders)
+        // IMPORTANT: If product is RENTED, we should be more lenient and check ALL orders for this product
+        let userOrderItem = null
+        if (product?.status === 'RENTED') {
+          // First, try to find order items by userId/email/phone
+          userOrderItem = await prisma.orderItem.findFirst({
             where: {
               productId,
-              order: {
-                status: {
-                  notIn: ['CANCELED', 'REFUNDED'],
+              OR: [
+                {
+                  order: {
+                    userId: session.user.id,
+                    status: {
+                      notIn: ['CANCELED', 'REFUNDED'], // Allow all statuses except canceled/refunded
+                    },
+                  },
                 },
-              },
-            },
-            include: {
-              order: {
-                select: {
-                  id: true,
-                  userId: true,
-                  email: true,
-                  phone: true,
-                  status: true,
+                // Fallback: check by email or phone if userId is null
+                {
+                  order: {
+                    userId: null,
+                    OR: [
+                      { email: session.user.email || undefined },
+                      { phone: session.user.phone || undefined },
+                    ],
+                    status: {
+                      notIn: ['CANCELED', 'REFUNDED'],
+                    },
+                  },
                 },
-              },
+              ],
             },
           })
           
-          // If there's at least one order item for this product, allow review
-          // This is a fallback for cases where user info doesn't match exactly
-          if (allOrderItemsForProduct.length > 0) {
-            // Set userOrderItem to the first one found (we just need to know it exists)
-            userOrderItem = allOrderItemsForProduct[0]
+          // If still not found, check ALL orders for this product (more lenient check)
+          // This handles cases where email/phone don't match exactly
+          if (!userOrderItem) {
+            const allOrderItemsForProduct = await prisma.orderItem.findMany({
+              where: {
+                productId,
+                order: {
+                  status: {
+                    notIn: ['CANCELED', 'REFUNDED'],
+                  },
+                },
+              },
+              include: {
+                order: {
+                  select: {
+                    id: true,
+                    userId: true,
+                    email: true,
+                    phone: true,
+                    status: true,
+                  },
+                },
+              },
+            })
+            
+            // If there's at least one order item for this product, allow review
+            // This is a fallback for cases where user info doesn't match exactly
+            if (allOrderItemsForProduct.length > 0) {
+              // Set userOrderItem to the first one found (we just need to know it exists)
+              userOrderItem = allOrderItemsForProduct[0]
+            }
           }
         }
-      }
 
-      // Also check if user has rental for this product in Rental table (even if product status is RENTED)
-      // This covers cases where rental was created directly in Rental table
-      const userRentalForRentedProduct = product?.status === 'RENTED' 
-        ? await prisma.rental.findFirst({
-            where: {
-              productId,
-              userId: session.user.id,
-              status: {
-                not: 'CANCELED',
+        // Also check if user has rental for this product in Rental table (even if product status is RENTED)
+        // This covers cases where rental was created directly in Rental table
+        const userRentalForRentedProduct = product?.status === 'RENTED' 
+          ? await prisma.rental.findFirst({
+              where: {
+                productId,
+                userId: session.user.id,
+                status: {
+                  not: 'CANCELED',
+                },
               },
-            },
-          })
-        : null
+            })
+          : null
 
-      canReview = !!(userRental || userOrderRental || userOrderItem || userRentalForRentedProduct)
+        canReview = !!(userRental || userOrderRental || userOrderItem || userRentalForRentedProduct)
+      }
     }
 
     const reviews = await prisma.review.findMany({
@@ -247,7 +252,7 @@ export async function POST(
     // Check if product exists
     const product = await prisma.product.findUnique({
       where: { id: productId },
-      select: { status: true },
+      select: { status: true, userId: true },
     })
 
     if (!product) {
@@ -257,72 +262,37 @@ export async function POST(
       )
     }
 
-    // Check if user has rented this product
-    // Check Rental table - user must have rented (any status except CANCELED)
-    const userRental = await prisma.rental.findFirst({
-      where: {
-        productId,
-        userId: session.user.id,
-        status: {
-          not: 'CANCELED', // Exclude canceled rentals
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    })
+    // If user is the product owner, allow review regardless of rental status
+    const isProductOwner = product.userId === session.user.id
 
-    // Also check OrderItems for rentals - allow all order statuses except CANCELED and REFUNDED
-    // Also check by email or phone if userId is null (for old orders)
-    const userOrderRental = await prisma.orderItem.findFirst({
-      where: {
-        productId,
-        isRental: true,
-        OR: [
-          {
-            order: {
-              userId: session.user.id,
-              status: {
-                notIn: ['CANCELED', 'REFUNDED'],
-              },
-            },
-          },
-          // Fallback: check by email or phone if userId is null
-          {
-            order: {
-              userId: null,
-              OR: [
-                { email: session.user.email || undefined },
-                { phone: session.user.phone || undefined },
-              ],
-              status: {
-                notIn: ['CANCELED', 'REFUNDED'],
-              },
-            },
-          },
-        ],
-      },
-      include: {
-        order: { select: { status: true, id: true, email: true, userId: true, phone: true } },
-      },
-    })
-
-    // If product status is RENTED, also check if user has any orderItem for this product (rental or purchase)
-    // Check ALL order statuses except CANCELED and REFUNDED
-    // Also check by email or phone if userId is null (for old orders)
-    // IMPORTANT: If product is RENTED, we should be more lenient and check ALL orders for this product
-    let userOrderItem = null
-    if (product.status === 'RENTED') {
-      // First, try to find order items by userId/email/phone
-      userOrderItem = await prisma.orderItem.findFirst({
+    if (!isProductOwner) {
+      // Check if user has rented this product
+      // Check Rental table - user must have rented (any status except CANCELED)
+      const userRental = await prisma.rental.findFirst({
         where: {
           productId,
+          userId: session.user.id,
+          status: {
+            not: 'CANCELED', // Exclude canceled rentals
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      })
+
+      // Also check OrderItems for rentals - allow all order statuses except CANCELED and REFUNDED
+      // Also check by email or phone if userId is null (for old orders)
+      const userOrderRental = await prisma.orderItem.findFirst({
+        where: {
+          productId,
+          isRental: true,
           OR: [
             {
               order: {
                 userId: session.user.id,
                 status: {
-                  notIn: ['CANCELED', 'REFUNDED'], // Allow all statuses except canceled/refunded
+                  notIn: ['CANCELED', 'REFUNDED'],
                 },
               },
             },
@@ -345,62 +315,103 @@ export async function POST(
           order: { select: { status: true, id: true, email: true, userId: true, phone: true } },
         },
       })
-      
-      // If still not found, check ALL orders for this product (more lenient check)
-      // This handles cases where email/phone don't match exactly
-      if (!userOrderItem) {
-        const allOrderItemsForProduct = await prisma.orderItem.findMany({
+
+      // If product status is RENTED, also check if user has any orderItem for this product (rental or purchase)
+      // Check ALL order statuses except CANCELED and REFUNDED
+      // Also check by email or phone if userId is null (for old orders)
+      // IMPORTANT: If product is RENTED, we should be more lenient and check ALL orders for this product
+      let userOrderItem = null
+      if (product.status === 'RENTED') {
+        // First, try to find order items by userId/email/phone
+        userOrderItem = await prisma.orderItem.findFirst({
           where: {
             productId,
-            order: {
-              status: {
-                notIn: ['CANCELED', 'REFUNDED'],
+            OR: [
+              {
+                order: {
+                  userId: session.user.id,
+                  status: {
+                    notIn: ['CANCELED', 'REFUNDED'], // Allow all statuses except canceled/refunded
+                  },
+                },
               },
-            },
+              // Fallback: check by email or phone if userId is null
+              {
+                order: {
+                  userId: null,
+                  OR: [
+                    { email: session.user.email || undefined },
+                    { phone: session.user.phone || undefined },
+                  ],
+                  status: {
+                    notIn: ['CANCELED', 'REFUNDED'],
+                  },
+                },
+              },
+            ],
           },
           include: {
-            order: {
-              select: {
-                id: true,
-                userId: true,
-                email: true,
-                phone: true,
-                status: true,
-              },
-            },
+            order: { select: { status: true, id: true, email: true, userId: true, phone: true } },
           },
         })
         
-        // If there's at least one order item for this product, allow review
-        // This is a fallback for cases where user info doesn't match exactly
-        if (allOrderItemsForProduct.length > 0) {
-          // Set userOrderItem to the first one found (we just need to know it exists)
-          userOrderItem = allOrderItemsForProduct[0]
+        // If still not found, check ALL orders for this product (more lenient check)
+        // This handles cases where email/phone don't match exactly
+        if (!userOrderItem) {
+          const allOrderItemsForProduct = await prisma.orderItem.findMany({
+            where: {
+              productId,
+              order: {
+                status: {
+                  notIn: ['CANCELED', 'REFUNDED'],
+                },
+              },
+            },
+            include: {
+              order: {
+                select: {
+                  id: true,
+                  userId: true,
+                  email: true,
+                  phone: true,
+                  status: true,
+                },
+              },
+            },
+          })
+          
+          // If there's at least one order item for this product, allow review
+          // This is a fallback for cases where user info doesn't match exactly
+          if (allOrderItemsForProduct.length > 0) {
+            // Set userOrderItem to the first one found (we just need to know it exists)
+            userOrderItem = allOrderItemsForProduct[0]
+          }
         }
       }
-    }
 
-    // Also check if user has rental for this product in Rental table (even if product status is RENTED)
-    const userRentalForRentedProduct = product.status === 'RENTED' 
-      ? await prisma.rental.findFirst({
-          where: {
-            productId,
-            userId: session.user.id,
-            status: {
-              not: 'CANCELED',
+      // Also check if user has rental for this product in Rental table (even if product status is RENTED)
+      const userRentalForRentedProduct = product.status === 'RENTED' 
+        ? await prisma.rental.findFirst({
+            where: {
+              productId,
+              userId: session.user.id,
+              status: {
+                not: 'CANCELED',
+              },
             },
-          },
-        })
-      : null
+          })
+        : null
 
-    if (!userRental && !userOrderRental && !userOrderItem && !userRentalForRentedProduct) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'კომენტარის დაწერა შეგიძლიათ მხოლოდ იმ პროდუქტებზე, რომლებიც იქირავეთ' 
-        },
-        { status: 403 }
-      )
+      // Check if user can review (must have rented the product)
+      if (!userRental && !userOrderRental && !userOrderItem && !userRentalForRentedProduct) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: 'კომენტარის დაწერა შეგიძლიათ მხოლოდ იმ პროდუქტებზე, რომლებიც იქირავეთ' 
+          },
+          { status: 403 }
+        )
+      }
     }
 
     const body = await request.json()
