@@ -51,8 +51,20 @@ const AccountPage = () => {
   } | null>(null)
   const [verifLoading, setVerifLoading] = useState(false)
   const [savingVerification, setSavingVerification] = useState(false)
-  const [idFrontUrl, setIdFrontUrl] = useState<string | null>(null)
-  const [idBackUrl, setIdBackUrl] = useState<string | null>(null)
+  
+  // Load uploaded images from localStorage on mount
+  const [idFrontUrl, setIdFrontUrl] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('idFrontUrl') || null
+    }
+    return null
+  })
+  const [idBackUrl, setIdBackUrl] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('idBackUrl') || null
+    }
+    return null
+  })
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -60,36 +72,47 @@ const AccountPage = () => {
     }
   }, [status, router])
 
+  // Fetch user stats only once when session is available
   useEffect(() => {
     if (session?.user?.id) {
       fetchUserStats()
     }
-  }, [session])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id])
 
+  // Update profile image when session changes
   useEffect(() => {
-    if (session?.user?.image) {
+    if (session?.user?.image && session.user.image !== profileImage) {
       setProfileImage(session.user.image)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.image])
 
+  // Fetch orders only when tab changes to orders
   useEffect(() => {
     if (activeTab === 'orders' && session?.user?.id) {
       fetchOrders()
     }
-  }, [activeTab, session])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab])
 
+  // Fetch products only when tab changes to products
   useEffect(() => {
     if (activeTab === 'products' && session?.user?.id) {
       fetchProducts()
     }
-  }, [activeTab, session])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab])
 
+  // Fetch verification only when tab changes to profile
   useEffect(() => {
     if (activeTab === 'profile' && session?.user?.id) {
       fetchVerification()
     }
-  }, [activeTab, session])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab])
 
+  // Check ban status only once
   useEffect(() => {
     if (session?.user?.id) {
       fetch('/api/user/me').then(r => r.json()).then(d => {
@@ -99,6 +122,7 @@ const AccountPage = () => {
         }
       }).catch(() => {})
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id])
 
   const fetchUserStats = async () => {
@@ -127,8 +151,8 @@ const AccountPage = () => {
       console.error('Error fetching user stats:', error)
     } finally {
       setLoading(false)
+      }
     }
-  }
 
   const handleImageUpload = async (urls: string[]) => {
     if (urls.length === 0) return
@@ -186,8 +210,16 @@ const AccountPage = () => {
       const data = await res.json()
       if (data.success) {
         setVerification(data.verification)
-        setIdFrontUrl(data.verification?.idFrontUrl || null)
-        setIdBackUrl(data.verification?.idBackUrl || null)
+        // Only set from API if not already in localStorage (preserve user's uploaded images)
+        if (typeof window !== 'undefined') {
+          const savedFront = localStorage.getItem('idFrontUrl')
+          const savedBack = localStorage.getItem('idBackUrl')
+          setIdFrontUrl(savedFront || data.verification?.idFrontUrl || null)
+          setIdBackUrl(savedBack || data.verification?.idBackUrl || null)
+        } else {
+          setIdFrontUrl(data.verification?.idFrontUrl || null)
+          setIdBackUrl(data.verification?.idBackUrl || null)
+        }
       }
     } catch (e) {
       console.error('Error fetching verification:', e)
@@ -198,12 +230,22 @@ const AccountPage = () => {
 
   const handleIdFrontUpload = async (urls: string[]) => {
     if (!urls.length) return
-    setIdFrontUrl(urls[0])
+    const url = urls[0]
+    setIdFrontUrl(url)
+    // Save to localStorage to persist across refreshes
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('idFrontUrl', url)
+    }
   }
 
   const handleIdBackUpload = async (urls: string[]) => {
     if (!urls.length) return
-    setIdBackUrl(urls[0])
+    const url = urls[0]
+    setIdBackUrl(url)
+    // Save to localStorage to persist across refreshes
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('idBackUrl', url)
+    }
   }
 
   const saveVerification = async () => {
@@ -224,6 +266,11 @@ const AccountPage = () => {
         alert('დოკუმენტები წარმატებით გაიგზავნა ვალიდაციაზე')
         setIdFrontUrl(null)
         setIdBackUrl(null)
+        // Clear localStorage after successful save
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('idFrontUrl')
+          localStorage.removeItem('idBackUrl')
+        }
       } else {
         alert(data.error || 'შეცდომა გაგზავნისას')
       }
@@ -447,17 +494,13 @@ const AccountPage = () => {
          
         </div>
 
-        {/* Verification Section for non-admin users */}
-        {session.user.role !== 'ADMIN' && (
+        {/* Verification Section for non-admin users - only show if not approved */}
+        {session.user.role !== 'ADMIN' && session.user.verificationStatus !== 'APPROVED' && (
           <div className="mt-8 p-4 border border-black rounded-lg bg-gray-50">
             <h4 className="text-lg font-semibold text-red mb-2">პირადობის ვერიფიკაცია </h4>
             <p className="text-[18px] text-red-500">პირადობის სურათებით მოხდება თქვენი ვერიფიცირება, თუ არ ატვირთავთ სურათებს ვერ შეძლებთ ახალი პროდუქტის დამატებას ან ყიდვას და ქირაობას</p>
             {verifLoading ? (
               <p className="text-sm text-gray-600">იტვირთება...</p>
-            ) : verification?.status === 'APPROVED' ? (
-              <div className="mt-4 px-4 py-3 bg-green-100 text-green-900 font-bold rounded text-center">
-                დოკუმენტები დამტკიცებულია
-              </div>
             ) : (
               <>
                 <div className="mb-3">
@@ -497,8 +540,11 @@ const AccountPage = () => {
             )}
           </div>
         )}
+        
       </div>
-
+      {session.user.role !== 'ADMIN' && session.user.verificationStatus == 'APPROVED' && (
+        <h1 className="text-green-500">პირადობა დამტკიცებულია</h1>
+      )}
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <h4 className="text-lg font-bold text-black mb-4">ანგარიშის სტატისტიკა</h4>
         {loading ? (
@@ -622,6 +668,12 @@ const AccountPage = () => {
           <div className="mb-4 p-3 border border-yellow-400 bg-yellow-50 text-yellow-800 rounded">
             გთხოვთ დაადასტუროთ პირადობა პროფილის გვერდზე, რომ შეძლოთ პროდუქტის დამატება.
           </div>
+        )}
+
+{session.user.role !== 'ADMIN' && verification?.status == 'APPROVED' && (
+          <div className="mb-4 p-3 border border-green-400 bg-green-50 text-green-800 rounded">
+              პირადობა დამტკიცებულია
+            </div>
         )}
         
         {loadingProducts ? (

@@ -8,6 +8,7 @@ declare module "next-auth" {
       phone?: string | null
       location?: string | null
       personalId?: string | null
+      verificationStatus?: string | null
     } & DefaultSession["user"]
   }
 }
@@ -19,5 +20,6 @@ declare module "next-auth/jwt" {
     phone?: string | null
     location?: string | null
     personalId?: string | null
+    verificationStatus?: string | null
   }
 }

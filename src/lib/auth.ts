@@ -19,6 +19,13 @@ export const authOptions: NextAuthOptions = {
         const user = await prisma.user.findUnique({
           where: {
             email: credentials.email
+          },
+          include: {
+            verification: {
+              select: {
+                status: true
+              }
+            }
           }
         })
 
@@ -54,6 +61,7 @@ export const authOptions: NextAuthOptions = {
           phone: user.phone,
           location: user.location,
           personalId: user.personalId,
+          verificationStatus: user.verification?.status || null,
         }
       }
     })
@@ -72,6 +80,7 @@ export const authOptions: NextAuthOptions = {
         phone?: string | null
         location?: string | null
         personalId?: string | null
+        verificationStatus?: string | null
       }
 
       if (user) {
@@ -81,6 +90,20 @@ export const authOptions: NextAuthOptions = {
         if (typeof u.phone === 'string' || u.phone === null) token.phone = u.phone
         if (typeof u.location === 'string' || u.location === null) token.location = u.location
         if (typeof u.personalId === 'string' || u.personalId === null) token.personalId = u.personalId
+        if (typeof u.verificationStatus === 'string' || u.verificationStatus === null) token.verificationStatus = u.verificationStatus
+      }
+
+      // Refresh verification status from database on each request
+      if (token.sub) {
+        try {
+          const userVerification = await prisma.userVerification.findUnique({
+            where: { userId: token.sub },
+            select: { status: true }
+          })
+          token.verificationStatus = userVerification?.status || null
+        } catch (error) {
+          console.error('Error fetching verification status:', error)
+        }
       }
 
       // Update token when profile is updated
@@ -114,6 +137,7 @@ export const authOptions: NextAuthOptions = {
         ;(session.user as { phone?: string | null }).phone = (token.phone as string | null | undefined) ?? undefined
         ;(session.user as { location?: string | null }).location = (token.location as string | null | undefined) ?? undefined
         ;(session.user as { personalId?: string | null }).personalId = (token.personalId as string | null | undefined) ?? undefined
+        ;(session.user as { verificationStatus?: string | null }).verificationStatus = (token.verificationStatus as string | null | undefined) ?? undefined
       }
       return session
     }
