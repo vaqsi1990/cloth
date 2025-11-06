@@ -12,6 +12,8 @@ import {
     CreditCard,
     RotateCcw,
     Shield,
+    Edit,
+    Trash2,
 } from "lucide-react"
 import { useCart } from "@/hooks/useCart"
 import { useSession } from 'next-auth/react';
@@ -60,6 +62,12 @@ const ProductPage = () => {
       comment: string | null
       createdAt: string
       user: { id: string; name: string | null; image: string | null }
+      reply?: {
+        id: number
+        comment: string
+        createdAt: string
+        user: { id: string; name: string | null; image: string | null }
+      } | null
     }>>([])
     const [averageRating, setAverageRating] = useState(0)
     const [totalReviews, setTotalReviews] = useState(0)
@@ -68,6 +76,14 @@ const ProductPage = () => {
     const [reviewComment, setReviewComment] = useState('')
     const [submittingReview, setSubmittingReview] = useState(false)
     const [canReview, setCanReview] = useState(false)
+    const [editingReviewId, setEditingReviewId] = useState<number | null>(null)
+    const [editingRating, setEditingRating] = useState(0)
+    const [editingComment, setEditingComment] = useState('')
+    const [deletingReviewId, setDeletingReviewId] = useState<number | null>(null)
+    const [replyingToReviewId, setReplyingToReviewId] = useState<number | null>(null)
+    const [replyComment, setReplyComment] = useState('')
+    const [submittingReply, setSubmittingReply] = useState(false)
+    const [deletingReplyId, setDeletingReplyId] = useState<number | null>(null)
 
     // Auto-switch to rent mode if product is rented
     useEffect(() => {
@@ -209,6 +225,186 @@ const ProductPage = () => {
             alert('შეცდომა კომენტარის დამატებისას')
         } finally {
             setSubmittingReview(false)
+        }
+    }
+
+    const handleEditReview = (review: { id: number; rating: number; comment: string | null }) => {
+        setEditingReviewId(review.id)
+        setEditingRating(review.rating)
+        setEditingComment(review.comment || '')
+    }
+
+    const handleCancelEdit = () => {
+        setEditingReviewId(null)
+        setEditingRating(0)
+        setEditingComment('')
+    }
+
+    const handleUpdateReview = async () => {
+        if (!session || !editingReviewId) return
+        if (editingRating === 0) {
+            alert('გთხოვთ აირჩიოთ რეიტინგი')
+            return
+        }
+        try {
+            setSubmittingReview(true)
+            const response = await fetch(`/api/products/${productId}/reviews`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    reviewId: editingReviewId,
+                    rating: editingRating,
+                    comment: editingComment || undefined,
+                }),
+            })
+            const data = await response.json()
+            
+            if (data.success) {
+                // Refresh reviews
+                const reviewsRes = await fetch(`/api/products/${productId}/reviews`)
+                const reviewsData = await reviewsRes.json()
+                if (reviewsData.success) {
+                    setReviews(reviewsData.reviews)
+                    setAverageRating(reviewsData.averageRating)
+                    setTotalReviews(reviewsData.totalReviews)
+                    // Update product rating
+                    if (product) {
+                        setProduct({ ...product, rating: reviewsData.averageRating })
+                    }
+                }
+                setEditingReviewId(null)
+                setEditingRating(0)
+                setEditingComment('')
+                alert('კომენტარი წარმატებით განახლდა')
+            } else {
+                alert(data.error || 'შეცდომა კომენტარის განახლებისას')
+            }
+        } catch (error) {
+            console.error('Error updating review:', error)
+            alert('შეცდომა კომენტარის განახლებისას')
+        } finally {
+            setSubmittingReview(false)
+        }
+    }
+
+    const handleDeleteReview = async (reviewId: number) => {
+        if (!session) return
+        if (!confirm('დარწმუნებული ხართ რომ გსურთ კომენტარის წაშლა?')) {
+            return
+        }
+        try {
+            setDeletingReviewId(reviewId)
+            const response = await fetch(`/api/products/${productId}/reviews?reviewId=${reviewId}`, {
+                method: 'DELETE',
+            })
+            const data = await response.json()
+            
+            if (data.success) {
+                // Refresh reviews
+                const reviewsRes = await fetch(`/api/products/${productId}/reviews`)
+                const reviewsData = await reviewsRes.json()
+                if (reviewsData.success) {
+                    setReviews(reviewsData.reviews)
+                    setAverageRating(reviewsData.averageRating)
+                    setTotalReviews(reviewsData.totalReviews)
+                    // Update product rating
+                    if (product) {
+                        setProduct({ ...product, rating: reviewsData.averageRating })
+                    }
+                }
+                alert('კომენტარი წარმატებით წაიშალა')
+            } else {
+                alert(data.error || 'შეცდომა კომენტარის წაშლისას')
+            }
+        } catch (error) {
+            console.error('Error deleting review:', error)
+            alert('შეცდომა კომენტარის წაშლისას')
+        } finally {
+            setDeletingReviewId(null)
+        }
+    }
+
+    const handleReplyToReview = (reviewId: number, existingReply?: { comment: string }) => {
+        setReplyingToReviewId(reviewId)
+        setReplyComment(existingReply?.comment || '')
+    }
+
+    const handleCancelReply = () => {
+        setReplyingToReviewId(null)
+        setReplyComment('')
+    }
+
+    const handleSubmitReply = async () => {
+        if (!session || !replyingToReviewId) return
+        if (!replyComment.trim()) {
+            alert('გთხოვთ შეიყვანოთ პასუხი')
+            return
+        }
+        try {
+            setSubmittingReply(true)
+            const response = await fetch(`/api/products/${productId}/reviews/reply`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    reviewId: replyingToReviewId,
+                    comment: replyComment,
+                }),
+            })
+            const data = await response.json()
+            
+            if (data.success) {
+                // Refresh reviews
+                const reviewsRes = await fetch(`/api/products/${productId}/reviews`)
+                const reviewsData = await reviewsRes.json()
+                if (reviewsData.success) {
+                    setReviews(reviewsData.reviews)
+                    setAverageRating(reviewsData.averageRating)
+                    setTotalReviews(reviewsData.totalReviews)
+                }
+                setReplyingToReviewId(null)
+                setReplyComment('')
+                alert('პასუხი წარმატებით დაემატა')
+            } else {
+                alert(data.error || 'შეცდომა პასუხის დამატებისას')
+            }
+        } catch (error) {
+            console.error('Error submitting reply:', error)
+            alert('შეცდომა პასუხის დამატებისას')
+        } finally {
+            setSubmittingReply(false)
+        }
+    }
+
+    const handleDeleteReply = async (reviewId: number) => {
+        if (!session) return
+        if (!confirm('დარწმუნებული ხართ რომ გსურთ პასუხის წაშლა?')) {
+            return
+        }
+        try {
+            setDeletingReplyId(reviewId)
+            const response = await fetch(`/api/products/${productId}/reviews/reply?reviewId=${reviewId}`, {
+                method: 'DELETE',
+            })
+            const data = await response.json()
+            
+            if (data.success) {
+                // Refresh reviews
+                const reviewsRes = await fetch(`/api/products/${productId}/reviews`)
+                const reviewsData = await reviewsRes.json()
+                if (reviewsData.success) {
+                    setReviews(reviewsData.reviews)
+                    setAverageRating(reviewsData.averageRating)
+                    setTotalReviews(reviewsData.totalReviews)
+                }
+                alert('პასუხი წარმატებით წაიშალა')
+            } else {
+                alert(data.error || 'შეცდომა პასუხის წაშლისას')
+            }
+        } catch (error) {
+            console.error('Error deleting reply:', error)
+            alert('შეცდომა პასუხის წაშლისას')
+        } finally {
+            setDeletingReplyId(null)
         }
     }
 
@@ -1026,39 +1222,192 @@ const ProductPage = () => {
                             </div>
                         ) : (
                             <div className="space-y-6">
-                                {reviews.map((review) => (
-                                    <div key={review.id} className="border-b border-gray-200 pb-6 last:border-b-0">
-                                        <div className="flex items-start justify-between mb-2">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
-                                                    {review.user.image ? (
-                                                        <img
-                                                            src={review.user.image}
-                                                            alt={review.user.name || 'User'}
-                                                            className="w-full h-full object-cover"
-                                                        />
-                                                    ) : (
-                                                        <span className="text-gray-600 font-semibold">
-                                                            {review.user.name?.[0]?.toUpperCase() || 'U'}
-                                                        </span>
+                                {reviews.map((review) => {
+                                    const isOwnReview = session?.user?.id === review.user.id
+                                    const isAdmin = session?.user?.role === 'ADMIN'
+                                    const isEditing = editingReviewId === review.id
+                                    const isReplying = replyingToReviewId === review.id
+                                    
+                                    return (
+                                        <div key={review.id} className="border-b border-gray-200 pb-6 last:border-b-0">
+                                            <div className="flex items-start justify-between mb-2">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+                                                        {review.user.image ? (
+                                                            <img
+                                                                src={review.user.image}
+                                                                alt={review.user.name || 'User'}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                        ) : (
+                                                            <span className="text-gray-600 font-semibold">
+                                                                {review.user.name?.[0]?.toUpperCase() || 'U'}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <div className="font-semibold text-black">
+                                                            {review.user.name || 'ანონიმური მომხმარებელი'}
+                                                        </div>
+                                                        <div className="text-sm text-gray-500">
+                                                            {new Date(review.createdAt).toLocaleDateString('ka-GE')}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <StarRating rating={review.rating} readonly size="sm" />
+                                                    {(isOwnReview || isAdmin) && !isEditing && (
+                                                        <div className="flex gap-2 ml-2">
+                                                            {isOwnReview && (
+                                                                <button
+                                                                    onClick={() => handleEditReview(review)}
+                                                                    className="p-1 text-gray-600 hover:text-[#1B3729] transition-colors"
+                                                                    title="რედაქტირება"
+                                                                >
+                                                                    <Edit className="w-4 h-4" />
+                                                                </button>
+                                                            )}
+                                                            {(isOwnReview || isAdmin) && (
+                                                                <button
+                                                                    onClick={() => handleDeleteReview(review.id)}
+                                                                    disabled={deletingReviewId === review.id}
+                                                                    className="p-1 text-gray-600 hover:text-red-600 transition-colors disabled:opacity-50"
+                                                                    title="წაშლა"
+                                                                >
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </button>
+                                                            )}
+                                                        </div>
                                                     )}
                                                 </div>
-                                                <div>
-                                                    <div className="font-semibold text-black">
-                                                        {review.user.name || 'ანონიმური მომხმარებელი'}
+                                            </div>
+                                            {isEditing ? (
+                                                <div className="mt-4 space-y-4 p-4 bg-gray-50 rounded-lg border">
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                            რეიტინგი *
+                                                        </label>
+                                                        <StarRating
+                                                            rating={editingRating}
+                                                            onRatingChange={(rating) => setEditingRating(rating)}
+                                                            size="md"
+                                                        />
                                                     </div>
-                                                    <div className="text-sm text-gray-500">
-                                                        {new Date(review.createdAt).toLocaleDateString('ka-GE')}
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                            კომენტარი
+                                                        </label>
+                                                        <textarea
+                                                            value={editingComment}
+                                                            onChange={(e) => setEditingComment(e.target.value)}
+                                                            placeholder="დაწერეთ თქვენი კომენტარი..."
+                                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                                                            rows={4}
+                                                        />
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={handleUpdateReview}
+                                                            disabled={submittingReview || editingRating === 0}
+                                                            className="px-4 py-2 bg-[#1B3729] text-white rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        >
+                                                            {submittingReview ? 'იგზავნება...' : 'შენახვა'}
+                                                        </button>
+                                                        <button
+                                                            onClick={handleCancelEdit}
+                                                            disabled={submittingReview}
+                                                            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        >
+                                                            გაუქმება
+                                                        </button>
                                                     </div>
                                                 </div>
-                                            </div>
-                                            <StarRating rating={review.rating} readonly size="sm" />
+                                            ) : (
+                                                <>
+                                                    {review.comment && (
+                                                        <p className="text-gray-700 mt-3">{review.comment}</p>
+                                                    )}
+                                                    
+                                                    {/* Admin Reply Section */}
+                                                    {isAdmin && !isReplying && (
+                                                        <div className="mt-4">
+                                                            {review.reply ? (
+                                                                <div className="ml-6 pl-4 border-l-2 border-[#1B3729] bg-gray-50 rounded-lg p-4">
+                                                                    <div className="flex items-start justify-between mb-2">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="text-xs font-semibold text-[#1B3729] bg-[#1B3729]/10 px-2 py-1 rounded">
+                                                                                ადმინისტრატორი
+                                                                            </span>
+                                                                            <span className="text-sm text-gray-500">
+                                                                                {new Date(review.reply.createdAt).toLocaleDateString('ka-GE')}
+                                                                            </span>
+                                                                        </div>
+                                                                        <button
+                                                                            onClick={() => handleDeleteReply(review.id)}
+                                                                            disabled={deletingReplyId === review.id}
+                                                                            className="p-1 text-gray-600 hover:text-red-600 transition-colors disabled:opacity-50"
+                                                                            title="პასუხის წაშლა"
+                                                                        >
+                                                                            <Trash2 className="w-3 h-3" />
+                                                                        </button>
+                                                                    </div>
+                                                                    <p className="text-gray-700">{review.reply.comment}</p>
+                                                                    <button
+                                                                        onClick={() => handleReplyToReview(review.id, { comment: review.reply!.comment })}
+                                                                        className="mt-2 text-sm text-[#1B3729] hover:underline"
+                                                                    >
+                                                                        რედაქტირება
+                                                                    </button>
+                                                                </div>
+                                                            ) : (
+                                                                <button
+                                                                    onClick={() => handleReplyToReview(review.id)}
+                                                                    className="mt-2 text-sm text-[#1B3729] hover:underline font-medium"
+                                                                >
+                                                                    პასუხის გაცემა
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                    
+                                                    {/* Reply Form */}
+                                                    {isReplying && (
+                                                        <div className="mt-4 ml-6 pl-4 border-l-2 border-[#1B3729] bg-gray-50 rounded-lg p-4">
+                                                            <div className="mb-2">
+                                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                                    პასუხი
+                                                                </label>
+                                                                <textarea
+                                                                    value={replyComment}
+                                                                    onChange={(e) => setReplyComment(e.target.value)}
+                                                                    placeholder="დაწერეთ პასუხი..."
+                                                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1B3729] focus:border-transparent"
+                                                                    rows={3}
+                                                                />
+                                                            </div>
+                                                            <div className="flex gap-2">
+                                                                <button
+                                                                    onClick={handleSubmitReply}
+                                                                    disabled={submittingReply || !replyComment.trim()}
+                                                                    className="px-4 py-2 bg-[#1B3729] text-white rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                >
+                                                                    {submittingReply ? 'იგზავნება...' : 'პასუხის გაგზავნა'}
+                                                                </button>
+                                                                <button
+                                                                    onClick={handleCancelReply}
+                                                                    disabled={submittingReply}
+                                                                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                >
+                                                                    გაუქმება
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </>
+                                            )}
                                         </div>
-                                        {review.comment && (
-                                            <p className="text-gray-700 mt-3">{review.comment}</p>
-                                        )}
-                                    </div>
-                                ))}
+                                    )
+                                })}
                             </div>
                         )}
                     </div>

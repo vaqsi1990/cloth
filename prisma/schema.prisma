@@ -121,6 +121,7 @@ model User {
   
   // Reviews
   reviews       Review[]
+  reviewReplies ReviewReply[] @relation("ReviewReplies")
 }
 
 model Account {
@@ -214,8 +215,24 @@ model Review {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   
+  reply     ReviewReply? // Admin reply to this review
+  
   @@unique([productId, userId]) // One review per user per product
   @@index([productId])
+  @@index([userId])
+}
+
+model ReviewReply {
+  id        Int      @id @default(autoincrement())
+  reviewId  Int      @unique
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  userId    String   // Admin user ID
+  user      User     @relation("ReviewReplies", fields: [userId], references: [id], onDelete: Cascade)
+  comment   String   // Admin reply comment
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([reviewId])
   @@index([userId])
 }
 
