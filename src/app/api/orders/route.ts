@@ -34,12 +34,15 @@ const orderSchema = z.object({
 // POST - Create new order
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions)
+    
     const body = await request.json()
     
     // Validate the request body
     const validatedData = orderSchema.parse(body)
     
     console.log('Creating order with data:', validatedData)
+    console.log('Session user ID:', session?.user?.id)
     
     // Validate rental dates don't conflict with existing rentals
     for (const item of validatedData.items) {
@@ -144,6 +147,7 @@ export async function POST(request: NextRequest) {
         paymentMethod: validatedData.paymentMethod,
         total: total,
         status: 'PENDING',
+        userId: session?.user?.id || null, // Set userId if user is logged in
         // Create order items
         items: {
           create: validatedData.items.map(item => ({
@@ -234,9 +238,22 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Fetch orders by userId OR by email/phone if userId is null (for old orders)
     const orders = await prisma.order.findMany({
       where: {
-        userId: session.user.id
+        OR: [
+          {
+            userId: session.user.id
+          },
+          // Fallback: check by email or phone if userId is null
+          {
+            userId: null,
+            OR: [
+              { email: session.user.email || undefined },
+              { phone: session.user.phone || undefined },
+            ],
+          },
+        ],
       },
       include: {
         items: {

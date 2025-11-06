@@ -225,16 +225,24 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
+    const productIdParam = searchParams.get('productId')
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
     const skip = (page - 1) * limit
 
-    const whereClause: { userId: string; status?: RentalStatus } = {
+    const whereClause: { userId: string; status?: RentalStatus; productId?: number } = {
       userId: session.user.id
     }
 
     if (status) {
       whereClause.status = status as RentalStatus
+    }
+
+    if (productIdParam) {
+      const productId = parseInt(productIdParam)
+      if (!isNaN(productId)) {
+        whereClause.productId = productId
+      }
     }
 
     const rentals = await prisma.rental.findMany({

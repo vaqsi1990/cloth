@@ -70,9 +70,9 @@ const SignInPage = () => {
             ან{' '}
             <Link
               href="/auth/signup"
-              className="text-lg text-black max-w-2xl mx-auto"
+            className="text-[16px] text-blue-700  hover:text-[#1B3729]"
             >
-              შექმენით ახალი ანგარიში
+             დარეგისტრირდი
             </Link>
           </p>
         </div>
@@ -135,7 +135,7 @@ const SignInPage = () => {
 
           {/* Password recovery */}
           <div className="text-center mt-2">
-            <Link href="/auth/forgot-password" className="text-[16px] text-blue-700 underline hover:text-blue-900">
+            <Link href="/auth/forgot-password" className="text-[16px] text-blue-700 hover:text-[#1B3729]">
               დაგავიწყდა პაროლი? აღადგინე
             </Link>
           </div>

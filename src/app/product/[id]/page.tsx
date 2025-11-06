@@ -19,6 +19,7 @@ import { useSession } from 'next-auth/react';
 import { Product, RentalPeriod } from "@/types/product"
 import { formatDate } from "@/utils/dateUtils"
 import SimilarProducts from "@/components/SimilarProducts"
+import StarRating from "@/components/StarRating"
 
 type Tier = { minDays: number; pricePerDay: number }
 
@@ -57,6 +58,22 @@ const ProductPage = () => {
     const [rentalEndDate, setRentalEndDate] = useState("")
     const [isAdding, setIsAdding] = useState(false)
     const [userVerification, setUserVerification] = useState<{ status?: 'PENDING' | 'APPROVED' | 'REJECTED' } | null>(null);
+    
+    // Reviews state
+    const [reviews, setReviews] = useState<Array<{
+      id: number
+      rating: number
+      comment: string | null
+      createdAt: string
+      user: { id: string; name: string | null; image: string | null }
+    }>>([])
+    const [averageRating, setAverageRating] = useState(0)
+    const [totalReviews, setTotalReviews] = useState(0)
+    const [loadingReviews, setLoadingReviews] = useState(false)
+    const [reviewRating, setReviewRating] = useState(0)
+    const [reviewComment, setReviewComment] = useState('')
+    const [submittingReview, setSubmittingReview] = useState(false)
+    const [canReview, setCanReview] = useState(false)
 
     // Auto-switch to rent mode if product is rented
     useEffect(() => {
@@ -84,6 +101,14 @@ const ProductPage = () => {
                 if (pJson?.success) {
                     setProduct(pJson.product)
                     setError(null)
+                    
+                    // Debug logging for product
+                    console.log('=== Product Loaded ===')
+                    console.log('Product ID:', productId)
+                    console.log('Product Status:', pJson.product.status)
+                    console.log('Product Name:', pJson.product.name)
+                    console.log('Product User ID (owner):', pJson.product.userId)
+                    console.log('=== End Product Load ===')
                 } else {
                     setError(pJson?.message || 'პროდუქტი ვერ მოიძებნა')
                     setProduct(null)
@@ -113,10 +138,151 @@ const ProductPage = () => {
             fetch('/api/user/verification')
                 .then((r) => r.json())
                 .then((d) => setUserVerification(d.verification || null));
+            
+            // Debug: Log current user info
+            console.log('=== Current User Info ===')
+            console.log('User ID:', session.user.id)
+            console.log('User Name:', session.user.name)
+            console.log('User Email:', session.user.email)
+            console.log('=== End User Info ===')
         } else {
             setUserVerification(null);
+            console.log('No user session - user not logged in')
         }
     }, [session?.user?.id]);
+
+    // Fetch reviews
+    useEffect(() => {
+        const fetchReviews = async () => {
+            if (!productId) return
+            try {
+                setLoadingReviews(true)
+                const response = await fetch(`/api/products/${productId}/reviews`)
+                const data = await response.json()
+                if (data.success) {
+                    setReviews(data.reviews)
+                    setAverageRating(data.averageRating)
+                    setTotalReviews(data.totalReviews)
+                    setCanReview(data.canReview || false)
+                    
+                    // Debug logging for rental check
+                    console.log('=== Review Fetch Debug ===')
+                    console.log('Product ID:', productId)
+                    console.log('Current User ID:', session?.user?.id)
+                    console.log('Can Review:', data.canReview)
+                    console.log('Product Status:', product?.status)
+                    
+                    // Fetch rental information for current user
+                    if (session?.user?.id) {
+                        try {
+                            // Check Rental table
+                            const rentalRes = await fetch(`/api/rental?productId=${productId}`)
+                            const rentalData = await rentalRes.json()
+                            console.log('User Rentals (Rental table) for this product:', rentalData.rentals || rentalData)
+                            
+                            // Also check ALL rentals for this user (not filtered by productId)
+                            const allRentalsRes = await fetch(`/api/rental`)
+                            const allRentalsData = await allRentalsRes.json()
+                            console.log('ALL User Rentals:', allRentalsData.rentals || allRentalsData)
+                            
+                            // Also check OrderItems
+                            const orderRes = await fetch(`/api/orders`)
+                            const orderData = await orderRes.json()
+                            if (orderData.success && orderData.orders) {
+                                console.log('ALL User Orders:', orderData.orders)
+                                const orderItemsForProduct = orderData.orders
+                                    .flatMap((order: any) => order.items || [])
+                                    .filter((item: any) => item.productId === parseInt(productId))
+                                console.log('User OrderItems for this product:', orderItemsForProduct)
+                                console.log('OrderItems with isRental=true:', orderItemsForProduct.filter((item: any) => item.isRental))
+                                
+                                // Check order statuses
+                                const ordersWithProduct = orderData.orders.filter((order: any) => 
+                                    order.items?.some((item: any) => item.productId === parseInt(productId))
+                                )
+                                console.log('Orders containing this product:', ordersWithProduct.map((o: any) => ({
+                                    orderId: o.id,
+                                    status: o.status,
+                                    items: o.items?.filter((item: any) => item.productId === parseInt(productId))
+                                })))
+                            }
+                        } catch (e) {
+                            console.log('Could not fetch rental info:', e)
+                        }
+                    }
+                    console.log('=== End Review Fetch Debug ===')
+                }
+            } catch (error) {
+                console.error('Error fetching reviews:', error)
+            } finally {
+                setLoadingReviews(false)
+            }
+        }
+        fetchReviews()
+    }, [productId, session?.user?.id, product?.status])
+
+    // Check if user has already reviewed
+    useEffect(() => {
+        if (session?.user?.id && reviews.length > 0) {
+            const userReview = reviews.find(r => r.user.id === session.user.id)
+            if (userReview) {
+                setReviewRating(userReview.rating)
+                setReviewComment(userReview.comment || '')
+            }
+        }
+    }, [session?.user?.id, reviews])
+
+    const handleSubmitReview = async () => {
+        console.log('Submit review clicked:', { canReview, reviewRating, session: !!session })
+        
+        if (!session) {
+            alert('გთხოვთ შეხვიდეთ სისტემაში კომენტარის დასაწერად')
+            return
+        }
+        if (reviewRating === 0) {
+            alert('გთხოვთ აირჩიოთ რეიტინგი')
+            return
+        }
+        try {
+            setSubmittingReview(true)
+            const response = await fetch(`/api/products/${productId}/reviews`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    rating: reviewRating,
+                    comment: reviewComment || undefined,
+                }),
+            })
+            const data = await response.json()
+            console.log('Review submit response:', data)
+            
+            if (data.success) {
+                // Refresh reviews
+                const reviewsRes = await fetch(`/api/products/${productId}/reviews`)
+                const reviewsData = await reviewsRes.json()
+                if (reviewsData.success) {
+                    setReviews(reviewsData.reviews)
+                    setAverageRating(reviewsData.averageRating)
+                    setTotalReviews(reviewsData.totalReviews)
+                    setCanReview(reviewsData.canReview || false) // Update canReview after submission
+                    // Update product rating
+                    if (product) {
+                        setProduct({ ...product, rating: reviewsData.averageRating })
+                    }
+                }
+                setReviewRating(0) // Reset rating
+                setReviewComment('')
+                alert('კომენტარი წარმატებით დაემატა')
+            } else {
+                alert(data.error || 'შეცდომა კომენტარის დამატებისას')
+            }
+        } catch (error) {
+            console.error('Error submitting review:', error)
+            alert('შეცდომა კომენტარის დამატებისას')
+        } finally {
+            setSubmittingReview(false)
+        }
+    }
 
     // -------------------------
     // Helpers
@@ -887,6 +1053,133 @@ const ProductPage = () => {
                             </div>
                         </div>
                     </section>
+                </div>
+
+                {/* Reviews Section */}
+                <div className="mt-12">
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                        <h2 className="text-2xl font-bold text-black mb-6">კომენტარები და რეიტინგები</h2>
+                        
+                        {/* Average Rating */}
+                        <div className="flex items-center gap-4 mb-6 pb-6 border-b">
+                            <div className="text-center">
+                                <div className="text-4xl font-bold text-black">{averageRating.toFixed(1)}</div>
+                                <StarRating rating={Math.round(averageRating)} readonly size="lg" />
+                                <div className="text-sm text-gray-600 mt-1">{totalReviews} კომენტარი</div>
+                            </div>
+                        </div>
+
+                        {/* Review Form */}
+                        {session ? (
+                            canReview ? (
+                                <div className="mb-8 pb-8 border-b">
+                                    <h3 className="text-lg font-semibold text-black mb-4">დაწერეთ კომენტარი</h3>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                რეიტინგი *
+                                            </label>
+                                            <StarRating
+                                                rating={reviewRating}
+                                                onRatingChange={(rating) => {
+                                                    console.log('Rating changed:', rating)
+                                                    setReviewRating(rating)
+                                                }}
+                                                size="md"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                კომენტარი
+                                            </label>
+                                            <textarea
+                                                value={reviewComment}
+                                                onChange={(e) => setReviewComment(e.target.value)}
+                                                placeholder="დაწერეთ თქვენი კომენტარი..."
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                                                rows={4}
+                                            />
+                                        </div>
+                                        <button
+                                            onClick={handleSubmitReview}
+                                            disabled={submittingReview || reviewRating === 0}
+                                            className="px-6 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {submittingReview ? 'იგზავნება...' : 'კომენტარის დამატება'}
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="mb-8 pb-8 border-b">
+                                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                        <p className="text-yellow-800 text-sm">
+                                            კომენტარის დაწერა შეგიძლიათ მხოლოდ იმ პროდუქტებზე, რომლებიც იქირავეთ.
+                                        </p>
+                                    </div>
+                                </div>
+                            )
+                        ) : (
+                            <div className="mb-8 pb-8 border-b">
+                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                    <p className="text-gray-700 text-sm">
+                                        კომენტარის დასაწერად გთხოვთ{' '}
+                                        <Link href="/auth/signin" className="text-[#1B3729] font-semibold underline">
+                                            შეხვიდეთ სისტემაში
+                                        </Link>
+                                        {' '}და იქირაოთ პროდუქტი.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Reviews List */}
+                        {loadingReviews ? (
+                            <div className="text-center py-8">
+                                <div className="w-8 h-8 border-4 border-gray-300 border-t-black rounded-full animate-spin mx-auto"></div>
+                                <p className="text-gray-600 mt-2">იტვირთება...</p>
+                            </div>
+                        ) : reviews.length === 0 ? (
+                            <div className="text-center py-8">
+                                <p className="text-gray-600">ჯერ არ არის კომენტარები</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-6">
+                                {reviews.map((review) => (
+                                    <div key={review.id} className="border-b border-gray-200 pb-6 last:border-b-0">
+                                        <div className="flex items-start justify-between mb-2">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+                                                    {review.user.image ? (
+                                                        <img
+                                                            src={review.user.image}
+                                                            alt={review.user.name || 'User'}
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        <span className="text-gray-600 font-semibold">
+                                                            {review.user.name?.[0]?.toUpperCase() || 'U'}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <div className="font-semibold text-black">
+                                                        {review.user.name || 'ანონიმური მომხმარებელი'}
+                                                    </div>
+                                                    <div className="text-sm text-gray-500">
+                                                        {new Date(review.createdAt).toLocaleDateString('ka-GE')}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <StarRating rating={review.rating} readonly size="sm" />
+                                        </div>
+                                        {review.comment && (
+                                            <p className="text-gray-700 mt-3">{review.comment}</p>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* Similar Products */}

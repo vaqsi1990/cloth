@@ -52,7 +52,7 @@ const AccountPage = () => {
   } | null>(null)
   const [verifLoading, setVerifLoading] = useState(false)
   const [savingVerification, setSavingVerification] = useState(false)
-  
+
   // Load uploaded images from localStorage on mount
   const [idFrontUrl, setIdFrontUrl] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
@@ -121,7 +121,7 @@ const AccountPage = () => {
           alert(d.user.banReason ? `თქვენი ანგარიში დაბლოკილია: ${d.user.banReason}` : 'თქვენი ანგარიში დაბლოკილია')
           router.push('/')
         }
-      }).catch(() => {})
+      }).catch(() => { })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id])
@@ -129,12 +129,12 @@ const AccountPage = () => {
   const fetchUserStats = async () => {
     try {
       setLoading(true)
-      
+
       // Fetch user orders
       const ordersResponse = await fetch('/api/user/orders')
       const ordersData = await ordersResponse.json()
       const ordersCount = ordersData.success ? ordersData.orders.length : 0
-      const totalSpent = ordersData.success 
+      const totalSpent = ordersData.success
         ? ordersData.orders.reduce((sum: number, order: Order) => sum + order.total, 0)
         : 0
 
@@ -152,12 +152,12 @@ const AccountPage = () => {
       console.error('Error fetching user stats:', error)
     } finally {
       setLoading(false)
-      }
     }
+  }
 
   const handleImageUpload = async (urls: string[]) => {
     if (urls.length === 0) return
-    
+
     setIsUploadingImage(true)
     try {
       console.log('Uploading image:', urls[0])
@@ -166,7 +166,7 @@ const AccountPage = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           name: session?.user?.name || '',
           email: session?.user?.email || '',
           phone: (session?.user as { phone?: string })?.phone || '',
@@ -180,7 +180,7 @@ const AccountPage = () => {
 
       if (response.ok && result.success) {
         setProfileImage(urls[0])
-        
+
         // Update the session with new image
         await update({
           image: urls[0],
@@ -189,7 +189,7 @@ const AccountPage = () => {
           phone: (session?.user as { phone?: string })?.phone || '',
           location: (session?.user as { location?: string })?.location || '',
         })
-        
+
         alert('პროფილის სურათი წარმატებით განახლდა!')
         setIsEditingProfile(false)
       } else {
@@ -370,7 +370,7 @@ const AccountPage = () => {
 
       if (response.ok) {
         // Update product status in the list
-        setProducts(products.map(p => 
+        setProducts(products.map(p =>
           p.id === productId ? { ...p, status: newStatus } : p
         ))
       } else {
@@ -378,7 +378,7 @@ const AccountPage = () => {
       }
     } catch (error) {
       console.error('Error updating status:', error)
-        alert('შეცდომა სტატუსის შეცვლისას')
+      alert('შეცდომა სტატუსის შეცვლისას')
     }
   }
 
@@ -488,11 +488,11 @@ const AccountPage = () => {
                 <p className="text-sm text-black">მისამართი</p>
                 <p className="font-medium">{(session.user as { location?: string })?.location ?? '-'}</p>
               </div>
-             
+
             </div>
-            
+
           </div>
-         
+
         </div>
 
         {/* Verification Section for non-admin users - only show if not approved */}
@@ -505,13 +505,12 @@ const AccountPage = () => {
             ) : (
               <>
                 <div className="mb-3">
-                  <span className={`inline-block px-3 py-1 text-sm rounded-full ${
-                    ['APPROVED'].includes(verification?.status ?? '')
+                  <span className={`inline-block px-3 py-1 text-sm rounded-full ${['APPROVED'].includes(verification?.status ?? '')
                       ? 'bg-green-100 text-green-800'
                       : ['REJECTED'].includes(verification?.status ?? '')
-                      ? 'bg-red-100 text-red-800'
-                      : 'bg-yellow-100 text-yellow-800'
-                  }`}>
+                        ? 'bg-red-100 text-red-800'
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}>
                     სტატუსი: {getVerificationStatusLabel(verification?.status)}
                   </span>
                 </div>
@@ -541,7 +540,7 @@ const AccountPage = () => {
             )}
           </div>
         )}
-        
+
       </div>
       {session.user.role !== 'ADMIN' && session.user.verificationStatus == 'APPROVED' && (
         <h1 className="text-green-500">პირადობა დამტკიცებულია</h1>
@@ -581,7 +580,7 @@ const AccountPage = () => {
     <div className="space-y-6">
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <h3 className="text-lg font-bold text-black mb-6">შეკვეთების ისტორია</h3>
-        
+
         {loadingOrders ? (
           <div className="text-center py-12">
             <div className="w-12 h-12 border-4 border-gray-300 border-t-[#1B3729] rounded-full animate-spin mx-auto mb-4"></div>
@@ -609,16 +608,15 @@ const AccountPage = () => {
                   </div>
                   <div className="text-right">
                     <p className="font-bold text-black">₾{order.total}</p>
-                    <span className={`inline-block px-2 py-1 text-xs rounded-full ${
-                      order.status === 'PAID' ? 'bg-green-100 text-green-800' :
-                      order.status === 'SHIPPED' ? 'bg-blue-100 text-blue-800' :
-                      'bg-gray-100 text-black'
-                    }`}>
+                    <span className={`inline-block px-2 py-1 text-xs rounded-full ${order.status === 'PAID' ? 'bg-green-100 text-green-800' :
+                        order.status === 'SHIPPED' ? 'bg-blue-100 text-blue-800' :
+                          'bg-gray-100 text-black'
+                      }`}>
                       {order.status}
                     </span>
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   {order.items?.map((item: { productName: string; size: string; price: number }, index: number) => (
                     <div key={index} className="flex items-center justify-between text-sm">
@@ -627,7 +625,7 @@ const AccountPage = () => {
                     </div>
                   ))}
                 </div>
-                
+
                 <div className="mt-4 pt-4 border-t border-black">
                   <button className="text-sm text-blue-600 hover:text-blue-800 font-medium">
                     დეტალების ნახვა
@@ -654,24 +652,7 @@ const AccountPage = () => {
               <Search className="w-4 h-4" />
               <span>ძიება კოდის მიხედვით</span>
             </Link>
-            {session.user.role === 'ADMIN' || verification?.status === 'APPROVED' || session.user.verificationStatus === 'APPROVED' ? (
-              <Link
-                href="/account/products/new"
-                className="flex items-center space-x-2 px-4 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
-              >
-                <Package className="w-4 h-4" />
-                <span>ახალი პროდუქტი</span>
-              </Link>
-            ) : (
-              <button
-                disabled
-                className="flex items-center space-x-2 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg font-bold uppercase tracking-wide cursor-not-allowed"
-                title="ახალი პროდუქტის დამატება შესაძლებელია მხოლოდ ვერიფიცირებული ანგარიშისთვის"
-              >
-                <Package className="w-4 h-4" />
-                <span>ახალი პროდუქტი</span>
-              </button>
-            )}
+
           </div>
         </div>
         {session.user.role !== 'ADMIN' && verification?.status !== 'APPROVED' && session.user.verificationStatus !== 'APPROVED' && (
@@ -685,7 +666,7 @@ const AccountPage = () => {
             პირადობა დამტკიცებულია
           </div>
         )}
-        
+
         {loadingProducts ? (
           <div className="text-center py-12">
             <div className="w-12 h-12 border-4 border-gray-300 border-t-[#1B3729] rounded-full animate-spin mx-auto mb-4"></div>
@@ -695,12 +676,24 @@ const AccountPage = () => {
           <div className="text-center py-8">
             <Package className="w-12 h-12 text-black mx-auto mb-4" />
             <p className="text-black">ჯერ არ გაქვთ პროდუქტები</p>
-            <Link
-              href="/account/products/new"
-              className="inline-block mt-4 px-6 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
-            >
-              პირველი პროდუქტის დამატება
-            </Link>
+            {session.user.role === 'ADMIN' || verification?.status === 'APPROVED' || session.user.verificationStatus === 'APPROVED' ? (
+              <Link
+                href="/account/products/new"
+                className="flex w-full md:w-[30%] justify-center mx-auto mt-5 items-center space-x-2 px-4 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
+              >
+                <Package className="w-4 h-4" />
+                <span>ახალი პროდუქტი</span>
+              </Link>
+            ) : (
+              <button
+                disabled 
+                className="flex justify-center mt-5 mx-auto items-center space-x-2 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg font-bold uppercase tracking-wide cursor-not-allowed"
+                title="ახალი პროდუქტის დამატება შესაძლებელია მხოლოდ ვერიფიცირებული ანგარიშისთვის"
+              >
+                <Package className="w-4 h-4" />
+                <span>ახალი პროდუქტი</span>
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -713,48 +706,47 @@ const AccountPage = () => {
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute top-2 right-2">
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      product.status === 'AVAILABLE' ? 'bg-green-100 text-green-800' :
-                      product.status === 'RENTED' ? 'bg-blue-100 text-blue-800' :
-                      product.status === 'RESERVED' ? 'bg-yellow-100 text-yellow-800' :
-                      product.status === 'MAINTENANCE' ? 'bg-red-100 text-red-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
+                    <span className={`px-2 py-1 text-xs rounded-full ${product.status === 'AVAILABLE' ? 'bg-green-100 text-green-800' :
+                        product.status === 'RENTED' ? 'bg-blue-100 text-blue-800' :
+                          product.status === 'RESERVED' ? 'bg-yellow-100 text-yellow-800' :
+                            product.status === 'MAINTENANCE' ? 'bg-red-100 text-red-800' :
+                              'bg-gray-100 text-gray-800'
+                      }`}>
                       {getStatusLabel(product.status)}
                     </span>
                   </div>
                 </div>
-                
+
                 <div className="p-4">
-                      <h4 className="font-semibold text-black mb-2">{product.name}</h4>
-                      {product.sku && (
-                        <div className="mb-2">
-                          <span className="text-xs font-mono px-2 py-1 rounded text-gray-700 bg-gray-100">
-                            კოდი: {product.sku}
-                          </span>
-                        </div>
-                      )}
+                  <h4 className="font-semibold text-black mb-2">{product.name}</h4>
+                  {product.sku && (
+                    <div className="mb-2">
+                      <span className="text-xs font-mono px-2 py-1 rounded text-gray-700 bg-gray-100">
+                        კოდი: {product.sku}
+                      </span>
+                    </div>
+                  )}
                   <p className="text-lg font-bold text-black mb-2">
                     {(() => {
                       if (!product.variants || product.variants.length === 0) return '₾0.00'
-                      
+
                       const variantPrices = product.variants as Array<{ price: number; size: string; stock: number; id: number }>
                       const prices = variantPrices
                         .filter((v: { price: number; size: string; stock: number; id: number }) => typeof v.price === 'number')
                         .map((v: { price: number }) => v.price)
-                      
+
                       if (prices.length === 0) return '₾0.00'
-                      
+
                       const minPrice = Math.min(...prices)
                       const maxPrice = Math.max(...prices)
-                      
-                      return minPrice === maxPrice 
-                        ? `₾${minPrice.toFixed(2)}` 
+
+                      return minPrice === maxPrice
+                        ? `₾${minPrice.toFixed(2)}`
                         : `₾${minPrice.toFixed(2)} - ₾${maxPrice.toFixed(2)}`
                     })()}
                   </p>
                   <p className="text-sm text-black mb-3">დამატებული: {new Date(product.createdAt).toLocaleDateString('ka-GE')}</p>
-                  
+
                   <div className="mb-3">
                     <label className="block text-[16px] font-medium text-gray-700 mb-1">სტატუსი</label>
                     <select
@@ -768,7 +760,7 @@ const AccountPage = () => {
                       <option className="text-[16px]" value="MAINTENANCE">რესტავრაციაზეა</option>
                     </select>
                   </div>
-                  
+
                   <div className="mt-4 flex space-x-2">
                     <Link
                       href={`/account/products/${product.id}/edit`}
@@ -776,7 +768,7 @@ const AccountPage = () => {
                     >
                       რედაქტირება
                     </Link>
-                    <button 
+                    <button
                       onClick={() => handleDeleteProduct(product.id)}
                       className="flex-1 cursor-pointer px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm"
                     >
@@ -794,7 +786,7 @@ const AccountPage = () => {
 
   const handleDeleteProfile = async () => {
     const confirmMessage = 'ნამდვილად გსურთ თქვენი პროფილის გაუქმება?'
-    
+
     if (!confirm(confirmMessage)) {
       return
     }
@@ -833,17 +825,17 @@ const AccountPage = () => {
         {/* Profile edit form */}
         <ProfileSettingsForm />
       </div>
-      
+
       {/* Danger Zone */}
-        <button
-          onClick={handleDeleteProfile}
-          className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-        >
-          <Trash2 className="w-4 h-4" />
-          <span>პროფილის გაუქმება</span>
-        </button>
-    
-      
+      <button
+        onClick={handleDeleteProfile}
+        className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+      >
+        <Trash2 className="w-4 h-4" />
+        <span>პროფილის გაუქმება</span>
+      </button>
+
+
     </div>
   )
 
@@ -899,11 +891,10 @@ const AccountPage = () => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`w-full cursor-pointer flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                      activeTab === tab.id
+                    className={`w-full cursor-pointer flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${activeTab === tab.id
                         ? 'bg-[#1B3729] text-white'
                         : 'text-black '
-                    }`}
+                      }`}
                   >
                     <tab.icon className="w-5 h-5" />
                     <span>{tab.label}</span>
@@ -1087,7 +1078,7 @@ function ProfileSettingsForm() {
             <option value="">აირჩიეთ სქესი</option>
             <option value="MALE">კაცი</option>
             <option value="FEMALE">ქალი</option>
-           
+
           </select>
         </div>
 
