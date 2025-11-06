@@ -8,11 +8,11 @@ import Image from 'next/image'
 import { ArrowLeft, Search, Filter, Users, Mail, Calendar, Package, ShoppingCart, Trash2, UserCheck, UserX, Phone, User } from 'lucide-react'
 
 interface User {
-  personalId: string
-  phone: string
+  personalId: string | null
+  phone: string | null
   id: string
-  name: string
-  email: string
+  name: string | null
+  email: string | null
   role: string
   banned?: boolean
   banReason?: string | null
@@ -160,8 +160,19 @@ const AdminUsersPage = () => {
   }
 
   const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase())
+    if (searchTerm === '') {
+      // If no search term, show all users
+      const matchesRole = filterRole === 'ALL' || user.role === filterRole
+      return matchesRole
+    }
+    
+    const searchLower = searchTerm.toLowerCase()
+    const nameMatch = user.name ? user.name.toLowerCase().includes(searchLower) : false
+    const emailMatch = user.email ? user.email.toLowerCase().includes(searchLower) : false
+    const personalIdMatch = user.personalId ? user.personalId.toLowerCase().includes(searchLower) : false
+    const phoneMatch = user.phone ? user.phone.toLowerCase().includes(searchLower) : false
+    
+    const matchesSearch = nameMatch || emailMatch || personalIdMatch || phoneMatch
     const matchesRole = filterRole === 'ALL' || user.role === filterRole
     
     return matchesSearch && matchesRole
@@ -279,7 +290,9 @@ const AdminUsersPage = () => {
                       
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-1">
-                          <h3 className="font-semibold text-gray-900">{user.name}</h3>
+                          <h3 className="font-semibold text-gray-900">
+                            {user.name || (user.personalId ? `წაშლილი მომხმარებელი (${user.personalId})` : 'წაშლილი მომხმარებელი')}
+                          </h3>
                           <span className={`px-2 py-1 text-xs rounded-full ${
                             user.role === 'ADMIN' 
                               ? 'bg-red-100 text-red-800' 
@@ -287,25 +300,36 @@ const AdminUsersPage = () => {
                           }`}>
                             {user.role === 'ADMIN' ? 'ადმინისტრატორი' : 'მომხმარებელი'}
                           </span>
+                          {(!user.name || !user.email) && (
+                            <span className="px-2 py-1 text-xs rounded-full bg-gray-200 text-gray-700">
+                              წაშლილი
+                            </span>
+                          )}
                         </div>
                         
                         <div className="flex items-center space-x-4 text-sm text-gray-600">
-                          <div className="flex items-center space-x-1">
-                            <Mail className="w-4 h-4" />
-                            <span>{user.email}</span>
-                          </div>
+                          {user.email && user.name && (
+                            <div className="flex items-center space-x-1">
+                              <Mail className="w-4 h-4" />
+                              <span>{user.email}</span>
+                            </div>
+                          )}
                           <div className="flex items-center space-x-1">
                             <Calendar className="w-4 h-4" />
                             <span>{new Date(user.createdAt).toLocaleDateString('ka-GE')}</span>
                           </div>
-                          <div className="flex items-center space-x-1">
-                            <User className="w-4 h-4" />
-                            <span>{user.personalId}</span>
-                          </div>
-                          <div className="flex items-center space-x-1">
-                            <Phone className="w-4 h-4" />
-                            <span>{user.phone}</span>
-                          </div>
+                          {user.personalId && (
+                            <div className="flex items-center space-x-1">
+                              <User className="w-4 h-4" />
+                              <span>{user.personalId}</span>
+                            </div>
+                          )}
+                          {user.phone && (
+                            <div className="flex items-center space-x-1">
+                              <Phone className="w-4 h-4" />
+                              <span>{user.phone}</span>
+                            </div>
+                          )}
                         </div>
                         
                         <div className="flex items-center space-x-4 text-xs text-gray-500 mt-1">
@@ -327,64 +351,68 @@ const AdminUsersPage = () => {
                       </div>
                     </div>
 
-                    {/* Actions */}
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleToggleRole(user.id, user.role)}
-                        className={`flex items-center space-x-1 px-3 py-2 rounded-lg text-[18px] transition-colors ${
-                          user.role === 'ADMIN'
-                            ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                            : 'bg-green-100 text-green-700 hover:bg-green-200'
-                        }`}
-                      >
-                        {user.role === 'ADMIN' ? (
-                          <>
-                            <UserX className="w-4 h-4" />
-                            <span>მომხმარებლად</span>
-                          </>
-                        ) : (
-                          <>
-                            <UserCheck className="w-4 h-4" />
-                            <span>ადმინად</span>
-                          </>
-                        )}
-                      </button>
-                      
-                      <button
-                        onClick={() => handleDeleteUser(user.id)}
-                        className="flex items-center space-x-1 px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-[18px]"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        <span>წაშლა</span>
-                      </button>
-                    </div>
+                    {/* Actions - Only show for non-deleted users */}
+                    {user.name && user.email && (
+                      <>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => handleToggleRole(user.id, user.role)}
+                            className={`flex items-center space-x-1 px-3 py-2 rounded-lg text-[18px] transition-colors ${
+                              user.role === 'ADMIN'
+                                ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                                : 'bg-green-100 text-green-700 hover:bg-green-200'
+                            }`}
+                          >
+                            {user.role === 'ADMIN' ? (
+                              <>
+                                <UserX className="w-4 h-4" />
+                                <span>მომხმარებლად</span>
+                              </>
+                            ) : (
+                              <>
+                                <UserCheck className="w-4 h-4" />
+                                <span>ადმინად</span>
+                              </>
+                            )}
+                          </button>
+                          
+                          <button
+                            onClick={() => handleDeleteUser(user.id)}
+                            className="flex items-center space-x-1 px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-[18px]"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            <span>წაშლა</span>
+                          </button>
+                        </div>
 
-                    {/* Ban status badge */}
-                    {user.banned && (
-                      <span className="ml-2 px-2 py-1 bg-red-600 text-white rounded text-[18px]">დაბლოკილი</span>
-                    )}
-                    {/* Ban/Unban buttons */}
-                    <div className="flex items-center gap-2 mt-2">
-                      {!user.banned ? (
-                        <BanUserInline user={user} setUsers={setUsers} />
-                      ) : (
-                        <button
-                          className="px-3 py-2 bg-gray-200 text-gray-800 rounded text-[18px] hover:bg-gray-300"
-                          onClick={async () => {
-                            const res = await fetch(`/api/admin/users/${user.id}/ban`, {
-                              method: 'PUT',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ banned: false })
-                            })
-                            if (res.ok) {
-                              setUsers(prev => prev.map(u => u.id === user.id ? { ...u, banned: false, banReason: null, bannedAt: null } : u))
-                            }
-                          }}
-                        >გაუქმება</button>
-                      )}
-                    </div>
-                    {user.banned && user.banReason && (
-                      <div className="mt-2 text-red-700 bg-red-50 border border-red-200 rounded p-2 text-[18px]">მიზეზი: {user.banReason}</div>
+                        {/* Ban status badge */}
+                        {user.banned && (
+                          <span className="ml-2 px-2 py-1 bg-red-600 text-white rounded text-[18px]">დაბლოკილი</span>
+                        )}
+                        {/* Ban/Unban buttons */}
+                        <div className="flex items-center gap-2 mt-2">
+                          {!user.banned ? (
+                            <BanUserInline user={user} setUsers={setUsers} />
+                          ) : (
+                            <button
+                              className="px-3 py-2 bg-gray-200 text-gray-800 rounded text-[18px] hover:bg-gray-300"
+                              onClick={async () => {
+                                const res = await fetch(`/api/admin/users/${user.id}/ban`, {
+                                  method: 'PUT',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ banned: false })
+                                })
+                                if (res.ok) {
+                                  setUsers(prev => prev.map(u => u.id === user.id ? { ...u, banned: false, banReason: null, bannedAt: null } : u))
+                                }
+                              }}
+                            >გაუქმება</button>
+                          )}
+                        </div>
+                        {user.banned && user.banReason && (
+                          <div className="mt-2 text-red-700 bg-red-50 border border-red-200 rounded p-2 text-[18px]">მიზეზი: {user.banReason}</div>
+                        )}
+                      </>
                     )}
                   </div>
 

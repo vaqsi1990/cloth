@@ -1,10 +1,10 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
+import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { User, Package, ShoppingCart, Settings, MapPin, Phone, Mail, Camera, MessageCircle, Search } from 'lucide-react'
+import { User, Package, ShoppingCart, Settings, MapPin, Phone, Mail, Camera, MessageCircle, Search, Trash2 } from 'lucide-react'
 import ImageUpload from '@/component/CloudinaryUploader'
 import ContactForm from '@/component/ContactForm'
 
@@ -792,6 +792,40 @@ const AccountPage = () => {
     </div>
   )
 
+  const handleDeleteProfile = async () => {
+    const confirmMessage = 'ნამდვილად გსურთ თქვენი პროფილის გაუქმება?'
+    
+    if (!confirm(confirmMessage)) {
+      return
+    }
+
+    // Double confirmation
+    const secondConfirm = prompt('გთხოვთ დაწეროთ "წაშლა" დასადასტურებლად:')
+    if (secondConfirm !== 'წაშლა') {
+      alert('პროფილის წაშლა გაუქმებულია')
+      return
+    }
+
+    try {
+      const response = await fetch('/api/user/profile', {
+        method: 'DELETE'
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        alert('თქვენი პროფილი წარმატებით წაიშალა')
+        // Sign out and redirect to home
+        await signOut({ callbackUrl: '/' })
+      } else {
+        alert(data.error || 'შეცდომა პროფილის წაშლისას')
+      }
+    } catch (error) {
+      console.error('Error deleting profile:', error)
+      alert('შეცდომა პროფილის წაშლისას')
+    }
+  }
+
   const renderSettingsTab = () => (
     <div className="space-y-6">
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
@@ -799,6 +833,17 @@ const AccountPage = () => {
         {/* Profile edit form */}
         <ProfileSettingsForm />
       </div>
+      
+      {/* Danger Zone */}
+        <button
+          onClick={handleDeleteProfile}
+          className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+        >
+          <Trash2 className="w-4 h-4" />
+          <span>პროფილის გაუქმება</span>
+        </button>
+    
+      
     </div>
   )
 

@@ -175,3 +175,75 @@ export async function GET(request: NextRequest) {
     )
   }
 }
+
+// DELETE - Delete user profile (keep only personalId)
+export async function DELETE(request: NextRequest) {
+  try {
+    // Check authentication
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
+    // Get user to preserve personalId
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { personalId: true }
+    })
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'მომხმარებელი ვერ მოიძებნა' },
+        { status: 404 }
+      )
+    }
+
+    // Delete all user sessions to log them out
+    await prisma.session.deleteMany({
+      where: { userId: session.user.id }
+    })
+
+    // Clear all user data except personalId
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: {
+        name: null,
+        lastName: null,
+        email: `deleted_${Date.now()}@deleted.local`, // Set unique email to avoid conflicts
+        phone: null,
+        location: null,
+        address: null,
+        postalIndex: null,
+        gender: null,
+        dateOfBirth: null,
+        password: null, // Clear password so they can't login
+        image: null,
+        emailVerified: null,
+        banned: false,
+        banReason: null,
+        bannedAt: null,
+        // personalId is preserved automatically (not in data object)
+      }
+    })
+
+    // Delete user verification if exists
+    await prisma.userVerification.deleteMany({
+      where: { userId: session.user.id }
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: 'პროფილი წარმატებით წაიშალა'
+    })
+
+  } catch (error) {
+    console.error('Error deleting profile:', error)
+    return NextResponse.json(
+      { success: false, error: 'შეცდომა პროფილის წაშლისას' },
+      { status: 500 }
+    )
+  }
+}
