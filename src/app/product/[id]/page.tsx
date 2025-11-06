@@ -30,20 +30,14 @@ const startOfDay = (date: Date) => {
     return d
 }
 
-// Today at start of day
-const startToday = startOfDay(new Date())
 
 const ProductPage = () => {
     const params = useParams()
     const productId = params.id as string
 
-    // Debug: Log the product ID
-    useEffect(() => {
-        console.log('Product ID from params:', productId)
-    }, [productId])
 
     const { addToCart } = useCart()
-    const { data: session, status } = useSession();
+    const { data: session } = useSession();
 
     const [product, setProduct] = useState<Product | null>(null)
     const [loading, setLoading] = useState(true)
@@ -101,14 +95,6 @@ const ProductPage = () => {
                 if (pJson?.success) {
                     setProduct(pJson.product)
                     setError(null)
-                    
-                    // Debug logging for product
-                    console.log('=== Product Loaded ===')
-                    console.log('Product ID:', productId)
-                    console.log('Product Status:', pJson.product.status)
-                    console.log('Product Name:', pJson.product.name)
-                    console.log('Product User ID (owner):', pJson.product.userId)
-                    console.log('=== End Product Load ===')
                 } else {
                     setError(pJson?.message || 'პროდუქტი ვერ მოიძებნა')
                     setProduct(null)
@@ -138,18 +124,10 @@ const ProductPage = () => {
             fetch('/api/user/verification')
                 .then((r) => r.json())
                 .then((d) => setUserVerification(d.verification || null));
-            
-            // Debug: Log current user info
-            console.log('=== Current User Info ===')
-            console.log('User ID:', session.user.id)
-            console.log('User Name:', session.user.name)
-            console.log('User Email:', session.user.email)
-            console.log('=== End User Info ===')
         } else {
             setUserVerification(null);
-            console.log('No user session - user not logged in')
         }
-    }, [session?.user?.id]);
+    }, [session?.user?.id, session?.user?.email, session?.user?.name]);
 
     // Fetch reviews
     useEffect(() => {
@@ -164,53 +142,6 @@ const ProductPage = () => {
                     setAverageRating(data.averageRating)
                     setTotalReviews(data.totalReviews)
                     setCanReview(data.canReview || false)
-                    
-                    // Debug logging for rental check
-                    console.log('=== Review Fetch Debug ===')
-                    console.log('Product ID:', productId)
-                    console.log('Current User ID:', session?.user?.id)
-                    console.log('Can Review:', data.canReview)
-                    console.log('Product Status:', product?.status)
-                    
-                    // Fetch rental information for current user
-                    if (session?.user?.id) {
-                        try {
-                            // Check Rental table
-                            const rentalRes = await fetch(`/api/rental?productId=${productId}`)
-                            const rentalData = await rentalRes.json()
-                            console.log('User Rentals (Rental table) for this product:', rentalData.rentals || rentalData)
-                            
-                            // Also check ALL rentals for this user (not filtered by productId)
-                            const allRentalsRes = await fetch(`/api/rental`)
-                            const allRentalsData = await allRentalsRes.json()
-                            console.log('ALL User Rentals:', allRentalsData.rentals || allRentalsData)
-                            
-                            // Also check OrderItems
-                            const orderRes = await fetch(`/api/orders`)
-                            const orderData = await orderRes.json()
-                            if (orderData.success && orderData.orders) {
-                                console.log('ALL User Orders:', orderData.orders)
-                                const orderItemsForProduct = orderData.orders
-                                    .flatMap((order: any) => order.items || [])
-                                    .filter((item: any) => item.productId === parseInt(productId))
-                                console.log('User OrderItems for this product:', orderItemsForProduct)
-                                console.log('OrderItems with isRental=true:', orderItemsForProduct.filter((item: any) => item.isRental))
-                                
-                                // Check order statuses
-                                const ordersWithProduct = orderData.orders.filter((order: any) => 
-                                    order.items?.some((item: any) => item.productId === parseInt(productId))
-                                )
-                                console.log('Orders containing this product:', ordersWithProduct.map((o: any) => ({
-                                    orderId: o.id,
-                                    status: o.status,
-                                    items: o.items?.filter((item: any) => item.productId === parseInt(productId))
-                                })))
-                            }
-                        } catch (e) {
-                            console.log('Could not fetch rental info:', e)
-                        }
-                    }
-                    console.log('=== End Review Fetch Debug ===')
                 }
             } catch (error) {
                 console.error('Error fetching reviews:', error)
@@ -233,8 +164,6 @@ const ProductPage = () => {
     }, [session?.user?.id, reviews])
 
     const handleSubmitReview = async () => {
-        console.log('Submit review clicked:', { canReview, reviewRating, session: !!session })
-        
         if (!session) {
             alert('გთხოვთ შეხვიდეთ სისტემაში კომენტარის დასაწერად')
             return
@@ -254,7 +183,6 @@ const ProductPage = () => {
                 }),
             })
             const data = await response.json()
-            console.log('Review submit response:', data)
             
             if (data.success) {
                 // Refresh reviews
@@ -322,12 +250,6 @@ const ProductPage = () => {
         }
     }, [product, rentalStatus, selectedSize])
 
-    // Debug product status
-    useEffect(() => {
-        if (product) {
-            console.log('Product status:', product.status)
-        }
-    }, [product])
 
     const selectedVariant = product?.variants?.find(v => v.size === selectedSize)
     const selectedPrice = selectedVariant?.price ?? 0
@@ -360,8 +282,6 @@ const ProductPage = () => {
         const blockedDates: Date[] = []
         const periods = getRentalPeriods(selectedSize)
 
-        console.log('[DEBUG] getBlockedDates - selectedSize:', selectedSize, 'periods:', periods)
-
         periods.forEach(period => {
             const start = new Date(period.startDate)
             const end = new Date(period.endDate)
@@ -371,8 +291,6 @@ const ProductPage = () => {
             // Add only 1 day for maintenance (so last maintenance day is selectable)
             const lastBlockedDate = new Date(end.getTime() + 24 * 60 * 60 * 1000)
 
-            console.log(`[DEBUG] Blocking from ${start.toISOString().split('T')[0]} to ${lastBlockedDate.toISOString().split('T')[0]} (available from ${new Date(lastBlockedDate.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]})`)
-
             const currentDate = new Date(start)
             while (currentDate <= lastBlockedDate) {
                 const normalizedDate = new Date(currentDate)
@@ -381,8 +299,6 @@ const ProductPage = () => {
                 currentDate.setDate(currentDate.getDate() + 1)
             }
         })
-
-        console.log('[DEBUG] Total blocked dates:', blockedDates.length, blockedDates.map(d => d.toISOString().split('T')[0]))
 
         return blockedDates
     }
@@ -403,10 +319,6 @@ const ProductPage = () => {
             return dateToCheck.getTime() === normalizedBlocked.getTime()
         })
 
-        if (Math.random() < 0.01) {
-            console.log('[DEBUG] isDateBlocked:', dateToCheck.toISOString().split('T')[0], '->', isBlocked)
-        }
-
         return isBlocked
     }
 
@@ -421,8 +333,6 @@ const ProductPage = () => {
 
         const diffTime = end.getTime() - start.getTime()
         const diffDays = diffTime / (1000 * 60 * 60 * 24)
-
-        console.log('[DEBUG] calcDays - start:', rentalStartDate, 'end:', rentalEndDate, 'diffDays:', diffDays)
 
         // Add 1 to include both start and end days
         return Math.max(1, Math.floor(diffDays) + 1)
@@ -531,14 +441,6 @@ const ProductPage = () => {
         )
     }
 
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
-            </div>
-        )
-    }
-
     if (!product || error) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -553,25 +455,6 @@ const ProductPage = () => {
             </div>
         )
     }
-    console.log('product', product.status);
-    console.log('Debug button state:', {
-        isAdding,
-        selectedSize,
-        productStatus: product.status,
-        purchaseMode,
-        rentalStartDate,
-        rentalEndDate,
-        hasActiveRentalsForSize: selectedSize ? hasActiveRentals(selectedSize) : 'no size',
-        rentalStatus,
-        isRentable: product?.isRentable,
-        buttonDisabledReason:
-            isAdding ? 'isAdding' :
-                !selectedSize ? 'no size' :
-                    product.status !== 'AVAILABLE' ? 'status not available' :
-                        (purchaseMode === "rent" && (!rentalStartDate || !rentalEndDate)) ? 'no rental dates' :
-                            (purchaseMode === "rent" && hasActiveRentals(selectedSize)) ? 'size has active rentals' :
-                                'enabled'
-    });
 
     return (
         <div className="min-h-screen">
@@ -1082,7 +965,6 @@ const ProductPage = () => {
                                             <StarRating
                                                 rating={reviewRating}
                                                 onRatingChange={(rating) => {
-                                                    console.log('Rating changed:', rating)
                                                     setReviewRating(rating)
                                                 }}
                                                 size="md"
