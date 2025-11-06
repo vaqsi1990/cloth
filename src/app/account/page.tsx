@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { User, Package, ShoppingCart, Settings, MapPin, Phone, Mail, Camera, MessageCircle } from 'lucide-react'
+import { User, Package, ShoppingCart, Settings, MapPin, Phone, Mail, Camera, MessageCircle, Search } from 'lucide-react'
 import ImageUpload from '@/component/CloudinaryUploader'
 import ContactForm from '@/component/ContactForm'
 
@@ -21,6 +21,7 @@ interface ProductItem {
   name: string
   status: string
   createdAt: string
+  sku?: string | null
   images?: Array<{ url: string }>
   variants?: Array<{ price: number; size: string; stock: number; id: number }>
 }
@@ -645,35 +646,44 @@ const AccountPage = () => {
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-bold text-black">ჩემი პროდუქტები</h3>
-          {session.user.role === 'ADMIN' || verification?.status === 'APPROVED' ? (
+          <div className="flex items-center space-x-3">
             <Link
-              href="/account/products/new"
-              className="flex items-center space-x-2 px-4 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
+              href="/account/products/sku"
+              className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
             >
-              <Package className="w-4 h-4" />
-              <span>ახალი პროდუქტი</span>
+              <Search className="w-4 h-4" />
+              <span>ძიება კოდის მიხედვით</span>
             </Link>
-          ) : (
-            <button
-              disabled
-              className="flex items-center space-x-2 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg font-bold uppercase tracking-wide cursor-not-allowed"
-              title="ახალი პროდუქტის დამატება შესაძლებელია მხოლოდ ვერიფიცირებული ანგარიშისთვის"
-            >
-              <Package className="w-4 h-4" />
-              <span>ახალი პროდუქტი</span>
-            </button>
-          )}
+            {session.user.role === 'ADMIN' || verification?.status === 'APPROVED' || session.user.verificationStatus === 'APPROVED' ? (
+              <Link
+                href="/account/products/new"
+                className="flex items-center space-x-2 px-4 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
+              >
+                <Package className="w-4 h-4" />
+                <span>ახალი პროდუქტი</span>
+              </Link>
+            ) : (
+              <button
+                disabled
+                className="flex items-center space-x-2 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg font-bold uppercase tracking-wide cursor-not-allowed"
+                title="ახალი პროდუქტის დამატება შესაძლებელია მხოლოდ ვერიფიცირებული ანგარიშისთვის"
+              >
+                <Package className="w-4 h-4" />
+                <span>ახალი პროდუქტი</span>
+              </button>
+            )}
+          </div>
         </div>
-        {session.user.role !== 'ADMIN' && verification?.status !== 'APPROVED' && (
+        {session.user.role !== 'ADMIN' && verification?.status !== 'APPROVED' && session.user.verificationStatus !== 'APPROVED' && (
           <div className="mb-4 p-3 border border-yellow-400 bg-yellow-50 text-yellow-800 rounded">
             გთხოვთ დაადასტუროთ პირადობა პროფილის გვერდზე, რომ შეძლოთ პროდუქტის დამატება.
           </div>
         )}
 
-{session.user.role !== 'ADMIN' && verification?.status == 'APPROVED' && (
+        {session.user.role !== 'ADMIN' && (verification?.status === 'APPROVED' || session.user.verificationStatus === 'APPROVED') && (
           <div className="mb-4 p-3 border border-green-400 bg-green-50 text-green-800 rounded">
-              პირადობა დამტკიცებულია
-            </div>
+            პირადობა დამტკიცებულია
+          </div>
         )}
         
         {loadingProducts ? (
@@ -717,6 +727,13 @@ const AccountPage = () => {
                 
                 <div className="p-4">
                       <h4 className="font-semibold text-black mb-2">{product.name}</h4>
+                      {product.sku && (
+                        <div className="mb-2">
+                          <span className="text-xs font-mono px-2 py-1 rounded text-gray-700 bg-gray-100">
+                            კოდი: {product.sku}
+                          </span>
+                        </div>
+                      )}
                   <p className="text-lg font-bold text-black mb-2">
                     {(() => {
                       if (!product.variants || product.variants.length === 0) return '₾0.00'

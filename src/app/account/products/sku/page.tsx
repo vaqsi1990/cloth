@@ -67,7 +67,7 @@ interface ProductData {
   rentalOrders: RentalOrder[]
 }
 
-const AdminProductBySKUPage = () => {
+const UserProductBySKUPage = () => {
   const { data: session, status } = useSession()
   const [sku, setSku] = useState('')
   const [loading, setLoading] = useState(false)
@@ -83,7 +83,7 @@ const AdminProductBySKUPage = () => {
     setProductData(null)
 
     try {
-      const response = await fetch(`/api/products/sku/${encodeURIComponent(sku.trim())}`)
+      const response = await fetch(`/api/user/products/sku/${encodeURIComponent(sku.trim())}`)
       const data = await response.json()
 
       if (data.success) {
@@ -128,14 +128,14 @@ const AdminProductBySKUPage = () => {
     )
   }
 
-  if (!session || session.user.role !== 'ADMIN') {
+  if (!session) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
-          <p className="text-gray-600 mb-6">You don&apos;t have permission to access this page.</p>
-          <Link href="/" className="px-6 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide transition-colors">
-            Go Home
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">ავტორიზაცია საჭიროა</h1>
+          <p className="text-gray-600 mb-6">გთხოვთ შეხვიდეთ ანგარიშში</p>
+          <Link href="/auth/signin" className="px-6 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide transition-colors">
+            შესვლა
           </Link>
         </div>
       </div>
@@ -150,21 +150,21 @@ const AdminProductBySKUPage = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">პროდუქტის ძიება კოდის მიხედვით</h1>
-              <p className="text-gray-600 mt-1">მოძებნე პროდუქტი და ნახე დეტალური ინფორმაცია</p>
+              <p className="text-gray-600 mt-1">მოძებნე შენი პროდუქტი და ნახე დეტალური ინფორმაცია</p>
             </div>
             <div className="flex items-center space-x-4">
               <Link
-                href="/admin/products"
+                href="/account"
                 className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>უკან</span>
               </Link>
               <Link
-                href="/admin"
+                href="/account"
                 className="px-4 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide transition-colors"
               >
-                ადმინ პანელი
+                ჩემი ანგარიში
               </Link>
             </div>
           </div>
@@ -286,7 +286,6 @@ const AdminProductBySKUPage = () => {
             {productData.product.status === 'MAINTENANCE' && (
               <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-6 shadow-sm">
                 <h3 className="text-xl font-bold text-red-900 mb-4 flex items-center">
-                
                   რესტავრაციის ინფორმაცია
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -294,7 +293,6 @@ const AdminProductBySKUPage = () => {
                     <p className="text-sm text-gray-600 mb-1">რესტავრაციაზე გადასვლის თარიღი</p>
                     <p className="font-semibold text-gray-900">{formatDate(productData.product.updatedAt)}</p>
                   </div>
-                 
                 </div>
                 <div className="mt-4 bg-white p-4 rounded-lg border border-red-200">
                   <p className="text-sm text-gray-600 mb-2">შენიშვნა:</p>
@@ -500,5 +498,5 @@ const AdminProductBySKUPage = () => {
   )
 }
 
-export default AdminProductBySKUPage
+export default UserProductBySKUPage
 
