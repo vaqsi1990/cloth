@@ -226,12 +226,8 @@ const ShopPageClient = () => {
         return activeCategoryMatch && priceMatch && sizeMatch && colorMatch && locationMatch && rentalAvailabilityMatch
     })
 
-    // Debug: Log filtering results
-    console.log('Total products:', products.length)
-    console.log('Filtered products:', filteredProducts.length)
-    console.log('Selected colors:', selectedColors)
-    console.log('Gender param:', genderParam)
 
+   
     // Sort products
     const sortedProducts = [...filteredProducts].sort((a, b) => {
         switch (sortBy) {

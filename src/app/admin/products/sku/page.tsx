@@ -2,18 +2,76 @@
 
 import React, { useState } from 'react'
 import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Search, ArrowLeft, Package, Calendar, User, Clock, DollarSign, AlertCircle, Wrench } from 'lucide-react'
+import { Search, ArrowLeft, Package, Calendar, User, Clock, DollarSign, AlertCircle } from 'lucide-react'
 import { formatDate } from '@/utils/dateUtils'
+import { Product, ProductVariant } from '@/types/product'
+
+interface RentalUser {
+  id: string
+  name?: string
+  email?: string
+  phone?: string
+}
+
+interface RentalVariant {
+  id: number
+  size: string
+}
+
+interface Rental {
+  id: number
+  status: string
+  startDate: string
+  endDate: string
+  durationDays: number
+  totalPrice: number
+  user?: RentalUser
+  variant?: RentalVariant
+}
+
+interface RentalOrder {
+  id: number
+  orderId: number
+  orderStatus: string
+  customerName: string
+  customerPhone?: string
+  customerEmail?: string
+  user?: RentalUser
+  size?: string
+  startDate: string
+  endDate: string
+  durationDays: number
+  price: number
+  deposit?: number
+  orderCreatedAt: string
+}
+
+interface ProductData {
+  product: Product & {
+    updatedAt: string
+    user?: {
+      id: string
+      name?: string
+      email?: string
+      phone?: string
+    }
+  }
+  rentals: {
+    all: Rental[]
+    active: Rental[]
+    total: number
+    activeCount: number
+  }
+  rentalOrders: RentalOrder[]
+}
 
 const AdminProductBySKUPage = () => {
   const { data: session, status } = useSession()
-  const router = useRouter()
   const [sku, setSku] = useState('')
   const [loading, setLoading] = useState(false)
-  const [productData, setProductData] = useState<any>(null)
+  const [productData, setProductData] = useState<ProductData | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const handleSearch = async (e: React.FormEvent) => {
@@ -211,7 +269,7 @@ const AdminProductBySKUPage = () => {
                     <div className="mt-4">
                       <p className="text-sm font-semibold text-gray-700 mb-2">ზომები და ფასები:</p>
                       <div className="flex flex-wrap gap-2">
-                        {productData.product.variants.map((variant: any) => (
+                        {productData.product.variants.map((variant: ProductVariant) => (
                           <div key={variant.id} className="bg-gray-50 px-3 py-2 rounded border">
                             <span className="font-semibold">{variant.size}</span> - ₾{variant.price} 
                             {variant.stock > 0 && <span className="text-green-600 ml-2">({variant.stock} ცალი)</span>}
@@ -281,7 +339,7 @@ const AdminProductBySKUPage = () => {
                   აქტიური გაქირავებები
                 </h3>
                 <div className="space-y-4">
-                  {productData.rentals.active.map((rental: any) => (
+                  {productData.rentals.active.map((rental: Rental) => (
                     <div key={rental.id} className="border border-gray-200 rounded-lg p-4">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
@@ -354,7 +412,7 @@ const AdminProductBySKUPage = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {productData.rentals.all.map((rental: any) => (
+                      {productData.rentals.all.map((rental: Rental) => (
                         <tr key={rental.id} className="border-b hover:bg-gray-50">
                           <td className="py-2 px-4">
                             {rental.user ? (
@@ -391,7 +449,7 @@ const AdminProductBySKUPage = () => {
               <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                 <h3 className="text-xl font-bold text-gray-900 mb-4">გაქირავების შეკვეთები</h3>
                 <div className="space-y-4">
-                  {productData.rentalOrders.map((order: any) => (
+                  {productData.rentalOrders.map((order: RentalOrder) => (
                     <div key={order.id} className="border border-gray-200 rounded-lg p-4">
                       <div className="flex items-start justify-between mb-3">
                         <div>

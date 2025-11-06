@@ -45,17 +45,16 @@ export async function GET(request: NextRequest) {
     const isNew = searchParams.get('isNew')
     
     // Show products based on status
-    // Non-admin users see only AVAILABLE products
-    // Admins see all products
+    // All users see AVAILABLE, RENTED, and RESERVED products
+    // Only MAINTENANCE products are hidden from non-admin users
     const isAdmin = session?.user?.role === 'ADMIN'
     
     const products = await prisma.product.findMany({
       where: {
         ...(isAdmin ? {} : { 
-          OR: [
-            { status: 'AVAILABLE' },
-            { status: 'RENTED' }
-          ]
+          status: {
+            not: 'MAINTENANCE' // Non-admin users don't see maintenance products
+          }
         }),
         ...(category && category !== 'ALL' ? { 
           category: { 
