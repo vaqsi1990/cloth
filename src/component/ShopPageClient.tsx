@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Filter, X, ChevronDown, Calendar } from 'lucide-react'
+import { Filter, X, ChevronDown, Calendar, Star } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 import { Product } from '@/types/product'
 import DatePicker from "react-datepicker"
@@ -22,6 +22,7 @@ const ShopPageClient = () => {
     const [selectedSizes, setSelectedSizes] = useState<string[]>([])
     const [selectedColors, setSelectedColors] = useState<string[]>([])
     const [selectedLocations, setSelectedLocations] = useState<string[]>([])
+    const [selectedRatings, setSelectedRatings] = useState<number[]>([])
     const [rentalStartDate, setRentalStartDate] = useState<Date | null>(null)
     const [rentalEndDate, setRentalEndDate] = useState<Date | null>(null)
     const [productRentalStatus, setProductRentalStatus] = useState<Record<number, {
@@ -86,14 +87,14 @@ const ShopPageClient = () => {
                 const data = await response.json()
                 if (data.success) {
                     setProducts(data.products)
-                    
+
                     // Calculate maximum price from products
-                    const allPrices = data.products.flatMap((product: Product) => 
+                    const allPrices = data.products.flatMap((product: Product) =>
                         product.variants?.map(variant => variant.price) || []
                     )
                     const calculatedMaxPrice = allPrices.length > 0 ? Math.max.apply(null, allPrices) : 200
                     setMaxPrice(calculatedMaxPrice)
-                    
+
                     // Update price range if current max is higher than calculated max
                     if (calculatedMaxPrice > priceRange[1]) {
                         setPriceRange([0, calculatedMaxPrice])
@@ -113,7 +114,7 @@ const ShopPageClient = () => {
     useEffect(() => {
         const fetchRentalStatus = async () => {
             const rentableProducts = products.filter(p => p.isRentable)
-            
+
             for (const product of rentableProducts) {
                 try {
                     const response = await fetch(`/api/products/${product.id}/rental-status`)
@@ -150,7 +151,7 @@ const ShopPageClient = () => {
     // Check if product is available during selected dates
     const isProductAvailable = (product: Product): boolean => {
         if (!rentalStartDate || !rentalEndDate || !product.isRentable) return true
-        
+
         const variants = productRentalStatus[product.id]
         if (!variants || variants.length === 0) return true
 
@@ -166,16 +167,16 @@ const ShopPageClient = () => {
             isAvailable: boolean;
         }) => {
             const activeRentals = variant.activeRentals || []
-            
+
             // Check if there are any conflicts
             const hasConflict = activeRentals.some((period: { startDate: string; endDate: string; status: string }) => {
                 const periodStart = new Date(period.startDate)
                 const periodEnd = new Date(period.endDate)
                 const periodLastBlockedDate = new Date(periodEnd.getTime() + 24 * 60 * 60 * 1000)
-                
+
                 return start < periodLastBlockedDate && end >= periodStart
             })
-            
+
             return !hasConflict
         })
     }
@@ -197,7 +198,7 @@ const ShopPageClient = () => {
             product.variants.some(variant => selectedSizes.includes(variant.size))
 
         // Color filter
-        const colorMatch = selectedColors.length === 0 || 
+        const colorMatch = selectedColors.length === 0 ||
             selectedColors.some(selectedColor => {
                 const colorMapping: Record<string, string[]> = {
                     'black': ['შავი', 'black'],
@@ -209,25 +210,29 @@ const ShopPageClient = () => {
                     'pink': ['ვარდისფერი', 'pink'],
                     'purple': ['იისფერი', 'purple']
                 };
-                
+
                 const colorVariations = colorMapping[selectedColor] || [selectedColor];
-                return colorVariations.some(color => 
+                return colorVariations.some(color =>
                     product.color?.toLowerCase().includes(color.toLowerCase())
                 );
             })
 
         // Location filter
-        const locationMatch = selectedLocations.length === 0 || 
+        const locationMatch = selectedLocations.length === 0 ||
             selectedLocations.includes(product.location || '')
+
+        // Rating filter
+        const ratingMatch = selectedRatings.length === 0 ||
+            selectedRatings.some(rating => Math.floor(product.rating || 0) === rating)
 
         // Rental availability filter
         const rentalAvailabilityMatch = isProductAvailable(product)
 
-        return activeCategoryMatch && priceMatch && sizeMatch && colorMatch && locationMatch && rentalAvailabilityMatch
+        return activeCategoryMatch && priceMatch && sizeMatch && colorMatch && locationMatch && ratingMatch && rentalAvailabilityMatch
     })
 
 
-   
+
     // Sort products
     const sortedProducts = [...filteredProducts].sort((a, b) => {
         switch (sortBy) {
@@ -270,6 +275,15 @@ const ShopPageClient = () => {
         )
     }
 
+    // Handle rating selection
+    const toggleRating = (rating: number) => {
+        setSelectedRatings(prev =>
+            prev.includes(rating)
+                ? prev.filter(r => r !== rating)
+                : [...prev, rating]
+        )
+    }
+
     // Clear all filters
     const clearFilters = () => {
         setActiveCategory("ALL")
@@ -277,6 +291,7 @@ const ShopPageClient = () => {
         setSelectedSizes([])
         setSelectedColors([])
         setSelectedLocations([])
+        setSelectedRatings([])
         setRentalStartDate(null)
         setRentalEndDate(null)
     }
@@ -291,7 +306,7 @@ const ShopPageClient = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50">
-         
+
 
             <div className="container mx-auto px-4 py-8">
                 {/* Mobile Filter Toggle */}
@@ -338,34 +353,34 @@ const ShopPageClient = () => {
                                     <ChevronDown className={`w-5 h-5 text-gray-700 transition-transform ${isCategoryOpen ? "rotate-180" : "rotate-0"}`} />
                                 </button>
                                 {isCategoryOpen && (
-                                <div className="space-y-2">
-                                    {categories.map((category) => {
-                                        const categoryCount = products.filter(product => 
-                                            category.id === "ALL" || product.category?.name === category.label
-                                        ).length;
-                                        
-                                        return (
-                                            <button
-                                                key={category.id}
-                                                onClick={() => setActiveCategory(category.id)}
-                                                className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex justify-between items-center ${activeCategory === category.id
-                                                    ? "bg-black text-white"
-                                                    : "text-gray-600 hover:bg-gray-100"
-                                                    }`}
-                                            >
-                                                <span>{category.label}</span>
-                                                {category.id !== "ALL" && (
-                                                    <span className={`text-xs px-2 py-1 rounded-full ${activeCategory === category.id
-                                                        ? "bg-gray-600 text-white"
-                                                        : "bg-gray-200 text-gray-600"
-                                                        }`}>
-                                                        {categoryCount}
-                                                    </span>
-                                                )}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
+                                    <div className="space-y-2">
+                                        {categories.map((category) => {
+                                            const categoryCount = products.filter(product =>
+                                                category.id === "ALL" || product.category?.name === category.label
+                                            ).length;
+
+                                            return (
+                                                <button
+                                                    key={category.id}
+                                                    onClick={() => setActiveCategory(category.id)}
+                                                    className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex justify-between items-center ${activeCategory === category.id
+                                                        ? "bg-black text-white"
+                                                        : "text-gray-600 hover:bg-gray-100"
+                                                        }`}
+                                                >
+                                                    <span>{category.label}</span>
+                                                    {category.id !== "ALL" && (
+                                                        <span className={`text-xs px-2 py-1 rounded-full ${activeCategory === category.id
+                                                            ? "bg-gray-600 text-white"
+                                                            : "bg-gray-200 text-gray-600"
+                                                            }`}>
+                                                            {categoryCount}
+                                                        </span>
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
                                 )}
                             </div>
 
@@ -451,6 +466,54 @@ const ShopPageClient = () => {
                                 </div>
                             </div>
 
+                            {/* Rating Filter */}
+                            <div className="mb-6">
+                                <h4 className="font-medium text-gray-900 mb-3">რეიტინგი</h4>
+                                <div className="space-y-2">
+                                    {[5, 4, 3, 2, 1].map((rating) => {
+                                        const count = products.filter(
+                                            (product) => Math.floor(product.rating || 0) === rating
+                                        ).length;
+
+                                        return (
+                                            <button
+                                                key={rating}
+                                                onClick={() => toggleRating(rating)}
+                                                className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md border transition-colors ${selectedRatings.includes(rating)
+                                                        ? "bg-[#1B3729] text-white border-[#1B3729]"
+                                                        : "bg-white text-gray-700 border-gray-300 hover:border-black"
+                                                    }`}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <div className="flex items-center">
+                                                        {[1, 2, 3, 4, 5].map((star) => (
+                                                            <Star
+                                                                key={star}
+                                                                className={`w-4 h-4 ${star <= rating
+                                                                        ? "fill-amber-500 text-amber-500"
+                                                                        : "fill-gray-200 text-gray-300"
+                                                                    }`}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                    <span className="ml-1">{rating} ★</span>
+                                                </div>
+
+                                                <span
+                                                    className={`text-xs px-2 py-1 rounded-full ${selectedRatings.includes(rating)
+                                                            ? "bg-gray-600 text-white"
+                                                            : "bg-gray-200 text-gray-600"
+                                                        }`}
+                                                >
+                                                    {count}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+
                             {/* Rental Date Filter */}
                             <div className="mb-6">
                                 <div className="flex items-center gap-2 mb-3">
@@ -480,7 +543,7 @@ const ShopPageClient = () => {
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-black"
                                         />
                                     </div>
-                                   
+
                                 </div>
                             </div>
 
@@ -533,7 +596,7 @@ const ShopPageClient = () => {
                                             fill
                                             className="object-cover  transition-transform duration-300"
                                         />
-                                        
+
                                     </div>
                                     {/* Product Info */}
                                     <div className="p-4">
