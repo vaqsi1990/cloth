@@ -36,11 +36,17 @@ const ProductPage = () => {
     const params = useParams()
     const productId = params.id as string
 
+    // Debug: Log the product ID
+    useEffect(() => {
+        console.log('Product ID from params:', productId)
+    }, [productId])
+
     const { addToCart } = useCart()
     const { data: session, status } = useSession();
 
     const [product, setProduct] = useState<Product | null>(null)
     const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
     const [activeImage, setActiveImage] = useState(0)
 
     const [selectedSize, setSelectedSize] = useState<string>("")
@@ -77,6 +83,10 @@ const ProductPage = () => {
 
                 if (pJson?.success) {
                     setProduct(pJson.product)
+                    setError(null)
+                } else {
+                    setError(pJson?.message || 'პროდუქტი ვერ მოიძებნა')
+                    setProduct(null)
                 }
                 if (rJson?.success) {
                     const map: Record<string, RentalPeriod[]> = {}
@@ -88,6 +98,8 @@ const ProductPage = () => {
                 }
             } catch (e) {
                 console.error(e)
+                setError('შეცდომა პროდუქტის ჩატვირთვისას')
+                setProduct(null)
             } finally {
                 setLoading(false)
             }
@@ -353,11 +365,21 @@ const ProductPage = () => {
         )
     }
 
-    if (!product) {
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
+            </div>
+        )
+    }
+
+    if (!product || error) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
-                    <h1 className="text-2xl font-bold text-black mb-4">პროდუქტი ვერ მოიძებნა</h1>
+                    <h1 className="text-2xl font-bold text-black mb-4">
+                        {error || 'პროდუქტი ვერ მოიძებნა'}
+                    </h1>
                     <Link href="/shop" className="underline">
                         დაბრუნდი მაღაზიაში
                     </Link>

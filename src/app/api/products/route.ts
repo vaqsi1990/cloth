@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { generateUniqueSKU } from '@/utils/skuUtils'
 
 // Product validation schema
 const productSchema = z.object({
@@ -125,13 +126,16 @@ export async function POST(request: NextRequest) {
     
     console.log('Creating product with data:', validatedData)
     
+    // Generate unique SKU for the product
+    const uniqueSKU = await generateUniqueSKU()
+    
     // Create product in database using Prisma
     const newProduct = await prisma.product.create({
       data: {
         name: validatedData.name,
         slug: validatedData.slug,
         description: validatedData.description,
-        sku: `SKU-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Generate unique SKU
+        sku: uniqueSKU, // Auto-generated unique SKU
         gender: validatedData.gender,
         color: validatedData.color,
         location: validatedData.location,

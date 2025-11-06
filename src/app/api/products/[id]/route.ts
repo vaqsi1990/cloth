@@ -147,7 +147,7 @@ export async function PUT(
         name: validatedData.name,
         slug: validatedData.slug,
         description: validatedData.description,
-        sku: `SKU-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Generate unique SKU
+        // SKU is not updated - keep existing unique code
         gender: validatedData.gender,
         color: validatedData.color,
         location: validatedData.location,
