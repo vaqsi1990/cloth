@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Plus, Edit, Trash2, Eye, Search, Filter, Package, Calendar, Clock } from 'lucide-react'
+import { Plus, Edit, Trash2, Eye, Search, Filter, Package, Calendar, Clock, Barcode } from 'lucide-react'
 
 interface RentalPeriod {
   startDate: string
@@ -274,6 +274,13 @@ const AdminProductsPage = () => {
               <p className="text-gray-600 mt-1">მართე ყველა პროდუქტი</p>
             </div>
             <div className="flex items-center space-x-4">
+              <Link
+                href="/admin/products/sku"
+                className="px-4 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
+              >
+               
+                <span>ძიება კოდის მიხედვით</span>
+              </Link>
               <Link
                 href="/admin"
                 className="px-4 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
