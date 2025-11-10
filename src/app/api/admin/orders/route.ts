@@ -50,33 +50,9 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // Filter items to exclude those with AVAILABLE product status
-    // Also filter out entire orders if all items are AVAILABLE
-    const filteredOrders = orders
-      .map(order => ({
-        ...order,
-        items: order.items.filter(item => {
-          // If product relationship exists and product status is AVAILABLE, exclude the item
-          console.log('Filtering item:', item.productId, 'Product status:', item.product?.status)
-          if (item.product && item.product.status === 'AVAILABLE') {
-            console.log('Excluding item with AVAILABLE status')
-            return false
-          }
-          // If product relationship doesn't exist, keep the item
-          return true
-        })
-      }))
-      .filter(order => {
-        // Exclude orders that have no items after filtering
-        return order.items.length > 0
-      })
-    
-    console.log('Filtered orders length:', filteredOrders.length)
-    console.log('Total orders before filter:', orders.length)
-
     return NextResponse.json({
       success: true,
-      orders: filteredOrders
+      orders: orders
     })
 
   } catch (error) {
