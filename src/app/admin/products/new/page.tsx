@@ -15,8 +15,9 @@ const productSchema = z.object({
   gender: z.enum(['MEN', 'WOMEN', 'CHILDREN', 'UNISEX']).default('UNISEX'),
   color: z.string().optional(),
   location: z.string().optional(),
+  sizeSystem: z.enum(['EU', 'US', 'UK', 'CN']).optional(),
   isNew: z.boolean().default(false),
-  hasSale: z.boolean().default(false),
+  discount: z.number().int().min(0).max(100).optional(),
   rating: z.number().min(0).max(5).optional(),
   categoryId: z.number().optional(),
   isRentable: z.boolean().default(false), // 🆕
@@ -51,8 +52,9 @@ const NewProductPage = () => {
     gender: 'UNISEX',
     color: '',
     location: '',
+    sizeSystem: undefined,
     isNew: false,
-    hasSale: false,
+    discount: undefined,
     rating: 0,
     categoryId: undefined,
     isRentable: false, // 🆕
@@ -264,16 +266,7 @@ const NewProductPage = () => {
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="px-6 py-4">
-          <div className="flex items-center space-x-4">
-            <Link
-              href="/admin"
-              className="flex items-center text-[20px] text-black hover:text-gray-600"
-            >
-              <ArrowLeft className="w-5 h-5 mr-2" />
-              დაბრუნება
-            </Link>
-            <h1 className="text-[20px] text-black font-bold">ახალი პროდუქტის დამატება</h1>
-          </div>
+          
         </div>
       </div>
 
@@ -394,6 +387,23 @@ const NewProductPage = () => {
                   <option value="ბათუმი">ბათუმი</option>
                 </select>
               </div>
+
+              <div>
+                <label className="block text-[20px] text-black font-medium mb-2">
+                  ზომის სისტემა
+                </label>
+                <select
+                  value={formData.sizeSystem || ''}
+                  onChange={(e) => handleInputChange('sizeSystem', e.target.value || undefined)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                >
+                  <option value="">აირჩიეთ ზომის სისტემა</option>
+                  <option value="EU">EU</option>
+                  <option value="US">US</option>
+                  <option value="UK">UK</option>
+                  <option value="CN">CN</option>
+                </select>
+              </div>
             </div>
 
             <div className="mt-6">
@@ -408,27 +418,7 @@ const NewProductPage = () => {
               />
             </div>
 
-            <div className="mt-6 flex space-x-6">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={formData.isNew}
-                  onChange={(e) => handleInputChange('isNew', e.target.checked)}
-                  className="mr-2"
-                />
-                <span className="text-[20px] text-black">ახალი პროდუქტი</span>
-              </label>
-
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={formData.hasSale}
-                  onChange={(e) => handleInputChange('hasSale', e.target.checked)}
-                  className="mr-2"
-                />
-                <span className="text-[20px] text-black">ფასდაკლება</span>
-              </label>
-            </div>
+            
           </div>
 
           {/* Variants */}
