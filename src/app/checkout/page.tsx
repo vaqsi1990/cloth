@@ -60,7 +60,27 @@ const CheckoutPage = () => {
             const totalAmount = getTotalPrice()
             const orderId = `order_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`
 
-            const orderData = {
+            const orderData: {
+                cart: {
+                    items: Array<{
+                        productId: string
+                        qty: number
+                        price: number
+                        name: string
+                        image: string | undefined
+                    }>
+                }
+                totalAmount: number
+                orderId: string
+                deliveryOption: string
+                address: {
+                    firstName: string
+                    lastName: string
+                    email: string
+                }
+                paymentMethod?: 'google_pay' | 'card'
+                googlePayToken?: string
+            } = {
                 cart: {
                     items: cartItems.map(item => ({
                         productId: String(item.productId),
