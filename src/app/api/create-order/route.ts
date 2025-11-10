@@ -40,6 +40,27 @@ interface BOGBasketItem {
   product_id: string
 }
 
+interface BOGRequestData {
+  callback_url: string
+  external_order_id: string
+  purchase_units: {
+    currency: string
+    total_amount: number
+    basket: BOGBasketItem[]
+  }
+  redirect_urls: {
+    success: string
+    fail: string
+  }
+  payment_method?: string[]
+  config?: {
+    google_pay: {
+      external: boolean
+      google_pay_token: string
+    }
+  }
+}
+
 interface BOGResponse {
   links?: {
     redirect?: { href: string }
@@ -281,7 +302,7 @@ export async function POST(req: NextRequest) {
     const databaseOrderId = databaseOrder.id.toString()
 
     // Prepare the request data for BOG
-    const bogRequestData: any = {
+    const bogRequestData: BOGRequestData = {
       callback_url: 'https://www.dressla.ge/api/payment-callback',
       external_order_id: databaseOrderId,
       purchase_units: {
@@ -292,18 +313,16 @@ export async function POST(req: NextRequest) {
       redirect_urls: {
         success: `https://www.dressla.ge/order-confirmation?status=success&orderId=${databaseOrder.id}`,
         fail: `https://www.dressla.ge/payment-fail?orderId=${databaseOrder.id}`
-      }
-    }
-
-    // Add Google Pay configuration if using Google Pay
-    if (orderData.paymentMethod === 'google_pay' && orderData.googlePayToken) {
-      bogRequestData.payment_method = ['google_pay']
-      bogRequestData.config = {
-        google_pay: {
-          external: true,
-          google_pay_token: orderData.googlePayToken
+      },
+      ...(orderData.paymentMethod === 'google_pay' && orderData.googlePayToken ? {
+        payment_method: ['google_pay'],
+        config: {
+          google_pay: {
+            external: true,
+            google_pay_token: orderData.googlePayToken
+          }
         }
-      }
+      } : {})
     }
 
     // Use token manager for automatic token refresh and retry
