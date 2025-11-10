@@ -339,13 +339,13 @@ const ShopPageClient = () => {
         return '/placeholder.jpg'
     }
 
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center px-4">
-                <AnimatedDotsLoader />
-            </div>
-        )
-    }
+    // if (loading) {
+    //     return (
+    //         <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center px-4">
+    //             <AnimatedDotsLoader />
+    //         </div>
+    //     )
+    // }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50">

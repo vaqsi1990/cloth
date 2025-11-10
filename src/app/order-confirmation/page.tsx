@@ -72,13 +72,13 @@ const OrderConfirmationContent = () => {
         fetchOrder()
     }, [orderId])
 
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center px-4">
-                <AnimatedDotsLoader />
-            </div>
-        )
-    }
+    // if (loading) {
+    //     return (
+    //         <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center px-4">
+    //             <AnimatedDotsLoader />
+    //         </div>
+    //     )
+    // }
 
     if (error || !order) {
         return (
@@ -337,18 +337,18 @@ const OrderConfirmationContent = () => {
     )
 }
 
-const OrderConfirmationPage = () => {
-    return (
-        <Suspense
-            fallback={
-                <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center px-4">
-                    <AnimatedDotsLoader />
-                </div>
-            }
-        >
-            <OrderConfirmationContent />
-        </Suspense>
-    )
-}
+// const OrderConfirmationPage = () => {
+//     return (
+//         <Suspense
+//             fallback={
+//                 <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center px-4">
+//                     <AnimatedDotsLoader />
+//                 </div>
+//             }
+//         >
+//             <OrderConfirmationContent />
+//         </Suspense>
+//     )
+// }
 
-export default OrderConfirmationPage
+export default  OrderConfirmationContent
