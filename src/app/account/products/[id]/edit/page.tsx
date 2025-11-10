@@ -16,9 +16,15 @@ const productSchema = z.object({
   gender: z.enum(['MEN', 'WOMEN', 'CHILDREN', 'UNISEX']).default('UNISEX'),
   color: z.string().optional(),
   location: z.string().optional(),
-  sizeSystem: z.enum(['EU', 'US', 'UK', 'CN']).optional(),
+  sizeSystem: z.preprocess(
+    (val) => (val === '' || val === null ? undefined : val),
+    z.enum(['EU', 'US', 'UK', 'CN']).optional()
+  ),
   isNew: z.boolean().default(false),
-  discount: z.number().int().min(0).max(100).optional(),
+  discount: z.preprocess(
+    (val) => (val === null ? undefined : val),
+    z.number().int().min(0).max(100).optional()
+  ),
   rating: z.number().min(0).max(5).optional(),
   categoryId: z.number().optional(),
   isRentable: z.boolean().default(false),
@@ -258,6 +264,14 @@ const EditProductPage = () => {
     try {
       const dataToValidate = {
         ...formData,
+        // Convert empty string to undefined for sizeSystem
+        sizeSystem: formData.sizeSystem && formData.sizeSystem.trim() !== '' 
+          ? formData.sizeSystem 
+          : undefined,
+        // Convert null to undefined for discount
+        discount: formData.discount !== null && formData.discount !== undefined 
+          ? formData.discount 
+          : undefined,
         pricePerDay: formData.pricePerDay || undefined,
         maxRentalDays: formData.maxRentalDays || undefined,
         deposit: formData.deposit || undefined,
