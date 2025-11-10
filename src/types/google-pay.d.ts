@@ -48,7 +48,7 @@ declare namespace google.payments.api {
       }
     }
     email?: string
-    shippingAddress?: any
+    shippingAddress?: unknown
   }
 
   interface IsReadyToPayRequest {
