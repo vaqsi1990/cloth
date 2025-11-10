@@ -3,13 +3,14 @@ import React, { useState } from 'react'
 import Image from 'next/image'
 import { useCart } from '@/hooks/useCart'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, CreditCard, MapPin, Phone, Mail, User } from 'lucide-react'
+import { ArrowLeft, CreditCard, MapPin, Phone, Mail, User, ShoppingCart } from 'lucide-react'
 import Link from 'next/link'
 import { formatDate } from '@/utils/dateUtils'
 import { showToast } from '@/utils/toast'
+import AnimatedDotsLoader from '@/component/AnimatedDotsLoader'
 
 const CheckoutPage = () => {
-    const { cartItems, getTotalPrice, getTotalItems, clearCart } = useCart()
+    const { cartItems, getTotalPrice, getTotalItems, clearCart, loading, initialized } = useCart()
     const router = useRouter()
     
     const [formData, setFormData] = useState({
@@ -75,7 +76,7 @@ const CheckoutPage = () => {
             if (result.success) {
                 showToast('შეკვეთა წარმატებით გაფორმდა!', 'success')
                 clearCart()
-                router.push('/')
+                router.push(`/order-confirmation?orderId=${result.order.id}`)
             } else {
                 showToast(result.message || 'შეცდომა შეკვეთის გაფორმებისას', 'error')
             }
@@ -87,227 +88,263 @@ const CheckoutPage = () => {
         }
     }
 
-    if (cartItems.length === 0) {
+    if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center">
-                <div className="text-center">
-                    <h1 className="text-[20px] text-black font-bold mb-4">კალათა ცარიელია</h1>
-                    <Link 
-                        href="/shop"
-                        className="bg-black text-white px-6 py-3 rounded-lg text-[20px] text-black hover:bg-gray-800 transition-colors"
-                    >
-                        მაღაზიაში დაბრუნება
-                    </Link>
+            <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center px-4">
+                <AnimatedDotsLoader />
+            </div>
+        )
+    }
+
+    if (initialized && !loading && cartItems.length === 0) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 py-16">
+                <div className="container mx-auto px-4">
+                    <div className="max-w-2xl mx-auto text-center">
+                        <div className="mb-8">
+                            <ShoppingCart className="w-24 h-24 text-black mx-auto mb-4 opacity-50" />
+                            <h1 className="text-3xl font-bold text-black mb-4">
+                                თქვენი კალათა ცარიელია
+                            </h1>
+                            <p className="text-black text-lg mb-8">
+                                დაამატეთ ნივთები კალათაში შესაძენად
+                            </p>
+                        </div>
+                        <Link
+                            href="/shop"
+                            className="inline-flex items-center bg-black text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-800 transition-colors"
+                        >
+                            <ArrowLeft className="w-5 h-5 mr-2" />
+                            მაღაზიაში დაბრუნება
+                        </Link>
+                    </div>
                 </div>
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50">
-            <div className="container mx-auto px-4 py-8">
-                {/* Header */}
-                <div className="mb-8">
-                    <Link 
-                        href="/cart"
-                        className="flex items-center text-[20px] text-black hover:text-gray-600 mb-4"
-                    >
-                        <ArrowLeft className="w-5 h-5 mr-2" />
-                        კალათაში დაბრუნება
-                    </Link>
-                    <h1 className="text-[20px] text-black font-bold">შეკვეთის გაფორმება</h1>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* Order Form */}
-                    <div className="bg-white rounded-lg shadow-sm p-6">
-                        <h2 className="text-[20px] text-black font-semibold mb-6">მიწოდების ინფორმაცია</h2>
-                        
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            {/* Personal Information */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-[20px] text-black font-medium mb-2">
-                                        <User className="w-4 h-4 inline mr-2" />
-                                        სახელი
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="firstName"
-                                        value={formData.firstName}
-                                        onChange={handleInputChange}
-                                        required
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-[20px] text-black font-medium mb-2">
-                                        გვარი
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="lastName"
-                                        value={formData.lastName}
-                                        onChange={handleInputChange}
-                                        required
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Contact Information */}
-                            <div>
-                                <label className="block text-[20px] text-black font-medium mb-2">
-                                    <Mail className="w-4 h-4 inline mr-2" />
-                                    ელ. ფოსტა
-                                </label>
-                                <input
-                                    type="email"
-                                    name="email"
-                                    value={formData.email}
-                                    onChange={handleInputChange}
-                                    required
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-[20px] text-black font-medium mb-2">
-                                    <Phone className="w-4 h-4 inline mr-2" />
-                                    ტელეფონი
-                                </label>
-                                <input
-                                    type="tel"
-                                    name="phone"
-                                    value={formData.phone}
-                                    onChange={handleInputChange}
-                                    required
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                                />
-                            </div>
-
-                            {/* Address Information */}
-                            <div>
-                                <label className="block text-[20px] text-black font-medium mb-2">
-                                    <MapPin className="w-4 h-4 inline mr-2" />
-                                    მისამართი
-                                </label>
-                                <input
-                                    type="text"
-                                    name="address"
-                                    value={formData.address}
-                                    onChange={handleInputChange}
-                                    required
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-[20px] text-black font-medium mb-2">ქალაქი</label>
-                                <input
-                                    type="text"
-                                    name="city"
-                                    value={formData.city}
-                                    onChange={handleInputChange}
-                                    required
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                                />
-                            </div>
-
-                            {/* Payment Method */}
-                            <div>
-                                <label className="block text-[20px] text-black font-medium mb-2">
-                                    <CreditCard className="w-4 h-4 inline mr-2" />
-                                    გადახდის მეთოდი
-                                </label>
-                                <select
-                                    name="paymentMethod"
-                                    value={formData.paymentMethod}
-                                    onChange={handleInputChange}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                                >
-                                    <option value="card">ბანკის ბარათი</option>
-                                    <option value="cash">ნაღდი ფული</option>
-                                    <option value="transfer">ბანკის გადარიცხვა</option>
-                                </select>
-                            </div>
-
-                            <button
-                                type="submit"
-                                disabled={isProcessing}
-                                className="flex md:text-[20px] text-[18px] font-bold justify-center md:mt-14 items-center w-full cursor-pointer mx-auto mt-4 bg-[#1B3729] text-white px-8 py-4 rounded-lg font-bold uppercase tracking-wide  transition-colors duration-300"
-                            >
-                                {isProcessing ? 'მუშავდება...' : 'შეკვეთის დადასტურება'}
-                            </button>
-                        </form>
+        <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 py-16">
+            <div className="container mx-auto px-4">
+                <div className="max-w-6xl mx-auto">
+                    {/* Header */}
+                    <div className="mb-8">
+                        <Link 
+                            href="/cart"
+                            className="flex items-center text-black hover:text-gray-600 mb-4 transition-colors"
+                        >
+                            <ArrowLeft className="w-5 h-5 mr-2" />
+                            კალათაში დაბრუნება
+                        </Link>
+                        <h1 className="text-3xl font-bold text-black">შეკვეთის გაფორმება</h1>
                     </div>
 
-                    {/* Order Summary */}
-                    <div className="bg-white rounded-lg shadow-sm p-6">
-                        <h2 className="text-[20px] text-black font-semibold mb-6">შეკვეთის დეტალები</h2>
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        {/* Order Form */}
+                        <div className="lg:col-span-2">
+                            <div className="bg-white rounded-2xl shadow-sm p-6">
+                                <h2 className="text-xl font-semibold text-black mb-6">მიწოდების ინფორმაცია</h2>
                         
-                        {/* Items */}
-                        <div className="space-y-4 mb-6">
-                            {cartItems.map((item) => (
-                                <div key={item.id} className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg">
-                                    <div className="relative w-16 h-16 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden">
-                                        <Image
-                                            src={item.image || '/placeholder.jpg'}
-                                            alt={item.productName}
-                                            width={64}
-                                            height={64}
-                                            className="w-full h-full object-cover"
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                                {/* Personal Information */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-black font-medium mb-2">
+                                            <User className="w-4 h-4 inline mr-2" />
+                                            სახელი
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="firstName"
+                                            value={formData.firstName}
+                                            onChange={handleInputChange}
+                                            required
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-[#1B3729]"
                                         />
-                                        {/* Rental Badge */}
-                                        {item.isRental && (
-                                            <div className="absolute top-1 right-1 bg-blue-500 text-white text-xs px-1 py-0.5 rounded">
-                                                ქირა
-                                            </div>
-                                        )}
                                     </div>
-                                    <div className="flex-1">
-                                        <h3 className="text-[20px] text-black font-medium">{item.productName}</h3>
-                                        <p className="text-[20px] text-black text-gray-600">ზომა: {item.size}</p>
-                                        
-                                        {/* Rental Information */}
-                                        {item.isRental && item.rentalStartDate && item.rentalEndDate && (
-                                            <div className="text-sm text-blue-600 mt-1">
-                                                <p>ქირაობის პერიოდი: {formatDate(item.rentalStartDate)} - {formatDate(item.rentalEndDate)}</p>
-                                                <p>დღეების რაოდენობა: {item.rentalDays} დღე</p>
-                                                {item.deposit && item.deposit > 0 && (
-                                                    <p>გირაო: ₾{item.deposit.toFixed(2)}</p>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-[20px] text-black font-semibold">₾{(item.price * item.quantity).toFixed(2)}</p>
+                                    <div>
+                                        <label className="block text-black font-medium mb-2">
+                                            გვარი
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="lastName"
+                                            value={formData.lastName}
+                                            onChange={handleInputChange}
+                                            required
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-[#1B3729]"
+                                        />
                                     </div>
                                 </div>
-                            ))}
+
+                                {/* Contact Information */}
+                                <div>
+                                    <label className="block text-black font-medium mb-2">
+                                        <Mail className="w-4 h-4 inline mr-2" />
+                                        ელ. ფოსტა
+                                    </label>
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        value={formData.email}
+                                        onChange={handleInputChange}
+                                        required
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-[#1B3729]"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-black font-medium mb-2">
+                                        <Phone className="w-4 h-4 inline mr-2" />
+                                        ტელეფონი
+                                    </label>
+                                    <input
+                                        type="tel"
+                                        name="phone"
+                                        value={formData.phone}
+                                        onChange={handleInputChange}
+                                        required
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-[#1B3729]"
+                                    />
+                                </div>
+
+                                {/* Address Information */}
+                                <div>
+                                    <label className="block text-black font-medium mb-2">
+                                        <MapPin className="w-4 h-4 inline mr-2" />
+                                        მისამართი
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="address"
+                                        value={formData.address}
+                                        onChange={handleInputChange}
+                                        required
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-[#1B3729]"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-black font-medium mb-2">ქალაქი</label>
+                                    <input
+                                        type="text"
+                                        name="city"
+                                        value={formData.city}
+                                        onChange={handleInputChange}
+                                        required
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-[#1B3729]"
+                                    />
+                                </div>
+
+                                {/* Payment Method */}
+                                <div>
+                                    <label className="block text-black font-medium mb-2">
+                                        <CreditCard className="w-4 h-4 inline mr-2" />
+                                        გადახდის მეთოდი
+                                    </label>
+                                    <select
+                                        name="paymentMethod"
+                                        value={formData.paymentMethod}
+                                        onChange={handleInputChange}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-[#1B3729]"
+                                    >
+                                        <option value="card">ბანკის ბარათი</option>
+                                        <option value="cash">ნაღდი ფული</option>
+                                        <option value="transfer">ბანკის გადარიცხვა</option>
+                                    </select>
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    disabled={isProcessing}
+                                    className="flex md:text-[20px] text-[18px] font-bold justify-center items-center w-full mx-auto mt-6 bg-[#1B3729] text-white px-8 py-4 rounded-lg font-bold uppercase tracking-wide transition-colors duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed hover:opacity-95"
+                                >
+                                    {isProcessing ? 'მუშავდება...' : 'ყიდვა'}
+                                </button>
+                                </form>
+                            </div>
                         </div>
 
-                        {/* Summary */}
-                        <div className="border-t border-gray-200 pt-4 space-y-2">
-                            <div className="flex justify-between text-[20px] text-black">
-                                <span>ყიდვის ნივთები:</span>
-                                <span>{cartItems.filter(item => !item.isRental).reduce((total, item) => total + item.quantity, 0)}</span>
-                            </div>
-                            <div className="flex justify-between text-[20px] text-black">
-                                <span>ქირაობის ნივთები:</span>
-                                <span>{cartItems.filter(item => item.isRental).length}</span>
-                            </div>
-                            <div className="flex justify-between text-[20px] text-black font-semibold">
-                                <span>სულ თანხა:</span>
-                                <span>₾{getTotalPrice().toFixed(2)}</span>
-                            </div>
-                            {/* Show total deposit if any rental items have deposits */}
-                            {cartItems.some(item => item.isRental && item.deposit && item.deposit > 0) && (
-                                <div className="flex justify-between text-[20px] text-blue-600">
-                                    <span>გირაო (ქირაობისთვის):</span>
-                                    <span>₾{cartItems.filter(item => item.isRental).reduce((total, item) => total + (item.deposit || 0), 0).toFixed(2)}</span>
+                        {/* Order Summary */}
+                        <div className="lg:col-span-1">
+                            <div className="bg-white rounded-2xl shadow-sm p-6 sticky top-8">
+                                <h2 className="text-xl font-semibold text-black mb-6">შეკვეთის შეჯამება</h2>
+                                
+                                {/* Items */}
+                                <div className="space-y-4 mb-6">
+                                    {cartItems.map((item) => (
+                                        <div key={item.id} className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg">
+                                            <div className="relative w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                                                <Image
+                                                    src={item.image || '/placeholder.jpg'}
+                                                    alt={item.productName}
+                                                    fill
+                                                    className="object-cover"
+                                                    sizes="80px"
+                                                />
+                                                {/* Rental Badge */}
+                                                {item.isRental && (
+                                                    <div className="absolute top-1 right-1 bg-blue-500 text-white text-xs px-1 py-0.5 rounded">
+                                                        ქირა
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <h3 className="text-lg font-medium text-black truncate">{item.productName}</h3>
+                                                <p className="text-black text-sm">
+                                                    ზომა: <span className="font-medium">{item.size}</span>
+                                                </p>
+                                                
+                                                {/* Rental Information */}
+                                                {item.isRental && item.rentalStartDate && item.rentalEndDate && (
+                                                    <div className="text-sm text-blue-600 mb-1">
+                                                        <p>ქირაობის პერიოდი: {formatDate(item.rentalStartDate)} - {formatDate(item.rentalEndDate)}</p>
+                                                        <p>დღეების რაოდენობა: {item.rentalDays}</p>
+                                                        {item.deposit && item.deposit > 0 && (
+                                                            <p>გირაო: ₾{item.deposit.toFixed(2)}</p>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                
+                                                <p className="text-lg font-bold text-black">
+                                                    ₾{(item.price * item.quantity).toFixed(2)}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
-                            )}
+
+                                {/* Summary */}
+                                <div className="border-t border-gray-200 pt-4 space-y-4 mb-6">
+                                    <div className="flex justify-between text-black">
+                                        <span>ყიდვის ნივთები:</span>
+                                        <span className="font-medium">{cartItems.filter(item => !item.isRental).reduce((total, item) => total + item.quantity, 0)}</span>
+                                    </div>
+                                    <div className="flex justify-between text-black">
+                                        <span>ქირაობის ნივთები:</span>
+                                        <span className="font-medium">{cartItems.filter(item => item.isRental).length}</span>
+                                    </div>
+                                    <div className="flex justify-between text-black">
+                                        <span>ჯამური ღირებულება:</span>
+                                        <span className="font-bold text-lg">₾{getTotalPrice().toFixed(2)}</span>
+                                    </div>
+                                    {/* Show total deposit if any rental items have deposits */}
+                                    {cartItems.some(item => item.isRental && item.deposit && item.deposit > 0) && (
+                                        <div className="flex justify-between text-blue-600">
+                                            <span>გირაო (ქირაობისთვის):</span>
+                                            <span className="font-medium">₾{cartItems.filter(item => item.isRental).reduce((total, item) => total + (item.deposit || 0), 0).toFixed(2)}</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Shipping Info */}
+                                <div className="p-4 bg-gray-50 rounded-lg">
+                                    <h3 className="font-medium text-black mb-2">მიწოდების ინფორმაცია</h3>
+                                    <p className="text-black text-sm">
+                                        უფასო მიწოდება 50₾-ზე მეტი შეკვეთისთვის
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

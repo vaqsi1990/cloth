@@ -26,13 +26,17 @@ interface Cart {
 }
 
 export const useCart = () => {
-  const { data: session } = useSession()
+  const { data: session, status: sessionStatus } = useSession()
   const [cart, setCart] = useState<Cart | null>(null)
   const [loading, setLoading] = useState(false)
+  const [initialized, setInitialized] = useState(false)
 
   // Fetch cart from API
   const fetchCart = async () => {
-    if (!session?.user?.id) return
+    if (!session?.user?.id) {
+      setInitialized(true)
+      return
+    }
 
     try {
       setLoading(true)
@@ -42,8 +46,10 @@ export const useCart = () => {
       if (data.success) {
         setCart(data.cart)
       }
+      setInitialized(true)
     } catch (error) {
       console.error('Error fetching cart:', error)
+      setInitialized(true)
     } finally {
       setLoading(false)
     }
@@ -178,12 +184,18 @@ export const useCart = () => {
 
   // Fetch cart on mount and when session changes
   useEffect(() => {
+    if (sessionStatus === 'loading') {
+      // Still loading session, don't fetch yet
+      return
+    }
+    
     if (session?.user?.id) {
       fetchCart()
     } else {
       setCart(null)
+      setInitialized(true)
     }
-  }, [session?.user?.id])
+  }, [session?.user?.id, sessionStatus])
 
   return {
     cart,
@@ -195,6 +207,7 @@ export const useCart = () => {
     getTotalItems,
     getTotalPrice,
     loading,
+    initialized,
     fetchCart
   }
 }

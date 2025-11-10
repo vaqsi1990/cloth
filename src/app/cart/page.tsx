@@ -5,10 +5,9 @@ import Link from 'next/link'
 import { ShoppingCart, Plus, Minus, Trash2, ArrowLeft } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { formatDate } from '@/utils/dateUtils'
-
+import AnimatedDotsLoader from '@/component/AnimatedDotsLoader'
 const CartPage = () => {
-    const { cartItems, removeFromCart, updateQuantity, getTotalPrice, clearCart } = useCart()
-
+    const { cartItems, removeFromCart, updateQuantity, getTotalPrice, clearCart, loading, initialized } = useCart()
     const handleQuantityChange = async (id: number, newQuantity: number) => {
         if (newQuantity <= 0) {
             await removeFromCart(id)
@@ -20,19 +19,30 @@ const CartPage = () => {
     const handleRemoveItem = async (id: number) => {
         await removeFromCart(id)
     }
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center px-4">
+                <AnimatedDotsLoader />
+            </div>
+        )
+    }
 
-    if (cartItems.length === 0) {
+    if (initialized && !loading && cartItems.length === 0) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 py-16">
                 <div className="container mx-auto px-4">
                     <div className="max-w-2xl mx-auto text-center">
                         <div className="mb-8">
                             <ShoppingCart className="w-24 h-24 text-black mx-auto mb-4 opacity-50" />
-                            <h1 className="text-3xl font-bold text-black mb-4">თქვენი კალათა ცარიელია</h1>
-                            <p className="text-black text-lg mb-8">დაამატეთ ნივთები კალათაში შესაძენად</p>
+                            <h1 className="text-3xl font-bold text-black mb-4">
+                                თქვენი კალათა ცარიელია
+                            </h1>
+                            <p className="text-black text-lg mb-8">
+                                დაამატეთ ნივთები კალათაში შესაძენად
+                            </p>
                         </div>
-                        <Link 
-                            href="/shop" 
+                        <Link
+                            href="/shop"
                             className="inline-flex items-center bg-black text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-800 transition-colors"
                         >
                             <ArrowLeft className="w-5 h-5 mr-2" />
@@ -44,11 +54,13 @@ const CartPage = () => {
         )
     }
 
+
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 py-16">
             <div className="container mx-auto px-4">
                 <div className="max-w-6xl mx-auto">
-                    {/* Header */}
+                   
                     <div className="flex items-center justify-between mb-8">
                         <h1 className="text-3xl font-bold text-black">კალათა</h1>
                         <button
@@ -66,7 +78,7 @@ const CartPage = () => {
                                 <h2 className="text-xl font-semibold text-black mb-6">
                                     ნივთები ({cartItems.length})
                                 </h2>
-                                
+
                                 <div className="space-y-6">
                                     {cartItems.map((item) => (
                                         <div key={item.id} className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg">
@@ -95,7 +107,7 @@ const CartPage = () => {
                                                 <p className="text-black text-sm">
                                                     ზომა: <span className="font-medium">{item.size}</span>
                                                 </p>
-                                                
+
                                                 {/* Rental Information */}
                                                 {item.isRental && item.rentalStartDate && item.rentalEndDate && (
                                                     <div className="text-sm text-blue-600 mb-1">
@@ -106,7 +118,7 @@ const CartPage = () => {
                                                         )}
                                                     </div>
                                                 )}
-                                                
+
                                                 <p className="text-lg font-bold text-black">
                                                     ₾{item.price.toFixed(2)}
                                                 </p>
@@ -158,7 +170,7 @@ const CartPage = () => {
                         <div className="lg:col-span-1">
                             <div className="bg-white rounded-2xl shadow-sm p-6 sticky top-8">
                                 <h2 className="text-xl font-semibold text-black mb-6">შეკვეთის შეჯამება</h2>
-                                
+
                                 <div className="space-y-4 mb-6">
                                     <div className="flex justify-between text-black">
                                         <span>ყიდვის ნივთები:</span>
@@ -182,14 +194,14 @@ const CartPage = () => {
                                 </div>
 
                                 <div className="space-y-4">
-                                    <Link 
+                                    <Link
                                         href="/checkout"
                                         className="flex md:text-[20px] text-[18px] font-bold justify-center md:mt-14 items-center w-full mx-auto mt-4 bg-[#1B3729] text-white px-8 py-4 rounded-lg font-bold uppercase tracking-wide  transition-colors duration-300"
                                     >
                                         შეკვეთის გაფორმება
                                     </Link>
-                                    
-                                    <Link 
+
+                                    <Link
                                         href="/shop"
                                         className="w-full bg-gray-100 text-black py-4 px-6 rounded-lg font-semibold text-lg hover:bg-gray-200 transition-colors text-center block"
                                     >

@@ -565,7 +565,11 @@ const ProductPage = () => {
             isRental: false,
         })
 
-        if (!ok) showToast("შეცდომა კალათაში დამატებისას", "error")
+        if (ok) {
+            showToast("პროდუქტი დაემატა კალათაში", "success")
+        } else {
+            showToast("შეცდომა კალათაში დამატებისას", "error")
+        }
         setIsAdding(false)
     }
 
