@@ -10,7 +10,7 @@ import { showToast } from '@/utils/toast'
 import GooglePayButton from '@/component/GooglePayButton'
 
 const CheckoutPage = () => {
-    const { cartItems, getTotalPrice, getTotalItems, clearCart, loading, initialized } = useCart()
+    const { cartItems, getTotalPrice, loading, initialized } = useCart()
     const router = useRouter()
     
     const [formData, setFormData] = useState({
@@ -60,7 +60,7 @@ const CheckoutPage = () => {
             const totalAmount = getTotalPrice()
             const orderId = `order_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`
 
-            const orderData: any = {
+            const orderData = {
                 cart: {
                     items: cartItems.map(item => ({
                         productId: String(item.productId),
@@ -137,7 +137,13 @@ const CheckoutPage = () => {
         await processOrder()
     }
 
-    const handleGooglePaySuccess = async (paymentData: any) => {
+    const handleGooglePaySuccess = async (paymentData: {
+        paymentMethodData: {
+            tokenizationData: {
+                token: string
+            }
+        }
+    }) => {
         try {
             // Extract the payment token from Google Pay response
             const paymentMethodData = paymentData.paymentMethodData
