@@ -582,11 +582,7 @@ const ShopPageClient = () => {
                             </div>
 
                             {/* Results Count */}
-                            <div className="pt-4 border-t border-gray-200">
-                                <p className="md:text-[18px] text-[16px] text-black">
-                                    ნაპოვნია {sortedProducts.length} პროდუქტი
-                                </p>
-                            </div>
+                            
                         </div>
                     </div>
 
@@ -595,23 +591,22 @@ const ShopPageClient = () => {
                         {/* Top Bar with Sorting */}
                         <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0">
-                                <div className="flex items-center space-x-2">
+                               <h3 className="md:text-[20px] font-bold text-[18px] text-black">ყიდვა / გაქირავება</h3>
+                                <div className="flex flex-col md:flex-row gap-2 items-center space-x-2">
                                     <span className="md:text-[18px] text-[16px] text-black">დალაგება:</span>
                                     <select
                                         value={sortBy}
                                         onChange={(e) => setSortBy(e.target.value)}
-                                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                                        className="px-3 py-2 text-[16px] md:text-[18px} border border-gray-300 rounded-lg  focus:outline-none focus:ring-2 focus:ring-black"
                                     >
-                                        <option value="newest">ახალი</option>
-                                        <option value="price-low">ფასი: დაბლიდან მაღლა</option>
-                                        <option value="price-high">ფასი: მაღლიდან დაბლა</option>
-                                        <option value="rating">რეიტინგი</option>
+                                        <option className='text-[16px] md:text-[18px} text-black' value="newest">ახალი</option>
+                                        <option className='text-[16px] md:text-[18px} text-black' value="price-low">ფასი: დაბლიდან მაღლა</option>
+                                        <option className='text-[16px] md:text-[18px} text-black' value="price-high">ფასი: მაღლიდან დაბლა</option>
+                                        <option className='text-[16px] md:text-[18px} text-black' value="rating">რეიტინგი</option>
                                     </select>
                                 </div>
 
-                                <div className="md:text-[18px] text-[16px] text-black">
-                                    ნაპოვნია {sortedProducts.length} პროდუქტი
-                                </div>
+                                
                             </div>
                         </div>
 
