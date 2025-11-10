@@ -700,11 +700,7 @@ const ProductPage = () => {
                                             -{product.discount}%
                                         </span>
                                     )}
-                                    {product.isNew && (
-                                        <span className="bg-black text-white px-3 py-1 rounded-full text-xs font-semibold">
-                                            ახალი
-                                        </span>
-                                    )}
+                                   
                                 </div>
                             </div>
                         </div>
@@ -1094,6 +1090,18 @@ const ProductPage = () => {
                                         <span className="font-semibold">კატეგორია: </span>
                                         {product.category?.name || "—"}
                                     </li>
+                                    {product.sizeSystem && (
+                                        <li>
+                                            <span className="font-semibold">ზომის სისტემა: </span>
+                                            {product.sizeSystem?.toUpperCase() || "—"}
+                                        </li>
+                                    )}
+                                    {product.brand && (
+                                        <li>
+                                            <span className="font-semibold">ბრენდი: </span>
+                                            {product.brand}
+                                        </li>
+                                    )}
                                     <li>
                                         <span className="font-semibold">ზომა: </span>
                                         {selectedSize || "—"}
