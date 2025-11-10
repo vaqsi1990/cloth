@@ -1,0 +1,184 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.svg {
+  width: 200px;
+  height: 200px;
+  animation: spin 5s ease infinite alternate;
+  border-radius: 50%;
+
+}
+
+
+
+.svgCircular {
+  animation: spin 5s ease infinite alternate;
+  border-radius: 50%;
+}
+
+.svgLinear {
+  animation: none;
+  border-radius: 0%;
+}
+
+.shape {
+  r: 20;
+  animation: movein 5s ease infinite alternate;
+}
+
+.dot1 {
+  cy: 50;
+  cx: 50;
+  fill: #c20f00;
+}
+
+.dot2 {
+  cy: 50;
+  cx: 150;
+  fill: #ffdd22;
+}
+
+.dot3 {
+  cy: 150;
+  cx: 50;
+  fill: #2374c6;
+}
+
+.dot4 {
+  cy: 150;
+  cx: 150;
+  fill: #000000;
+}
+
+.darkDot4 {
+  fill: #ffffff;
+}
+
+.linearDot1 {
+  cy: 150;
+  cx: 40;
+  animation: moveup 2s ease infinite alternate;
+}
+
+.linearDot2 {
+  cy: 150;
+  cx: 80;
+  animation: moveup 2s ease 0.5s infinite alternate;
+}
+
+.linearDot3 {
+  cy: 150;
+  cx: 120;
+  animation: moveup 2s ease 1s infinite alternate;
+}
+
+.linearDot4 {
+  cy: 150;
+  cx: 160;
+  animation: moveup 2s ease 1.5s infinite alternate;
+}
+
+.label {
+  color: inherit;
+  font-weight: 500;
+}
+
+.controls {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.control {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #000000;
+}
+
+.darkLabel {
+  color: #ffffff;
+}
+
+.control input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 26px;
+  background-color: #ffdd22;
+  border-radius: 34px;
+  transition: background-color 0.4s;
+}
+
+.slider::before {
+  content: "";
+  position: absolute;
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background-color: #000000;
+  border-radius: 50%;
+  transition: transform 0.4s;
+}
+
+.control input:checked + .slider {
+  background-color: #c20f00;
+}
+
+.sliderLinear {
+  background-color: #ffdd22;
+}
+
+.sliderLinearActive {
+  background-color: #2374c6 !important;
+}
+
+.control input:checked + .slider::before {
+  transform: translateX(22px);
+}
+
+.control input:focus + .slider {
+  box-shadow: 0 0 3px #c20f00;
+}
+
+.linearControl {
+  color: #000000;
+}
+
+.linearControl input:checked + .slider {
+  box-shadow: 0 0 3px #2374c6;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes movein {
+  to {
+    cy: 100;
+    cx: 100;
+  }
+}
+
+@keyframes moveup {
+  to {
+    cy: 20;
+  }
+}
+

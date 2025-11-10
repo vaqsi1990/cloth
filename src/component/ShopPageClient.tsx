@@ -7,6 +7,7 @@ import { useSearchParams } from 'next/navigation'
 import { Product } from '@/types/product'
 import DatePicker from "react-datepicker"
 import "react-datepicker/dist/react-datepicker.css"
+import AnimatedDotsLoader from '@/component/AnimatedDotsLoader'
 
 const ShopPageClient = () => {
     const searchParams = useSearchParams()
@@ -336,6 +337,14 @@ const ShopPageClient = () => {
             return product.images[0].url
         }
         return '/placeholder.jpg'
+    }
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center px-4">
+                <AnimatedDotsLoader />
+            </div>
+        )
     }
 
     return (
