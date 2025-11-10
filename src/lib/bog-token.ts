@@ -56,7 +56,8 @@ class BOGTokenManager {
     } catch (error) {
       const axiosError = error as AxiosError<{ error?: string }>;
       const errorMessage = axiosError.response?.data?.error || axiosError.message || 'Unknown error';
-      console.error('❌ Failed to fetch BOG token:', axiosError.response?.data || errorMessage);
+      const errorData = axiosError.response?.data as { error?: string } | undefined;
+      console.error('❌ Failed to fetch BOG token:', errorData || errorMessage);
       throw new Error(`Failed to fetch BOG token: ${errorMessage}`);
     }
   }

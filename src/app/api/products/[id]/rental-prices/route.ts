@@ -99,7 +99,7 @@ export async function POST(
     })
 
     // Create new price tiers
-    const newPriceTiers = await prisma.rentalPriceTier.createMany({
+    await prisma.rentalPriceTier.createMany({
       data: validatedData.tiers.map(tier => ({
         productId,
         minDays: tier.minDays,

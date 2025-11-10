@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { bogTokenManager } from '@/lib/bog-token';
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     console.log('🔑 BOG Token Request - Using Token Manager');
     
@@ -25,16 +25,17 @@ export async function GET(req: NextRequest) {
       success: true,
       token_info: updatedTokenInfo,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('❌ BOG Token error:', error);
     
+    const errorObj = error instanceof Error ? error : new Error('Unknown error');
     let errorMessage = 'Failed to get BOG access token';
-    let errorDetails = error.message || 'Unknown error occurred';
+    let errorDetails = errorObj.message || 'Unknown error occurred';
     
-    if (error.message.includes('Missing BOG credentials')) {
+    if (errorObj.message.includes('Missing BOG credentials')) {
       errorMessage = 'Missing BOG credentials';
       errorDetails = 'BOG_CLIENT_ID and BOG_CLIENT_SECRET must be set in environment variables';
-    } else if (error.message.includes('unauthorized_client')) {
+    } else if (errorObj.message.includes('unauthorized_client')) {
       errorMessage = 'Invalid BOG credentials';
       errorDetails = 'Please check your BOG_CLIENT_ID and BOG_CLIENT_SECRET. Make sure they are correct and match your BOG application registration.';
     }
