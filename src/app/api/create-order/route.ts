@@ -30,6 +30,8 @@ interface OrderDataInput {
     lastName: string
     email: string
   }
+  paymentMethod?: 'google_pay' | 'card'
+  googlePayToken?: string
 }
 
 interface BOGBasketItem {
@@ -49,6 +51,7 @@ interface BOGResponse {
   }
   id?: string
   order_id?: string
+  status?: string
 }
 
 // Validation schema
@@ -72,7 +75,9 @@ const orderDataSchema = z.object({
       firstName: z.string(),
       lastName: z.string(),
       email: z.string().email()
-    }).optional()
+    }).optional(),
+    paymentMethod: z.enum(['google_pay', 'card']).optional(),
+    googlePayToken: z.string().optional()
   })
 })
 
@@ -276,7 +281,7 @@ export async function POST(req: NextRequest) {
     const databaseOrderId = databaseOrder.id.toString()
 
     // Prepare the request data for BOG
-    const bogRequestData = {
+    const bogRequestData: any = {
       callback_url: 'https://www.dressla.ge/api/payment-callback',
       external_order_id: databaseOrderId,
       purchase_units: {
@@ -287,6 +292,17 @@ export async function POST(req: NextRequest) {
       redirect_urls: {
         success: `https://www.dressla.ge/order-confirmation?status=success&orderId=${databaseOrder.id}`,
         fail: `https://www.dressla.ge/payment-fail?orderId=${databaseOrder.id}`
+      }
+    }
+
+    // Add Google Pay configuration if using Google Pay
+    if (orderData.paymentMethod === 'google_pay' && orderData.googlePayToken) {
+      bogRequestData.payment_method = ['google_pay']
+      bogRequestData.config = {
+        google_pay: {
+          external: true,
+          google_pay_token: orderData.googlePayToken
+        }
       }
     }
 
@@ -320,7 +336,6 @@ export async function POST(req: NextRequest) {
 
       // Extract redirect URL from BOG response
       bogOrderId = response.data.id || response.data.order_id
-      const finalRedirectUrl = extractRedirectUrl(response.data, databaseOrderId)
 
       // Update order with BOG payment ID
       await prisma.order.update({
@@ -329,6 +344,33 @@ export async function POST(req: NextRequest) {
       })
 
       console.log(`✅ Order ${databaseOrder.id} updated with BOG payment ID: ${bogOrderId}`)
+
+      // Check if payment is completed (for Google Pay, it might complete immediately)
+      const paymentStatus = response.data.status
+      if (paymentStatus === 'completed' && orderData.paymentMethod === 'google_pay') {
+        // Update order status to PAID
+        await prisma.order.update({
+          where: { id: databaseOrder.id },
+          data: { status: 'PAID' }
+        })
+
+        // Clear the cart after successful order creation
+        await prisma.cartItem.deleteMany({
+          where: { cartId: userCart.id }
+        })
+
+        console.log(`✅ Cart cleared for user: ${session.user.id}`)
+
+        return NextResponse.json({
+          success: true,
+          orderId: databaseOrder.id,
+          bogOrderId: bogOrderId || undefined,
+          status: 'completed'
+        })
+      }
+
+      // For regular card payments, extract redirect URL
+      const finalRedirectUrl = extractRedirectUrl(response.data, databaseOrderId)
 
       // Send order receipt email to customer (non-blocking)
       // Uncomment if email functions are available

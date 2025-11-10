@@ -7,7 +7,7 @@ import { ArrowLeft, MapPin, Phone, Mail, User, ShoppingCart } from 'lucide-react
 import Link from 'next/link'
 import { formatDate } from '@/utils/dateUtils'
 import { showToast } from '@/utils/toast'
-import AnimatedDotsLoader from '@/component/AnimatedDotsLoader'
+import GooglePayButton from '@/component/GooglePayButton'
 
 const CheckoutPage = () => {
     const { cartItems, getTotalPrice, getTotalItems, clearCart, loading, initialized } = useCart()
@@ -23,6 +23,7 @@ const CheckoutPage = () => {
     })
     
     const [isProcessing, setIsProcessing] = useState(false)
+    const [paymentMethod, setPaymentMethod] = useState<'card' | 'google_pay'>('card')
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target
@@ -48,8 +49,7 @@ const CheckoutPage = () => {
         }
     }
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
+    const processOrder = async (googlePayToken?: string) => {
         setIsProcessing(true)
         
         try {
@@ -60,7 +60,7 @@ const CheckoutPage = () => {
             const totalAmount = getTotalPrice()
             const orderId = `order_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`
 
-            const orderData = {
+            const orderData: any = {
                 cart: {
                     items: cartItems.map(item => ({
                         productId: String(item.productId),
@@ -80,6 +80,12 @@ const CheckoutPage = () => {
                 }
             }
 
+            // Add Google Pay configuration if using Google Pay
+            if (paymentMethod === 'google_pay' && googlePayToken) {
+                orderData.paymentMethod = 'google_pay'
+                orderData.googlePayToken = googlePayToken
+            }
+
             // Step 3: Create payment order
             const res = await fetch('/api/create-order', {
                 method: 'POST',
@@ -92,28 +98,64 @@ const CheckoutPage = () => {
 
             const data = await res.json()
 
-            if (data.success && data.redirectUrl) {
-                // Store payment info as backup
-                sessionStorage.setItem('pendingPayment', JSON.stringify({
-                    redirectUrl: data.redirectUrl,
-                    orderId: data.orderId,
-                    bogOrderId: data.bogOrderId
-                }))
-                
-                // Redirect to BOG payment page (component will unmount, so no need to reset state)
-                window.location.href = data.redirectUrl
+            if (data.success) {
+                if (data.redirectUrl) {
+                    // Store payment info as backup
+                    sessionStorage.setItem('pendingPayment', JSON.stringify({
+                        redirectUrl: data.redirectUrl,
+                        orderId: data.orderId,
+                        bogOrderId: data.bogOrderId
+                    }))
+                    
+                    // Redirect to BOG payment page (component will unmount, so no need to reset state)
+                    window.location.href = data.redirectUrl
+                } else if (data.orderId) {
+                    // Google Pay payment completed, redirect to confirmation
+                    router.push(`/order-confirmation?orderId=${data.orderId}`)
+                } else {
+                    showToast('გადახდა წარმატებით დასრულდა', 'success')
+                }
             } else {
                 console.error('Payment order creation failed:', data)
                 showToast(data.error || 'დაფიქსირდა შეცდომა გადახდის დაწყებისას', 'error')
+                setIsProcessing(false)
             }
         } catch (error) {
             console.error('Error submitting order:', error)
             const errorMessage = error instanceof Error ? error.message : 'მოულოდნელი შეცდომა'
             showToast(errorMessage, 'error')
-        } finally {
-            // Reset processing state (if redirect happened, component will unmount anyway)
             setIsProcessing(false)
         }
+    }
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (paymentMethod === 'google_pay') {
+            // Google Pay will be handled by the button's onPaymentSuccess callback
+            return
+        }
+        await processOrder()
+    }
+
+    const handleGooglePaySuccess = async (paymentData: any) => {
+        try {
+            // Extract the payment token from Google Pay response
+            const paymentMethodData = paymentData.paymentMethodData
+            const token = paymentMethodData.tokenizationData.token
+            
+            // Process order with Google Pay token
+            await processOrder(token)
+        } catch (error) {
+            console.error('Error processing Google Pay:', error)
+            showToast('დაფიქსირდა შეცდომა Google Pay გადახდის დამუშავებისას', 'error')
+            setIsProcessing(false)
+        }
+    }
+
+    const handleGooglePayError = (error: Error) => {
+        console.error('Google Pay error:', error)
+        showToast('Google Pay-ის გამოყენებისას დაფიქსირდა შეცდომა', 'error')
+        setIsProcessing(false)
     }
 
     // if (loading) {
@@ -264,13 +306,54 @@ const CheckoutPage = () => {
                                     />
                                 </div>
 
-                                <button
-                                    type="submit"
-                                    disabled={isProcessing}
-                                    className="flex md:text-[20px] text-[18px] font-bold justify-center items-center w-full mx-auto mt-6 bg-[#1B3729] text-white px-8 py-4 rounded-lg font-bold uppercase tracking-wide transition-colors duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed hover:opacity-95"
-                                >
-                                    {isProcessing ? 'მუშავდება...' : 'ბარათით ყიდვა'}
-                                </button>
+                                {/* Payment Method Selection */}
+                                <div className="mb-6">
+                                    <h3 className="text-lg font-semibold text-black mb-4">გადახდის მეთოდი</h3>
+                                    <div className="space-y-3">
+                                        <label className="flex items-center space-x-3 p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-[#1B3729] transition-colors">
+                                            <input
+                                                type="radio"
+                                                name="paymentMethod"
+                                                value="card"
+                                                checked={paymentMethod === 'card'}
+                                                onChange={(e) => setPaymentMethod(e.target.value as 'card' | 'google_pay')}
+                                                className="w-5 h-5 text-[#1B3729] focus:ring-[#1B3729]"
+                                            />
+                                            <span className="text-black font-medium">ბანკის ბარათი</span>
+                                        </label>
+                                        <label className="flex items-center space-x-3 p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-[#1B3729] transition-colors">
+                                            <input
+                                                type="radio"
+                                                name="paymentMethod"
+                                                value="google_pay"
+                                                checked={paymentMethod === 'google_pay'}
+                                                onChange={(e) => setPaymentMethod(e.target.value as 'card' | 'google_pay')}
+                                                className="w-5 h-5 text-[#1B3729] focus:ring-[#1B3729]"
+                                            />
+                                            <span className="text-black font-medium">Google Pay</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                {paymentMethod === 'card' ? (
+                                    <button
+                                        type="submit"
+                                        disabled={isProcessing}
+                                        className="flex md:text-[20px] text-[18px] font-bold justify-center items-center w-full mx-auto mt-6 bg-[#1B3729] text-white px-8 py-4 rounded-lg font-bold uppercase tracking-wide transition-colors duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed hover:opacity-95"
+                                    >
+                                        {isProcessing ? 'მუშავდება...' : 'ბარათით ყიდვა'}
+                                    </button>
+                                ) : (
+                                    <div className="mt-6">
+                                        <GooglePayButton
+                                            totalAmount={getTotalPrice()}
+                                            currency="GEL"
+                                            onPaymentSuccess={handleGooglePaySuccess}
+                                            onError={handleGooglePayError}
+                                            disabled={isProcessing}
+                                        />
+                                    </div>
+                                )}
                                 </form>
                             </div>
                         </div>

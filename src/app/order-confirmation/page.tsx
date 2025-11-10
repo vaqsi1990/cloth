@@ -342,18 +342,18 @@ const OrderConfirmationContent = () => {
     )
 }
 
-// const OrderConfirmationPage = () => {
-//     return (
-//         <Suspense
-//             fallback={
-//                 <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center px-4">
-//                     <AnimatedDotsLoader />
-//                 </div>
-//             }
-//         >
-//             <OrderConfirmationContent />
-//         </Suspense>
-//     )
-// }
+const OrderConfirmationPage = () => {
+    return (
+        <Suspense
+            fallback={
+                <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center px-4">
+                    <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
+                </div>
+            }
+        >
+            <OrderConfirmationContent />
+        </Suspense>
+    )
+}
 
-export default  OrderConfirmationContent
+export default OrderConfirmationPage
