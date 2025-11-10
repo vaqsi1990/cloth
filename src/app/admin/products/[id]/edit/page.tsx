@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { Product } from '@/types/product'
 import ImageUpload from '@/component/CloudinaryUploader'
 import ImageUploadForProduct from '@/component/productimage'
+import { showToast } from '@/utils/toast'
 const productSchema = z.object({
   name: z.string().min(1, 'სახელი აუცილებელია'),
   slug: z.string().min(1, 'Slug აუცილებელია').regex(/^[a-z0-9-]+$/, 'Slug უნდა შეიცავდეს მხოლოდ პატარა ასოებს, ციფრებს და ტირეებს'),
@@ -305,7 +306,7 @@ const EditProductPage = () => {
       
       if (result.success) {
         console.log('=== SUCCESS ===')
-        alert('პროდუქტი წარმატებით განახლდა!')
+        showToast('პროდუქტი წარმატებით განახლდა!', 'success')
         router.push('/admin')
       } else {
         console.log('=== API ERROR ===')
@@ -319,7 +320,7 @@ const EditProductPage = () => {
           })
           setErrors(newErrors)
         } else {
-          alert(result.message || 'შეცდომა პროდუქტის განახლებისას')
+          showToast(result.message || 'შეცდომა პროდუქტის განახლებისას', 'error')
         }
       }
     } catch (error) {
@@ -336,7 +337,7 @@ const EditProductPage = () => {
         setErrors(newErrors)
       } else {
         console.error('General error:', error)
-        alert('შეცდომა პროდუქტის განახლებისას')
+        showToast('შეცდომა პროდუქტის განახლებისას', 'error')
       }
     } finally {
       console.log('=== FINALLY BLOCK ===')

@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { MessageCircle, Send, Clock, XCircle, Play, Trash2 } from 'lucide-react'
 import { formatDateTime } from '@/utils/dateUtils'
+import { showToast } from '@/utils/toast'
 
 interface ChatMessage {
   id: number
@@ -189,7 +190,7 @@ const AdminChatPage = () => {
       console.error('Error sending message:', error)
       // Restore message if sending failed
       setNewMessage(messageToSend)
-      alert('შეცდომა მესიჯის გაგზავნისას. სცადეთ კვლავ.')
+      showToast('შეცდომა მესიჯის გაგზავნისას. სცადეთ კვლავ.', 'error')
     } finally {
       setIsLoading(false)
     }
@@ -217,7 +218,7 @@ const AdminChatPage = () => {
 
   const deleteChatRoom = async () => {
     if (!chatRoomToDelete || deleteConfirmText !== 'DELETE') {
-      alert('გთხოვთ შეიყვანოთ "DELETE" დასადასტურებლად')
+      showToast('გთხოვთ შეიყვანოთ "DELETE" დასადასტურებლად', 'warning')
       return
     }
 
@@ -238,13 +239,13 @@ const AdminChatPage = () => {
         setShowDeleteModal(false)
         setDeleteConfirmText('')
         setChatRoomToDelete(null)
-        alert('საუბარი წარმატებით წაიშალა')
+        showToast('საუბარი წარმატებით წაიშალა', 'success')
       } else {
-        alert('შეცდომა საუბრის წაშლისას: ' + data.message)
+        showToast('შეცდომა საუბრის წაშლისას: ' + data.message, 'error')
       }
     } catch (error) {
       console.error('Error deleting chat room:', error)
-      alert('შეცდომა საუბრის წაშლისას')
+      showToast('შეცდომა საუბრის წაშლისას', 'error')
     }
   }
 

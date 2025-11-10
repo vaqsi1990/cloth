@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Save, User, Mail, Lock, AlertTriangle, Eye, EyeOff, Camera } from 'lucide-react'
 import ImageUpload from '@/component/CloudinaryUploader'
+import { showToast } from '@/utils/toast'
 
 const AdminSettingsPage = () => {
   const { data: session, status, update } = useSession()
@@ -186,15 +187,15 @@ const AdminSettingsPage = () => {
           email: profileData.email
         })
         
-        alert('პროფილის სურათი წარმატებით განახლდა!')
+        showToast('პროფილის სურათი წარმატებით განახლდა!', 'success')
         setIsEditingProfile(false)
       } else {
         console.error('Profile update failed:', result)
-        alert(`შეცდომა სურათის ატვირთვისას: ${result.error || 'Unknown error'}`)
+        showToast(`შეცდომა სურათის ატვირთვისას: ${result.error || 'Unknown error'}`, 'error')
       }
     } catch (error) {
       console.error('Error uploading image:', error)
-      alert('შეცდომა სურათის ატვირთვისას')
+      showToast('შეცდომა სურათის ატვირთვისას', 'error')
     } finally {
       setIsUploadingImage(false)
     }

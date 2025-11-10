@@ -4,6 +4,7 @@
 import { UploadButton } from "@/utils/uploadthing";
 import { useState } from "react";
 import Image from "next/image";
+import { showToast } from "@/utils/toast";
 
 type ImageUploadProps = {
   onChange: (urls: string[]) => void;
@@ -21,13 +22,13 @@ const ImageUpload = ({ onChange, value }: ImageUploadProps): React.JSX.Element =
     setImageUrls(newUrls);
     onChange(newUrls);
     setIsUploading(false);
-    alert("სურათი აიტვირთა");
+    showToast("სურათი აიტვირთა", "success");
   };
 
   const handleUploadError = (error: Error) => {
     console.error("Upload error:", error);
     setIsUploading(false);
-    alert(`Upload error: ${error.message}`);
+    showToast(`Upload error: ${error.message}`, "error");
   };
 
   const handleUploadBegin = () => {

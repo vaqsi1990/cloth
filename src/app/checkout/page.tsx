@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, CreditCard, MapPin, Phone, Mail, User } from 'lucide-react'
 import Link from 'next/link'
 import { formatDate } from '@/utils/dateUtils'
+import { showToast } from '@/utils/toast'
 
 const CheckoutPage = () => {
     const { cartItems, getTotalPrice, getTotalItems, clearCart } = useCart()
@@ -72,15 +73,15 @@ const CheckoutPage = () => {
             const result = await response.json()
 
             if (result.success) {
-                alert('შეკვეთა წარმატებით გაფორმდა!')
+                showToast('შეკვეთა წარმატებით გაფორმდა!', 'success')
                 clearCart()
                 router.push('/')
             } else {
-                alert(result.message || 'შეცდომა შეკვეთის გაფორმებისას')
+                showToast(result.message || 'შეცდომა შეკვეთის გაფორმებისას', 'error')
             }
         } catch (error) {
             console.error('Error submitting order:', error)
-            alert('მოულოდნელი შეცდომა')
+            showToast('მოულოდნელი შეცდომა', 'error')
         } finally {
             setIsProcessing(false)
         }

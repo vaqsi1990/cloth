@@ -22,6 +22,7 @@ import { Product, RentalPeriod } from "@/types/product"
 import { formatDate } from "@/utils/dateUtils"
 import SimilarProducts from "@/components/SimilarProducts"
 import StarRating from "@/components/StarRating"
+import { showToast } from "@/utils/toast"
 
 type Tier = { minDays: number; pricePerDay: number }
 
@@ -181,11 +182,11 @@ const ProductPage = () => {
 
     const handleSubmitReview = async () => {
         if (!session) {
-            alert('გთხოვთ შეხვიდეთ სისტემაში კომენტარის დასაწერად')
+            showToast('გთხოვთ შეხვიდეთ სისტემაში კომენტარის დასაწერად', 'warning')
             return
         }
         if (reviewRating === 0) {
-            alert('გთხოვთ აირჩიოთ რეიტინგი')
+            showToast('გთხოვთ აირჩიოთ რეიტინგი', 'warning')
             return
         }
         try {
@@ -216,13 +217,13 @@ const ProductPage = () => {
                 }
                 setReviewRating(0) // Reset rating
                 setReviewComment('')
-                alert('კომენტარი წარმატებით დაემატა')
+                showToast('კომენტარი წარმატებით დაემატა', 'success')
             } else {
-                alert(data.error || 'შეცდომა კომენტარის დამატებისას')
+                showToast(data.error || 'შეცდომა კომენტარის დამატებისას', 'error')
             }
         } catch (error) {
             console.error('Error submitting review:', error)
-            alert('შეცდომა კომენტარის დამატებისას')
+            showToast('შეცდომა კომენტარის დამატებისას', 'error')
         } finally {
             setSubmittingReview(false)
         }
@@ -243,7 +244,7 @@ const ProductPage = () => {
     const handleUpdateReview = async () => {
         if (!session || !editingReviewId) return
         if (editingRating === 0) {
-            alert('გთხოვთ აირჩიოთ რეიტინგი')
+            showToast('გთხოვთ აირჩიოთ რეიტინგი', 'warning')
             return
         }
         try {
@@ -275,13 +276,13 @@ const ProductPage = () => {
                 setEditingReviewId(null)
                 setEditingRating(0)
                 setEditingComment('')
-                alert('კომენტარი წარმატებით განახლდა')
+                showToast('კომენტარი წარმატებით განახლდა', 'success')
             } else {
-                alert(data.error || 'შეცდომა კომენტარის განახლებისას')
+                showToast(data.error || 'შეცდომა კომენტარის განახლებისას', 'error')
             }
         } catch (error) {
             console.error('Error updating review:', error)
-            alert('შეცდომა კომენტარის განახლებისას')
+            showToast('შეცდომა კომენტარის განახლებისას', 'error')
         } finally {
             setSubmittingReview(false)
         }
@@ -312,13 +313,13 @@ const ProductPage = () => {
                         setProduct({ ...product, rating: reviewsData.averageRating })
                     }
                 }
-                alert('კომენტარი წარმატებით წაიშალა')
+                showToast('კომენტარი წარმატებით წაიშალა', 'success')
             } else {
-                alert(data.error || 'შეცდომა კომენტარის წაშლისას')
+                showToast(data.error || 'შეცდომა კომენტარის წაშლისას', 'error')
             }
         } catch (error) {
             console.error('Error deleting review:', error)
-            alert('შეცდომა კომენტარის წაშლისას')
+            showToast('შეცდომა კომენტარის წაშლისას', 'error')
         } finally {
             setDeletingReviewId(null)
         }
@@ -337,7 +338,7 @@ const ProductPage = () => {
     const handleSubmitReply = async () => {
         if (!session || !replyingToReviewId) return
         if (!replyComment.trim()) {
-            alert('გთხოვთ შეიყვანოთ პასუხი')
+            showToast('გთხოვთ შეიყვანოთ პასუხი', 'warning')
             return
         }
         try {
@@ -363,13 +364,13 @@ const ProductPage = () => {
                 }
                 setReplyingToReviewId(null)
                 setReplyComment('')
-                alert('პასუხი წარმატებით დაემატა')
+                showToast('პასუხი წარმატებით დაემატა', 'success')
             } else {
-                alert(data.error || 'შეცდომა პასუხის დამატებისას')
+                showToast(data.error || 'შეცდომა პასუხის დამატებისას', 'error')
             }
         } catch (error) {
             console.error('Error submitting reply:', error)
-            alert('შეცდომა პასუხის დამატებისას')
+            showToast('შეცდომა პასუხის დამატებისას', 'error')
         } finally {
             setSubmittingReply(false)
         }
@@ -396,13 +397,13 @@ const ProductPage = () => {
                     setAverageRating(reviewsData.averageRating)
                     setTotalReviews(reviewsData.totalReviews)
                 }
-                alert('პასუხი წარმატებით წაიშალა')
+                showToast('პასუხი წარმატებით წაიშალა', 'success')
             } else {
-                alert(data.error || 'შეცდომა პასუხის წაშლისას')
+                showToast(data.error || 'შეცდომა პასუხის წაშლისას', 'error')
             }
         } catch (error) {
             console.error('Error deleting reply:', error)
-            alert('შეცდომა პასუხის წაშლისას')
+            showToast('შეცდომა პასუხის წაშლისას', 'error')
         } finally {
             setDeletingReplyId(null)
         }
@@ -564,7 +565,7 @@ const ProductPage = () => {
             isRental: false,
         })
 
-        if (!ok) alert("შეცდომა კალათაში დამატებისას")
+        if (!ok) showToast("შეცდომა კალათაში დამატებისას", "error")
         setIsAdding(false)
     }
 
@@ -573,12 +574,12 @@ const ProductPage = () => {
         
         // Only block if product is in maintenance or completely unavailable
         if (product.status === 'MAINTENANCE') {
-            alert("პროდუქტი რესტავრაციაზეა და ამჟამად ხელმისაწვდომი არ არის")
+            showToast("პროდუქტი რესტავრაციაზეა და ამჟამად ხელმისაწვდომი არ არის", "warning")
             return
         }
         
         if (!rentalStartDate || !rentalEndDate) {
-            alert("აირჩიე ქირაობის თარიღები")
+            showToast("აირჩიე ქირაობის თარიღები", "warning")
             return
         }
         
@@ -595,7 +596,7 @@ const ProductPage = () => {
         })
         
         if (conflicts.length > 0) {
-            alert("ამ თარიღებზე პროდუქტი დაკავებულია. გთხოვთ აირჩიოთ სხვა თარიღები")
+            showToast("ამ თარიღებზე პროდუქტი დაკავებულია. გთხოვთ აირჩიოთ სხვა თარიღები", "warning")
             return
         }
         
@@ -619,7 +620,7 @@ const ProductPage = () => {
             deposit: product.deposit || 0,
         })
 
-        if (!ok) alert("შეცდომა ქირაობის დამატებისას")
+        if (!ok) showToast("შეცდომა ქირაობის დამატებისას", "error")
         setIsAdding(false)
     }
 

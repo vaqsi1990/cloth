@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { MessageCircle, Send, X, Minimize2, Maximize2 } from 'lucide-react'
 import { formatDateTime } from '@/utils/dateUtils'
 import { useSession } from 'next-auth/react'
+import { showToast } from '@/utils/toast'
 
 interface ChatMessage {
   id: number
@@ -147,7 +148,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
 
     // Client-side validation
     if (newMessage.trim().length > 1000) {
-      alert('მესიჯი ძალიან გრძელია. მაქსიმუმ 1000 სიმბოლო.')
+      showToast('მესიჯი ძალიან გრძელია. მაქსიმუმ 1000 სიმბოლო.', 'warning')
       return
     }
 
@@ -248,7 +249,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
       
       // Show more specific error message
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      alert(`შეცდომა მესიჯის გაგზავნისას: ${errorMessage}`)
+      showToast(`შეცდომა მესიჯის გაგზავნისას: ${errorMessage}`, 'error')
     } finally {
       setIsLoading(false)
     }
@@ -291,13 +292,13 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
         setGuestName('')
         setGuestEmail('')
         
-        alert('ლაპარაკი წარმატებით დასრულდა')
+        showToast('ლაპარაკი წარმატებით დასრულდა', 'success')
       } else {
-        alert('შეცდომა ლაპარაკის დასრულებისას')
+        showToast('შეცდომა ლაპარაკის დასრულებისას', 'error')
       }
     } catch (error) {
       console.error('Error ending chat:', error)
-      alert('შეცდომა ლაპარაკის დასრულებისას')
+      showToast('შეცდომა ლაპარაკის დასრულებისას', 'error')
     } finally {
       setIsEndingChat(false)
     }

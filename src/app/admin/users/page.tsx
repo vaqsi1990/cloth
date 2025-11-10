@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, Search, Filter, Users, Mail, Calendar, Package, ShoppingCart, Trash2, UserCheck, UserX, Phone, User } from 'lucide-react'
+import { showToast } from '@/utils/toast'
 
 interface User {
   personalId: string | null
@@ -123,11 +124,11 @@ const AdminUsersPage = () => {
       if (response.ok) {
         setUsers(users.filter(u => u.id !== userId))
       } else {
-        alert('შეცდომა მომხმარებლის წაშლისას')
+        showToast('შეცდომა მომხმარებლის წაშლისას', 'error')
       }
     } catch (error) {
       console.error('Error deleting user:', error)
-      alert('შეცდომა მომხმარებლის წაშლისას')
+      showToast('შეცდომა მომხმარებლის წაშლისას', 'error')
     }
   }
 
@@ -152,11 +153,11 @@ const AdminUsersPage = () => {
           u.id === userId ? { ...u, role: newRole } : u
         ))
       } else {
-        alert('შეცდომა როლის შეცვლისას')
+        showToast('შეცდომა როლის შეცვლისას', 'error')
       }
     } catch (error) {
       console.error('Error updating role:', error)
-      alert('შეცდომა როლის შეცვლისას')
+      showToast('შეცდომა როლის შეცვლისას', 'error')
     }
   }
 

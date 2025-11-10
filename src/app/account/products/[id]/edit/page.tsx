@@ -5,6 +5,7 @@ import { ArrowLeft, Save, X, Plus } from 'lucide-react'
 import { z } from 'zod'
 import { Product } from '@/types/product'
 import ImageUploadForProduct from '@/component/productimage'
+import { showToast } from '@/utils/toast'
 
 const productSchema = z.object({
   name: z.string().min(1, 'სახელი აუცილებელია'),
@@ -274,7 +275,7 @@ const EditProductPage = () => {
       const result = await response.json()
       
       if (result.success) {
-        alert('პროდუქტი წარმატებით განახლდა!')
+        showToast('პროდუქტი წარმატებით განახლდა!', 'success')
         router.push('/account')
       } else {
         if (result.errors) {
@@ -286,7 +287,7 @@ const EditProductPage = () => {
           })
           setErrors(newErrors)
         } else {
-          alert(result.message || 'შეცდომა პროდუქტის განახლებისას')
+          showToast(result.message || 'შეცდომა პროდუქტის განახლებისას', 'error')
         }
       }
     } catch (error) {
@@ -300,7 +301,7 @@ const EditProductPage = () => {
         })
         setErrors(newErrors)
       } else {
-        alert('შეცდომა პროდუქტის განახლებისას')
+        showToast('შეცდომა პროდუქტის განახლებისას', 'error')
       }
     } finally {
       setIsSubmitting(false)

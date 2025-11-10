@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { formatDate, formatDateTime } from '@/utils/dateUtils'
 import Link from 'next/link'
 import { ArrowLeft, Search, Filter, ShoppingCart, Package, User, MapPin, Phone, Mail, CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
+import { showToast } from '@/utils/toast'
 
 interface OrderItem {
   id: number
@@ -109,11 +110,11 @@ const AdminOrdersPage = () => {
           order.id === orderId ? { ...order, status: newStatus } : order
         ))
       } else {
-        alert('შეცდომა სტატუსის განახლებისას')
+        showToast('შეცდომა სტატუსის განახლებისას', 'error')
       }
     } catch (error) {
       console.error('Error updating status:', error)
-      alert('შეცდომა სტატუსის განახლებისას')
+      showToast('შეცდომა სტატუსის განახლებისას', 'error')
     }
   }
 
@@ -129,14 +130,14 @@ const AdminOrdersPage = () => {
       
       if (response.ok) {
         setOrders(orders.filter(order => order.id !== orderId))
-        alert('შეკვეთა წაიშალა წარმატებით')
+        showToast('შეკვეთა წაიშალა წარმატებით', 'success')
       } else {
         const data = await response.json()
-        alert(data.message || 'შეცდომა შეკვეთის წაშლისას')
+        showToast(data.message || 'შეცდომა შეკვეთის წაშლისას', 'error')
       }
     } catch (error) {
       console.error('Error deleting order:', error)
-      alert('შეცდომა შეკვეთის წაშლისას')
+      showToast('შეცდომა შეკვეთის წაშლისას', 'error')
     }
   }
 

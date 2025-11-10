@@ -313,3 +313,13 @@ body {
   color: #9ca3af !important;
 }
 
+/* React-Toastify custom styling with gradient background */
+.Toastify__toast {
+  background: linear-gradient(to bottom right, #fef2f2, #fff7ed) !important;
+  border-radius: 8px !important;
+}
+
+.Toastify__toast-body {
+  background: linear-gradient(to bottom right, #fef2f2, #fff7ed) !important;
+}
+

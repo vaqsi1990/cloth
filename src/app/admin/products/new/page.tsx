@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { z } from 'zod'
 
 import ImageUploadForProduct from '@/component/productimage'
+import { showToast } from '@/utils/toast'
 
 const productSchema = z.object({
   name: z.string().min(1, 'სახელი აუცილებელია'),
@@ -264,7 +265,7 @@ const NewProductPage = () => {
       const result = await response.json()
 
       if (result.success) {
-        alert('პროდუქტი წარმატებით შეიქმნა!')
+        showToast('პროდუქტი წარმატებით შეიქმნა!', 'success')
         router.push('/admin')
       } else {
         if (result.errors) {
@@ -276,7 +277,7 @@ const NewProductPage = () => {
           })
           setErrors(newErrors)
         } else {
-          alert(result.message || 'შეცდომა პროდუქტის შექმნისას')
+          showToast(result.message || 'შეცდომა პროდუქტის შექმნისას', 'error')
         }
       }
 
@@ -291,7 +292,7 @@ const NewProductPage = () => {
         })
         setErrors(newErrors)
       } else {
-        alert('მოულოდნელი შეცდომა')
+        showToast('მოულოდნელი შეცდომა', 'error')
       }
     } finally {
       setIsSubmitting(false)

@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { User, Package, ShoppingCart, Settings, MapPin, Phone, Mail, Camera, MessageCircle, Search, Trash2 } from 'lucide-react'
 import ImageUpload from '@/component/CloudinaryUploader'
 import ContactForm from '@/component/ContactForm'
+import { showToast } from '@/utils/toast'
 
 interface Order {
   id: number
@@ -118,7 +119,7 @@ const AccountPage = () => {
     if (session?.user?.id) {
       fetch('/api/user/me').then(r => r.json()).then(d => {
         if (d?.user?.banned) {
-          alert(d.user.banReason ? `თქვენი ანგარიში დაბლოკილია: ${d.user.banReason}` : 'თქვენი ანგარიში დაბლოკილია')
+          showToast(d.user.banReason ? `თქვენი ანგარიში დაბლოკილია: ${d.user.banReason}` : 'თქვენი ანგარიში დაბლოკილია', 'error')
           router.push('/')
         }
       }).catch(() => { })
@@ -190,15 +191,15 @@ const AccountPage = () => {
           location: (session?.user as { location?: string })?.location || '',
         })
 
-        alert('პროფილის სურათი წარმატებით განახლდა!')
+        showToast('პროფილის სურათი წარმატებით განახლდა!', 'success')
         setIsEditingProfile(false)
       } else {
         console.error('Profile update failed:', result)
-        alert(`შეცდომა სურათის ატვირთვისას: ${result.error || 'Unknown error'}`)
+        showToast(`შეცდომა სურათის ატვირთვისას: ${result.error || 'Unknown error'}`, 'error')
       }
     } catch (error) {
       console.error('Error uploading image:', error)
-      alert('შეცდომა სურათის ატვირთვისას')
+      showToast('შეცდომა სურათის ატვირთვისას', 'error')
     } finally {
       setIsUploadingImage(false)
     }
@@ -252,7 +253,7 @@ const AccountPage = () => {
   const saveVerification = async () => {
     try {
       if (!idFrontUrl || !idBackUrl) {
-        alert('გთხოვთ ატვირთოთ ორივე სურათი (წინა და უკან მხარე)')
+        showToast('გთხოვთ ატვირთოთ ორივე სურათი (წინა და უკან მხარე)', 'warning')
         return
       }
       setSavingVerification(true)
@@ -264,7 +265,7 @@ const AccountPage = () => {
       const data = await res.json()
       if (res.ok && data.success) {
         setVerification(data.verification)
-        alert('დოკუმენტები წარმატებით გაიგზავნა ვალიდაციაზე')
+        showToast('დოკუმენტები წარმატებით გაიგზავნა ვალიდაციაზე', 'success')
         setIdFrontUrl(null)
         setIdBackUrl(null)
         // Clear localStorage after successful save
@@ -273,11 +274,11 @@ const AccountPage = () => {
           localStorage.removeItem('idBackUrl')
         }
       } else {
-        alert(data.error || 'შეცდომა გაგზავნისას')
+        showToast(data.error || 'შეცდომა გაგზავნისას', 'error')
       }
     } catch (e) {
       console.error('Error saving verification:', e)
-      alert('შეცდომა ვერიფიკაციის შენახვისას')
+      showToast('შეცდომა ვერიფიკაციის შენახვისას', 'error')
     } finally {
       setSavingVerification(false)
     }
@@ -348,13 +349,13 @@ const AccountPage = () => {
         setProducts(products.filter(p => p.id !== productId))
         // Update stats
         fetchUserStats()
-        alert('პროდუქტი წარმატებით წაიშალა')
+        showToast('პროდუქტი წარმატებით წაიშალა', 'success')
       } else {
-        alert('შეცდომა პროდუქტის წაშლისას')
+        showToast('შეცდომა პროდუქტის წაშლისას', 'error')
       }
     } catch (error) {
       console.error('Error deleting product:', error)
-      alert('შეცდომა პროდუქტის წაშლისას')
+      showToast('შეცდომა პროდუქტის წაშლისას', 'error')
     }
   }
 
@@ -374,11 +375,11 @@ const AccountPage = () => {
           p.id === productId ? { ...p, status: newStatus } : p
         ))
       } else {
-        alert('შეცდომა სტატუსის შეცვლისას')
+        showToast('შეცდომა სტატუსის შეცვლისას', 'error')
       }
     } catch (error) {
       console.error('Error updating status:', error)
-      alert('შეცდომა სტატუსის შეცვლისას')
+      showToast('შეცდომა სტატუსის შეცვლისას', 'error')
     }
   }
 
@@ -794,7 +795,7 @@ const AccountPage = () => {
     // Double confirmation
     const secondConfirm = prompt('გთხოვთ დაწეროთ "წაშლა" დასადასტურებლად:')
     if (secondConfirm !== 'წაშლა') {
-      alert('პროფილის წაშლა გაუქმებულია')
+      showToast('პროფილის წაშლა გაუქმებულია', 'info')
       return
     }
 
@@ -806,15 +807,15 @@ const AccountPage = () => {
       const data = await response.json()
 
       if (response.ok && data.success) {
-        alert('თქვენი პროფილი წარმატებით წაიშალა')
+        showToast('თქვენი პროფილი წარმატებით წაიშალა', 'success')
         // Sign out and redirect to home
         await signOut({ callbackUrl: '/' })
       } else {
-        alert(data.error || 'შეცდომა პროფილის წაშლისას')
+        showToast(data.error || 'შეცდომა პროფილის წაშლისას', 'error')
       }
     } catch (error) {
       console.error('Error deleting profile:', error)
-      alert('შეცდომა პროფილის წაშლისას')
+      showToast('შეცდომა პროფილის წაშლისას', 'error')
     }
   }
 

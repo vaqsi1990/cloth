@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Plus, Edit, Trash2, Eye, Search, Filter, Package, Calendar, Clock, Barcode } from 'lucide-react'
+import { showToast } from '@/utils/toast'
 
 interface RentalPeriod {
   startDate: string
@@ -131,11 +132,11 @@ const AdminProductsPage = () => {
       if (response.ok) {
         setProducts(products.filter(p => p.id !== productId))
       } else {
-        alert('შეცდომა პროდუქტის წაშლისას')
+        showToast('შეცდომა პროდუქტის წაშლისას', 'error')
       }
     } catch (error) {
       console.error('Error deleting product:', error)
-      alert('შეცდომა პროდუქტის წაშლისას')
+      showToast('შეცდომა პროდუქტის წაშლისას', 'error')
     }
   }
 
@@ -191,11 +192,11 @@ const AdminProductsPage = () => {
           p.id === productId ? { ...p, status: newStatus as 'AVAILABLE' | 'RENTED' | 'RESERVED' | 'MAINTENANCE' } : p
         ))
       } else {
-        alert(result.message || 'შეცდომა სტატუსის შეცვლისას')
+        showToast(result.message || 'შეცდომა სტატუსის შეცვლისას', 'error')
       }
     } catch (error) {
       console.error('Error updating status:', error)
-      alert('შეცდომა სტატუსის შეცვლისას')
+      showToast('შეცდომა სტატუსის შეცვლისას', 'error')
     }
   }
 
