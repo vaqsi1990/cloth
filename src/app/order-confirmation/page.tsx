@@ -56,6 +56,11 @@ const OrderConfirmationContent = () => {
                 const response = await fetch(`/api/orders/${orderId}`)
                 const data = await response.json()
                 
+                if (!response.ok) {
+                    setError(data.message || 'შეკვეთა ვერ მოიძებნა')
+                    return
+                }
+                
                 if (data.success && data.order) {
                     setOrder(data.order)
                 } else {
@@ -63,7 +68,7 @@ const OrderConfirmationContent = () => {
                 }
             } catch (error) {
                 console.error('Error fetching order:', error)
-                setError('შეცდომა შეკვეთის მიღებისას')
+                setError('შეცდომა შეკვეთის მიღებისას. გთხოვთ სცადოთ მოგვიანებით.')
             } finally {
                 setLoading(false)
             }

@@ -187,98 +187,56 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Prepare the request data for BOG
-    const bogRequestData = {
-      callback_url: 'https://www.dressla.ge/api/payment-callback',
-      external_order_id: orderId,
-      purchase_units: {
-        currency: 'GEL',
-        total_amount: totalAmountNumber,
-        basket: basket
-      },
-      redirect_urls: {
-        success: `https://www.dressla.ge/order-confirmation?status=success&orderId=${orderId}`,
-        fail: `https://www.dressla.ge/payment-fail?orderId=${orderId}`
-      }
+    // Get session and create order in database FIRST (before calling BOG)
+    const session = await getServerSession(authOptions)
+    
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'User not authenticated' },
+        { status: 401 }
+      )
     }
 
-    // Use token manager for automatic token refresh and retry
-    console.log('🔑 Creating BOG payment order...')
-    const response = await bogTokenManager.makeAuthenticatedRequest(
-      async (validToken) => {
-        return axios.post<BOGResponse>(
-          'https://api.bog.ge/payments/v1/ecommerce/orders',
-          bogRequestData,
-          {
-            headers: {
-              Authorization: `Bearer ${validToken}`,
-              'Accept-Language': 'ka',
-              'Content-Type': 'application/json'
-            },
-            timeout: 30000
-          }
-        )
-      }
-    )
-
-    console.log('✅ BOG API response received:', {
-      status: response.status,
-      orderId: response.data.id || response.data.order_id
+    // Get the user's cart
+    const userCart = await prisma.cart.findFirst({
+      where: { userId: session.user.id },
+      include: { items: true }
     })
 
-    // Extract redirect URL from BOG response
-    const finalRedirectUrl = extractRedirectUrl(response.data, orderId)
-    const bogOrderId = response.data.id || response.data.order_id
+    if (!userCart || userCart.items.length === 0) {
+      return NextResponse.json(
+        { error: 'Cart not found or empty' },
+        { status: 400 }
+      )
+    }
 
-    // Create the order in the database after successful BOG order creation
-    try {
-      const session = await getServerSession(authOptions)
-      
-      if (!session?.user?.id) {
-        return NextResponse.json(
-          { error: 'User not authenticated' },
-          { status: 401 }
-        )
-      }
-
-      // Get the user's cart
-      const userCart = await prisma.cart.findFirst({
-        where: { userId: session.user.id },
-        include: { items: true }
+    // Ensure the cart is properly linked to the user
+    if (userCart.userId !== session.user.id) {
+      await prisma.cart.update({
+        where: { id: userCart.id },
+        data: { userId: session.user.id }
       })
+    }
 
-      if (!userCart || userCart.items.length === 0) {
-        return NextResponse.json(
-          { error: 'Cart not found or empty' },
-          { status: 400 }
-        )
-      }
+    // Transform cart items to order items
+    const orderItems = userCart.items.map((item) => ({
+      productId: item.productId,
+      productName: item.productName,
+      image: item.image || null,
+      size: item.size || null,
+      price: item.price,
+      quantity: item.quantity,
+      isRental: item.isRental || false,
+      rentalStartDate: item.rentalStartDate || null,
+      rentalEndDate: item.rentalEndDate || null,
+      rentalDays: item.rentalDays || null,
+      deposit: item.deposit || null
+    }))
 
-      // Ensure the cart is properly linked to the user
-      if (userCart.userId !== session.user.id) {
-        await prisma.cart.update({
-          where: { id: userCart.id },
-          data: { userId: session.user.id }
-        })
-      }
-
-      // Transform cart items to order items
-      const orderItems = userCart.items.map((item) => ({
-        productId: item.productId,
-        productName: item.productName,
-        image: item.image || null,
-        size: item.size || null,
-        price: item.price,
-        quantity: item.quantity,
-        isRental: item.isRental || false,
-        rentalStartDate: item.rentalStartDate || null,
-        rentalEndDate: item.rentalEndDate || null,
-        rentalDays: item.rentalDays || null,
-        deposit: item.deposit || null
-      }))
-
-      // Create the order in database
-      const order = await prisma.order.create({
+    // Create the order in database FIRST (before calling BOG)
+    let databaseOrder
+    try {
+      databaseOrder = await prisma.order.create({
         data: {
           userId: session.user.id,
           customerName: orderData.address 
@@ -289,7 +247,6 @@ export async function POST(req: NextRequest) {
           address: orderData.deliveryOption || '',
           city: null,
           paymentMethod: 'BOG Card Payment',
-          paymentId: bogOrderId || null,
           total: totalAmountNumber,
           status: 'PENDING',
           items: {
@@ -302,7 +259,76 @@ export async function POST(req: NextRequest) {
         }
       })
 
-      console.log(`✅ Order created in database: ${order.id}`)
+      console.log(`✅ Order created in database: ${databaseOrder.id}`)
+    } catch (orderError) {
+      console.error('❌ Error creating order in database:', orderError)
+      return NextResponse.json(
+        {
+          error: 'Failed to create order in database',
+          message: orderError instanceof Error ? orderError.message : 'Unknown error occurred',
+          timestamp: new Date().toISOString()
+        },
+        { status: 500 }
+      )
+    }
+
+    // Use database order ID in redirect URLs and as external_order_id
+    const databaseOrderId = databaseOrder.id.toString()
+
+    // Prepare the request data for BOG
+    const bogRequestData = {
+      callback_url: 'https://www.dressla.ge/api/payment-callback',
+      external_order_id: databaseOrderId,
+      purchase_units: {
+        currency: 'GEL',
+        total_amount: totalAmountNumber,
+        basket: basket
+      },
+      redirect_urls: {
+        success: `https://www.dressla.ge/order-confirmation?status=success&orderId=${databaseOrder.id}`,
+        fail: `https://www.dressla.ge/payment-fail?orderId=${databaseOrder.id}`
+      }
+    }
+
+    // Use token manager for automatic token refresh and retry
+    console.log('🔑 Creating BOG payment order...')
+    let response
+    let bogOrderId
+    
+    try {
+      response = await bogTokenManager.makeAuthenticatedRequest(
+        async (validToken) => {
+          return axios.post<BOGResponse>(
+            'https://api.bog.ge/payments/v1/ecommerce/orders',
+            bogRequestData,
+            {
+              headers: {
+                Authorization: `Bearer ${validToken}`,
+                'Accept-Language': 'ka',
+                'Content-Type': 'application/json'
+              },
+              timeout: 30000
+            }
+          )
+        }
+      )
+
+      console.log('✅ BOG API response received:', {
+        status: response.status,
+        orderId: response.data.id || response.data.order_id
+      })
+
+      // Extract redirect URL from BOG response
+      bogOrderId = response.data.id || response.data.order_id
+      const finalRedirectUrl = extractRedirectUrl(response.data, databaseOrderId)
+
+      // Update order with BOG payment ID
+      await prisma.order.update({
+        where: { id: databaseOrder.id },
+        data: { paymentId: bogOrderId || null }
+      })
+
+      console.log(`✅ Order ${databaseOrder.id} updated with BOG payment ID: ${bogOrderId}`)
 
       // Send order receipt email to customer (non-blocking)
       // Uncomment if email functions are available
@@ -311,7 +337,7 @@ export async function POST(req: NextRequest) {
       //     const customerName = orderData.address.firstName 
       //       ? `${orderData.address.firstName} ${orderData.address.lastName}`
       //       : 'Customer'
-      //     await sendOrderReceipt(orderData.address.email, order, customerName)
+      //     await sendOrderReceipt(orderData.address.email, databaseOrder, customerName)
       //   } catch (emailError) {
       //     console.error('Failed to send order receipt email:', emailError)
       //   }
@@ -320,7 +346,7 @@ export async function POST(req: NextRequest) {
       // Send order info to admin (non-blocking)
       // Uncomment if email functions are available
       // try {
-      //   await sendOrderToAdmin(order)
+      //   await sendOrderToAdmin(databaseOrder)
       // } catch (adminEmailError) {
       //   console.error('Failed to send admin notification email:', adminEmailError)
       // }
@@ -332,32 +358,29 @@ export async function POST(req: NextRequest) {
 
       console.log(`✅ Cart cleared for user: ${session.user.id}`)
 
-    } catch (orderError) {
-      console.error('❌ Error creating order in database:', orderError)
-      
-      // This is a critical error - the order must be created for BOG payments
-      // Return an error response instead of proceeding
-      const errorMessage = orderError instanceof Error 
-        ? orderError.message 
-        : 'Unknown error occurred'
-      
-      return NextResponse.json(
-        {
-          error: 'Failed to create order in database',
-          details: 'Order creation failed but BOG payment was initiated. Please contact support.',
-          message: errorMessage,
-          timestamp: new Date().toISOString()
-        },
-        { status: 500 }
-      )
-    }
+      return NextResponse.json({
+        success: true,
+        redirectUrl: finalRedirectUrl,
+        orderId: databaseOrder.id,
+        bogOrderId: bogOrderId || undefined
+      })
 
-    return NextResponse.json({
-      success: true,
-      redirectUrl: finalRedirectUrl,
-      orderId,
-      bogOrderId: bogOrderId || undefined
-    })
+    } catch (bogError) {
+      console.error('❌ Error creating BOG payment order:', bogError)
+      
+      // If BOG fails, we should delete the order we created (rollback)
+      try {
+        await prisma.order.delete({
+          where: { id: databaseOrder.id }
+        })
+        console.log(`✅ Rolled back order ${databaseOrder.id} due to BOG payment failure`)
+      } catch (deleteError) {
+        console.error('❌ Error rolling back order:', deleteError)
+      }
+      
+      // Re-throw to be handled by outer catch block
+      throw bogError
+    }
   } catch (error) {
     console.error('❌ Error in create-order endpoint:', error)
 

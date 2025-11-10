@@ -12,10 +12,10 @@ export async function GET(
     const resolvedParams = await params
     const orderId = parseInt(resolvedParams.id)
     
-    if (isNaN(orderId)) {
+    if (isNaN(orderId) || orderId <= 0) {
       return NextResponse.json({
         success: false,
-        message: 'არასწორი შეკვეთის ID'
+        message: 'არასწორი შეკვეთის ID. გთხოვთ შეამოწმოთ URL მისამართი.'
       }, { status: 400 })
     }
 
@@ -44,7 +44,10 @@ export async function GET(
       })
     } else {
       return NextResponse.json(
-        { success: false, error: 'Permission denied' },
+        { 
+          success: false, 
+          message: 'თქვენ არ გაქვთ ამ შეკვეთის ნახვის უფლება' 
+        },
         { status: 403 }
       )
     }
@@ -76,10 +79,10 @@ export async function PATCH(
     const resolvedParams = await params
     const orderId = parseInt(resolvedParams.id)
     
-    if (isNaN(orderId)) {
+    if (isNaN(orderId) || orderId <= 0) {
       return NextResponse.json({
         success: false,
-        message: 'არასწორი შეკვეთის ID'
+        message: 'არასწორი შეკვეთის ID. გთხოვთ შეამოწმოთ URL მისამართი.'
       }, { status: 400 })
     }
 
@@ -135,10 +138,10 @@ export async function DELETE(
     const resolvedParams = await params
     const orderId = parseInt(resolvedParams.id)
     
-    if (isNaN(orderId)) {
+    if (isNaN(orderId) || orderId <= 0) {
       return NextResponse.json({
         success: false,
-        message: 'არასწორი შეკვეთის ID'
+        message: 'არასწორი შეკვეთის ID. გთხოვთ შეამოწმოთ URL მისამართი.'
       }, { status: 400 })
     }
 
