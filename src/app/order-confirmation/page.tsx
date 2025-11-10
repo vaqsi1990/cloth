@@ -1,5 +1,5 @@
 "use client"
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -35,7 +35,7 @@ interface Order {
     items: OrderItem[]
 }
 
-const OrderConfirmationPage = () => {
+const OrderConfirmationContent = () => {
     const searchParams = useSearchParams()
     const router = useRouter()
     const orderId = searchParams.get('orderId')
@@ -334,6 +334,20 @@ const OrderConfirmationPage = () => {
                 </div>
             </div>
         </div>
+    )
+}
+
+const OrderConfirmationPage = () => {
+    return (
+        <Suspense
+            fallback={
+                <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center px-4">
+                    <AnimatedDotsLoader />
+                </div>
+            }
+        >
+            <OrderConfirmationContent />
+        </Suspense>
     )
 }
 
