@@ -1,12 +1,5 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import qs from 'qs';
-
-interface BOGTokenResponse {
-  access_token: string;
-  token_type: string;
-  expires_in: number;
-  success: boolean;
-}
 
 class BOGTokenManager {
   private static instance: BOGTokenManager;
@@ -60,9 +53,11 @@ class BOGTokenManager {
       console.log('Token will be refreshed at:', new Date(this.tokenExpiry).toISOString());
       
       return access_token;
-    } catch (error: any) {
-      console.error('❌ Failed to fetch BOG token:', error.response?.data || error.message);
-      throw new Error(`Failed to fetch BOG token: ${error.response?.data?.error || error.message}`);
+    } catch (error) {
+      const axiosError = error as AxiosError<{ error?: string }>;
+      const errorMessage = axiosError.response?.data?.error || axiosError.message || 'Unknown error';
+      console.error('❌ Failed to fetch BOG token:', axiosError.response?.data || errorMessage);
+      throw new Error(`Failed to fetch BOG token: ${errorMessage}`);
     }
   }
 
@@ -95,17 +90,18 @@ class BOGTokenManager {
     requestFn: (token: string) => Promise<T>,
     maxRetries: number = 2
   ): Promise<T> {
-    let lastError: any;
+    let lastError: unknown;
     
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         const token = await this.getValidToken();
         return await requestFn(token);
-      } catch (error: any) {
+      } catch (error) {
         lastError = error;
+        const axiosError = error as AxiosError;
         
         // Check if it's an authentication error
-        if (error.response?.status === 401) {
+        if (axiosError.response?.status === 401) {
           console.log(`🔄 Attempt ${attempt}: Token expired, refreshing...`);
           
           // Clear current token to force refresh
