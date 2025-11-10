@@ -3,7 +3,7 @@ import React, { useState } from 'react'
 import Image from 'next/image'
 import { useCart } from '@/hooks/useCart'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, CreditCard, MapPin, Phone, Mail, User, ShoppingCart } from 'lucide-react'
+import { ArrowLeft, MapPin, Phone, Mail, User, ShoppingCart } from 'lucide-react'
 import Link from 'next/link'
 import { formatDate } from '@/utils/dateUtils'
 import { showToast } from '@/utils/toast'
@@ -19,8 +19,7 @@ const CheckoutPage = () => {
         email: '',
         phone: '',
         address: '',
-        city: '',
-        paymentMethod: 'card'
+        city: ''
     })
     
     const [isProcessing, setIsProcessing] = useState(false)
@@ -33,57 +32,86 @@ const CheckoutPage = () => {
         }))
     }
 
+    const getToken = async () => {
+        try {
+            const res = await fetch('/api/token')
+            const data = await res.json()
+
+            if (!data.success) {
+                throw new Error(data.error || 'Failed to get token')
+            }
+
+            return data.access_token
+        } catch (error) {
+            console.error('Token error:', error)
+            throw new Error('Failed to get BOG access token')
+        }
+    }
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setIsProcessing(true)
         
         try {
-            // Prepare order data
+            // Step 1: Get BOG token
+            const token = await getToken()
+
+            // Step 2: Prepare order data for BOG
+            const totalAmount = getTotalPrice()
+            const orderId = `order_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`
+
             const orderData = {
-                customerName: `${formData.firstName} ${formData.lastName}`,
-                phone: formData.phone,
-                email: formData.email,
-                address: formData.address,
-                city: formData.city,
-                paymentMethod: formData.paymentMethod,
-                items: cartItems.map(item => ({
-                    productId: item.productId,
-                    productName: item.productName,
-                    image: item.image,
-                    size: item.size,
-                    price: item.price,
-                    quantity: item.quantity,
-                    // Include rental information if it's a rental item
-                    isRental: item.isRental || false,
-                    rentalStartDate: item.rentalStartDate || null,
-                    rentalEndDate: item.rentalEndDate || null,
-                    rentalDays: item.rentalDays || null,
-                    deposit: item.deposit || null
-                }))
+                cart: {
+                    items: cartItems.map(item => ({
+                        productId: String(item.productId),
+                        qty: item.quantity,
+                        price: item.price,
+                        name: item.productName,
+                        image: item.image
+                    }))
+                },
+                totalAmount: totalAmount,
+                orderId: orderId,
+                deliveryOption: `${formData.address}, ${formData.city}`,
+                address: {
+                    firstName: formData.firstName,
+                    lastName: formData.lastName,
+                    email: formData.email
+                }
             }
 
-            // Send order to API
-            const response = await fetch('/api/orders', {
+            // Step 3: Create payment order
+            const res = await fetch('/api/create-order', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(orderData),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    token,
+                    orderData
+                }),
             })
 
-            const result = await response.json()
+            const data = await res.json()
 
-            if (result.success) {
-                showToast('შეკვეთა წარმატებით გაფორმდა!', 'success')
-                clearCart()
-                router.push(`/order-confirmation?orderId=${result.order.id}`)
+            if (data.success && data.redirectUrl) {
+                // Store payment info as backup
+                sessionStorage.setItem('pendingPayment', JSON.stringify({
+                    redirectUrl: data.redirectUrl,
+                    orderId: data.orderId,
+                    bogOrderId: data.bogOrderId
+                }))
+                
+                // Redirect to BOG payment page (component will unmount, so no need to reset state)
+                window.location.href = data.redirectUrl
             } else {
-                showToast(result.message || 'შეცდომა შეკვეთის გაფორმებისას', 'error')
+                console.error('Payment order creation failed:', data)
+                showToast(data.error || 'დაფიქსირდა შეცდომა გადახდის დაწყებისას', 'error')
             }
         } catch (error) {
             console.error('Error submitting order:', error)
-            showToast('მოულოდნელი შეცდომა', 'error')
+            const errorMessage = error instanceof Error ? error.message : 'მოულოდნელი შეცდომა'
+            showToast(errorMessage, 'error')
         } finally {
+            // Reset processing state (if redirect happened, component will unmount anyway)
             setIsProcessing(false)
         }
     }
@@ -236,30 +264,12 @@ const CheckoutPage = () => {
                                     />
                                 </div>
 
-                                {/* Payment Method */}
-                                <div>
-                                    <label className="block text-black font-medium mb-2">
-                                        <CreditCard className="w-4 h-4 inline mr-2" />
-                                        გადახდის მეთოდი
-                                    </label>
-                                    <select
-                                        name="paymentMethod"
-                                        value={formData.paymentMethod}
-                                        onChange={handleInputChange}
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-[#1B3729]"
-                                    >
-                                        <option value="card">ბანკის ბარათი</option>
-                                        <option value="cash">ნაღდი ფული</option>
-                                        <option value="transfer">ბანკის გადარიცხვა</option>
-                                    </select>
-                                </div>
-
                                 <button
                                     type="submit"
                                     disabled={isProcessing}
                                     className="flex md:text-[20px] text-[18px] font-bold justify-center items-center w-full mx-auto mt-6 bg-[#1B3729] text-white px-8 py-4 rounded-lg font-bold uppercase tracking-wide transition-colors duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed hover:opacity-95"
                                 >
-                                    {isProcessing ? 'მუშავდება...' : 'ყიდვა'}
+                                    {isProcessing ? 'მუშავდება...' : 'ბარათით ყიდვა'}
                                 </button>
                                 </form>
                             </div>
