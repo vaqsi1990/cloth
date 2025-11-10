@@ -25,7 +25,7 @@ interface CallbackBody {
     }
     status?: string
     payment_status?: string
-    [key: string]: any
+    [key: string]: unknown
   }
 }
 
@@ -179,8 +179,10 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     )
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error processing payment callback:', error)
+    
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
     
     // Even on error, we should return 200 if signature was valid
     // to prevent BOG from retrying. Log the error for investigation.
@@ -188,7 +190,7 @@ export async function POST(request: NextRequest) {
       { 
         success: false,
         error: 'Error processing callback',
-        message: error.message 
+        message: errorMessage 
       },
       { status: 200 } // Still return 200 to acknowledge receipt
     )

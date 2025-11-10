@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { bogTokenManager } from '@/lib/bog-token'
-import axios from 'axios'
+import axios, { AxiosError } from 'axios'
 
 /**
  * GET - Fetch BOG payment details by order_id
@@ -56,22 +56,25 @@ export async function GET(
       data: paymentDetails,
     })
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('❌ Error fetching BOG payment status:', error)
 
+    const axiosError = error as AxiosError<{ message?: string; error?: string }>
+
     // Handle specific error cases
-    if (error.response?.status === 404) {
+    if (axiosError.response?.status === 404) {
+      const url = axiosError.config?.url || ''
       return NextResponse.json(
         {
           success: false,
           error: 'Payment not found',
-          message: `No payment found with order_id: ${error.config?.url?.split('/').pop()}`,
+          message: `No payment found with order_id: ${url.split('/').pop()}`,
         },
         { status: 404 }
       )
     }
 
-    if (error.response?.status === 401) {
+    if (axiosError.response?.status === 401) {
       return NextResponse.json(
         {
           success: false,
@@ -82,23 +85,25 @@ export async function GET(
       )
     }
 
-    if (error.response?.data) {
+    if (axiosError.response?.data) {
+      const errorData = axiosError.response.data
       return NextResponse.json(
         {
           success: false,
           error: 'BOG API error',
-          message: error.response.data.message || error.response.data.error || 'Unknown error',
-          details: error.response.data,
+          message: errorData.message || errorData.error || 'Unknown error',
+          details: errorData,
         },
-        { status: error.response.status || 500 }
+        { status: axiosError.response.status || 500 }
       )
     }
 
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
     return NextResponse.json(
       {
         success: false,
         error: 'Failed to fetch payment status',
-        message: error.message || 'Unknown error occurred',
+        message: errorMessage,
       },
       { status: 500 }
     )
