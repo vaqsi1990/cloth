@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -28,7 +28,7 @@ interface User {
     currentPrice: number
     gender: string
     isNew: boolean
-    hasSale: boolean
+    discount?: number
     createdAt: string
     images: Array<{
       url: string
@@ -58,15 +58,10 @@ const AdminUsersPage = () => {
     if (status === 'unauthenticated') {
       router.push('/auth/signin')
     }
-  }, [status, router])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status])
 
-  useEffect(() => {
-    if (session?.user?.role === 'ADMIN') {
-      fetchUsers()
-    }
-  }, [session])
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       setLoading(true)
       const response = await fetch('/api/admin/users')
@@ -80,7 +75,13 @@ const AdminUsersPage = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.role === 'ADMIN') {
+      fetchUsers()
+    }
+  }, [status, session?.user?.role, fetchUsers])
 
   const fetchUserProducts = async (userId: string) => {
     try {
@@ -532,9 +533,9 @@ const AdminUsersPage = () => {
                                           ახალი
                                         </span>
                                       )}
-                                      {product.hasSale && (
+                                      {product.discount && product.discount > 0 && (
                                         <span className="px-2 py-1 bg-red-100 text-red-800 text-[18px] rounded-full">
-                                          ფასდაკლება
+                                          -{product.discount}%
                                         </span>
                                       )}
                                     </div>

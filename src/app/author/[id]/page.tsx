@@ -108,9 +108,9 @@ const AuthorPage = () => {
                                         className="object-cover group-hover:scale-105 transition-transform duration-300"
                                     />
                                     <div className="absolute top-4 left-4 flex gap-2">
-                                        {product.hasSale && (
+                                        {product.discount && product.discount > 0 && (
                                             <span className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
-                                                ფასდაკლება
+                                                -{product.discount}%
                                             </span>
                                         )}
                                         {product.isNew && (

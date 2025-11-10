@@ -82,9 +82,9 @@ const SimilarProducts: React.FC<SimilarProductsProps> = ({ productId, categoryNa
                 
                 {/* Badges */}
                 <div className="absolute top-2 left-2 flex flex-col gap-1">
-                  {product.hasSale && (
+                  {product.discount && product.discount > 0 && (
                     <span className="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
-                      ფასდაკლება
+                      -{product.discount}%
                     </span>
                   )}
                   {product.isNew && (

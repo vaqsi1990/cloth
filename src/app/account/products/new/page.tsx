@@ -9,13 +9,15 @@ import ImageUploadForProduct from '@/component/productimage'
 const productSchema = z.object({
   name: z.string().min(1, 'სახელი აუცილებელია'),
   slug: z.string().min(1, 'Slug აუცილებელია').regex(/^[a-z0-9-]+$/, 'Slug უნდა შეიცავდეს მხოლოდ პატარა ასოებს, ციფრებს და ტირეებს'),
+  brand: z.string().optional(),
   description: z.string().optional(),
   stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი').default(0),
   gender: z.enum(['MEN', 'WOMEN', 'CHILDREN', 'UNISEX']).default('UNISEX'),
   color: z.string().optional(),
   location: z.string().optional(),
+  sizeSystem: z.enum(['EU', 'US', 'UK', 'CN']).optional(),
   isNew: z.boolean().default(false),
-  hasSale: z.boolean().default(false),
+  discount: z.number().int().min(0).max(100).optional(),
   rating: z.number().min(0).max(5).optional(),
   categoryId: z.number().optional(),
   isRentable: z.boolean().default(false),
@@ -27,7 +29,8 @@ const productSchema = z.object({
     z.object({
       size: z.string().min(1, 'ზომა აუცილებელია'),
       stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი'),
-      price: z.number().min(0, 'ფასი უნდა იყოს დადებითი')
+      price: z.number().min(0, 'ფასი უნდა იყოს დადებითი'),
+      discount: z.number().min(0).max(100).optional()
     })
   ).default([]),
   imageUrls: z.array(z.string().url('არასწორი URL')).default([]),
@@ -44,13 +47,15 @@ const NewProductPage = () => {
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
     slug: '',
+    brand: '',
     description: '',
     stock: 0,
     gender: 'UNISEX',
     color: '',
     location: '',
+    sizeSystem: undefined,
     isNew: false,
-    hasSale: false,
+    discount: undefined,
     rating: 0,
     categoryId: undefined,
     isRentable: false,
@@ -67,11 +72,44 @@ const NewProductPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const categories = [
+    // ძირითადი
     { id: 1, name: 'კაბები', slug: 'dresses' },
     { id: 2, name: 'ბლუზები', slug: 'tops' },
-    { id: 3, name: 'შარვლები', slug: 'bottoms' },
-    { id: 4, name: 'ზედა ტანსაცმელი', slug: 'outerwear' },
-    { id: 5, name: 'აქსესუარები', slug: 'accessories' }
+    { id: 3, name: 'შარვლები', slug: 'pants' },
+    { id: 4, name: 'ქვედაბოლოები', slug: 'skirts' },
+    { id: 5, name: 'ზედა ტანსაცმელი', slug: 'outerwear' },
+    { id: 6, name: 'პალტოები და მოსასხამი', slug: 'coats' },
+
+    // საქორწინო და სადღესასწაულო
+    { id: 7, name: 'საქორწინო კაბები', slug: 'wedding-dresses' },
+    { id: 8, name: 'საღამოს ტანსაცმელი', slug: 'evening-wear' },
+
+    // სპორტული და სათხილამურო
+    { id: 9, name: 'სათხილამურო ქურთუკი', slug: 'ski-jacket' },
+    { id: 10, name: 'თერმო ტანსაცმელი', slug: 'thermal-wear' },
+    { id: 11, name: 'სათვალე', slug: 'goggles' },
+    { id: 12, name: 'ჩაფხუტი', slug: 'helmet' },
+
+    // კულტურული და თემატური
+    { id: 13, name: 'ტრადიციული ტანსაცმელი', slug: 'traditional' },
+    { id: 14, name: 'ქოსფლეის კოსტუმები', slug: 'cosplay' },
+
+    // მამაკაცების
+    { id: 15, name: 'შარვალ კოსტუმი', slug: 'suit' },
+    { id: 16, name: 'პიჯაკი', slug: 'blazer' },
+
+    // აქსესუარები
+    { id: 17, name: 'აქსესუარები', slug: 'accessories' },
+
+    // ბავშვები
+    { id: 18, name: 'ბავშვთა კაბები', slug: 'kids-dresses' },
+    { id: 19, name: 'ბავშვთა ტრადიციული ტანსაცმელი', slug: 'kids-traditional' },
+    { id: 20, name: 'ბავშვთა სათხილამურო ტანსაცმელი', slug: 'kids-ski' },
+
+    // სხვა
+    { id: 21, name: 'ყოველდღიური ტანსაცმელი', slug: 'everyday' },
+    { id: 22, name: 'სპორტული ტანსაცმელი', slug: 'sportwear' },
+    { id: 23, name: 'სადღესასწაულო ტანსაცმელი', slug: 'festive' }
   ]
 
   const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
@@ -157,7 +195,7 @@ const NewProductPage = () => {
   const addVariant = () => {
     setFormData(prev => ({
       ...prev,
-      variants: [...prev.variants, { size: '', stock: 0, price: 0 }]
+      variants: [...prev.variants, { size: '', stock: 0, price: 0, discount: undefined }]
     }))
   }
 
@@ -327,6 +365,18 @@ const NewProductPage = () => {
 
               <div>
                 <label className="block text-[20px] text-black font-medium mb-2">
+                  ბრენდი (ოფციონალური)
+                </label>
+                <input
+                  type="text"
+                  value={formData.brand || ''}
+                  onChange={(e) => handleInputChange('brand', e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[20px] text-black font-medium mb-2">
                   კატეგორია
                 </label>
                 <select
@@ -393,6 +443,23 @@ const NewProductPage = () => {
                   <option value="ბათუმი">ბათუმი</option>
                 </select>
               </div>
+
+              <div>
+                <label className="block text-[20px] text-black font-medium mb-2">
+                  ზომის სისტემა
+                </label>
+                <select
+                  value={formData.sizeSystem || ''}
+                  onChange={(e) => handleInputChange('sizeSystem', e.target.value || undefined)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                >
+                  <option value="">აირჩიეთ ზომის სისტემა</option>
+                  <option value="EU">EU</option>
+                  <option value="US">US</option>
+                  <option value="UK">UK</option>
+                  <option value="CN">CN</option>
+                </select>
+              </div>
             </div>
 
             <div className="mt-6">
@@ -407,27 +474,7 @@ const NewProductPage = () => {
               />
             </div>
 
-            <div className="mt-6 flex space-x-6">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={formData.isNew}
-                  onChange={(e) => handleInputChange('isNew', e.target.checked)}
-                  className="mr-2"
-                />
-                <span className="text-[20px] text-black">ახალი პროდუქტი</span>
-              </label>
-
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={formData.hasSale}
-                  onChange={(e) => handleInputChange('hasSale', e.target.checked)}
-                  className="mr-2"
-                />
-                <span className="text-[20px] text-black">ფასდაკლება</span>
-              </label>
-            </div>
+           
           </div>
 
           {/* Variants */}
@@ -445,7 +492,7 @@ const NewProductPage = () => {
             </div>
 
             {formData.variants.map((variant, index) => (
-              <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border border-gray-200 rounded-lg mb-4">
+              <div key={index} className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 border border-gray-200 rounded-lg mb-4">
                 <div>
                   <label className="block text-[20px] text-black font-medium mb-2">ზომა</label>
                   <select
@@ -477,6 +524,17 @@ const NewProductPage = () => {
                     step="0.01"
                     value={variant.price || ''}
                     onChange={(e) => updateVariant(index, 'price', e.target.value ? parseFloat(e.target.value) : undefined)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[20px] text-black font-medium mb-2">ფასდაკლება (ოფციონალური)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={variant.discount ?? ''}
+                    onChange={(e) => updateVariant(index, 'discount', e.target.value ? parseFloat(e.target.value) : undefined)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                   />
                 </div>

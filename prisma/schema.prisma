@@ -79,6 +79,13 @@ enum UserGender {
   OTHER     // სხვა
 }
 
+enum SizeSystem {
+  EU
+  US
+  UK
+  CN
+}
+
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
@@ -173,13 +180,15 @@ model Product {
   id            Int              @id @default(autoincrement())
   name          String
   slug          String           @unique
+  brand         String?
   description   String?
   sku           String?          @unique
   gender        Gender           @default(UNISEX)
   color         String?
   location      String?
+  sizeSystem    SizeSystem?
   isNew         Boolean          @default(false)
-  hasSale       Boolean          @default(false)
+  discount      Int?
   rating        Float?           @default(0)
   isRentable    Boolean          @default(false)
   pricePerDay   Float?

@@ -44,38 +44,41 @@ const AdminDashboard = () => {
     if (status === 'unauthenticated') {
       router.push('/auth/signin')
     }
-  }, [status, router])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status])
 
   // Fetch stats once when ADMIN is authenticated
   useEffect(() => {
-    if (status === 'authenticated' && session?.user?.role === 'ADMIN' && !hasFetchedRef.current) {
+    const fetchAdminStats = async () => {
+      try {
+        setStatsLoading(true)
+        const response = await fetch('/api/admin/stats')
+        const result = await response.json()
+
+        if (result.success && result.stats) {
+          setStats({
+            totalProducts: result.stats.totalProducts,
+            totalUsers: result.stats.totalUsers,
+            totalOrders: result.stats.totalOrders,
+            totalRevenue: result.stats.totalRevenue,
+          })
+        } else {
+          console.error('Stats API failed:', result)
+        }
+      } catch (error) {
+        console.error('Error fetching admin stats:', error)
+      } finally {
+        setStatsLoading(false)
+      }
+    }
+
+    const userRole = session?.user?.role
+    if (status === 'authenticated' && userRole === 'ADMIN' && !hasFetchedRef.current) {
       hasFetchedRef.current = true
       fetchAdminStats()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, session?.user?.role])
-
-  const fetchAdminStats = async () => {
-    try {
-      setStatsLoading(true)
-      const response = await fetch('/api/admin/stats')
-      const result = await response.json()
-
-      if (result.success && result.stats) {
-        setStats({
-          totalProducts: result.stats.totalProducts,
-          totalUsers: result.stats.totalUsers,
-          totalOrders: result.stats.totalOrders,
-          totalRevenue: result.stats.totalRevenue,
-        })
-      } else {
-        console.error('Stats API failed:', result)
-      }
-    } catch (error) {
-      console.error('Error fetching admin stats:', error)
-    } finally {
-      setStatsLoading(false)
-    }
-  }
 
   // ---------------------
   // Loading states

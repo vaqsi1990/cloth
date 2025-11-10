@@ -44,13 +44,15 @@ export interface Product {
   id: number
   name: string
   slug: string
+  brand?: string
   description?: string
   sku?: string
   gender: 'MEN' | 'WOMEN' | 'CHILDREN' | 'UNISEX'
   color?: string
   location?: string
+  sizeSystem?: 'EU' | 'US' | 'UK' | 'CN'
   isNew: boolean
-  hasSale: boolean
+  discount?: number
   rating?: number
   categoryId?: number
   category?: Category

@@ -35,12 +35,46 @@ const ShopPageClient = () => {
     const [isCategoryOpen, setIsCategoryOpen] = useState(true)
 
     const categories = [
-        { id: "ALL", label: "ყველა" },
-        { id: "კაბები", label: "კაბები" },
-        { id: "ბლუზები", label: "ბლუზები" },
-        { id: "შარვლები", label: "შარვლები" },
-        { id: "ზედა ტანსაცმელი", label: "ზედა ტანსაცმელი" },
-        { id: "აქსესუარები", label: "აქსესუარები" }
+        { id: "ALL", label: "ყველა", slug: "all" },
+
+        // ძირითადი
+        { id: "კაბები", label: "კაბები", slug: "dresses" },
+        { id: "ბლუზები", label: "ბლუზები", slug: "tops" },
+        { id: "შარვლები", label: "შარვლები", slug: "pants" },
+        { id: "ქვედაბოლოები", label: "ქვედაბოლოები", slug: "skirts" },
+        { id: "ზედა ტანსაცმელი", label: "ზედა ტანსაცმელი", slug: "outerwear" },
+        { id: "პალტოები და მოსასხამი", label: "პალტოები და მოსასხამი", slug: "coats" },
+
+        // საქორწინო და სადღესასწაულო
+        { id: "საქორწინო კაბები", label: "საქორწინო კაბები", slug: "wedding-dresses" },
+        { id: "საღამოს ტანსაცმელი", label: "საღამოს ტანსაცმელი", slug: "evening-wear" },
+
+        // სპორტული და სათხილამურო
+        { id: "სათხილამურო ქურთუკი", label: "სათხილამურო ქურთუკი", slug: "ski-jacket" },
+        { id: "თერმო ტანსაცმელი", label: "თერმო ტანსაცმელი", slug: "thermal-wear" },
+        { id: "სათვალე", label: "სათვალე", slug: "goggles" },
+        { id: "ჩაფხუტი", label: "ჩაფხუტი", slug: "helmet" },
+
+        // კულტურული და თემატური
+        { id: "ტრადიციული ტანსაცმელი", label: "ტრადიციული ტანსაცმელი", slug: "traditional" },
+        { id: "ქოსფლეის კოსტუმები", label: "ქოსფლეის კოსტუმები", slug: "cosplay" },
+
+        // მამაკაცების
+        { id: "შარვალ კოსტუმი", label: "შარვალ კოსტუმი", slug: "suit" },
+        { id: "პიჯაკი", label: "პიჯაკი", slug: "blazer" },
+
+        // აქსესუარები
+        { id: "აქსესუარები", label: "აქსესუარები", slug: "accessories" },
+
+        // ბავშვები
+        { id: "ბავშვთა კაბები", label: "ბავშვთა კაბები", slug: "kids-dresses" },
+        { id: "ბავშვთა ტრადიციული ტანსაცმელი", label: "ბავშვთა ტრადიციული ტანსაცმელი", slug: "kids-traditional" },
+        { id: "ბავშვთა სათხილამურო ტანსაცმელი", label: "ბავშვთა სათხილამურო ტანსაცმელი", slug: "kids-ski" },
+
+        // სხვა
+        { id: "ყოველდღიური ტანსაცმელი", label: "ყოველდღიური ტანსაცმელი", slug: "everyday" },
+        { id: "სპორტული ტანსაცმელი", label: "სპორტული ტანსაცმელი", slug: "sportwear" },
+        { id: "სადღესასწაულო ტანსაცმელი", label: "სადღესასწაულო ტანსაცმელი", slug: "festive" },
     ]
 
     const sizes = [

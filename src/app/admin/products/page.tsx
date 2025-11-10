@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -23,7 +23,7 @@ interface Product {
   color?: string
   location?: string
   isNew: boolean
-  hasSale: boolean
+  discount?: number
   rating?: number
   createdAt: string
   updatedAt: string
@@ -73,15 +73,10 @@ const AdminProductsPage = () => {
     if (status === 'unauthenticated') {
       router.push('/auth/signin')
     }
-  }, [status, router])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status])
 
-  useEffect(() => {
-    if (session?.user?.role === 'ADMIN') {
-      fetchProducts()
-    }
-  }, [session])
-
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       setLoading(true)
       const response = await fetch('/api/products')
@@ -115,7 +110,13 @@ const AdminProductsPage = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.role === 'ADMIN') {
+      fetchProducts()
+    }
+  }, [status, session?.user?.role, fetchProducts])
 
   const handleDeleteProduct = async (productId: number) => {
     if (!confirm('ნამდვილად გსურთ პროდუქტის წაშლა?')) {
@@ -158,7 +159,7 @@ const AdminProductsPage = () => {
         color: product.color || '',
         location: product.location || '',
         isNew: product.isNew,
-        hasSale: product.hasSale,
+        discount: product.discount,
         rating: product.rating || 0,
         categoryId: product.category?.id,
         isRentable: product.isRentable || false,
@@ -440,11 +441,11 @@ const AdminProductsPage = () => {
                                ახალი
                              </span>
                            )}
-                           {product.hasSale && (
-                             <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">
-                               ფასდაკლება
-                             </span>
-                           )}
+                          {product.discount && product.discount > 0 && (
+                            <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">
+                              -{product.discount}%
+                            </span>
+                          )}
                            {hasActiveRentals(product) && (
                              <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full flex items-center">
                                <Clock className="w-3 h-3 mr-1" />

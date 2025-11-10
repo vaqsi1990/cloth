@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { formatDate, formatDateTime } from '@/utils/dateUtils'
@@ -69,15 +69,10 @@ const AdminOrdersPage = () => {
     if (status === 'unauthenticated') {
       router.push('/auth/signin')
     }
-  }, [status, router])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status])
 
-  useEffect(() => {
-    if (session?.user?.role === 'ADMIN') {
-      fetchOrders()
-    }
-  }, [session])
-
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     try {
       setLoading(true)
       const response = await fetch('/api/admin/orders')
@@ -91,7 +86,13 @@ const AdminOrdersPage = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.role === 'ADMIN') {
+      fetchOrders()
+    }
+  }, [status, session?.user?.role, fetchOrders])
 
   const handleStatusUpdate = async (orderId: number, newStatus: string) => {
     try {
