@@ -39,7 +39,8 @@ const productSchema = z.object({
   variants: z.array(z.object({
     size: z.string().min(1, 'ზომა აუცილებელია'),
     stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი'),
-    price: z.number().min(0, 'ფასი უნდა იყოს დადებითი')
+    price: z.number().min(0, 'ფასი უნდა იყოს დადებითი'),
+    sizeSystem: z.enum(['EU', 'US', 'UK', 'CN']).optional()
   })).default([]),
   imageUrls: z.array(z.string().min(1, 'URL აუცილებელია')).default([]),
   rentalPriceTiers: z.array(z.object({
@@ -151,7 +152,10 @@ const EditProductPage = () => {
             maxRentalDays: product.maxRentalDays || undefined,
             deposit: product.deposit || undefined,
             status: product.status || 'AVAILABLE',
-            variants: product.variants || [],
+            variants: (product.variants || []).map((variant: any) => ({
+              ...variant,
+              sizeSystem: variant.sizeSystem ?? product.sizeSystem ?? undefined
+            })),
             imageUrls: imageUrls,
             rentalPriceTiers: product.rentalPriceTiers || []
           })
@@ -209,7 +213,18 @@ const EditProductPage = () => {
   const handleInputChange = (field: keyof ProductFormData, value: string | number | boolean | undefined) => {
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: value,
+      ...(field === 'sizeSystem'
+        ? {
+            variants: prev.variants.map(variant => ({
+              ...variant,
+              sizeSystem:
+                typeof value === 'string' && value.trim() !== ''
+                  ? (value as ProductFormData['sizeSystem'])
+                  : undefined
+            }))
+          }
+        : {})
     }))
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }))
@@ -219,7 +234,10 @@ const EditProductPage = () => {
   const addVariant = () => {
     setFormData(prev => ({
       ...prev,
-      variants: [...prev.variants, { size: '', stock: 0, price: 0 }]
+      variants: [
+        ...prev.variants,
+        { size: '', stock: 0, price: 0, sizeSystem: prev.sizeSystem }
+      ]
     }))
   }
 

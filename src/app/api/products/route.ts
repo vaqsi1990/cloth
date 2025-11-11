@@ -29,7 +29,8 @@ const productSchema = z.object({
   variants: z.array(z.object({
     size: z.string().min(1, 'ზომა აუცილებელია'),
     stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი'),
-    price: z.number().min(0, 'ფასი უნდა იყოს დადებითი')
+    price: z.number().min(0, 'ფასი უნდა იყოს დადებითი'),
+    sizeSystem: z.enum(['EU', 'US', 'UK', 'CN']).optional()
   })).default([]),
   imageUrls: z.array(z.string().min(1, 'URL აუცილებელია')).default([]),
   rentalPriceTiers: z.array(z.object({
@@ -167,7 +168,8 @@ export async function POST(request: NextRequest) {
           create: validatedData.variants.map(variant => ({
             size: variant.size,
             stock: variant.stock,
-            price: variant.price
+            price: variant.price,
+            sizeSystem: variant.sizeSystem ?? validatedData.sizeSystem
           }))
         },
         // Create rental price tiers if provided

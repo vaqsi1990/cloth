@@ -38,7 +38,8 @@ const productSchema = z.object({
   variants: z.array(z.object({
     size: z.string().min(1, 'ზომა აუცილებელია'),
     stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი'),
-    price: z.number().min(0, 'ფასი უნდა იყოს დადებითი')
+    price: z.number().min(0, 'ფასი უნდა იყოს დადებითი'),
+    sizeSystem: z.enum(['EU', 'US', 'UK', 'CN']).optional()
   })).default([]),
   imageUrls: z.array(z.string().min(1, 'URL აუცილებელია')).default([]),
   rentalPriceTiers: z.array(z.object({
@@ -151,7 +152,12 @@ export async function PUT(
     console.log('Validated data:', JSON.stringify(validatedData, null, 2))
     console.log('Variants to create:', validatedData.variants)
     console.log('Variants length:', validatedData.variants.length)
-    console.log('Each variant:', validatedData.variants.map(v => ({ size: v.size, stock: v.stock, price: v.price })))
+    console.log('Each variant:', validatedData.variants.map(v => ({
+      size: v.size,
+      stock: v.stock,
+      price: v.price,
+      sizeSystem: v.sizeSystem ?? validatedData.sizeSystem
+    })))
     
     const updatedProduct = await prisma.product.update({
       where: { id: productId },

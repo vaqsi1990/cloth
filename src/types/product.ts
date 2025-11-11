@@ -11,6 +11,7 @@ export interface ProductVariant {
   stock: number
   price: number  // required price for this variant
   sku?: string
+  sizeSystem?: 'EU' | 'US' | 'UK' | 'CN'
   activeRentals?: RentalPeriod[]
   isAvailable?: boolean
 }
@@ -51,6 +52,7 @@ export interface Product {
   color?: string
   location?: string
   sizeSystem?: 'EU' | 'US' | 'UK' | 'CN'
+  size?: string
   isNew: boolean
   discount?: number
   rating?: number

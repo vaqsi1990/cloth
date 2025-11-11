@@ -69,7 +69,8 @@ const productSchema = z.object({
       size: z.string().min(1, 'ზომა აუცილებელია').default(FALLBACK_SIZE),
       stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი'),
       price: z.number().min(0, 'ფასი უნდა იყოს დადებითი'),
-      discount: z.number().min(0).max(100).optional()
+      discount: z.number().min(0).max(100).optional(),
+      sizeSystem: z.enum(['EU', 'US', 'UK', 'CN']).optional()
     })
   ).default([]),
   imageUrls: z.array(z.string().url('არასწორი URL')).default([]),
@@ -181,6 +182,13 @@ const NewProductPage = () => {
       setSelectedSize('')
       handleInputChange('sizeSystem', undefined)
       handleInputChange('size', undefined)
+      setFormData(prev => ({
+        ...prev,
+        variants: prev.variants.map(variant => ({
+          ...variant,
+          sizeSystem: undefined
+        }))
+      }))
       return
     }
 
@@ -191,6 +199,13 @@ const NewProductPage = () => {
     setSelectedSize(nextSize)
     handleInputChange('sizeSystem', system as SizeSystem)
     handleInputChange('size', nextSize)
+    setFormData(prev => ({
+      ...prev,
+      variants: prev.variants.map(variant => ({
+        ...variant,
+        sizeSystem: system as SizeSystem
+      }))
+    }))
   }
 
   const handleInputChange = (field: keyof ProductFormData, value: string | number | boolean | undefined) => {
@@ -268,7 +283,16 @@ const NewProductPage = () => {
 
     setFormData(prev => ({
       ...prev,
-      variants: [...prev.variants, { size: defaultSize, stock: 0, price: 0, discount: undefined }]
+      variants: [
+        ...prev.variants,
+        {
+          size: defaultSize,
+          stock: 0,
+          price: 0,
+          discount: undefined,
+          sizeSystem: prev.sizeSystem
+        }
+      ]
     }))
   }
 
