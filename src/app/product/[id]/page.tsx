@@ -453,7 +453,8 @@ const ProductPage = () => {
     const selectedStock = selectedVariant?.stock ?? 0
 
     const handleSizeClick = (size: string) => {
-        if (product?.status === 'AVAILABLE') {
+        // Allow size selection in both buy and rent modes, as long as product is not in maintenance
+        if (product?.status !== 'MAINTENANCE') {
             setSelectedSize(size)
         }
     }
@@ -657,6 +658,8 @@ const ProductPage = () => {
         )
     }
 
+
+
     return (
         <div className="min-h-screen">
             {/* Header (Back) */}
@@ -798,11 +801,8 @@ const ProductPage = () => {
                             )}
 
                             {/* Size selector */}
-                            <div className="p-6  space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="md:text-[18px] text-[16px] font-semibold text-black">ზომა:</h3>
-
-                                </div>
+                            <div className="p-6 space-y-3">
+                                <h3 className="md:text-[18px] text-[16px] font-semibold text-black">ზომა:</h3>
 
                                 <div className="grid grid-cols-3 gap-3">
                                     {getAvailableSizes().map(size => {
@@ -829,7 +829,7 @@ const ProductPage = () => {
                                             <button
                                                 key={size}
                                                 onClick={() => handleSizeClick(size)}
-                                                disabled={product.status !== 'AVAILABLE'}
+                                                disabled={product.status === 'MAINTENANCE'}
                                                 className={`rounded-xl border-2 p-3 text-center transition ${selectedSize === size
                                                     ? rented
                                                         ? " bg-[#1B3729] text-white"
@@ -880,21 +880,23 @@ const ProductPage = () => {
                                     </div>
                                 ) : (
                                     <div className="grid grid-cols-2 gap-3">
-                                        <button
-                                            onClick={() => setPurchaseMode("buy")}
-                                            disabled={product.status === 'RENTED'}
-                                            className={`p-4 rounded-xl border-2 flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed ${purchaseMode === "buy"
-                                                ? "border-[#1B3729] bg-[#1B3729] text-white"
-                                                : "border-gray-300"
-                                                }`}
-                                        >
-                                            <CreditCard className="w-5 h-5" />
-                                            ყიდვა
-                                        </button>
-                                        {product.isRentable && product.status === 'AVAILABLE' && (
+                                        {selectedSize && (
+                                            <button
+                                                onClick={() => setPurchaseMode("buy")}
+                                                disabled={product.status === 'RENTED'}
+                                                className={`p-4 rounded-xl border-2 flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed ${purchaseMode === "buy"
+                                                    ? "border-[#1B3729] bg-[#1B3729] text-white"
+                                                    : "border-gray-300"
+                                                    }`}
+                                            >
+                                                <CreditCard className="w-5 h-5" />
+                                                ყიდვა
+                                            </button>
+                                        )}
+                                        {product.isRentable && (product.status === 'AVAILABLE' || product.status === 'RENTED' || product.status === 'RESERVED' || product.status === undefined) && (
                                             <button
                                                 onClick={() => setPurchaseMode("rent")}
-                                                className={`p-4 rounded-xl border-2 flex items-center justify-center gap-2 ${purchaseMode === "rent"
+                                                className={`p-4 rounded-xl border-2 flex items-center justify-center gap-2 transition ${purchaseMode === "rent"
                                                     ? "border-emerald-400 bg-emerald-100 text-black"
                                                     : "border-gray-300"
                                                     }`}
@@ -1061,22 +1063,23 @@ const ProductPage = () => {
                                     })()}
 
                                     {product.status !== 'MAINTENANCE' && (
-                                        <button
-                                            onClick={() =>
-                                                purchaseMode === "buy" ? handleAddToCart() : handleRental()
-                                            }
-                                        
-                                            className={`w-full py-4 rounded-xl text-white font-bold transition disabled:bg-gray-400 ${purchaseMode === "buy"
-                                                ? "bg-[#1B3729] hover:opacity-95"
-                                                : "bg-emerald-600 hover:bg-emerald-700"
-                                                }`}
-                                        >
-                                            {isAdding
-                                                ? "მუშავდება..."
-                                                : purchaseMode === "buy"
-                                                    ? "კალათაში დამატება"
-                                                    : "ქირაობა "}
-                                        </button>
+                                        <>
+                                            {purchaseMode === "buy" && selectedSize ? (
+                                                <button
+                                                    onClick={handleAddToCart}
+                                                    className="w-full py-4 rounded-xl text-white font-bold transition bg-[#1B3729] hover:opacity-95"
+                                                >
+                                                    {isAdding ? "მუშავდება..." : "კალათაში დამატება"}
+                                                </button>
+                                            ) : purchaseMode === "rent" && selectedSize && rentalStartDate && rentalEndDate ? (
+                                                <button
+                                                    onClick={handleRental}
+                                                    className="w-full py-4 rounded-xl text-white font-bold transition bg-emerald-600 hover:bg-emerald-700"
+                                                >
+                                                    {isAdding ? "მუშავდება..." : "ქირაობა"}
+                                                </button>
+                                            ) : null}
+                                        </>
                                     )}
                                 </div>
                             ) : (

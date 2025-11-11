@@ -30,7 +30,7 @@ const productSchema = z.object({
   ),
   rating: z.number().min(0).max(5).optional(),
   categoryId: z.number().optional(),
-  isRentable: z.boolean().default(false),
+  isRentable: z.boolean().default(true),
   pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional(),
   maxRentalDays: z.number().optional(),
   deposit: z.number().min(0, 'გირაო უნდა იყოს დადებითი').optional(),

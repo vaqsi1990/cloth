@@ -3,8 +3,7 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Save, X, Plus } from 'lucide-react'
 import { z } from 'zod'
-import { Product } from '@/types/product'
-import ImageUpload from '@/component/CloudinaryUploader'
+import { Product, ProductVariant } from '@/types/product'
 import ImageUploadForProduct from '@/component/productimage'
 import { showToast } from '@/utils/toast'
 const productSchema = z.object({
@@ -31,7 +30,7 @@ const productSchema = z.object({
   ),
   rating: z.number().min(0).max(5).optional(),
   categoryId: z.number().optional(),
-  isRentable: z.boolean().default(false),
+  isRentable: z.boolean().default(true),
   pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').nullable().optional(),
   maxRentalDays: z.number().nullable().optional(),
   deposit: z.number().min(0, 'გირაო უნდა იყოს დადებითი').nullable().optional(),
@@ -74,7 +73,7 @@ const EditProductPage = () => {
     discount: undefined,
     rating: 0,
     categoryId: undefined,
-    isRentable: false,
+    isRentable: true,
     pricePerDay: undefined,
     maxRentalDays: undefined,
     deposit: undefined,
@@ -147,12 +146,12 @@ const EditProductPage = () => {
             discount: product.discount,
             rating: product.rating || 0,
             categoryId: product.categoryId,
-            isRentable: product.isRentable || false,
+            isRentable: product.isRentable ?? true,
             pricePerDay: product.pricePerDay || undefined,
             maxRentalDays: product.maxRentalDays || undefined,
             deposit: product.deposit || undefined,
             status: product.status || 'AVAILABLE',
-            variants: (product.variants || []).map((variant: any) => ({
+            variants: (product.variants || []).map((variant: ProductVariant) => ({
               ...variant,
               sizeSystem: variant.sizeSystem ?? product.sizeSystem ?? undefined
             })),

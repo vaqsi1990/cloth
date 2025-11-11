@@ -77,7 +77,6 @@ const AdminDashboard = () => {
       hasFetchedRef.current = true
       fetchAdminStats()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, session?.user?.role])
 
   // ---------------------

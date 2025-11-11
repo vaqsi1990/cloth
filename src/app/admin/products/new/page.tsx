@@ -63,7 +63,7 @@ const productSchema = z.object({
   discount: z.number().int().min(0).max(100).optional(),
   rating: z.number().min(0).max(5).optional(),
   categoryId: z.number().optional(),
-  isRentable: z.boolean().default(false), // 🆕
+  isRentable: z.boolean().default(true), // 🆕
   pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional(), // 🆕
   maxRentalDays: z.number().optional(), // 🆕
   deposit: z.number().min(0, 'გირაო უნდა იყოს დადებითი').optional(), // 🆕
@@ -104,7 +104,7 @@ const NewProductPage = () => {
     discount: undefined,
     rating: 0,
     categoryId: undefined,
-    isRentable: false, // 🆕
+    isRentable: true, // 🆕
     pricePerDay: undefined,
     maxRentalDays: undefined,
     deposit: undefined,
