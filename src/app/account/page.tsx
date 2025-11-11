@@ -507,10 +507,10 @@ const AccountPage = () => {
               <>
                 <div className="mb-3">
                   <span className={`inline-block px-3 py-1 text-sm rounded-full ${['APPROVED'].includes(verification?.status ?? '')
-                      ? 'bg-green-100 text-green-800'
-                      : ['REJECTED'].includes(verification?.status ?? '')
-                        ? 'bg-red-100 text-red-800'
-                        : 'bg-yellow-100 text-yellow-800'
+                    ? 'bg-green-100 text-green-800'
+                    : ['REJECTED'].includes(verification?.status ?? '')
+                      ? 'bg-red-100 text-red-800'
+                      : 'bg-yellow-100 text-yellow-800'
                     }`}>
                     სტატუსი: {getVerificationStatusLabel(verification?.status)}
                   </span>
@@ -610,8 +610,8 @@ const AccountPage = () => {
                   <div className="text-right">
                     <p className="font-bold text-black">₾{order.total}</p>
                     <span className={`inline-block px-2 py-1 text-xs rounded-full ${order.status === 'PAID' ? 'bg-green-100 text-green-800' :
-                        order.status === 'SHIPPED' ? 'bg-blue-100 text-blue-800' :
-                          'bg-gray-100 text-black'
+                      order.status === 'SHIPPED' ? 'bg-blue-100 text-blue-800' :
+                        'bg-gray-100 text-black'
                       }`}>
                       {order.status}
                     </span>
@@ -645,15 +645,32 @@ const AccountPage = () => {
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-bold text-black">ჩემი პროდუქტები</h3>
-          <div className="flex items-center space-x-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
             <Link
               href="/account/products/sku"
-              className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
             >
               <Search className="w-4 h-4" />
               <span>ძიება კოდის მიხედვით</span>
             </Link>
-
+            {session.user.role === 'ADMIN' || verification?.status === 'APPROVED' || session.user.verificationStatus === 'APPROVED' ? (
+              <Link
+                href="/account/products/new"
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#1B3729] text-white rounded-lg font-semibold uppercase tracking-wide transition-colors hover:bg-[#164321]"
+              >
+                <Package className="w-4 h-4" />
+                <span>ახალი პროდუქტი</span>
+              </Link>
+            ) : (
+              <button
+                disabled
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-gray-200 text-gray-600 rounded-lg font-semibold uppercase tracking-wide cursor-not-allowed"
+                title="ახალი პროდუქტის დამატება შესაძლებელია მხოლოდ ვერიფიცირებული ანგარიშისთვის"
+              >
+                <Package className="w-4 h-4" />
+                <span>ახალი პროდუქტი</span>
+              </button>
+            )}
           </div>
         </div>
         {session.user.role !== 'ADMIN' && verification?.status !== 'APPROVED' && session.user.verificationStatus !== 'APPROVED' && (
@@ -677,24 +694,7 @@ const AccountPage = () => {
           <div className="text-center py-8">
             <Package className="w-12 h-12 text-black mx-auto mb-4" />
             <p className="text-black">ჯერ არ გაქვთ პროდუქტები</p>
-            {session.user.role === 'ADMIN' || verification?.status === 'APPROVED' || session.user.verificationStatus === 'APPROVED' ? (
-              <Link
-                href="/account/products/new"
-                className="flex w-full md:w-[30%] justify-center mx-auto mt-5 items-center space-x-2 px-4 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
-              >
-                <Package className="w-4 h-4" />
-                <span>ახალი პროდუქტი</span>
-              </Link>
-            ) : (
-              <button
-                disabled 
-                className="flex justify-center mt-5 mx-auto items-center space-x-2 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg font-bold uppercase tracking-wide cursor-not-allowed"
-                title="ახალი პროდუქტის დამატება შესაძლებელია მხოლოდ ვერიფიცირებული ანგარიშისთვის"
-              >
-                <Package className="w-4 h-4" />
-                <span>ახალი პროდუქტი</span>
-              </button>
-            )}
+
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -708,10 +708,10 @@ const AccountPage = () => {
                   />
                   <div className="absolute top-2 right-2">
                     <span className={`px-2 py-1 text-xs rounded-full ${product.status === 'AVAILABLE' ? 'bg-green-100 text-green-800' :
-                        product.status === 'RENTED' ? 'bg-blue-100 text-blue-800' :
-                          product.status === 'RESERVED' ? 'bg-yellow-100 text-yellow-800' :
-                            product.status === 'MAINTENANCE' ? 'bg-red-100 text-red-800' :
-                              'bg-gray-100 text-gray-800'
+                      product.status === 'RENTED' ? 'bg-blue-100 text-blue-800' :
+                        product.status === 'RESERVED' ? 'bg-yellow-100 text-yellow-800' :
+                          product.status === 'MAINTENANCE' ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-800'
                       }`}>
                       {getStatusLabel(product.status)}
                     </span>
@@ -893,8 +893,8 @@ const AccountPage = () => {
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
                     className={`w-full cursor-pointer flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${activeTab === tab.id
-                        ? 'bg-[#1B3729] text-white'
-                        : 'text-black '
+                      ? 'bg-[#1B3729] text-white'
+                      : 'text-black '
                       }`}
                   >
                     <tab.icon className="w-5 h-5" />

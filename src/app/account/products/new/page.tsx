@@ -15,8 +15,7 @@ const sizeOptions = {
   XL: { UK: [16], EU: [44], US: [12] },
   XXL: { UK: [18], EU: [46], US: [14] },
   XXXL: { UK: [20], EU: [48], US: [16] },
-  XXXXL: { UK: [22], EU: [50], US: [18] },
-  XXXXXL: { UK: [24], EU: [52], US: [20] },
+ 
 }
 const FALLBACK_SIZE = 'STANDARD'
 const categories = [
@@ -111,7 +110,7 @@ const NewProductPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showPurchaseOptions, setShowPurchaseOptions] = useState(false)
   const [sizeSystem, setSizeSystem] = useState(formData.sizeSystem ?? '')
-  const [availableSizes, setAvailableSizes] = useState<string[]>(Object.keys(sizeOptions))
+  const [availableSizes, setAvailableSizes] = useState<string[]>([])
   const [selectedSize, setSelectedSize] = useState('')
 
   const colors = [
@@ -132,8 +131,15 @@ const NewProductPage = () => {
     handleInputChange('sizeSystem', system || undefined)
 
     if (!system) {
-      setAvailableSizes([...Object.keys(sizeOptions)])
+      setAvailableSizes([])
       setSelectedSize('')
+      return
+    }
+
+    if (system === 'CN') {
+      const baseSizes = Object.keys(sizeOptions)
+      setAvailableSizes(baseSizes)
+      setSelectedSize(baseSizes[0] ?? '')
       return
     }
 
@@ -159,8 +165,8 @@ const NewProductPage = () => {
         return {
           ...prev,
           [field]: value,
-          rentalPriceTiers: prev.rentalPriceTiers && prev.rentalPriceTiers.length > 0 
-            ? prev.rentalPriceTiers 
+          rentalPriceTiers: prev.rentalPriceTiers && prev.rentalPriceTiers.length > 0
+            ? prev.rentalPriceTiers
             : [{ minDays: 4, pricePerDay: 0 }]
         }
       }
@@ -265,7 +271,7 @@ const NewProductPage = () => {
           rentalPriceTiers: [{ minDays: 1, pricePerDay: 0 }]
         }
       }
-      
+
       return {
         ...prev,
         rentalPriceTiers: currentTiers.map((tier, i) =>
@@ -376,18 +382,7 @@ const NewProductPage = () => {
                 {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
               </div>
 
-              <div>
-                <label className="block text-[20px] text-black font-medium mb-2">
-                  Slug (ავტომატური)
-                </label>
-                <input
-                  type="text"
-                  value={formData.slug}
-                  readOnly
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black bg-gray-50 cursor-not-allowed"
-                />
-                <p className="text-gray-500 text-sm mt-1">Slug ავტომატურად გენერირდება სახელიდან</p>
-              </div>
+
 
               <div>
                 <label className="block text-[20px] text-black font-medium mb-2">
@@ -451,7 +446,21 @@ const NewProductPage = () => {
                   <option value="ბათუმი">ბათუმი</option>
                 </select>
               </div>
-
+              <div>
+                <label className="block text-[20px] text-black font-medium mb-2">ფერი</label>
+                <select
+                  value={formData.color || ''}
+                  onChange={(e) => handleInputChange('color', e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                >
+                  <option value="">აირჩიეთ ფერი</option>
+                  {colors.map((color) => (
+                    <option key={color.id} value={color.label}>
+                      {color.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
             </div>
 
@@ -492,33 +501,7 @@ const NewProductPage = () => {
               </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-[20px] text-black font-medium mb-2">გირაოს თანხა</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.deposit || ''}
-                  onChange={(e) => handleInputChange('deposit', e.target.value ? parseFloat(e.target.value) : undefined)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                />
-              </div>
-              <div>
-                <label className="block text-[20px] text-black font-medium mb-2">ფერი</label>
-                <select
-                  value={formData.color || ''}
-                  onChange={(e) => handleInputChange('color', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                >
-                  <option value="">აირჩიეთ ფერი</option>
-                  {colors.map((color) => (
-                    <option key={color.id} value={color.label}>
-                      {color.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
+
 
             <div className="mt-6">
               <label className="block text-[20px] text-black font-medium mb-2">
@@ -532,99 +515,100 @@ const NewProductPage = () => {
               />
             </div>
 
-           
+
           </div>
 
           {/* Variants */}
-        
+
 
           {/* Rental Options */}
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h2 className="text-[20px] text-black font-semibold mb-6">გაქირავების პარამეტრები</h2>
 
-            <label className="flex items-center mb-4">
-              <input
-                type="checkbox"
-                checked={formData.isRentable}
-                onChange={(e) => handleInputChange('isRentable', e.target.checked)}
-                className="mr-2"
-              />
-              <span className="text-[20px] text-black">პროდუქტის გაქირავება შესაძლებელია</span>
-            </label>
 
-            {formData.isRentable && (
-              <div className="space-y-6">
-                {/* Rental Price Tiers */}
-                <div>
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-medium text-black">ფასის გეგმა</h3>
-                    <button
-                      type="button"
-                      onClick={addRentalPriceTier}
-                      className="bg-black text-white px-4 py-2 rounded-lg text-sm flex items-center space-x-2"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>გეგმის დამატება</span>
-                    </button>
-                  </div>
 
-                  {/* Show price tiers */}
-                  {(formData.rentalPriceTiers || []).map((tier, index) => (
-                    <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border border-gray-200 rounded-lg mb-4">
-                      <div>
-                        <label className="block text-[20px] font-medium text-black mb-2">მინიმალური დღეები</label>
-                        <input
-                          type="number"
-                          min="1"
-                          value={tier.minDays}
-                          onChange={(e) => updateRentalPriceTier(index, 'minDays', parseInt(e.target.value) || 1)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[20px] font-medium text-black mb-2">ფასი დღეში</label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={tier.pricePerDay}
-                          onChange={(e) => updateRentalPriceTier(index, 'pricePerDay', parseFloat(e.target.value) || 0)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-
-                      <div className="flex items-end">
-                        {/* Only show delete button if there's more than one tier */}
-                        {formData.rentalPriceTiers && formData.rentalPriceTiers.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => removeRentalPriceTier(index)}
-                            className="bg-red-500 text-white px-3 py-2 rounded-lg text-sm flex items-center space-x-2"
-                          >
-                            <X className="w-4 h-4" />
-                            <span>წაშლა</span>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+            <div className="space-y-6">
+              {/* Rental Price Tiers */}
+              <div>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-medium text-black">ფასის გეგმა</h3>
+                  <button
+                    type="button"
+                    onClick={addRentalPriceTier}
+                    className="bg-black text-white px-4 py-2 rounded-lg text-[20px] flex items-center space-x-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>გეგმის დამატება</span>
+                  </button>
                 </div>
 
-                {/* Additional Rental Parameters */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-[20px] text-black font-medium mb-2">მაქს დღეები(არასავალდებულო)</label>
-                    <input
-                      type="number"
-                      value={formData.maxRentalDays || ''}
-                      onChange={(e) => handleInputChange('maxRentalDays', e.target.value ? parseInt(e.target.value) : undefined)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                    />
+                {/* Show price tiers */}
+                {(formData.rentalPriceTiers || []).map((tier, index) => (
+                  <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border border-gray-200 rounded-lg mb-4">
+                    <div>
+                      <label className="block text-[20px] font-medium text-black mb-2">მინიმალური დღეები</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={tier.minDays}
+                        onChange={(e) => updateRentalPriceTier(index, 'minDays', parseInt(e.target.value) || 1)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[20px] font-medium text-black mb-2">ფასი დღეში</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={tier.pricePerDay}
+                        onChange={(e) => updateRentalPriceTier(index, 'pricePerDay', parseFloat(e.target.value) || 0)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    <div className="flex items-end">
+                      {/* Only show delete button if there's more than one tier */}
+                      {formData.rentalPriceTiers && formData.rentalPriceTiers.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeRentalPriceTier(index)}
+                          className="bg-red-500 text-white px-3 py-2 rounded-lg text-sm flex items-center space-x-2"
+                        >
+                          <X className="w-4 h-4" />
+                          <span>წაშლა</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
+                ))}
+              </div>
+
+              {/* Additional Rental Parameters */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-[20px] text-black font-medium mb-2">მაქს დღეები(არასავალდებულო)</label>
+                  <input
+                    type="number"
+                    value={formData.maxRentalDays || ''}
+                    onChange={(e) => handleInputChange('maxRentalDays', e.target.value ? parseInt(e.target.value) : undefined)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[20px] text-black font-medium mb-2">გირაოს თანხა</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.deposit || ''}
+                    onChange={(e) => handleInputChange('deposit', e.target.value ? parseFloat(e.target.value) : undefined)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  />
                 </div>
               </div>
-            )}
+            </div>
+
           </div>
 
           <div className="bg-white rounded-lg shadow-sm p-6">
@@ -636,7 +620,7 @@ const NewProductPage = () => {
                   onChange={(e) => setShowPurchaseOptions(e.target.checked)}
                   className="h-5 w-5"
                 />
-                <span>ყიდვის პარამეტრები</span>
+                <span>გაყიდვის პარამეტრები</span>
               </label>
               {showPurchaseOptions && (
                 <button

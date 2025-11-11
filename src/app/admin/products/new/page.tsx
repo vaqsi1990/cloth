@@ -117,7 +117,7 @@ const NewProductPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showPurchaseOptions, setShowPurchaseOptions] = useState(false)
   const [sizeSystem, setSizeSystem] = useState(formData.sizeSystem ?? '')
-  const [availableSizes, setAvailableSizes] = useState<string[]>(Object.keys(sizeOptions))
+  const [availableSizes, setAvailableSizes] = useState<string[]>([])
   const [selectedSize, setSelectedSize] = useState('')
 
   const handleSystemChange = (system: string) => {
@@ -125,8 +125,15 @@ const NewProductPage = () => {
     handleInputChange('sizeSystem', system || undefined)
 
     if (!system) {
-      setAvailableSizes([...Object.keys(sizeOptions)])
+      setAvailableSizes([])
       setSelectedSize('')
+      return
+    }
+
+    if (system === 'CN') {
+      const baseSizes = Object.keys(sizeOptions)
+      setAvailableSizes(baseSizes)
+      setSelectedSize(baseSizes[0] ?? '')
       return
     }
 
