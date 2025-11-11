@@ -86,12 +86,20 @@ const ProductPage = () => {
     const [submittingReply, setSubmittingReply] = useState(false)
     const [deletingReplyId, setDeletingReplyId] = useState<number | null>(null)
 
-    // Auto-switch to rent mode if product is rented
+    // Auto-switch to rent mode if product is rented or if buy price is 0
     useEffect(() => {
         if (product?.status === 'RENTED' && purchaseMode === 'buy') {
             setPurchaseMode('rent')
         }
-    }, [product?.status, purchaseMode])
+        // If selected price is 0, switch to rent mode (product is rent-only)
+        if (selectedSize && product) {
+            const variant = product.variants?.find(v => v.size === selectedSize)
+            const price = variant?.price ?? 0
+            if (price === 0 && purchaseMode === 'buy') {
+                setPurchaseMode('rent')
+            }
+        }
+    }, [product?.status, purchaseMode, selectedSize, product])
 
     // size => busy periods
     const [rentalStatus, setRentalStatus] = useState<Record<string, RentalPeriod[]>>({})
@@ -440,7 +448,7 @@ const ProductPage = () => {
     useEffect(() => {
         if (product && !selectedSize) {
             // First try to find a size without active rentals, otherwise just pick the first size
-            const sz = firstAvailableSize() || product.variants?.[0]?.size
+            const sz = firstAvailableSize() || product.variants?.[0]?.size || product.size
             if (sz) {
                 setSelectedSize(sz)
             }
@@ -804,67 +812,13 @@ const ProductPage = () => {
                             <div className="p-6 space-y-3">
                                 <h3 className="md:text-[18px] text-[16px] font-semibold text-black">ზომა:</h3>
 
-                                <div className="grid grid-cols-3 gap-3">
-                                    {getAvailableSizes().map(size => {
-                                        const variant = product.variants?.find(v => v.size === size)
-                                        const price = variant?.price || 0
-                                        const rented = hasActiveRentals(size)
-                                        const firstEnd =
-                                            getRentalPeriods(size).length > 0
-                                                ? (() => {
-                                                    const earliestEnd = getRentalPeriods(size)
-                                                        .map(p => p.endDate)
-                                                        .sort(
-                                                            (a, b) =>
-                                                                new Date(a).getTime() - new Date(b).getTime()
-                                                        )[0]
-                                                    // Add 2 days for return + maintenance
-                                                    const availableDate = new Date(earliestEnd)
-                                                    availableDate.setDate(availableDate.getDate() + 2)
-                                                    return formatDate(availableDate.toISOString())
-                                                })()
-                                                : null
-
-                                        return (
-                                            <button
-                                                key={size}
-                                                onClick={() => handleSizeClick(size)}
-                                                disabled={product.status === 'MAINTENANCE'}
-                                                className={`rounded-xl border-2 p-3 text-center transition ${selectedSize === size
-                                                    ? rented
-                                                        ? " bg-[#1B3729] text-white"
-                                                        : " bg-[#1B3729] text-white"
-                                                    : rented || (product.status && product.status !== 'AVAILABLE')
-                                                        ? product.status === 'MAINTENANCE'
-                                                            ? "border-orange-300  bg-[#1B3729] text-orange-600 cursor-not-allowed"
-                                                            : product.status === 'RENTED'
-                                                                ? "border-blue-300 bg-[#1B3729]0 text-white cursor-not-allowed"
-                                                                : "border-red-300 bg-[#1B3729] text-white"
-                                                        : "border-gray-300 hover:border-black"
-                                                    }`}
-                                            >
-                                                <div className="font-semibold">{size}</div>
-                                                <div className="text-[16px]">{`₾${price.toFixed(2)}`}</div>
-                                                {product.status === 'MAINTENANCE' && (
-                                                    <div className="mt-1 text-orange-600 text-[16px]">
-                                                        რესტავრაციაზე
-                                                    </div>
-                                                )}
-
-                                                {product.status === 'RENTED' && (
-                                                    <div className="mt-1 text-white text-[16px]">
-                                                        იქნება ხელმისაწვდომი {firstEnd}
-                                                    </div>
-                                                )}
-                                                {rented && firstEnd && product.status === 'AVAILABLE' && (
-                                                    <div className="mt-1 positive text-white">
-                                                        თავისუფალია
-                                                    </div>
-                                                )}
-                                            </button>
-                                        )
-                                    })}
-                                </div>
+                                {product.size && (
+                                    <div className="inline-block">
+                                        <div className="rounded-xl border-2 border-gray-300 bg-[#1B3729]  px-6 py-4 text-center transition hover:border-black">
+                                            <div className="text-xl font-bold text-white">{product.size}</div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Purchase / Rent toggle + calendars */}
@@ -879,8 +833,8 @@ const ProductPage = () => {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="grid grid-cols-2 gap-3">
-                                        {selectedSize && (
+                                    <div className={`grid gap-3 ${selectedSize && selectedPrice > 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                                        {selectedSize && selectedPrice > 0 && (
                                             <button
                                                 onClick={() => setPurchaseMode("buy")}
                                                 disabled={product.status === 'RENTED'}
@@ -1064,17 +1018,18 @@ const ProductPage = () => {
 
                                     {product.status !== 'MAINTENANCE' && (
                                         <>
-                                            {purchaseMode === "buy" && selectedSize ? (
+                                            {purchaseMode === "buy" && selectedSize && selectedPrice > 0 ? (
                                                 <button
                                                     onClick={handleAddToCart}
                                                     className="w-full py-4 rounded-xl text-white font-bold transition bg-[#1B3729] hover:opacity-95"
                                                 >
                                                     {isAdding ? "მუშავდება..." : "კალათაში დამატება"}
                                                 </button>
-                                            ) : purchaseMode === "rent" && selectedSize && rentalStartDate && rentalEndDate ? (
+                                            ) : purchaseMode === "rent" && selectedSize ? (
                                                 <button
                                                     onClick={handleRental}
-                                                    className="w-full py-4 rounded-xl text-white font-bold transition bg-emerald-600 hover:bg-emerald-700"
+                                                    disabled={!rentalStartDate || !rentalEndDate}
+                                                    className="w-full py-4 rounded-xl text-white font-bold transition bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
                                                 >
                                                     {isAdding ? "მუშავდება..." : "ქირაობა"}
                                                 </button>
@@ -1098,28 +1053,21 @@ const ProductPage = () => {
                                         <span className="font-semibold">კატეგორია: </span>
                                         {product.category?.name || "—"}
                                     </li>
+                                   
                                     {product.sizeSystem && (
                                         <li>
                                             <span className="font-semibold">ზომის სისტემა: </span>
                                             {product.sizeSystem?.toUpperCase() || "—"}
                                         </li>
                                     )}
-                                    {product.size && (
-                                        <li>
-                                            <span className="font-semibold">ზომა: </span>
-                                            {product.size}
-                                        </li>
-                                    )}
+                                   
                                     {product.brand && (
                                         <li>
                                             <span className="font-semibold">ბრენდი: </span>
                                             {product.brand}
                                         </li>
                                     )}
-                                    <li>
-                                        <span className="font-semibold">ზომა: </span>
-                                        {selectedSize || "—"}
-                                    </li>
+                                  
                                     <li>
                                         <span className="font-semibold">ფერი: </span>
                                         {product.color || "—"}

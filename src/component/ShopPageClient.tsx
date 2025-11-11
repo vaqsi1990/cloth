@@ -123,15 +123,26 @@ const ShopPageClient = () => {
                 if (data.success) {
                     setProducts(data.products)
 
-                    // Calculate maximum price from products
-                    const allPrices = data.products.flatMap((product: Product) =>
-                        product.variants?.map(variant => variant.price) || []
-                    )
+                    // Calculate maximum price from products (including rental prices)
+                    const allPrices = data.products.flatMap((product: Product) => {
+                        const prices: number[] = []
+                        // Add buy prices
+                        if (product.variants && product.variants.length > 0) {
+                            prices.push(...product.variants.map(variant => variant.price))
+                        }
+                        // Add rental prices if product is rentable
+                        if (product.isRentable && product.rentalPriceTiers && product.rentalPriceTiers.length > 0) {
+                            const sortedTiers = [...product.rentalPriceTiers].sort((a, b) => a.minDays - b.minDays)
+                            const tier0 = sortedTiers[0]
+                            prices.push(tier0.pricePerDay * tier0.minDays)
+                        }
+                        return prices
+                    })
                     const calculatedMaxPrice = allPrices.length > 0 ? Math.max.apply(null, allPrices) : 200
                     setMaxPrice(calculatedMaxPrice)
 
                     // Update price range if current max is higher than calculated max
-                    if (calculatedMaxPrice > priceRange[1]) {
+                    if (calculatedMaxPrice > priceRange[1] || priceRange[1] === 0) {
                         setPriceRange([0, calculatedMaxPrice])
                     }
                 }
@@ -171,16 +182,57 @@ const ShopPageClient = () => {
         }
     }, [products])
 
-    // Get minimum price from variants
-    const getMinPrice = (product: Product) => {
-        if (!product.variants || product.variants.length === 0) return 0
-        return Math.min(...product.variants.map(v => v.price))
+    // Helper to get rental price from tier[0] (first tier with minimum days)
+    const getRentalPrice = (product: Product): number => {
+        if (!product.isRentable || !product.rentalPriceTiers || product.rentalPriceTiers.length === 0) {
+            return 0
+        }
+        // Sort tiers by minDays to get the first tier (lowest minDays)
+        const sortedTiers = [...product.rentalPriceTiers].sort((a, b) => a.minDays - b.minDays)
+        const tier0 = sortedTiers[0]
+        return tier0.pricePerDay * tier0.minDays
     }
 
-    // Get maximum price from variants
+    // Get minimum price from variants, or rental price if buy price is 0
+    const getMinPrice = (product: Product) => {
+        // First check if product has variants with prices
+        if (product.variants && product.variants.length > 0) {
+            const prices = product.variants.map(v => v.price).filter(p => p > 0)
+            // If all prices are 0 or no positive prices, check rental
+            if (prices.length === 0) {
+                return getRentalPrice(product)
+            }
+            const minBuyPrice = Math.min(...prices)
+            // If min buy price is 0, show rental price instead
+            if (minBuyPrice === 0) {
+                const rentalPrice = getRentalPrice(product)
+                return rentalPrice > 0 ? rentalPrice : 0
+            }
+            return minBuyPrice
+        }
+        // If no variants, check if it's rentable
+        return getRentalPrice(product)
+    }
+
+    // Get maximum price from variants, or rental price if buy price is 0
     const getMaxPrice = (product: Product) => {
-        if (!product.variants || product.variants.length === 0) return 0
-        return Math.max(...product.variants.map(v => v.price))
+        // First check if product has variants with prices
+        if (product.variants && product.variants.length > 0) {
+            const prices = product.variants.map(v => v.price).filter(p => p > 0)
+            // If all prices are 0 or no positive prices, check rental
+            if (prices.length === 0) {
+                return getRentalPrice(product)
+            }
+            const maxBuyPrice = Math.max(...prices)
+            // If max buy price is 0, show rental price instead
+            if (maxBuyPrice === 0) {
+                const rentalPrice = getRentalPrice(product)
+                return rentalPrice > 0 ? rentalPrice : 0
+            }
+            return maxBuyPrice
+        }
+        // If no variants, check if it's rentable
+        return getRentalPrice(product)
     }
 
     // Check if product is available during selected dates
@@ -224,13 +276,16 @@ const ShopPageClient = () => {
         // Price filter
         const minPrice = getMinPrice(product)
         const maxPrice = getMaxPrice(product)
-        const priceMatch = (minPrice >= priceRange[0] && minPrice <= priceRange[1]) ||
+        // If priceRange is not initialized (both are 0), show all products
+        const priceMatch = (priceRange[0] === 0 && priceRange[1] === 0) ||
+            (minPrice >= priceRange[0] && minPrice <= priceRange[1]) ||
             (maxPrice >= priceRange[0] && maxPrice <= priceRange[1]) ||
             (minPrice <= priceRange[0] && maxPrice >= priceRange[1])
 
-        // Size filter
+        // Size filter - if no variants, show product (it might have product.size instead)
         const sizeMatch = selectedSizes.length === 0 ||
-            product.variants.some(variant => selectedSizes.includes(variant.size))
+            (product.variants && product.variants.length > 0 && product.variants.some(variant => selectedSizes.includes(variant.size))) ||
+            (!product.variants || product.variants.length === 0)
 
         // Color filter
         const colorMatch = selectedColors.length === 0 ||
@@ -291,6 +346,7 @@ const ShopPageClient = () => {
                 : [...prev, size]
         )
     }
+
 
     // Handle color selection
     const toggleColor = (color: string) => {
