@@ -624,10 +624,10 @@ const ShopPageClient = () => {
                             {sortedProducts.map((product) => (
                                 <div
                                     key={product.id}
-                                    className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 group"
+                                    className="bg-white  rounded-lg shadow-md hover:shadow-lg transition-all duration-300 group"
                                 >
-                                    {/* Product Image */}
-                                    <div className="relative aspect-[3/4] bg-gray-100">
+                     
+                                    <div className="relative w-full h-[360px] md:h-[450px] bg-gray-100 rounded-t-lg overflow-hidden">
                                         <Image
                                             src={product.images?.[0]?.url || "/placeholder.jpg"}
                                             alt={product.name}
