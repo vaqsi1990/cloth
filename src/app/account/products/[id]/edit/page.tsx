@@ -387,17 +387,7 @@ const EditProductPage = () => {
                 {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
               </div>
 
-              <div>
-                <label className="block text-[20px] text-black font-medium mb-2">
-                  Slug (ავტომატური)
-                </label>
-                <input
-                  type="text"
-                  value={formData.slug}
-                  readOnly
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black bg-gray-50 cursor-not-allowed"
-                />
-              </div>
+            
 
               <div>
                 <label className="block text-[20px] text-black font-medium mb-2">

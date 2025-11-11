@@ -15,8 +15,7 @@ const sizeOptions = {
   XL: { UK: [16], EU: [44], US: [12], },
   XXL: { UK: [18], EU: [46], US: [14],  },
   XXXL: { UK: [20], EU: [48], US: [16],  },
-  XXXXL: { UK: [22], EU: [50], US: [18],  },
-  XXXXXL: { UK: [24], EU: [52], US: [20],  },
+
 }
 const FALLBACK_SIZE = 'STANDARD'
 const categories = [
@@ -370,18 +369,7 @@ const NewProductPage = () => {
                 {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
               </div>
 
-              <div>
-                <label className="block text-[20px] text-black font-medium mb-2">
-                  Slug (ავტომატური)
-                </label>
-                <input
-                  type="text"
-                  value={formData.slug}
-                  readOnly
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black bg-gray-50 cursor-not-allowed"
-                />
-                <p className="text-gray-500 text-sm mt-1">Slug ავტომატურად გენერირდება სახელიდან</p>
-              </div>
+            
 
               {/* <div>
                 <label className="block text-[20px] text-black font-medium mb-2">
@@ -461,7 +449,21 @@ const NewProductPage = () => {
                 </select>
               </div>
 
-
+              <div>
+                <label className="block text-[20px] text-black font-medium mb-2">ფერი</label>
+                <select
+                  value={formData.color || ''}
+                  onChange={(e) => handleInputChange('color', e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                >
+                  <option value="">აირჩიეთ ფერი</option>
+                  {colors.map((color) => (
+                    <option key={color.id} value={color.label}>
+                      {color.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
 
 
@@ -480,7 +482,7 @@ const NewProductPage = () => {
                     <option value="EU">EU</option>
                     <option value="US">US</option>
                     <option value="UK">UK</option>
-                  
+                    <option value="CN">CN</option>
                   </select>
                 </div>
 
@@ -502,33 +504,7 @@ const NewProductPage = () => {
                   </select>
                 </div>
               </div>
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-[20px] text-black font-medium mb-2">გირაოს თანხა</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.deposit || ''}
-                  onChange={(e) => handleInputChange('deposit', e.target.value ? parseFloat(e.target.value) : undefined)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                />
-              </div>
-              <div>
-                <label className="block text-[20px] text-black font-medium mb-2">ფერი</label>
-                <select
-                  value={formData.color || ''}
-                  onChange={(e) => handleInputChange('color', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                >
-                  <option value="">აირჩიეთ ფერი</option>
-                  {colors.map((color) => (
-                    <option key={color.id} value={color.label}>
-                      {color.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
+            
             <div className="mt-6">
               <label className="block text-[20px] text-black font-medium mb-2">
                 აღწერა
@@ -612,8 +588,25 @@ const NewProductPage = () => {
 
               {/* Additional Rental Parameters */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-
+              <div>
+                <label className="block text-[20px] text-black font-medium mb-2">გირაოს თანხა</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.deposit || ''}
+                  onChange={(e) => handleInputChange('deposit', e.target.value ? parseFloat(e.target.value) : undefined)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                />
+              </div>
+              <div>
+                  <label className="block text-[20px] text-black font-medium mb-2">მაქს დღეები(არასავალდებულო)</label>
+                  <input
+                    type="number"
+                    value={formData.maxRentalDays || ''}
+                    onChange={(e) => handleInputChange('maxRentalDays', e.target.value ? parseInt(e.target.value) : undefined)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  />
+                </div>
 
 
               </div>
