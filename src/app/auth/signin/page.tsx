@@ -66,11 +66,11 @@ const SignInPage = () => {
           <h2 className="text-[20px] text-center md:text-[30px] font-semibold uppercase tracking-widesttext-black">
             შესვლა
           </h2>
-          <p className="mt-2 text-center text-lg text-gray-600">
+          <p className="mt-2 text-center text-lg text-black ">
             ან{' '}
             <Link
               href="/auth/signup"
-            className="text-[16px] text-blue-700  hover:text-[#1B3729]"
+            className=" text-blue-700  hover:text-[#1B3729]"
             >
              დარეგისტრირდი
             </Link>
@@ -135,7 +135,7 @@ const SignInPage = () => {
 
           {/* Password recovery */}
           <div className="text-center mt-2">
-            <Link href="/auth/forgot-password" className="text-[16px] text-blue-700 hover:text-[#1B3729]">
+            <Link href="/auth/forgot-password" className="md:text-[18px] text-[16px] text-blue-700 hover:text-[#1B3729]">
               დაგავიწყდა პაროლი? აღადგინე
             </Link>
           </div>

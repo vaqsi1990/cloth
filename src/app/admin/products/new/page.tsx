@@ -1,13 +1,54 @@
 "use client"
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Plus, X } from 'lucide-react'
+import { Plus, X } from 'lucide-react'
 import Link from 'next/link'
 import { z } from 'zod'
 
 import ImageUploadForProduct from '@/component/productimage'
 import { showToast } from '@/utils/toast'
-
+const sizeOptions = {
+  XS: { UK: [4, 6], EU: [32, 34], US: [0, 2],  },
+  S: { UK: [8, 10], EU: [36, 38], US: [4, 6],  },
+  M: { UK: [12], EU: [40], US: [8],  },
+  L: { UK: [14], EU: [42], US: [10],  },
+  XL: { UK: [16], EU: [44], US: [12], },
+  XXL: { UK: [18], EU: [46], US: [14],  },
+  XXXL: { UK: [20], EU: [48], US: [16],  },
+  XXXXL: { UK: [22], EU: [50], US: [18],  },
+  XXXXXL: { UK: [24], EU: [52], US: [20],  },
+}
+const FALLBACK_SIZE = 'STANDARD'
+const categories = [
+  { id: 1, name: 'კაბები', slug: 'dresses' },
+  { id: 2, name: 'ბლუზები', slug: 'tops' },
+  { id: 3, name: 'შარვლები', slug: 'pants' },
+  { id: 4, name: 'ქვედაბოლოები', slug: 'skirts' },
+  { id: 5, name: 'ზედა ტანსაცმელი', slug: 'outerwear' },
+  { id: 6, name: 'პალტოები და მოსასხამი', slug: 'coats' },
+  { id: 7, name: 'საქორწინო კაბები', slug: 'wedding-dresses' },
+  { id: 8, name: 'საღამოს ტანსაცმელი', slug: 'evening-wear' },
+  { id: 9, name: 'სათხილამურო ქურთუკი', slug: 'ski-jacket' },
+  { id: 10, name: 'თერმო ტანსაცმელი', slug: 'thermal-wear' },
+  { id: 11, name: 'სათვალე', slug: 'goggles' },
+  { id: 12, name: 'ჩაფხუტი', slug: 'helmet' },
+  { id: 13, name: 'ტრადიციული ტანსაცმელი', slug: 'traditional' },
+  { id: 14, name: 'ქოსფლეის კოსტუმები', slug: 'cosplay' },
+  { id: 15, name: 'შარვალ კოსტუმი', slug: 'suit' },
+  { id: 16, name: 'პიჯაკი', slug: 'blazer' },
+  { id: 17, name: 'აქსესუარები', slug: 'accessories' },
+  { id: 18, name: 'ბავშვთა კაბები', slug: 'kids-dresses' },
+  { id: 19, name: 'ბავშვთა ტრადიციული ტანსაცმელი', slug: 'kids-traditional' },
+  { id: 20, name: 'ბავშვთა სათხილამურო ტანსაცმელი', slug: 'kids-ski' },
+  { id: 21, name: 'ყოველდღიური ტანსაცმელი', slug: 'everyday' },
+  { id: 22, name: 'სპორტული ტანსაცმელი', slug: 'sportwear' },
+  { id: 23, name: 'სადღესასწაულო ტანსაცმელი', slug: 'festive' }
+]
+type Category = {
+  id: number
+  name: string
+  slug: string
+}
 const productSchema = z.object({
   name: z.string().min(1, 'სახელი აუცილებელია'),
   slug: z.string().min(1, 'Slug აუცილებელია').regex(/^[a-z0-9-]+$/, 'Slug უნდა შეიცავდეს მხოლოდ პატარა ასოებს, ციფრებს და ტირეებს'),
@@ -29,7 +70,7 @@ const productSchema = z.object({
   status: z.enum(['AVAILABLE', 'RENTED', 'RESERVED', 'MAINTENANCE']).default('AVAILABLE'),
   variants: z.array(
     z.object({
-      size: z.string().min(1, 'ზომა აუცილებელია'),
+      size: z.string().min(1, 'ზომა აუცილებელია').default(FALLBACK_SIZE),
       stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი'),
       price: z.number().min(0, 'ფასი უნდა იყოს დადებითი'),
       discount: z.number().min(0).max(100).optional()
@@ -74,50 +115,35 @@ const NewProductPage = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showPurchaseOptions, setShowPurchaseOptions] = useState(false)
+  const [sizeSystem, setSizeSystem] = useState(formData.sizeSystem ?? '')
+  const [availableSizes, setAvailableSizes] = useState<string[]>(Object.keys(sizeOptions))
+  const [selectedSize, setSelectedSize] = useState('')
 
-  const categories = [
-    // ძირითადი
-    { id: 1, name: 'კაბები', slug: 'dresses' },
-    { id: 2, name: 'ბლუზები', slug: 'tops' },
-    { id: 3, name: 'შარვლები', slug: 'pants' },
-    { id: 4, name: 'ქვედაბოლოები', slug: 'skirts' },
-    { id: 5, name: 'ზედა ტანსაცმელი', slug: 'outerwear' },
-    { id: 6, name: 'პალტოები და მოსასხამი', slug: 'coats' },
+  const handleSystemChange = (system: string) => {
+    setSizeSystem(system)
+    handleInputChange('sizeSystem', system || undefined)
 
-    // საქორწინო და სადღესასწაულო
-    { id: 7, name: 'საქორწინო კაბები', slug: 'wedding-dresses' },
-    { id: 8, name: 'საღამოს ტანსაცმელი', slug: 'evening-wear' },
+    if (!system) {
+      setAvailableSizes([...Object.keys(sizeOptions)])
+      setSelectedSize('')
+      return
+    }
 
-    // სპორტული და სათხილამურო
-    { id: 9, name: 'სათხილამურო ქურთუკი', slug: 'ski-jacket' },
-    { id: 10, name: 'თერმო ტანსაცმელი', slug: 'thermal-wear' },
-    { id: 11, name: 'სათვალე', slug: 'goggles' },
-    { id: 12, name: 'ჩაფხუტი', slug: 'helmet' },
+    const allSizes = Object.values(sizeOptions)
+      .map((obj) => obj[system as keyof typeof obj])
+      .flat()
+      .filter(Boolean)
 
-    // კულტურული და თემატური
-    { id: 13, name: 'ტრადიციული ტანსაცმელი', slug: 'traditional' },
-    { id: 14, name: 'ქოსფლეის კოსტუმები', slug: 'cosplay' },
+    const unique = Array.from(new Set(allSizes))
+    const nextSizes = unique.length > 0 ? unique.map(String) : [FALLBACK_SIZE]
+    setAvailableSizes(nextSizes)
+    setSelectedSize(nextSizes[0] ?? '')
+  }
 
-    // მამაკაცების
-    { id: 15, name: 'შარვალ კოსტუმი', slug: 'suit' },
-    { id: 16, name: 'პიჯაკი', slug: 'blazer' },
-
-    // აქსესუარები
-    { id: 17, name: 'აქსესუარები', slug: 'accessories' },
-
-    // ბავშვები
-    { id: 18, name: 'ბავშვთა კაბები', slug: 'kids-dresses' },
-    { id: 19, name: 'ბავშვთა ტრადიციული ტანსაცმელი', slug: 'kids-traditional' },
-    { id: 20, name: 'ბავშვთა სათხილამურო ტანსაცმელი', slug: 'kids-ski' },
-
-    // სხვა
-    { id: 21, name: 'ყოველდღიური ტანსაცმელი', slug: 'everyday' },
-    { id: 22, name: 'სპორტული ტანსაცმელი', slug: 'sportwear' },
-    { id: 23, name: 'სადღესასწაულო ტანსაცმელი', slug: 'festive' }
-  ]
-
-
-  const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
+  const handleSizeSelect = (value: string) => {
+    setSelectedSize(value)
+  }
 
   const colors = [
     { id: "black", label: "შავი", color: "#000000" },
@@ -186,9 +212,18 @@ const NewProductPage = () => {
   }
 
   const addVariant = () => {
+    const defaultSize = selectedSize || availableSizes[0] || FALLBACK_SIZE
     setFormData(prev => ({
       ...prev,
-      variants: [...prev.variants, { size: '', stock: 0, price: 0, discount: undefined }]
+      variants: [
+        ...prev.variants,
+        {
+          size: defaultSize,
+          stock: 0,
+          price: 0,
+          discount: undefined,
+        },
+      ],
     }))
   }
 
@@ -298,7 +333,6 @@ const NewProductPage = () => {
       setIsSubmitting(false)
     }
   }
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -355,7 +389,22 @@ const NewProductPage = () => {
                 />
                 {errors.stock && <p className="text-red-500 text-sm mt-1">{errors.stock}</p>}
               </div> */}
-
+              <div>
+                <label className="block text-[20px] text-black font-medium mb-2">
+                  მდებარეობა
+                </label>
+                <select
+                  value={formData.location || ''}
+                  onChange={(e) => handleInputChange('location', e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                >
+                  <option value="">მდებარეობის არჩევა</option>
+                  <option value="თბილისი">თბილისი</option>
+                  <option value="ქუთაისი">ქუთაისი</option>
+                  <option value="რუსთავი">რუსთავი</option>
+                  <option value="ბათუმი">ბათუმი</option>
+                </select>
+              </div>
 
               <div>
                 <label className="block text-[20px] text-black font-medium mb-2">
@@ -378,8 +427,10 @@ const NewProductPage = () => {
                   onChange={(e) => handleInputChange('categoryId', e.target.value ? parseInt(e.target.value) : undefined)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                 >
-                  <option value="">აირჩიეთ კატეგორია</option>
-                  {categories.map(category => (
+                  <option value="">
+                    აირჩიეთ კატეგორია
+                  </option>
+                  {categories.map((category) => (
                     <option key={category.id} value={category.id}>
                       {category.name}
                     </option>
@@ -403,59 +454,74 @@ const NewProductPage = () => {
                 </select>
               </div>
 
+
+
+
+
+            </div>
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-[20px] text-black font-medium mb-2">
+                    ზომის სისტემა
+                  </label>
+                  <select
+                    value={sizeSystem}
+                    onChange={(e) => handleSystemChange(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  >
+                    <option value="">აირჩიეთ ზომის სისტემა</option>
+                    <option value="EU">EU</option>
+                    <option value="US">US</option>
+                    <option value="UK">UK</option>
+                  
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[20px] text-black font-medium mb-2">
+                    ზომა
+                  </label>
+                  <select
+                    value={selectedSize}
+                    onChange={(e) => handleSizeSelect(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  >
+                    <option value="">აირჩიეთ ზომა</option>
+                    {availableSizes.map((size) => (
+                      <option key={size} value={size}>
+                        {size}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-[20px] text-black font-medium mb-2">
-                  ფერი
-                </label>
+                <label className="block text-[20px] text-black font-medium mb-2">გირაოს თანხა</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.deposit || ''}
+                  onChange={(e) => handleInputChange('deposit', e.target.value ? parseFloat(e.target.value) : undefined)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                />
+              </div>
+              <div>
+                <label className="block text-[20px] text-black font-medium mb-2">ფერი</label>
                 <select
                   value={formData.color || ''}
                   onChange={(e) => handleInputChange('color', e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                 >
                   <option value="">აირჩიეთ ფერი</option>
-                  {colors.map(color => (
+                  {colors.map((color) => (
                     <option key={color.id} value={color.label}>
                       {color.label}
                     </option>
                   ))}
                 </select>
               </div>
-
-              <div>
-                <label className="block text-[20px] text-black font-medium mb-2">
-                  მდებარეობა
-                </label>
-                <select
-                  value={formData.location || ''}
-                  onChange={(e) => handleInputChange('location', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                >
-                  <option value="">მდებარეობის არჩევა</option>
-                  <option value="თბილისი">თბილისი</option>
-                  <option value="ქუთაისი">ქუთაისი</option>
-                  <option value="რუსთავი">რუსთავი</option>
-                  <option value="ბათუმი">ბათუმი</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[20px] text-black font-medium mb-2">
-                  ზომის სისტემა
-                </label>
-                <select
-                  value={formData.sizeSystem || ''}
-                  onChange={(e) => handleInputChange('sizeSystem', e.target.value || undefined)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                >
-                  <option value="">აირჩიეთ ზომის სისტემა</option>
-                  <option value="EU">EU</option>
-                  <option value="US">US</option>
-                  <option value="UK">UK</option>
-                  <option value="CN">CN</option>
-                </select>
-              </div>
             </div>
-
             <div className="mt-6">
               <label className="block text-[20px] text-black font-medium mb-2">
                 აღწერა
@@ -472,35 +538,108 @@ const NewProductPage = () => {
           </div>
 
           {/* Variants */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-[20px] text-black font-semibold">ზომები და საწყობი</h2>
-              <button
-                type="button"
-                onClick={addVariant}
-                className="bg-black text-white px-4 py-2 rounded-lg text-[20px] text-black flex items-center space-x-2"
-              >
-                <Plus className="w-4 h-4" />
-                <span>ზომის დამატება</span>
-              </button>
-            </div>
 
-            {formData.variants.map((variant, index) => (
-              <div key={index} className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 border border-gray-200 rounded-lg mb-4">
-                <div>
-                  <label className="block text-[20px] text-black font-medium mb-2">ზომა</label>
-                  <select
-                    value={variant.size}
-                    onChange={(e) => updateVariant(index, 'size', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+          {/* Rental Options */}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-[20px] text-black font-semibold mb-6">გაქირავების პარამეტრები</h2>
+
+
+
+            <div className="space-y-6">
+              {/* Rental Price Tiers */}
+              <div>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-medium text-black">ფასის გეგმა</h3>
+                  <button
+                    type="button"
+                    onClick={addRentalPriceTier}
+                    className="bg-black text-white px-4 py-2 rounded-lg text-[20px] flex items-center space-x-2"
                   >
-                    <option value="">აირჩიეთ ზომა</option>
-                    {sizes.map(size => (
-                      <option key={size} value={size}>{size}</option>
-                    ))}
-                  </select>
+                    <Plus className="w-4 h-4" />
+                    <span>ფასის გეგმის დამატება</span>
+                  </button>
                 </div>
 
+                {/* Always show at least one price tier */}
+                {(formData.rentalPriceTiers && formData.rentalPriceTiers.length > 0 ? formData.rentalPriceTiers : [{ minDays: 1, pricePerDay: 0 }]).map((tier, index) => (
+                  <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border border-gray-200 rounded-lg mb-4">
+                    <div>
+                      <label className="block text-[20px] font-medium text-black mb-2">მინიმალური დღეები</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={tier.minDays}
+                        onChange={(e) => updateRentalPriceTier(index, 'minDays', parseInt(e.target.value) || 1)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[20px] font-medium text-black mb-2">ფასი დღეში</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={tier.pricePerDay}
+                        onChange={(e) => updateRentalPriceTier(index, 'pricePerDay', parseFloat(e.target.value) || 0)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    <div className="flex items-end">
+                      {(formData.rentalPriceTiers && formData.rentalPriceTiers.length > 0 ? formData.rentalPriceTiers.length : 1) > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeRentalPriceTier(index)}
+                          className="bg-red-500 text-white px-3 py-2 rounded-lg text-[20px] flex items-center space-x-2"
+                        >
+                          <X className="w-4 h-4" />
+                          <span>წაშლა</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+              </div>
+
+              {/* Additional Rental Parameters */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+
+
+
+              </div>
+            </div>
+            {/* {formData.isRentable && (
+            )} */}
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="flex justify-between items-center mb-6">
+              <label className="flex items-center gap-3 text-[20px] text-black font-semibold cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={showPurchaseOptions}
+                  onChange={(e) => setShowPurchaseOptions(e.target.checked)}
+                  className="h-5 w-5"
+                />
+                <span>ყიდვის პარამეტრები</span>
+              </label>
+              {showPurchaseOptions && (
+                <button
+                  type="button"
+                  onClick={addVariant}
+                  className="bg-black text-white px-4 py-2 rounded-lg text-[20px] text-black flex items-center space-x-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>ზომის დამატება</span>
+                </button>
+              )}
+            </div>
+
+            {showPurchaseOptions && formData.variants.map((variant, index) => (
+              <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border border-gray-200 rounded-lg mb-4">
                 <div>
                   <label className="block text-[20px] text-black font-medium mb-2">საწყობი</label>
                   <input
@@ -510,7 +649,6 @@ const NewProductPage = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                   />
                 </div>
-
                 <div>
                   <label className="block text-[20px] text-black font-medium mb-2">ფასი </label>
                   <input
@@ -521,7 +659,6 @@ const NewProductPage = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                   />
                 </div>
-
                 <div>
                   <label className="block text-[20px] text-black font-medium mb-2">ფასდაკლება </label>
                   <input
@@ -532,7 +669,6 @@ const NewProductPage = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                   />
                 </div>
-
                 <div className="flex items-end">
                   <button
                     type="button"
@@ -545,121 +681,11 @@ const NewProductPage = () => {
                 </div>
               </div>
             ))}
-          </div>
 
-          {/* Rental Options */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-[20px] text-black font-semibold mb-6">გაქირავების პარამეტრები</h2>
-
-            <label className="flex items-center mb-4">
-              <input
-                type="checkbox"
-                checked={formData.isRentable}
-                onChange={(e) => handleInputChange('isRentable', e.target.checked)}
-                className="mr-2"
-              />
-              <span className="text-[20px] text-black">პროდუქტის გაქირავება შესაძლებელია</span>
-            </label>
-
-            {formData.isRentable && (
-              <div className="space-y-6">
-                {/* Rental Price Tiers */}
-                <div>
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-medium text-black">ფასის გეგმა</h3>
-                    <button
-                      type="button"
-                      onClick={addRentalPriceTier}
-                      className="bg-black text-white px-4 py-2 rounded-lg text-[20px] flex items-center space-x-2"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>ფასის გეგმის დამატება</span>
-                    </button>
-                  </div>
-
-                  {/* Always show at least one price tier */}
-                  {(formData.rentalPriceTiers && formData.rentalPriceTiers.length > 0 ? formData.rentalPriceTiers : [{ minDays: 1, pricePerDay: 0 }]).map((tier, index) => (
-                    <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border border-gray-200 rounded-lg mb-4">
-                      <div>
-                        <label className="block text-[20px] font-medium text-black mb-2">მინიმალური დღეები</label>
-                        <input
-                          type="number"
-                          min="1"
-                          value={tier.minDays}
-                          onChange={(e) => updateRentalPriceTier(index, 'minDays', parseInt(e.target.value) || 1)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[20px] font-medium text-black mb-2">ფასი დღეში</label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={tier.pricePerDay}
-                          onChange={(e) => updateRentalPriceTier(index, 'pricePerDay', parseFloat(e.target.value) || 0)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-
-                      <div className="flex items-end">
-                        {(formData.rentalPriceTiers && formData.rentalPriceTiers.length > 0 ? formData.rentalPriceTiers.length : 1) > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => removeRentalPriceTier(index)}
-                            className="bg-red-500 text-white px-3 py-2 rounded-lg text-[20px] flex items-center space-x-2"
-                          >
-                            <X className="w-4 h-4" />
-                            <span>წაშლა</span>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Additional Rental Parameters */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div>
-                    <label className="block text-[20px] text-black font-medium mb-2">სტატუსი</label>
-                    <select
-                      value={formData.status}
-                      onChange={(e) => handleInputChange('status', e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                    >
-                      <option value="AVAILABLE">თავისუფალია</option>
-                      <option value="RENTED">გაქირავებულია</option>
-                      <option value="RESERVED">დაჯავშნილია</option>
-                      <option value="MAINTENANCE">რესტავრაციაზე</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[20px] text-black font-medium mb-2">მაქს დღეები(არასავალდებულო)</label>
-                    <input
-                      type="number"
-                      value={formData.maxRentalDays || ''}
-                      onChange={(e) => handleInputChange('maxRentalDays', e.target.value ? parseInt(e.target.value) : undefined)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[20px] text-black font-medium mb-2">გირაოს თანხა</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={formData.deposit || ''}
-                      onChange={(e) => handleInputChange('deposit', e.target.value ? parseFloat(e.target.value) : undefined)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                    />
-                  </div>
-                </div>
-              </div>
+            {showPurchaseOptions && formData.variants.length === 0 && (
+              <p className="text-sm text-gray-500">თქვენ შეგიძლიათ დაამატოთ ზომები და საწყობის რაოდენობა.</p>
             )}
           </div>
-
 
           {/* Images */}
           <div className="bg-white rounded-lg shadow-sm p-6">
