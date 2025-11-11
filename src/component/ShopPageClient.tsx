@@ -35,6 +35,37 @@ const ShopPageClient = () => {
     }[]>>({})
     const [isCategoryOpen, setIsCategoryOpen] = useState(true)
 
+    // Helper functions for price calculation
+    const getRentalPrice = (product: Product): number => {
+        if (!product.isRentable || !product.rentalPriceTiers || product.rentalPriceTiers.length === 0) {
+            return 0
+        }
+        // Sort tiers by minDays to get the first tier (lowest minDays)
+        const sortedTiers = [...product.rentalPriceTiers].sort((a, b) => a.minDays - b.minDays)
+        const tier0 = sortedTiers[0]
+        return tier0.pricePerDay * tier0.minDays
+    }
+
+    const getDisplayPrice = (product: Product): number => {
+        // First check if product has variants with prices
+        if (product.variants && product.variants.length > 0) {
+            const prices = product.variants.map(v => v.price).filter(p => p > 0)
+            // If all prices are 0 or no positive prices, check rental
+            if (prices.length === 0) {
+                return getRentalPrice(product)
+            }
+            const minBuyPrice = Math.min(...prices)
+            // If min buy price is 0, show rental price instead
+            if (minBuyPrice === 0) {
+                const rentalPrice = getRentalPrice(product)
+                return rentalPrice > 0 ? rentalPrice : 0
+            }
+            return minBuyPrice
+        }
+        // If no variants, check if it's rentable
+        return getRentalPrice(product)
+    }
+
     const categories = [
         { id: "ALL", label: "ყველა", slug: "all" },
 
@@ -181,17 +212,6 @@ const ShopPageClient = () => {
             fetchRentalStatus()
         }
     }, [products])
-
-    // Helper to get rental price from tier[0] (first tier with minimum days)
-    const getRentalPrice = (product: Product): number => {
-        if (!product.isRentable || !product.rentalPriceTiers || product.rentalPriceTiers.length === 0) {
-            return 0
-        }
-        // Sort tiers by minDays to get the first tier (lowest minDays)
-        const sortedTiers = [...product.rentalPriceTiers].sort((a, b) => a.minDays - b.minDays)
-        const tier0 = sortedTiers[0]
-        return tier0.pricePerDay * tier0.minDays
-    }
 
     // Get minimum price from variants, or rental price if buy price is 0
     const getMinPrice = (product: Product) => {
@@ -579,8 +599,8 @@ const ShopPageClient = () => {
                                                 key={rating}
                                                 onClick={() => toggleRating(rating)}
                                                 className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md border transition-colors ${selectedRatings.includes(rating)
-                                                        ? "bg-[#1B3729] text-white border-[#1B3729]"
-                                                        : "bg-white text-gray-700 border-gray-300 hover:border-black"
+                                                    ? "bg-[#1B3729] text-white border-[#1B3729]"
+                                                    : "bg-white text-gray-700 border-gray-300 hover:border-black"
                                                     }`}
                                             >
                                                 <div className="flex items-center gap-2">
@@ -589,8 +609,8 @@ const ShopPageClient = () => {
                                                             <Star
                                                                 key={star}
                                                                 className={`w-4 h-4 ${star <= rating
-                                                                        ? "fill-amber-500 text-amber-500"
-                                                                        : "fill-gray-200 text-gray-300"
+                                                                    ? "fill-amber-500 text-amber-500"
+                                                                    : "fill-gray-200 text-gray-300"
                                                                     }`}
                                                             />
                                                         ))}
@@ -600,8 +620,8 @@ const ShopPageClient = () => {
 
                                                 <span
                                                     className={`text-xs px-2 py-1 rounded-full ${selectedRatings.includes(rating)
-                                                            ? "bg-gray-600 text-white"
-                                                            : "bg-gray-200 text-gray-600"
+                                                        ? "bg-gray-600 text-white"
+                                                        : "bg-gray-200 text-gray-600"
                                                         }`}
                                                 >
                                                     {count}
@@ -647,7 +667,7 @@ const ShopPageClient = () => {
                             </div>
 
                             {/* Results Count */}
-                            
+
                         </div>
                     </div>
 
@@ -656,7 +676,7 @@ const ShopPageClient = () => {
                         {/* Top Bar with Sorting */}
                         <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0">
-                               <h3 className="md:text-[20px] font-bold text-[18px] text-black">ყიდვა / გაქირავება</h3>
+                                <h3 className="md:text-[20px] font-bold text-[18px] text-black">ყიდვა / გაქირავება</h3>
                                 <div className="flex flex-col md:flex-row gap-2 items-center space-x-2">
                                     <span className="md:text-[18px] text-[16px] text-black">დალაგება:</span>
                                     <select
@@ -671,71 +691,60 @@ const ShopPageClient = () => {
                                     </select>
                                 </div>
 
-                                
+
                             </div>
                         </div>
 
                         {/* Products Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {sortedProducts.map((product) => (
-                                <div
-                                    key={product.id}
-                                    className="bg-white  rounded-lg shadow-md hover:shadow-lg transition-all duration-300 group"
-                                >
-                     
-                                    <div className="relative w-full h-[360px] md:h-[450px] bg-gray-100 rounded-t-lg overflow-hidden">
-                                        <Image
-                                            src={product.images?.[0]?.url || "/placeholder.jpg"}
-                                            alt={product.name}
-                                            fill
-                                            className="object-cover  transition-transform duration-300"
-                                        />
+                        {sortedProducts.length > 0 ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                {sortedProducts.map((product) => (
+                                    <div
+                                        key={product.id}
 
-                                    </div>
-                                    {/* Product Info */}
-                                    <div className="p-4">
-                                        {/* Category */}
-                                        <div className="mb-2">
-                                            <span className="md:text-[18px] text-[16px] text-black uppercase tracking-wide">
-                                                {product.category?.name || 'უცნობი'}
-                                            </span>
-                                        </div>
-
-                                        {/* Product Title */}
-                                        <h3 className="md:text-[18px] text-[16px] font-medium text-black mb-2 leading-tight line-clamp-2">
-                                            {product.name}
-                                        </h3>
-
-
-                                        {/* Pricing */}
-                                        <div className="flex items-center space-x-2 mb-4">
-                                            <span className="md:text-[18px] text-[16px] font-bold text-black">
-                                                ₾{getMinPrice(product).toFixed(2)}
-                                                {getMinPrice(product) !== getMaxPrice(product) && (
-                                                    <span className="text-sm"> - ₾{getMaxPrice(product).toFixed(2)}</span>
+                                        className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                                    >
+                                        <div className="relative aspect-[3/4] bg-gray-100">
+                                            <Image
+                                                src={product.images?.[0]?.url || "/placeholder.jpg"}
+                                                alt={product.name}
+                                                fill
+                                                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                            />
+                                            <div className="absolute top-4 left-4 flex gap-2">
+                                                {product.discount && product.discount > 0 && (
+                                                    <span className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                                                        -{product.discount}%
+                                                    </span>
                                                 )}
-                                            </span>
+                                            </div>
                                         </div>
+                                        <div className="p-4">
+                                            <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
+                                                {product.name}
+                                            </h3>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-lg font-bold text-gray-900">
+                                                    ₾{getDisplayPrice(product).toFixed(2)}
+                                                </span>
 
-                                        {/* Action Button */}
-                                        <Link
-                                            href={`/product/${product.id}`}
-                                            className="block w-full md:w-[200px]  mt-3 bg-[#1B3729] md:text-[18px] text-[16px] text-white text-center py-2 rounded-lg font-bold transition-colors duration-300"
-                                        >
-                                            დეტალები
-                                        </Link>
+                                            </div>
+                                            <Link href={`/product/${product.id}`} className="block w-full md:w-[200px]  mt-3 bg-[#1B3729] md:text-[18px] text-[16px] text-white text-center py-2 rounded-lg font-bold transition-colors duration-300">დეტალები</Link>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* No Results */}
-                        {sortedProducts.length === 0 && (
-                            <div className="text-center py-12">
-                                <div className="md:text-[18px] text-[16px] text-black mb-2">პროდუქტი ვერ მოიძებნა</div>
-                                <p className="text-gray-400">სცადეთ სხვა ფილტრები</p>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-16">
+                                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                                    პროდუქტები ვერ მოიძებნა
+                                </h3>
+                                <p className="text-gray-600">
+                                    სცადეთ სხვა ფილტრები
+                                </p>
                             </div>
                         )}
+
                     </div>
                 </div>
             </div>
