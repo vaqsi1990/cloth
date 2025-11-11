@@ -20,7 +20,7 @@ const ShopPageClient = () => {
     const [isFilterOpen, setIsFilterOpen] = useState(false)
     const [priceRange, setPriceRange] = useState([0, 0])
     const [maxPrice, setMaxPrice] = useState(0)
-    const [selectedSizes, setSelectedSizes] = useState<string[]>([])
+    const [selectedSizeSystems, setSelectedSizeSystems] = useState<string[]>([])
     const [selectedColors, setSelectedColors] = useState<string[]>([])
     const [selectedLocations, setSelectedLocations] = useState<string[]>([])
     const [selectedRatings, setSelectedRatings] = useState<number[]>([])
@@ -109,13 +109,11 @@ const ShopPageClient = () => {
         { id: "სადღესასწაულო ტანსაცმელი", label: "სადღესასწაულო ტანსაცმელი", slug: "festive" },
     ]
 
-    const sizes = [
-        { id: "XS", label: "XS" },
-        { id: "S", label: "S" },
-        { id: "M", label: "M" },
-        { id: "L", label: "L" },
-        { id: "XL", label: "XL" },
-        { id: "XXL", label: "XXL" }
+    const sizeSystems = [
+        { id: "EU", label: "EU" },
+        { id: "US", label: "US" },
+        { id: "UK", label: "UK" },
+        { id: "CN", label: "CN" }
     ]
 
     const colors = [
@@ -302,10 +300,11 @@ const ShopPageClient = () => {
             (maxPrice >= priceRange[0] && maxPrice <= priceRange[1]) ||
             (minPrice <= priceRange[0] && maxPrice >= priceRange[1])
 
-        // Size filter - if no variants, show product (it might have product.size instead)
-        const sizeMatch = selectedSizes.length === 0 ||
-            (product.variants && product.variants.length > 0 && product.variants.some(variant => selectedSizes.includes(variant.size))) ||
-            (!product.variants || product.variants.length === 0)
+        // Size System filter
+        const sizeSystemMatch = selectedSizeSystems.length === 0 ||
+            (product.variants && product.variants.length > 0 && product.variants.some(variant => variant.sizeSystem && selectedSizeSystems.includes(variant.sizeSystem))) ||
+            (product.sizeSystem && selectedSizeSystems.includes(product.sizeSystem)) ||
+            (!product.variants || product.variants.length === 0) && !product.sizeSystem
 
         // Color filter
         const colorMatch = selectedColors.length === 0 ||
@@ -338,7 +337,7 @@ const ShopPageClient = () => {
         // Rental availability filter
         const rentalAvailabilityMatch = isProductAvailable(product)
 
-        return activeCategoryMatch && priceMatch && sizeMatch && colorMatch && locationMatch && ratingMatch && rentalAvailabilityMatch
+        return activeCategoryMatch && priceMatch && sizeSystemMatch && colorMatch && locationMatch && ratingMatch && rentalAvailabilityMatch
     })
 
 
@@ -358,12 +357,12 @@ const ShopPageClient = () => {
         }
     })
 
-    // Handle size selection
-    const toggleSize = (size: string) => {
-        setSelectedSizes(prev =>
-            prev.includes(size)
-                ? prev.filter(s => s !== size)
-                : [...prev, size]
+    // Handle size system selection
+    const toggleSizeSystem = (sizeSystem: string) => {
+        setSelectedSizeSystems(prev =>
+            prev.includes(sizeSystem)
+                ? prev.filter(s => s !== sizeSystem)
+                : [...prev, sizeSystem]
         )
     }
 
@@ -399,7 +398,7 @@ const ShopPageClient = () => {
     const clearFilters = () => {
         setActiveCategory("ALL")
         setPriceRange([0, maxPrice])
-        setSelectedSizes([])
+        setSelectedSizeSystems([])
         setSelectedColors([])
         setSelectedLocations([])
         setSelectedRatings([])
@@ -524,20 +523,20 @@ const ShopPageClient = () => {
                                 </div>
                             </div>
 
-                            {/* Size Filter */}
+                            {/* Size System Filter */}
                             <div className="mb-6">
-                                <h4 className="font-medium text-gray-900 mb-3">ზომა</h4>
-                                <div className="grid grid-cols-3 gap-2">
-                                    {sizes.map((size) => (
+                                <h4 className="font-medium text-gray-900 mb-3">ზომის სისტემა</h4>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {sizeSystems.map((sizeSystem) => (
                                         <button
-                                            key={size.id}
-                                            onClick={() => toggleSize(size.id)}
-                                            className={`px-3 py-2 text-sm rounded-md border transition-colors ${selectedSizes.includes(size.id)
+                                            key={sizeSystem.id}
+                                            onClick={() => toggleSizeSystem(sizeSystem.id)}
+                                            className={`px-3 py-2 text-sm rounded-md border transition-colors ${selectedSizeSystems.includes(sizeSystem.id)
                                                 ? "bg-black text-white border-black"
                                                 : "bg-white text-gray-700 border-gray-300 hover:border-black"
                                                 }`}
                                         >
-                                            {size.label}
+                                            {sizeSystem.label}
                                         </button>
                                     ))}
                                 </div>
