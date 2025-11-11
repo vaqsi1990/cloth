@@ -709,7 +709,7 @@ const ShopPageClient = () => {
                                                 src={product.images?.[0]?.url || "/placeholder.jpg"}
                                                 alt={product.name}
                                                 fill
-                                                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                                className="object-cover  transition-transform duration-300"
                                             />
                                             <div className="absolute top-4 left-4 flex gap-2">
                                                 {product.discount && product.discount > 0 && (
