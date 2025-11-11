@@ -20,6 +20,10 @@ const productSchema = z.object({
     (val) => (val === '' || val === null ? undefined : val),
     z.enum(['EU', 'US', 'UK', 'CN']).optional()
   ),
+  size: z.preprocess(
+    (val) => (val === '' || val === null ? undefined : val),
+    z.string().optional()
+  ),
   isNew: z.boolean().default(false),
   discount: z.preprocess(
     (val) => (val === null ? undefined : val),
@@ -65,6 +69,7 @@ const EditProductPage = () => {
     color: '',
     location: '',
     sizeSystem: undefined,
+    size: undefined,
     isNew: false,
     discount: undefined,
     rating: 0,
@@ -129,6 +134,7 @@ const EditProductPage = () => {
             color: product.color || '',
             location: product.location || '',
             sizeSystem: product.sizeSystem,
+            size: product.size || undefined,
             isNew: product.isNew,
             discount: product.discount,
             rating: product.rating || 0,
@@ -267,6 +273,10 @@ const EditProductPage = () => {
         // Convert empty string to undefined for sizeSystem
         sizeSystem: formData.sizeSystem && formData.sizeSystem.trim() !== '' 
           ? formData.sizeSystem 
+          : undefined,
+        // Convert empty string to undefined for size
+        size: formData.size && formData.size.trim() !== '' 
+          ? formData.size 
           : undefined,
         // Convert null to undefined for discount
         discount: formData.discount !== null && formData.discount !== undefined 
@@ -486,6 +496,19 @@ const EditProductPage = () => {
                   <option value="CN">CN</option>
                 </select>
               </div>
+
+              <div>
+                <label className="block text-[20px] text-black font-medium mb-2">
+                  ზომა
+                </label>
+                <input
+                  type="text"
+                  value={formData.size || ''}
+                  onChange={(e) => handleInputChange('size', e.target.value || undefined)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  placeholder="მაგ: 42, M, L, XL"
+                />
+              </div>
               
             </div>
 
@@ -514,7 +537,7 @@ const EditProductPage = () => {
                 className="bg-black text-white px-4 py-2 rounded-lg text-[20px] text-black flex items-center space-x-2"
               >
                 <Plus className="w-4 h-4" />
-                <span>ზომის დამატება</span>
+                <span>დამატება</span>
               </button>
             </div>
 

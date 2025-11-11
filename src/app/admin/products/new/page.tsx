@@ -1,7 +1,7 @@
 "use client"
 import React, { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, X } from 'lucide-react'
+import { ArrowLeft, Plus, X } from 'lucide-react'
 import Link from 'next/link'
 import { z } from 'zod'
 
@@ -58,6 +58,7 @@ const productSchema = z.object({
   color: z.string().optional(),
   location: z.string().optional(),
   sizeSystem: z.enum(['EU', 'US', 'UK', 'CN']).optional(),
+  size: z.string().optional(),
   isNew: z.boolean().default(false),
   discount: z.number().int().min(0).max(100).optional(),
   rating: z.number().min(0).max(5).optional(),
@@ -97,6 +98,7 @@ const NewProductPage = () => {
     color: '',
     location: '',
     sizeSystem: undefined,
+    size: undefined,
     isNew: false,
     discount: undefined,
     rating: 0,
@@ -171,6 +173,7 @@ const NewProductPage = () => {
       setSizeSystem('')
       setSelectedSize('')
       handleInputChange('sizeSystem', undefined)
+      handleInputChange('size', undefined)
       return
     }
 
@@ -180,6 +183,7 @@ const NewProductPage = () => {
     setSizeSystem(system as SizeSystem)
     setSelectedSize(nextSize)
     handleInputChange('sizeSystem', system as SizeSystem)
+    handleInputChange('size', nextSize)
   }
 
   const colors = [
@@ -381,7 +385,12 @@ const NewProductPage = () => {
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="px-6 py-4">
-
+        <div className=" mx-auto px-4 py-4">
+                    <Link href="/" className="flex md:text-[20px] text-[18px] items-center text-black hover:opacity-80">
+                        <ArrowLeft className="w-5 h-5 mr-2" />
+                        უკან დაბრუნება
+                    </Link>
+                </div>
         </div>
       </div>
 
@@ -651,7 +660,7 @@ const NewProductPage = () => {
                   className="bg-black text-white px-4 py-2 rounded-lg text-[20px] text-black flex items-center space-x-2"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>ზომის დამატება</span>
+                  <span> დამატება</span>
                 </button>
               )}
             </div>

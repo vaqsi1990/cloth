@@ -187,6 +187,7 @@ model Product {
   color         String?
   location      String?
   sizeSystem    SizeSystem?
+  size          String?
   isNew         Boolean          @default(false)
   discount      Int?
   rating        Float?           @default(0)

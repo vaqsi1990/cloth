@@ -19,6 +19,10 @@ const productSchema = z.object({
     (val) => (val === '' || val === null ? undefined : val),
     z.enum(['EU', 'US', 'UK', 'CN']).optional()
   ),
+  size: z.preprocess(
+    (val) => (val === '' || val === null ? undefined : val),
+    z.string().optional()
+  ),
   isNew: z.boolean().default(false),
   discount: z.preprocess(
     (val) => (val === null ? undefined : val),
@@ -162,6 +166,7 @@ export async function PUT(
         color: validatedData.color,
         location: validatedData.location,
         sizeSystem: validatedData.sizeSystem,
+        size: validatedData.size,
         isNew: validatedData.isNew,
         discount: validatedData.discount,
         rating: validatedData.rating,

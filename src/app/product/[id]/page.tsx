@@ -1101,6 +1101,12 @@ const ProductPage = () => {
                                             {product.sizeSystem?.toUpperCase() || "—"}
                                         </li>
                                     )}
+                                    {product.size && (
+                                        <li>
+                                            <span className="font-semibold">ზომა: </span>
+                                            {product.size}
+                                        </li>
+                                    )}
                                     {product.brand && (
                                         <li>
                                             <span className="font-semibold">ბრენდი: </span>

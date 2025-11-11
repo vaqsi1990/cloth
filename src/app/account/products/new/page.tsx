@@ -54,6 +54,7 @@ const productSchema = z.object({
   color: z.string().optional(),
   location: z.string().optional(),
   sizeSystem: z.enum(['EU', 'US', 'UK', 'CN']).optional(),
+  size: z.string().optional(),
   isNew: z.boolean().default(false),
   discount: z.number().int().min(0).max(100).optional(),
   rating: z.number().min(0).max(5).optional(),
@@ -92,6 +93,7 @@ const NewProductPage = () => {
     color: '',
     location: '',
     sizeSystem: undefined,
+    size: undefined,
     isNew: false,
     discount: undefined,
     rating: 0,
@@ -178,6 +180,7 @@ const NewProductPage = () => {
       setSizeSystem('')
       setSelectedSize('')
       handleInputChange('sizeSystem', undefined)
+      handleInputChange('size', undefined)
       return
     }
 
@@ -187,6 +190,7 @@ const NewProductPage = () => {
     setSizeSystem(system as SizeSystem)
     setSelectedSize(nextSize)
     handleInputChange('sizeSystem', system as SizeSystem)
+    handleInputChange('size', nextSize)
   }
 
   const handleInputChange = (field: keyof ProductFormData, value: string | number | boolean | undefined) => {
@@ -646,7 +650,7 @@ const NewProductPage = () => {
                   className="bg-black text-white px-4 py-2 rounded-lg text-[20px] text-black flex items-center space-x-2"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>ზომის დამატება</span>
+                  <span>დამატება</span>
                 </button>
               )}
             </div>
