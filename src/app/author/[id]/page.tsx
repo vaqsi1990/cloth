@@ -14,6 +14,38 @@ const AuthorPage = () => {
     const [products, setProducts] = useState<Product[]>([])
     const [loading, setLoading] = useState(true)
 
+    // Helper to get rental price from tier[0] (first tier with minimum days)
+    const getRentalPrice = (product: Product): number => {
+        if (!product.isRentable || !product.rentalPriceTiers || product.rentalPriceTiers.length === 0) {
+            return 0
+        }
+        // Sort tiers by minDays to get the first tier (lowest minDays)
+        const sortedTiers = [...product.rentalPriceTiers].sort((a, b) => a.minDays - b.minDays)
+        const tier0 = sortedTiers[0]
+        return tier0.pricePerDay * tier0.minDays
+    }
+
+    // Get display price (buy price or rental price if buy price is 0)
+    const getDisplayPrice = (product: Product): number => {
+        // First check if product has variants with prices
+        if (product.variants && product.variants.length > 0) {
+            const prices = product.variants.map(v => v.price).filter(p => p > 0)
+            // If all prices are 0 or no positive prices, check rental
+            if (prices.length === 0) {
+                return getRentalPrice(product)
+            }
+            const minBuyPrice = Math.min(...prices)
+            // If min buy price is 0, show rental price instead
+            if (minBuyPrice === 0) {
+                const rentalPrice = getRentalPrice(product)
+                return rentalPrice > 0 ? rentalPrice : 0
+            }
+            return minBuyPrice
+        }
+        // If no variants, check if it's rentable
+        return getRentalPrice(product)
+    }
+
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -22,6 +54,7 @@ const AuthorPage = () => {
 
                 if (data?.success) {
                     console.log('API Response:', data)
+                    console.log('Products count:', data.products?.length || 0)
                     setProducts(data.products || [])
                     setAuthor(data.author || { id: authorId, name: "უცნობი ავტორი" })
                 } else {
@@ -122,7 +155,7 @@ const AuthorPage = () => {
                                     </h3>
                                     <div className="flex items-center justify-between">
                                         <span className="text-lg font-bold text-gray-900">
-                                            ₾{product.variants?.[0]?.price?.toFixed(2) || "0.00"}
+                                            ₾{getDisplayPrice(product).toFixed(2)}
                                         </span>
                                         {product.isRentable && (
                                             <span className="text-sm text-emerald-600 font-medium">

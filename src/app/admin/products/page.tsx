@@ -230,6 +230,38 @@ const AdminProductsPage = () => {
     return statusMap[status || ''] || 'თავისუფალია'
   }
 
+  // Helper to get rental price from tier[0] (first tier with minimum days)
+  const getRentalPrice = (product: Product): number => {
+    if (!product.isRentable || !product.rentalPriceTiers || product.rentalPriceTiers.length === 0) {
+      return 0
+    }
+    // Sort tiers by minDays to get the first tier (lowest minDays)
+    const sortedTiers = [...product.rentalPriceTiers].sort((a, b) => a.minDays - b.minDays)
+    const tier0 = sortedTiers[0]
+    return tier0.pricePerDay * tier0.minDays
+  }
+
+  // Get display price (buy price or rental price if buy price is 0)
+  const getDisplayPrice = (product: Product): number => {
+    // First check if product has variants with prices
+    if (product.variants && product.variants.length > 0) {
+      const prices = product.variants.map(v => v.price).filter(p => p > 0)
+      // If all prices are 0 or no positive prices, check rental
+      if (prices.length === 0) {
+        return getRentalPrice(product)
+      }
+      const minBuyPrice = Math.min(...prices)
+      // If min buy price is 0, show rental price instead
+      if (minBuyPrice === 0) {
+        const rentalPrice = getRentalPrice(product)
+        return rentalPrice > 0 ? rentalPrice : 0
+      }
+      return minBuyPrice
+    }
+    // If no variants, check if it's rentable
+    return getRentalPrice(product)
+  }
+
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -414,6 +446,16 @@ const AdminProductsPage = () => {
                              კოდი: {product.sku || 'არ არის მინიჭებული'}
                            </span>
                          </div>
+
+                         <div className="mb-2">
+                           <span className={`text-xs font-mono px-2 py-1 rounded ${
+                             product.sku 
+                               ? 'text-gray-700 bg-gray-100' 
+                               : 'text-orange-600 bg-orange-50'
+                           }`}>
+                             ავტორი: {product.sku || 'არ არის მინიჭებული'}
+                           </span>
+                         </div>
                        
                         <div className="flex items-center space-x-2 mb-2">
                           <select
@@ -429,7 +471,7 @@ const AdminProductsPage = () => {
                          
                         </div>
                          <div className="flex items-center space-x-4 text-sm text-gray-600 mb-2">
-                           <span>₾{product.variants?.[0]?.price || 0}</span>
+                           <span>₾{getDisplayPrice(product).toFixed(2)}</span>
                            <span>{product.gender}</span>
                            {product.category && (
                              <span>{product.category.name}</span>
@@ -437,11 +479,7 @@ const AdminProductsPage = () => {
                          </div>
                          
                          <div className="flex items-center space-x-2">
-                           {product.isNew && (
-                             <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                               ახალი
-                             </span>
-                           )}
+                          
                           {product.discount && product.discount > 0 && (
                             <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">
                               -{product.discount}%
