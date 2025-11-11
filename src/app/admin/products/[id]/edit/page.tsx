@@ -1,6 +1,7 @@
 "use client"
 import React, { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { ArrowLeft, Save, X, Plus } from 'lucide-react'
 import { z } from 'zod'
 import { Product, ProductVariant } from '@/types/product'
@@ -39,6 +40,7 @@ const productSchema = z.object({
     size: z.string().min(1, 'ზომა აუცილებელია'),
     stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი'),
     price: z.number().min(0, 'ფასი უნდა იყოს დადებითი'),
+    discount: z.number().min(0).max(100).optional(),
     sizeSystem: z.enum(['EU', 'US', 'UK', 'CN']).optional()
   })).default([]),
   imageUrls: z.array(z.string().min(1, 'URL აუცილებელია')).default([]),
@@ -414,132 +416,37 @@ const EditProductPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => router.push('/admin')}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <ArrowLeft className="w-6 h-6 text-black" />
-            </button>
-            <h1 className="text-[20px] text-black font-bold">პროდუქტის რედაქტირება</h1>
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="px-6 py-4">
+          <div className="mx-auto px-4 py-4">
+            <Link href="/admin" className="flex md:text-[20px] text-[18px] items-center text-black hover:opacity-80">
+              <ArrowLeft className="w-5 h-5 mr-2" />
+              უკან დაბრუნება
+            </Link>
           </div>
         </div>
+      </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Basic Info */}
-            <div className="space-y-6">
-              <h2 className="text-[20px] text-black font-semibold">ძირითადი ინფორმაცია</h2>
-              
+      <div className="container mx-auto px-6 py-8">
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Basic Information */}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-[20px] text-black font-semibold mb-6">ძირითადი ინფორმაცია</h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-[20px] text-black font-medium mb-2">
-                  პროდუქტის სახელი *
+                  სახელი *
                 </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => handleNameChange(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                  placeholder="შეიყვანეთ პროდუქტის სახელი"
+                  className={`w-full px-4 py-3 border rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black ${errors.name ? 'border-red-500' : 'border-gray-300'
+                    }`}
                 />
                 {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
-              </div>
-
-              <div>
-                <label className="block text-[20px] text-black font-medium mb-2">
-                  Slug *
-                </label>
-                <input
-                  type="text"
-                  value={formData.slug}
-                  readOnly
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black bg-gray-50"
-                />
-                {errors.slug && <p className="text-red-500 text-sm mt-1">{errors.slug}</p>}
-              </div>
-
-              <div>
-                <label className="block text-[20px] text-black font-medium mb-2">
-                  ბრენდი (ოფციონალური)
-                </label>
-                <input
-                  type="text"
-                  value={formData.brand || ''}
-                  onChange={(e) => handleInputChange('brand', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                  placeholder="შეიყვანეთ ბრენდის სახელი"
-                />
-                {errors.brand && <p className="text-red-500 text-sm mt-1">{errors.brand}</p>}
-              </div>
-
-              <div>
-                <label className="block text-[20px] text-black font-medium mb-2">
-                  აღწერა
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
-                  rows={4}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                  placeholder="შეიყვანეთ პროდუქტის აღწერა"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[20px] text-black font-medium mb-2">
-                  კატეგორია
-                </label>
-                <select
-                  value={formData.categoryId || ''}
-                  onChange={(e) => handleInputChange('categoryId', e.target.value ? parseInt(e.target.value) : undefined)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                >
-                  <option value="">კატეგორიის არჩევა</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-                {errors.categoryId && <p className="text-red-500 text-sm mt-1">{errors.categoryId}</p>}
-              </div>
-
-              <div>
-                <label className="block text-[20px] text-black font-medium mb-2">
-                  სქესი
-                </label>
-                <select
-                  value={formData.gender}
-                  onChange={(e) => handleInputChange('gender', e.target.value as 'MEN' | 'WOMEN' | 'CHILDREN' | 'UNISEX')}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                >
-                  <option value="UNISEX">უნივერსალური</option>
-                  <option value="MEN">კაცისთვის</option>
-                  <option value="WOMEN">ქალისთვის</option>
-                  <option value="CHILDREN">ბავშვისთვის</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[20px] text-black font-medium mb-2">
-                  ფერი
-                </label>
-                <select
-                  value={formData.color || ''}
-                  onChange={(e) => handleInputChange('color', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                >
-                  <option value="">აირჩიეთ ფერი</option>
-                  {colors.map(color => (
-                    <option key={color.id} value={color.label}>
-                      {color.label}
-                    </option>
-                  ))}
-                </select>
               </div>
 
               <div>
@@ -561,255 +468,281 @@ const EditProductPage = () => {
 
               <div>
                 <label className="block text-[20px] text-black font-medium mb-2">
-                  ზომის სისტემა
+                  ბრენდი (ოფციონალური)
+                </label>
+                <input
+                  type="text"
+                  value={formData.brand || ''}
+                  onChange={(e) => handleInputChange('brand', e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[20px] text-black font-medium mb-2">
+                  კატეგორია
                 </label>
                 <select
-                  value={formData.sizeSystem || ''}
-                  onChange={(e) => handleInputChange('sizeSystem', e.target.value || undefined)}
+                  value={formData.categoryId || ''}
+                  onChange={(e) => handleInputChange('categoryId', e.target.value ? parseInt(e.target.value) : undefined)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                 >
-                  <option value="">აირჩიეთ ზომის სისტემა</option>
-                  <option value="EU">EU</option>
-                  <option value="US">US</option>
-                  <option value="UK">UK</option>
-                  <option value="CN">CN</option>
+                  <option value="">
+                    აირჩიეთ კატეგორია
+                  </option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
                 </select>
               </div>
 
               <div>
                 <label className="block text-[20px] text-black font-medium mb-2">
-                  ზომა
+                  სქესი
                 </label>
-                <input
-                  type="text"
-                  value={formData.size || ''}
-                  onChange={(e) => handleInputChange('size', e.target.value || undefined)}
+                <select
+                  value={formData.gender}
+                  onChange={(e) => handleInputChange('gender', e.target.value as 'MEN' | 'WOMEN' | 'CHILDREN' | 'UNISEX')}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                  placeholder="მაგ: 42, M, L, XL"
-                />
+                >
+                  <option value="UNISEX">უნივერსალური</option>
+                  <option value="MEN">კაცისთვის</option>
+                  <option value="WOMEN">ქალისთვის</option>
+                  <option value="CHILDREN">ბავშვისთვის</option>
+                </select>
               </div>
 
-              {/* <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[20px] text-black font-medium mb-2">
-                    საწყობი *
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.stock}
-                    onChange={(e) => handleInputChange('stock', parseInt(e.target.value) || 0)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                  />
-                  {errors.stock && <p className="text-red-500 text-sm mt-1">{errors.stock}</p>}
-                </div>
-              </div> */}
-
-             
-
-            
+              <div>
+                <label className="block text-[20px] text-black font-medium mb-2">ფერი</label>
+                <select
+                  value={formData.color || ''}
+                  onChange={(e) => handleInputChange('color', e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                >
+                  <option value="">აირჩიეთ ფერი</option>
+                  {colors.map((color) => (
+                    <option key={color.id} value={color.label}>
+                      {color.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-
-            {/* Images and Variants */}
-            <div className="space-y-6">
-              <h2 className="text-[20px] text-black font-semibold">სურათები</h2>
-              
-              <ImageUploadForProduct
-                value={formData.imageUrls}
-                onChange={handleImageChange}
+            <div className="mt-6">
+              <label className="block text-[20px] text-black font-medium mb-2">
+                ზომა
+              </label>
+              <input
+                type="text"
+                value={formData.size || ''}
+                onChange={(e) => handleInputChange('size', e.target.value || undefined)}
+                className="w-full px-4 py-3 md:w-1/2 w-full border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                placeholder="მაგ: 42, M, L, XL"
               />
+            </div>
+            
+            <div className="mt-6">
+              <label className="block text-[20px] text-black font-medium mb-2">
+                აღწერა
+              </label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => handleInputChange('description', e.target.value)}
+                rows={4}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+              />
+            </div>
+          </div>
 
-              <h2 className="text-[20px] text-black font-semibold">ვარიანტები</h2>
-              
-              <div className="space-y-4">
-                {formData.variants.map((variant, index) => (
-                  <div key={index} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex justify-between items-center mb-3">
-                      <h3 className="text-[20px] text-black font-medium">ვარიანტი {index + 1}</h3>
-                      <button
-                        type="button"
-                        onClick={() => removeVariant(index)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+          {/* Rental Options */}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-[20px] text-black font-semibold mb-6">გაქირავების პარამეტრები</h2>
+
+            <div className="space-y-6">
+              {/* Rental Price Tiers */}
+              <div>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-medium text-black">ფასის გეგმა</h3>
+                  <button
+                    type="button"
+                    onClick={addRentalPriceTier}
+                    className="bg-black text-white px-4 py-2 rounded-lg text-[20px] flex items-center space-x-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>ფასის გეგმის დამატება</span>
+                  </button>
+                </div>
+
+                {/* Always show at least one price tier */}
+                {(formData.rentalPriceTiers && formData.rentalPriceTiers.length > 0 ? formData.rentalPriceTiers : [{ minDays: 1, pricePerDay: 0 }]).map((tier, index) => (
+                  <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border border-gray-200 rounded-lg mb-4">
+                    <div>
+                      <label className="block text-[20px] font-medium text-black mb-2">მინიმალური დღეები</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={tier.minDays}
+                        onChange={(e) => updateRentalPriceTier(index, 'minDays', parseInt(e.target.value) || 1)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
                     </div>
-                    
-                    <div className="grid grid-cols-3 gap-3">
-                      <div>
-                        <label className="block text-sm text-black mb-1">ზომა</label>
-                        <input
-                          type="text"
-                          value={variant.size}
-                          onChange={(e) => updateVariant(index, 'size', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm text-black mb-1">საწყობი</label>
-                        <input
-                          type="number"
-                          value={variant.stock}
-                          onChange={(e) => updateVariant(index, 'stock', parseInt(e.target.value) || 0)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm text-black mb-1">ფასი</label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={variant.price || ''}
-                          onChange={(e) => updateVariant(index, 'price', e.target.value ? parseFloat(e.target.value) : undefined)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                        />
-                      </div>
+
+                    <div>
+                      <label className="block text-[20px] font-medium text-black mb-2">ფასი დღეში</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={tier.pricePerDay}
+                        onChange={(e) => updateRentalPriceTier(index, 'pricePerDay', parseFloat(e.target.value) || 0)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    <div className="flex items-end">
+                      {(formData.rentalPriceTiers && formData.rentalPriceTiers.length > 0 ? formData.rentalPriceTiers.length : 1) > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeRentalPriceTier(index)}
+                          className="bg-red-500 text-white px-3 py-2 rounded-lg text-[20px] flex items-center space-x-2"
+                        >
+                          <X className="w-4 h-4" />
+                          <span>წაშლა</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
-                
-                <button
-                  type="button"
-                  onClick={addVariant}
-                  className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-[20px] text-black hover:border-black transition-colors"
-                >
-                  + ვარიანტის დამატება
-                </button>
               </div>
 
-              <h2 className="text-[20px] text-black font-semibold">გაქირავების პარამეტრები</h2>
-              
-              <div className="space-y-4">
-                <label className="flex items-center">
+              {/* Additional Rental Parameters */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label className="block text-[20px] text-black font-medium mb-2">გირაოს თანხა</label>
                   <input
-                    type="checkbox"
-                    checked={formData.isRentable}
-                    onChange={(e) => handleInputChange('isRentable', e.target.checked)}
-                    className="mr-2"
+                    type="number"
+                    step="0.01"
+                    value={formData.deposit || ''}
+                    onChange={(e) => handleInputChange('deposit', e.target.value ? parseFloat(e.target.value) : undefined)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                   />
-                  <span className="text-[20px] text-black">პროდუქტის გაქირავება შესაძლებელია</span>
-                </label>
-
-                {formData.isRentable && (
-                  <div className="space-y-6">
-                    {/* Rental Price Tiers */}
-                    <div>
-                      <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-medium text-black">ფასის გეგმა</h3>
-                        <button
-                          type="button"
-                          onClick={addRentalPriceTier}
-                          className="bg-black text-white px-4 py-2 rounded-lg text-[20px] flex items-center space-x-2"
-                        >
-                          <Plus className="w-4 h-4" />
-                          <span>ფასის გეგმის დამატება</span>
-                        </button>
-                      </div>
-
-                      {/* Always show at least one price tier */}
-                      {(formData.rentalPriceTiers && formData.rentalPriceTiers.length > 0 ? formData.rentalPriceTiers : [{ minDays: 1, pricePerDay: 1 }]).map((tier, index) => (
-                        <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border border-gray-200 rounded-lg mb-4">
-                          <div>
-                            <label className="block text-[20px] font-medium text-black mb-2">მინიმალური დღეები</label>
-                            <input
-                              type="number"
-                              min="1"
-                              value={tier.minDays}
-                              onChange={(e) => updateRentalPriceTier(index, 'minDays', parseInt(e.target.value) || 1)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-[20px] font-medium text-black mb-2">ფასი დღეში</label>
-                            <input
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              value={tier.pricePerDay}
-                              onChange={(e) => updateRentalPriceTier(index, 'pricePerDay', parseFloat(e.target.value) || 0)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                          </div>
-
-                          <div className="flex items-end">
-                            <button
-                              type="button"
-                              onClick={() => removeRentalPriceTier(index)}
-                              className="bg-red-500 text-white px-3 py-2 rounded-lg text-[20px] flex items-center space-x-2"
-                            >
-                              <X className="w-4 h-4" />
-                              <span>წაშლა</span>
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Additional Rental Parameters */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div>
-                        <label className="block text-[20px] text-black font-medium mb-2">სტატუსი</label>
-                        <select
-                          value={formData.status}
-                          onChange={(e) => handleInputChange('status', e.target.value)}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                        >
-                          <option value="AVAILABLE">თავისუფალია</option>
-                          <option value="RENTED">გაქირავებულია</option>
-                          <option value="RESERVED">დაჯავშნილია</option>
-                          <option value="MAINTENANCE">რესტავრაციაზე</option>
-                        </select>
-                      </div>
-                      
-                      <div>
-                        <label className="block text-[20px] text-black font-medium mb-2">მაქს დღეები(არასავალდებულო)</label>
-                        <input
-                          type="number"
-                          value={formData.maxRentalDays || ''}
-                          onChange={(e) => handleInputChange('maxRentalDays', e.target.value ? parseInt(e.target.value) : undefined)}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[20px] text-black font-medium mb-2">გირაოს თანხა</label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={formData.deposit || ''}
-                          onChange={(e) => handleInputChange('deposit', e.target.value ? parseFloat(e.target.value) : undefined)}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
+                </div>
+                <div>
+                  <label className="block text-[20px] text-black font-medium mb-2">მაქს დღეები(არასავალდებულო)</label>
+                  <input
+                    type="number"
+                    value={formData.maxRentalDays || ''}
+                    onChange={(e) => handleInputChange('maxRentalDays', e.target.value ? parseInt(e.target.value) : undefined)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  />
+                </div>
               </div>
             </div>
           </div>
 
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="flex justify-between items-center mb-6">
+              <label className="flex items-center gap-3 text-[20px] text-black font-semibold cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={formData.variants.length > 0}
+                  onChange={(e) => {
+                    if (!e.target.checked) {
+                      setFormData(prev => ({ ...prev, variants: [] }))
+                    } else {
+                      addVariant()
+                    }
+                  }}
+                  className="h-5 w-5"
+                />
+                <span>ყიდვის პარამეტრები</span>
+              </label>
+              {formData.variants.length > 0 && (
+                <button
+                  type="button"
+                  onClick={addVariant}
+                  className="bg-black text-white px-4 py-2 rounded-lg text-[20px] flex items-center space-x-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span> დამატება</span>
+                </button>
+              )}
+            </div>
+
+            {formData.variants.length > 0 && formData.variants.map((variant, index) => (
+              <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border border-gray-200 rounded-lg mb-4">
+                <div>
+                  <label className="block text-[20px] text-black font-medium mb-2">საწყობი</label>
+                  <input
+                    type="number"
+                    value={variant.stock}
+                    onChange={(e) => updateVariant(index, 'stock', parseInt(e.target.value) || 0)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[20px] text-black font-medium mb-2">ფასი </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={variant.price || ''}
+                    onChange={(e) => updateVariant(index, 'price', e.target.value ? parseFloat(e.target.value) : undefined)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[20px] text-black font-medium mb-2">ფასდაკლება </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={variant.discount ?? ''}
+                    onChange={(e) => updateVariant(index, 'discount', e.target.value ? parseFloat(e.target.value) : undefined)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  />
+                </div>
+                <div className="flex items-end">
+                  <button
+                    type="button"
+                    onClick={() => removeVariant(index)}
+                    className="bg-red-500 text-white px-3 py-2 rounded-lg text-[20px] flex items-center space-x-2"
+                  >
+                    <X className="w-4 h-4" />
+                    <span>წაშლა</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {formData.variants.length === 0 && (
+              <p className="text-sm text-gray-500">თქვენ შეგიძლიათ დაამატოთ ზომები და საწყობის რაოდენობა.</p>
+            )}
+          </div>
+
+          {/* Images */}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-[20px] text-black font-semibold mb-6">სურათები</h2>
+            <ImageUploadForProduct
+              value={formData.imageUrls}
+              onChange={handleImageChange}
+            />
+          </div>
+
           {/* Submit Button */}
-          <div className="flex justify-end space-x-4 mt-8 pt-6 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={() => router.push('/admin')}
-              className="px-6 py-3 border border-gray-300 rounded-lg text-[20px] text-black hover:bg-gray-50 transition-colors"
+          <div className="flex justify-end space-x-4">
+            <Link
+              href="/admin"
+              className="bg-gray-500 text-white px-6 py-3 rounded-lg text-[20px] text-black hover:bg-gray-600 transition-colors"
             >
               გაუქმება
-            </button>
+            </Link>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-6 py-3 bg-black text-white rounded-lg text-[20px] font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              className="bg-black text-white px-6 py-3 rounded-lg text-[20px] text-black hover:bg-gray-800 transition-colors disabled:bg-gray-400"
             >
-              {isSubmitting ? (
-                'მიმდინარეობს...'
-              ) : (
-                <>
-                  <Save className="w-5 h-5 mr-2" />
-                  განახლება
-                </>
-              )}
+              {isSubmitting ? 'მუშავდება...' : 'პროდუქტის განახლება'}
             </button>
           </div>
         </form>
