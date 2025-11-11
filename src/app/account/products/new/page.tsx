@@ -1,5 +1,5 @@
 "use client"
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Plus, X } from 'lucide-react'
 import Link from 'next/link'
@@ -110,8 +110,55 @@ const NewProductPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showPurchaseOptions, setShowPurchaseOptions] = useState(false)
   const [sizeSystem, setSizeSystem] = useState(formData.sizeSystem ?? '')
-  const [availableSizes, setAvailableSizes] = useState<string[]>([])
   const [selectedSize, setSelectedSize] = useState('')
+
+  type SizeSystem = NonNullable<ProductFormData['sizeSystem']>
+  type MeasurementSystem = Exclude<SizeSystem, 'CN'>
+  type CombinedSizeOption = {
+    value: string
+    label: string
+    system: SizeSystem
+    size: string
+  }
+
+  const combinedSizeOptions = useMemo<CombinedSizeOption[]>(() => {
+    const options: CombinedSizeOption[] = []
+    const measurementSystems: MeasurementSystem[] = ['EU', 'US', 'UK']
+
+    measurementSystems.forEach((system) => {
+      const sizes = Array.from(
+        new Set(
+          Object.values(sizeOptions)
+            .map((entry) => {
+              const systemValues = entry[system]
+              return systemValues ? systemValues.map((value) => String(value)) : []
+            })
+            .flat()
+            .filter((value): value is string => Boolean(value))
+        )
+      )
+
+      sizes.forEach((size) => {
+        options.push({
+          value: `${system}:${size}`,
+          label: `${system} - ${size}`,
+          system,
+          size,
+        })
+      })
+    })
+
+    Object.keys(sizeOptions).forEach((sizeKey) => {
+      options.push({
+        value: `CN:${sizeKey}`,
+        label: `CN - ${sizeKey}`,
+        system: 'CN',
+        size: sizeKey,
+      })
+    })
+
+    return options
+  }, [])
 
   const colors = [
     { id: "black", label: "შავი", color: "#000000" },
@@ -126,36 +173,20 @@ const NewProductPage = () => {
     { id: "beige", label: "ბეჟი", color: "#8B4513" }
   ]
 
-  const handleSystemChange = (system: string) => {
-    setSizeSystem(system)
-    handleInputChange('sizeSystem', system || undefined)
-
-    if (!system) {
-      setAvailableSizes([])
+  const handleCombinedSizeSelect = (value: string) => {
+    if (!value) {
+      setSizeSystem('')
       setSelectedSize('')
+      handleInputChange('sizeSystem', undefined)
       return
     }
 
-    if (system === 'CN') {
-      const baseSizes = Object.keys(sizeOptions)
-      setAvailableSizes(baseSizes)
-      setSelectedSize(baseSizes[0] ?? '')
-      return
-    }
+    const [system, ...sizeParts] = value.split(':')
+    const nextSize = sizeParts.join(':')
 
-    const allSizes = Object.values(sizeOptions)
-      .map((obj) => obj[system as keyof typeof obj])
-      .flat()
-      .filter(Boolean)
-
-    const unique = Array.from(new Set(allSizes))
-    const nextSizes = unique.length > 0 ? unique.map(String) : [FALLBACK_SIZE]
-    setAvailableSizes(nextSizes)
-    setSelectedSize(nextSizes[0] ?? '')
-  }
-
-  const handleSizeSelect = (value: string) => {
-    setSelectedSize(value)
+    setSizeSystem(system as SizeSystem)
+    setSelectedSize(nextSize)
+    handleInputChange('sizeSystem', system as SizeSystem)
   }
 
   const handleInputChange = (field: keyof ProductFormData, value: string | number | boolean | undefined) => {
@@ -224,7 +255,13 @@ const NewProductPage = () => {
   }
 
   const addVariant = () => {
-    const defaultSize = selectedSize || availableSizes[0] || FALLBACK_SIZE
+    const defaultSizeOption =
+      (sizeSystem && selectedSize && `${sizeSystem}:${selectedSize}`) ||
+      combinedSizeOptions[0]?.value
+
+    const defaultSize =
+      (defaultSizeOption ? defaultSizeOption.split(':')[1] : undefined) || selectedSize || FALLBACK_SIZE
+
     setFormData(prev => ({
       ...prev,
       variants: [...prev.variants, { size: defaultSize, stock: 0, price: 0, discount: undefined }]
@@ -464,43 +501,23 @@ const NewProductPage = () => {
 
             </div>
 
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-[20px] text-black font-medium mb-2">
-                  ზომის სისტემა
-                </label>
-                <select
-                  value={sizeSystem}
-                  onChange={(e) => handleSystemChange(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                >
-                  <option value="">აირჩიეთ ზომის სისტემა</option>
-                  <option value="EU">EU</option>
-                  <option value="US">US</option>
-                  <option value="UK">UK</option>
-                  <option value="CN">CN</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[20px] text-black font-medium mb-2">
-                  ზომა
-                </label>
-                <select
-                  value={selectedSize}
-                  onChange={(e) => handleSizeSelect(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                >
-                  <option value="">აირჩიეთ ზომა</option>
-                  {availableSizes.map((size) => (
-                    <option key={size} value={size}>
-                      {size}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div className="mt-6">
+              <label className="block text-[20px] text-black font-medium mb-2">
+                ზომა
+              </label>
+              <select
+                value={sizeSystem && selectedSize ? `${sizeSystem}:${selectedSize}` : ''}
+                onChange={(e) => handleCombinedSizeSelect(e.target.value)}
+                className="w-full px-4 py-3 md:w-1/2 w-full border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+              >
+                <option value="">აირჩიეთ ზომა</option>
+                {combinedSizeOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </div>
-
 
 
             <div className="mt-6">
