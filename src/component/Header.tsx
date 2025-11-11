@@ -279,10 +279,6 @@ const Header = () => {
                   </span>
                 )}
               </Link>
-
-              <button onClick={toggleMobileMenu} className="md:hidden p-2 text-white hover:text-gray-200">
-                <Menu className="w-6 h-6" />
-              </button>
             </div>
           </nav>
 
@@ -344,16 +340,91 @@ const Header = () => {
 
       {/* --- Search Bar --- */}
       {isSearchOpen && (
-        <div className="bg-white border-t border-gray-100 py-4">
+        <div className="bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 py-4">
           <div className="container mx-auto px-4">
             <div className="relative max-w-md mx-auto">
               <input
                 type="text"
                 placeholder="მოძებნე ნივთები..."
-                className="w-full placeholder:text-black text-black pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-300"
+                className="w-full placeholder:text-black dark:placeholder:text-gray-300 text-black dark:text-white bg-white dark:bg-gray-800 pl-12 pr-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-600"
               />
-              <Search className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
+              <Search className="absolute left-4 top-3.5 w-5 h-5 text-gray-400 dark:text-gray-500" />
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- Mobile Menu --- */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden   border-t border-black h-screen text-white">
+          <div className="container mx-auto px-4 py-4">
+            <nav className="space-y-2">
+              {/* Menu Categories */}
+              <div className="space-y-1">
+                {['ქალი', 'მამაკაცი', 'ბავშვები'].map((item) => (
+                  <div key={item}>
+                    <button
+                      onClick={() => toggleMobileDropdown(item)}
+                      className="w-full flex items-center justify-between px-4 py-3 text-white dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-[18px]"
+                    >
+                      <span>{item}</span>
+                      <ChevronRight className={`w-4 h-4 transition-transform ${mobileDropdownOpen === item ? 'rotate-90' : ''}`} />
+                    </button>
+                    {mobileDropdownOpen === item && (
+                      <div className="pl-4 space-y-1 mt-1">
+                        {item === 'ქალი' && (
+                          <>
+                            <Link href="/shop?gender=women" className="block px-4 py-2 text-white dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-[16px]">
+                              პალტოები და მოსასხამი
+                            </Link>
+                            <Link href="/shop?gender=women&category=dresses" className="block px-4 py-2 text-white dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-[16px]">
+                              კაბები
+                            </Link>
+                            <Link href="/shop?gender=women&category=tops" className="block px-4 py-2 text-white dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-[16px]">
+                              შარვლები
+                            </Link>
+                            <Link href="/shop?gender=women&category=bottoms" className="block px-4 py-2 text-white dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-[16px]">
+                              ქვედაბოლოები
+                            </Link>
+                          </>
+                        )}
+                        {item === 'მამაკაცი' && (
+                          <>
+                            <Link href="/shop?gender=men" className="block px-4 py-2 text-white dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-[16px]">
+                              შარვალ კოსტუმი
+                            </Link>
+                            <Link href="/shop?gender=men&category=suits" className="block px-4 py-2 text-white dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-[16px]">
+                              პიჯაკი
+                            </Link>
+                            <Link href="/shop?gender=men&category=pants" className="block px-4 py-2 text-white dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-[16px]">
+                              ტრადიციული და კულტურული ტანსაცმელი
+                            </Link>
+                          </>
+                        )}
+                        {item === 'ბავშვები' && (
+                          <>
+                            <Link href="/shop?gender=children" className="block px-4 py-2 text-white   dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-[16px]">
+                              კაბები
+                            </Link>
+                            <Link href="/shop?gender=children&category=dresses" className="block px-4 py-2 text-white dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-[16px]">
+                              სათხილამურო ტანსაცმელი
+                            </Link>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              
+              {/* Other Links */}
+              <Link href="/about" className="block px-4 py-3 text-white dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-[18px]">
+                ჩვენს შესახებ
+              </Link>
+              <Link href="/politics" className="block px-4 py-3 text-white dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-[18px]">
+                საიტის პოლიტიკა
+              </Link>
+            </nav>
           </div>
         </div>
       )}
