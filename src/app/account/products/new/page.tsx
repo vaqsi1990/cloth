@@ -7,6 +7,44 @@ import { z } from 'zod'
 import ImageUploadForProduct from '@/component/productimage'
 import { showToast } from '@/utils/toast'
 
+const sizeOptions = {
+  XS: { UK: [4, 6], EU: [32, 34], US: [0, 2] },
+  S: { UK: [8, 10], EU: [36, 38], US: [4, 6] },
+  M: { UK: [12], EU: [40], US: [8] },
+  L: { UK: [14], EU: [42], US: [10] },
+  XL: { UK: [16], EU: [44], US: [12] },
+  XXL: { UK: [18], EU: [46], US: [14] },
+  XXXL: { UK: [20], EU: [48], US: [16] },
+  XXXXL: { UK: [22], EU: [50], US: [18] },
+  XXXXXL: { UK: [24], EU: [52], US: [20] },
+}
+const FALLBACK_SIZE = 'STANDARD'
+const categories = [
+  { id: 1, name: 'კაბები', slug: 'dresses' },
+  { id: 2, name: 'ბლუზები', slug: 'tops' },
+  { id: 3, name: 'შარვლები', slug: 'pants' },
+  { id: 4, name: 'ქვედაბოლოები', slug: 'skirts' },
+  { id: 5, name: 'ზედა ტანსაცმელი', slug: 'outerwear' },
+  { id: 6, name: 'პალტოები და მოსასხამი', slug: 'coats' },
+  { id: 7, name: 'საქორწინო კაბები', slug: 'wedding-dresses' },
+  { id: 8, name: 'საღამოს ტანსაცმელი', slug: 'evening-wear' },
+  { id: 9, name: 'სათხილამურო ქურთუკი', slug: 'ski-jacket' },
+  { id: 10, name: 'თერმო ტანსაცმელი', slug: 'thermal-wear' },
+  { id: 11, name: 'სათვალე', slug: 'goggles' },
+  { id: 12, name: 'ჩაფხუტი', slug: 'helmet' },
+  { id: 13, name: 'ტრადიციული ტანსაცმელი', slug: 'traditional' },
+  { id: 14, name: 'ქოსფლეის კოსტუმები', slug: 'cosplay' },
+  { id: 15, name: 'შარვალ კოსტუმი', slug: 'suit' },
+  { id: 16, name: 'პიჯაკი', slug: 'blazer' },
+  { id: 17, name: 'აქსესუარები', slug: 'accessories' },
+  { id: 18, name: 'ბავშვთა კაბები', slug: 'kids-dresses' },
+  { id: 19, name: 'ბავშვთა ტრადიციული ტანსაცმელი', slug: 'kids-traditional' },
+  { id: 20, name: 'ბავშვთა სათხილამურო ტანსაცმელი', slug: 'kids-ski' },
+  { id: 21, name: 'ყოველდღიური ტანსაცმელი', slug: 'everyday' },
+  { id: 22, name: 'სპორტული ტანსაცმელი', slug: 'sportwear' },
+  { id: 23, name: 'სადღესასწაულო ტანსაცმელი', slug: 'festive' },
+]
+
 const productSchema = z.object({
   name: z.string().min(1, 'სახელი აუცილებელია'),
   slug: z.string().min(1, 'Slug აუცილებელია').regex(/^[a-z0-9-]+$/, 'Slug უნდა შეიცავდეს მხოლოდ პატარა ასოებს, ციფრებს და ტირეებს'),
@@ -28,7 +66,7 @@ const productSchema = z.object({
   status: z.enum(['AVAILABLE', 'RENTED', 'RESERVED', 'MAINTENANCE']).default('AVAILABLE'),
   variants: z.array(
     z.object({
-      size: z.string().min(1, 'ზომა აუცილებელია'),
+      size: z.string().min(1, 'ზომა აუცილებელია').default(FALLBACK_SIZE),
       stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი'),
       price: z.number().min(0, 'ფასი უნდა იყოს დადებითი'),
       discount: z.number().min(0).max(100).optional()
@@ -71,49 +109,10 @@ const NewProductPage = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const categories = [
-    // ძირითადი
-    { id: 1, name: 'კაბები', slug: 'dresses' },
-    { id: 2, name: 'ბლუზები', slug: 'tops' },
-    { id: 3, name: 'შარვლები', slug: 'pants' },
-    { id: 4, name: 'ქვედაბოლოები', slug: 'skirts' },
-    { id: 5, name: 'ზედა ტანსაცმელი', slug: 'outerwear' },
-    { id: 6, name: 'პალტოები და მოსასხამი', slug: 'coats' },
-
-    // საქორწინო და სადღესასწაულო
-    { id: 7, name: 'საქორწინო კაბები', slug: 'wedding-dresses' },
-    { id: 8, name: 'საღამოს ტანსაცმელი', slug: 'evening-wear' },
-
-    // სპორტული და სათხილამურო
-    { id: 9, name: 'სათხილამურო ქურთუკი', slug: 'ski-jacket' },
-    { id: 10, name: 'თერმო ტანსაცმელი', slug: 'thermal-wear' },
-    { id: 11, name: 'სათვალე', slug: 'goggles' },
-    { id: 12, name: 'ჩაფხუტი', slug: 'helmet' },
-
-    // კულტურული და თემატური
-    { id: 13, name: 'ტრადიციული ტანსაცმელი', slug: 'traditional' },
-    { id: 14, name: 'ქოსფლეის კოსტუმები', slug: 'cosplay' },
-
-    // მამაკაცების
-    { id: 15, name: 'შარვალ კოსტუმი', slug: 'suit' },
-    { id: 16, name: 'პიჯაკი', slug: 'blazer' },
-
-    // აქსესუარები
-    { id: 17, name: 'აქსესუარები', slug: 'accessories' },
-
-    // ბავშვები
-    { id: 18, name: 'ბავშვთა კაბები', slug: 'kids-dresses' },
-    { id: 19, name: 'ბავშვთა ტრადიციული ტანსაცმელი', slug: 'kids-traditional' },
-    { id: 20, name: 'ბავშვთა სათხილამურო ტანსაცმელი', slug: 'kids-ski' },
-
-    // სხვა
-    { id: 21, name: 'ყოველდღიური ტანსაცმელი', slug: 'everyday' },
-    { id: 22, name: 'სპორტული ტანსაცმელი', slug: 'sportwear' },
-    { id: 23, name: 'სადღესასწაულო ტანსაცმელი', slug: 'festive' }
-  ]
-
-  const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
+  const [showPurchaseOptions, setShowPurchaseOptions] = useState(false)
+  const [sizeSystem, setSizeSystem] = useState(formData.sizeSystem ?? '')
+  const [availableSizes, setAvailableSizes] = useState<string[]>(Object.keys(sizeOptions))
+  const [selectedSize, setSelectedSize] = useState('')
 
   const colors = [
     { id: "black", label: "შავი", color: "#000000" },
@@ -127,6 +126,31 @@ const NewProductPage = () => {
     { id: "gray", label: "ნაცრისფერი", color: "#A52A2A" },
     { id: "beige", label: "ბეჟი", color: "#8B4513" }
   ]
+
+  const handleSystemChange = (system: string) => {
+    setSizeSystem(system)
+    handleInputChange('sizeSystem', system || undefined)
+
+    if (!system) {
+      setAvailableSizes([...Object.keys(sizeOptions)])
+      setSelectedSize('')
+      return
+    }
+
+    const allSizes = Object.values(sizeOptions)
+      .map((obj) => obj[system as keyof typeof obj])
+      .flat()
+      .filter(Boolean)
+
+    const unique = Array.from(new Set(allSizes))
+    const nextSizes = unique.length > 0 ? unique.map(String) : [FALLBACK_SIZE]
+    setAvailableSizes(nextSizes)
+    setSelectedSize(nextSizes[0] ?? '')
+  }
+
+  const handleSizeSelect = (value: string) => {
+    setSelectedSize(value)
+  }
 
   const handleInputChange = (field: keyof ProductFormData, value: string | number | boolean | undefined) => {
     setFormData(prev => {
@@ -194,9 +218,10 @@ const NewProductPage = () => {
   }
 
   const addVariant = () => {
+    const defaultSize = selectedSize || availableSizes[0] || FALLBACK_SIZE
     setFormData(prev => ({
       ...prev,
-      variants: [...prev.variants, { size: '', stock: 0, price: 0, discount: undefined }]
+      variants: [...prev.variants, { size: defaultSize, stock: 0, price: 0, discount: undefined }]
     }))
   }
 
@@ -412,24 +437,6 @@ const NewProductPage = () => {
 
               <div>
                 <label className="block text-[20px] text-black font-medium mb-2">
-                  ფერი
-                </label>
-                <select
-                  value={formData.color || ''}
-                  onChange={(e) => handleInputChange('color', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                >
-                  <option value="">აირჩიეთ ფერი</option>
-                  {colors.map(color => (
-                    <option key={color.id} value={color.label}>
-                      {color.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[20px] text-black font-medium mb-2">
                   მდებარეობა
                 </label>
                 <select
@@ -445,13 +452,17 @@ const NewProductPage = () => {
                 </select>
               </div>
 
+
+            </div>
+
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-[20px] text-black font-medium mb-2">
                   ზომის სისტემა
                 </label>
                 <select
-                  value={formData.sizeSystem || ''}
-                  onChange={(e) => handleInputChange('sizeSystem', e.target.value || undefined)}
+                  value={sizeSystem}
+                  onChange={(e) => handleSystemChange(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                 >
                   <option value="">აირჩიეთ ზომის სისტემა</option>
@@ -459,6 +470,52 @@ const NewProductPage = () => {
                   <option value="US">US</option>
                   <option value="UK">UK</option>
                   <option value="CN">CN</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[20px] text-black font-medium mb-2">
+                  ზომა
+                </label>
+                <select
+                  value={selectedSize}
+                  onChange={(e) => handleSizeSelect(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                >
+                  <option value="">აირჩიეთ ზომა</option>
+                  {availableSizes.map((size) => (
+                    <option key={size} value={size}>
+                      {size}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-[20px] text-black font-medium mb-2">გირაოს თანხა</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.deposit || ''}
+                  onChange={(e) => handleInputChange('deposit', e.target.value ? parseFloat(e.target.value) : undefined)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                />
+              </div>
+              <div>
+                <label className="block text-[20px] text-black font-medium mb-2">ფერი</label>
+                <select
+                  value={formData.color || ''}
+                  onChange={(e) => handleInputChange('color', e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                >
+                  <option value="">აირჩიეთ ფერი</option>
+                  {colors.map((color) => (
+                    <option key={color.id} value={color.label}>
+                      {color.label}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -479,80 +536,7 @@ const NewProductPage = () => {
           </div>
 
           {/* Variants */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-[20px] text-black font-semibold">ზომები და საწყობი</h2>
-              <button
-                type="button"
-                onClick={addVariant}
-                className="bg-black text-white px-4 py-2 rounded-lg text-[20px] text-black flex items-center space-x-2"
-              >
-                <Plus className="w-4 h-4" />
-                <span>ზომის დამატება</span>
-              </button>
-            </div>
-
-            {formData.variants.map((variant, index) => (
-              <div key={index} className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 border border-gray-200 rounded-lg mb-4">
-                <div>
-                  <label className="block text-[20px] text-black font-medium mb-2">ზომა</label>
-                  <select
-                    value={variant.size}
-                    onChange={(e) => updateVariant(index, 'size', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                  >
-                    <option value="">აირჩიეთ ზომა</option>
-                    {sizes.map(size => (
-                      <option key={size} value={size}>{size}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[20px] text-black font-medium mb-2">საწყობი</label>
-                  <input
-                    type="number"
-                    value={variant.stock}
-                    onChange={(e) => updateVariant(index, 'stock', parseInt(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[20px] text-black font-medium mb-2">ფასი (ოფციონალური)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={variant.price || ''}
-                    onChange={(e) => updateVariant(index, 'price', e.target.value ? parseFloat(e.target.value) : undefined)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[20px] text-black font-medium mb-2">ფასდაკლება (ოფციონალური)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={variant.discount ?? ''}
-                    onChange={(e) => updateVariant(index, 'discount', e.target.value ? parseFloat(e.target.value) : undefined)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                  />
-                </div>
-
-                <div className="flex items-end">
-                  <button
-                    type="button"
-                    onClick={() => removeVariant(index)}
-                    className="bg-red-500 text-white px-3 py-2 rounded-lg text-[20px] text-black flex items-center space-x-2"
-                  >
-                    <X className="w-4 h-4" />
-                    <span>წაშლა</span>
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+        
 
           {/* Rental Options */}
           <div className="bg-white rounded-lg shadow-sm p-6">
@@ -638,19 +622,83 @@ const NewProductPage = () => {
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                     />
                   </div>
-
-                  <div>
-                    <label className="block text-[20px] text-black font-medium mb-2">გირაოს თანხა</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={formData.deposit || ''}
-                      onChange={(e) => handleInputChange('deposit', e.target.value ? parseFloat(e.target.value) : undefined)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                    />
-                  </div>
                 </div>
               </div>
+            )}
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="flex justify-between items-center mb-6">
+              <label className="flex items-center gap-3 text-[20px] text-black font-semibold cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={showPurchaseOptions}
+                  onChange={(e) => setShowPurchaseOptions(e.target.checked)}
+                  className="h-5 w-5"
+                />
+                <span>ყიდვის პარამეტრები</span>
+              </label>
+              {showPurchaseOptions && (
+                <button
+                  type="button"
+                  onClick={addVariant}
+                  className="bg-black text-white px-4 py-2 rounded-lg text-[20px] text-black flex items-center space-x-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>ზომის დამატება</span>
+                </button>
+              )}
+            </div>
+
+            {showPurchaseOptions && formData.variants.map((variant, index) => (
+              <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border border-gray-200 rounded-lg mb-4">
+                <div>
+                  <label className="block text-[20px] text-black font-medium mb-2">საწყობი</label>
+                  <input
+                    type="number"
+                    value={variant.stock}
+                    onChange={(e) => updateVariant(index, 'stock', parseInt(e.target.value) || 0)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[20px] text-black font-medium mb-2">ფასი</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={variant.price || ''}
+                    onChange={(e) => updateVariant(index, 'price', e.target.value ? parseFloat(e.target.value) : undefined)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[20px] text-black font-medium mb-2">ფასდაკლება</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={variant.discount ?? ''}
+                    onChange={(e) => updateVariant(index, 'discount', e.target.value ? parseFloat(e.target.value) : undefined)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  />
+                </div>
+
+                <div className="flex items-end">
+                  <button
+                    type="button"
+                    onClick={() => removeVariant(index)}
+                    className="bg-red-500 text-white px-3 py-2 rounded-lg text-[20px] text-black flex items-center space-x-2"
+                  >
+                    <X className="w-4 h-4" />
+                    <span>წაშლა</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {showPurchaseOptions && formData.variants.length === 0 && (
+              <p className="text-sm text-gray-500">თქვენ შეგიძლიათ დაამატოთ ზომები და საწყობის რაოდენობა.</p>
             )}
           </div>
 
