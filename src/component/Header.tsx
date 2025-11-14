@@ -233,17 +233,17 @@ const Header = () => {
               )}
             </div>
             <div className="flex items-center space-x-4">
-              <button onClick={toggleSearch} className="group cursor-pointer p-2 text-white hover:text-gray-200 text-[20px]">
+              <button onClick={toggleSearch} className="group cursor-pointer p-2 text-white  text-[20px]">
                 <Search className="w-5 h-5 group-hover:scale-110 transition-transform" />
               </button>
 
               {/* Account Section */}
               {session ? (
                 <div className="relative group">
-                  <button className="p-2 text-white hover:text-gray-200">
+                  <button className="p-2 text-white ">
                     <User className="w-5 h-5" />
                   </button>
-                  <div className="absolute -right-20 top-full mt-2 w-54 bg-white border border-gray-200 rounded-xl shadow-xl z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300">
+                  <div className="absolute -right-20 top-full mt-2 w-54 bg-black border border-black rounded-xl shadow-xl z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300">
                     <div className="py-2 text-black">
                       <p className="px-4 font-semibold">{session.user.name}</p>
                       {session.user.role === 'ADMIN' ? (
@@ -251,7 +251,7 @@ const Header = () => {
                           ადმინისტრატორი
                         </Link>
                       ) : (
-                        <Link href="/account" className="block px-4 py-2 hover:bg-gray-100">
+                        <Link href="/account" className="block px-4 py-2 hover:bg-black">
                           პროფილი
                         </Link>
                       )}
@@ -266,12 +266,12 @@ const Header = () => {
                   </div>
                 </div>
               ) : (
-                <Link href="/auth/signin" className="text-[18px]  md:text-[20px] font-medium hover:text-gray-200">
+                <Link href="/auth/signin" className="text-[18px]  md:text-[20px] font-medium ">
                   შესვლა
                 </Link>
               )}
 
-              <Link href="/cart" className="relative p-2 text-white hover:text-gray-200">
+              <Link href="/cart" className="relative p-2 text-white ">
                 <ShoppingCart className="w-5 h-5" />
                 {cartItemCount > 0 && (
                   <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
@@ -284,17 +284,17 @@ const Header = () => {
 
           {/* --- Right side icons --- */}
           <div className="flex md:hidden items-center space-x-4">
-            <button onClick={toggleSearch} className="group cursor-pointer p-2 text-white hover:text-gray-200">
+            <button onClick={toggleSearch} className="group cursor-pointer p-2 text-white ">
               <Search className="w-5 h-5 group-hover:scale-110 transition-transform" />
             </button>
 
             {/* Account Section */}
             {session ? (
               <div className="relative group">
-                <button className="p-2 text-white hover:text-gray-200">
+                <button className="p-2 text-white ">
                   <User className="w-5 h-5" />
                 </button>
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-xl z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300">
+                <div className="absolute right-0 top-full mt-2 w-48 bg-black border border-black rounded-xl shadow-xl z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300">
                   <div className="py-2 text-black">
                     <p className="px-4 font-semibold">{session.user.name}</p>
                     {session.user.role === 'ADMIN' ? (
@@ -302,13 +302,13 @@ const Header = () => {
                         ადმინისტრატორი
                       </Link>
                     ) : (
-                      <Link href="/account" className="block px-4 py-2 hover:bg-gray-100">
+                      <Link href="/account" className="block px-4 py-2 hover:bg-black">
                         პროფილი
                       </Link>
                     )}
                     <button
                       onClick={() => signOut()}
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
+                      className="w-full text-left px-4 py-2 hover:bg-black flex items-center space-x-2"
                     >
                       <LogOut className="w-4 h-4" />
                       <span>გასვლა</span>
@@ -317,12 +317,12 @@ const Header = () => {
                 </div>
               </div>
             ) : (
-              <Link href="/auth/signin" className="text-sm hover:text-gray-200">
+              <Link href="/auth/signin" className="text-sm ">
                 შესვლა
               </Link>
             )}
 
-            <Link href="/cart" className="relative p-2 text-white hover:text-gray-200">
+            <Link href="/cart" className="relative p-2 text-white ">
               <ShoppingCart className="w-5 h-5" />
               {cartItemCount > 0 && (
                 <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
@@ -331,7 +331,7 @@ const Header = () => {
               )}
             </Link>
 
-            <button onClick={toggleMobileMenu} className="md:hidden p-2 text-white hover:text-gray-200">
+            <button onClick={toggleMobileMenu} className="md:hidden p-2 text-white ">
               <Menu className="w-6 h-6" />
             </button>
           </div>
@@ -340,15 +340,15 @@ const Header = () => {
 
       {/* --- Search Bar --- */}
       {isSearchOpen && (
-        <div className="bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 py-4">
+        <div className="bg-white  border-t border-black  py-4">
           <div className="container mx-auto px-4">
             <div className="relative max-w-md mx-auto">
               <input
                 type="text"
                 placeholder="მოძებნე ნივთები..."
-                className="w-full placeholder:text-black dark:placeholder:text-gray-300 text-black dark:text-white bg-white dark:bg-gray-800 pl-12 pr-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-600"
+                className="w-full placeholder:text-black md:text-[18px] text-[16px]  text-black bg-white pl-12 pr-4 py-3 border border-black rounded-xl "
               />
-              <Search className="absolute left-4 top-3.5 w-5 h-5 text-gray-400 dark:text-gray-500" />
+              <Search className="absolute left-4 top-3.5 w-5 h-5 text-black " />
             </div>
           </div>
         </div>
@@ -365,7 +365,7 @@ const Header = () => {
                   <div key={item}>
                     <button
                       onClick={() => toggleMobileDropdown(item)}
-                      className="w-full flex items-center justify-between px-4 py-3 text-white dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-[18px]"
+                      className="w-full flex items-center justify-between px-4 py-3 text-white md:text-[18px] text-[16px]  rounded-lg text-[18px]"
                     >
                       <span>{item}</span>
                       <ChevronRight className={`w-4 h-4 transition-transform ${mobileDropdownOpen === item ? 'rotate-90' : ''}`} />

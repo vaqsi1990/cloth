@@ -707,13 +707,7 @@ const ShopPageClient = () => {
                             </div>
                         </div>
 
-                        {/* Results Count */}
-                        {sortedProducts.length > 0 && (
-                            <div className="mb-4 text-black md:text-[18px] text-[16px]">
-                                <p>ნაჩვენებია {startIndex + 1}-{Math.min(endIndex, sortedProducts.length)} {sortedProducts.length}-დან</p>
-                            </div>
-                        )}
-
+                      
                         {/* Products Grid */}
                         {currentProducts.length > 0 ? (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
