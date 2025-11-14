@@ -34,7 +34,8 @@ const AccountPage = () => {
   const [userStats, setUserStats] = useState({
     ordersCount: 0,
     totalSpent: 0,
-    productsCount: 0
+    productsCount: 0,
+    soldProductsCount: 0
   })
   const [loading, setLoading] = useState(false)
   const [isEditingProfile, setIsEditingProfile] = useState(false)
@@ -138,6 +139,9 @@ const AccountPage = () => {
       const totalSpent = ordersData.success
         ? ordersData.orders.reduce((sum: number, order: Order) => sum + order.total, 0)
         : 0
+      const soldProductsCount = ordersData.success
+        ? ordersData.orders.reduce((sum: number, order: Order) => sum + (order.items?.length || 0), 0)
+        : 0
 
       // Fetch user products
       const productsResponse = await fetch('/api/user/products')
@@ -147,7 +151,8 @@ const AccountPage = () => {
       setUserStats({
         ordersCount,
         totalSpent,
-        productsCount
+        productsCount,
+        soldProductsCount
       })
     } catch (error) {
       console.error('Error fetching user stats:', error)
@@ -431,9 +436,7 @@ const AccountPage = () => {
           <div>
             <h3 className="text-xl font-bold text-black">{session.user.name}</h3>
             <p className="text-black">{session.user.email}</p>
-            <span className="inline-block mt-2 px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
-              {session.user.role === 'ADMIN' ? 'ადმინისტრატორი' : 'მომხმარებელი'}
-            </span>
+           
           </div>
         </div>
 
@@ -445,7 +448,7 @@ const AccountPage = () => {
               onChange={handleImageUpload}
             />
             {isUploadingImage && (
-              <p className="text-sm text-black mt-2">სურათი იტვირთება...</p>
+              <p className="text-[16px] text-black mt-2">სურათი იტვირთება...</p>
             )}
             <div className="mt-3 flex space-x-2">
               <button
@@ -463,14 +466,14 @@ const AccountPage = () => {
             <div className="flex items-center space-x-3">
               <Mail className="w-5 h-5 text-black" />
               <div>
-                <p className="text-sm text-black">ელფოსტა</p>
+                <p className="text-[16px] text-black">ელფოსტა</p>
                 <p className="font-medium">{session.user.email}</p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
               <User className="w-5 h-5 text-black" />
               <div>
-                <p className="text-sm text-black">სახელი</p>
+                <p className="text-[16px] text-black">სახელი</p>
                 <p className="font-medium">{session.user.name}</p>
               </div>
             </div>
@@ -479,14 +482,14 @@ const AccountPage = () => {
             <div className="flex items-center space-x-3">
               <Phone className="w-5 h-5 text-black" />
               <div>
-                <p className="text-sm text-black">ტელეფონი</p>
+                <p className="text-[16px] text-black">ტელეფონი</p>
                 <p className="font-medium">{session.user.phone ?? '-'}</p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
               <MapPin className="w-5 h-5 text-black" />
               <div>
-                <p className="text-sm text-black">მისამართი</p>
+                <p className="text-[16px] text-black">მისამართი</p>
                 <p className="font-medium">{(session.user as { location?: string })?.location ?? '-'}</p>
               </div>
 
@@ -502,11 +505,11 @@ const AccountPage = () => {
             <h4 className="text-lg font-semibold text-red mb-2">პირადობის ვერიფიკაცია </h4>
             <p className="text-[18px] text-red-500">პირადობის სურათებით მოხდება თქვენი ვერიფიცირება, თუ არ ატვირთავთ სურათებს ვერ შეძლებთ ახალი პროდუქტის დამატებას ან ყიდვას და ქირაობას</p>
             {verifLoading ? (
-              <p className="text-sm text-black">იტვირთება...</p>
+              <p className="text-[16px] text-black">იტვირთება...</p>
             ) : (
               <>
                 <div className="mb-3">
-                  <span className={`inline-block px-3 py-1 text-sm rounded-full ${['APPROVED'].includes(verification?.status ?? '')
+                  <span className={`inline-block px-3 py-1 text-[16px] rounded-full ${['APPROVED'].includes(verification?.status ?? '')
                     ? 'bg-green-100 text-green-800'
                     : ['REJECTED'].includes(verification?.status ?? '')
                       ? 'bg-red-100 text-red-800'
@@ -516,15 +519,15 @@ const AccountPage = () => {
                   </span>
                 </div>
                 {verification?.status === 'REJECTED' && verification?.comment && (
-                  <p className="text-sm text-red-700 mb-3">მიზეზი: {verification.comment}</p>
+                  <p className="text-[16px] text-red-700 mb-3">მიზეზი: {verification.comment}</p>
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-black mb-2">დოკუმენტის წინა მხარე</p>
+                    <p className="text-[16px] text-black mb-2">დოკუმენტის წინა მხარე</p>
                     <ImageUpload value={idFrontUrl ? [idFrontUrl] : []} onChange={handleIdFrontUpload} />
                   </div>
                   <div>
-                    <p className="text-sm text-black mb-2">დოკუმენტის შიდა მხარე</p>
+                    <p className="text-[16px] text-black mb-2">დოკუმენტის შიდა მხარე</p>
                     <ImageUpload value={idBackUrl ? [idBackUrl] : []} onChange={handleIdBackUpload} />
                   </div>
                 </div>
@@ -544,13 +547,13 @@ const AccountPage = () => {
 
       </div>
       {session.user.role !== 'ADMIN' && session.user.verificationStatus == 'APPROVED' && (
-        <h1 className="text-green-500">პირადობა დამტკიცებულია</h1>
+        <h1 className="text-green-500 text-[18px]">პირადობა დამტკიცებულია</h1>
       )}
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <h4 className="text-lg font-bold text-black mb-4">ანგარიშის სტატისტიკა</h4>
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map((i) => (
               <div key={i} className="text-center">
                 <div className="w-8 h-8 bg-gray-200 rounded animate-pulse mx-auto mb-2"></div>
                 <div className="w-16 h-4 bg-gray-200 rounded animate-pulse mx-auto"></div>
@@ -558,18 +561,22 @@ const AccountPage = () => {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="text-center">
               <div className="text-2xl font-bold text-black">{userStats.ordersCount}</div>
-              <div className="text-sm text-black">შეკვეთა</div>
+              <div className="text-[16px] text-black">შეკვეთა</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-black">₾{userStats.totalSpent.toFixed(2)}</div>
-              <div className="text-sm text-black">მთლიანი ღირებულება</div>
+              <div className="text-[16px] text-black">მთლიანი ღირებულება</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-black">{userStats.productsCount}</div>
-              <div className="text-sm text-black">პროდუქტი</div>
+              <div className="text-[16px] text-black">პროდუქტი</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-black">{userStats.soldProductsCount}</div>
+              <div className="text-[16px] text-black">გაყიდული პროდუქტი</div>
             </div>
           </div>
         )}
@@ -580,17 +587,17 @@ const AccountPage = () => {
   const renderOrdersTab = () => (
     <div className="space-y-6">
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-        <h3 className="text-lg font-bold text-black mb-6">შეკვეთების ისტორია</h3>
+        <h3 className="text-[18px] font-bold text-black mb-6">შეკვეთების ისტორია</h3>
 
         {loadingOrders ? (
           <div className="text-center py-12">
             <div className="w-12 h-12 border-4 border-gray-300 border-t-[#1B3729] rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-black">იტვირთება...</p>
+            <p className="text-[16px] text-black">იტვირთება...</p>
           </div>
         ) : orders.length === 0 ? (
           <div className="text-center py-8">
             <ShoppingCart className="w-12 h-12 text-black mx-auto mb-4" />
-            <p className="text-black">ჯერ არ გაქვთ შეკვეთები</p>
+            <p className="text-[16px] text-black">ჯერ არ გაქვთ შეკვეთები</p>
             <Link
               href="/shop"
               className="inline-block mt-4 px-6 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
@@ -605,7 +612,7 @@ const AccountPage = () => {
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <h4 className="font-semibold text-black">შეკვეთა #{order.id}</h4>
-                    <p className="text-sm text-black">{new Date(order.createdAt).toLocaleDateString('ka-GE')}</p>
+                    <p className="text-[16px] text-black">{new Date(order.createdAt).toLocaleDateString('ka-GE')}</p>
                   </div>
                   <div className="text-right">
                     <p className="font-bold text-black">₾{order.total}</p>
@@ -620,7 +627,7 @@ const AccountPage = () => {
 
                 <div className="space-y-2">
                   {order.items?.map((item: { productName: string; size: string; price: number }, index: number) => (
-                    <div key={index} className="flex items-center justify-between text-sm">
+                    <div key={index} className="flex items-center justify-between text-[16px]">
                       <span className="text-black">{item.productName} ({item.size})</span>
                       <span className="font-medium">₾{item.price}</span>
                     </div>
@@ -628,7 +635,7 @@ const AccountPage = () => {
                 </div>
 
                 <div className="mt-4 pt-4 border-t border-black">
-                  <button className="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                  <button className="text-[16px] cursor-pointer text-blue-600 hover:text-blue-800 font-medium">
                     დეტალების ნახვა
                   </button>
                 </div>
@@ -1018,54 +1025,54 @@ function ProfileSettingsForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-5">
-      {error && <div className="p-3 rounded bg-red-50 text-red-800 text-sm">{error}</div>}
-      {success && <div className="p-3 rounded bg-green-50 text-green-800 text-sm">{success}</div>}
+      {error && <div className="p-3 rounded bg-red-50 text-red-800 text-[16px]">{error}</div>}
+      {success && <div className="p-3 rounded bg-green-50 text-green-800 text-[16px]">{success}</div>}
 
       <div>
-        <label className="block text-sm font-medium text-black mb-2">სურათი</label>
+        <label className="block text-[16px] font-medium text-black mb-2">სურათი</label>
         <ImageUpload value={form.image ? [form.image] : []} onChange={onImageChange} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-black mb-2">სახელი</label>
+          <label className="block text-[16px] font-medium text-black mb-2">სახელი</label>
           <input name="name" value={form.name} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-black mb-2">გვარი</label>
+          <label className="block text-[16px] font-medium text-black mb-2">გვარი</label>
           <input name="lastName" value={form.lastName} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-black mb-2">ელფოსტა</label>
+        <label className="block text-[16px] font-medium text-black mb-2">ელფოსტა</label>
         <input type="email" name="email" value={form.email} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-black mb-2">ტელეფონი</label>
+        <label className="block text-[16px] font-medium text-black mb-2">ტელეფონი</label>
         <input name="phone" value={form.phone} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-black mb-2">ადგილმდებარეობა</label>
+        <label className="block text-[16px] font-medium text-black mb-2">ადგილმდებარეობა</label>
         <input name="location" value={form.location} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-black mb-2">მისამართი</label>
+        <label className="block text-[16px] font-medium text-black mb-2">მისამართი</label>
         <input name="address" value={form.address} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-black mb-2">საფოსტო ინდექსი</label>
+        <label className="block text-[16px] font-medium text-black mb-2">საფოსტო ინდექსი</label>
         <input name="postalIndex" value={form.postalIndex} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-black mb-2">სქესი</label>
+          <label className="block text-[16px] font-medium text-black mb-2">სქესი</label>
           <select name="gender" value={form.gender} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
             <option value="">აირჩიეთ სქესი</option>
             <option value="MALE">კაცი</option>
@@ -1075,13 +1082,13 @@ function ProfileSettingsForm() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-black mb-2">დაბადების თარიღი</label>
+          <label className="block text-[16px] font-medium text-black mb-2">დაბადების თარიღი</label>
           <input type="date" name="dateOfBirth" value={form.dateOfBirth} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-black mb-2">პირადობის ნომერი</label>
+        <label className="block text-[16px] font-medium text-black mb-2">პირადობის ნომერი</label>
         <input name="personalId" value={form.personalId} disabled className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed" />
         <p className="md:text-[18px] text-[16px] text-black mt-1">პირადობის ნომერი არ შეიძლება შეიცვალოს</p>
       </div>

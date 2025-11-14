@@ -31,23 +31,6 @@ interface Rental {
   variant?: RentalVariant
 }
 
-interface RentalOrder {
-  id: number
-  orderId: number
-  orderStatus: string
-  customerName: string
-  customerPhone?: string
-  customerEmail?: string
-  user?: RentalUser
-  size?: string
-  startDate: string
-  endDate: string
-  durationDays: number
-  price: number
-  deposit?: number
-  orderCreatedAt: string
-}
-
 interface ProductData {
   product: Product & {
     updatedAt: string
@@ -64,7 +47,6 @@ interface ProductData {
     total: number
     activeCount: number
   }
-  rentalOrders: RentalOrder[]
 }
 
 const UserProductBySKUPage = () => {
@@ -182,7 +164,7 @@ const UserProductBySKUPage = () => {
                 placeholder="შეიყვანე კოდი (მაგ. 1234567890123456)"
                 value={sku}
                 onChange={(e) => setSku(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent font-mono"
+                className="w-full pl-10 pr-4  py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent font-mono"
               />
             </div>
             <button
@@ -231,7 +213,7 @@ const UserProductBySKUPage = () => {
                     <div>
                       <h2 className="text-2xl font-bold text-gray-900 mb-2">{productData.product.name}</h2>
                       <div className="mb-2">
-                        <span className="text-sm font-mono text-black bg-gray-100 px-3 py-1 rounded">
+                        <span className="md:text-[18px] text-[16px] font-mono text-black bg-gray-100 px-3 py-1 rounded">
                           კოდი: {productData.product.sku}
                         </span>
                       </div>
@@ -248,26 +230,26 @@ const UserProductBySKUPage = () => {
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                     <div>
-                      <p className="text-sm text-gray-500">კატეგორია</p>
+                      <p className="md:text-[18px] text-[16px] text-gray-500">კატეგორია</p>
                       <p className="font-semibold">{productData.product.category?.name || 'არ არის'}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">გენდერი</p>
+                      <p className="md:text-[18px] text-[16px] text-gray-500">გენდერი</p>
                       <p className="font-semibold">{productData.product.gender}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">ფერი</p>
+                      <p className="md:text-[18px] text-[16px] text-gray-500">ფერი</p>
                       <p className="font-semibold">{productData.product.color || 'არ არის'}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">მფლობელი</p>
+                      <p className="md:text-[18px] text-[16px] text-gray-500">მფლობელი</p>
                       <p className="font-semibold">{productData.product.user?.name || 'არ არის'}</p>
                     </div>
                   </div>
 
                   {productData.product.variants && productData.product.variants.length > 0 && (
                     <div className="mt-4">
-                      <p className="text-sm font-semibold text-black mb-2">ზომები და ფასები:</p>
+                      <p className="md:text-[18px] text-[16px] font-semibold text-black mb-2">ზომები და ფასები:</p>
                       <div className="flex flex-wrap gap-2">
                         {productData.product.variants.map((variant: ProductVariant) => (
                           <div key={variant.id} className="bg-gray-50 px-3 py-2 rounded border">
@@ -285,17 +267,17 @@ const UserProductBySKUPage = () => {
             {/* Maintenance Information */}
             {productData.product.status === 'MAINTENANCE' && (
               <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-6 shadow-sm">
-                <h3 className="text-xl font-bold text-red-900 mb-4 flex items-center">
+                <h3 className="md:text-[18px] text-[16px] font-bold text-red-900 mb-4 flex items-center">
                   რესტავრაციის ინფორმაცია
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="bg-white p-4 rounded-lg border border-red-200">
-                    <p className="text-sm text-black mb-1">რესტავრაციაზე გადასვლის თარიღი</p>
+                    <p className="md:text-[18px] text-[16px] text-black mb-1">რესტავრაციაზე გადასვლის თარიღი</p>
                     <p className="font-semibold text-gray-900">{formatDate(productData.product.updatedAt)}</p>
                   </div>
                 </div>
                 <div className="mt-4 bg-white p-4 rounded-lg border border-red-200">
-                  <p className="text-sm text-black mb-2">შენიშვნა:</p>
+                  <p className="md:text-[18px] text-[16px] text-black mb-2">შენიშვნა:</p>
                   <p className="text-gray-800">
                     ეს პროდუქტი ამჟამად რესტავრაციაზეა . 
                     პროდუქტი არ არის ხელმისაწვდომი გაქირავებისთვის ან გაყიდვისთვის სანამ 
@@ -307,21 +289,21 @@ const UserProductBySKUPage = () => {
 
             {/* Rental Statistics */}
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+              <h3 className="md:text-[18px] text-[16px] font-bold text-gray-900 mb-4 flex items-center">
                 <Clock className="w-5 h-5 mr-2" />
                 გაქირავების სტატისტიკა
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-blue-50 p-4 rounded-lg">
-                  <p className="text-sm text-black">სულ გაქირავებები</p>
+                  <p className="md:text-[18px] text-[16px] text-black">სულ გაქირავებები</p>
                   <p className="text-2xl font-bold text-blue-700">{productData.rentals.total}</p>
                 </div>
                 <div className="bg-orange-50 p-4 rounded-lg">
-                  <p className="text-sm text-black">აქტიური გაქირავებები</p>
+                  <p className="md:text-[18px] text-[16px] text-black">აქტიური გაქირავებები</p>
                   <p className="text-2xl font-bold text-orange-700">{productData.rentals.activeCount}</p>
                 </div>
                 <div className="bg-green-50 p-4 rounded-lg">
-                  <p className="text-sm text-black">დასრულებული</p>
+                  <p className="md:text-[18px] text-[16px] text-black">დასრულებული</p>
                   <p className="text-2xl font-bold text-green-700">
                     {productData.rentals.total - productData.rentals.activeCount}
                   </p>
@@ -343,12 +325,12 @@ const UserProductBySKUPage = () => {
                         <div className="flex-1">
                           <div className="flex items-center space-x-3 mb-2">
                             <div className={`px-3 py-1 rounded ${getRentalStatusLabel(rental.status).bgColor}`}>
-                              <span className={`text-sm font-semibold ${getRentalStatusLabel(rental.status).color}`}>
+                              <span className={`md:text-[18px] text-[16px] font-semibold ${getRentalStatusLabel(rental.status).color}`}>
                                 {getRentalStatusLabel(rental.status).label}
                               </span>
                             </div>
                             {rental.variant && (
-                              <span className="text-sm text-black">ზომა: {rental.variant.size}</span>
+                              <span className="md:text-[18px] text-[16px] text-black">ზომა: {rental.variant.size}</span>
                             )}
                           </div>
                           {rental.user && (
@@ -356,28 +338,28 @@ const UserProductBySKUPage = () => {
                               <User className="w-4 h-4 text-gray-400" />
                               <span className="font-semibold">{rental.user.name || 'არ არის'}</span>
                               {rental.user.email && (
-                                <span className="text-sm text-black">({rental.user.email})</span>
+                                <span className="md:text-[18px] text-[16px] text-black">({rental.user.email})</span>
                               )}
                               {rental.user.phone && (
-                                <span className="text-sm text-black">- {rental.user.phone}</span>
+                                <span className="md:text-[18px] text-[16px] text-black">- {rental.user.phone}</span>
                               )}
                             </div>
                           )}
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:text-[18px] text-[16px]">
                             <div>
-                              <p className="text-gray-500">დაწყების თარიღი</p>
+                              <p className="md:text-[18px] text-[16px] text-black">დაწყების თარიღი</p>
                               <p className="font-semibold">{formatDate(rental.startDate)}</p>
                             </div>
                             <div>
-                              <p className="text-gray-500">დასრულების თარიღი</p>
+                              <p className="md:text-[18px] text-[16px] text-black">დასრულების თარიღი</p>
                               <p className="font-semibold">{formatDate(rental.endDate)}</p>
                             </div>
                             <div>
-                              <p className="text-gray-500">ხანგრძლივობა</p>
+                              <p className="md:text-[18px] text-[16px] text-black">ხანგრძლივობა</p>
                               <p className="font-semibold">{rental.durationDays} დღე</p>
                             </div>
                             <div>
-                              <p className="text-gray-500">ფასი</p>
+                              <p className="md:text-[18px] text-[16px] text-black">ფასი</p>
                               <p className="font-semibold flex items-center">
                                 <DollarSign className="w-4 h-4 mr-1" />
                                 ₾{rental.totalPrice}
@@ -395,7 +377,7 @@ const UserProductBySKUPage = () => {
             {/* All Rentals History */}
             {productData.rentals.all && productData.rentals.all.length > 0 && (
               <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                <h3 className="text-xl font-bold text-gray-900 mb-4">გაქირავების ისტორია</h3>
+                <h3 className="md:text-[18px] text-[16px] font-bold text-black mb-4">გაქირავების ისტორია</h3>
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
@@ -417,11 +399,11 @@ const UserProductBySKUPage = () => {
                               <div>
                                 <p className="font-semibold">{rental.user.name || 'არ არის'}</p>
                                 {rental.user.email && (
-                                  <p className="text-sm text-black">{rental.user.email}</p>
+                                  <p className="text-[16px] text-black">{rental.user.email}</p>
                                 )}
                               </div>
                             ) : (
-                              <span className="text-gray-400">არ არის</span>
+                              <span className="text-[16px] text-black">არ არის</span>
                             )}
                           </td>
                           <td className="py-2 px-4">{rental.variant?.size || 'არ არის'}</td>
@@ -442,50 +424,7 @@ const UserProductBySKUPage = () => {
               </div>
             )}
 
-            {/* Rental Orders */}
-            {productData.rentalOrders && productData.rentalOrders.length > 0 && (
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                <h3 className="text-xl font-bold text-gray-900 mb-4">გაქირავების შეკვეთები</h3>
-                <div className="space-y-4">
-                  {productData.rentalOrders.map((order: RentalOrder) => (
-                    <div key={order.id} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <p className="font-semibold">შეკვეთა #{order.orderId}</p>
-                          <p className="text-sm text-black">სტატუსი: {order.orderStatus}</p>
-                        </div>
-                        <span className="text-sm text-gray-500">{formatDate(order.orderCreatedAt)}</span>
-                      </div>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div>
-                          <p className="text-gray-500">მომხმარებელი</p>
-                          <p className="font-semibold">{order.customerName}</p>
-                          {order.customerPhone && <p className="text-black">{order.customerPhone}</p>}
-                        </div>
-                        <div>
-                          <p className="text-gray-500">ზომა</p>
-                          <p className="font-semibold">{order.size || 'არ არის'}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500">პერიოდი</p>
-                          <p className="font-semibold">
-                            {formatDate(order.startDate)} - {formatDate(order.endDate)}
-                          </p>
-                          <p className="text-black">{order.durationDays} დღე</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500">ფასი</p>
-                          <p className="font-semibold">₾{order.price}</p>
-                          {order.deposit && <p className="text-black">გირაო: ₾{order.deposit}</p>}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {productData.rentals.total === 0 && (!productData.rentalOrders || productData.rentalOrders.length === 0) && (
+            {productData.rentals.total === 0 && (
               <div className="bg-gray-50 rounded-lg p-8 text-center">
                 <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <p className="text-black">ეს პროდუქტი არასოდეს გაქირავებულა</p>
