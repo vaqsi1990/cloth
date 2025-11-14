@@ -191,26 +191,26 @@ const OrderConfirmationContent = () => {
                                 
                                 <div className="space-y-3">
                                     <div>
-                                        <span className="text-gray-600 text-sm">სახელი:</span>
+                                        <span className="text-black text-sm">სახელი:</span>
                                         <p className="text-black font-medium">{order.customerName}</p>
                                     </div>
                                     {order.email && (
                                         <div>
-                                            <span className="text-gray-600 text-sm">ელ. ფოსტა:</span>
+                                            <span className="text-black text-sm">ელ. ფოსტა:</span>
                                             <p className="text-black font-medium">{order.email}</p>
                                         </div>
                                     )}
                                     <div>
-                                        <span className="text-gray-600 text-sm">ტელეფონი:</span>
+                                        <span className="text-black text-sm">ტელეფონი:</span>
                                         <p className="text-black font-medium">{order.phone}</p>
                                     </div>
                                     <div>
-                                        <span className="text-gray-600 text-sm">მისამართი:</span>
+                                        <span className="text-black text-sm">მისამართი:</span>
                                         <p className="text-black font-medium">{order.address}</p>
                                     </div>
                                     {order.city && (
                                         <div>
-                                            <span className="text-gray-600 text-sm">ქალაქი:</span>
+                                            <span className="text-black text-sm">ქალაქი:</span>
                                             <p className="text-black font-medium">{order.city}</p>
                                         </div>
                                     )}
@@ -265,7 +265,7 @@ const OrderConfirmationContent = () => {
                                             </div>
                                             
                                             <div className="text-center">
-                                                <span className="text-sm text-gray-600">რაოდენობა:</span>
+                                                <span className="text-sm text-black">რაოდენობა:</span>
                                                 <div className="font-medium text-black">{item.quantity}</div>
                                             </div>
                                         </div>

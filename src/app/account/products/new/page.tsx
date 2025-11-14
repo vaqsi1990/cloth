@@ -416,7 +416,7 @@ const NewProductPage = () => {
           <div className="flex items-center space-x-4">
             <Link
               href="/account"
-              className="flex items-center text-[20px] text-black hover:text-gray-600"
+              className="flex items-center text-[20px] text-black hover:text-black"
             >
               <ArrowLeft className="w-5 h-5 mr-2" />
               დაბრუნება

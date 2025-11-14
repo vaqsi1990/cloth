@@ -369,7 +369,7 @@ const EditProductPage = () => {
           <h1 className="text-2xl font-bold text-black mb-4">პროდუქტი ვერ მოიძებნა</h1>
           <button 
             onClick={() => router.push('/account')}
-            className="text-black hover:text-gray-600"
+            className="text-black hover:text-black"
           >
             დაბრუნდი ანგარიშში
           </button>

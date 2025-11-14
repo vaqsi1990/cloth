@@ -27,26 +27,26 @@ const PaymentFailPage = () => {
                         
                         <div className="space-y-3">
                             <div className="flex items-start space-x-3">
-                                <CreditCard className="w-5 h-5 text-gray-600 mt-0.5 flex-shrink-0" />
+                                <CreditCard className="w-5 h-5 text-black mt-0.5 flex-shrink-0" />
                                 <div>
                                     <p className="text-black font-medium">ბარათის ინფორმაცია</p>
-                                    <p className="text-gray-600 text-sm">შეამოწმეთ, რომ ბარათის ნომერი, CVV და ვადის გასვლის თარიღი სწორია</p>
+                                    <p className="text-black text-sm">შეამოწმეთ, რომ ბარათის ნომერი, CVV და ვადის გასვლის თარიღი სწორია</p>
                                 </div>
                             </div>
                             
                             <div className="flex items-start space-x-3">
-                                <CreditCard className="w-5 h-5 text-gray-600 mt-0.5 flex-shrink-0" />
+                                <CreditCard className="w-5 h-5 text-black mt-0.5 flex-shrink-0" />
                                 <div>
                                     <p className="text-black font-medium">ბარათის ბალანსი</p>
-                                    <p className="text-gray-600 text-sm">დარწმუნდით, რომ ბარათზე საკმარისი თანხაა</p>
+                                    <p className="text-black text-sm">დარწმუნდით, რომ ბარათზე საკმარისი თანხაა</p>
                                 </div>
                             </div>
                             
                             <div className="flex items-start space-x-3">
-                                <CreditCard className="w-5 h-5 text-gray-600 mt-0.5 flex-shrink-0" />
+                                <CreditCard className="w-5 h-5 text-black mt-0.5 flex-shrink-0" />
                                 <div>
                                     <p className="text-black font-medium">ბანკის შეზღუდვები</p>
-                                    <p className="text-gray-600 text-sm">თქვენმა ბანკმა შეიძლება უარყო ტრანზაქცია უსაფრთხოების მიზნით</p>
+                                    <p className="text-black text-sm">თქვენმა ბანკმა შეიძლება უარყო ტრანზაქცია უსაფრთხოების მიზნით</p>
                                 </div>
                             </div>
                         </div>

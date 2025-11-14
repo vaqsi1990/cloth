@@ -133,7 +133,7 @@ const AdminProductBySKUPage = () => {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
-          <p className="text-gray-600 mb-6">You don&apos;t have permission to access this page.</p>
+          <p className="text-black mb-6">You don&apos;t have permission to access this page.</p>
           <Link href="/" className="px-6 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide transition-colors">
             Go Home
           </Link>
@@ -150,7 +150,7 @@ const AdminProductBySKUPage = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">პროდუქტის ძიება კოდის მიხედვით</h1>
-              <p className="text-gray-600 mt-1">მოძებნე პროდუქტი და ნახე დეტალური ინფორმაცია</p>
+              <p className="text-black mt-1">მოძებნე პროდუქტი და ნახე დეტალური ინფორმაცია</p>
             </div>
             <div className="flex items-center space-x-4">
               <Link
@@ -231,12 +231,12 @@ const AdminProductBySKUPage = () => {
                     <div>
                       <h2 className="text-2xl font-bold text-gray-900 mb-2">{productData.product.name}</h2>
                       <div className="mb-2">
-                        <span className="text-sm font-mono text-gray-600 bg-gray-100 px-3 py-1 rounded">
+                        <span className="text-sm font-mono text-black bg-gray-100 px-3 py-1 rounded">
                           კოდი: {productData.product.sku}
                         </span>
                       </div>
                       {productData.product.description && (
-                        <p className="text-gray-600 mb-4">{productData.product.description}</p>
+                        <p className="text-black mb-4">{productData.product.description}</p>
                       )}
                     </div>
                     <div className={`px-4 py-2 rounded-lg ${getStatusLabel(productData.product.status).bgColor}`}>
@@ -291,13 +291,13 @@ const AdminProductBySKUPage = () => {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="bg-white p-4 rounded-lg border border-red-200">
-                    <p className="text-sm text-gray-600 mb-1">რესტავრაციაზე გადასვლის თარიღი</p>
+                    <p className="text-sm text-black mb-1">რესტავრაციაზე გადასვლის თარიღი</p>
                     <p className="font-semibold text-gray-900">{formatDate(productData.product.updatedAt)}</p>
                   </div>
                  
                 </div>
                 <div className="mt-4 bg-white p-4 rounded-lg border border-red-200">
-                  <p className="text-sm text-gray-600 mb-2">შენიშვნა:</p>
+                  <p className="text-sm text-black mb-2">შენიშვნა:</p>
                   <p className="text-gray-800">
                     ეს პროდუქტი ამჟამად რესტავრაციაზეა . 
                     პროდუქტი არ არის ხელმისაწვდომი გაქირავებისთვის ან გაყიდვისთვის სანამ 
@@ -315,15 +315,15 @@ const AdminProductBySKUPage = () => {
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-blue-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">სულ გაქირავებები</p>
+                  <p className="text-sm text-black">სულ გაქირავებები</p>
                   <p className="text-2xl font-bold text-blue-700">{productData.rentals.total}</p>
                 </div>
                 <div className="bg-orange-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">აქტიური გაქირავებები</p>
+                  <p className="text-sm text-black">აქტიური გაქირავებები</p>
                   <p className="text-2xl font-bold text-orange-700">{productData.rentals.activeCount}</p>
                 </div>
                 <div className="bg-green-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">დასრულებული</p>
+                  <p className="text-sm text-black">დასრულებული</p>
                   <p className="text-2xl font-bold text-green-700">
                     {productData.rentals.total - productData.rentals.activeCount}
                   </p>
@@ -350,7 +350,7 @@ const AdminProductBySKUPage = () => {
                               </span>
                             </div>
                             {rental.variant && (
-                              <span className="text-sm text-gray-600">ზომა: {rental.variant.size}</span>
+                              <span className="text-sm text-black">ზომა: {rental.variant.size}</span>
                             )}
                           </div>
                           {rental.user && (
@@ -358,10 +358,10 @@ const AdminProductBySKUPage = () => {
                               <User className="w-4 h-4 text-gray-400" />
                               <span className="font-semibold">{rental.user.name || 'არ არის'}</span>
                               {rental.user.email && (
-                                <span className="text-sm text-gray-600">({rental.user.email})</span>
+                                <span className="text-sm text-black">({rental.user.email})</span>
                               )}
                               {rental.user.phone && (
-                                <span className="text-sm text-gray-600">- {rental.user.phone}</span>
+                                <span className="text-sm text-black">- {rental.user.phone}</span>
                               )}
                             </div>
                           )}
@@ -419,7 +419,7 @@ const AdminProductBySKUPage = () => {
                               <div>
                                 <p className="font-semibold">{rental.user.name || 'არ არის'}</p>
                                 {rental.user.email && (
-                                  <p className="text-sm text-gray-600">{rental.user.email}</p>
+                                  <p className="text-sm text-black">{rental.user.email}</p>
                                 )}
                               </div>
                             ) : (
@@ -454,7 +454,7 @@ const AdminProductBySKUPage = () => {
                       <div className="flex items-start justify-between mb-3">
                         <div>
                           <p className="font-semibold">შეკვეთა #{order.orderId}</p>
-                          <p className="text-sm text-gray-600">სტატუსი: {order.orderStatus}</p>
+                          <p className="text-sm text-black">სტატუსი: {order.orderStatus}</p>
                         </div>
                         <span className="text-sm text-gray-500">{formatDate(order.orderCreatedAt)}</span>
                       </div>
@@ -462,7 +462,7 @@ const AdminProductBySKUPage = () => {
                         <div>
                           <p className="text-gray-500">მომხმარებელი</p>
                           <p className="font-semibold">{order.customerName}</p>
-                          {order.customerPhone && <p className="text-gray-600">{order.customerPhone}</p>}
+                          {order.customerPhone && <p className="text-black">{order.customerPhone}</p>}
                         </div>
                         <div>
                           <p className="text-gray-500">ზომა</p>
@@ -473,12 +473,12 @@ const AdminProductBySKUPage = () => {
                           <p className="font-semibold">
                             {formatDate(order.startDate)} - {formatDate(order.endDate)}
                           </p>
-                          <p className="text-gray-600">{order.durationDays} დღე</p>
+                          <p className="text-black">{order.durationDays} დღე</p>
                         </div>
                         <div>
                           <p className="text-gray-500">ფასი</p>
                           <p className="font-semibold">₾{order.price}</p>
-                          {order.deposit && <p className="text-gray-600">გირაო: ₾{order.deposit}</p>}
+                          {order.deposit && <p className="text-black">გირაო: ₾{order.deposit}</p>}
                         </div>
                       </div>
                     </div>
@@ -490,7 +490,7 @@ const AdminProductBySKUPage = () => {
             {productData.rentals.total === 0 && (!productData.rentalOrders || productData.rentalOrders.length === 0) && (
               <div className="bg-gray-50 rounded-lg p-8 text-center">
                 <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">ეს პროდუქტი არასოდეს გაქირავებულა</p>
+                <p className="text-black">ეს პროდუქტი არასოდეს გაქირავებულა</p>
               </div>
             )}
           </div>

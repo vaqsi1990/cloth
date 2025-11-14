@@ -299,7 +299,7 @@ const GooglePayButton: React.FC<GooglePayButtonProps> = ({
     return (
       <div className="w-full flex items-center justify-center py-4 min-h-[60px]">
         <div className="w-6 h-6 border-2 border-gray-300 border-t-black rounded-full animate-spin"></div>
-        <span className="ml-3 text-sm text-gray-600">Google Pay იტვირთება...</span>
+        <span className="ml-3 text-sm text-black">Google Pay იტვირთება...</span>
       </div>
     )
   }
@@ -327,7 +327,7 @@ const GooglePayButton: React.FC<GooglePayButtonProps> = ({
   if (!isReady) {
     return (
       <div className="w-full p-4 bg-gray-50 border border-gray-200 rounded-lg min-h-[60px]">
-        <p className="text-sm text-gray-600">Google Pay არ არის ხელმისაწვდომი</p>
+        <p className="text-sm text-black">Google Pay არ არის ხელმისაწვდომი</p>
         <button
           type="button"
           onClick={() => {

@@ -50,7 +50,7 @@ const ImageUpload = ({ onChange, value }: ImageUploadProps): React.JSX.Element =
               disabled={isUploading}
             />
             {isUploading && (
-              <p className="text-sm text-gray-600 mt-2">სურათები იტვირთება...</p>
+              <p className="text-sm text-black mt-2">სურათები იტვირთება...</p>
             )}
           </div>
         ) : (

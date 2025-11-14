@@ -645,7 +645,7 @@ const ProductPage = () => {
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
                     <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                    <p className="text-gray-600">იტვირთება...</p>
+                    <p className="text-black">იტვირთება...</p>
                 </div>
             </div>
         )
@@ -739,7 +739,7 @@ const ProductPage = () => {
                                                 className="object-cover"
                                             />
                                         ) : (
-                                            <div className="w-full h-full flex items-center justify-center bg-gray-300 text-gray-600 font-semibold">
+                                            <div className="w-full h-full flex items-center justify-center bg-gray-300 text-black font-semibold">
                                                 {product.user?.name ? product.user.name.charAt(0).toUpperCase() : "?"}
                                             </div>
                                         )}
@@ -750,24 +750,24 @@ const ProductPage = () => {
                                                 href={`/author/${product.user.id}`}
                                                 className="hover:opacity-80 transition-opacity"
                                             >
-                                                <h3 className="md:text-[18px] text-[16px] font-semibold text-gray-900 hover:text-underline transition-colors">
+                                                <h3 className="md:text-[18px] text-[16px] font-semibold text-black hover:text-underline transition-colors">
                                                     {product.user.name || "უცნობი ავტორი"}
                                                 </h3>
                                             </Link>
                                         ) : (
-                                            <h3 className="md:text-[18px] text-[16px] font-semibold text-gray-900">
+                                            <h3 className="md:text-[20px] text-[18px] font-semibold text-black">
                                                 უცნობი ავტორი
                                             </h3>
                                         )}
-                                        <p className="text-sm text-gray-600">პროდუქტის ავტორი</p>
+                                        <p className="md:text-[20px] text-[18px] text-black">პროდუქტის ავტორი</p>
                                     </div>
                                 </div>
                             </div>
                             {/* Title */}
                             <div className="bg-white  p-6 s">
-                                <h1 className="text-3xl font-bold text-gray-900">{product.name}</h1>
+                                <h1 className="text-3xl font-bold text-black md:text-[20px] text-[18px]">{product.name}</h1>
                                 {product.description && (
-                                    <p className="text-gray-700 mt-2 leading-relaxed">{product.description}</p>
+                                    <p className="text-black md:text-[18px] text-[16px] mt-2 leading-relaxed">{product.description}</p>
                                 )}
                             </div>
 
@@ -778,9 +778,9 @@ const ProductPage = () => {
                                         {/* 4+ days */}
                                         {tiers[0] && (
                                             <div className="border border-gray-200 rounded-xl p-4">
-                                                <p className="text-sm text-gray-600">{tiers[0].minDays} + დღე</p>
-                                                <p className="text-[16px] font-bold text-gray-900">₾{tiers[0].pricePerDay.toFixed(2)}/დღე</p>
-                                                <p className="text-sm text-gray-500 mt-1">ჯამი: ₾{fromAmount(tiers[0]).toFixed(2)}</p>
+                                                <p className="text-[16px] text-black">{tiers[0].minDays} + დღე</p>
+                                                <p className="text-[16px] font-bold text-black">₾{tiers[0].pricePerDay.toFixed(2)}/დღე</p>
+                                                <p className="md:text-[18px] text-[16px] text-black mt-1">ჯამი: ₾{fromAmount(tiers[0]).toFixed(2)}</p>
                                             </div>
                                         )}
 
@@ -790,8 +790,8 @@ const ProductPage = () => {
                                                 <span className="absolute -top-2 right-0 bg-emerald-100 text-emerald-800 text-xs font-semibold px-2 py-1 rounded">
                                                     რეკომენდირებული
                                                 </span>
-                                                <p className="text-sm text-gray-600">{tiers[1].minDays} + დღე</p>
-                                                <p className="text-[16px] font-bold text-gray-900">₾{tiers[1].pricePerDay.toFixed(2)}/დღე</p>
+                                                <p className="text-[16px] text-black">{tiers[1].minDays} + დღე</p>
+                                                <p className="text-[16px] font-bold text-black">₾{tiers[1].pricePerDay.toFixed(2)}/დღე</p>
                                                 <p className="text-sm text-emerald-700 mt-1 font-medium">ჯამი: ₾{fromAmount(tiers[1]).toFixed(2)}</p>
                                             </div>
                                         )}
@@ -799,9 +799,9 @@ const ProductPage = () => {
                                         {/* 28+ days */}
                                         {tiers[2] && (
                                             <div className="border border-gray-200 rounded-xl p-4">
-                                                <p className="text-sm text-gray-600">{tiers[2].minDays} + დღე</p>
-                                                <p className="text-[16px] font-bold text-gray-900">₾{tiers[2].pricePerDay.toFixed(2)}/დღე</p>
-                                                <p className="text-sm text-gray-500 mt-1">ჯამი: ₾{fromAmount(tiers[2]).toFixed(2)}</p>
+                                                <p className="text-[16px] text-black">{tiers[2].minDays} + დღე</p>
+                                                <p className="text-[16px] font-bold text-black">₾{tiers[2].pricePerDay.toFixed(2)}/დღე</p>
+                                                <p className="text-[16px] text-black mt-1">ჯამი: ₾{fromAmount(tiers[2]).toFixed(2)}</p>
                                             </div>
                                         )}
                                     </div>
@@ -838,7 +838,7 @@ const ProductPage = () => {
                                             <button
                                                 onClick={() => setPurchaseMode("buy")}
                                                 disabled={product.status === 'RENTED'}
-                                                className={`p-4 rounded-xl border-2 flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed ${purchaseMode === "buy"
+                                                className={`p-4 rounded-xl border-2 flex md:text-[18px] text-[16px] items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed ${purchaseMode === "buy"
                                                     ? "border-[#1B3729] bg-[#1B3729] text-white"
                                                     : "border-gray-300"
                                                     }`}
@@ -850,7 +850,7 @@ const ProductPage = () => {
                                         {product.isRentable && (product.status === 'AVAILABLE' || product.status === 'RENTED' || product.status === 'RESERVED' || product.status === undefined) && (
                                             <button
                                                 onClick={() => setPurchaseMode("rent")}
-                                                className={`p-4 rounded-xl border-2 flex items-center justify-center gap-2 transition ${purchaseMode === "rent"
+                                                className={`p-4 rounded-xl border-2 flex md:text-[18px] text-[16px] items-center justify-center gap-2 transition ${purchaseMode === "rent"
                                                     ? "border-emerald-400 bg-emerald-100 text-black"
                                                     : "border-gray-300"
                                                     }`}
@@ -866,7 +866,7 @@ const ProductPage = () => {
                                     <div className="space-y-3 p-4 bg-emerald-50 rounded-xl border border-emerald-200">
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
-                                                <label className="block text-[16px] font-medium mb-1">დაწყება</label>
+                                                <label className="block md:text-[18px] text-[16px] font-medium mb-1">დაწყება</label>
                                                 <DatePicker
                                                     selected={rentalStartDate ? new Date(rentalStartDate) : null}
                                                     onChange={(date: Date | null) => {
@@ -889,7 +889,7 @@ const ProductPage = () => {
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-[16px] font-medium mb-1">დასრულება</label>
+                                                <label className="block md:text-[18px] text-[16px] font-medium mb-1">დასრულება</label>
 
                                                 <DatePicker
                                                     selected={rentalEndDate ? new Date(rentalEndDate) : null}
@@ -1094,8 +1094,8 @@ const ProductPage = () => {
                                     <div key={idx} className="flex items-center">
                                         <i.icon className="w-5 h-5 mr-3 text-black" />
                                         <div>
-                                            <div className="font-medium text-black">{i.title}</div>
-                                            <div className="text-sm text-gray-700">{i.desc}</div>
+                                            <div className="md:text-[18px] text-[16px] font-medium text-black">{i.title}</div>
+                                            <div className="md:text-[18px] text-[16px] text-black">{i.desc}</div>
                                         </div>
                                     </div>
                                 ))}
@@ -1112,9 +1112,9 @@ const ProductPage = () => {
                         {/* Average Rating */}
                         <div className="flex items-center gap-4 mb-6 pb-6 border-b">
                             <div className="text-center">
-                                <div className="text-4xl font-bold text-black">{averageRating.toFixed(1)}</div>
+                                <div className="text-3xl font-bold text-black">{averageRating.toFixed(1)}</div>
                                 <StarRating rating={Math.round(averageRating)} readonly size="lg" />
-                                <div className="text-sm text-gray-600 mt-1">{totalReviews} კომენტარი</div>
+                                <div className="md:text-[18px] text-[16px] text-black mt-1">{totalReviews} კომენტარი</div>
                             </div>
                         </div>
 
@@ -1125,7 +1125,7 @@ const ProductPage = () => {
                                     <h3 className="text-lg font-semibold text-black mb-4">დაწერეთ კომენტარი</h3>
                                     <div className="space-y-4">
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            <label className="block text-black md:text-[18px] text-[16px] font-medium text-black mb-2">
                                                 რეიტინგი *
                                             </label>
                                             <StarRating
@@ -1138,14 +1138,14 @@ const ProductPage = () => {
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            <label className="block text-black md:text-[18px] text-[16px] font-medium text-black mb-2">
                                                 კომენტარი
                                             </label>
                                             <textarea
                                                 value={reviewComment}
                                                 onChange={(e) => setReviewComment(e.target.value)}
                                                 placeholder="დაწერეთ თქვენი კომენტარი..."
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                                                className="w-full px-4 py-3 border border-black rounded-lg "
                                                 rows={4}
                                             />
                                         </div>
@@ -1161,7 +1161,7 @@ const ProductPage = () => {
                             ) : (
                                 <div className="mb-8 pb-8 border-b">
                                     <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                                        <p className="text-yellow-800 text-sm">
+                                        <p className="text-yellow-800 md:text-[18px] text-[16px]">
                                             კომენტარის დაწერა შეგიძლიათ მხოლოდ იმ პროდუქტებზე, რომლებიც იქირავეთ.
                                         </p>
                                     </div>
@@ -1170,7 +1170,7 @@ const ProductPage = () => {
                         ) : (
                             <div className="mb-8 pb-8 border-b">
                                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                                    <p className="text-gray-700 text-sm">
+                                    <p className="text-black md:text-[18px] text-[16px]">
                                         კომენტარის დასაწერად გთხოვთ{' '}
                                         <Link href="/auth/signin" className="text-[#1B3729] font-semibold underline">
                                             შეხვიდეთ სისტემაში
@@ -1184,12 +1184,12 @@ const ProductPage = () => {
                         {/* Reviews List */}
                         {loadingReviews ? (
                             <div className="text-center py-8">
-                                <div className="w-8 h-8 border-4 border-gray-300 border-t-black rounded-full animate-spin mx-auto"></div>
-                                <p className="text-gray-600 mt-2">იტვირთება...</p>
+                                <div className="w-8 h-8 border-4 border-black border-t-black rounded-full animate-spin mx-auto"></div>
+                                <p className="text-black mt-2">იტვირთება...</p>
                             </div>
                         ) : reviews.length === 0 ? (
                             <div className="text-center py-8">
-                                <p className="text-gray-600">ჯერ არ არის კომენტარები</p>
+                                <p className="text-black md:text-[18px] text-[16px]">ჯერ არ არის კომენტარები</p>
                             </div>
                         ) : (
                             <div className="space-y-6">
@@ -1213,7 +1213,7 @@ const ProductPage = () => {
                                                                 className="w-full h-full object-cover"
                                                             />
                                                         ) : (
-                                                            <span className="text-gray-600 font-semibold">
+                                                            <span className="text-black font-semibold">
                                                                 {review.user.name?.[0]?.toUpperCase() || 'U'}
                                                             </span>
                                                         )}
@@ -1222,7 +1222,7 @@ const ProductPage = () => {
                                                         <div className="font-semibold text-black">
                                                             {review.user.name || 'ანონიმური მომხმარებელი'}
                                                         </div>
-                                                        <div className="text-sm text-gray-500">
+                                                        <div className=" text-black  text-[16px]">
                                                             {new Date(review.createdAt).toLocaleDateString('ka-GE')}
                                                         </div>
                                                     </div>
@@ -1234,20 +1234,20 @@ const ProductPage = () => {
                                                             {isOwnReview && (
                                                                 <button
                                                                     onClick={() => handleEditReview(review)}
-                                                                    className="p-1 text-gray-600 hover:text-[#1B3729] transition-colors"
+                                                                    className="p-1 text-black hover:text-[#1B3729] transition-colors"
                                                                     title="რედაქტირება"
                                                                 >
-                                                                    <Edit className="w-4 h-4" />
+                                                                    <Edit className="w-5 h-5" />
                                                                 </button>
                                                             )}
                                                             {(isOwnReview || isAdmin) && (
                                                                 <button
                                                                     onClick={() => handleDeleteReview(review.id)}
                                                                     disabled={deletingReviewId === review.id}
-                                                                    className="p-1 text-gray-600 hover:text-red-600 transition-colors disabled:opacity-50"
+                                                                    className="p-1 text-black hover:text-red-600 transition-colors disabled:opacity-50"
                                                                     title="წაშლა"
                                                                 >
-                                                                    <Trash2 className="w-4 h-4" />
+                                                                    <Trash2 className="w-5 h-5" />
                                                                 </button>
                                                             )}
                                                         </div>
@@ -1257,7 +1257,7 @@ const ProductPage = () => {
                                             {isEditing ? (
                                                 <div className="mt-4 space-y-4 p-4 bg-gray-50 rounded-lg border">
                                                     <div>
-                                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        <label className="block text-black md:text-[18px] text-[16px] font-medium text-black mb-2">
                                                             რეიტინგი *
                                                         </label>
                                                         <StarRating
@@ -1268,14 +1268,14 @@ const ProductPage = () => {
                                                         />
                                                     </div>
                                                     <div>
-                                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        <label className="block text-black md:text-[18px] text-[16px] font-medium text-black mb-2">
                                                             კომენტარი
                                                         </label>
                                                         <textarea
                                                             value={editingComment}
                                                             onChange={(e) => setEditingComment(e.target.value)}
                                                             placeholder="დაწერეთ თქვენი კომენტარი..."
-                                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                                                            className="w-full px-4 placeholder:text-black md:text-[18px] text-[16px] py-3 border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                                                             rows={4}
                                                         />
                                                     </div>
@@ -1299,7 +1299,7 @@ const ProductPage = () => {
                                             ) : (
                                                 <>
                                                     {review.comment && (
-                                                        <p className="text-gray-700 mt-3">{review.comment}</p>
+                                                        <p className="text-black md:text-[18px] text-[16px] mt-3">{review.comment}</p>
                                                     )}
                                                     
                                                     {/* Admin Reply Section */}
@@ -1312,23 +1312,23 @@ const ProductPage = () => {
                                                                             <span className="text-xs font-semibold text-[#1B3729] bg-[#1B3729]/10 px-2 py-1 rounded">
                                                                                 ადმინისტრატორი
                                                                             </span>
-                                                                            <span className="text-sm text-gray-500">
+                                                                            <span className="text-black md:text-[18px] text-[16px]">
                                                                                 {new Date(review.reply.createdAt).toLocaleDateString('ka-GE')}
                                                                             </span>
                                                                         </div>
                                                                         <button
                                                                             onClick={() => handleDeleteReply(review.id)}
                                                                             disabled={deletingReplyId === review.id}
-                                                                            className="p-1 text-gray-600 hover:text-red-600 transition-colors disabled:opacity-50"
+                                                                            className="p-1 text-black hover:text-red-600 transition-colors disabled:opacity-50"
                                                                             title="პასუხის წაშლა"
                                                                         >
                                                                             <Trash2 className="w-3 h-3" />
                                                                         </button>
                                                                     </div>
-                                                                    <p className="text-gray-700">{review.reply.comment}</p>
+                                                                    <p className="text-black md:text-[18px] text-[16px]">{review.reply.comment}</p>
                                                                     <button
                                                                         onClick={() => handleReplyToReview(review.id, { comment: review.reply!.comment })}
-                                                                        className="mt-2 text-sm text-[#1B3729] hover:underline"
+                                                                        className="mt-2 text-black md:text-[18px] text-[16px] text-[#1B3729] hover:underline"
                                                                     >
                                                                         რედაქტირება
                                                                     </button>
@@ -1336,7 +1336,7 @@ const ProductPage = () => {
                                                             ) : (
                                                                 <button
                                                                     onClick={() => handleReplyToReview(review.id)}
-                                                                    className="mt-2 text-sm text-[#1B3729] hover:underline font-medium"
+                                                                    className="mt-2 text-black md:text-[18px] text-[16px] text-[#1B3729] hover:underline font-medium"
                                                                 >
                                                                     პასუხის გაცემა
                                                                 </button>
@@ -1348,7 +1348,7 @@ const ProductPage = () => {
                                                     {isReplying && (
                                                         <div className="mt-4 ml-6 pl-4 border-l-2 border-[#1B3729] bg-gray-50 rounded-lg p-4">
                                                             <div className="mb-2">
-                                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                                <label className="block text-black md:text-[18px] text-[16px] font-medium text-black mb-2">
                                                                     პასუხი
                                                                 </label>
                                                                 <textarea
@@ -1370,7 +1370,7 @@ const ProductPage = () => {
                                                                 <button
                                                                     onClick={handleCancelReply}
                                                                     disabled={submittingReply}
-                                                                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                    className="px-4 py-2 bg-gray-200 text-black md:text-[18px] text-[16px] rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                                                 >
                                                                     გაუქმება
                                                                 </button>

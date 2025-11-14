@@ -299,7 +299,7 @@ const AdminChatPage = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#1B3729] mx-auto"></div>
-          <p className="mt-4 text-gray-600">იტვირთება...</p>
+          <p className="mt-4 text-black">იტვირთება...</p>
         </div>
       </div>
     )
@@ -309,7 +309,7 @@ const AdminChatPage = () => {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <div className="flex-shrink-0 px-4 sm:px-6 lg:px-8 py-6 bg-white border-b border-gray-200">
         <h1 className="text-3xl font-bold text-gray-900">Live Chat მართვა</h1>
-        <p className="mt-2 text-gray-600">მომხმარებლებთან საუბარი და მხარდაჭერა</p>
+        <p className="mt-2 text-black">მომხმარებლებთან საუბარი და მხარდაჭერა</p>
       </div>
 
       <div className="flex-1 px-4 sm:px-6 lg:px-8 py-6">
@@ -405,7 +405,7 @@ const AdminChatPage = () => {
                       <h3 className="text-lg font-semibold text-gray-900">
                         საუბარი #{selectedChatRoom.id}
                       </h3>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-black">
                         {selectedChatRoom.user?.name || selectedChatRoom.guestName || 'უცნობი მომხმარებელი'}
                       </p>
                     </div>
@@ -463,7 +463,7 @@ const AdminChatPage = () => {
                               {/* Show sender name */}
                               <div className="flex items-center justify-between mb-1">
                                 <p className={`text-xs font-medium ${
-                                  message.isFromAdmin ? 'text-gray-300' : 'text-gray-600'
+                                  message.isFromAdmin ? 'text-gray-300' : 'text-black'
                                 }`}>
                                   {message.isFromAdmin 
                                     ? (message.admin?.name || 'ადმინისტრატორი')
@@ -528,7 +528,7 @@ const AdminChatPage = () => {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               საუბრის წაშლა
             </h3>
-            <p className="text-gray-600 mb-4">
+            <p className="text-black mb-4">
               ნამდვილად გსურთ საუბრის წაშლა? ეს მოქმედება შეუქცევადია.
             </p>
             <p className="text-sm text-gray-500 mb-4">

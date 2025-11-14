@@ -148,7 +148,7 @@ const CartPage = () => {
                                             {/* Rental items show quantity as 1 */}
                                             {item.isRental && (
                                                 <div className="text-center">
-                                                    <span className="text-sm text-gray-600">რაოდენობა:</span>
+                                                    <span className="text-sm text-black">რაოდენობა:</span>
                                                     <div className="font-medium text-black">1</div>
                                                 </div>
                                             )}

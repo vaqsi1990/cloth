@@ -226,7 +226,7 @@ const AdminOrdersPage = () => {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
-          <p className="text-gray-600 mb-6">You don&apos;t have permission to access this page.</p>
+          <p className="text-black mb-6">You don&apos;t have permission to access this page.</p>
           <Link
             href="/"
             className="px-6 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
@@ -247,14 +247,14 @@ const AdminOrdersPage = () => {
             <div className="flex items-center space-x-4">
               <Link
                 href="/admin"
-                className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
+                className="flex items-center space-x-2 text-black hover:text-gray-900 transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
                 <span>ადმინ პანელი</span>
               </Link>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">შეკვეთების მართვა</h1>
-                <p className="text-gray-600 mt-1">მართე ყველა შეკვეთა</p>
+                <p className="text-black mt-1">მართე ყველა შეკვეთა</p>
               </div>
             </div>
           </div>
@@ -307,7 +307,7 @@ const AdminOrdersPage = () => {
           {filteredOrders.length === 0 ? (
             <div className="text-center py-12">
               <ShoppingCart className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 mb-4">
+              <p className="text-black mb-4">
                 {searchTerm || filterStatus !== 'ALL'
                   ? 'ფილტრის შედეგები ვერ მოიძებნა'
                   : 'ჯერ არ არის შეკვეთები'
@@ -322,11 +322,11 @@ const AdminOrdersPage = () => {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-4">
                       <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                        <ShoppingCart className="w-5 h-5 text-gray-600" />
+                        <ShoppingCart className="w-5 h-5 text-black" />
                       </div>
                       <div>
                         <h3 className="font-semibold text-gray-900">შეკვეთა #{order.id}</h3>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-black">
                           {formatDate(order.createdAt)}
                         </p>
                       </div>
@@ -350,9 +350,9 @@ const AdminOrdersPage = () => {
                         title={expandedOrders.has(order.id) ? 'დეტალების დამალვა' : 'დეტალების ჩვენება'}
                       >
                         {expandedOrders.has(order.id) ? (
-                          <ChevronUp className="w-5 h-5 text-gray-600" />
+                          <ChevronUp className="w-5 h-5 text-black" />
                         ) : (
-                          <ChevronDown className="w-5 h-5 text-gray-600" />
+                          <ChevronDown className="w-5 h-5 text-black" />
                         )}
                       </button>
                     </div>
@@ -364,27 +364,27 @@ const AdminOrdersPage = () => {
                       {/* Customer Info */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div className="space-y-2">
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <div className="flex items-center space-x-2 text-sm text-black">
                             <User className="w-4 h-4" />
                             <span>{order.customerName}</span>
                           </div>
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <div className="flex items-center space-x-2 text-sm text-black">
                             <Mail className="w-4 h-4" />
                             <span>{order.email || 'N/A'}</span>
                           </div>
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <div className="flex items-center space-x-2 text-sm text-black">
                             <Phone className="w-4 h-4" />
                             <span>{order.phone}</span>
                           </div>
                         </div>
                         
                         <div className="space-y-2">
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <div className="flex items-center space-x-2 text-sm text-black">
                             <MapPin className="w-4 h-4" />
                             <span>{order.address}</span>
                           </div>
                           {order.user && (
-                            <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <div className="flex items-center space-x-2 text-sm text-black">
                               <User className="w-4 h-4" />
                               <span>რეგისტრირებული მომხმარებელი: {order.user.name}</span>
                             </div>
@@ -399,7 +399,7 @@ const AdminOrdersPage = () => {
                           {order.items.map((item) => (
                             <div key={item.id} className={`flex items-center space-x-3 p-2 rounded-lg ${item.isRental ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50'}`}>
                               <div className={`w-8 h-8 rounded flex items-center justify-center ${item.isRental ? 'bg-blue-200' : 'bg-gray-200'}`}>
-                                <Package className={`w-4 h-4 ${item.isRental ? 'text-blue-600' : 'text-gray-600'}`} />
+                                <Package className={`w-4 h-4 ${item.isRental ? 'text-blue-600' : 'text-black'}`} />
                               </div>
                               <div className="flex-1">
                                 <div className="flex items-center gap-2">
@@ -410,7 +410,7 @@ const AdminOrdersPage = () => {
                                     </span>
                                   )}
                                 </div>
-                                <p className="text-xs text-gray-600">რაოდენობა: {item.quantity}</p>
+                                <p className="text-xs text-black">რაოდენობა: {item.quantity}</p>
                                 {/* Show rental information if it's a rental item */}
                                 {item.isRental && item.rentalStartDate && item.rentalEndDate && (
                                   <div className="text-xs text-blue-600 mt-1 space-y-1">
@@ -433,15 +433,15 @@ const AdminOrdersPage = () => {
                         <h4 className="font-medium text-gray-900 mb-2">შეკვეთის შეჯამება:</h4>
                         <div className="space-y-1 text-sm">
                           <div className="flex justify-between">
-                            <span className="text-gray-600">ყიდვის ნივთები:</span>
+                            <span className="text-black">ყიდვის ნივთები:</span>
                             <span className="font-medium">{order.items.filter(item => !item.isRental).reduce((total, item) => total + item.quantity, 0)}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-600">ქირაობის ნივთები:</span>
+                            <span className="text-black">ქირაობის ნივთები:</span>
                             <span className="font-medium text-blue-600">{order.items.filter(item => item.isRental).length}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-600">სულ თანხა:</span>
+                            <span className="text-black">სულ თანხა:</span>
                             <span className="font-bold">₾{order.total.toFixed(2)}</span>
                           </div>
                           {/* Show total deposit if any rental items have deposits */}
@@ -457,7 +457,7 @@ const AdminOrdersPage = () => {
                       {/* Status Actions */}
                       <div className="flex items-center justify-between pt-4 border-t border-gray-200">
                         <div className="flex items-center space-x-2">
-                          <span className="text-sm text-gray-600">სტატუსის შეცვლა:</span>
+                          <span className="text-sm text-black">სტატუსის შეცვლა:</span>
                           <select
                             value={order.status}
                             onChange={(e) => handleStatusUpdate(order.id, e.target.value)}

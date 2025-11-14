@@ -103,7 +103,7 @@ export default function ResetPasswordConfirmPage() {
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">ლინკის შემოწმება...</p>
+            <p className="mt-4 text-black">ლინკის შემოწმება...</p>
           </div>
         </div>
       </div>
@@ -117,7 +117,7 @@ export default function ResetPasswordConfirmPage() {
           <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 text-center">
 
             <h3 className="mt-4 mb-4 block text-black md:text-[20px] text-[18px]">არასწორი ლინკი</h3>
-            <p className="mt-2 text-sm text-gray-600">
+            <p className="mt-2 text-sm text-black">
               {message}
             </p>
             <div className="mt-6">
@@ -168,7 +168,7 @@ export default function ResetPasswordConfirmPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-black hover:text-gray-600 transition-colors duration-200"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-black hover:text-black transition-colors duration-200"
                   >
                     {showPassword ? (
                       <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -204,7 +204,7 @@ export default function ResetPasswordConfirmPage() {
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-black hover:text-gray-600 transition-colors duration-200"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-black hover:text-black transition-colors duration-200"
                   >
                     {showConfirmPassword ? (
                       <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -245,7 +245,7 @@ export default function ResetPasswordConfirmPage() {
                 </svg>
               </div>
               <h3 className="mt-4 text-lg font-medium text-gray-900">წარმატებით შეიცვალა!</h3>
-              <p className="mt-2 text-sm text-gray-600">
+              <p className="mt-2 text-sm text-black">
                 თქვენი პაროლი წარმატებით შეიცვალა
               </p>
               <div className="mt-6">

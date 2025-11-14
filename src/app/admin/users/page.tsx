@@ -193,7 +193,7 @@ const AdminUsersPage = () => {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
-          <p className="text-gray-600 mb-6">You don&apos;t have permission to access this page.</p>
+          <p className="text-black mb-6">You don&apos;t have permission to access this page.</p>
           <Link
             href="/"
             className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
@@ -214,14 +214,14 @@ const AdminUsersPage = () => {
             <div className="flex items-center space-x-4">
               <Link
                 href="/admin"
-                className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
+                className="flex items-center space-x-2 text-black hover:text-gray-900 transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
                 <span>ადმინ პანელი</span>
               </Link>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">მომხმარებლების მართვა</h1>
-                <p className="text-gray-600 mt-1">მართე ყველა მომხმარებელი</p>
+                <p className="text-black mt-1">მართე ყველა მომხმარებელი</p>
               </div>
             </div>
           </div>
@@ -271,7 +271,7 @@ const AdminUsersPage = () => {
           {filteredUsers.length === 0 ? (
             <div className="text-center py-12">
               <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 mb-4">
+              <p className="text-black mb-4">
                 {searchTerm || filterRole !== 'ALL'
                   ? 'ფილტრის შედეგები ვერ მოიძებნა'
                   : 'ჯერ არ არის მომხმარებლები'
@@ -287,7 +287,7 @@ const AdminUsersPage = () => {
                     {/* User Info */}
                     <div className="flex items-center space-x-4">
                       <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                        <Users className="w-6 h-6 text-gray-600" />
+                        <Users className="w-6 h-6 text-black" />
                       </div>
                       
                       <div className="flex-1">
@@ -309,7 +309,7 @@ const AdminUsersPage = () => {
                           )}
                         </div>
                         
-                        <div className="flex items-center space-x-4 text-sm text-gray-600">
+                        <div className="flex items-center space-x-4 text-sm text-black">
                           {user.email && user.name && (
                             <div className="flex items-center space-x-1">
                               <Mail className="w-4 h-4" />
@@ -523,7 +523,7 @@ const AdminUsersPage = () => {
                                       {product.name}
                                     </h5>
                                     
-                                    <div className="text-sm text-gray-600 mb-2">
+                                    <div className="text-sm text-black mb-2">
                                       <span className="font-semibold">₾{product.currentPrice}</span>
                                       <span className="ml-2 text-[18px]">{product.gender}</span>
                                     </div>

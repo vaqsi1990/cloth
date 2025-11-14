@@ -2,12 +2,12 @@
 import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Filter, X, ChevronDown, Calendar, Star } from 'lucide-react'
+import { Filter, X, ChevronDown, Calendar, Star, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 import { Product } from '@/types/product'
 import DatePicker from "react-datepicker"
 import "react-datepicker/dist/react-datepicker.css"
-import AnimatedDotsLoader from '@/component/AnimatedDotsLoader'
+
 
 const ShopPageClient = () => {
     const searchParams = useSearchParams()
@@ -34,6 +34,8 @@ const ShopPageClient = () => {
         isAvailable: boolean;
     }[]>>({})
     const [isCategoryOpen, setIsCategoryOpen] = useState(true)
+    const [currentPage, setCurrentPage] = useState(1)
+    const [itemsPerPage] = useState(4)
 
     // Helper functions for price calculation
     const getRentalPrice = (product: Product): number => {
@@ -357,6 +359,17 @@ const ShopPageClient = () => {
         }
     })
 
+    // Pagination calculations
+    const totalPages = Math.ceil(sortedProducts.length / itemsPerPage)
+    const startIndex = (currentPage - 1) * itemsPerPage
+    const endIndex = startIndex + itemsPerPage
+    const currentProducts = sortedProducts.slice(startIndex, endIndex)
+
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1)
+    }, [activeCategory, priceRange, selectedSizeSystems, selectedColors, selectedLocations, selectedRatings, rentalStartDate, rentalEndDate, sortBy])
+
     // Handle size system selection
     const toggleSizeSystem = (sizeSystem: string) => {
         setSelectedSizeSystems(prev =>
@@ -451,10 +464,10 @@ const ShopPageClient = () => {
                         <div className="bg-white rounded-lg shadow-sm p-6 sticky top-24">
                             {/* Filter Header */}
                             <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-lg font-semibold text-gray-900">ფილტრები</h3>
+                                <h3 className="font-semibold text-black md:text-[20px] text-[16px]">ფილტრები</h3>
                                 <button
                                     onClick={clearFilters}
-                                    className="text-[16px] cursor-pointer text-black hover:text-black font-medium"
+                                    className="md:text-[20px] text-[16px] cursor-pointer text-black hover:text-black font-medium"
                                 >
                                     გაწმენდა
                                 </button>
@@ -466,9 +479,9 @@ const ShopPageClient = () => {
                                     type="button"
                                     onClick={() => setIsCategoryOpen(!isCategoryOpen)}
                                     className="w-full flex items-center justify-between mb-3"
-                                >
-                                    <h4 className="font-medium text-gray-900">კატეგორია</h4>
-                                    <ChevronDown className={`w-5 h-5 text-gray-700 transition-transform ${isCategoryOpen ? "rotate-180" : "rotate-0"}`} />
+                                    >
+                                        <h4 className="font-medium text-black md:text-[20px] text-[16px]">კატეგორია</h4>
+                                    <ChevronDown className={`w-5 h-5 text-black transition-transform ${isCategoryOpen ? "rotate-180" : "rotate-0"}`} />
                                 </button>
                                 {isCategoryOpen && (
                                     <div className="space-y-2">
@@ -481,16 +494,16 @@ const ShopPageClient = () => {
                                                 <button
                                                     key={category.id}
                                                     onClick={() => setActiveCategory(category.id)}
-                                                    className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex justify-between items-center ${activeCategory === category.id
+                                                    className={`w-full text-left px-3 py-2 rounded-md md:text-[18px] text-[16px] transition-colors flex justify-between items-center ${activeCategory === category.id
                                                         ? "bg-black text-white"
-                                                        : "text-gray-600 hover:bg-gray-100"
+                                                        : "text-black hover:bg-gray-100"
                                                         }`}
                                                 >
                                                     <span>{category.label}</span>
                                                     {category.id !== "ALL" && (
-                                                        <span className={`text-xs px-2 py-1 rounded-full ${activeCategory === category.id
+                                                        <span className={`text-[14px] px-2 py-1 rounded-full ${activeCategory === category.id
                                                             ? "bg-gray-600 text-white"
-                                                            : "bg-gray-200 text-gray-600"
+                                                            : "bg-gray-200 text-black"
                                                             }`}>
                                                             {categoryCount}
                                                         </span>
@@ -504,7 +517,7 @@ const ShopPageClient = () => {
 
                             {/* Price Range */}
                             <div className="mb-6">
-                                <h4 className="font-medium text-gray-900 mb-3">ფასის დიაპაზონი</h4>
+                                <h4 className="font-medium text-black md:text-[20px] text-[16px] mb-3">ფასის დიაპაზონი</h4>
                                 <div className="space-y-3">
                                     <div className="flex items-center space-x-2">
                                         <input
@@ -516,7 +529,7 @@ const ShopPageClient = () => {
                                             className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
                                         />
                                     </div>
-                                    <div className="flex items-center justify-between text-sm text-gray-600">
+                                    <div className="flex items-center justify-between md:text-[18px] text-[16px] text-black">
                                         <span>₾{priceRange[0]}</span>
                                         <span>₾{priceRange[1]}</span>
                                     </div>
@@ -525,13 +538,13 @@ const ShopPageClient = () => {
 
                             {/* Size System Filter */}
                             <div className="mb-6">
-                                <h4 className="font-medium text-gray-900 mb-3">ზომის სისტემა</h4>
+                                <h4 className="font-medium text-black md:text-[20px] text-[16px] mb-3">ზომის სისტემა</h4>
                                 <div className="grid grid-cols-2 gap-2">
                                     {sizeSystems.map((sizeSystem) => (
                                         <button
                                             key={sizeSystem.id}
                                             onClick={() => toggleSizeSystem(sizeSystem.id)}
-                                            className={`px-3 py-2 text-sm rounded-md border transition-colors ${selectedSizeSystems.includes(sizeSystem.id)
+                                            className={`px-3 py-2 md:text-[18px] text-[16px] rounded-md border transition-colors ${selectedSizeSystems.includes(sizeSystem.id)
                                                 ? "bg-black text-white border-black"
                                                 : "bg-white text-gray-700 border-gray-300 hover:border-black"
                                                 }`}
@@ -544,7 +557,7 @@ const ShopPageClient = () => {
 
                             {/* Color Filter */}
                             <div className="mb-6">
-                                <h4 className="font-medium text-gray-900 mb-3">ფერი</h4>
+                                <h4 className="font-medium text-black md:text-[20px] text-[16px] mb-3">ფერი</h4>
                                 <select
                                     value={selectedColors.length > 0 ? selectedColors[0] : ''}
                                     onChange={(e) => {
@@ -554,7 +567,7 @@ const ShopPageClient = () => {
                                             setSelectedColors([])
                                         }
                                     }}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md md:text-[18px] text-[16px] focus:outline-none focus:ring-2 focus:ring-black"
                                 >
                                     <option value="">ყველა ფერი</option>
                                     {colors.map((color) => (
@@ -567,13 +580,13 @@ const ShopPageClient = () => {
 
                             {/* Location Filter */}
                             <div className="mb-6">
-                                <h4 className="font-medium text-gray-900 mb-3">მდებარეობა</h4>
+                                <h4 className="font-medium text-black md:text-[20px] text-[16px] mb-3">მდებარეობა</h4>
                                 <div className="grid grid-cols-2 gap-2">
                                     {locations.map((location) => (
                                         <button
                                             key={location.id}
                                             onClick={() => toggleLocation(location.id)}
-                                            className={`px-3 py-2 text-sm rounded-md border transition-colors ${selectedLocations.includes(location.id)
+                                            className={`px-3 py-2 md:text-[18px] text-[16px] rounded-md border transition-colors ${selectedLocations.includes(location.id)
                                                 ? "bg-black text-white border-black"
                                                 : "bg-white text-gray-700 border-gray-300 hover:border-black"
                                                 }`}
@@ -586,7 +599,7 @@ const ShopPageClient = () => {
 
                             {/* Rating Filter */}
                             <div className="mb-6">
-                                <h4 className="font-medium text-gray-900 mb-3">რეიტინგი</h4>
+                                <h4 className="font-medium text-black md:text-[20px] text-[16px] mb-3">რეიტინგი</h4>
                                 <div className="space-y-2">
                                     {[5, 4, 3, 2, 1].map((rating) => {
                                         const count = products.filter(
@@ -597,7 +610,7 @@ const ShopPageClient = () => {
                                             <button
                                                 key={rating}
                                                 onClick={() => toggleRating(rating)}
-                                                className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md border transition-colors ${selectedRatings.includes(rating)
+                                                className={`w-full flex items-center justify-between px-3 py-2 md:text-[18px] text-[16px] rounded-md border transition-colors ${selectedRatings.includes(rating)
                                                     ? "bg-[#1B3729] text-white border-[#1B3729]"
                                                     : "bg-white text-gray-700 border-gray-300 hover:border-black"
                                                     }`}
@@ -618,9 +631,9 @@ const ShopPageClient = () => {
                                                 </div>
 
                                                 <span
-                                                    className={`text-xs px-2 py-1 rounded-full ${selectedRatings.includes(rating)
+                                                    className={`text-[14px] px-2 py-1 rounded-full ${selectedRatings.includes(rating)
                                                         ? "bg-gray-600 text-white"
-                                                        : "bg-gray-200 text-gray-600"
+                                                        : "bg-gray-200 text-black"
                                                         }`}
                                                 >
                                                     {count}
@@ -635,30 +648,30 @@ const ShopPageClient = () => {
                             {/* Rental Date Filter */}
                             <div className="mb-6">
                                 <div className="flex items-center gap-2 mb-3">
-                                    <Calendar className="w-5 h-5 text-gray-700" />
-                                    <h4 className="font-medium text-gray-900">გაქირავების თარიღი</h4>
+                                    <Calendar className="w-5 h-5 text-black" />
+                                    <h4 className="font-medium text-black md:text-[20px] text-[16px]">გაქირავების თარიღი</h4>
                                 </div>
                                 <div className="space-y-3">
                                     <div>
-                                        <label className="block text-sm text-gray-600 mb-1">დაწყება</label>
+                                        <label className="block md:text-[18px] text-[16px] text-black mb-1">დაწყება</label>
                                         <DatePicker
                                             selected={rentalStartDate}
                                             onChange={(date: Date | null) => setRentalStartDate(date)}
                                             minDate={new Date()}
                                             placeholderText="აირჩიე თარიღი"
                                             dateFormat="dd/MM/yyyy"
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md md:text-[18px] text-[16px] focus:outline-none focus:ring-2 focus:ring-black"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm text-gray-600 mb-1">დასრულება</label>
+                                        <label className="block md:text-[18px] text-[16px] text-black mb-1">დასრულება</label>
                                         <DatePicker
                                             selected={rentalEndDate}
                                             onChange={(date: Date | null) => setRentalEndDate(date)}
                                             minDate={rentalStartDate || new Date()}
                                             placeholderText="აირჩიე თარიღი"
                                             dateFormat="dd/MM/yyyy"
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md md:text-[18px] text-[16px] focus:outline-none focus:ring-2 focus:ring-black"
                                         />
                                     </div>
 
@@ -677,16 +690,16 @@ const ShopPageClient = () => {
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0">
                                 <h3 className="md:text-[20px] font-bold text-[18px] text-black">ყიდვა / გაქირავება</h3>
                                 <div className="flex flex-col md:flex-row gap-2 items-center space-x-2">
-                                    <span className="md:text-[18px] text-[16px] text-black">დალაგება:</span>
+                                    <span className="md:text-[20px] text-[16px] text-black">დალაგება:</span>
                                     <select
                                         value={sortBy}
                                         onChange={(e) => setSortBy(e.target.value)}
-                                        className="px-3 py-2 text-[16px] md:text-[18px} border border-gray-300 rounded-lg  focus:outline-none focus:ring-2 focus:ring-black"
+                                        className="px-3 py-2 md:text-[18px] text-[16px] border border-gray-300 rounded-lg  focus:outline-none focus:ring-2 focus:ring-black"
                                     >
-                                        <option className='text-[16px] md:text-[18px} text-black' value="newest">ახალი</option>
-                                        <option className='text-[16px] md:text-[18px} text-black' value="price-low">ფასი: დაბლიდან მაღლა</option>
-                                        <option className='text-[16px] md:text-[18px} text-black' value="price-high">ფასი: მაღლიდან დაბლა</option>
-                                        <option className='text-[16px] md:text-[18px} text-black' value="rating">რეიტინგი</option>
+                                        <option className='md:text-[18px] text-[16px] text-black' value="newest">ახალი</option>
+                                        <option className='md:text-[18px] text-[16px] text-black' value="price-low">ფასი: დაბლიდან მაღლა</option>
+                                        <option className='md:text-[18px] text-[16px] text-black' value="price-high">ფასი: მაღლიდან დაბლა</option>
+                                        <option className='md:text-[18px] text-[16px] text-black' value="rating">რეიტინგი</option>
                                     </select>
                                 </div>
 
@@ -694,10 +707,17 @@ const ShopPageClient = () => {
                             </div>
                         </div>
 
+                        {/* Results Count */}
+                        {sortedProducts.length > 0 && (
+                            <div className="mb-4 text-black md:text-[18px] text-[16px]">
+                                <p>ნაჩვენებია {startIndex + 1}-{Math.min(endIndex, sortedProducts.length)} {sortedProducts.length}-დან</p>
+                            </div>
+                        )}
+
                         {/* Products Grid */}
-                        {sortedProducts.length > 0 ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                                {sortedProducts.map((product) => (
+                        {currentProducts.length > 0 ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+                                {currentProducts.map((product) => (
                                     <div
                                         key={product.id}
 
@@ -719,11 +739,11 @@ const ShopPageClient = () => {
                                             </div>
                                         </div>
                                         <div className="p-4">
-                                            <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
+                                            <h3 className="font-semibold text-black md:text-[20px] text-[16px] mb-2 line-clamp-2">
                                                 {product.name}
                                             </h3>
                                             <div className="flex items-center justify-between">
-                                                <span className="text-lg font-bold text-gray-900">
+                                                <span className="font-bold text-black md:text-[18px] text-[16px]">
                                                     ₾{getDisplayPrice(product).toFixed(2)}
                                                 </span>
 
@@ -735,11 +755,83 @@ const ShopPageClient = () => {
                             </div>
                         ) : (
                             <div className="text-center py-16">
-                                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                                <h3 className="text-xl font-semibold text-black md:text-[20px] text-[16px] mb-2">
                                     პროდუქტები ვერ მოიძებნა
                                 </h3>
-                                <p className="text-gray-600">
+                                <p className="text-black">
                                     სცადეთ სხვა ფილტრები
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Pagination */}
+                        {totalPages > 1 && (
+                            <div className="flex flex-col items-center justify-center gap-4 mt-8">
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                        disabled={currentPage === 1}
+                                        className={`px-4 py-2 rounded-lg border transition-colors md:text-[18px] text-[16px] flex items-center gap-2 ${
+                                            currentPage === 1
+                                                ? 'bg-gray-100 text-black cursor-not-allowed border-gray-300'
+                                                : 'bg-white text-black border-gray-300 hover:bg-gray-50 hover:border-black'
+                                        }`}
+                                    >
+                                        <ChevronLeft className="w-5 h-5" />
+                                        წინა
+                                    </button>
+
+                                    <div className="flex items-center gap-1">
+                                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                                            // Show first page, last page, current page, and pages around current
+                                            if (
+                                                page === 1 ||
+                                                page === totalPages ||
+                                                (page >= currentPage - 1 && page <= currentPage + 1)
+                                            ) {
+                                                return (
+                                                    <button
+                                                        key={page}
+                                                        onClick={() => setCurrentPage(page)}
+                                                        className={`px-4 py-2 rounded-lg border transition-colors md:text-[18px] text-[16px] ${
+                                                            currentPage === page
+                                                                ? 'bg-black text-white border-black'
+                                                                : 'bg-white text-black border-gray-300 hover:bg-gray-50 hover:border-black'
+                                                        }`}
+                                                    >
+                                                        {page}
+                                                    </button>
+                                                )
+                                            } else if (
+                                                page === currentPage - 2 ||
+                                                page === currentPage + 2
+                                            ) {
+                                                return (
+                                                    <span key={page} className="px-2 text-black">
+                                                        ...
+                                                    </span>
+                                                )
+                                            }
+                                            return null
+                                        })}
+                                    </div>
+
+                                    <button
+                                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                        disabled={currentPage === totalPages}
+                                        className={`px-4 py-2 rounded-lg border transition-colors md:text-[18px] text-[16px] flex items-center gap-2 ${
+                                            currentPage === totalPages
+                                                ? 'bg-gray-100 text-black cursor-not-allowed border-gray-300'
+                                                : 'bg-white text-black border-gray-300 hover:bg-gray-50 hover:border-black'
+                                        }`}
+                                    >
+                                        შემდეგი
+                                        <ChevronRight className="w-5 h-5" />
+                                    </button>
+                                </div>
+
+                                <p className="text-black md:text-[16px] text-[14px]">
+                                    გვერდი {currentPage} {totalPages}-დან
                                 </p>
                             </div>
                         )}

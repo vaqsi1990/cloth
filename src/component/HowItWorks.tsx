@@ -51,7 +51,7 @@ const HowItWorks = () => {
         <div className="bg-white rounded-3xl shadow-lg p-8 border border-gray-100 hover:-translate-y-2 hover:shadow-xl transition-all duration-500">
           <div className="flex items-center justify-between mb-6">
             <p className="text-2xl font-bold text-gray-900">ნაბიჯი 1</p>
-            <svg className="w-6 text-gray-600 transform rotate-90 sm:rotate-0" stroke="currentColor" strokeWidth="2"
+            <svg className="w-6 text-black transform rotate-90 sm:rotate-0" stroke="currentColor" strokeWidth="2"
               strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
               <line x1="2" y1="12" x2="22" y2="12"></line>
               <polyline points="15,5 22,12 15,19"></polyline>
@@ -66,7 +66,7 @@ const HowItWorks = () => {
         <div className="bg-white rounded-3xl shadow-lg p-8 border border-gray-100 hover:-translate-y-2 hover:shadow-xl transition-all duration-500">
           <div className="flex items-center justify-between mb-6">
             <p className="text-2xl font-bold text-gray-900">ნაბიჯი 2</p>
-            <svg className="w-6 text-gray-600 transform rotate-90 sm:rotate-0" stroke="currentColor" strokeWidth="2"
+            <svg className="w-6 text-black transform rotate-90 sm:rotate-0" stroke="currentColor" strokeWidth="2"
               strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
               <line x1="2" y1="12" x2="22" y2="12"></line>
               <polyline points="15,5 22,12 15,19"></polyline>
@@ -81,7 +81,7 @@ const HowItWorks = () => {
         <div className="bg-white rounded-3xl shadow-lg p-8 border border-gray-100 hover:-translate-y-2 hover:shadow-xl transition-all duration-500">
           <div className="flex items-center justify-between mb-6">
             <p className="text-2xl font-bold text-gray-900">ნაბიჯი 3</p>
-            <svg className="w-6 text-gray-600 transform rotate-90 sm:rotate-0" stroke="currentColor" strokeWidth="2"
+            <svg className="w-6 text-black transform rotate-90 sm:rotate-0" stroke="currentColor" strokeWidth="2"
               strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
               <line x1="2" y1="12" x2="22" y2="12"></line>
               <polyline points="15,5 22,12 15,19"></polyline>

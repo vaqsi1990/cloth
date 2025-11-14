@@ -76,7 +76,7 @@ const AuthorPage = () => {
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
                     <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                    <p className="text-gray-600">იტვირთება...</p>
+                    <p className="text-black">იტვირთება...</p>
                 </div>
             </div>
         )
@@ -107,7 +107,7 @@ const AuthorPage = () => {
                                     className="object-cover"
                                 />
                             ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-gray-300 text-gray-600 font-semibold text-2xl">
+                                <div className="w-full h-full flex items-center justify-center bg-gray-300 text-black font-semibold text-2xl">
                                     {author?.name ? author.name.charAt(0).toUpperCase() : "?"}
                                 </div>
                             )}
@@ -116,7 +116,7 @@ const AuthorPage = () => {
                             <h1 className="text-3xl font-bold text-gray-900 mb-2">
                                 {author?.name || "უცნობი ავტორი"}
                             </h1>
-                            <p className="text-gray-600">
+                            <p className="text-black">
                                 {products.length} პროდუქტი
                             </p>
                            
@@ -173,7 +173,7 @@ const AuthorPage = () => {
                         <h3 className="text-xl font-semibold text-gray-900 mb-2">
                             პროდუქტები ვერ მოიძებნა
                         </h3>
-                        <p className="text-gray-600">
+                        <p className="text-black">
                             ამ ავტორს არ აქვს გამოქვეყნებული პროდუქტები
                         </p>
                     </div>

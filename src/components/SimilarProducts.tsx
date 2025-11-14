@@ -102,7 +102,7 @@ const SimilarProducts: React.FC<SimilarProductsProps> = ({ productId, categoryNa
                 
                 {/* Author */}
                 {product.user && (
-                  <p className="text-sm text-gray-600">
+                  <p className=" md:text-[18px] text-[16px] text-black">
                     {product.user.name}
                   </p>
                 )}

@@ -214,7 +214,7 @@ const AdminSettingsPage = () => {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
-          <p className="text-gray-600 mb-6">You don&apos;t have permission to access this page.</p>
+          <p className="text-black mb-6">You don&apos;t have permission to access this page.</p>
           <Link
             href="/"
             className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
@@ -235,7 +235,7 @@ const AdminSettingsPage = () => {
             <div className="flex items-center space-x-4">
               <Link
                 href="/admin"
-                className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
+                className="flex items-center space-x-2 text-black hover:text-gray-900 transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
                 <span>ადმინ პანელი</span>
@@ -270,7 +270,7 @@ const AdminSettingsPage = () => {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <User className="w-8 h-8 text-gray-600" />
+                        <User className="w-8 h-8 text-black" />
                       )}
                     </div>
                     <button
@@ -282,7 +282,7 @@ const AdminSettingsPage = () => {
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">პროფილის სურათი</h3>
-                    <p className="text-sm text-gray-600">ატვირთეთ თქვენი პროფილის სურათი</p>
+                    <p className="text-sm text-black">ატვირთეთ თქვენი პროფილის სურათი</p>
                   </div>
                 </div>
 
@@ -293,7 +293,7 @@ const AdminSettingsPage = () => {
                       onChange={handleImageUpload}
                     />
                     {isUploadingImage && (
-                      <p className="text-sm text-gray-600 mt-2">სურათი იტვირთება...</p>
+                      <p className="text-sm text-black mt-2">სურათი იტვირთება...</p>
                     )}
                     <div className="mt-3 flex space-x-2">
                       <button

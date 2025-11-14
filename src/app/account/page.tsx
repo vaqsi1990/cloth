@@ -445,7 +445,7 @@ const AccountPage = () => {
               onChange={handleImageUpload}
             />
             {isUploadingImage && (
-              <p className="text-sm text-gray-600 mt-2">სურათი იტვირთება...</p>
+              <p className="text-sm text-black mt-2">სურათი იტვირთება...</p>
             )}
             <div className="mt-3 flex space-x-2">
               <button
@@ -502,7 +502,7 @@ const AccountPage = () => {
             <h4 className="text-lg font-semibold text-red mb-2">პირადობის ვერიფიკაცია </h4>
             <p className="text-[18px] text-red-500">პირადობის სურათებით მოხდება თქვენი ვერიფიცირება, თუ არ ატვირთავთ სურათებს ვერ შეძლებთ ახალი პროდუქტის დამატებას ან ყიდვას და ქირაობას</p>
             {verifLoading ? (
-              <p className="text-sm text-gray-600">იტვირთება...</p>
+              <p className="text-sm text-black">იტვირთება...</p>
             ) : (
               <>
                 <div className="mb-3">
@@ -585,7 +585,7 @@ const AccountPage = () => {
         {loadingOrders ? (
           <div className="text-center py-12">
             <div className="w-12 h-12 border-4 border-gray-300 border-t-[#1B3729] rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">იტვირთება...</p>
+            <p className="text-black">იტვირთება...</p>
           </div>
         ) : orders.length === 0 ? (
           <div className="text-center py-8">
@@ -664,7 +664,7 @@ const AccountPage = () => {
             ) : (
               <button
                 disabled
-                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-gray-200 text-gray-600 rounded-lg font-semibold uppercase tracking-wide cursor-not-allowed"
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-gray-200 text-black rounded-lg font-semibold uppercase tracking-wide cursor-not-allowed"
                 title="ახალი პროდუქტის დამატება შესაძლებელია მხოლოდ ვერიფიცირებული ანგარიშისთვის"
               >
                 <Package className="w-4 h-4" />
@@ -688,7 +688,7 @@ const AccountPage = () => {
         {loadingProducts ? (
           <div className="text-center py-12">
             <div className="w-12 h-12 border-4 border-gray-300 border-t-[#1B3729] rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">იტვირთება...</p>
+            <p className="text-black">იტვირთება...</p>
           </div>
         ) : products.length === 0 ? (
           <div className="text-center py-8">
@@ -1020,7 +1020,7 @@ function ProfileSettingsForm() {
     return (
       <div className="text-center py-8">
         <div className="w-8 h-8 border-4 border-gray-300 border-t-black rounded-full animate-spin mx-auto"></div>
-        <p className="text-gray-600 mt-2">იტვირთება...</p>
+        <p className="text-black mt-2">იტვირთება...</p>
       </div>
     )
   }

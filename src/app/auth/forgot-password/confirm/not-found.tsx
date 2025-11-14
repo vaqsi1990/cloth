@@ -11,7 +11,7 @@ export default function NotFound() {
             </svg>
           </div>
           <h3 className="mt-4 text-lg font-medium text-gray-900">გვერდი ვერ მოიძებნა</h3>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-2 text-sm text-black">
             პაროლის აღდგენის ლინკი არასწორია ან ვადა გასდა
           </p>
           <div className="mt-6">

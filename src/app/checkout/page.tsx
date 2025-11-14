@@ -227,7 +227,7 @@ const CheckoutPage = () => {
                     <div className="mb-8">
                         <Link 
                             href="/cart"
-                            className="flex items-center text-black hover:text-gray-600 mb-4 transition-colors"
+                            className="flex items-center text-black hover:text-black mb-4 transition-colors"
                         >
                             <ArrowLeft className="w-5 h-5 mr-2" />
                             კალათაში დაბრუნება
