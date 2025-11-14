@@ -322,7 +322,7 @@ const AdminChatPage = () => {
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-[#1B3729] focus:border-transparent"
+                  className="px-3 py-1 border border-gray-300 rounded-md md:text-[18px] text-[16px] focus:ring-2 focus:ring-[#1B3729] focus:border-transparent"
                 >
                   <option value="">ყველა</option>
                   <option value="PENDING">ლოდინი</option>
@@ -364,14 +364,14 @@ const AdminChatPage = () => {
                         </span>
                       </div>
                       
-                      <div className="text-sm">
+                      <div className="md:text-[18px] text-[16px]">
                         <p className="font-medium">
                           {room.user?.name || room.guestName || 'უცნობი მომხმარებელი'}
                         </p>
-                        <p className="text-xs opacity-75">
+                        <p className="md:text-[18px] text-[16px] opacity-75">
                           {room.user?.email || room.guestEmail}
                         </p>
-                        <p className="text-xs opacity-75 mt-1">
+                        <p className="md:text-[18px] text-[16px] opacity-75 mt-1">
                           {formatDateTime(room.updatedAt)}
                         </p>
                         <div className="mt-2">
@@ -380,7 +380,7 @@ const AdminChatPage = () => {
                               e.stopPropagation()
                               openDeleteModal(room)
                             }}
-                            className="text-red-500 hover:text-red-700 text-xs flex items-center space-x-1"
+                            className="text-red-500 hover:text-red-700 md:text-[18px] text-[16px] flex items-center space-x-1"
                           >
                             <Trash2 className="w-3 h-3" />
                             <span>წაშლა</span>
@@ -402,10 +402,10 @@ const AdminChatPage = () => {
                 <div className="flex-shrink-0 p-4 border-b border-gray-200 bg-white">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900">
+                      <h3 className="md:text-[18px] text-[16px] font-semibold text-black">
                         საუბარი #{selectedChatRoom.id}
                       </h3>
-                      <p className="text-sm text-black">
+                      <p className="md:text-[18px] text-[16px] text-black">
                         {selectedChatRoom.user?.name || selectedChatRoom.guestName || 'უცნობი მომხმარებელი'}
                       </p>
                     </div>
@@ -413,7 +413,7 @@ const AdminChatPage = () => {
                       {selectedChatRoom.status === 'PENDING' && (
                         <button
                           onClick={() => updateChatRoomStatus(selectedChatRoom.id, 'assign')}
-                          className="px-3 py-1 bg-[#1B3729] text-white rounded-md text-sm hover:bg-[#2a4d3a] transition-colors"
+                          className="px-3 py-1 bg-[#1B3729] text-white rounded-md md:text-[18px] text-[16px] hover:bg-[#2a4d3a] transition-colors"
                         >
                           მიღება
                         </button>
@@ -421,7 +421,7 @@ const AdminChatPage = () => {
                       {selectedChatRoom.status === 'ACTIVE' && (
                         <button
                           onClick={() => updateChatRoomStatus(selectedChatRoom.id, 'close')}
-                          className="px-3 py-1 bg-red-500 text-white rounded-md text-sm hover:bg-red-600 transition-colors"
+                          className="px-3 py-1 bg-red-500 text-white rounded-md md:text-[18px] text-[16px] hover:bg-red-600 transition-colors"
                         >
                           დახურვა
                         </button>
@@ -429,7 +429,7 @@ const AdminChatPage = () => {
                       {selectedChatRoom.status === 'CLOSED' && (
                         <button
                           onClick={() => updateChatRoomStatus(selectedChatRoom.id, 'reopen')}
-                          className="px-3 py-1 bg-green-500 text-white rounded-md text-sm hover:bg-green-600 transition-colors"
+                          className="px-3 py-1 bg-green-500 text-white rounded-md md:text-[18px] text-[16px] hover:bg-green-600 transition-colors"
                         >
                           გახსნა
                         </button>
@@ -462,7 +462,7 @@ const AdminChatPage = () => {
                             >
                               {/* Show sender name */}
                               <div className="flex items-center justify-between mb-1">
-                                <p className={`text-xs font-medium ${
+                                <p className={`md:text-[18px] text-[16px] font-medium ${
                                   message.isFromAdmin ? 'text-gray-300' : 'text-black'
                                 }`}>
                                   {message.isFromAdmin 
@@ -471,8 +471,8 @@ const AdminChatPage = () => {
                                   }
                                 </p>
                               </div>
-                              <p className="text-sm">{message.content}</p>
-                              <p className={`text-xs mt-1 ${
+                              <p className="md:text-[18px] text-[16px]">{message.content}</p>
+                              <p className={`md:text-[18px] text-[16px] mt-1 ${
                                 message.isFromAdmin ? 'text-gray-300' : 'text-gray-500'
                               }`}>
                                 {formatDateTime(message.createdAt)}
@@ -512,8 +512,8 @@ const AdminChatPage = () => {
               <div className="flex-1 flex items-center justify-center text-gray-500">
                 <div className="text-center">
                   <MessageCircle className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                  <p className="text-lg">აირჩიეთ საუბარი</p>
-                  <p className="text-sm">მარცხნივ ჩამონათვალიდან</p>
+                  <p className="md:text-[18px] text-[16px]">აირჩიეთ საუბარი</p>
+                  <p className="md:text-[18px] text-[16px]">მარცხნივ ჩამონათვალიდან</p>
                 </div>
               </div>
             )}
@@ -525,17 +525,17 @@ const AdminChatPage = () => {
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              <h3 className="md:text-[18px] text-[16px] font-semibold text-black mb-4">
               საუბრის წაშლა
             </h3>
             <p className="text-black mb-4">
               ნამდვილად გსურთ საუბრის წაშლა? ეს მოქმედება შეუქცევადია.
             </p>
-            <p className="text-sm text-gray-500 mb-4">
+            <p className="md:text-[18px] text-[16px] text-black mb-4">
               საუბარი #{chatRoomToDelete?.id} - {chatRoomToDelete?.user?.name || chatRoomToDelete?.guestName || 'უცნობი მომხმარებელი'}
             </p>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-black mb-2">
+              <label className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
                 დასადასტურებლად შეიყვანეთ &quot;DELETE&quot;:
               </label>
               <input

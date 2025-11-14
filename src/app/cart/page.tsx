@@ -104,13 +104,13 @@ const CartPage = () => {
                                                 <h3 className="text-lg font-medium text-black truncate">
                                                     {item.productName}
                                                 </h3>
-                                                <p className="text-black text-sm">
+                                                <p className="text-black მდ:ტეხტ-[18px] text-[16px]">
                                                     ზომა: <span className="font-medium">{item.size}</span>
                                                 </p>
 
                                                 {/* Rental Information */}
                                                 {item.isRental && item.rentalStartDate && item.rentalEndDate && (
-                                                    <div className="text-sm text-blue-600 mb-1">
+                                                    <div className="md:text-[18px] text-[16px] text-blue-600 mb-1">
                                                         <p>ქირაობის პერიოდი: {formatDate(item.rentalStartDate)} - {formatDate(item.rentalEndDate)}</p>
                                                         <p>დღეების რაოდენობა: {item.rentalDays}</p>
                                                         {item.deposit && item.deposit > 0 && (
@@ -148,7 +148,7 @@ const CartPage = () => {
                                             {/* Rental items show quantity as 1 */}
                                             {item.isRental && (
                                                 <div className="text-center">
-                                                    <span className="text-sm text-black">რაოდენობა:</span>
+                                                    <span className="md:text-[18px] text-[16px] text-black">რაოდენობა:</span>
                                                     <div className="font-medium text-black">1</div>
                                                 </div>
                                             )}
@@ -172,21 +172,21 @@ const CartPage = () => {
                                 <h2 className="text-xl font-semibold text-black mb-6">შეკვეთის შეჯამება</h2>
 
                                 <div className="space-y-4 mb-6">
-                                    <div className="flex justify-between text-black">
+                                    <div className="flex justify-between text-black md:text-[18px] text-[16px]">
                                         <span>ყიდვის ნივთები:</span>
                                         <span className="font-medium">{cartItems.filter(item => !item.isRental).reduce((total, item) => total + item.quantity, 0)}</span>
                                     </div>
-                                    <div className="flex justify-between text-black">
+                                    <div className="flex justify-between text-black md:text-[18px] text-[16px]">
                                         <span>ქირაობის ნივთები:</span>
                                         <span className="font-medium">{cartItems.filter(item => item.isRental).length}</span>
                                     </div>
-                                    <div className="flex justify-between text-black">
+                                    <div className="flex justify-between text-black md:text-[18px] text-[16px]">
                                         <span>ჯამური ღირებულება:</span>
                                         <span className="font-bold text-lg">₾{getTotalPrice().toFixed(2)}</span>
                                     </div>
                                     {/* Show total deposit if any rental items have deposits */}
                                     {cartItems.some(item => item.isRental && item.deposit && item.deposit > 0) && (
-                                        <div className="flex justify-between text-blue-600">
+                                        <div className="flex justify-between text-blue-600 md:text-[18px] text-[16px]">
                                             <span>გირაო (ქირაობისთვის):</span>
                                             <span className="font-medium">₾{cartItems.filter(item => item.isRental).reduce((total, item) => total + (item.deposit || 0), 0).toFixed(2)}</span>
                                         </div>
@@ -196,14 +196,14 @@ const CartPage = () => {
                                 <div className="space-y-4">
                                     <Link
                                         href="/checkout"
-                                        className="flex md:text-[20px] text-[18px] font-bold justify-center md:mt-14 items-center w-full mx-auto mt-4 bg-[#1B3729] text-white px-8 py-4 rounded-lg font-bold uppercase tracking-wide  transition-colors duration-300"
+                                        className="flex md:text-[18px] text-[16px] font-bold justify-center md:mt-14 items-center w-full mx-auto mt-4 bg-[#1B3729] text-white px-8 py-4 rounded-lg font-bold uppercase tracking-wide  transition-colors duration-300"
                                     >
                                         შეკვეთის გაფორმება
                                     </Link>
 
                                     <Link
                                         href="/shop"
-                                        className="w-full bg-gray-100 text-black py-4 px-6 rounded-lg font-semibold text-lg hover:bg-gray-200 transition-colors text-center block"
+                                        className="w-full md:text-[18px] text-[16px] bg-gray-100 text-black py-4 px-6 rounded-lg font-semibold text-lg hover:bg-gray-200 transition-colors text-center block"
                                     >
                                         მაღაზიაში დაბრუნება
                                     </Link>
@@ -211,8 +211,8 @@ const CartPage = () => {
 
                                 {/* Shipping Info */}
                                 <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                                    <h3 className="font-medium text-black mb-2">მიწოდების ინფორმაცია</h3>
-                                    <p className="text-black text-sm">
+                                    <h3 className="font-medium text-black md:text-[18px] text-[16px] mb-2">მიწოდების ინფორმაცია</h3>
+                                    <p className="text-black md:text-[18px] text-[16px]">
                                         უფასო მიწოდება 50₾-ზე მეტი შეკვეთისთვის
                                     </p>
                                 </div>
