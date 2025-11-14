@@ -644,11 +644,11 @@ const AccountPage = () => {
     <div className="space-y-6">
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-bold text-black">ჩემი პროდუქტები</h3>
+          <h3 className="md:text-[18px] text-[16px] font-bold text-black">ჩემი პროდუქტები</h3>
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
             <Link
               href="/account/products/sku"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-black rounded-lg hover:bg-gray-200 transition-colors"
             >
               <Search className="w-4 h-4" />
               <span>ძიება კოდის მიხედვით</span>
@@ -659,7 +659,7 @@ const AccountPage = () => {
                 className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#1B3729] text-white rounded-lg font-semibold uppercase tracking-wide transition-colors hover:bg-[#164321]"
               >
                 <Package className="w-4 h-4" />
-                <span>ახალი პროდუქტი</span>
+                <span className="md:text-[18px] text-[16px]">ახალი პროდუქტი</span>
               </Link>
             ) : (
               <button
@@ -668,20 +668,20 @@ const AccountPage = () => {
                 title="ახალი პროდუქტის დამატება შესაძლებელია მხოლოდ ვერიფიცირებული ანგარიშისთვის"
               >
                 <Package className="w-4 h-4" />
-                <span>ახალი პროდუქტი</span>
+                <span className="md:text-[18px] text-[16px]">ახალი პროდუქტი</span>
               </button>
             )}
           </div>
         </div>
         {session.user.role !== 'ADMIN' && verification?.status !== 'APPROVED' && session.user.verificationStatus !== 'APPROVED' && (
-          <div className="mb-4 p-3 border border-yellow-400 bg-yellow-50 text-yellow-800 rounded">
+          <div className="mb-4 p-3 border border-yellow-400 bg-yellow-50 text-yellow-800 rounded md:text-[18px] text-[16px]">
             გთხოვთ დაადასტუროთ პირადობა პროფილის გვერდზე, რომ შეძლოთ პროდუქტის დამატება.
           </div>
         )}
 
         {session.user.role !== 'ADMIN' && (verification?.status === 'APPROVED' || session.user.verificationStatus === 'APPROVED') && (
-          <div className="mb-4 p-3 border border-green-400 bg-green-50 text-green-800 rounded">
-            პირადობა დამტკიცებულია
+          <div className="mb-4 p-3 border border-green-400 bg-green-50 text-green-800 rounded md:text-[18px] text-[16px]">
+            <span className="md:text-[18px] text-[16px]">პირადობა დამტკიცებულია</span>
           </div>
         )}
 
@@ -706,28 +706,19 @@ const AccountPage = () => {
                     alt={product.name}
                     className="w-full h-full object-cover"
                   />
-                  <div className="absolute top-2 right-2">
-                    <span className={`px-2 py-1 text-xs rounded-full ${product.status === 'AVAILABLE' ? 'bg-green-100 text-green-800' :
-                      product.status === 'RENTED' ? 'bg-blue-100 text-blue-800' :
-                        product.status === 'RESERVED' ? 'bg-yellow-100 text-yellow-800' :
-                          product.status === 'MAINTENANCE' ? 'bg-red-100 text-red-800' :
-                            'bg-gray-100 text-gray-800'
-                      }`}>
-                      {getStatusLabel(product.status)}
-                    </span>
-                  </div>
+              
                 </div>
 
                 <div className="p-4">
                   <h4 className="font-semibold text-black mb-2">{product.name}</h4>
                   {product.sku && (
                     <div className="mb-2">
-                      <span className="text-xs font-mono px-2 py-1 rounded text-gray-700 bg-gray-100">
+                      <span className="md:text-[18px] text-[16px] font-mono px-2 py-1 rounded text-black bg-gray-100">
                         კოდი: {product.sku}
                       </span>
                     </div>
                   )}
-                  <p className="text-lg font-bold text-black mb-2">
+                  <p className="md:text-[18px] text-[16px] font-bold text-black mb-2">
                     {(() => {
                       if (!product.variants || product.variants.length === 0) return '₾0.00'
 
@@ -746,32 +737,32 @@ const AccountPage = () => {
                         : `₾${minPrice.toFixed(2)} - ₾${maxPrice.toFixed(2)}`
                     })()}
                   </p>
-                  <p className="text-sm text-black mb-3">დამატებული: {new Date(product.createdAt).toLocaleDateString('ka-GE')}</p>
+                  <p className="md:text-[18px] text-[16px] text-black mb-3">დამატებული: {new Date(product.createdAt).toLocaleDateString('ka-GE')}</p>
 
                   <div className="mb-3">
-                    <label className="block text-[16px] font-medium text-gray-700 mb-1">სტატუსი</label>
+                    <label className="block md:text-[18px] text-[16px] font-medium text-black mb-1">სტატუსი</label>
                     <select
                       value={product.status}
                       onChange={(e) => handleStatusChange(product.id, e.target.value)}
-                      className="w-full px-2 py-1 text-[16px] border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-black"
+                      className="w-full px-2 py-1 md:text-[18px] text-[16px] border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-black"
                     >
-                      <option className="text-[16px]" value="AVAILABLE">თავისუფალია</option>
-                      <option className="text-[16px]" value="RENTED">გაქირავებულია</option>
-                      <option className="text-[16px]" value="RESERVED">დაჯავშნილია</option>
-                      <option className="text-[16px]" value="MAINTENANCE">რესტავრაციაზეა</option>
+                      <option className="md:text-[18px] text-[16px]" value="AVAILABLE">თავისუფალია</option>
+                      <option className="md:text-[18px] text-[16px]" value="RENTED">გაქირავებულია</option>
+                      <option className="md:text-[18px] text-[16px]" value="RESERVED">დაჯავშნილია</option>
+                      <option className="md:text-[18px] text-[16px]" value="MAINTENANCE">რესტავრაციაზეა</option>
                     </select>
                   </div>
 
                   <div className="mt-4 flex space-x-2">
                     <Link
                       href={`/account/products/${product.id}/edit`}
-                      className="flex-1 px-3 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors text-sm text-center"
+                      className="flex-1 px-3 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors md:text-[18px] text-[16px] text-center"
                     >
                       რედაქტირება
                     </Link>
                     <button
                       onClick={() => handleDeleteProduct(product.id)}
-                      className="flex-1 cursor-pointer px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm"
+                      className="flex-1 cursor-pointer px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors md:text-[18px] text-[16px]"
                     >
                       წაშლა
                     </button>
@@ -822,7 +813,7 @@ const AccountPage = () => {
   const renderSettingsTab = () => (
     <div className="space-y-6">
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-        <h3 className="text-lg font-bold text-black mb-6">პარამეტრები</h3>
+        <h3 className="md:text-[18px] text-[16px] font-bold text-black mb-6">პარამეტრები</h3>
         {/* Profile edit form */}
         <ProfileSettingsForm />
       </div>
@@ -892,7 +883,7 @@ const AccountPage = () => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`w-full cursor-pointer flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${activeTab === tab.id
+                    className={`w-full cursor-pointer flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors text-[16px]  ${activeTab === tab.id
                       ? 'bg-[#1B3729] text-white'
                       : 'text-black '
                       }`}
@@ -1031,50 +1022,50 @@ function ProfileSettingsForm() {
       {success && <div className="p-3 rounded bg-green-50 text-green-800 text-sm">{success}</div>}
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">სურათი</label>
+        <label className="block text-sm font-medium text-black mb-2">სურათი</label>
         <ImageUpload value={form.image ? [form.image] : []} onChange={onImageChange} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">სახელი</label>
+          <label className="block text-sm font-medium text-black mb-2">სახელი</label>
           <input name="name" value={form.name} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">გვარი</label>
+          <label className="block text-sm font-medium text-black mb-2">გვარი</label>
           <input name="lastName" value={form.lastName} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">ელფოსტა</label>
+        <label className="block text-sm font-medium text-black mb-2">ელფოსტა</label>
         <input type="email" name="email" value={form.email} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">ტელეფონი</label>
+        <label className="block text-sm font-medium text-black mb-2">ტელეფონი</label>
         <input name="phone" value={form.phone} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">ადგილმდებარეობა</label>
+        <label className="block text-sm font-medium text-black mb-2">ადგილმდებარეობა</label>
         <input name="location" value={form.location} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">მისამართი</label>
+        <label className="block text-sm font-medium text-black mb-2">მისამართი</label>
         <input name="address" value={form.address} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">საფოსტო ინდექსი</label>
+        <label className="block text-sm font-medium text-black mb-2">საფოსტო ინდექსი</label>
         <input name="postalIndex" value={form.postalIndex} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">სქესი</label>
+          <label className="block text-sm font-medium text-black mb-2">სქესი</label>
           <select name="gender" value={form.gender} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
             <option value="">აირჩიეთ სქესი</option>
             <option value="MALE">კაცი</option>
@@ -1084,15 +1075,15 @@ function ProfileSettingsForm() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">დაბადების თარიღი</label>
+          <label className="block text-sm font-medium text-black mb-2">დაბადების თარიღი</label>
           <input type="date" name="dateOfBirth" value={form.dateOfBirth} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">პირადობის ნომერი</label>
+        <label className="block text-sm font-medium text-black mb-2">პირადობის ნომერი</label>
         <input name="personalId" value={form.personalId} disabled className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed" />
-        <p className="text-xs text-gray-500 mt-1">პირადობის ნომერი არ შეიძლება შეიცვალოს</p>
+        <p className="md:text-[18px] text-[16px] text-black mt-1">პირადობის ნომერი არ შეიძლება შეიცვალოს</p>
       </div>
 
       <button type="submit" disabled={saving} className="w-full bg-black text-white py-3 px-6 rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50">

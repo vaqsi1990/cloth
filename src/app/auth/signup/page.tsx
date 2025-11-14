@@ -148,11 +148,11 @@ const SignUpPage = () => {
           <h2 className="text-[20px] text-center md:text-[30px] font-semibold uppercase tracking-widesttext-black">
             რეგისტრაცია
           </h2>
-          <p className="mt-2 text-center text-sm text-black">
+          <p className="mt-2 text-center text-lg text-black">
             ან{' '}
             <Link
               href="/auth/signin"
-              className="font-medium text-black"
+              className="text-blue-700  hover:text-[#1B3729]"
             >
               შედით თქვენს ანგარიშში
             </Link>
@@ -162,24 +162,24 @@ const SignUpPage = () => {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-red-800 text-sm">{error}</p>
+              <p className="text-red-800 text-[16px]">{error}</p>
             </div>
           )}
 
           {success && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <p className="text-green-800 text-sm">{success}</p>
+              <p className="text-green-800 text-[16px]">{success}</p>
             </div>
           )}
 
           <div className="space-y-4">
             {/* Name */}
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="name" className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
                 სახელი
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-black" />
                 <input
                   id="name"
                   name="name"
@@ -187,7 +187,7 @@ const SignUpPage = () => {
                   required
                   value={formData.name}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                  className="w-full pl-10 pr-4 py-3 placeholder:text-black border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
                   placeholder="შეიყვანეთ სახელი"
                 />
               </div>
@@ -195,11 +195,11 @@ const SignUpPage = () => {
 
             {/* Last Name */}
             <div>
-              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="lastName" className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
                 გვარი
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-black" />
                 <input
                   id="lastName"
                   name="lastName"
@@ -207,14 +207,14 @@ const SignUpPage = () => {
                   required
                   value={formData.lastName}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                  className="w-full pl-10 pr-4 py-3 placeholder:text-black border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
                   placeholder="შეიყვანეთ გვარი"
                 />
               </div>
             </div>
             {/* Phone */}
             <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="phone" className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
                 ტელეფონის ნომერი
               </label>
               <div className="relative">
@@ -225,14 +225,14 @@ const SignUpPage = () => {
                   required
                   value={formData.phone}
                   onChange={handleChange}
-                  className="w-full pl-4 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                  className="w-full pl-4 pr-4 py-3 placeholder:text-black border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
                   placeholder="შეიყვანეთ ტელეფონის ნომერი"
                 />
               </div>
             </div>
             {/* Location */}
             <div>
-              <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="location" className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
                 ადგილმდებარეობა
               </label>
               <div className="relative">
@@ -243,7 +243,7 @@ const SignUpPage = () => {
                   required
                   value={formData.location}
                   onChange={handleChange}
-                  className="w-full pl-4 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                  className="w-full pl-4 pr-4 py-3 placeholder:text-black border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
                   placeholder="შეიყვანეთ ადგილმდებარეობა"
                 />
               </div>
@@ -251,7 +251,7 @@ const SignUpPage = () => {
 
             {/* Address */}
             <div>
-              <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="address" className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
                 მისამართი
               </label>
               <div className="relative">
@@ -262,7 +262,7 @@ const SignUpPage = () => {
                   required
                   value={formData.address}
                   onChange={handleChange}
-                  className="w-full pl-4 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                  className="w-full pl-4 pr-4 py-3 placeholder:text-black border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
                   placeholder="შეიყვანეთ მისამართი"
                 />
               </div>
@@ -270,7 +270,7 @@ const SignUpPage = () => {
 
             {/* Postal Index */}
             <div>
-              <label htmlFor="postalIndex" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="postalIndex" className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
                 საფოსტო ინდექსი
               </label>
               <div className="relative">
@@ -281,7 +281,7 @@ const SignUpPage = () => {
                   required
                   value={formData.postalIndex}
                   onChange={handleChange}
-                  className="w-full pl-4 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                  className="w-full pl-4 pr-4 py-3 placeholder:text-black border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
                   placeholder="შეიყვანეთ საფოსტო ინდექსი"
                 />
               </div>
@@ -289,7 +289,7 @@ const SignUpPage = () => {
 
             {/* Gender */}
             <div>
-              <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="gender" className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
                 სქესი
               </label>
               <div className="relative">
@@ -299,7 +299,7 @@ const SignUpPage = () => {
                   required
                   value={formData.gender}
                   onChange={handleChange}
-                  className="w-full pl-4 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                  className="w-full pl-4 pr-4 py-3 placeholder:text-black border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
                 >
                   <option value="">აირჩიეთ სქესი</option>
                   <option value="MALE">კაცი</option>
@@ -311,7 +311,7 @@ const SignUpPage = () => {
 
             {/* Date of Birth */}
             <div>
-              <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="dateOfBirth" className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
                 დაბადების თარიღი
               </label>
               <div className="relative">
@@ -322,13 +322,13 @@ const SignUpPage = () => {
                   required
                   value={formData.dateOfBirth}
                   onChange={handleChange}
-                  className="w-full pl-4 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                  className="w-full pl-4 pr-4 py-3 placeholder:text-black border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
                 />
               </div>
             </div>
             {/* Personal ID */}
             <div>
-              <label htmlFor="personalId" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="personalId" className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
                 პირადობის ნომერი
               </label>
               <div className="relative">
@@ -339,7 +339,7 @@ const SignUpPage = () => {
                   required
                   value={formData.personalId}
                   onChange={handleChange}
-                  className="w-full pl-4 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                  className="w-full pl-4 pr-4 py-3 placeholder:text-black border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
                   placeholder="შეიყვანეთ პირადობის ნომერი"
                 />
               </div>
@@ -347,11 +347,11 @@ const SignUpPage = () => {
 
             {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="email" className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
                 ელფოსტა
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-black" />
                 <input
                   id="email"
                   name="email"
@@ -359,7 +359,7 @@ const SignUpPage = () => {
                   required
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                  className="w-full pl-10 pr-4 py-3 border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
                   placeholder="შეიყვანეთ ელფოსტა"
                 />
               </div>
@@ -367,11 +367,11 @@ const SignUpPage = () => {
 
             {/* Password */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="password" className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
                 პაროლი
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-black" />
                 <input
                   id="password"
                   name="password"
@@ -379,13 +379,13 @@ const SignUpPage = () => {
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                  className="w-full pl-10 pr-12 py-3 border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
                   placeholder="შეიყვანეთ პაროლი"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-black"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-black hover:text-black"
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -394,11 +394,11 @@ const SignUpPage = () => {
 
             {/* Confirm Password */}
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="confirmPassword" className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
                 პაროლის დადასტურება
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-black" />
                 <input
                   id="confirmPassword"
                   name="confirmPassword"
@@ -406,13 +406,13 @@ const SignUpPage = () => {
                   required
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                  className="w-full pl-10 pr-12 py-3 placeholder:text-black border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
                   placeholder="დაადასტურეთ პაროლი"
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-black"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-black hover:text-black"
                 >
                   {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -422,7 +422,7 @@ const SignUpPage = () => {
             {/* Verification Code - only show after code is sent */}
             {showCodeInput && (
               <div>
-                <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="code" className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
                   ვერიფიკაციის კოდი
                 </label>
                 <div className="relative">
@@ -435,7 +435,7 @@ const SignUpPage = () => {
                     maxLength={6}
                     value={formData.code}
                     onChange={handleChange}
-                    className="w-full pl-4 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                    className="w-full pl-4 pr-4 py-3 placeholder:text-black border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
                     placeholder="შეიყვანეთ 6-ნიშნა კოდი"
                   />
                 </div>
@@ -449,7 +449,7 @@ const SignUpPage = () => {
                 type="button"
                 onClick={handleSendCode}
                 disabled={isSendingCode}
-                className="w-full bg-black cursor-pointer text-white py-3 px-6 rounded-lg font-medium hover:bg-gray-800 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                className="w-full md:text-[18px] text-[16px] bg-black cursor-pointer text-white py-3 px-6 rounded-lg font-medium hover:bg-gray-800 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
               >
                 {isSendingCode ? (
                   <>
@@ -464,7 +464,7 @@ const SignUpPage = () => {
               <button
                 type="submit"
                 disabled={isLoading || !formData.code || !/^[A-Za-z0-9]{6}$/.test(formData.code)}
-                className="w-full bg-black cursor-pointer text-white py-3 px-6 rounded-lg font-medium hover:bg-gray-800 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                className="w-full bg-black md:text-[18px] text-[16px]  cursor-pointer text-white py-3 px-6 rounded-lg font-medium hover:bg-gray-800 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
               >
                 {isLoading ? (
                   <>

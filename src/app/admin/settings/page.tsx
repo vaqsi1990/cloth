@@ -324,7 +324,7 @@ const AdminSettingsPage = () => {
               <form onSubmit={handleProfileUpdate} className="space-y-6">
                 {/* Name */}
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="name" className="block text-sm font-medium text-black mb-2">
                     სახელი
                   </label>
                   <div className="relative">
@@ -344,7 +344,7 @@ const AdminSettingsPage = () => {
 
                 {/* Email */}
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="email" className="block text-sm font-medium text-black mb-2">
                     ელფოსტა
                   </label>
                   <div className="relative">

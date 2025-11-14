@@ -37,13 +37,10 @@ export async function GET(
       }, { status: 404 })
     }
 
-    // Only show AVAILABLE products to non-admin users
-    const isAdmin = session?.user?.role === 'ADMIN'
-
+    // Show all products regardless of status
     const products = await prisma.product.findMany({
       where: { 
-        userId: userId,
-        ...(isAdmin ? {} : { status: 'AVAILABLE' })
+        userId: userId
       },
       include: {
         category: true,

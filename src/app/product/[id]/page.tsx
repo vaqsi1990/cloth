@@ -930,9 +930,9 @@ const ProductPage = () => {
                                             
                                             return (
                                                 <div className="text-[16px] bg-white border border-gray-200 rounded-lg p-3">
-                                                    <div className="font-medium text-gray-700 mb-2">დაკავებული პერიოდი:</div>
+                                                    <div className="font-medium text-black mb-2">დაკავებული პერიოდი:</div>
                                                     <div className="p-2 border rounded">
-                                                        <div className="text-gray-700 font-medium">ქირაობა: {formatDate(lastPeriod.startDate)} - {formatDate(lastPeriod.endDate)}</div>
+                                                        <div className="text-black font-medium">ქირაობა: {formatDate(lastPeriod.startDate)} - {formatDate(lastPeriod.endDate)}</div>
                                                         <div className="text-orange-600">რესტავრაცია: {formatDate(maintenanceEndDate.toISOString())}</div>
                                                         <div className="text-green-600 font-semibold">ხელმისაწვდომია {formatDate(availableDate.toISOString())}-იდან</div>
                                                     </div>
@@ -971,7 +971,7 @@ const ProductPage = () => {
                                                 </div>
 
                                                 {product.deposit ? (
-                                                    <div className="text-[16px] text-gray-700">
+                                                    <div className="text-[16px] text-black">
                                                         + გირაო: ₾{product.deposit.toFixed(2)}
                                                     </div>
                                                 ) : null}

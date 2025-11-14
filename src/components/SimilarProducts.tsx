@@ -96,7 +96,7 @@ const SimilarProducts: React.FC<SimilarProductsProps> = ({ productId, categoryNa
               </div>
               
               <div className="space-y-1">
-                <h3 className="font-semibold text-gray-900 group-hover:text-gray-700 transition-colors line-clamp-2">
+                <h3 className="font-semibold text-gray-900 group-hover:text-black transition-colors line-clamp-2">
                   {product.name}
                 </h3>
                 

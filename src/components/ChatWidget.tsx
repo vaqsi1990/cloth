@@ -386,7 +386,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
             <div className="p-4 border-t border-gray-200 bg-white">
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-black mb-1">
                     სახელი
                   </label>
                   <input
@@ -398,7 +398,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-black mb-1">
                     ელ-ფოსტა
                   </label>
                   <input

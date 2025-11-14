@@ -303,7 +303,7 @@ const AdminUsersPage = () => {
                             {user.role === 'ADMIN' ? 'ადმინისტრატორი' : 'მომხმარებელი'}
                           </span>
                           {(!user.name || !user.email) && (
-                            <span className="px-2 py-1 text-xs rounded-full bg-gray-200 text-gray-700">
+                            <span className="px-2 py-1 text-xs rounded-full bg-gray-200 text-black">
                               წაშლილი
                             </span>
                           )}

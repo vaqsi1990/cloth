@@ -113,11 +113,11 @@ const AdminProductBySKUPage = () => {
     const statusMap: { [key: string]: { label: string; color: string; bgColor: string } } = {
       'ACTIVE': { label: 'აქტიური', color: 'text-green-700', bgColor: 'bg-green-100' },
       'RESERVED': { label: 'დაჯავშნილი', color: 'text-blue-700', bgColor: 'bg-blue-100' },
-      'RETURNED': { label: 'დაბრუნებული', color: 'text-gray-700', bgColor: 'bg-gray-100' },
+      'RETURNED': { label: 'დაბრუნებული', color: 'text-black', bgColor: 'bg-gray-100' },
       'LATE': { label: 'გადაცდენილი', color: 'text-red-700', bgColor: 'bg-red-100' },
-      'CANCELED': { label: 'გაუქმებული', color: 'text-gray-700', bgColor: 'bg-gray-100' }
+      'CANCELED': { label: 'გაუქმებული', color: 'text-black', bgColor: 'bg-gray-100' }
     }
-    return statusMap[status] || { label: status, color: 'text-gray-700', bgColor: 'bg-gray-100' }
+    return statusMap[status] || { label: status, color: 'text-black', bgColor: 'bg-gray-100' }
   }
 
   if (status === 'loading') {
@@ -155,7 +155,7 @@ const AdminProductBySKUPage = () => {
             <div className="flex items-center space-x-4">
               <Link
                 href="/admin/products"
-                className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-black rounded-lg hover:bg-gray-200 transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>უკან</span>
@@ -267,7 +267,7 @@ const AdminProductBySKUPage = () => {
 
                   {productData.product.variants && productData.product.variants.length > 0 && (
                     <div className="mt-4">
-                      <p className="text-sm font-semibold text-gray-700 mb-2">ზომები და ფასები:</p>
+                      <p className="text-sm font-semibold text-black mb-2">ზომები და ფასები:</p>
                       <div className="flex flex-wrap gap-2">
                         {productData.product.variants.map((variant: ProductVariant) => (
                           <div key={variant.id} className="bg-gray-50 px-3 py-2 rounded border">

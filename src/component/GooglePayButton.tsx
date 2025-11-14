@@ -336,7 +336,7 @@ const GooglePayButton: React.FC<GooglePayButtonProps> = ({
             setError(null)
             initializeGooglePay()
           }}
-          className="mt-2 text-sm text-gray-700 underline hover:no-underline"
+          className="mt-2 text-sm text-black underline hover:no-underline"
         >
           სცადეთ თავიდან
         </button>

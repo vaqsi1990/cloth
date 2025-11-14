@@ -243,7 +243,7 @@ const Header = () => {
                   <button className="p-2 text-white ">
                     <User className="w-5 h-5" />
                   </button>
-                  <div className="absolute -right-20 top-full mt-2 w-54 bg-black border border-black rounded-xl shadow-xl z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300">
+                  <div className="absolute -right-20 top-full mt-2 w-54 bg-white border border-gray-200 rounded-xl shadow-xl z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300">
                     <div className="py-2 text-black">
                       <p className="px-4 font-semibold">{session.user.name}</p>
                       {session.user.role === 'ADMIN' ? (
@@ -251,13 +251,13 @@ const Header = () => {
                           ადმინისტრატორი
                         </Link>
                       ) : (
-                        <Link href="/account" className="block px-4 py-2 hover:bg-black">
+                        <Link href="/account" className="block hover:bg-gray-100 text-black px-4 py-2 ">
                           პროფილი
                         </Link>
                       )}
                       <button
                         onClick={() => signOut()}
-                        className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
+                        className="w-full text-left cursor-pointer px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
                       >
                         <LogOut className="w-4 h-4" />
                         <span>გასვლა</span>

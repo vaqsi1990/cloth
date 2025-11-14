@@ -113,7 +113,7 @@ const AuthorPage = () => {
                             )}
                         </div>
                         <div>
-                            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                            <h1 className=" font-bold text-black md:text-[18px] text-[16px] mb-2">
                                 {author?.name || "უცნობი ავტორი"}
                             </h1>
                             <p className="text-black">
@@ -150,18 +150,14 @@ const AuthorPage = () => {
                                     </div>
                                 </div>
                                 <div className="p-4">
-                                    <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
+                                    <h3 className="font-semibold text-black md:text-[18px] text-[16px] mb-2 line-clamp-2">
                                         {product.name}
                                     </h3>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-lg font-bold text-gray-900">
+                                        <span className="text-lg font-bold text-black md:text-[18px] text-[16px]">
                                             ₾{getDisplayPrice(product).toFixed(2)}
                                         </span>
-                                        {product.isRentable && (
-                                            <span className="text-sm text-emerald-600 font-medium">
-                                                ქირაობა
-                                            </span>
-                                        )}
+                                       
                                     </div>
                                 </div>
                             </Link>
@@ -169,8 +165,8 @@ const AuthorPage = () => {
                     </div>
                 ) : (
                     <div className="text-center py-16">
-                        <User className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                        <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                        <User className="w-16 h-16 text-black mx-auto mb-4" />
+                        <h3 className=" font-semibold text-black md:text-[18px] text-[16px] mb-2">
                             პროდუქტები ვერ მოიძებნა
                         </h3>
                         <p className="text-black">

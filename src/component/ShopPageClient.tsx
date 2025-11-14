@@ -546,7 +546,7 @@ const ShopPageClient = () => {
                                             onClick={() => toggleSizeSystem(sizeSystem.id)}
                                             className={`px-3 py-2 md:text-[18px] text-[16px] rounded-md border transition-colors ${selectedSizeSystems.includes(sizeSystem.id)
                                                 ? "bg-black text-white border-black"
-                                                : "bg-white text-gray-700 border-gray-300 hover:border-black"
+                                                : "bg-white text-black border-gray-300 hover:border-black"
                                                 }`}
                                         >
                                             {sizeSystem.label}
@@ -588,7 +588,7 @@ const ShopPageClient = () => {
                                             onClick={() => toggleLocation(location.id)}
                                             className={`px-3 py-2 md:text-[18px] text-[16px] rounded-md border transition-colors ${selectedLocations.includes(location.id)
                                                 ? "bg-black text-white border-black"
-                                                : "bg-white text-gray-700 border-gray-300 hover:border-black"
+                                                : "bg-white text-black border-gray-300 hover:border-black"
                                                 }`}
                                         >
                                             {location.label}
@@ -612,7 +612,7 @@ const ShopPageClient = () => {
                                                 onClick={() => toggleRating(rating)}
                                                 className={`w-full flex items-center justify-between px-3 py-2 md:text-[18px] text-[16px] rounded-md border transition-colors ${selectedRatings.includes(rating)
                                                     ? "bg-[#1B3729] text-white border-[#1B3729]"
-                                                    : "bg-white text-gray-700 border-gray-300 hover:border-black"
+                                                    : "bg-white text-black border-gray-300 hover:border-black"
                                                     }`}
                                             >
                                                 <div className="flex items-center gap-2">

@@ -440,7 +440,7 @@ const AdminProductsPage = () => {
                          <div className="mb-2">
                            <span className={`text-xs font-mono px-2 py-1 rounded ${
                              product.sku 
-                               ? 'text-gray-700 bg-gray-100' 
+                               ? 'text-black bg-gray-100' 
                                : 'text-orange-600 bg-orange-50'
                            }`}>
                              კოდი: {product.sku || 'არ არის მინიჭებული'}
@@ -450,7 +450,7 @@ const AdminProductsPage = () => {
                          <div className="mb-2">
                            <span className={`text-xs font-mono px-2 py-1 rounded ${
                              product.sku 
-                               ? 'text-gray-700 bg-gray-100' 
+                               ? 'text-black bg-gray-100' 
                                : 'text-orange-600 bg-orange-50'
                            }`}>
                              ავტორი: {product.sku || 'არ არის მინიჭებული'}
@@ -461,7 +461,7 @@ const AdminProductsPage = () => {
                           <select
                             value={product.status || 'AVAILABLE'}
                             onChange={(e) => handleStatusChange(product.id, e.target.value)}
-                            className="text-sm border border-gray-300 rounded px-2 py-1 text-gray-700 focus:outline-none focus:ring-1 focus:ring-black"
+                            className="text-sm border border-gray-300 rounded px-2 py-1 text-black focus:outline-none focus:ring-1 focus:ring-black"
                           >
                             <option value="AVAILABLE">თავისუფალია</option>
                             <option value="RENTED">გაქირავებულია</option>
@@ -537,7 +537,7 @@ const AdminProductsPage = () => {
                        <div className="flex items-center space-x-2 ml-4">
                          <Link
                            href={`/product/${product.id}`}
-                           className="flex items-center space-x-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+                           className="flex items-center space-x-1 px-3 py-2 bg-gray-100 text-black rounded-lg hover:bg-gray-200 transition-colors text-sm"
                          >
                            <Eye className="w-4 h-4" />
                            <span>ნახვა</span>
