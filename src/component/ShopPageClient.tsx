@@ -35,7 +35,7 @@ const ShopPageClient = () => {
     }[]>>({})
     const [isCategoryOpen, setIsCategoryOpen] = useState(true)
     const [currentPage, setCurrentPage] = useState(1)
-    const [itemsPerPage] = useState(4)
+    const [itemsPerPage] = useState(20)
 
     // Helper functions for price calculation
     const getRentalPrice = (product: Product): number => {

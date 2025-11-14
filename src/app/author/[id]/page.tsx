@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowLeft, User } from "lucide-react"
+import { ArrowLeft, User, ChevronLeft, ChevronRight } from "lucide-react"
 import { Product } from "@/types/product"
 
 const AuthorPage = () => {
@@ -13,6 +13,8 @@ const AuthorPage = () => {
     const [author, setAuthor] = useState<{ id: string; name?: string; image?: string } | null>(null)
     const [products, setProducts] = useState<Product[]>([])
     const [loading, setLoading] = useState(true)
+    const [currentPage, setCurrentPage] = useState(1)
+    const [itemsPerPage] = useState(20)
 
     // Helper to get rental price from tier[0] (first tier with minimum days)
     const getRentalPrice = (product: Product): number => {
@@ -71,6 +73,17 @@ const AuthorPage = () => {
         if (authorId) fetchData()
     }, [authorId])
 
+    // Pagination calculations
+    const totalPages = Math.ceil(products.length / itemsPerPage)
+    const startIndex = (currentPage - 1) * itemsPerPage
+    const endIndex = startIndex + itemsPerPage
+    const currentProducts = products.slice(startIndex, endIndex)
+
+    // Reset to page 1 when products change
+    useEffect(() => {
+        setCurrentPage(1)
+    }, [products.length])
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -125,55 +138,126 @@ const AuthorPage = () => {
                 </div>
 
                 {/* Products Grid */}
-                {products.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {products.map((product) => (
-                            <Link
-                                key={product.id}
-                                href={`/product/${product.id}`}
-                                className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
-                            >
-                                <div className="relative aspect-[3/4] bg-gray-100">
-                                    <Image
-                                        src={product.images?.[0]?.url || "/placeholder.jpg"}
-                                        alt={product.name}
-                                        fill
-                                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                                    />
-                                    <div className="absolute top-4 left-4 flex gap-2">
-                                        {product.discount && product.discount > 0 && (
-                                            <span className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
-                                                -{product.discount}%
-                                            </span>
-                                        )}
-                                      
+                {currentProducts.length > 0 ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+                                {currentProducts.map((product) => (
+                                    <div
+                                        key={product.id}
+
+                                        className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                                    >
+                                        <div className="relative aspect-[3/4] bg-gray-100">
+                                            <Image
+                                                src={product.images?.[0]?.url || "/placeholder.jpg"}
+                                                alt={product.name}
+                                                fill
+                                                className="object-cover  transition-transform duration-300"
+                                            />
+                                            <div className="absolute top-4 left-4 flex gap-2">
+                                                {product.discount && product.discount > 0 && (
+                                                    <span className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                                                        -{product.discount}%
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="p-4">
+                                            <h3 className="font-semibold text-black md:text-[20px] text-[16px] mb-2 line-clamp-2">
+                                                {product.name}
+                                            </h3>
+                                            <div className="flex items-center justify-between">
+                                                <span className="font-bold text-black md:text-[18px] text-[16px]">
+                                                    ₾{getDisplayPrice(product).toFixed(2)}
+                                                </span>
+
+                                            </div>
+                                            <Link href={`/product/${product.id}`} className="block w-full md:w-[200px]  mt-3 bg-[#1B3729] md:text-[18px] text-[16px] text-white text-center py-2 rounded-lg font-bold transition-colors duration-300">დეტალები</Link>
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="p-4">
-                                    <h3 className="font-semibold text-black md:text-[18px] text-[16px] mb-2 line-clamp-2">
-                                        {product.name}
-                                    </h3>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-lg font-bold text-black md:text-[18px] text-[16px]">
-                                            ₾{getDisplayPrice(product).toFixed(2)}
-                                        </span>
-                                       
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-16">
+                                <h3 className="text-xl font-semibold text-black md:text-[20px] text-[16px] mb-2">
+                                    პროდუქტები ვერ მოიძებნა
+                                </h3>
+                                <p className="text-black">
+                                    სცადეთ სხვა ფილტრები
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Pagination */}
+                        {totalPages > 1 && (
+                            <div className="flex flex-col items-center justify-center gap-4 mt-8">
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                        disabled={currentPage === 1}
+                                        className={`px-4 py-2 rounded-lg border transition-colors md:text-[18px] text-[16px] flex items-center gap-2 ${
+                                            currentPage === 1
+                                                ? 'bg-gray-100 text-black cursor-not-allowed border-gray-300'
+                                                : 'bg-white text-black border-gray-300 hover:bg-gray-50 hover:border-black'
+                                        }`}
+                                    >
+                                        <ChevronLeft className="w-5 h-5" />
+                                        წინა
+                                    </button>
+
+                                    <div className="flex items-center gap-1">
+                                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                                            // Show first page, last page, current page, and pages around current
+                                            if (
+                                                page === 1 ||
+                                                page === totalPages ||
+                                                (page >= currentPage - 1 && page <= currentPage + 1)
+                                            ) {
+                                                return (
+                                                    <button
+                                                        key={page}
+                                                        onClick={() => setCurrentPage(page)}
+                                                        className={`px-4 py-2 rounded-lg border transition-colors md:text-[18px] text-[16px] ${
+                                                            currentPage === page
+                                                                ? 'bg-black text-white border-black'
+                                                                : 'bg-white text-black border-gray-300 hover:bg-gray-50 hover:border-black'
+                                                        }`}
+                                                    >
+                                                        {page}
+                                                    </button>
+                                                )
+                                            } else if (
+                                                page === currentPage - 2 ||
+                                                page === currentPage + 2
+                                            ) {
+                                                return (
+                                                    <span key={page} className="px-2 text-black">
+                                                        ...
+                                                    </span>
+                                                )
+                                            }
+                                            return null
+                                        })}
                                     </div>
+
+                                    <button
+                                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                        disabled={currentPage === totalPages}
+                                        className={`px-4 py-2 rounded-lg border transition-colors md:text-[18px] text-[16px] flex items-center gap-2 ${
+                                            currentPage === totalPages
+                                                ? 'bg-gray-100 text-black cursor-not-allowed border-gray-300'
+                                                : 'bg-white text-black border-gray-300 hover:bg-gray-50 hover:border-black'
+                                        }`}
+                                    >
+                                        შემდეგი
+                                        <ChevronRight className="w-5 h-5" />
+                                    </button>
                                 </div>
-                            </Link>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="text-center py-16">
-                        <User className="w-16 h-16 text-black mx-auto mb-4" />
-                        <h3 className=" font-semibold text-black md:text-[18px] text-[16px] mb-2">
-                            პროდუქტები ვერ მოიძებნა
-                        </h3>
-                        <p className="text-black">
-                            ამ ავტორს არ აქვს გამოქვეყნებული პროდუქტები
-                        </p>
-                    </div>
-                )}
+
+                                <p className="text-black md:text-[16px] text-[14px]">
+                                    გვერდი {currentPage} {totalPages}-დან
+                                </p>
+                            </div>
+                        )}
             </main>
         </div>
     )
