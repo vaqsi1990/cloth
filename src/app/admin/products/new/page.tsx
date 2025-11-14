@@ -596,7 +596,7 @@ const NewProductPage = () => {
                         min="1"
                         value={tier.minDays}
                         onChange={(e) => updateRentalPriceTier(index, 'minDays', parseInt(e.target.value) || 1)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
 
@@ -608,7 +608,7 @@ const NewProductPage = () => {
                         min="0"
                         value={tier.pricePerDay}
                         onChange={(e) => updateRentalPriceTier(index, 'pricePerDay', parseFloat(e.target.value) || 0)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
 
@@ -726,7 +726,7 @@ const NewProductPage = () => {
             ))}
 
             {showPurchaseOptions && formData.variants.length === 0 && (
-              <p className="text-sm text-gray-500">თქვენ შეგიძლიათ დაამატოთ ზომები და საწყობის რაოდენობა.</p>
+              <p className="md:text-[18px] text-[16px] text-black">თქვენ შეგიძლიათ დაამატოთ ზომები და საწყობის რაოდენობა.</p>
             )}
           </div>
 

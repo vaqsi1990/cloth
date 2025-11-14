@@ -225,7 +225,7 @@ const AdminDashboard = () => {
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-black">{stat.title}</p>
+                  <p className="md:text-[18px] text-[16px] font-medium text-black">{stat.title}</p>
                   <p className="text-2xl font-bold text-gray-900 mt-1">
                     {statsLoading ? (
                       <span className="inline-block w-8 h-6 bg-gray-200 rounded animate-pulse"></span>
@@ -246,7 +246,7 @@ const AdminDashboard = () => {
 
         {/* Quick Actions */}
         <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">სწრაფი მოქმედებები</h2>
+          <h2 className="text-2xl font-bold text-black  mb-6">სწრაფი მოქმედებები</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
             {quickActions.map((action, index) => (
@@ -265,7 +265,7 @@ const AdminDashboard = () => {
                     <h3 className="font-semibold text-gray-900 group-hover:text-black transition-colors">
                       {action.title}
                     </h3>
-                    <p className="text-sm text-black mt-1">
+                    <p className="md:text-[18px] text-[16px] text-black mt-1">
                       {action.description}
                     </p>
                   </div>

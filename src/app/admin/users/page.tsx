@@ -192,7 +192,7 @@ const AdminUsersPage = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
+          <h1 className="text-2xl font-bold text-black mb-4">Access Denied</h1>
           <p className="text-black mb-6">You don&apos;t have permission to access this page.</p>
           <Link
             href="/"
@@ -214,13 +214,13 @@ const AdminUsersPage = () => {
             <div className="flex items-center space-x-4">
               <Link
                 href="/admin"
-                className="flex items-center space-x-2 text-black hover:text-gray-900 transition-colors"
+                className="flex items-center space-x-2 text-black hover:text-black transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
                 <span>ადმინ პანელი</span>
               </Link>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">მომხმარებლების მართვა</h1>
+                <h1 className="text-3xl font-bold text-black">მომხმარებლების მართვა</h1>
                 <p className="text-black mt-1">მართე ყველა მომხმარებელი</p>
               </div>
             </div>
@@ -234,7 +234,7 @@ const AdminUsersPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Search */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-black" />
               <input
                 type="text"
                 placeholder="მომხმარებლის ძებნა..."
@@ -246,7 +246,7 @@ const AdminUsersPage = () => {
 
             {/* Role Filter */}
             <div className="relative">
-              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-black" />
               <select
                 value={filterRole}
                 onChange={(e) => setFilterRole(e.target.value)}
@@ -263,15 +263,15 @@ const AdminUsersPage = () => {
         {/* Users List */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-gray-900">
+            <h2 className="text-xl font-bold text-black">
               მომხმარებლები ({filteredUsers.length})
             </h2>
           </div>
 
           {filteredUsers.length === 0 ? (
             <div className="text-center py-12">
-              <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-black mb-4">
+              <Users className="w-12 h-12 text-black mx-auto mb-4" />
+              <p className="md:text-[18px] text-[16px] text-black mb-4">
                 {searchTerm || filterRole !== 'ALL'
                   ? 'ფილტრის შედეგები ვერ მოიძებნა'
                   : 'ჯერ არ არის მომხმარებლები'
@@ -292,7 +292,7 @@ const AdminUsersPage = () => {
                       
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-1">
-                          <h3 className="font-semibold text-gray-900">
+                          <h3 className="font-semibold text-black md:text-[18px] text-[16px]">
                             {user.name || (user.personalId ? `წაშლილი მომხმარებელი (${user.personalId})` : 'წაშლილი მომხმარებელი')}
                           </h3>
                           <span className={`px-2 py-1 text-xs rounded-full ${
@@ -309,7 +309,7 @@ const AdminUsersPage = () => {
                           )}
                         </div>
                         
-                        <div className="flex items-center space-x-4 text-sm text-black">
+                        <div className="flex items-center space-x-4 text-[16px] text-black">
                           {user.email && user.name && (
                             <div className="flex items-center space-x-1">
                               <Mail className="w-4 h-4" />
@@ -334,7 +334,7 @@ const AdminUsersPage = () => {
                           )}
                         </div>
                         
-                        <div className="flex items-center space-x-4 text-xs text-gray-500 mt-1">
+                        <div className="flex items-center space-x-4 text-[16px] text-black mt-1">
                           <div className="flex items-center space-x-1">
                             <Package className="w-3 h-3" />
                             <span>{user._count.products} პროდუქტი</span>
@@ -397,7 +397,7 @@ const AdminUsersPage = () => {
                             <BanUserInline user={user} setUsers={setUsers} />
                           ) : (
                             <button
-                              className="px-3 py-2 bg-gray-200 text-gray-800 rounded text-[18px] hover:bg-gray-300"
+                              className="px-3 py-2 bg-gray-200 text-black rounded text-[18px] hover:bg-gray-300"
                               onClick={async () => {
                                 const res = await fetch(`/api/admin/users/${user.id}/ban`, {
                                   method: 'PUT',
@@ -424,7 +424,7 @@ const AdminUsersPage = () => {
                       {/* User Verification Section */}
                       {user.verification && (
                         <div className="mb-6">
-                          <h4 className="text-sm font-semibold text-gray-900 mt-4 mb-2">ვერიფიკაცია (პირადობის სურათები)</h4>
+                          <h4 className="text-[16px] font-semibold text-black mt-4 mb-2">ვერიფიკაცია (პირადობის სურათები)</h4>
                           <div className="flex flex-col md:flex-row gap-4 mb-2">
                             {user.verification.idFrontUrl && (
                               <div className="flex flex-col items-center">
@@ -462,7 +462,7 @@ const AdminUsersPage = () => {
                               {user.verification.status === 'REJECTED' && 'უარყოფილია'}
                             </span>
                             {user.verification.updatedAt && (
-                              <span className="text-[18px] text-gray-500">{new Date(user.verification.updatedAt).toLocaleDateString('ka-GE')}</span>
+                              <span className="text-[18px] text-black">{new Date(user.verification.updatedAt).toLocaleDateString('ka-GE')}</span>
                             )}
                           </div>
                           {user.verification.comment && (
@@ -493,74 +493,8 @@ const AdminUsersPage = () => {
                           )}
                         </div>
                       )}
-                      {/* User Products Section */}
-                      <h4 className="text-sm font-semibold text-gray-900 mb-3 mt-4">მომხმარებლის პროდუქტები</h4>
-                      {user.products ? (
-                        user.products.length > 0 ? (
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {user.products.map((product) => (
-                              <div key={product.id} className="border border-gray-200 rounded-lg p-3 hover:shadow-sm transition-shadow">
-                                <div className="flex items-start space-x-3">
-                                  {/* Product Image */}
-                                  <div className="w-16 h-20 bg-gray-200 rounded-lg relative flex-shrink-0">
-                                    {product.images.length > 0 ? (
-                                      <Image
-                                        src={product.images[0].url}
-                                        alt={product.images[0].alt || product.name}
-                                        fill
-                                        className="object-cover rounded-lg"
-                                      />
-                                    ) : (
-                                      <div className="w-full h-full flex items-center justify-center">
-                                        <Package className="w-6 h-6 text-gray-400" />
-                                      </div>
-                                    )}
-                                  </div>
-
-                                  {/* Product Info */}
-                                  <div className="flex-1 min-w-0">
-                                    <h5 className="font-medium text-gray-900 text-sm mb-1 truncate">
-                                      {product.name}
-                                    </h5>
-                                    
-                                    <div className="text-sm text-black mb-2">
-                                      <span className="font-semibold">₾{product.currentPrice}</span>
-                                      <span className="ml-2 text-[18px]">{product.gender}</span>
-                                    </div>
-                                    
-                                    <div className="flex items-center space-x-2 mb-2">
-                                      {product.isNew && (
-                                        <span className="px-2 py-1 bg-green-100 text-green-800 text-[18px] rounded-full">
-                                          ახალი
-                                        </span>
-                                      )}
-                                      {product.discount && product.discount > 0 && (
-                                        <span className="px-2 py-1 bg-red-100 text-red-800 text-[18px] rounded-full">
-                                          -{product.discount}%
-                                        </span>
-                                      )}
-                                    </div>
-                                    
-                                    <p className="text-[18px] text-gray-500">
-                                      დამატებული: {new Date(product.createdAt).toLocaleDateString('ka-GE')}
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="text-center py-4 text-[18px] text-gray-500">
-                            <Package className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                            <p className="text-[18px]">მომხმარებელს არ აქვს პროდუქტები</p>
-                          </div>
-                        )
-                      ) : (
-                        <div className="text-center py-4">
-                          <div className="w-6 h-6 border-2 border-gray-300 border-t-black rounded-full animate-spin mx-auto mb-2"></div>
-                          <p className="text-[18px] text-gray-500">პროდუქტების ჩატვირთვა...</p>
-                        </div>
-                      )}
+                    
+                   
                     </div>
                   )}
                 </div>

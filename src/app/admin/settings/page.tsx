@@ -281,8 +281,8 @@ const AdminSettingsPage = () => {
                     </button>
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">პროფილის სურათი</h3>
-                    <p className="text-sm text-black">ატვირთეთ თქვენი პროფილის სურათი</p>
+                    <h3 className="md:text-[18px] text-[16px] font-semibold text-black">პროფილის სურათი</h3>
+                    <p className="md:text-[18px] text-[16px] text-black">ატვირთეთ თქვენი პროფილის სურათი</p>
                   </div>
                 </div>
 
@@ -293,7 +293,7 @@ const AdminSettingsPage = () => {
                       onChange={handleImageUpload}
                     />
                     {isUploadingImage && (
-                      <p className="text-sm text-black mt-2">სურათი იტვირთება...</p>
+                      <p className="md:text-[18px] text-[16px] text-black mt-2">სურათი იტვირთება...</p>
                     )}
                     <div className="mt-3 flex space-x-2">
                       <button
@@ -309,7 +309,7 @@ const AdminSettingsPage = () => {
 
               {isSubmitted && (
                 <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <p className="text-green-800 font-medium">
+                  <p className="md:text-[18px] text-[16px] text-green-800 font-medium">
                     ✅ პროფილი წარმატებით განახლდა!
                   </p>
                 </div>
@@ -324,7 +324,7 @@ const AdminSettingsPage = () => {
               <form onSubmit={handleProfileUpdate} className="space-y-6">
                 {/* Name */}
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-black mb-2">
+                  <label htmlFor="name" className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
                     სახელი
                   </label>
                   <div className="relative">
@@ -336,7 +336,7 @@ const AdminSettingsPage = () => {
                       value={profileData.name}
                       onChange={handleChange}
                       required
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                      className="w-full pl-10 pr-4 placeholder:text-black py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
                       placeholder="შეიყვანეთ თქვენი სახელი"
                     />
                   </div>
@@ -344,11 +344,11 @@ const AdminSettingsPage = () => {
 
                 {/* Email */}
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-black mb-2">
+                  <label htmlFor="email" className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
                     ელფოსტა
                   </label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-black" />
                     <input
                       type="email"
                       id="email"
@@ -356,7 +356,7 @@ const AdminSettingsPage = () => {
                       value={profileData.email}
                       onChange={handleChange}
                       required
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                      className="w-full pl-10 pr-4 placeholder:text-black py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
                       placeholder="შეიყვანეთ თქვენი ელფოსტა"
                     />
                   </div>

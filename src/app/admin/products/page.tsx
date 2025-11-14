@@ -284,7 +284,7 @@ const AdminProductsPage = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
+          <h1 className="text-2xl font-bold text-black mb-4">Access Denied</h1>
           <p className="text-black mb-6">You don&apos;t have permission to access this page.</p>
           <Link
             href="/"
@@ -304,7 +304,7 @@ const AdminProductsPage = () => {
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">პროდუქტების მართვა</h1>
+              <h1 className="text-3xl font-bold text-black">პროდუქტების მართვა</h1>
               <p className="text-black mt-1">მართე ყველა პროდუქტი</p>
             </div>
             <div className="flex items-center space-x-4">
@@ -339,7 +339,7 @@ const AdminProductsPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Search */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-black" />
               <input
                 type="text"
                 placeholder="პროდუქტის ძებნა..."
@@ -351,7 +351,7 @@ const AdminProductsPage = () => {
 
             {/* Gender Filter */}
             <div className="relative">
-              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-black" />
               <select
                 value={filterGender}
                 onChange={(e) => setFilterGender(e.target.value)}
@@ -367,7 +367,7 @@ const AdminProductsPage = () => {
 
             {/* Category Filter */}
             <div className="relative">
-              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-black" />
               <select
                 value={filterCategory}
                 onChange={(e) => setFilterCategory(e.target.value)}
@@ -387,14 +387,14 @@ const AdminProductsPage = () => {
         {/* Products Grid */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-gray-900">
+            <h2 className="text-xl font-bold text-black">
               პროდუქტები ({filteredProducts.length})
             </h2>
           </div>
 
           {filteredProducts.length === 0 ? (
             <div className="text-center py-12">
-              <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <Package className="w-12 h-12 text-black mx-auto mb-4" />
               <p className="text-black mb-4">
                 {searchTerm || filterGender !== 'ALL' || filterCategory !== 'ALL'
                   ? 'ფილტრის შედეგები ვერ მოიძებნა'
@@ -423,7 +423,7 @@ const AdminProductsPage = () => {
                        />
                      ) : (
                        <div className="w-full h-full flex items-center justify-center">
-                         <Package className="w-6 h-6 text-gray-400" />
+                         <Package className="w-6 h-6 text-black" />
                        </div>
                      )}
                    </div>
@@ -432,13 +432,13 @@ const AdminProductsPage = () => {
                    <div className="flex-1 min-w-0">
                      <div className="flex items-start justify-between">
                        <div className="flex-1">
-                         <h3 className="font-semibold text-gray-900 mb-1 truncate">
+                         <h3 className="font-semibold text-black mb-1 truncate">
                            {product.name}
                          </h3>
                          
                          {/* SKU Code - Always show */}
                          <div className="mb-2">
-                           <span className={`text-xs font-mono px-2 py-1 rounded ${
+                           <span className={`md:text-[18px] text-[16px] font-mono px-2 py-1 rounded ${
                              product.sku 
                                ? 'text-black bg-gray-100' 
                                : 'text-orange-600 bg-orange-50'
@@ -448,12 +448,12 @@ const AdminProductsPage = () => {
                          </div>
 
                          <div className="mb-2">
-                           <span className={`text-xs font-mono px-2 py-1 rounded ${
-                             product.sku 
+                           <span className={`md:text-[18px] text-[16px] font-mono px-2 py-1 rounded ${
+                             product.user?.name 
                                ? 'text-black bg-gray-100' 
                                : 'text-orange-600 bg-orange-50'
                            }`}>
-                             ავტორი: {product.sku || 'არ არის მინიჭებული'}
+                             ავტორი: {product.user?.name || 'არ არის მინიჭებული'}
                            </span>
                          </div>
                        
@@ -461,7 +461,7 @@ const AdminProductsPage = () => {
                           <select
                             value={product.status || 'AVAILABLE'}
                             onChange={(e) => handleStatusChange(product.id, e.target.value)}
-                            className="text-sm border border-gray-300 rounded px-2 py-1 text-black focus:outline-none focus:ring-1 focus:ring-black"
+                            className="md:text-[18px] text-[16px] border border-gray-300 rounded px-2 py-1 text-black focus:outline-none focus:ring-1 focus:ring-black"
                           >
                             <option value="AVAILABLE">თავისუფალია</option>
                             <option value="RENTED">გაქირავებულია</option>
@@ -470,7 +470,7 @@ const AdminProductsPage = () => {
                           </select>
                          
                         </div>
-                         <div className="flex items-center space-x-4 text-sm text-black mb-2">
+                         <div className="flex items-center space-x-4 text-[16px] text-black mb-2">
                            <span>₾{getDisplayPrice(product).toFixed(2)}</span>
                            <span>{product.gender}</span>
                            {product.category && (
@@ -481,26 +481,22 @@ const AdminProductsPage = () => {
                          <div className="flex items-center space-x-2">
                           
                           {product.discount && product.discount > 0 && (
-                            <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">
+                            <span className="px-2 py-1 bg-red-100 text-red-800 text-[16px] rounded-full">
                               -{product.discount}%
                             </span>
                           )}
                            {hasActiveRentals(product) && (
-                             <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full flex items-center">
+                             <span className="px-2 py-1 bg-orange-100 text-orange-800 text-[16px] rounded-full flex items-center">
                                <Clock className="w-3 h-3 mr-1" />
                                გაქირავებული
                              </span>
                            )}
-                           {product.user && (
-                             <span className="text-xs text-gray-500">
-                               {product.user.name}
-                             </span>
-                           )}
+                          
                          </div>
                          
                          {/* Rental Status Details */}
                          {hasActiveRentals(product) && (
-                           <div className="mt-2 p-2 bg-orange-50 border border-orange-200 rounded text-xs">
+                           <div className="mt-2 p-2 bg-orange-50 border border-orange-200 rounded text-[16px]">
                              <div className="flex items-center text-orange-800 font-medium mb-1">
                                <Calendar className="w-3 h-3 mr-1" />
                                აქტიური გაქირავებები:
@@ -516,7 +512,8 @@ const AdminProductsPage = () => {
                                      {periods.map((period, index) => (
                                        <span key={index} className="ml-2">
                                          {formatDate(period.startDate)}-{formatDate(period.endDate)}
-                                         <span className={`ml-1 px-1 py-0.5 rounded text-xs ${
+                                         
+                                         <span className={`ml-1 px-1 py-0.5 rounded text-[16px] ${
                                            period.status === 'ACTIVE' 
                                              ? 'bg-green-100 text-green-800' 
                                              : 'bg-blue-100 text-blue-800'
@@ -537,7 +534,7 @@ const AdminProductsPage = () => {
                        <div className="flex items-center space-x-2 ml-4">
                          <Link
                            href={`/product/${product.id}`}
-                           className="flex items-center space-x-1 px-3 py-2 bg-gray-100 text-black rounded-lg hover:bg-gray-200 transition-colors text-sm"
+                           className="flex items-center space-x-1 px-3 py-2 bg-gray-100 text-black rounded-lg hover:bg-gray-200 transition-colors md:text-[18px] text-[16px]"
                          >
                            <Eye className="w-4 h-4" />
                            <span>ნახვა</span>
@@ -545,7 +542,7 @@ const AdminProductsPage = () => {
                          
                          <Link
                            href={`/admin/products/${product.id}/edit`}
-                           className="flex items-center space-x-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm"
+                           className="flex items-center space-x-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors md:text-[18px] text-[16px]"
                          >
                            <Edit className="w-4 h-4" />
                            <span>რედაქტირება</span>
@@ -553,7 +550,7 @@ const AdminProductsPage = () => {
                          
                          <button
                            onClick={() => handleDeleteProduct(product.id)}
-                           className="flex items-center space-x-1 px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm"
+                           className="flex items-center space-x-1 px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors md:text-[18px] text-[16px]"
                          >
                            <Trash2 className="w-4 h-4" />
                            <span>წაშლა</span>
