@@ -46,7 +46,7 @@ const AdminDashboard = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status])
-console.log('ass');
+
 
   // Fetch stats once when ADMIN is authenticated
   useEffect(() => {
