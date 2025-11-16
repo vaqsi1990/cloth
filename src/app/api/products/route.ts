@@ -125,10 +125,12 @@ export async function POST(request: NextRequest) {
     // Check if user is blocked
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { blocked: true } as any
+      select: { 
+        blocked: true 
+      }
     })
 
-    if ((user as any)?.blocked) {
+    if (user?.blocked) {
       return NextResponse.json(
         { 
           success: false, 

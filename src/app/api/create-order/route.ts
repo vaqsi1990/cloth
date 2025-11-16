@@ -140,7 +140,7 @@ function transformCartItemsToBasket(items: CartItemInput[]): BOGBasketItem[] {
 /**
  * Extract redirect URL from BOG API response
  */
-function extractRedirectUrl(responseData: BOGResponse, orderId: string): string {
+function extractRedirectUrl(responseData: BOGResponse): string {
   const { links, _links, id, order_id } = responseData
   
   // Try to get redirect URL from links
@@ -227,10 +227,12 @@ export async function POST(req: NextRequest) {
     // Check if user is blocked
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { blocked: true } as any
+      select: { 
+        blocked: true 
+      }
     })
 
-    if ((user as any)?.blocked) {
+    if (user?.blocked) {
       return NextResponse.json(
         { 
           error: 'Your account requires identity verification. Please upload a document.',
@@ -419,7 +421,7 @@ export async function POST(req: NextRequest) {
       }
 
       // For regular card payments, extract redirect URL
-      const finalRedirectUrl = extractRedirectUrl(response.data, databaseOrderId)
+      const finalRedirectUrl = extractRedirectUrl(response.data)
 
       // Send order receipt email to customer (non-blocking)
       // Uncomment if email functions are available
