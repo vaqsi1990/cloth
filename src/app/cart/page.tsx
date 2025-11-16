@@ -210,12 +210,7 @@ const CartPage = () => {
                                 </div>
 
                                 {/* Shipping Info */}
-                                <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                                    <h3 className="font-medium text-black md:text-[18px] text-[16px] mb-2">მიწოდების ინფორმაცია</h3>
-                                    <p className="text-black md:text-[18px] text-[16px]">
-                                        უფასო მიწოდება 50₾-ზე მეტი შეკვეთისთვის
-                                    </p>
-                                </div>
+                            
                             </div>
                         </div>
                     </div>

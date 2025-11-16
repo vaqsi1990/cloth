@@ -28,6 +28,8 @@ export async function GET(request: NextRequest) {
         banned: true,
         banReason: true,
         bannedAt: true,
+        blocked: true,
+        verified: true,
         personalId: true,
         phone: true,
         _count: {
@@ -41,6 +43,7 @@ export async function GET(request: NextRequest) {
             status: true,
             idFrontUrl: true,
             idBackUrl: true,
+            entrepreneurCertificateUrl: true,
             comment: true,
             createdAt: true,
             updatedAt: true,
@@ -87,6 +90,8 @@ export async function PATCH(request: NextRequest) {
     if (!verification) {
       return NextResponse.json({ success: false, error: 'Verification not found' }, { status: 404 });
     }
+    
+    // Update verification status
     const updated = await prisma.userVerification.update({
       where: { userId },
       data: {
@@ -94,6 +99,18 @@ export async function PATCH(request: NextRequest) {
         comment: status === 'REJECTED' ? comment || null : null,
       },
     });
+
+    // If approved, set verified=true and blocked=false
+    if (status === 'APPROVED') {
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          verified: true,
+          blocked: false,
+        },
+      });
+    }
+
     return NextResponse.json({ success: true, verification: updated });
   } catch (error) {
     return NextResponse.json(

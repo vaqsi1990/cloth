@@ -7,6 +7,7 @@ import { z } from 'zod'
 const verificationSchema = z.object({
   idFrontUrl: z.string().url().optional().nullable(),
   idBackUrl: z.string().url().optional().nullable(),
+  entrepreneurCertificateUrl: z.string().url().optional().nullable(),
 })
 
 // GET - Get current user's verification
@@ -46,13 +47,14 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { idFrontUrl, idBackUrl } = verificationSchema.parse(body)
+    const { idFrontUrl, idBackUrl, entrepreneurCertificateUrl } = verificationSchema.parse(body)
 
     const upserted = await prisma.userVerification.upsert({
       where: { userId: session.user.id },
       update: {
         idFrontUrl: idFrontUrl ?? null,
         idBackUrl: idBackUrl ?? null,
+        entrepreneurCertificateUrl: entrepreneurCertificateUrl ?? null,
         status: 'PENDING',
         comment: null,
       },
@@ -60,6 +62,7 @@ export async function PUT(request: NextRequest) {
         userId: session.user.id,
         idFrontUrl: idFrontUrl ?? null,
         idBackUrl: idBackUrl ?? null,
+        entrepreneurCertificateUrl: entrepreneurCertificateUrl ?? null,
         status: 'PENDING',
       },
     })

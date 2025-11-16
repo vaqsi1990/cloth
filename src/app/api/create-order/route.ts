@@ -3,6 +3,7 @@ import axios, { AxiosError } from 'axios'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { checkAndBlockUser } from '@/utils/revenue'
 // Email functions - uncomment if available
 // import { sendOrderReceipt, sendOrderToAdmin } from '@/lib/email'
 import { bogTokenManager } from '@/lib/bog-token'
@@ -223,6 +224,22 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Check if user is blocked
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { blocked: true } as any
+    })
+
+    if ((user as any)?.blocked) {
+      return NextResponse.json(
+        { 
+          error: 'Your account requires identity verification. Please upload a document.',
+          blocked: true
+        },
+        { status: 403 }
+      )
+    }
+
     // Get the user's cart
     const userCart = await prisma.cart.findFirst({
       where: { userId: session.user.id },
@@ -372,6 +389,19 @@ export async function POST(req: NextRequest) {
           where: { id: databaseOrder.id },
           data: { status: 'PAID' }
         })
+
+        // Create transaction for completed payment
+        await prisma.transaction.create({
+          data: {
+            type: 'SALE',
+            total: totalAmountNumber,
+            userId: session.user.id,
+            orderId: databaseOrder.id
+          }
+        })
+
+        // Check revenue and block user if needed
+        await checkAndBlockUser(session.user.id, 100)
 
         // Clear the cart after successful order creation
         await prisma.cartItem.deleteMany({

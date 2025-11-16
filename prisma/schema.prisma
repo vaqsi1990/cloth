@@ -107,6 +107,9 @@ model User {
   banned        Boolean   @default(false)
   banReason     String?
   bannedAt      DateTime?
+  // Verification fields
+  verified      Boolean   @default(false)
+  blocked       Boolean   @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
  
@@ -466,15 +469,16 @@ model RentalPriceTier {
 }
 
 model UserVerification {
-  id         Int                @id @default(autoincrement())
-  userId     String             @unique
-  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  idFrontUrl String?
-  idBackUrl  String?
-  status     VerificationStatus @default(PENDING)
-  comment    String?
-  createdAt  DateTime           @default(now())
-  updatedAt  DateTime           @updatedAt
+  id                    Int                @id @default(autoincrement())
+  userId                 String             @unique
+  user                   User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  idFrontUrl             String?
+  idBackUrl              String?
+  entrepreneurCertificateUrl String?
+  status                 VerificationStatus @default(PENDING)
+  comment                String?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
 }
 
 model PasswordResetToken {

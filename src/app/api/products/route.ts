@@ -122,6 +122,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Check if user is blocked
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { blocked: true } as any
+    })
+
+    if ((user as any)?.blocked) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Your account requires identity verification. Please upload a document.',
+          blocked: true
+        },
+        { status: 403 }
+      )
+    }
+
     const body = await request.json()
     
     // Validate the request body

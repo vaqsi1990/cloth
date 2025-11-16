@@ -49,11 +49,14 @@ const AccountPage = () => {
     id?: number;
     idFrontUrl?: string | null;
     idBackUrl?: string | null;
+    entrepreneurCertificateUrl?: string | null;
     status?: 'PENDING' | 'APPROVED' | 'REJECTED';
     comment?: string | null;
   } | null>(null)
   const [verifLoading, setVerifLoading] = useState(false)
   const [savingVerification, setSavingVerification] = useState(false)
+  const [userBlocked, setUserBlocked] = useState(false)
+  const [userVerified, setUserVerified] = useState(false)
 
   // Load uploaded images from localStorage on mount
   const [idFrontUrl, setIdFrontUrl] = useState<string | null>(() => {
@@ -65,6 +68,12 @@ const AccountPage = () => {
   const [idBackUrl, setIdBackUrl] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('idBackUrl') || null
+    }
+    return null
+  })
+  const [entrepreneurCertificateUrl, setEntrepreneurCertificateUrl] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('entrepreneurCertificateUrl') || null
     }
     return null
   })
@@ -115,13 +124,17 @@ const AccountPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab])
 
-  // Check ban status only once
+  // Check ban status and blocked/verified status
   useEffect(() => {
     if (session?.user?.id) {
       fetch('/api/user/me').then(r => r.json()).then(d => {
         if (d?.user?.banned) {
           showToast(d.user.banReason ? `თქვენი ანგარიში დაბლოკილია: ${d.user.banReason}` : 'თქვენი ანგარიში დაბლოკილია', 'error')
           router.push('/')
+        }
+        if (d?.user) {
+          setUserBlocked(d.user.blocked || false)
+          setUserVerified(d.user.verified || false)
         }
       }).catch(() => { })
     }
@@ -221,11 +234,14 @@ const AccountPage = () => {
         if (typeof window !== 'undefined') {
           const savedFront = localStorage.getItem('idFrontUrl')
           const savedBack = localStorage.getItem('idBackUrl')
+          const savedEntrepreneur = localStorage.getItem('entrepreneurCertificateUrl')
           setIdFrontUrl(savedFront || data.verification?.idFrontUrl || null)
           setIdBackUrl(savedBack || data.verification?.idBackUrl || null)
+          setEntrepreneurCertificateUrl(savedEntrepreneur || data.verification?.entrepreneurCertificateUrl || null)
         } else {
           setIdFrontUrl(data.verification?.idFrontUrl || null)
           setIdBackUrl(data.verification?.idBackUrl || null)
+          setEntrepreneurCertificateUrl(data.verification?.entrepreneurCertificateUrl || null)
         }
       }
     } catch (e) {
@@ -255,17 +271,39 @@ const AccountPage = () => {
     }
   }
 
+  const handleEntrepreneurCertificateUpload = async (urls: string[]) => {
+    if (!urls.length) return
+    const url = urls[0]
+    setEntrepreneurCertificateUrl(url)
+    // Save to localStorage to persist across refreshes
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('entrepreneurCertificateUrl', url)
+    }
+  }
+
   const saveVerification = async () => {
     try {
+      // პირადობის დოკუმენტი სავალდებულოა ყოველთვის
       if (!idFrontUrl || !idBackUrl) {
-        showToast('გთხოვთ ატვირთოთ ორივე სურათი (წინა და უკან მხარე)', 'warning')
+        showToast('გთხოვთ ატვირთოთ პირადობის დოკუმენტის წინა და უკანა მხარე', 'warning')
         return
       }
+      
+      // ინდმეწარმის საბუთი საჭიროა მხოლოდ როცა blocked (revenue >= 100₾)
+      if (userBlocked && !entrepreneurCertificateUrl) {
+        showToast('თქვენი შემოსავალი 100₾-ს აღემატება. გთხოვთ ატვირთოთ ინდმეწარმის საბუთი', 'warning')
+        return
+      }
+      
       setSavingVerification(true)
       const res = await fetch('/api/user/verification', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idFrontUrl, idBackUrl })
+        body: JSON.stringify({ 
+          idFrontUrl, 
+          idBackUrl, 
+          entrepreneurCertificateUrl: userBlocked ? entrepreneurCertificateUrl : null 
+        })
       })
       const data = await res.json()
       if (res.ok && data.success) {
@@ -273,10 +311,17 @@ const AccountPage = () => {
         showToast('დოკუმენტები წარმატებით გაიგზავნა ვალიდაციაზე', 'success')
         setIdFrontUrl(null)
         setIdBackUrl(null)
+        // Clear entrepreneur certificate only if it was uploaded
+        if (entrepreneurCertificateUrl) {
+          setEntrepreneurCertificateUrl(null)
+        }
         // Clear localStorage after successful save
         if (typeof window !== 'undefined') {
           localStorage.removeItem('idFrontUrl')
           localStorage.removeItem('idBackUrl')
+          if (entrepreneurCertificateUrl) {
+            localStorage.removeItem('entrepreneurCertificateUrl')
+          }
         }
       } else {
         showToast(data.error || 'შეცდომა გაგზავნისას', 'error')
@@ -499,43 +544,165 @@ const AccountPage = () => {
 
         </div>
 
-        {/* Verification Section for non-admin users - only show if not approved */}
-        {session.user.role !== 'ADMIN' && session.user.verificationStatus !== 'APPROVED' && (
-          <div className="mt-8 p-4 border border-black rounded-lg bg-gray-50">
-            <h4 className="text-lg font-semibold text-red mb-2">პირადობის ვერიფიკაცია </h4>
-            <p className="text-[18px] text-red-500">პირადობის სურათებით მოხდება თქვენი ვერიფიცირება, თუ არ ატვირთავთ სურათებს ვერ შეძლებთ ახალი პროდუქტის დამატებას ან ყიდვას და ქირაობას</p>
+        {/* Blocked message */}
+        {userBlocked && !userVerified && (
+          <div className="mt-8 p-4 border-2 border-red-500 rounded-lg bg-red-50">
+            <h4 className="text-lg font-semibold text-red-600 mb-2">⚠️ ანგარიშის ვერიფიკაცია საჭიროა</h4>
+            <p className="text-[18px] text-red-700 font-medium">
+              Your account requires identity verification. Please upload a document.
+            </p>
+            <p className="text-[16px] text-red-600 mt-2">
+              თქვენი შემოსავალი 100₾-ს აღემატება. გთხოვთ ატვირთოთ პირადობის დოკუმენტი ქვემოთ.
+            </p>
+          </div>
+        )}
+
+        {/* Verification Section for non-admin users - show if blocked or not approved */}
+        {session.user.role !== 'ADMIN' && (userBlocked || session.user.verificationStatus !== 'APPROVED') && (
+          <div className={`mt-8 p-6 border-2 rounded-lg ${userBlocked ? 'border-red-500 bg-red-50' : 'border-black bg-gray-50'}`}>
+            <div className="mb-4">
+              <h4 className="text-xl font-bold mb-2">
+                {userBlocked ? '⚠️ პირადობის ვერიფიკაცია საჭიროა' : 'პირადობის ვერიფიკაცია'}
+              </h4>
+              {userBlocked ? (
+                <p className="text-[18px] text-red-700 font-medium mb-2">
+                  Your account requires identity verification. Please upload a document.
+                </p>
+              ) : (
+                <p className="text-[18px] text-red-500">
+                  პირადობის სურათებით მოხდება თქვენი ვერიფიცირება, თუ არ ატვირთავთ სურათებს ვერ შეძლებთ ახალი პროდუქტის დამატებას ან ყიდვას და ქირაობას
+                </p>
+              )}
+            </div>
+            
             {verifLoading ? (
-              <p className="text-[16px] text-black">იტვირთება...</p>
+              <div className="text-center py-8">
+                <div className="w-8 h-8 border-4 border-gray-300 border-t-[#1B3729] rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-[16px] text-black">იტვირთება...</p>
+              </div>
             ) : (
               <>
-                <div className="mb-3">
-                  <span className={`inline-block px-3 py-1 text-[16px] rounded-full ${['APPROVED'].includes(verification?.status ?? '')
-                    ? 'bg-green-100 text-green-800'
-                    : ['REJECTED'].includes(verification?.status ?? '')
-                      ? 'bg-red-100 text-red-800'
-                      : 'bg-yellow-100 text-yellow-800'
+                {/* Status Badge */}
+                {verification?.status && (
+                  <div className="mb-4">
+                    <span className={`inline-block px-4 py-2 text-[16px] font-semibold rounded-full ${
+                      verification.status === 'APPROVED'
+                        ? 'bg-green-100 text-green-800'
+                        : verification.status === 'REJECTED'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-yellow-100 text-yellow-800'
                     }`}>
-                    სტატუსი: {getVerificationStatusLabel(verification?.status)}
-                  </span>
-                </div>
-                {verification?.status === 'REJECTED' && verification?.comment && (
-                  <p className="text-[16px] text-red-700 mb-3">მიზეზი: {verification.comment}</p>
+                      სტატუსი: {getVerificationStatusLabel(verification.status)}
+                    </span>
+                  </div>
                 )}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-[16px] text-black mb-2">დოკუმენტის წინა მხარე</p>
-                    <ImageUpload value={idFrontUrl ? [idFrontUrl] : []} onChange={handleIdFrontUpload} />
+
+                {/* Rejection Comment */}
+                {verification?.status === 'REJECTED' && verification?.comment && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-[16px] font-semibold text-red-800 mb-1">უარყოფის მიზეზი:</p>
+                    <p className="text-[16px] text-red-700">{verification.comment}</p>
                   </div>
-                  <div>
-                    <p className="text-[16px] text-black mb-2">დოკუმენტის შიდა მხარე</p>
-                    <ImageUpload value={idBackUrl ? [idBackUrl] : []} onChange={handleIdBackUpload} />
+                )}
+
+                {/* Document Upload Section */}
+                <div className={`grid gap-6 mb-6 ${userBlocked ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-1 md:grid-cols-2'}`}>
+                  <div className="space-y-2">
+                    <label className="block text-[18px] font-semibold text-black mb-3">
+                      დოკუმენტის წინა მხარე *
+                    </label>
+                    <ImageUpload 
+                      value={idFrontUrl ? [idFrontUrl] : []} 
+                      onChange={handleIdFrontUpload} 
+                    />
+                    {idFrontUrl && (
+                      <p className="text-sm text-green-600 mt-2">✓ სურათი ატვირთულია</p>
+                    )}
                   </div>
+                  
+                  <div className="space-y-2">
+                    <label className="block text-[18px] font-semibold text-black mb-3">
+                      დოკუმენტის უკანა მხარე *
+                    </label>
+                    <ImageUpload 
+                      value={idBackUrl ? [idBackUrl] : []} 
+                      onChange={handleIdBackUpload} 
+                    />
+                    {idBackUrl && (
+                      <p className="text-sm text-green-600 mt-2">✓ სურათი ატვირთულია</p>
+                    )}
+                  </div>
+
+                  {/* ინდმეწარმის საბუთი - მხოლოდ როცა blocked */}
+                  {userBlocked && (
+                    <div className="space-y-2">
+                      <label className="block text-[18px] font-semibold text-red-600 mb-3">
+                        ინდმეწარმის საბუთი * 
+                        <span className="text-sm text-orange-600 ml-2">(საჭიროა რადგან შემოსავალი ≥ 100₾)</span>
+                      </label>
+                      <ImageUpload 
+                        value={entrepreneurCertificateUrl ? [entrepreneurCertificateUrl] : []} 
+                        onChange={handleEntrepreneurCertificateUpload} 
+                      />
+                      {entrepreneurCertificateUrl && (
+                        <p className="text-sm text-green-600 mt-2">✓ სურათი ატვირთულია</p>
+                      )}
+                      {!entrepreneurCertificateUrl && (
+                        <p className="text-sm text-red-600 mt-2">⚠️ აუცილებელია ატვირთვა</p>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <div className="mt-4">
+
+                {/* Upload Instructions */}
+                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-[16px] font-semibold text-blue-800 mb-2">ინსტრუქცია:</p>
+                  <ul className="list-disc list-inside text-[15px] text-blue-700 space-y-1">
+                    <li>ატვირთეთ პირადობის მოწმობის ან პასპორტის წინა და უკანა მხარე (სავალდებულო)</li>
+                    {userBlocked && (
+                      <li className="text-red-700 font-semibold">ატვირთეთ ინდმეწარმის საბუთის სურათი (საჭიროა რადგან თქვენი შემოსავალი 100₾-ს აღემატება)</li>
+                    )}
+                    <li>დარწმუნდით, რომ სურათები ნათელი და კარგად ჩანს</li>
+                    <li>{userBlocked ? 'სამივე' : 'ორივე'} სურათის ატვირთვის შემდეგ დააჭირეთ "დასტური გაგზავნაზე" ღილაკს</li>
+                    <li>ადმინისტრატორი გადაამოწმებს თქვენს დოკუმენტებს</li>
+                  </ul>
+                </div>
+
+                {/* Submit Button */}
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-gray-600">
+                    {userBlocked ? (
+                      // როცა blocked - საჭიროა სამივე
+                      idFrontUrl && idBackUrl && entrepreneurCertificateUrl ? (
+                        <span className="text-green-600 font-semibold">✓ სამივე სურათი მზადაა გასაგზავნად</span>
+                      ) : (
+                        <span className="text-orange-600">გთხოვთ ატვირთოთ სამივე სურათი</span>
+                      )
+                    ) : (
+                      // როცა არაა blocked - საჭიროა მხოლოდ პირადობა
+                      idFrontUrl && idBackUrl ? (
+                        <span className="text-green-600 font-semibold">✓ ორივე სურათი მზადაა გასაგზავნად</span>
+                      ) : (
+                        <span className="text-orange-600">გთხოვთ ატვირთოთ პირადობის დოკუმენტის ორივე მხარე</span>
+                      )
+                    )}
+                  </div>
                   <button
                     onClick={saveVerification}
-                    disabled={savingVerification}
-                    className="px-4 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors disabled:opacity-60"
+                    disabled={
+                      savingVerification || 
+                      !idFrontUrl || 
+                      !idBackUrl || 
+                      (userBlocked && !entrepreneurCertificateUrl)
+                    }
+                    className={`px-6 py-3 rounded-lg font-bold text-[18px] uppercase tracking-wide transition-colors ${
+                      idFrontUrl && 
+                      idBackUrl && 
+                      (!userBlocked || entrepreneurCertificateUrl) && 
+                      !savingVerification
+                        ? 'bg-[#1B3729] text-white hover:bg-[#2a4d3a]'
+                        : 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                    }`}
                   >
                     {savingVerification ? 'გაგზავნა...' : 'დასტური გაგზავნაზე'}
                   </button>
