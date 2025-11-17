@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { User, Package, ShoppingCart, Settings, MapPin, Phone, Mail, Camera, MessageCircle, Search, Trash2 } from 'lucide-react'
 import ImageUpload from '@/component/CloudinaryUploader'
 import ContactForm from '@/component/ContactForm'
@@ -89,7 +90,6 @@ const AccountPage = () => {
     if (session?.user?.id) {
       fetchUserStats()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id])
 
   // Update profile image when session changes
@@ -433,16 +433,6 @@ const AccountPage = () => {
     }
   }
 
-  const getStatusLabel = (status: string) => {
-    const statusMap: Record<string, string> = {
-      'AVAILABLE': 'თავისუფალია',
-      'RENTED': 'გაქირავებულია',
-      'RESERVED': 'დაჯავშნილია',
-      'MAINTENANCE': 'რესტავრაციაზეა'
-    }
-    return statusMap[status] || status
-  }
-
   const getVerificationStatusLabel = (
     status?: 'PENDING' | 'APPROVED' | 'REJECTED'
   ) => {
@@ -462,9 +452,11 @@ const AccountPage = () => {
           <div className="relative">
             <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
               {profileImage ? (
-                <img
+                <Image
                   src={profileImage}
                   alt="Profile"
+                  width={64}
+                  height={64}
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -663,7 +655,7 @@ const AccountPage = () => {
                       <li className="text-red-700 font-semibold">ატვირთეთ ინდმეწარმის საბუთის სურათი (საჭიროა რადგან თქვენი შემოსავალი 100₾-ს აღემატება)</li>
                     )}
                     <li>დარწმუნდით, რომ სურათები ნათელი და კარგად ჩანს</li>
-                    <li>{userBlocked ? 'სამივე' : 'ორივე'} სურათის ატვირთვის შემდეგ დააჭირეთ "დასტური გაგზავნაზე" ღილაკს</li>
+                    <li>{userBlocked ? 'სამივე' : 'ორივე'} სურათის ატვირთვის შემდეგ დააჭირეთ &quot;დასტური გაგზავნაზე&quot; ღილაკს</li>
                     <li>ადმინისტრატორი გადაამოწმებს თქვენს დოკუმენტებს</li>
                   </ul>
                 </div>
@@ -875,9 +867,11 @@ const AccountPage = () => {
             {products.map((product) => (
               <div key={product.id} className="border border-black rounded-lg overflow-hidden hover:shadow-md transition-shadow">
                 <div className="aspect-[3/4] bg-gray-200 relative">
-                  <img
+                  <Image
                     src={product.images?.[0]?.url || '/placeholder.jpg'}
                     alt={product.name}
+                    width={400}
+                    height={533}
                     className="w-full h-full object-cover"
                   />
               
