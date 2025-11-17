@@ -220,7 +220,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Check revenue and block user if needed
-    await checkAndBlockUser(session.user.id, 100)
+    await checkAndBlockUser(session.user.id, 2)
 
     return NextResponse.json({
       success: true,

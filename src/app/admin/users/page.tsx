@@ -432,11 +432,11 @@ const AdminUsersPage = () => {
                         <div className="flex items-center justify-between mb-3">
                           <h4 className="text-[18px] font-bold text-orange-800">⚠️ ვერიფიკაცია საჭიროა - პირადობის დოკუმენტები</h4>
                           <span className="px-3 py-1 bg-orange-600 text-white rounded text-[16px] font-semibold">
-                            შემოსავალი ≥ 100₾
+                            შემოსავალი ≥ 2₾
                           </span>
                         </div>
                         <p className="text-[16px] text-orange-700 mb-4">
-                          მომხმარებელი დაბლოკილია, რადგან მისი შემოსავალი 100₾-ს აღემატება. გთხოვთ გადაამოწმოთ დოკუმენტები და დაამტკიცოთ.
+                          მომხმარებელი დაბლოკილია, რადგან მისი შემოსავალი 2₾-ს აღემატება. გთხოვთ გადაამოწმოთ დოკუმენტები და დაამტკიცოთ.
                         </p>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                           {user.verification.idFrontUrl && (

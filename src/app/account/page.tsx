@@ -289,9 +289,9 @@ const AccountPage = () => {
         return
       }
       
-      // ინდმეწარმის საბუთი საჭიროა მხოლოდ როცა blocked (revenue >= 100₾)
+      // ინდმეწარმის საბუთი საჭიროა მხოლოდ როცა blocked (revenue >= 2₾)
       if (userBlocked && !entrepreneurCertificateUrl) {
-        showToast('თქვენი შემოსავალი 100₾-ს აღემატება. გთხოვთ ატვირთოთ ინდმეწარმის საბუთი', 'warning')
+        showToast('თქვენი შემოსავალი 2₾-ს აღემატება. გთხოვთ ატვირთოთ ინდმეწარმის საბუთი', 'warning')
         return
       }
       

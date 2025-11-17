@@ -37,7 +37,10 @@ const productSchema = z.object({
   deposit: z.number().min(0, 'გირაო უნდა იყოს დადებითი').nullable().optional(),
   status: z.enum(['AVAILABLE', 'RENTED', 'RESERVED', 'MAINTENANCE']).default('AVAILABLE'),
   variants: z.array(z.object({
-    size: z.string().min(1, 'ზომა აუცილებელია'),
+    size: z.preprocess(
+      (val) => (val === '' || val === null ? undefined : val),
+      z.string().optional()
+    ),
     stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი'),
     price: z.number().min(0, 'ფასი უნდა იყოს დადებითი'),
     discount: z.number().min(0).max(100).optional(),
@@ -237,7 +240,7 @@ const EditProductPage = () => {
       ...prev,
       variants: [
         ...prev.variants,
-        { size: '', stock: 0, price: 0, sizeSystem: prev.sizeSystem }
+        { size: undefined, stock: 0, price: 0, sizeSystem: prev.sizeSystem }
       ]
     }))
   }

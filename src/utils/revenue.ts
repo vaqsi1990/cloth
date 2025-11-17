@@ -28,10 +28,10 @@ export async function calculateUserRevenue(userId: string): Promise<number> {
 /**
  * Check if user should be blocked based on revenue threshold
  * @param userId - The user ID to check
- * @param threshold - Revenue threshold in GEL (default: 100)
+ * @param threshold - Revenue threshold in GEL (default: 2)
  * @returns true if user should be blocked, false otherwise
  */
-export async function shouldBlockUser(userId: string, threshold: number = 100): Promise<boolean> {
+export async function shouldBlockUser(userId: string, threshold: number = 2): Promise<boolean> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -64,10 +64,10 @@ export async function shouldBlockUser(userId: string, threshold: number = 100): 
 /**
  * Block user if revenue threshold is met and user is not verified
  * @param userId - The user ID to check and potentially block
- * @param threshold - Revenue threshold in GEL (default: 100)
+ * @param threshold - Revenue threshold in GEL (default: 2)
  * @returns true if user was blocked, false otherwise
  */
-export async function checkAndBlockUser(userId: string, threshold: number = 100): Promise<boolean> {
+export async function checkAndBlockUser(userId: string, threshold: number = 2): Promise<boolean> {
   const shouldBlock = await shouldBlockUser(userId, threshold)
 
   if (shouldBlock) {

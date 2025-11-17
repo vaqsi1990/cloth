@@ -403,7 +403,7 @@ export async function POST(req: NextRequest) {
         })
 
         // Check revenue and block user if needed
-        await checkAndBlockUser(session.user.id, 100)
+        await checkAndBlockUser(session.user.id, 2)
 
         // Clear the cart after successful order creation
         await prisma.cartItem.deleteMany({

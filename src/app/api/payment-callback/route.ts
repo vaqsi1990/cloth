@@ -120,7 +120,7 @@ async function updateOrderStatus(orderId: string, paymentStatus: string) {
         })
 
         // Check revenue and block user if needed
-        await checkAndBlockUser(order.userId, 100)
+        await checkAndBlockUser(order.userId, 2)
       }
     }
 
