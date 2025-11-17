@@ -190,8 +190,7 @@ export async function POST(request: NextRequest) {
           create: validatedData.variants.map(variant => ({
             size: variant.size,
             stock: variant.stock,
-            price: variant.price,
-            sizeSystem: variant.sizeSystem ?? validatedData.sizeSystem
+            price: variant.price
           }))
         },
         // Create rental price tiers if provided
