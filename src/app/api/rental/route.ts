@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { checkAndBlockUser } from '@/utils/revenue'
+import { checkAndBlockUser, reevaluateUserBlocking } from '@/utils/revenue'
 import { RentalStatus } from '@prisma/client'
 
 export async function POST(request: NextRequest) {
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user is blocked
-    const user = await prisma.user.findUnique({
+    let user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { 
         blocked: true 
@@ -22,13 +22,21 @@ export async function POST(request: NextRequest) {
     })
 
     if (user?.blocked) {
-      return NextResponse.json(
-        { 
-          error: 'Your account requires identity verification. Please upload a document.',
-          blocked: true
-        },
-        { status: 403 }
-      )
+      await reevaluateUserBlocking(session.user.id, 2)
+      user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { blocked: true }
+      })
+
+      if (user?.blocked) {
+        return NextResponse.json(
+          { 
+            error: 'Your account requires identity verification. Please upload a document.',
+            blocked: true
+          },
+          { status: 403 }
+        )
+      }
     }
 
     const body = await request.json()

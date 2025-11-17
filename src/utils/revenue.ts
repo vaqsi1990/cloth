@@ -36,7 +36,9 @@ export async function shouldBlockUser(userId: string, threshold: number = 2): Pr
     where: { id: userId },
     select: {
       verified: true,
-      blocked: true,
+      _count: {
+        select: { products: true },
+      },
     },
   })
 
@@ -44,14 +46,15 @@ export async function shouldBlockUser(userId: string, threshold: number = 2): Pr
     return false
   }
 
-  // If already verified, don't block
+  // Verified sellers stay unblocked
   if (user.verified) {
     return false
   }
 
-  // If already blocked, keep blocked
-  if (user.blocked) {
-    return true
+  const hasProducts = (user._count?.products ?? 0) > 0
+
+  if (!hasProducts) {
+    return false
   }
 
   // Calculate revenue
@@ -70,15 +73,16 @@ export async function shouldBlockUser(userId: string, threshold: number = 2): Pr
 export async function checkAndBlockUser(userId: string, threshold: number = 2): Promise<boolean> {
   const shouldBlock = await shouldBlockUser(userId, threshold)
 
-  if (shouldBlock) {
+  try {
     await prisma.user.update({
       where: { id: userId },
-      data: { blocked: true },
+      data: { blocked: shouldBlock },
     })
-    return true
+  } catch (error) {
+    console.error('Failed to update user block status', { userId, error })
   }
 
-  return false
+  return shouldBlock
 }
 
 export async function reevaluateUserBlocking(userId: string, threshold: number = 2): Promise<void> {

@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { recordSellerTransactions } from '@/utils/sellerTransactions'
+import { reevaluateUserBlocking } from '@/utils/revenue'
 // Email functions - uncomment if available
 // import { sendOrderReceipt, sendOrderToAdmin } from '@/lib/email'
 import { bogTokenManager } from '@/lib/bog-token'
@@ -225,7 +226,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if user is blocked
-    const user = await prisma.user.findUnique({
+    let user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { 
         blocked: true 
@@ -233,13 +234,21 @@ export async function POST(req: NextRequest) {
     })
 
     if (user?.blocked) {
-      return NextResponse.json(
-        { 
-          error: 'Your account requires identity verification. Please upload a document.',
-          blocked: true
-        },
-        { status: 403 }
-      )
+      await reevaluateUserBlocking(session.user.id, 2)
+      user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { blocked: true }
+      })
+
+      if (user?.blocked) {
+        return NextResponse.json(
+          { 
+            error: 'Your account requires identity verification. Please upload a document.',
+            blocked: true
+          },
+          { status: 403 }
+        )
+      }
     }
 
     // Get the user's cart
