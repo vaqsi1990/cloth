@@ -164,6 +164,14 @@ const AdminUsersPage = () => {
     }
   }
 
+  const blockedSellers = users.filter(
+    user => user.blocked && user._count.products > 0
+  )
+
+  const sellersNeedingVerification = blockedSellers.filter(
+    user => !user.verified
+  )
+
   const filteredUsers = users.filter(user => {
     if (searchTerm === '') {
       // If no search term, show all users
@@ -233,7 +241,7 @@ const AdminUsersPage = () => {
 
       <div className="container mx-auto px-4 py-8">
         {/* Filters */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-8">
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-8 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Search */}
             <div className="relative">
@@ -261,6 +269,92 @@ const AdminUsersPage = () => {
               </select>
             </div>
           </div>
+
+          {blockedSellers.length > 0 && (
+            <div className="border border-red-200 rounded-xl bg-red-50 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="text-lg font-semibold text-red-900">
+                    დაბლოკილი პროდუქტის ავტორები ({blockedSellers.length})
+                  </h3>
+                  <p className="text-sm text-red-700">
+                    ეს მომხმარებლები დაბლოკილნი არიან შემოსავლის ზღვრის გადაჭარბების გამო. ადმინისტრატორი ხედავს მათ მონაცემებს.
+                  </p>
+                </div>
+              </div>
+              <div className="overflow-x-auto rounded-lg border border-red-100 bg-white">
+                <table className="min-w-full divide-y divide-red-100">
+                  <thead className="bg-red-50">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-red-800 uppercase tracking-wider">სახელი</th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-red-800 uppercase tracking-wider">ელფოსტა</th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-red-800 uppercase tracking-wider">პროდუქტები</th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-red-800 uppercase tracking-wider">სტატუსი</th>
+                      <th className="px-4 py-2"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-red-100">
+                    {blockedSellers.map((seller) => (
+                      <tr key={seller.id}>
+                        <td className="px-4 py-2 text-sm text-black">{seller.name || 'უცნობი მომხმარებელი'}</td>
+                        <td className="px-4 py-2 text-sm text-black">{seller.email || '---'}</td>
+                        <td className="px-4 py-2 text-sm text-black">{seller._count.products}</td>
+                        <td className="px-4 py-2 text-sm">
+                          {seller.verified ? (
+                            <span className="px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs font-semibold">დამოწმებული</span>
+                          ) : (
+                            <span className="px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs font-semibold">ველოდებით დოკუმენტებს</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-2 text-right">
+                          <button
+                            onClick={() => toggleUserExpansion(seller.id)}
+                            className="text-sm text-red-600 hover:text-red-800 font-semibold"
+                          >
+                            დეტალები
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {sellersNeedingVerification.length > 0 && (
+            <div className="border border-orange-200 rounded-xl bg-orange-50 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="text-lg font-semibold text-orange-900">
+                    ვერიფიკაცია სჭირდება გამყიდველებს ({sellersNeedingVerification.length})
+                  </h3>
+                  <p className="text-sm text-orange-700">
+                    ამ მომხმარებლების შემოსავალი 2₾-ს აღემატება და საჭიროა დოკუმენტების გადამოწმება.
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {sellersNeedingVerification.map(seller => (
+                  <button
+                    key={seller.id}
+                    onClick={() => toggleUserExpansion(seller.id)}
+                    className="flex items-center justify-between bg-white border border-orange-200 rounded-lg px-4 py-3 text-left hover:shadow-sm transition-shadow"
+                  >
+                    <div>
+                      <p className="font-semibold text-black">{seller.name || seller.email || 'უცნობი მომხმარებელი'}</p>
+                      <p className="text-sm text-gray-600">
+                        {seller.email || 'ელფოსტა უცნობია'}
+                      </p>
+                    </div>
+                    <span className="px-3 py-1 text-sm bg-orange-100 text-orange-800 rounded-full">
+                      პროდუქტები: {seller._count.products}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Users List */}
@@ -395,7 +489,7 @@ const AdminUsersPage = () => {
                           <span className="ml-2 px-2 py-1 bg-red-600 text-white rounded text-[18px]">დაბლოკილი</span>
                         )}
                         {/* Blocked status badge (for revenue threshold) */}
-                        {user.blocked && !user.verified && (
+                        {user.blocked && !user.verified && user._count.products > 0 && (
                           <span className="ml-2 px-2 py-1 bg-orange-600 text-white rounded text-[18px]">ვერიფიკაცია საჭიროა</span>
                         )}
                         {/* Ban/Unban buttons */}
@@ -426,18 +520,40 @@ const AdminUsersPage = () => {
                   </div>
 
                   {/* Blocked User Verification Section - Always visible for blocked users */}
-                  {user.blocked && !user.verified && user.verification && (
+                  {user.blocked && !user.verified && user._count.products > 0 && user.verification && (
                     <div className="px-4 pb-4 border-t border-gray-200 bg-orange-50">
                       <div className="mb-4 pt-4">
                         <div className="flex items-center justify-between mb-3">
-                          <h4 className="text-[18px] font-bold text-orange-800">⚠️ ვერიფიკაცია საჭიროა - პირადობის დოკუმენტები</h4>
-                          <span className="px-3 py-1 bg-orange-600 text-white rounded text-[16px] font-semibold">
-                            შემოსავალი ≥ 2₾
-                          </span>
+                          <div>
+                            <h4 className="text-[18px] font-bold text-orange-800">
+                              ⚠️ ვერიფიკაცია საჭიროა - პირადობის დოკუმენტები
+                            </h4>
+                            <p className="text-sm text-orange-700">
+                              ბლოკი საჭიროა მხოლოდ იმ მომხმარებლებისთვის, ვინც პროდუქტებს ყიდის.
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            {user.role === 'ADMIN' ? (
+                              <span className="px-3 py-1 bg-blue-600 text-white rounded text-[16px] font-semibold">
+                                ადმინი – ბლოკი არ მოქმედებს
+                              </span>
+                            ) : (
+                              <span className="px-3 py-1 bg-orange-600 text-white rounded text-[16px] font-semibold">
+                                შემოსავალი ≥ 2₾
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <p className="text-[16px] text-orange-700 mb-4">
-                          მომხმარებელი დაბლოკილია, რადგან მისი შემოსავალი 2₾-ს აღემატება. გთხოვთ გადაამოწმოთ დოკუმენტები და დაამტკიცოთ.
-                        </p>
+                        {user.role === 'ADMIN' ? (
+                          <p className="text-[16px] text-orange-700 mb-4">
+                            ეს არის ადმინისტრატორული ანგარიში – ბლოკი მხოლოდ სიგნალის სახით გვაჩვენებს,
+                            რომ გადამოწმდეს გამყიდველის დოკუმენტები.
+                          </p>
+                        ) : (
+                          <p className="text-[16px] text-orange-700 mb-4">
+                            გამყიდველი დაბლოკილია, რადგან მისი შემოსავალი 2₾-ს აღემატება. გთხოვთ გადაამოწმოთ დოკუმენტები და დაამტკიცოთ.
+                          </p>
+                        )}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                           {user.verification.idFrontUrl && (
                             <div className="flex flex-col items-center">

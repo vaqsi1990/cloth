@@ -26,11 +26,14 @@ export async function GET(
       select: {
         id: true,
         name: true,
-        image: true
+        image: true,
+        blocked: true
       }
     })
 
-    if (!user) {
+    const isAdmin = session?.user?.role === 'ADMIN'
+
+    if (!user || (!isAdmin && user.blocked)) {
       return NextResponse.json({
         success: false,
         message: 'ავტორი ვერ მოიძებნა'
@@ -40,7 +43,8 @@ export async function GET(
     // Show all products regardless of status
     const products = await prisma.product.findMany({
       where: { 
-        userId: userId
+        userId: userId,
+        ...(isAdmin ? {} : { user: { blocked: false } })
       },
       include: {
         category: true,

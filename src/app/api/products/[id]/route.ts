@@ -57,6 +57,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getServerSession(authOptions)
+    const isAdmin = session?.user?.role === 'ADMIN'
     const resolvedParams = await params
     const productId = parseInt(resolvedParams.id)
     
@@ -75,7 +77,8 @@ export async function GET(
           select: {
             id: true,
             name: true,
-            image: true
+            image: true,
+            blocked: true
           }
         },
         images: {
@@ -88,7 +91,7 @@ export async function GET(
       }
     })
 
-    if (!product) {
+    if (!product || (!isAdmin && product.user?.blocked)) {
       return NextResponse.json({
         success: false,
         message: 'პროდუქტი ვერ მოიძებნა'

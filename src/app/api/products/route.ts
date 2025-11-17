@@ -61,6 +61,9 @@ export async function GET(request: NextRequest) {
         ...(isAdmin ? {} : { 
           status: {
             not: 'MAINTENANCE' // Non-admin users don't see maintenance products
+          },
+          user: {
+            blocked: false
           }
         }),
         ...(category && category !== 'ALL' ? { 

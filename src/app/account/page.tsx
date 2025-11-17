@@ -309,7 +309,6 @@ const AccountPage = () => {
       localStorage.setItem('idBackUrl', url)
     }
   }
-
   const handleEntrepreneurCertificateUpload = async (urls: string[]) => {
     if (!urls.length) return
     const url = urls[0]
@@ -922,6 +921,12 @@ const AccountPage = () => {
           ) : (
             <div className="space-y-4">
               {sales.map((order) => {
+                const saleDate = new Date(order.createdAt)
+                const saleDateLabel = saleDate.toLocaleDateString('ka-GE')
+                const saleTimeLabel = saleDate.toLocaleTimeString('ka-GE', {
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })
                 const sellerTotal =
                   order.items?.reduce(
                     (sum, item) => sum + (item.price ?? 0) * (item.quantity ?? 1),
@@ -933,7 +938,7 @@ const AccountPage = () => {
                       <div>
                         <h4 className="font-semibold text-black">გაყიდვა #{order.id}</h4>
                         <p className="text-[16px] text-black">
-                          {new Date(order.createdAt).toLocaleDateString('ka-GE')}
+                          {saleDateLabel} • <span className="text-gray-600 text-[14px]">{saleTimeLabel}</span>
                         </p>
                         {order.buyer && (
                           <p className="text-[14px] text-gray-600">

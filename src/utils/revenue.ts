@@ -81,3 +81,11 @@ export async function checkAndBlockUser(userId: string, threshold: number = 2): 
   return false
 }
 
+export async function reevaluateUserBlocking(userId: string, threshold: number = 2): Promise<void> {
+  const shouldBlock = await shouldBlockUser(userId, threshold)
+  await prisma.user.update({
+    where: { id: userId },
+    data: { blocked: shouldBlock },
+  })
+}
+

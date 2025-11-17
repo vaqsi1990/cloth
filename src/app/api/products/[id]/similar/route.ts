@@ -26,7 +26,12 @@ export async function GET(
       select: { 
         categoryId: true,
         gender: true,
-        id: true
+        id: true,
+        user: {
+          select: {
+            blocked: true
+          }
+        }
       }
     })
 
@@ -40,13 +45,25 @@ export async function GET(
     // Only show AVAILABLE products to non-admin users
     const isAdmin = session?.user?.role === 'ADMIN'
 
+    if (!isAdmin && currentProduct.user?.blocked) {
+      return NextResponse.json({
+        success: false,
+        message: 'პროდუქტი ვერ მოიძებნა'
+      }, { status: 404 })
+    }
+
     // Fetch similar products from the same category, excluding current product
     const similarProducts = await prisma.product.findMany({
       where: {
         categoryId: currentProduct.categoryId,
         id: { not: productId }, // Exclude current product
         gender: currentProduct.gender, // Same gender
-        ...(isAdmin ? {} : { status: 'AVAILABLE' })
+        ...(isAdmin ? {} : { 
+          status: 'AVAILABLE',
+          user: {
+            blocked: false
+          }
+        })
       },
       include: {
         category: true,

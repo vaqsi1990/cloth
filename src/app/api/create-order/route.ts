@@ -3,7 +3,7 @@ import axios, { AxiosError } from 'axios'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { checkAndBlockUser } from '@/utils/revenue'
+import { recordSellerTransactions } from '@/utils/sellerTransactions'
 // Email functions - uncomment if available
 // import { sendOrderReceipt, sendOrderToAdmin } from '@/lib/email'
 import { bogTokenManager } from '@/lib/bog-token'
@@ -392,18 +392,8 @@ export async function POST(req: NextRequest) {
           data: { status: 'PAID' }
         })
 
-        // Create transaction for completed payment
-        await prisma.transaction.create({
-          data: {
-            type: 'SALE',
-            total: totalAmountNumber,
-            userId: session.user.id,
-            orderId: databaseOrder.id
-          }
-        })
-
-        // Check revenue and block user if needed
-        await checkAndBlockUser(session.user.id, 2)
+        // Record seller transactions
+        await recordSellerTransactions(databaseOrder.id)
 
         // Clear the cart after successful order creation
         await prisma.cartItem.deleteMany({

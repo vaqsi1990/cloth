@@ -209,18 +209,27 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    const sellerId = product.userId
+    if (!sellerId) {
+      console.error('Product owner not found for rental', { productId })
+      return NextResponse.json(
+        { error: 'Product owner not found' },
+        { status: 500 }
+      )
+    }
+
     // Create transaction record
     const transaction = await prisma.transaction.create({
       data: {
         type: 'RENT',
         total: totalPrice,
-        userId: session.user.id,
+        userId: sellerId,
         rentalId: rental.id
       }
     })
 
     // Check revenue and block user if needed
-    await checkAndBlockUser(session.user.id, 2)
+    await checkAndBlockUser(sellerId, 2)
 
     return NextResponse.json({
       success: true,

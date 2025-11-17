@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { checkAndBlockUser } from '@/utils/revenue'
+import { recordSellerTransactions } from '@/utils/sellerTransactions'
 import crypto from 'crypto'
 
 // BOG Public Key for signature verification
@@ -83,7 +83,15 @@ async function updateOrderStatus(orderId: string, paymentStatus: string) {
         paymentId: orderId
       },
       include: {
-        items: true
+        items: {
+          include: {
+            product: {
+              select: {
+                userId: true
+              }
+            }
+          }
+        }
       }
     })
 
@@ -98,30 +106,9 @@ async function updateOrderStatus(orderId: string, paymentStatus: string) {
       data: { status: orderStatus }
     })
 
-    // If order is PAID, create transaction and check revenue
-    if (orderStatus === 'PAID' && order.userId) {
-      // Check if transaction already exists for this order
-      const existingTransaction = await prisma.transaction.findFirst({
-        where: {
-          orderId: order.id,
-          type: 'SALE'
-        }
-      })
-
-      // Create transaction if it doesn't exist
-      if (!existingTransaction) {
-        await prisma.transaction.create({
-          data: {
-            type: 'SALE',
-            total: order.total,
-            userId: order.userId,
-            orderId: order.id
-          }
-        })
-
-        // Check revenue and block user if needed
-        await checkAndBlockUser(order.userId, 2)
-      }
+    // If order is PAID, create seller transactions
+    if (orderStatus === 'PAID') {
+      await recordSellerTransactions(order.id)
     }
 
     console.log(`Order ${order.id} status updated to ${orderStatus} based on payment ${orderId}`)
