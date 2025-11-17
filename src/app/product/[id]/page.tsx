@@ -822,6 +822,36 @@ const ProductPage = () => {
                                 )}
                             </div>
 
+                            {/* Sale price */}
+                            {canBuyProduct && (
+                                <div className="bg-white p-6  rounded-2xl">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-black md:text-[18px] text-[16px] uppercase tracking-wide">გაყიდვის ფასი</p>
+                                            <p className="md:text-[18px] text-[16px] text-black">
+                                                {selectedSize
+                                                    ? 'ფასი არჩეული ზომისთვის'
+                                                    : 'აირჩიეთ ზომა ფასის სანახავად'}
+                                            </p>
+                                        </div>
+                                        {showBuyOption ? (
+                                            <div className="text-3xl font-bold text-black">
+                                                ₾{selectedPrice.toFixed(2)}
+                                            </div>
+                                        ) : (
+                                            <div className="md:text-[18px] text-[16px] font-semibold text-black">
+                                                ფასის გარეშე
+                                            </div>
+                                        )}
+                                    </div>
+                                    {selectedSize && !showBuyOption && (
+                                        <p className="md:text-[18px] text-[16px] text-red-600 mt-2">
+                                            არჩეული ზომა ამჟამად არ იყიდება
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+
                             {/* Pricing plans (4+/7+/28+) */}
                             {product.isRentable && tiers.length > 0 && (
                                 <div className="bg-white  p-6 ">
