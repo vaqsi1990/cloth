@@ -1040,7 +1040,7 @@ const ProductPage = () => {
 
                                             return conflicts.length > 0 ? (
                                                 <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
-                                                    ⚠️ ამ თარიღებზე პროდუქტი დაკავებულია. გთხოვთ აირჩიოთ სხვა თარიღები.
+                                                     ამ თარიღებზე პროდუქტი დაკავებულია. გთხოვთ აირჩიოთ სხვა თარიღები.
                                                 </div>
                                             ) : null
                                         })()}
@@ -1092,7 +1092,7 @@ const ProductPage = () => {
                                         
                                         return conflicts.length > 0 ? (
                                             <p className="text-[16px] text-red-600 font-medium text-center">
-                                                ⚠️ ამ თარიღებზე პროდუქტი დაკავებულია
+                                                 ამ თარიღებზე პროდუქტი დაკავებულია
                                             </p>
                                         ) : null
                                     })()}

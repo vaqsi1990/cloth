@@ -424,7 +424,7 @@ const NewProductPage = () => {
               <ArrowLeft className="w-5 h-5 mr-2" />
               დაბრუნება
             </Link>
-            <h1 className="text-[20px] text-black font-bold">ახალი პროდუქტის დამატება</h1>
+            <h1 className="md:text-[20px] text-[18px] text-black font-bold">ახალი პროდუქტის დამატება</h1>
           </div>
         </div>
       </div>
@@ -433,18 +433,18 @@ const NewProductPage = () => {
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Basic Information */}
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-[20px] text-black font-semibold mb-6">ძირითადი ინფორმაცია</h2>
+            <h2 className="md:text-[20px] text-[18px] text-black font-semibold mb-6">ძირითადი ინფორმაცია</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-[20px] text-black font-medium mb-2">
+                <label className="block md:text-[18px] text-[16px] text-black font-medium mb-2">
                   სახელი *
                 </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => handleNameChange(e.target.value)}
-                  className={`w-full px-4 py-3 border rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black ${errors.name ? 'border-red-500' : 'border-gray-300'
+                  className={`w-full px-4 py-3 border rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-black ${errors.name ? 'border-red-500' : 'border-gray-300'
                     }`}
                 />
                 {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
@@ -453,25 +453,25 @@ const NewProductPage = () => {
 
 
               <div>
-                <label className="block text-[20px] text-black font-medium mb-2">
+                <label className="block md:text-[18px] text-[16px] text-black font-medium mb-2">
                   ბრენდი (ოფციონალური)
                 </label>
                 <input
                   type="text"
                   value={formData.brand || ''}
                   onChange={(e) => handleInputChange('brand', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                 />
               </div>
 
               <div>
-                <label className="block text-[20px] text-black font-medium mb-2">
+                <label className="block md:text-[18px] text-[16px] text-black font-medium mb-2">
                   კატეგორია
                 </label>
                 <select
                   value={formData.categoryId || ''}
                   onChange={(e) => handleInputChange('categoryId', e.target.value ? parseInt(e.target.value) : undefined)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                 >
                   <option value="">აირჩიეთ კატეგორია</option>
                   {categories.map(category => (
@@ -483,13 +483,13 @@ const NewProductPage = () => {
               </div>
 
               <div>
-                <label className="block text-[20px] text-black font-medium mb-2">
+                <label className="block md:text-[18px] text-[16px] text-black font-medium mb-2">
                   სქესი
                 </label>
                 <select
                   value={formData.gender}
                   onChange={(e) => handleInputChange('gender', e.target.value as 'MEN' | 'WOMEN' | 'CHILDREN' | 'UNISEX')}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                 >
                   <option value="UNISEX">უნივერსალური</option>
                   <option value="MEN">კაცისთვის</option>
@@ -499,13 +499,13 @@ const NewProductPage = () => {
               </div>
 
               <div>
-                <label className="block text-[20px] text-black font-medium mb-2">
+                <label className="block md:text-[18px] text-[16px] text-black font-medium mb-2">
                   მდებარეობა
                 </label>
                 <select
                   value={formData.location || ''}
                   onChange={(e) => handleInputChange('location', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                 >
                   <option value="">მდებარეობის არჩევა</option>
                   <option value="თბილისი">თბილისი</option>
@@ -515,11 +515,11 @@ const NewProductPage = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-[20px] text-black font-medium mb-2">ფერი</label>
+                <label className="block md:text-[18px] text-[16px] text-black font-medium mb-2">ფერი</label>
                 <select
                   value={formData.color || ''}
                   onChange={(e) => handleInputChange('color', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                 >
                   <option value="">აირჩიეთ ფერი</option>
                   {colors.map((color) => (
@@ -533,13 +533,13 @@ const NewProductPage = () => {
             </div>
 
             <div className="mt-6">
-              <label className="block text-[20px] text-black font-medium mb-2">
+              <label className="block md:text-[18px] text-[16px] text-black font-medium mb-2">
                 ზომა
               </label>
               <select
                 value={sizeSystem && selectedSize ? `${sizeSystem}:${selectedSize}` : ''}
                 onChange={(e) => handleCombinedSizeSelect(e.target.value)}
-                className="w-full px-4 py-3 md:w-1/2 w-full border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                className="w-full px-4 py-3 md:w-1/2 w-full border border-gray-300 rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-black"
               >
                 <option value="">აირჩიეთ ზომა</option>
                 {combinedSizeOptions.map((option) => (
@@ -552,14 +552,14 @@ const NewProductPage = () => {
 
 
             <div className="mt-6">
-              <label className="block text-[20px] text-black font-medium mb-2">
+              <label className="block md:text-[18px] text-[16px] text-black font-medium mb-2">
                 აღწერა
               </label>
               <textarea
                 value={formData.description}
                 onChange={(e) => handleInputChange('description', e.target.value)}
                 rows={4}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-black"
               />
             </div>
 
@@ -571,7 +571,7 @@ const NewProductPage = () => {
 
           {/* Rental Options */}
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-[20px] text-black font-semibold mb-6">გაქირავების პარამეტრები</h2>
+            <h2 className="md:text-[20px] text-[18px] text-black font-semibold mb-6">გაქირავების პარამეტრები</h2>
 
 
 
@@ -579,7 +579,7 @@ const NewProductPage = () => {
               {/* Rental Price Tiers */}
               <div>
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-medium text-black">ფასის გეგმა</h3>
+                  <h3 className="md:text-[18px] text-[16px] font-medium text-black">ფასის გეგმა</h3>
                   <button
                     type="button"
                     onClick={addRentalPriceTier}
@@ -594,7 +594,7 @@ const NewProductPage = () => {
                 {(formData.rentalPriceTiers || []).map((tier, index) => (
                   <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border border-gray-200 rounded-lg mb-4">
                     <div>
-                      <label className="block text-[20px] font-medium text-black mb-2">მინიმალური დღეები</label>
+                      <label className="block md:text-[18px] text-[16px] font-medium text-black mb-2">მინიმალური დღეები</label>
                       <input
                         type="number"
                         min="1"
@@ -605,7 +605,7 @@ const NewProductPage = () => {
                     </div>
 
                     <div>
-                      <label className="block text-[20px] font-medium text-black mb-2">ფასი დღეში</label>
+                      <label className="block md:text-[18px] text-[16px] font-medium text-black mb-2">ფასი დღეში</label>
                       <input
                         type="number"
                         step="0.01"
@@ -636,16 +636,16 @@ const NewProductPage = () => {
               {/* Additional Rental Parameters */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-[20px] text-black font-medium mb-2">მაქს დღეები(არასავალდებულო)</label>
+                  <label className="block md:text-[18px] text-[16px] text-black font-medium mb-2">მაქს დღეები(არასავალდებულო)</label>
                   <input
                     type="number"
                     value={formData.maxRentalDays || ''}
                     onChange={(e) => handleInputChange('maxRentalDays', e.target.value ? parseInt(e.target.value) : undefined)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                   />
                 </div>
                 <div>
-                  <label className="block text-[20px] text-black font-medium mb-2">გირაოს თანხა</label>
+                  <label className="block md:text-[18px] text-[16px] text-black font-medium mb-2">გირაოს თანხა</label>
                   <input
                     type="number"
                     step="0.01"
@@ -722,8 +722,8 @@ const NewProductPage = () => {
                     onClick={() => removeVariant(index)}
                     className="bg-red-500 text-white px-3 py-2 rounded-lg text-[20px] text-black flex items-center space-x-2"
                   >
-                    <X className="w-4 h-4" />
-                    <span>წაშლა</span>
+                    <X className="w-7 h-7" />
+                
                   </button>
                 </div>
               </div>

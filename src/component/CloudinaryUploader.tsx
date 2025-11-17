@@ -37,12 +37,12 @@ const ImageUpload = ({ onChange, value }: ImageUploadProps): React.JSX.Element =
   };
 
   return (
-    <div className="bg-white border-2 border-gray-200 rounded-xl p-6 hover:border-pink-500 transition-colors">
+    <div className="bg-white border-2 border-gray-200 rounded-xl p-6 hover:border-black transition-colors">
       <div className="mb-4">
         {imageUrls.length === 0 ? (
           <div>
             <UploadButton
-              className=" hover:bg-pink-700 text-white font-medium py-3 px-6 rounded-xl transition-colors flex items-center space-x-2 disabled:opacity-50"
+              className=" text-white font-medium py-3 px-6 rounded-xl transition-colors flex items-center space-x-2 disabled:opacity-50"
               endpoint="imageUploader"
               onClientUploadComplete={handleUploadComplete}
               onUploadError={handleUploadError}
@@ -74,7 +74,7 @@ const ImageUpload = ({ onChange, value }: ImageUploadProps): React.JSX.Element =
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-800">აიტვირთა სურათები</h3>
             <span className="bg-pink-100 text-pink-800 px-3 py-1 rounded-full text-sm font-medium">
-              {imageUrls.length} image{imageUrls.length !== 1 ? 's' : ''}
+              {imageUrls.length} სურათი{imageUrls.length !== 1 ? 's' : ''}
             </span>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">

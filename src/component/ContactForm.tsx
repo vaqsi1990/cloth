@@ -49,25 +49,16 @@ const ContactForm = () => {
         <section className="">
             <div className="container max-w-7xl mx-auto px-4">
                 {/* Header */}
-                <div className="text-center mb-12">
-                    <h2 className="text-[20px] md:text-[30px] font-bold text-black mb-4">
-                        დაგვიკავშირდით
-                    </h2>
-                    <p className="text-lg text-black max-w-2xl mx-auto">
-                        გაქვთ კითხვები? ჩვენ მზად ვართ დაგეხმაროთ. გამოგვიგზავნეთ შეტყობინება და ჩვენ მალე დაგიკავშირდებით.
-                    </p>
-                </div>
+             
 
-                <div className="grid lg:grid-cols-2 gap-12">
+                <div className="grid mt-10 lg:grid-cols-2 gap-12">
                     {/* Contact Information */}
                     <div className="space-y-8">
                         <div>
-                            <h3 className="text-2xl font-bold text-black mb-6">
-                                კონტაქტის ინფორმაცია
-                            </h3>
-                            <p className="text-black mb-8">
+                          
+                            <p className="text-black md:text-[18px] text-[16px] mb-8">
                                 ჩვენი გუნდი მზად არის დაგეხმაროთ ნებისმიერი კითხვის გადაჭრაში. 
-                                დაგვიკავშირდით ნებისმიერ დროს.
+                                დაგვიკავშირდით ნებისმიერ დროს
                             </p>
                         </div>
 
@@ -78,7 +69,7 @@ const ContactForm = () => {
                                     <Mail className="w-6 h-6 text-white" />
                                 </div>
                                 <div>
-                                    <h4 className="font-semibold text-black mb-1">ელფოსტა</h4>
+                                    <h4 className="block md:text-[18px] text-[16px] font-medium text-black mb-2">ელფოსტა</h4>
                                     <p className="text-black">info@cloth.ge</p>
                                     <p className="text-black">support@cloth.ge</p>
                                 </div>
@@ -89,7 +80,7 @@ const ContactForm = () => {
                                     <Phone className="w-6 h-6 text-white" />
                                 </div>
                                 <div>
-                                    <h4 className="font-semibold text-gray-900 mb-1">ტელეფონი</h4>
+                                    <h4 className="block md:text-[18px] text-[16px] font-medium text-black mb-2">ტელეფონი</h4>
                                     <p className="text-black">+995 555 123 456</p>
                                     <p className="text-black">+995 555 789 012</p>
                                 </div>
@@ -100,7 +91,7 @@ const ContactForm = () => {
                                     <MapPin className="w-6 h-6 text-white" />
                                 </div>
                                 <div>
-                                    <h4 className="font-semibold text-gray-900 mb-1">მისამართი</h4>
+                                    <h4 className="block md:text-[18px] text-[16px] font-medium text-black mb-2">მისამართი</h4>
                                     <p className="text-black">თბილისი, საქართველო</p>
                                     <p className="text-black">რუსთაველის გამზირი 15</p>
                                 </div>
@@ -112,14 +103,14 @@ const ContactForm = () => {
 
                     {/* Contact Form */}
                     <div className="bg-white rounded-2xl p-8 shadow-lg mb-14">
-                        <h3 className="text-2xl font-bold text-gray-900 mb-6">
+                        <h3 className="md:text-[20px] text-[18px] font-bold text-gray-900 mb-6">
                             გამოგვიგზავნეთ შეტყობინება
                         </h3>
 
                         {isSubmitted && (
                             <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
                                 <p className="text-green-800 font-medium">
-                                    ✅ შეტყობინება წარმატებით გაიგზავნა! ჩვენ მალე დაგიკავშირდებით.
+                                     შეტყობინება წარმატებით გაიგზავნა! ჩვენ მალე დაგიკავშირდებით.
                                 </p>
                             </div>
                         )}
@@ -127,7 +118,7 @@ const ContactForm = () => {
                         <form onSubmit={handleSubmit} className="space-y-6">
                             {/* Name */}
                             <div>
-                                <label htmlFor="name" className="block text-[16px] font-medium text-black mb-2">
+                                <label htmlFor="name" className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
                                     სახელი *
                                 </label>
                                 <div className="relative">
@@ -147,7 +138,7 @@ const ContactForm = () => {
 
                             {/* Email */}
                             <div>
-                                <label htmlFor="email" className="block text-[16px] font-medium text-black mb-2">
+                                <label htmlFor="email" className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
                                     ელფოსტა *
                                 </label>
                                 <div className="relative">
@@ -167,7 +158,7 @@ const ContactForm = () => {
 
                             {/* Phone */}
                             <div>
-                                <label htmlFor="phone" className="block text-[16px] font-medium text-black mb-2">
+                                <label htmlFor="phone" className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
                                     ტელეფონი
                                 </label>
                                 <div className="relative">
@@ -186,7 +177,7 @@ const ContactForm = () => {
 
                             {/* Subject */}
                             <div>
-                                <label htmlFor="subject" className="block text-[16px] font-medium text-black mb-2">
+                                <label htmlFor="subject" className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
                                     თემა *
                                 </label>
                                 <input
@@ -203,7 +194,7 @@ const ContactForm = () => {
 
                             {/* Message */}
                             <div>
-                                <label htmlFor="message" className="block text-[16px] font-medium text-black mb-2">
+                                <label htmlFor="message" className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
                                     შეტყობინება *
                                 </label>
                                 <div className="relative">
@@ -225,7 +216,7 @@ const ContactForm = () => {
                             <button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="w-full bg-[#1B3729] cursor-pointer text-white py-3 px-6 rounded-lg md:text-[20px] text-[18px] font-bold hover:bg-gray-800 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                                className="w-full bg-[#1B3729] cursor-pointer text-white py-3 px-6 rounded-lg md:text-[20px] text-[18px] font-bold transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                             >
                                 {isSubmitting ? (
                                     <>

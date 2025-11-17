@@ -526,7 +526,7 @@ const AdminUsersPage = () => {
                         <div className="flex items-center justify-between mb-3">
                           <div>
                             <h4 className="text-[18px] font-bold text-orange-800">
-                              ⚠️ ვერიფიკაცია საჭიროა - პირადობის დოკუმენტები
+                               ვერიფიკაცია საჭიროა - პირადობის დოკუმენტები
                             </h4>
                             <p className="text-sm text-orange-700">
                               ბლოკი საჭიროა მხოლოდ იმ მომხმარებლებისთვის, ვინც პროდუქტებს ყიდის.

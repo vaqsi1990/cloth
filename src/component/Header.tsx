@@ -137,7 +137,7 @@ const Header = () => {
                         >
                           {item === 'ქალი' && (
                             <div className="py-2">
-                              <p className="text-black flex items-center gap-2 text-[17px] border-b border-gray-200 px-4 py-2 font-bold  hover:bg-gray-100"><Image src="/icon/woman-clothes.png" alt="everyday" width={20} height={20} />  ყოველდღიური ტანსაცმელი</p>
+                              <p className="text-black flex items-center gap-2 text-[17px] border-b border-gray-200 px-4 py-2 font-bold  hover:bg-gray-100">  ყოველდღიური ტანსაცმელი</p>
                               <Link href="/shop?gender=women" className="block text-black text-[17px] px-4 py-2 hover:bg-gray-100">
                                 პალტოები და მოსასხამი
                               </Link>
@@ -150,14 +150,14 @@ const Header = () => {
                               <Link href="/shop?gender=women&category=bottoms" className="block text-black text-[17px] px-4 py-2 hover:bg-gray-100">
                                 ქვედაბოლოები
                               </Link>
-                              <p className="text-black flex items-center gap-2 text-[17px] border-b border-gray-200 px-4 py-2 font-bold  hover:bg-gray-100"><Image src="/icon/wedding-ring.png" alt="everyday" width={20} height={20} /> საქორწინო და სადღესასწაულო</p>
+                              <p className="text-black flex items-center gap-2 text-[17px] border-b border-gray-200 px-4 py-2 font-bold  hover:bg-gray-100"> საქორწინო და სადღესასწაულო</p>
                               <Link href="/shop?gender=women" className="block text-black text-[17px] px-4 py-2 hover:bg-gray-100">
                                 საქორწინო კაბები
                               </Link>
                               <Link href="/shop?gender=women" className="block text-black text-[17px] px-4 py-2 hover:bg-gray-100">
                                 საღამოს ტანსაცმელი
                               </Link>
-                              <p className="text-black flex items-center gap-2 text-[17px]  border-b border-gray-200 px-4 py-2 font-bold  hover:bg-gray-100"><Image src="/icon/swimming-suit.png" alt="everyday" width={20} height={20} /> სათხილამურო & სპორტული</p>
+                              <p className="text-black flex items-center gap-2 text-[17px]  border-b border-gray-200 px-4 py-2 font-bold  hover:bg-gray-100"> სათხილამურო & სპორტული</p>
                               <Link href="/shop?gender=women" className="block text-black text-[17px] px-4 py-2 hover:bg-gray-100">
                                 სათხილამურო ქურთუკი
                               </Link>
@@ -170,7 +170,7 @@ const Header = () => {
                               <Link href="/shop?gender=women" className="block text-black text-[17px] px-4 py-2 hover:bg-gray-100">
                                 ჩაფხუტი
                               </Link>
-                              <p className="text-black flex items-center gap-2 text-[17px] border-b border-gray-200 px-4 py-2 font-bold  hover:bg-gray-100"><Image src="/icon/party-mask.png" alt="everyday" width={20} height={20} /> კულტურული & თემატური</p>
+                              <p className="text-black flex items-center gap-2 text-[17px] border-b border-gray-200 px-4 py-2 font-bold  hover:bg-gray-100"> კულტურული & თემატური</p>
 
                               <Link href="/shop?gender=women" className="block text-black text-[17px] px-4 py-2 hover:bg-gray-100">
                                 ტრადიციული ტანსაცმელი
