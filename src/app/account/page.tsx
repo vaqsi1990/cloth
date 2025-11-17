@@ -899,8 +899,8 @@ const AccountPage = () => {
           ) : sales.length === 0 ? (
             <div className="text-center py-8">
               <TrendingUp className="w-12 h-12 text-black mx-auto mb-4" />
-              <p className="text-[16px] text-black">ჯერ არ გაქვთ გაყიდვები</p>
-              <p className="text-[14px] text-gray-500">დაამატეთ პროდუქტი და დაიწყეთ გაყიდვები</p>
+              <p className="text-[18px] text-black">ჯერ არ გაქვთ გაყიდვები</p>
+              <p className="text-[16px] text-gray-500">დაამატეთ პროდუქტი და დაიწყეთ გაყიდვები</p>
             </div>
           ) : (
             <div className="space-y-4">
