@@ -20,6 +20,8 @@ export async function GET() {
         banned: true,
         banReason: true,
         bannedAt: true,
+        blocked: true,
+        verified: true,
         verification: { select: { status: true } }
       }
     })

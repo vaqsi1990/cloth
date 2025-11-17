@@ -86,6 +86,7 @@ const AccountPage = () => {
   const [userBlocked, setUserBlocked] = useState(false)
   const [userVerified, setUserVerified] = useState(false)
   const isSeller = userStats.productsCount > 0
+  const sellerNeedsVerification = userBlocked || isSeller
 
   // Load uploaded images from localStorage on mount
   const [idFrontUrl, setIdFrontUrl] = useState<string | null>(() => {
@@ -329,7 +330,7 @@ const AccountPage = () => {
       }
       
       // ინდმეწარმის საბუთი საჭიროა მხოლოდ როცა blocked (revenue >= 2₾)
-      if (isSeller && userBlocked && !entrepreneurCertificateUrl) {
+      if (userBlocked && !entrepreneurCertificateUrl) {
         showToast('თქვენი შემოსავალი 2₾-ს აღემატება. გთხოვთ ატვირთოთ ინდმეწარმის საბუთი', 'warning')
         return
       }
@@ -592,7 +593,7 @@ const AccountPage = () => {
         </div>
 
         {/* Blocked message */}
-        {isSeller && userBlocked && !userVerified && (
+        {userBlocked && !userVerified && (
           <div className="mt-8 p-4 border-2 border-red-500 rounded-lg bg-red-50">
             <h4 className="text-lg font-semibold text-red-600 mb-2">⚠️ ანგარიშის ვერიფიკაცია საჭიროა</h4>
             <p className="text-[18px] text-red-700 font-medium">
@@ -605,7 +606,7 @@ const AccountPage = () => {
         )}
 
         {/* Verification Section for non-admin users - show if blocked or not approved */}
-        {session.user.role !== 'ADMIN' && isSeller && (userBlocked || session.user.verificationStatus !== 'APPROVED') && (
+        {session.user.role !== 'ADMIN' && sellerNeedsVerification && (userBlocked || session.user.verificationStatus !== 'APPROVED') && (
           <div className={`mt-8 p-6 border-2 rounded-lg ${userBlocked ? 'border-red-500 bg-red-50' : 'border-black bg-gray-50'}`}>
             <div className="mb-4">
               <h4 className="text-xl font-bold mb-2">
