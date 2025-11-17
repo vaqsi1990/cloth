@@ -5,7 +5,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { User, Package, ShoppingCart, Settings, MapPin, Phone, Mail, Camera, MessageCircle, Search, Trash2 } from 'lucide-react'
+import { User, Package, ShoppingCart, Settings, MapPin, Phone, Mail, Camera, MessageCircle, Search, Trash2, TrendingUp } from 'lucide-react'
 import ImageUpload from '@/component/CloudinaryUploader'
 import ContactForm from '@/component/ContactForm'
 import { showToast } from '@/utils/toast'
@@ -16,6 +16,31 @@ interface Order {
   status: string
   createdAt: string
   items?: Array<{ productName: string; size: string; price: number }>
+}
+
+interface SaleOrderItem {
+  productName: string
+  size: string | null
+  price: number
+  quantity: number
+  product?: {
+    id: number
+    images?: Array<{ url: string }>
+  }
+}
+
+interface SaleOrder {
+  id: number
+  total: number
+  status: string
+  createdAt: string
+  buyer?: {
+    id?: string
+    name: string | null
+    email: string | null
+    phone?: string | null
+  }
+  items?: SaleOrderItem[]
 }
 
 interface ProductItem {
@@ -43,8 +68,10 @@ const AccountPage = () => {
   const [profileImage, setProfileImage] = useState<string | null>(session?.user?.image || null)
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   const [orders, setOrders] = useState<Order[]>([])
+  const [sales, setSales] = useState<SaleOrder[]>([])
   const [products, setProducts] = useState<ProductItem[]>([])
   const [loadingOrders, setLoadingOrders] = useState(false)
+  const [loadingSales, setLoadingSales] = useState(false)
   const [loadingProducts, setLoadingProducts] = useState(false)
   const [verification, setVerification] = useState<{
     id?: number;
@@ -108,6 +135,14 @@ const AccountPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab])
 
+  // Fetch sales when tab changes to sales
+  useEffect(() => {
+    if (activeTab === 'sales' && session?.user?.id) {
+      fetchSales()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab])
+
   // Fetch products only when tab changes to products
   useEffect(() => {
     if (activeTab === 'products' && session?.user?.id) {
@@ -152,8 +187,12 @@ const AccountPage = () => {
       const totalSpent = ordersData.success
         ? ordersData.orders.reduce((sum: number, order: Order) => sum + order.total, 0)
         : 0
-      const soldProductsCount = ordersData.success
-        ? ordersData.orders.reduce((sum: number, order: Order) => sum + (order.items?.length || 0), 0)
+      const salesResponse = await fetch('/api/user/sales')
+      const salesData = await salesResponse.json()
+      const soldProductsCount = salesData.success
+        ? salesData.orders.reduce((sum: number, order: { items?: Array<{ quantity?: number }> }) =>
+            sum + (order.items?.reduce((itemSum, item) => itemSum + (item.quantity ?? 1), 0) || 0),
+          0)
         : 0
 
       // Fetch user products
@@ -349,6 +388,7 @@ const AccountPage = () => {
   const tabs = [
     { id: 'profile', label: 'პროფილი', icon: User },
     { id: 'orders', label: 'შეკვეთები', icon: ShoppingCart },
+    { id: 'sales', label: 'გაყიდვები', icon: TrendingUp },
     { id: 'Contact', label: 'კონტაქტი', icon: MessageCircle },
     { id: 'products', label: 'ჩემი პროდუქტები', icon: Package },
     { id: 'settings', label: 'პარამეტრები', icon: Settings },
@@ -366,6 +406,21 @@ const AccountPage = () => {
       console.error('Error fetching orders:', error)
     } finally {
       setLoadingOrders(false)
+    }
+  }
+
+  const fetchSales = async () => {
+    try {
+      setLoadingSales(true)
+      const response = await fetch('/api/user/sales')
+      const data = await response.json()
+      if (data.success) {
+        setSales(data.orders || [])
+      }
+    } catch (error) {
+      console.error('Error fetching sales:', error)
+    } finally {
+      setLoadingSales(false)
     }
   }
 
@@ -771,15 +826,24 @@ const AccountPage = () => {
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <h4 className="font-semibold text-black">შეკვეთა #{order.id}</h4>
-                    <p className="text-[16px] text-black">{new Date(order.createdAt).toLocaleDateString('ka-GE')}</p>
+                        <p className="text-[16px] text-black">{new Date(order.createdAt).toLocaleDateString('ka-GE')}</p>
                   </div>
                   <div className="text-right">
                     <p className="font-bold text-black">₾{order.total}</p>
                     <span className={`inline-block px-2 py-1 text-xs rounded-full ${order.status === 'PAID' ? 'bg-green-100 text-green-800' :
                       order.status === 'SHIPPED' ? 'bg-blue-100 text-blue-800' :
-                        'bg-gray-100 text-black'
+                        order.status === 'CANCELED' ? 'bg-red-100 text-red-800' :
+                          order.status === 'REFUNDED' ? 'bg-gray-100 text-gray-800' : 'bg-yellow-100 text-yellow-800'
                       }`}>
-                      {order.status}
+                      {order.status === 'PAID'
+                        ? 'გადახდილი'
+                        : order.status === 'SHIPPED'
+                          ? 'გაგზავნილი'
+                          : order.status === 'CANCELED'
+                            ? 'გაუქმებული'
+                            : order.status === 'REFUNDED'
+                              ? 'დაბრუნებული'
+                              : 'მოლოდინში'}
                     </span>
                   </div>
                 </div>
@@ -805,6 +869,145 @@ const AccountPage = () => {
       </div>
     </div>
   )
+
+  const renderSalesTab = () => {
+    const totalSoldItems = sales.reduce(
+      (sum, order) =>
+        sum +
+        (order.items?.reduce((itemSum, item) => itemSum + (item.quantity ?? 1), 0) || 0),
+      0
+    )
+
+    const totalSalesAmount = sales.reduce(
+      (sum, order) =>
+        sum +
+        (order.items?.reduce(
+          (itemSum, item) =>
+            itemSum + (item.price ?? 0) * (item.quantity ?? 1),
+          0
+        ) || 0),
+      0
+    )
+
+    return (
+      <div className="space-y-6">
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+          <h3 className="text-[18px] font-bold text-black mb-6">გაყიდვების მიმოხილვა</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-black">{totalSoldItems}</div>
+              <div className="text-[16px] text-black">გაყიდული პროდუქტი</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-black">₾{totalSalesAmount.toFixed(2)}</div>
+              <div className="text-[16px] text-black">შემოსავალი</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+          <h3 className="text-[18px] font-bold text-black mb-6">გაყიდვების ისტორია</h3>
+
+          {loadingSales ? (
+            <div className="text-center py-12">
+              <div className="w-12 h-12 border-4 border-gray-300 border-t-[#1B3729] rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-[16px] text-black">გაყიდვები იტვირთება...</p>
+            </div>
+          ) : sales.length === 0 ? (
+            <div className="text-center py-8">
+              <TrendingUp className="w-12 h-12 text-black mx-auto mb-4" />
+              <p className="text-[16px] text-black">ჯერ არ გაქვთ გაყიდვები</p>
+              <p className="text-[14px] text-gray-500">დაამატეთ პროდუქტი და დაიწყეთ გაყიდვები</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {sales.map((order) => {
+                const sellerTotal =
+                  order.items?.reduce(
+                    (sum, item) => sum + (item.price ?? 0) * (item.quantity ?? 1),
+                    0
+                  ) || 0
+                return (
+                  <div key={order.id} className="border border-black rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-3">
+                      <div>
+                        <h4 className="font-semibold text-black">გაყიდვა #{order.id}</h4>
+                        <p className="text-[16px] text-black">
+                          {new Date(order.createdAt).toLocaleDateString('ka-GE')}
+                        </p>
+                        {order.buyer && (
+                          <p className="text-[14px] text-gray-600">
+                            მყიდველი: {order.buyer.name || 'უცნობი'} ({order.buyer.email || '---'})
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-black">₾{sellerTotal.toFixed(2)}</p>
+                        <span
+                          className={`inline-block px-2 py-1 text-xs rounded-full ${
+                            order.status === 'PAID'
+                              ? 'bg-green-100 text-green-800'
+                              : order.status === 'SHIPPED'
+                                ? 'bg-blue-100 text-blue-800'
+                                : order.status === 'CANCELED'
+                                  ? 'bg-red-100 text-red-800'
+                                  : order.status === 'REFUNDED'
+                                    ? 'bg-gray-100 text-gray-800'
+                                    : 'bg-yellow-100 text-yellow-800'
+                          }`}
+                        >
+                          {order.status === 'PAID'
+                            ? 'გადახდილი'
+                            : order.status === 'SHIPPED'
+                              ? 'გაგზავნილი'
+                              : order.status === 'CANCELED'
+                                ? 'გაუქმებული'
+                                : order.status === 'REFUNDED'
+                                  ? 'დაბრუნებული'
+                                  : 'მოლოდინში'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      {order.items?.map((item, index) => (
+                        <div
+                          key={index}
+                          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-[16px]"
+                        >
+                          <div className="flex items-center gap-3 text-black">
+                            {item.product?.images?.[0]?.url && (
+                              <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100">
+                                <Image
+                                  src={item.product.images[0].url}
+                                  alt={item.productName}
+                                  width={48}
+                                  height={48}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            )}
+                            <div>
+                              <div className="font-medium">{item.productName}</div>
+                              {item.size && <div className="text-sm text-gray-500">ზომა: {item.size}</div>}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-semibold">₾{(item.price ?? 0).toFixed(2)}</div>
+                            <div className="text-sm text-gray-500">რაოდენობა: {item.quantity ?? 1}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   const renderProductsTab = () => (
     <div className="space-y-6">
@@ -1005,6 +1208,8 @@ const AccountPage = () => {
         return renderProfileTab()
       case 'orders':
         return renderOrdersTab()
+      case 'sales':
+        return renderSalesTab()
       case 'Contact':
         return (
           <div className="bg-white rounded-lg shadow-sm p-6">
