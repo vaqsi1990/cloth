@@ -117,13 +117,17 @@ export async function GET(
     }
 
     // Create response with rental status for each variant
-    const variantRentalStatus = product.variants.map(variant => ({
-      variantId: variant.id,
-      size: variant.size,
-      stock: variant.stock,
-      activeRentals: rentalStatusBySize[variant.size] || [],
-      isAvailable: !rentalStatusBySize[variant.size] || rentalStatusBySize[variant.size].length === 0
-    }))
+    const variantRentalStatus = product.variants.map(variant => {
+      const variantSizeKey = variant.size || 'UNKNOWN'
+      const variantRentals = rentalStatusBySize[variantSizeKey] || []
+      return {
+        variantId: variant.id,
+        size: variant.size,
+        stock: variant.stock,
+        activeRentals: variantRentals,
+        isAvailable: variantRentals.length === 0
+      }
+    })
 
     return NextResponse.json({
       success: true,

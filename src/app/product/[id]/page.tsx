@@ -1,5 +1,5 @@
 "use client"
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useMemo, useState } from "react"
 import { useParams } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
@@ -86,20 +86,75 @@ const ProductPage = () => {
     const [submittingReply, setSubmittingReply] = useState(false)
     const [deletingReplyId, setDeletingReplyId] = useState<number | null>(null)
 
+    const tiers: Tier[] = useMemo(() => {
+        if (!product) return []
+
+        const normalized =
+            (product.rentalPriceTiers as Tier[] | undefined)?.filter(
+                tier => tier.pricePerDay && tier.pricePerDay > 0
+            ).map(tier => ({
+                ...tier,
+                pricePerDay: Number(tier.pricePerDay),
+            })) || []
+
+        if (normalized.length) {
+            return [...normalized].sort((a, b) => a.minDays - b.minDays)
+        }
+
+        const fallbackPrice =
+            typeof product.pricePerDay === 'number' && product.pricePerDay > 0
+                ? product.pricePerDay
+                : null
+
+        if (!fallbackPrice) {
+            return []
+        }
+
+        return [
+            { minDays: 4, pricePerDay: fallbackPrice },
+            { minDays: 7, pricePerDay: Number((fallbackPrice * 0.6).toFixed(2)) },
+            { minDays: 28, pricePerDay: Number((fallbackPrice * 0.4).toFixed(2)) },
+        ]
+    }, [product])
+
+    const canRent = Boolean(product?.isRentable && tiers.length > 0)
+    const canBuyProduct = useMemo(() => {
+        if (!product?.variants || product.variants.length === 0) {
+            return false
+        }
+        return product.variants.some(variant => (variant.price ?? 0) > 0)
+    }, [product])
+
     // Auto-switch to rent mode if product is rented or if buy price is 0
     useEffect(() => {
-        if (product?.status === 'RENTED' && purchaseMode === 'buy') {
-            setPurchaseMode('rent')
+        if (!product) return
+
+        if (purchaseMode === 'rent' && !canRent) {
+            if (canBuyProduct) {
+                setPurchaseMode('buy')
+            }
+            return
         }
-        // If selected price is 0, switch to rent mode (product is rent-only)
-        if (selectedSize && product) {
-            const variant = product.variants?.find(v => v.size === selectedSize)
-            const price = variant?.price ?? 0
-            if (price === 0 && purchaseMode === 'buy') {
+
+        if (product.status === 'RENTED' && purchaseMode === 'buy' && canRent) {
+            setPurchaseMode('rent')
+            return
+        }
+
+        if (purchaseMode === 'buy') {
+            if (!canBuyProduct && canRent) {
                 setPurchaseMode('rent')
+                return
+            }
+            if (selectedSize) {
+                const variant = product.variants?.find(v => v.size === selectedSize)
+                const price = variant?.price ?? 0
+                if (price === 0 && canRent) {
+                    setPurchaseMode('rent')
+                }
             }
         }
-    }, [product?.status, purchaseMode, selectedSize, product])
+    }, [product, purchaseMode, selectedSize, canRent, canBuyProduct])
 
     // size => busy periods
     const [rentalStatus, setRentalStatus] = useState<Record<string, RentalPeriod[]>>({})
@@ -420,17 +475,6 @@ const ProductPage = () => {
     // -------------------------
     // Helpers
     // -------------------------
-    const tiers: Tier[] =
-        (product?.rentalPriceTiers as Tier[] | undefined)?.sort(
-            (a, b) => a.minDays - b.minDays
-        ) ||
-        [
-            // fallback თუ API-დან არ მოდის ტირები
-            { minDays: 4, pricePerDay: product?.pricePerDay || 20 },
-            { minDays: 7, pricePerDay: (product?.pricePerDay || 20) * 0.6 },
-            { minDays: 28, pricePerDay: (product?.pricePerDay || 20) * 0.4 },
-        ]
-
     const minDaysGlobal = tiers.length ? Math.min(...tiers.map(t => t.minDays)) : 4
 
     const getMainImage = () =>
@@ -458,6 +502,13 @@ const ProductPage = () => {
 
     const selectedVariant = product?.variants?.find(v => v.size === selectedSize)
     const selectedPrice = selectedVariant?.price ?? 0
+    const showBuyOption = Boolean(canBuyProduct && selectedSize && selectedPrice > 0)
+    const rentStatusAllowed =
+        product?.status === 'AVAILABLE' ||
+        product?.status === 'RENTED' ||
+        product?.status === 'RESERVED' ||
+        typeof product?.status === 'undefined'
+    const showRentOption = Boolean(canRent && rentStatusAllowed)
     const selectedStock = selectedVariant?.stock ?? 0
 
     const handleSizeClick = (size: string) => {
@@ -833,8 +884,8 @@ const ProductPage = () => {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className={`grid gap-3 ${selectedSize && selectedPrice > 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                                        {selectedSize && selectedPrice > 0 && (
+                                    <div className={`grid gap-3 ${(showBuyOption ? 1 : 0) + (showRentOption ? 1 : 0) > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                                        {showBuyOption && (
                                             <button
                                                 onClick={() => setPurchaseMode("buy")}
                                                 disabled={product.status === 'RENTED'}
@@ -847,7 +898,7 @@ const ProductPage = () => {
                                                 ყიდვა
                                             </button>
                                         )}
-                                        {product.isRentable && (product.status === 'AVAILABLE' || product.status === 'RENTED' || product.status === 'RESERVED' || product.status === undefined) && (
+                                        {showRentOption && (
                                             <button
                                                 onClick={() => setPurchaseMode("rent")}
                                                 className={`p-4 rounded-xl border-2 flex md:text-[18px] text-[16px] items-center justify-center gap-2 transition ${purchaseMode === "rent"
@@ -862,7 +913,7 @@ const ProductPage = () => {
                                     </div>
                                 )}
 
-                                {purchaseMode === "rent" && product.isRentable && product.status !== 'MAINTENANCE' && (
+                                {purchaseMode === "rent" && canRent && product.status !== 'MAINTENANCE' && (
                                     <div className="space-y-3 p-4 bg-emerald-50 rounded-xl border border-emerald-200">
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
@@ -993,12 +1044,12 @@ const ProductPage = () => {
                                             {product.status === 'MAINTENANCE' && 'ნივთი რესტავრაციაზეა'}
                                         </p>
                                     )}
-                                    {(purchaseMode === "rent" && (!rentalStartDate || !rentalEndDate)) && product.status === 'AVAILABLE' && (
+                                    {(purchaseMode === "rent" && canRent && (!rentalStartDate || !rentalEndDate)) && product.status === 'AVAILABLE' && (
                                         <p className="text-sm text-orange-600 font-medium text-center">
                                             გთხოვთ აირჩიოთ ქირაობის დაწყების და დასრულების თარიღები
                                         </p>
                                     )}
-                                    {(purchaseMode === "rent" && rentalStartDate && rentalEndDate) && (() => {
+                                    {(purchaseMode === "rent" && canRent && rentalStartDate && rentalEndDate) && (() => {
                                         // Check if the selected dates conflict with existing rentals
                                         const start = new Date(rentalStartDate)
                                         const end = new Date(rentalEndDate)
@@ -1018,14 +1069,14 @@ const ProductPage = () => {
 
                                     {product.status !== 'MAINTENANCE' && (
                                         <>
-                                            {purchaseMode === "buy" && selectedSize && selectedPrice > 0 ? (
+                                            {purchaseMode === "buy" && showBuyOption ? (
                                                 <button
                                                     onClick={handleAddToCart}
                                                     className="w-full py-4 rounded-xl md:text-[18px] text-[16px] text-white font-bold transition bg-[#1B3729] hover:opacity-95"
                                                 >
                                                     {isAdding ? "მუშავდება..." : "კალათაში დამატება"}
                                                 </button>
-                                            ) : purchaseMode === "rent" && selectedSize ? (
+                                            ) : purchaseMode === "rent" && selectedSize && canRent ? (
                                                 <button
                                                     onClick={handleRental}
                                                     disabled={!rentalStartDate || !rentalEndDate}
