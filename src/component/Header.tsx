@@ -247,17 +247,17 @@ const Header = () => {
                     <div className="py-2 text-black">
                       <p className="px-4 font-semibold">{session.user.name}</p>
                       {session.user.role === 'ADMIN' ? (
-                        <Link href="/admin" className="block px-4 py-2 hover:bg-gray-100">
+                        <Link href="/admin" className="block text-[17px] px-4 py-2 hover:bg-gray-100">
                           ადმინისტრატორი
                         </Link>
                       ) : (
-                        <Link href="/account" className="block hover:bg-gray-100 text-black px-4 py-2 ">
+                        <Link href="/account" className="block text-[17px] hover:bg-gray-100 text-black px-4 py-2 ">
                           პროფილი
                         </Link>
                       )}
                       <button
                         onClick={() => signOut()}
-                        className="w-full text-left cursor-pointer px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
+                        className="w-full text-left cursor-pointer text-[17px] px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
                       >
                         <LogOut className="w-4 h-4" />
                         <span>გასვლა</span>

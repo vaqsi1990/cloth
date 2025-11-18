@@ -604,7 +604,7 @@ const NewProductPage = () => {
 
             <div className="mt-6">
               <label className="block md:text-[18px] text-[16px] text-black font-medium mb-2">
-                ზომა
+                ზომა (არასავალდებულო)
               </label>
               <select
                 value={sizeSystem && selectedSize ? `${sizeSystem}:${selectedSize}` : ''}

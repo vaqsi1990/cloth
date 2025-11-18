@@ -647,7 +647,7 @@ const EditProductPage = () => {
 
               <div className="md:col-span-2">
                 <label className="block text-[20px] text-black font-medium mb-2">
-                  ზომა
+                  ზომა (არასავალდებულო)
                 </label>
                 <select
                   value={

@@ -29,25 +29,84 @@ const SignUpPage = () => {
   const [showCodeInput, setShowCodeInput] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   
   const router = useRouter()
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     })
     setError('')
     setSuccess('')
+
+    // Validate Georgian characters for name, lastName, location, address in real-time
+    if (['name', 'lastName', 'location'].includes(name)) {
+      if (value && !/^[\u10A0-\u10FF\s]+$/.test(value)) {
+        const fieldName = name === 'name' ? 'სახელი' :
+                         name === 'lastName' ? 'გვარი' :
+                         'ადგილმდებარეობა'
+        setFieldErrors(prev => ({
+          ...prev,
+          [name]: `${fieldName} უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს`
+        }))
+      } else {
+        setFieldErrors(prev => {
+          const newErrors = { ...prev }
+          delete newErrors[name]
+          return newErrors
+        })
+      }
+    } else if (name === 'address') {
+      // Address allows Georgian characters, numbers, № (optional), and N
+      if (value && !/^[\u10A0-\u10FF\s0-9№N]+$/.test(value)) {
+        setFieldErrors(prev => ({
+          ...prev,
+          [name]: 'მისამართი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, ციფრებს, № (ოფციონალური) და N'
+        }))
+      } else {
+        setFieldErrors(prev => {
+          const newErrors = { ...prev }
+          delete newErrors[name]
+          return newErrors
+        })
+      }
+    }
   }
 
   const handleSendCode = async () => {
     setError('')
     setSuccess('')
     
+    // Check for field validation errors
+    if (Object.keys(fieldErrors).length > 0) {
+      setError('გთხოვთ გაასწოროთ შეცდომები')
+      return
+    }
+    
     // Validate required fields before sending code
     if (!formData.name || !formData.lastName || !formData.phone || !formData.location || !formData.address || !formData.postalIndex || !formData.gender || !formData.dateOfBirth || !formData.personalId || !formData.email || !formData.password || !formData.confirmPassword) {
       setError('გთხოვთ შეავსეთ ყველა ველი')
+      return
+    }
+    
+    // Validate Georgian characters
+    if (!/^[\u10A0-\u10FF\s]+$/.test(formData.name)) {
+      setError('სახელი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს')
+      return
+    }
+    if (!/^[\u10A0-\u10FF\s]+$/.test(formData.lastName)) {
+      setError('გვარი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს')
+      return
+    }
+    if (!/^[\u10A0-\u10FF\s]+$/.test(formData.location)) {
+      setError('ადგილმდებარეობა უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს')
+      return
+    }
+    if (!/^[\u10A0-\u10FF\s0-9№N]+$/.test(formData.address)) {
+      setError('მისამართი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, ციფრებს, № (ოფციონალური) და N')
       return
     }
     
@@ -88,6 +147,35 @@ const SignUpPage = () => {
     setIsLoading(true)
     setError('')
     setSuccess('')
+
+    // Check for field validation errors
+    if (Object.keys(fieldErrors).length > 0) {
+      setError('გთხოვთ გაასწოროთ შეცდომები')
+      setIsLoading(false)
+      return
+    }
+
+    // Validate Georgian characters
+    if (!/^[\u10A0-\u10FF\s]+$/.test(formData.name)) {
+      setError('სახელი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს')
+      setIsLoading(false)
+      return
+    }
+    if (!/^[\u10A0-\u10FF\s]+$/.test(formData.lastName)) {
+      setError('გვარი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს')
+      setIsLoading(false)
+      return
+    }
+    if (!/^[\u10A0-\u10FF\s]+$/.test(formData.location)) {
+      setError('ადგილმდებარეობა უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს')
+      setIsLoading(false)
+      return
+    }
+    if (!/^[\u10A0-\u10FF\s0-9№N]+$/.test(formData.address)) {
+      setError('მისამართი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, ციფრებს, № და N')
+      setIsLoading(false)
+      return
+    }
 
     // Validation
     if (formData.password !== formData.confirmPassword) {
@@ -187,10 +275,11 @@ const SignUpPage = () => {
                   required
                   value={formData.name}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-3 placeholder:text-black border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                  className={`w-full pl-10 pr-4 py-3 placeholder:text-black border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300 ${fieldErrors.name ? 'border-red-500' : 'border-black'}`}
                   placeholder="შეიყვანეთ სახელი"
                 />
               </div>
+              {fieldErrors.name && <p className="text-red-500 md:text-[18px] text-[16px] mt-1">{fieldErrors.name}</p>}
             </div>
 
             {/* Last Name */}
@@ -207,10 +296,11 @@ const SignUpPage = () => {
                   required
                   value={formData.lastName}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-3 placeholder:text-black border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                  className={`w-full pl-10 pr-4 py-3 placeholder:text-black border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300 ${fieldErrors.lastName ? 'border-red-500' : 'border-black'}`}
                   placeholder="შეიყვანეთ გვარი"
                 />
               </div>
+              {fieldErrors.lastName && <p className="text-red-500 md:text-[18px] text-[16px] mt-1">{fieldErrors.lastName}</p>}
             </div>
             {/* Phone */}
             <div>
@@ -243,10 +333,11 @@ const SignUpPage = () => {
                   required
                   value={formData.location}
                   onChange={handleChange}
-                  className="w-full pl-4 pr-4 py-3 placeholder:text-black border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                  className={`w-full pl-4 pr-4 py-3 placeholder:text-black border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300 ${fieldErrors.location ? 'border-red-500' : 'border-black'}`}
                   placeholder="შეიყვანეთ ადგილმდებარეობა"
                 />
               </div>
+              {fieldErrors.location && <p className="text-red-500 md:text-[18px] text-[16px] mt-1">{fieldErrors.location}</p>}
             </div>
 
             {/* Address */}
@@ -262,10 +353,11 @@ const SignUpPage = () => {
                   required
                   value={formData.address}
                   onChange={handleChange}
-                  className="w-full pl-4 pr-4 py-3 placeholder:text-black border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                  className={`w-full pl-4 pr-4 py-3 placeholder:text-black border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300 ${fieldErrors.address ? 'border-red-500' : 'border-black'}`}
                   placeholder="შეიყვანეთ მისამართი"
                 />
               </div>
+              {fieldErrors.address && <p className="text-red-500 md:text-[18px] text-[16px] mt-1">{fieldErrors.address}</p>}
             </div>
 
             {/* Postal Index */}
