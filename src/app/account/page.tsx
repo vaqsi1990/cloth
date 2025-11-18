@@ -801,7 +801,7 @@ const AccountPage = () => {
             <p className="text-[18px] text-black">ჯერ არ გაქვთ შეკვეთები</p>
             <Link
               href="/shop"
-              className="inline-block md:text-[20px] text-[18px] mt-4 px-6 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
+              className="inline-block md:text-[18px] text-[16px] mt-4 px-6 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
             >
               შეკვეთის დაწყება
             </Link>
