@@ -509,7 +509,7 @@ const ShopPageClient = () => {
                                 </button>
                             </div>
 
-                            <div className="mb-6">
+                            <div className="mb-6 border-b border-gray-200 pb-6">
                                 <h4 className="font-medium text-black md:text-[20px] text-[16px] mb-3">ტიპი</h4>
                                 <div className="space-y-2">
                                     <button
@@ -561,7 +561,7 @@ const ShopPageClient = () => {
                             </div>
 
                             {/* Category Filters */}
-                            <div className="mb-6">
+                            <div className="mb-6 border-b border-gray-200 pb-6">
                                 <button
                                     type="button"
                                     onClick={() => setIsCategoryOpen(!isCategoryOpen)}
@@ -628,7 +628,7 @@ const ShopPageClient = () => {
 
 
                             {/* Size System Filter */}
-                            <div className="mb-6">
+                            <div className="mb-6 border-b border-gray-200 pb-6">
                                 <h4 className="font-medium text-black md:text-[20px] text-[16px] mb-3">ზომის სისტემა</h4>
                                 <div className="grid grid-cols-2 gap-2">
                                     {sizeSystems.map((sizeSystem) => (
@@ -647,7 +647,7 @@ const ShopPageClient = () => {
                             </div>
 
                             {/* Color Filter */}
-                            <div className="mb-6">
+                            <div className="mb-6 border-b border-gray-200 pb-6">
                                 <h4 className="font-medium text-black md:text-[20px] text-[16px] mb-3">ფერი</h4>
                                 <select
                                     value={selectedColors.length > 0 ? selectedColors[0] : ''}
@@ -670,7 +670,7 @@ const ShopPageClient = () => {
                             </div>
 
                             {/* Location Filter */}
-                            <div className="mb-6">
+                            <div className="mb-6 border-b border-gray-200 pb-6">
                                 <h4 className="font-medium text-black md:text-[20px] text-[16px] mb-3">მდებარეობა</h4>
                                 <div className="grid grid-cols-2 gap-2">
                                     {locations.map((location) => (
@@ -689,7 +689,7 @@ const ShopPageClient = () => {
                             </div>
 
                             {/* Rating Filter */}
-                            <div className="mb-6">
+                            <div className="mb-6 border-b border-gray-200 pb-6">
                                 <h4 className="font-medium text-black md:text-[20px] text-[16px] mb-3">რეიტინგი</h4>
                                 <div className="space-y-2">
                                     {[5, 4, 3, 2, 1].map((rating) => {

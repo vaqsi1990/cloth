@@ -131,53 +131,59 @@ const Header = () => {
                       {/* --- Submenu --- */}
                       {activeSub === item && (
                         <div
-                          className="absolute left-full top-0 ml-1 bg-white rounded-xl border border-gray-200 shadow-lg w-80 z-50"
+                          className="absolute left-full top-0 ml-1 bg-white rounded-xl border border-gray-200 shadow-lg w-[600px] z-50"
                           onMouseEnter={() => setActiveSub(item)}
                           onMouseLeave={() => setActiveSub(null)}
                         >
                           {item === 'ქალი' && (
-                            <div className="py-2">
-                              <p className="text-black flex items-center gap-2 text-[17px] border-b border-gray-200 px-4 py-2 font-bold  hover:bg-gray-100">  ყოველდღიური ტანსაცმელი</p>
-                              <Link href="/shop?gender=women" className="block text-black text-[17px] px-4 py-2 hover:bg-gray-100">
-                                პალტოები და მოსასხამი
-                              </Link>
-                              <Link href="/shop?gender=women&category=dresses" className="block text-black text-[17px] px-4 py-2 hover:bg-gray-100">
-                                კაბები
-                              </Link>
-                              <Link href="/shop?gender=women&category=tops" className="block text-black text-[17px] px-4 py-2 hover:bg-gray-100">
-                                შარვლები
-                              </Link>
-                              <Link href="/shop?gender=women&category=bottoms" className="block text-black text-[17px] px-4 py-2 hover:bg-gray-100">
-                                ქვედაბოლოები
-                              </Link>
-                              <p className="text-black flex items-center gap-2 text-[17px] border-b border-gray-200 px-4 py-2 font-bold  hover:bg-gray-100"> საქორწინო და სადღესასწაულო</p>
-                              <Link href="/shop?gender=women" className="block text-black text-[17px] px-4 py-2 hover:bg-gray-100">
-                                საქორწინო კაბები
-                              </Link>
-                              <Link href="/shop?gender=women" className="block text-black text-[17px] px-4 py-2 hover:bg-gray-100">
-                                საღამოს ტანსაცმელი
-                              </Link>
-                              <p className="text-black flex items-center gap-2 text-[17px]  border-b border-gray-200 px-4 py-2 font-bold  hover:bg-gray-100"> სათხილამურო & სპორტული</p>
-                              <Link href="/shop?gender=women" className="block text-black text-[17px] px-4 py-2 hover:bg-gray-100">
-                                სათხილამურო ქურთუკი
-                              </Link>
-                              <Link href="/shop?gender=women" className="block text-black text-[17px] px-4 py-2 hover:bg-gray-100">
-                                თერმო ტანსაცმელი
-                              </Link>
-                              <Link href="/shop?gender=women" className="block text-black text-[17px] px-4 py-2 hover:bg-gray-100">
-                                სათვალე
-                              </Link>
-                              <Link href="/shop?gender=women" className="block text-black text-[17px] px-4 py-2 hover:bg-gray-100">
-                                ჩაფხუტი
-                              </Link>
-                              <p className="text-black flex items-center gap-2 text-[17px] border-b border-gray-200 px-4 py-2 font-bold  hover:bg-gray-100"> კულტურული & თემატური</p>
-
-                              <Link href="/shop?gender=women" className="block text-black text-[17px] px-4 py-2 hover:bg-gray-100">
-                                ტრადიციული ტანსაცმელი
-                              </Link>
-                              <Link href="/shop?gender=women" className="block text-black text-[17px] px-4 py-2 hover:bg-gray-100">
-                                ქოსფლეის კოსტუმები
-                              </Link>
+                            <div className="py-2 grid grid-cols-2 gap-0">
+                              {/* მარცხენა სვეტი */}
+                              <div className="border-r border-gray-200">
+                                <p className="text-black flex items-center gap-2 text-[17px] border-b border-gray-200 px-4 py-2 font-bold hover:bg-gray-100">  ყოველდღიური ტანსაცმელი</p>
+                                <Link href="/shop?gender=women" className="block text-black text-[17px] px-4 py-2 hover:bg-gray-100">
+                                  პალტოები და მოსასხამი
+                                </Link>
+                                <Link href="/shop?gender=women&category=dresses" className="block text-black text-[17px] px-4 py-2 hover:bg-gray-100">
+                                  კაბები
+                                </Link>
+                                <Link href="/shop?gender=women&category=tops" className="block text-black text-[17px] px-4 py-2 hover:bg-gray-100">
+                                  შარვლები
+                                </Link>
+                                <Link href="/shop?gender=women&category=bottoms" className="block text-black text-[17px] px-4 py-2 hover:bg-gray-100">
+                                  ქვედაბოლოები
+                                </Link>
+                                <p className="text-black flex items-center gap-2 text-[17px] border-b border-gray-200 px-4 py-2 font-bold hover:bg-gray-100 mt-2"> საქორწინო და სადღესასწაულო</p>
+                                <Link href="/shop?gender=women" className="block text-black text-[17px] px-4 py-2 hover:bg-gray-100">
+                                  საქორწინო კაბები
+                                </Link>
+                                <Link href="/shop?gender=women" className="block text-black text-[17px] px-4 py-2 hover:bg-gray-100">
+                                  საღამოს ტანსაცმელი
+                                </Link>
+                              </div>
+                              
+                              {/* მარჯვენა სვეტი */}
+                              <div>
+                                <p className="text-black flex items-center gap-2 text-[17px] border-b border-gray-200 px-4 py-2 font-bold hover:bg-gray-100"> სათხილამურო & სპორტული</p>
+                                <Link href="/shop?gender=women" className="block text-black text-[17px] px-4 py-2 hover:bg-gray-100">
+                                  სათხილამურო ქურთუკი
+                                </Link>
+                                <Link href="/shop?gender=women" className="block text-black text-[17px] px-4 py-2 hover:bg-gray-100">
+                                  თერმო ტანსაცმელი
+                                </Link>
+                                <Link href="/shop?gender=women" className="block text-black text-[17px] px-4 py-2 hover:bg-gray-100">
+                                  სათვალე
+                                </Link>
+                                <Link href="/shop?gender=women" className="block text-black text-[17px] px-4 py-2 hover:bg-gray-100">
+                                  ჩაფხუტი
+                                </Link>
+                                <p className="text-black flex items-center gap-2 text-[17px] border-b border-gray-200 px-4 py-2 font-bold hover:bg-gray-100 mt-2"> კულტურული & თემატური</p>
+                                <Link href="/shop?gender=women" className="block text-black text-[17px] px-4 py-2 hover:bg-gray-100">
+                                  ტრადიციული ტანსაცმელი
+                                </Link>
+                                <Link href="/shop?gender=women" className="block text-black text-[17px] px-4 py-2 hover:bg-gray-100">
+                                  ქოსფლეის კოსტუმები
+                                </Link>
+                              </div>
                             </div>
                           )}
 
