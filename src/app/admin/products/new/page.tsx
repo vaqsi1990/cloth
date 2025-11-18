@@ -114,7 +114,7 @@ const NewProductPage = () => {
     status: 'AVAILABLE',
     variants: [],
     imageUrls: [],
-    rentalPriceTiers: [],
+    rentalPriceTiers: [{ minDays: 1, pricePerDay: 0 }],
   })
 
 

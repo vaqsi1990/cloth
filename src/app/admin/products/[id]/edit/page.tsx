@@ -264,7 +264,9 @@ const EditProductPage = () => {
               sizeSystem: variant.sizeSystem ?? product.sizeSystem ?? undefined
             })),
             imageUrls: imageUrls,
-            rentalPriceTiers: product.rentalPriceTiers || []
+            rentalPriceTiers: product.rentalPriceTiers && product.rentalPriceTiers.length > 0 
+              ? product.rentalPriceTiers 
+              : [{ minDays: 1, pricePerDay: 0 }]
           })
           console.log('Form data set successfully')
         } else {
@@ -374,7 +376,7 @@ const EditProductPage = () => {
   const addRentalPriceTier = () => {
     setFormData(prev => ({
       ...prev,
-      rentalPriceTiers: [...(prev.rentalPriceTiers || []), { minDays: 1, pricePerDay: 1 }]
+      rentalPriceTiers: [...(prev.rentalPriceTiers || []), { minDays: 1, pricePerDay: 0 }]
     }))
   }
 
@@ -388,12 +390,18 @@ const EditProductPage = () => {
   const updateRentalPriceTier = (index: number, field: string, value: number) => {
     setFormData(prev => {
       const currentTiers = prev.rentalPriceTiers || []
-      // If no tiers exist, create a default one
-      const tiers = currentTiers.length === 0 ? [{ minDays: 1, pricePerDay: 1 }] : currentTiers
+      // If no tiers exist, create one with the updated value
+      if (currentTiers.length === 0) {
+        const newTier = { minDays: 1, pricePerDay: 0 }
+        return {
+          ...prev,
+          rentalPriceTiers: [{ ...newTier, [field]: value }]
+        }
+      }
       
       return {
         ...prev,
-        rentalPriceTiers: tiers.map((tier, i) =>
+        rentalPriceTiers: currentTiers.map((tier, i) =>
           i === index ? { ...tier, [field]: value } : tier
         )
       }

@@ -475,7 +475,7 @@ const ShopPageClient = () => {
         <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50">
 
 
-            <div className="container mx-auto px-4 py-8">
+            <div className="container mx-auto px-2 py-8">
                 {/* Mobile Filter Toggle */}
                 <div className="lg:hidden mb-6">
                     <button

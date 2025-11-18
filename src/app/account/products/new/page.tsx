@@ -109,7 +109,7 @@ const NewProductPage = () => {
     status: 'AVAILABLE',
     variants: [],
     imageUrls: [],
-    rentalPriceTiers: [],
+    rentalPriceTiers: [{ minDays: 1, pricePerDay: 0 }],
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -332,11 +332,12 @@ const NewProductPage = () => {
   const updateRentalPriceTier = (index: number, field: string, value: number) => {
     setFormData(prev => {
       const currentTiers = prev.rentalPriceTiers || []
-      // Ensure we have at least one tier
+      // If no tiers exist, create one with the updated value
       if (currentTiers.length === 0) {
+        const newTier = { minDays: 1, pricePerDay: 0 }
         return {
           ...prev,
-          rentalPriceTiers: [{ minDays: 1, pricePerDay: 0 }]
+          rentalPriceTiers: [{ ...newTier, [field]: value }]
         }
       }
 
@@ -590,8 +591,10 @@ const NewProductPage = () => {
                   </button>
                 </div>
 
-                {/* Show price tiers */}
-                {(formData.rentalPriceTiers || []).map((tier, index) => (
+                {/* Show price tiers - always show at least one */}
+                {(formData.rentalPriceTiers && formData.rentalPriceTiers.length > 0 
+                  ? formData.rentalPriceTiers 
+                  : [{ minDays: 1, pricePerDay: 0 }]).map((tier, index) => (
                   <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border border-gray-200 rounded-lg mb-4">
                     <div>
                       <label className="block md:text-[18px] text-[16px] font-medium text-black mb-2">მინიმალური დღეები</label>
