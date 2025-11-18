@@ -15,7 +15,7 @@ const ShopPageClient = () => {
 
     const [products, setProducts] = useState<Product[]>([])
     const [loading, setLoading] = useState(true)
-    const [activeCategory, setActiveCategory] = useState("ALL")
+    const [selectedCategories, setSelectedCategories] = useState<string[]>([])
     const [sortBy, setSortBy] = useState("newest")
     const [isFilterOpen, setIsFilterOpen] = useState(false)
     const [priceRange, setPriceRange] = useState([0, 0])
@@ -26,6 +26,7 @@ const ShopPageClient = () => {
     const [selectedRatings, setSelectedRatings] = useState<number[]>([])
     const [rentalStartDate, setRentalStartDate] = useState<Date | null>(null)
     const [rentalEndDate, setRentalEndDate] = useState<Date | null>(null)
+    const [purchaseType, setPurchaseType] = useState<"all" | "rent-only" | "sale-only">("all")
     const [productRentalStatus, setProductRentalStatus] = useState<Record<number, {
         variantId: number;
         size: string;
@@ -69,8 +70,6 @@ const ShopPageClient = () => {
     }
 
     const categories = [
-        { id: "ALL", label: "ყველა", slug: "all" },
-
         // ძირითადი
         { id: "კაბები", label: "კაბები", slug: "dresses" },
         { id: "ბლუზები", label: "ბლუზები", slug: "tops" },
@@ -255,6 +254,27 @@ const ShopPageClient = () => {
         return getRentalPrice(product)
     }
 
+    // Check if product is rent-only (rentable but no sale price)
+    const isRentOnly = (product: Product): boolean => {
+        if (!product.isRentable) return false
+        // Check if product has any variants with price > 0
+        if (product.variants && product.variants.length > 0) {
+            const hasSalePrice = product.variants.some(v => v.price > 0)
+            return !hasSalePrice
+        }
+        return true // If no variants and is rentable, it's rent-only
+    }
+
+    // Check if product is sale-only (has sale price but not rentable)
+    const isSaleOnly = (product: Product): boolean => {
+        if (product.isRentable) return false
+        // Check if product has any variants with price > 0
+        if (product.variants && product.variants.length > 0) {
+            return product.variants.some(v => v.price > 0)
+        }
+        return false
+    }
+
     // Check if product is available during selected dates
     const isProductAvailable = (product: Product): boolean => {
         if (!rentalStartDate || !rentalEndDate || !product.isRentable) return true
@@ -290,8 +310,9 @@ const ShopPageClient = () => {
 
     // Filter products by all criteria (excluding gender since it's handled by API)
     const filteredProducts = products.filter(product => {
-        // Active Category filter (from sidebar)
-        const activeCategoryMatch = activeCategory === "ALL" || product.category?.name === activeCategory
+        // Category filter (multiple selection)
+        const categoryMatch = selectedCategories.length === 0 || 
+            selectedCategories.includes(product.category?.name || '')
 
         // Price filter
         const minPrice = getMinPrice(product)
@@ -339,7 +360,12 @@ const ShopPageClient = () => {
         // Rental availability filter
         const rentalAvailabilityMatch = isProductAvailable(product)
 
-        return activeCategoryMatch && priceMatch && sizeSystemMatch && colorMatch && locationMatch && ratingMatch && rentalAvailabilityMatch
+        // Purchase type filter (rent-only, sale-only, or all)
+        const purchaseTypeMatch = purchaseType === "all" ||
+            (purchaseType === "rent-only" && isRentOnly(product)) ||
+            (purchaseType === "sale-only" && isSaleOnly(product))
+
+        return categoryMatch && priceMatch && sizeSystemMatch && colorMatch && locationMatch && ratingMatch && rentalAvailabilityMatch && purchaseTypeMatch
     })
 
 
@@ -368,7 +394,16 @@ const ShopPageClient = () => {
     // Reset to page 1 when filters change
     useEffect(() => {
         setCurrentPage(1)
-    }, [activeCategory, priceRange, selectedSizeSystems, selectedColors, selectedLocations, selectedRatings, rentalStartDate, rentalEndDate, sortBy])
+    }, [selectedCategories, priceRange, selectedSizeSystems, selectedColors, selectedLocations, selectedRatings, rentalStartDate, rentalEndDate, sortBy, purchaseType])
+
+    // Handle category selection
+    const toggleCategory = (categoryName: string) => {
+        setSelectedCategories(prev =>
+            prev.includes(categoryName)
+                ? prev.filter(c => c !== categoryName)
+                : [...prev, categoryName]
+        )
+    }
 
     // Handle size system selection
     const toggleSizeSystem = (sizeSystem: string) => {
@@ -409,7 +444,7 @@ const ShopPageClient = () => {
 
     // Clear all filters
     const clearFilters = () => {
-        setActiveCategory("ALL")
+        setSelectedCategories([])
         setPriceRange([0, maxPrice])
         setSelectedSizeSystems([])
         setSelectedColors([])
@@ -417,6 +452,7 @@ const ShopPageClient = () => {
         setSelectedRatings([])
         setRentalStartDate(null)
         setRentalEndDate(null)
+        setPurchaseType("all")
     }
 
     // Get main product image
@@ -473,41 +509,93 @@ const ShopPageClient = () => {
                                 </button>
                             </div>
 
+                            <div className="mb-6">
+                                <h4 className="font-medium text-black md:text-[20px] text-[16px] mb-3">ტიპი</h4>
+                                <div className="space-y-2">
+                                    <button
+                                        onClick={() => setPurchaseType("all")}
+                                        className={`w-full text-left px-3 py-2 rounded-md md:text-[18px] text-[16px] transition-colors flex justify-between items-center ${purchaseType === "all"
+                                                ? "bg-black text-white"
+                                                : "text-black hover:bg-gray-100"
+                                            }`}
+                                    >
+                                        <span>ყველა</span>
+                                        <span className={`text-[14px] px-2 py-1 rounded-full ${purchaseType === "all"
+                                                ? "bg-gray-600 text-white"
+                                                : "bg-gray-200 text-black"
+                                            }`}>
+                                            {products.length}
+                                        </span>
+                                    </button>
+                                    <button
+                                        onClick={() => setPurchaseType("rent-only")}
+                                        className={`w-full text-left px-3 py-2 rounded-md md:text-[18px] text-[16px] transition-colors flex justify-between items-center ${purchaseType === "rent-only"
+                                                ? "bg-black text-white"
+                                                : "text-black hover:bg-gray-100"
+                                            }`}
+                                    >
+                                        <span>მხოლოდ გაქირავება</span>
+                                        <span className={`text-[14px] px-2 py-1 rounded-full ${purchaseType === "rent-only"
+                                                ? "bg-gray-600 text-white"
+                                                : "bg-gray-200 text-black"
+                                            }`}>
+                                            {products.filter(p => isRentOnly(p)).length}
+                                        </span>
+                                    </button>
+                                    <button
+                                        onClick={() => setPurchaseType("sale-only")}
+                                        className={`w-full text-left px-3 py-2 rounded-md md:text-[18px] text-[16px] transition-colors flex justify-between items-center ${purchaseType === "sale-only"
+                                                ? "bg-black text-white"
+                                                : "text-black hover:bg-gray-100"
+                                            }`}
+                                    >
+                                        <span>მხოლოდ ყიდვა</span>
+                                        <span className={`text-[14px] px-2 py-1 rounded-full ${purchaseType === "sale-only"
+                                                ? "bg-gray-600 text-white"
+                                                : "bg-gray-200 text-black"
+                                            }`}>
+                                            {products.filter(p => isSaleOnly(p)).length}
+                                        </span>
+                                    </button>
+                                </div>
+                            </div>
+
                             {/* Category Filters */}
                             <div className="mb-6">
                                 <button
                                     type="button"
                                     onClick={() => setIsCategoryOpen(!isCategoryOpen)}
                                     className="w-full flex items-center justify-between mb-3"
-                                    >
-                                        <h4 className="font-medium text-black md:text-[20px] text-[16px]">კატეგორია</h4>
+                                >
+                                    <h4 className="font-medium text-black md:text-[20px] text-[16px]">კატეგორია</h4>
                                     <ChevronDown className={`w-5 h-5 text-black transition-transform ${isCategoryOpen ? "rotate-180" : "rotate-0"}`} />
                                 </button>
                                 {isCategoryOpen && (
                                     <div className="space-y-2">
                                         {categories.map((category) => {
                                             const categoryCount = products.filter(product =>
-                                                category.id === "ALL" || product.category?.name === category.label
+                                                product.category?.name === category.label
                                             ).length;
+                                            const isSelected = selectedCategories.includes(category.label);
 
                                             return (
                                                 <button
                                                     key={category.id}
-                                                    onClick={() => setActiveCategory(category.id)}
-                                                    className={`w-full text-left px-3 py-2 rounded-md md:text-[18px] text-[16px] transition-colors flex justify-between items-center ${activeCategory === category.id
-                                                        ? "bg-black text-white"
-                                                        : "text-black hover:bg-gray-100"
-                                                        }`}
+                                                    onClick={() => toggleCategory(category.label)}
+                                                    className={`w-full text-left px-3 py-2 rounded-md md:text-[18px] text-[16px] transition-colors flex justify-between items-center ${
+                                                        isSelected
+                                                            ? "bg-black text-white"
+                                                            : "text-black hover:bg-gray-100"
+                                                    }`}
                                                 >
                                                     <span>{category.label}</span>
-                                                    {category.id !== "ALL" && (
-                                                        <span className={`text-[14px] px-2 py-1 rounded-full ${activeCategory === category.id
+                                                    <span className={`text-[14px] px-2 py-1 rounded-full ${
+                                                        isSelected
                                                             ? "bg-gray-600 text-white"
                                                             : "bg-gray-200 text-black"
-                                                            }`}>
-                                                            {categoryCount}
-                                                        </span>
-                                                    )}
+                                                    }`}>
+                                                        {categoryCount}
+                                                    </span>
                                                 </button>
                                             );
                                         })}
@@ -535,6 +623,9 @@ const ShopPageClient = () => {
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Purchase Type Filter */}
+
 
                             {/* Size System Filter */}
                             <div className="mb-6">
@@ -707,7 +798,7 @@ const ShopPageClient = () => {
                             </div>
                         </div>
 
-                      
+
                         {/* Products Grid */}
                         {currentProducts.length > 0 ? (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
@@ -765,11 +856,10 @@ const ShopPageClient = () => {
                                     <button
                                         onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                                         disabled={currentPage === 1}
-                                        className={`px-4 py-2 rounded-lg border transition-colors md:text-[18px] text-[16px] flex items-center gap-2 ${
-                                            currentPage === 1
+                                        className={`px-4 py-2 rounded-lg border transition-colors md:text-[18px] text-[16px] flex items-center gap-2 ${currentPage === 1
                                                 ? 'bg-gray-100 text-black cursor-not-allowed border-gray-300'
                                                 : 'bg-white text-black border-gray-300 hover:bg-gray-50 hover:border-black'
-                                        }`}
+                                            }`}
                                     >
                                         <ChevronLeft className="w-5 h-5" />
                                         წინა
@@ -787,11 +877,10 @@ const ShopPageClient = () => {
                                                     <button
                                                         key={page}
                                                         onClick={() => setCurrentPage(page)}
-                                                        className={`px-4 py-2 rounded-lg border transition-colors md:text-[18px] text-[16px] ${
-                                                            currentPage === page
+                                                        className={`px-4 py-2 rounded-lg border transition-colors md:text-[18px] text-[16px] ${currentPage === page
                                                                 ? 'bg-black text-white border-black'
                                                                 : 'bg-white text-black border-gray-300 hover:bg-gray-50 hover:border-black'
-                                                        }`}
+                                                            }`}
                                                     >
                                                         {page}
                                                     </button>
@@ -813,11 +902,10 @@ const ShopPageClient = () => {
                                     <button
                                         onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                                         disabled={currentPage === totalPages}
-                                        className={`px-4 py-2 rounded-lg border transition-colors md:text-[18px] text-[16px] flex items-center gap-2 ${
-                                            currentPage === totalPages
+                                        className={`px-4 py-2 rounded-lg border transition-colors md:text-[18px] text-[16px] flex items-center gap-2 ${currentPage === totalPages
                                                 ? 'bg-gray-100 text-black cursor-not-allowed border-gray-300'
                                                 : 'bg-white text-black border-gray-300 hover:bg-gray-50 hover:border-black'
-                                        }`}
+                                            }`}
                                     >
                                         შემდეგი
                                         <ChevronRight className="w-5 h-5" />
