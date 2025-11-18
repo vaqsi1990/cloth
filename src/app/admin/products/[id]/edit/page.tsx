@@ -8,10 +8,16 @@ import { Product, ProductVariant } from '@/types/product'
 import ImageUploadForProduct from '@/component/productimage'
 import { showToast } from '@/utils/toast'
 const productSchema = z.object({
-  name: z.string().min(1, 'სახელი აუცილებელია'),
+  name: z.string()
+    .min(1, 'სახელი აუცილებელია')
+    .regex(/^[\u10A0-\u10FF\s]+$/, 'სახელი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს'),
   slug: z.string().min(1, 'Slug აუცილებელია').regex(/^[a-z0-9-]+$/, 'Slug უნდა შეიცავდეს მხოლოდ პატარა ასოებს, ციფრებს და ტირეებს'),
   brand: z.string().optional(),
-  description: z.string().optional(),
+  description: z.string()
+    .optional()
+    .refine((val) => !val || /^[\u10A0-\u10FF\s]+$/.test(val), {
+      message: 'აღწერა უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს'
+    }),
   stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი').default(0),
   gender: z.enum(['MEN', 'WOMEN', 'CHILDREN', 'UNISEX']).default('UNISEX'),
   color: z.string().optional(),
@@ -314,8 +320,18 @@ const EditProductPage = () => {
       name: name,
       slug: slug
     }))
-    if (errors.name) {
-      setErrors(prev => ({ ...prev, name: '' }))
+    
+    // Validate Georgian characters in real-time
+    if (name && !/^[\u10A0-\u10FF\s]+$/.test(name)) {
+      setErrors(prev => ({
+        ...prev,
+        name: 'სახელი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს'
+      }))
+    } else {
+      // Clear errors when valid
+      if (errors.name) {
+        setErrors(prev => ({ ...prev, name: '' }))
+      }
     }
   }
 
@@ -335,8 +351,25 @@ const EditProductPage = () => {
           }
         : {})
     }))
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }))
+    
+    // Validate Georgian characters for description in real-time
+    if (field === 'description' && typeof value === 'string') {
+      if (value && !/^[\u10A0-\u10FF\s]+$/.test(value)) {
+        setErrors(prev => ({
+          ...prev,
+          description: 'აღწერა უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს'
+        }))
+      } else {
+        // Clear errors when valid
+        if (errors.description) {
+          setErrors(prev => ({ ...prev, description: '' }))
+        }
+      }
+    } else {
+      // Clear error when user starts typing for other fields
+      if (errors[field]) {
+        setErrors(prev => ({ ...prev, [field]: '' }))
+      }
     }
   }
 
@@ -557,10 +590,11 @@ const EditProductPage = () => {
                   type="text"
                   value={formData.name}
                   onChange={(e) => handleNameChange(e.target.value)}
+                  placeholder="შეიყვანეთ პროდუქტის სახელი"
                   className={`w-full px-4 py-3 border rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black ${errors.name ? 'border-red-500' : 'border-gray-300'
                     }`}
                 />
-                {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+                {errors.name && <p className="text-red-500 md:text-[16px] text-[14px] mt-1">{errors.name}</p>}
               </div>
 
               <div>
@@ -673,6 +707,7 @@ const EditProductPage = () => {
               <textarea
                 value={formData.description}
                 onChange={(e) => handleInputChange('description', e.target.value)}
+                placeholder="შეიყვანეთ პროდუქტის აღწერა"
                 rows={4}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
               />

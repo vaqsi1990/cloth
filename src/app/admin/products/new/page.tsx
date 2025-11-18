@@ -49,10 +49,16 @@ type Category = {
   slug: string
 }
 const productSchema = z.object({
-  name: z.string().min(1, 'სახელი აუცილებელია'),
+  name: z.string()
+    .min(1, 'სახელი აუცილებელია')
+    .regex(/^[\u10A0-\u10FF\s]+$/, 'სახელი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს'),
   slug: z.string().min(1, 'Slug აუცილებელია').regex(/^[a-z0-9-]+$/, 'Slug უნდა შეიცავდეს მხოლოდ პატარა ასოებს, ციფრებს და ტირეებს'),
   brand: z.string().optional(),
-  description: z.string().optional(),
+  description: z.string()
+    .optional()
+    .refine((val) => !val || /^[\u10A0-\u10FF\s]+$/.test(val), {
+      message: 'აღწერა უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს'
+    }),
   stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი').default(0),
   gender: z.enum(['MEN', 'WOMEN', 'CHILDREN', 'UNISEX']).default('UNISEX'),
   color: z.string().optional(),
@@ -223,12 +229,30 @@ const NewProductPage = () => {
       [field]: value
     }))
 
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({
-        ...prev,
-        [field]: ''
-      }))
+    // Validate Georgian characters for description in real-time
+    if (field === 'description' && typeof value === 'string') {
+      if (value && !/^[\u10A0-\u10FF\s]+$/.test(value)) {
+        setErrors(prev => ({
+          ...prev,
+          description: 'აღწერა უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს'
+        }))
+      } else {
+        // Clear errors when valid
+        if (errors.description) {
+          setErrors(prev => ({
+            ...prev,
+            description: ''
+          }))
+        }
+      }
+    } else {
+      // Clear error when user starts typing for other fields
+      if (errors[field]) {
+        setErrors(prev => ({
+          ...prev,
+          [field]: ''
+        }))
+      }
     }
   }
 
@@ -261,12 +285,20 @@ const NewProductPage = () => {
       slug: slug
     }))
 
-    // Clear errors when user starts typing
-    if (errors.name) {
+    // Validate Georgian characters in real-time
+    if (name && !/^[\u10A0-\u10FF\s]+$/.test(name)) {
       setErrors(prev => ({
         ...prev,
-        name: ''
+        name: 'სახელი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს'
       }))
+    } else {
+      // Clear errors when valid
+      if (errors.name) {
+        setErrors(prev => ({
+          ...prev,
+          name: ''
+        }))
+      }
     }
   }
 
@@ -371,12 +403,30 @@ const NewProductPage = () => {
       } else {
         if (result.errors) {
           const newErrors: Record<string, string> = {}
+          const errorMessages: string[] = []
           result.errors.forEach((err: { path: string[]; message: string }) => {
             if (err.path.length > 0) {
-              newErrors[err.path.join('.')] = err.message
+              const fieldPath = err.path.join('.')
+              newErrors[fieldPath] = err.message
+              // Add to error messages for toaster
+              const fieldName = fieldPath === 'name' ? 'სახელი' : 
+                               fieldPath === 'description' ? 'აღწერა' :
+                               fieldPath === 'slug' ? 'Slug' :
+                               fieldPath === 'imageUrls' ? 'სურათები' :
+                               fieldPath === 'rentalPriceTiers' ? 'ფასის გეგმა' :
+                               fieldPath.startsWith('rentalPriceTiers.') ? 'ფასის გეგმა' :
+                               fieldPath.startsWith('variants.') ? 'ვარიანტი' :
+                               fieldPath
+              errorMessages.push(`${fieldName}: ${err.message}`)
+            } else {
+              errorMessages.push(err.message)
             }
           })
           setErrors(newErrors)
+          // Show all errors in toaster
+          if (errorMessages.length > 0) {
+            showToast(errorMessages.join('; '), 'error')
+          }
         } else {
           showToast(result.message || 'შეცდომა პროდუქტის შექმნისას', 'error')
         }
@@ -386,12 +436,30 @@ const NewProductPage = () => {
       console.error('Error:', error)
       if (error instanceof z.ZodError) {
         const newErrors: Record<string, string> = {}
+        const errorMessages: string[] = []
         error.issues.forEach(err => {
           if (err.path.length > 0) {
-            newErrors[err.path.join('.')] = err.message
+            const fieldPath = err.path.join('.')
+            newErrors[fieldPath] = err.message
+            // Add to error messages for toaster
+            const fieldName = fieldPath === 'name' ? 'სახელი' : 
+                             fieldPath === 'description' ? 'აღწერა' :
+                             fieldPath === 'slug' ? 'Slug' :
+                             fieldPath === 'imageUrls' ? 'სურათები' :
+                             fieldPath === 'rentalPriceTiers' ? 'ფასის გეგმა' :
+                             fieldPath.startsWith('rentalPriceTiers.') ? 'ფასის გეგმა' :
+                             fieldPath.startsWith('variants.') ? 'ვარიანტი' :
+                             fieldPath
+            errorMessages.push(`${fieldName}: ${err.message}`)
+          } else {
+            errorMessages.push(err.message)
           }
         })
         setErrors(newErrors)
+        // Show all errors in toaster
+        if (errorMessages.length > 0) {
+          showToast(errorMessages.join('; '), 'error')
+        }
       } else {
         showToast('მოულოდნელი შეცდომა', 'error')
       }
@@ -428,10 +496,11 @@ const NewProductPage = () => {
                   type="text"
                   value={formData.name}
                   onChange={(e) => handleNameChange(e.target.value)}
+                  placeholder="შეიყვანეთ პროდუქტის სახელი"
                   className={`w-full px-4 py-3 border rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black ${errors.name ? 'border-red-500' : 'border-gray-300'
                     }`}
                 />
-                {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+                {errors.name && <p className="text-red-500 md:text-[16px] text-[14px] mt-1">{errors.name}</p>}
               </div>
 
             
@@ -447,7 +516,7 @@ const NewProductPage = () => {
                   className={`w-full px-4 py-3 border rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black ${errors.stock ? 'border-red-500' : 'border-gray-300'
                     }`}
                 />
-                {errors.stock && <p className="text-red-500 text-sm mt-1">{errors.stock}</p>}
+                {errors.stock && <p className="text-red-500 md:text-[16px] text-[14px] mt-1">{errors.stock}</p>}
               </div> */}
               <div>
                 <label className="block text-[20px] text-black font-medium mb-2">
@@ -558,9 +627,11 @@ const NewProductPage = () => {
               <textarea
                 value={formData.description}
                 onChange={(e) => handleInputChange('description', e.target.value)}
+                placeholder="შეიყვანეთ პროდუქტის აღწერა"
                 rows={4}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                className={`w-full px-4 py-3 border rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black ${errors.description ? 'border-red-500' : 'border-gray-300'}`}
               />
+              {errors.description && <p className="text-red-500 md:text-[16px] text-[14px] mt-1">{errors.description}</p>}
             </div>
 
 
@@ -609,8 +680,11 @@ const NewProductPage = () => {
                         type="number"
                         step="0.01"
                         min="0"
-                        value={tier.pricePerDay}
-                        onChange={(e) => updateRentalPriceTier(index, 'pricePerDay', parseFloat(e.target.value) || 0)}
+                        value={tier.pricePerDay === 0 ? '' : tier.pricePerDay}
+                        onChange={(e) => {
+                          const val = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0
+                          updateRentalPriceTier(index, 'pricePerDay', val)
+                        }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
@@ -700,8 +774,11 @@ const NewProductPage = () => {
                   <input
                     type="number"
                     step="0.01"
-                    value={variant.price || ''}
-                    onChange={(e) => updateVariant(index, 'price', e.target.value ? parseFloat(e.target.value) : undefined)}
+                    value={variant.price === 0 ? '' : variant.price || ''}
+                    onChange={(e) => {
+                      const val = e.target.value === '' ? undefined : (e.target.value ? parseFloat(e.target.value) : undefined)
+                      updateVariant(index, 'price', val)
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                   />
                 </div>

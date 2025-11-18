@@ -7,10 +7,16 @@ import { generateUniqueSKU } from '@/utils/skuUtils'
 
 // Product validation schema
 const productSchema = z.object({
-  name: z.string().min(1, 'სახელი აუცილებელია'),
+  name: z.string()
+    .min(1, 'სახელი აუცილებელია')
+    .regex(/^[\u10A0-\u10FF\s]+$/, 'სახელი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს'),
   slug: z.string().min(1, 'Slug აუცილებელია'),
   brand: z.string().optional(),
-  description: z.string().optional(),
+  description: z.string()
+    .optional()
+    .refine((val) => !val || /^[\u10A0-\u10FF\s]+$/.test(val), {
+      message: 'აღწერა უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს'
+    }),
   stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი').default(0),
   gender: z.enum(['MEN', 'WOMEN', 'CHILDREN', 'UNISEX']).default('UNISEX'),
   color: z.string().optional(),
