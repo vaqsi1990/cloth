@@ -3,10 +3,9 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
-// PATCH - Update entrepreneur certificate verification status
 export async function PATCH(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -17,7 +16,7 @@ export async function PATCH(
       )
     }
 
-    const userId = context.params.id
+    const userId = params.id
     const body = await request.json()
     const { status, comment } = body
 
@@ -39,16 +38,9 @@ export async function PATCH(
       )
     }
 
-    // Update entrepreneur verification status
-    const updateData: {
-      entrepreneurStatus: 'PENDING' | 'APPROVED' | 'REJECTED'
-      entrepreneurComment?: string | null
-      status?: 'PENDING' | 'APPROVED' | 'REJECTED' // Legacy field
-      comment?: string | null // Legacy field
-    } = {
+    const updateData = {
       entrepreneurStatus: status,
       entrepreneurComment: status === 'REJECTED' ? comment || null : null,
-      // Update legacy fields for backward compatibility
       status: status,
       comment: status === 'REJECTED' ? comment || null : null,
     }
@@ -58,7 +50,6 @@ export async function PATCH(
       data: updateData,
     })
 
-    // Update user blocked field if approved
     if (status === 'APPROVED') {
       await prisma.user.update({
         where: { id: userId },
@@ -75,4 +66,3 @@ export async function PATCH(
     )
   }
 }
-
