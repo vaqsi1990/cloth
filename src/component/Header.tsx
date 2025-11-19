@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Search, Menu, User, LogOut, ShoppingCart, ChevronRight } from 'lucide-react'
 import Image from 'next/image'
 import { useSession, signOut } from 'next-auth/react'
@@ -12,7 +13,9 @@ const Header = () => {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
   const [mobileDropdownOpen, setMobileDropdownOpen] = useState<string | null>(null)
   const [cartItemCount, setCartItemCount] = useState(0)
+  const [searchValue, setSearchValue] = useState('')
   const { data: session } = useSession()
+  const router = useRouter()
 
   const [openMain, setOpenMain] = useState(false)
   const [activeSub, setActiveSub] = useState<string | null>(null)
@@ -79,6 +82,15 @@ const Header = () => {
   const toggleSearch = () => setIsSearchOpen(!isSearchOpen)
   const toggleMobileDropdown = (dropdown: string) =>
     setMobileDropdownOpen(mobileDropdownOpen === dropdown ? null : dropdown)
+
+  const handleSearchSubmit = (event?: React.FormEvent) => {
+    event?.preventDefault()
+    const query = searchValue.trim()
+    if (!query) return
+    setIsSearchOpen(false)
+    setIsMobileMenuOpen(false)
+    router.push(`/shop?search=${encodeURIComponent(query)}`)
+  }
 
   return (
     <header className="bg-[#1B3729] text-white shadow-lg sticky top-0 z-50">
@@ -346,16 +358,20 @@ const Header = () => {
 
       {/* --- Search Bar --- */}
       {isSearchOpen && (
-        <div className="bg-white  border-t border-black  py-4">
+        <div className="bg-white border-t border-black py-4">
           <div className="container mx-auto px-4">
-            <div className="relative max-w-md mx-auto">
+            <form onSubmit={handleSearchSubmit} className="relative max-w-md mx-auto">
               <input
                 type="text"
                 placeholder="მოძებნე ნივთები..."
-                className="w-full placeholder:text-black md:text-[18px] text-[16px]  text-black bg-white pl-12 pr-4 py-3 border border-black rounded-xl "
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                className="w-full placeholder:text-black md:text-[18px] text-[16px] text-black bg-white pl-12 pr-4 py-3 border border-black rounded-xl"
               />
-              <Search className="absolute left-4 top-3.5 w-5 h-5 text-black " />
-            </div>
+              <button type="submit" className="absolute left-4 top-3.5 text-black">
+                <Search className="w-5 h-5" />
+              </button>
+            </form>
           </div>
         </div>
       )}

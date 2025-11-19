@@ -56,6 +56,7 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category')
     const gender = searchParams.get('gender')
     const isNew = searchParams.get('isNew')
+    const search = searchParams.get('search')?.trim()
     
     // Show products based on status
     // All users see AVAILABLE, RENTED, and RESERVED products
@@ -73,6 +74,13 @@ export async function GET(request: NextRequest) {
             blocked: false
           }
         }),
+        ...(search ? {
+          OR: [
+            { name: { contains: search, mode: 'insensitive' } },
+            { description: { contains: search, mode: 'insensitive' } },
+            { sku: { contains: search, mode: 'insensitive' } }
+          ]
+        } : {}),
         ...(category && category !== 'ALL' ? { 
           category: { 
             slug: category === 'DRESSES' ? 'dresses' :
@@ -166,8 +174,17 @@ export async function POST(request: NextRequest) {
     
     const shouldAutoApprove = session.user.role === 'ADMIN'
 
-    // Create product in database using Prisma
-    const newProduct = await prisma.product.create({
+    const productInclude = {
+      images: true,
+      variants: true,
+      category: true,
+      rentalPriceTiers: {
+        orderBy: { minDays: 'asc' as const }
+      }
+    }
+
+    // Create product in database using Prisma (approval fields rely on DB defaults)
+    const createdProduct = await prisma.product.create({
       data: {
         name: validatedData.name,
         slug: validatedData.slug,
@@ -188,9 +205,6 @@ export async function POST(request: NextRequest) {
         maxRentalDays: validatedData.maxRentalDays,
         deposit: validatedData.deposit,
         status: validatedData.status,
-        approvalStatus: shouldAutoApprove ? 'APPROVED' : 'PENDING',
-        approvedAt: shouldAutoApprove ? new Date() : null,
-        rejectionReason: null,
         userId: session.user.id, // Associate product with user
         // Create product images
         images: {
@@ -216,15 +230,26 @@ export async function POST(request: NextRequest) {
           }))
         } : undefined
       },
-      include: {
-        images: true,
-        variants: true,
-        category: true,
-        rentalPriceTiers: {
-          orderBy: { minDays: 'asc' }
-        }
-      }
+      include: productInclude
     })
+
+    // Auto-approve if admin created the product
+    if (shouldAutoApprove) {
+      await prisma.$executeRaw`
+        UPDATE "Product"
+        SET "approvalStatus" = 'APPROVED',
+            "approvedAt" = ${new Date()},
+            "rejectionReason" = NULL
+        WHERE "id" = ${createdProduct.id}
+      `
+    }
+    
+    const newProduct = shouldAutoApprove
+      ? await prisma.product.findUnique({
+          where: { id: createdProduct.id },
+          include: productInclude
+        })
+      : createdProduct
     
     console.log('Product created successfully:', newProduct)
     

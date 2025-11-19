@@ -12,6 +12,7 @@ import "react-datepicker/dist/react-datepicker.css"
 const ShopPageClient = () => {
     const searchParams = useSearchParams()
     const genderParam = searchParams.get('gender')
+    const searchParam = searchParams.get('search')
 
     const [products, setProducts] = useState<Product[]>([])
     const [loading, setLoading] = useState(true)
@@ -147,6 +148,9 @@ const ShopPageClient = () => {
                 if (genderParam) {
                     params.append('gender', genderParam)
                 }
+                if (searchParam) {
+                    params.append('search', searchParam)
+                }
 
                 const response = await fetch(`/api/products?${params.toString()}`)
                 const data = await response.json()
@@ -184,7 +188,7 @@ const ShopPageClient = () => {
         }
 
         fetchProducts()
-    }, [genderParam])
+    }, [genderParam, searchParam])
 
     // Fetch rental status for rentable products
     useEffect(() => {
@@ -827,6 +831,9 @@ const ShopPageClient = () => {
                                             <h3 className="font-semibold text-black md:text-[20px] text-[16px] mb-2 line-clamp-2">
                                                 {product.name}
                                             </h3>
+                                            <span className=" text-black md:text-[18px] text-[16px]">
+                                                  {product.sku}
+                                                </span>
                                             <div className="flex items-center justify-between">
                                                 <span className="font-bold text-black md:text-[18px] text-[16px]">
                                                     ₾{getDisplayPrice(product).toFixed(2)}
