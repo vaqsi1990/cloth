@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
 export async function PATCH(
-  request: NextRequest,
+  req: Request,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -17,12 +17,12 @@ export async function PATCH(
     }
 
     const userId = params.id
-    const body = await request.json()
+    const body = await req.json()
     const { status, comment } = body
 
     if (!['APPROVED', 'REJECTED'].includes(status)) {
       return NextResponse.json(
-        { success: false, error: 'Invalid status. Must be APPROVED or REJECTED' },
+        { success: false, error: 'Invalid status' },
         { status: 400 }
       )
     }
@@ -38,23 +38,20 @@ export async function PATCH(
       )
     }
 
-    const updateData = {
-      identityStatus: status,
-      identityComment: status === 'REJECTED' ? comment || null : null,
-      status: status,
-      comment: status === 'REJECTED' ? comment || null : null,
-    }
-
     const updated = await prisma.userVerification.update({
       where: { userId },
-      data: updateData,
+      data: {
+        identityStatus: status,
+        identityComment: status === 'REJECTED' ? comment || null : null,
+        status,
+        comment: status === 'REJECTED' ? comment || null : null,
+      }
     })
 
-    // If approved, mark user as verified
     if (status === 'APPROVED') {
       await prisma.user.update({
         where: { id: userId },
-        data: { verified: true },
+        data: { verified: true }
       })
     }
 
