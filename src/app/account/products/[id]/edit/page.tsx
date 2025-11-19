@@ -556,7 +556,7 @@ const EditProductPage = () => {
                   value={formData.name}
                   onChange={(e) => handleNameChange(e.target.value)}
                   placeholder="შეიყვანეთ პროდუქტის სახელი"
-                  className={`w-full px-4 py-3 border rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black ${errors.name ? 'border-red-500' : 'border-gray-300'
+                  className={`w-full px-4 py-3  border rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black ${errors.name ? 'border-red-500' : 'border-gray-300'
                     }`}
                 />
                 {errors.name && <p className="text-red-500 md:text-[18px] text-[16px] mt-1">{errors.name}</p>}
@@ -842,7 +842,7 @@ const EditProductPage = () => {
                     type="number"
                     value={formData.maxRentalDays || ''}
                     onChange={(e) => handleInputChange('maxRentalDays', e.target.value ? parseInt(e.target.value) : undefined)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                    className="w-full px-4 text-black py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                   />
                 </div>
               </div>

@@ -514,7 +514,7 @@ const NewProductPage = () => {
                   value={formData.name}
                   onChange={(e) => handleNameChange(e.target.value)}
                   placeholder="შეიყვანეთ პროდუქტის სახელი"
-                  className={`w-full px-4 py-3 border rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-black ${errors.name ? 'border-red-500' : 'border-gray-300'
+                  className={`w-full text-black px-4 py-3 border rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-black ${errors.name ? 'border-red-500' : 'border-gray-300'
                     }`}
                 />
                 {errors.name && <p className="text-red-500 md:text-[16px] text-[14px] mt-1">{errors.name}</p>}
@@ -530,7 +530,7 @@ const NewProductPage = () => {
                   type="text"
                   value={formData.brand || ''}
                   onChange={(e) => handleInputChange('brand', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  className="w-full text-black px-4 py-3 border border-gray-300 rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                 />
               </div>
 
@@ -541,7 +541,7 @@ const NewProductPage = () => {
                 <select
                   value={formData.categoryId || ''}
                   onChange={(e) => handleInputChange('categoryId', e.target.value ? parseInt(e.target.value) : undefined)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  className="w-full text-black px-4 py-3 border border-gray-300 rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                 >
                   <option value="">აირჩიეთ კატეგორია</option>
                   {categories.map(category => (
@@ -559,7 +559,7 @@ const NewProductPage = () => {
                 <select
                   value={formData.gender}
                   onChange={(e) => handleInputChange('gender', e.target.value as 'MEN' | 'WOMEN' | 'CHILDREN' | 'UNISEX')}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  className="w-full text-black px-4 py-3 border border-gray-300 rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                 >
                   <option value="UNISEX">უნივერსალური</option>
                   <option value="MEN">კაცისთვის</option>
@@ -575,7 +575,7 @@ const NewProductPage = () => {
                 <select
                   value={formData.location || ''}
                   onChange={(e) => handleInputChange('location', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  className="w-full text-black px-4 py-3 border border-gray-300 rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                 >
                   <option value="">მდებარეობის არჩევა</option>
                   <option value="თბილისი">თბილისი</option>
@@ -589,7 +589,7 @@ const NewProductPage = () => {
                 <select
                   value={formData.color || ''}
                   onChange={(e) => handleInputChange('color', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  className="w-full text-black px-4 py-3 border border-gray-300 rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                 >
                   <option value="">აირჩიეთ ფერი</option>
                   {colors.map((color) => (
@@ -609,7 +609,7 @@ const NewProductPage = () => {
               <select
                 value={sizeSystem && selectedSize ? `${sizeSystem}:${selectedSize}` : ''}
                 onChange={(e) => handleCombinedSizeSelect(e.target.value)}
-                className="w-full px-4 py-3 md:w-1/2 w-full border border-gray-300 rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                className="w-full text-black px-4 py-3 md:w-1/2 w-full border border-gray-300 rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-black"
               >
                 <option value="">აირჩიეთ ზომა</option>
                 {combinedSizeOptions.map((option) => (
@@ -630,7 +630,7 @@ const NewProductPage = () => {
                 onChange={(e) => handleInputChange('description', e.target.value)}
                 placeholder="შეიყვანეთ პროდუქტის აღწერა"
                 rows={4}
-                className={`w-full px-4 py-3 border rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-black ${errors.description ? 'border-red-500' : 'border-gray-300'}`}
+                className={`w-full text-black px-4 py-3 border rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-black ${errors.description ? 'border-red-500' : 'border-gray-300'}`}
               />
               {errors.description && <p className="text-red-500 md:text-[16px] text-[14px] mt-1">{errors.description}</p>}
             </div>
@@ -674,7 +674,7 @@ const NewProductPage = () => {
                         min="1"
                         value={tier.minDays}
                         onChange={(e) => updateRentalPriceTier(index, 'minDays', parseInt(e.target.value) || 1)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full text-black px-3 py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
 
@@ -689,7 +689,7 @@ const NewProductPage = () => {
                           const val = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0
                           updateRentalPriceTier(index, 'pricePerDay', val)
                         }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full text-black px-3 py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
 
@@ -718,7 +718,7 @@ const NewProductPage = () => {
                     type="number"
                     value={formData.maxRentalDays || ''}
                     onChange={(e) => handleInputChange('maxRentalDays', e.target.value ? parseInt(e.target.value) : undefined)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                    className="w-full text-black px-4 py-3 border border-gray-300 rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                   />
                 </div>
                 <div>

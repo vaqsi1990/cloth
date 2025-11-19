@@ -1494,44 +1494,44 @@ function ProfileSettingsForm() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block md:text-[18px] text-[16px] font-medium text-black mb-2">სახელი</label>
-          <input name="name" value={form.name} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
+          <input name="name" value={form.name} onChange={onChange} className="w-full text-black px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
         </div>
 
         <div>
           <label className="block md:text-[18px] text-[16px] font-medium text-black mb-2">გვარი</label>
-          <input name="lastName" value={form.lastName} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
+          <input name="lastName" value={form.lastName} onChange={onChange} className="w-full text-black px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
         </div>
       </div>
 
       <div>
         <label className="block md:text-[18px] text-[16px] font-medium text-black mb-2">ელფოსტა</label>
-        <input type="email" name="email" value={form.email} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
+        <input type="email" name="email" value={form.email} onChange={onChange} className="w-full text-black px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
       </div>
 
       <div>
         <label className="block md:text-[18px] text-[16px] font-medium text-black mb-2">ტელეფონი</label>
-        <input name="phone" value={form.phone} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
+        <input name="phone" value={form.phone} onChange={onChange} className="w-full px-4 py-3 border text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
       </div>
 
       <div>
         <label className="block md:text-[18px] text-[16px] font-medium text-black mb-2">ადგილმდებარეობა</label>
-        <input name="location" value={form.location} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
+        <input name="location" value={form.location} onChange={onChange} className="w-full px-4 py-3 text-black border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
       </div>
 
       <div>
         <label className="block md:text-[18px] text-[16px] font-medium text-black mb-2">მისამართი</label>
-        <input name="address" value={form.address} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
+        <input name="address" value={form.address} onChange={onChange} className="w-full px-4 py-3 border text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
       </div>
 
       <div>
         <label className="block md:text-[18px] text-[16px] font-medium text-black mb-2">საფოსტო ინდექსი</label>
-        <input name="postalIndex" value={form.postalIndex} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
+        <input name="postalIndex" value={form.postalIndex} onChange={onChange} className="w-full px-4 py-3 border text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block md:text-[18px] text-[16px] font-medium text-black mb-2">სქესი</label>
-          <select name="gender" value={form.gender} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+          <select name="gender" value={form.gender} onChange={onChange} className="w-full px-4 py-3 border text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
             <option value="">აირჩიეთ სქესი</option>
             <option value="MALE">კაცი</option>
             <option value="FEMALE">ქალი</option>
@@ -1541,13 +1541,13 @@ function ProfileSettingsForm() {
 
         <div>
           <label className="block md:text-[18px] text-[16px] font-medium text-black mb-2">დაბადების თარიღი</label>
-          <input type="date" name="dateOfBirth" value={form.dateOfBirth} onChange={onChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
+          <input type="date" name="dateOfBirth" value={form.dateOfBirth} onChange={onChange} className="w-full px-4 py-3 border text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
         </div>
       </div>
 
       <div>
         <label className="block md:text-[18px] text-[16px] font-medium text-black mb-2">პირადობის ნომერი</label>
-        <input name="personalId" value={form.personalId} disabled className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed" />
+        <input name="personalId" value={form.personalId} disabled className="w-full px-4 py-3 border text-black border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed" />
         <p className="md:text-[18px] text-[16px] text-black mt-1">პირადობის ნომერი არ შეიძლება შეიცვალოს</p>
       </div>
 

@@ -273,7 +273,7 @@ const AdminOrdersPage = () => {
                 placeholder="შეკვეთის ძებნა..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                className="w-full pl-10 pr-4 py-3 text-black border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
               />
             </div>
 
@@ -283,7 +283,7 @@ const AdminOrdersPage = () => {
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent appearance-none"
+                className="w-full pl-10 pr-4 py-3 text-black  border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent appearance-none"
               >
                 <option value="ALL">ყველა სტატუსი</option>
                 <option value="PENDING">მოლოდინი</option>
