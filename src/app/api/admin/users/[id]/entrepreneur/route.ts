@@ -4,14 +4,14 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
 type RouteContext = {
-  params?: {
-    id?: string
+  params: {
+    id: string
   }
 }
 
 export async function PATCH(
   request: NextRequest,
-  context: RouteContext = {}
+  context: RouteContext
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -22,13 +22,7 @@ export async function PATCH(
       )
     }
 
-    const userId = context.params?.id
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'Missing user id in route params' },
-        { status: 400 }
-      )
-    }
+    const userId = context.params.id
     const body = await request.json()
     const { status, comment } = body
 
