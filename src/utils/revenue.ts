@@ -36,9 +36,14 @@ export async function shouldBlockUser(userId: string, threshold: number = 2): Pr
     where: { id: userId },
     select: {
       verified: true, // პირადობის ვერიფიკაცია
-      blocked: true, // ინდმეწარმის საბუთის ვერიფიკაცია
+      blocked: true, // უკვე დაბლოკილია თუ არა (კიდევ არ უნდა დაბლოკოს)
       _count: {
         select: { products: true },
+      },
+      verification: {
+        select: {
+          entrepreneurStatus: true,
+        },
       },
     },
   })
@@ -47,9 +52,9 @@ export async function shouldBlockUser(userId: string, threshold: number = 2): Pr
     return false
   }
 
-  // თუ ინდმეწარმის საბუთი უკვე დამტკიცებულია (blocked=false), არ უნდა დაბლოკოს
-  // ან თუ პირადობა დამტკიცებულია (verified=true), არ უნდა დაბლოკოს
-  if (!user.blocked || user.verified) {
+  // თუ პირადობა დამტკიცებულია ან ინდმეწარმის საბუთი უკვე დამტკიცდა, აღარ გვჭირდება ბლოკი
+  const entrepreneurApproved = user.verification?.entrepreneurStatus === 'APPROVED'
+  if (user.verified || entrepreneurApproved) {
     return false
   }
 
@@ -62,8 +67,12 @@ export async function shouldBlockUser(userId: string, threshold: number = 2): Pr
   // Calculate revenue
   const revenue = await calculateUserRevenue(userId)
 
-  // Block if revenue >= threshold and entrepreneur certificate not verified
-  return revenue >= threshold
+  // დაბლოკეთ მხოლოდ მაშინ, როცა პირველად გადააჭარბებს ზღვარს (blocked ჯერ false იყო)
+  if (revenue >= threshold && !user.blocked) {
+    return true
+  }
+
+  return false
 }
 
 /**
@@ -75,23 +84,23 @@ export async function shouldBlockUser(userId: string, threshold: number = 2): Pr
 export async function checkAndBlockUser(userId: string, threshold: number = 2): Promise<boolean> {
   const shouldBlock = await shouldBlockUser(userId, threshold)
 
+  if (!shouldBlock) {
+    return false
+  }
+
   try {
     await prisma.user.update({
       where: { id: userId },
-      data: { blocked: shouldBlock },
+      data: { blocked: true },
     })
   } catch (error) {
     console.error('Failed to update user block status', { userId, error })
   }
 
-  return shouldBlock
+  return true
 }
 
 export async function reevaluateUserBlocking(userId: string, threshold: number = 2): Promise<void> {
-  const shouldBlock = await shouldBlockUser(userId, threshold)
-  await prisma.user.update({
-    where: { id: userId },
-    data: { blocked: shouldBlock },
-  })
+  await checkAndBlockUser(userId, threshold)
 }
 
