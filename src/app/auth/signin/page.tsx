@@ -63,7 +63,7 @@ const SignInPage = () => {
     <div className="min-h-screen  flex  justify-center py-12 px-4 ">
       <div className="max-w-md w-full space-y-8">
         <div>
-          <h2 className="text-[20px] text-center md:text-[30px] font-semibold uppercase tracking-widesttext-black">
+          <h2 className="text-[16px] text-center md:text-[20px] font-semibold uppercase tracking-widesttext-black">
             შესვლა
           </h2>
           <p className="mt-2 text-center text-lg text-black ">
@@ -144,7 +144,7 @@ const SignInPage = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full md:text-[18px] text-[16px] bg-black cursor-pointer text-white py-3 px-6 rounded-lg font-medium hover:bg-gray-800 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+              className="w-full md:text-[18px] font-bold text-[16px] bg-[#1B3729] cursor-pointer text-white py-3 px-6 rounded-lg hover:bg-gray-800 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
             >
               {isLoading ? (
                 <>

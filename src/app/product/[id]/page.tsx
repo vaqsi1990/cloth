@@ -868,12 +868,12 @@ const ProductPage = () => {
                                         {/* 7+ days - Recommended */}
                                         {tiers[1] && (
                                             <div className="border relative border-emerald-400 rounded-xl p-4 ring-2 ring-emerald-400 bg-emerald-50">
-                                                <span className="absolute -top-2 right-0 bg-emerald-100 text-emerald-800 text-[13px] font-semibold px-2 py-1 rounded">
+                                                <span className="absolute -top-2 right-1 bg-emerald-100 text-emerald-800 text-[13px] font-semibold px-2 py-1 rounded">
                                                     რეკომენდირებული
                                                 </span>
                                                 <p className="text-[16px] text-black">{tiers[1].minDays} + დღე</p>
                                                 <p className="text-[16px] font-bold text-black">₾{tiers[1].pricePerDay.toFixed(2)}/დღე</p>
-                                                <p className="text-sm text-emerald-700 mt-1 font-medium">ჯამი: ₾{fromAmount(tiers[1]).toFixed(2)}</p>
+                                                <p className="md:text-[18px] text-[16px] text-emerald-700 mt-1 font-medium">ჯამი: ₾{fromAmount(tiers[1]).toFixed(2)}</p>
                                             </div>
                                         )}
 
@@ -882,7 +882,7 @@ const ProductPage = () => {
                                             <div className="border border-gray-200 rounded-xl p-4">
                                                 <p className="text-[16px] text-black">{tiers[2].minDays} + დღე</p>
                                                 <p className="text-[16px] font-bold text-black">₾{tiers[2].pricePerDay.toFixed(2)}/დღე</p>
-                                                <p className="text-[16px] text-black mt-1">ჯამი: ₾{fromAmount(tiers[2]).toFixed(2)}</p>
+                                                <p className="md:text-[18px] text-[16px] text-black mt-1">ჯამი: ₾{fromAmount(tiers[2]).toFixed(2)}</p>
                                             </div>
                                         )}
                                     </div>
@@ -895,7 +895,7 @@ const ProductPage = () => {
 
                                 {product.size && (
                                     <div className="inline-block">
-                                        <div className="rounded-xl border-2 border-gray-300 bg-[#1B3729]  px-6 py-4 text-center transition hover:border-black">
+                                        <div className="rounded-xl border-2 border-gray-300 bg-black  px-6 py-4 text-center transition hover:border-black">
                                             <div className="text-xl font-bold text-white">{product.size}</div>
                                         </div>
                                     </div>
@@ -920,7 +920,7 @@ const ProductPage = () => {
                                                 onClick={() => setPurchaseMode("buy")}
                                                 disabled={product.status === 'RENTED'}
                                                 className={`p-4 rounded-xl border-2 flex md:text-[18px] text-[16px] items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed ${purchaseMode === "buy"
-                                                    ? "border-[#1B3729] bg-[#1B3729] text-white"
+                                                    ? "border-black bg-black text-white"
                                                     : "border-gray-300"
                                                     }`}
                                             >
@@ -1120,7 +1120,7 @@ const ProductPage = () => {
                                 </div>
                             ) : (
                                 <div className="space-y-2">
-                                    <div className="p-4 text-center bg-yellow-100 border border-yellow-300 text-yellow-900 rounded-lg font-bold">
+                                    <div className="p-4 text-center  border-2 border-red-500 text-red-500 rounded-lg font-bold">
                                     პროდუქტის შეძენა ან ქირაობა შესაძლებელია მხოლოდ ვერიფიცირებული მომხმარებლებისთვის.
                                     გთხოვთ, შეხვიდეთ ანგარიშში და გაიაროთ ვერიფიკაცია!
                                     </div>
@@ -1250,13 +1250,13 @@ const ProductPage = () => {
                             )
                         ) : (
                             <div className="mb-8 pb-8 border-b">
-                                <div className="bg-black border border-gray-200 rounded-lg p-4">
-                                    <p className="text-black md:text-[18px] text-[16px]">
+                                <div className="bg-black border border-gray-200 text-center rounded-lg p-4">
+                                    <p className="text-white md:text-[18px] text-[16px]">
                                         კომენტარის დასაწერად გთხოვთ{' '}
-                                        <Link href="/auth/signin" className="text-[#1B3729] font-semibold underline">
+                                        <Link href="/auth/signin" className="text-white font-semibold underline">
                                             შეხვიდეთ სისტემაში
                                         </Link>
-                                        {' '}და იქირაოთ პროდუქტი.
+                                        {' '}და იქირაოთ ან იყიდოთ პროდუქტი
                                     </p>
                                 </div>
                             </div>

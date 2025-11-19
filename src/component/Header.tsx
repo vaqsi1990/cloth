@@ -118,7 +118,7 @@ const Header = () => {
               onMouseEnter={handleMouseEnterMain}
               onMouseLeave={handleMouseLeaveMain}
             >
-              <button className="text-white px-4 py-2 rounded-lg hover:bg-gray-50 hover:text-black transition-all text-[20px]">
+              <button className="text-white px-4 py-2 rounded-lg hover:bg-gray-50 hover:text-black transition-all md:text-[20px] text-[16px]">
                 მენიუ
               </button>
 
@@ -135,7 +135,7 @@ const Header = () => {
                       onMouseEnter={() => setActiveSub(item)}
                       onMouseLeave={() => setActiveSub(null)}
                     >
-                      <div className="flex items-center justify-between px-4 py-3 text-black hover:bg-gray-100 cursor-pointer text-[20px]">
+                      <div className="flex items-center justify-between px-4 py-3 text-black hover:bg-gray-100 cursor-pointer md:text-[18px] text-[16px]">
                         <span>{item}</span>
                         <ChevronRight className="w-4 h-4" />
                       </div>
@@ -245,13 +245,13 @@ const Header = () => {
                       )}
                     </div>
                   ))}
-                  <Link href="/about" className="block text-black text-[17px] px-4 py-2 hover:bg-gray-100">ჩვენს შესახებ</Link>
-                  <Link href="/politics" className="block text-black text-[17px] px-4 py-2 hover:bg-gray-100">საიტის პოლიტიკა</Link>
+                  <Link href="/about" className="block text-black md:text-[18px] text-[16px] px-4 py-2 hover:bg-gray-100">ჩვენს შესახებ</Link>
+                  <Link href="/politics" className="block text-black md:text-[18px] text-[16px] px-4 py-2 hover:bg-gray-100">საიტის პოლიტიკა</Link>
                 </div>
               )}
             </div>
             <div className="flex items-center space-x-4">
-              <button onClick={toggleSearch} className="group cursor-pointer p-2 text-white  text-[20px]">
+              <button onClick={toggleSearch} className="group cursor-pointer p-2 text-white  md:text-[18px] text-[16px]">
                 <Search className="w-5 h-5 group-hover:scale-110 transition-transform" />
               </button>
 
@@ -265,17 +265,17 @@ const Header = () => {
                     <div className="py-2 text-black">
                       <p className="px-4 font-semibold">{session.user.name}</p>
                       {session.user.role === 'ADMIN' ? (
-                        <Link href="/admin" className="block text-[17px] px-4 py-2 hover:bg-gray-100">
+                        <Link href="/admin" className="block md:text-[20px] text-[16px] px-4 py-2 hover:bg-gray-100">
                           ადმინისტრატორი
                         </Link>
                       ) : (
-                        <Link href="/account" className="block text-[17px] hover:bg-gray-100 text-black px-4 py-2 ">
+                        <Link href="/account" className="block  md:text-[20px] text-[16px] hover:bg-gray-100 text-black px-4 py-2 ">
                           პროფილი
                         </Link>
                       )}
                       <button
                         onClick={() => signOut()}
-                        className="w-full text-left cursor-pointer text-[17px] px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
+                        className="w-full text-left cursor-pointer md:text-[20px] text-[16px] px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
                       >
                         <LogOut className="w-4 h-4" />
                         <span>გასვლა</span>
@@ -284,7 +284,7 @@ const Header = () => {
                   </div>
                 </div>
               ) : (
-                <Link href="/auth/signin" className="text-[18px]  md:text-[20px] font-medium ">
+                <Link href="/auth/signin" className="text-[18px] md:text-[20px] text-[16px] font-medium ">
                   შესვლა
                 </Link>
               )}
@@ -335,7 +335,7 @@ const Header = () => {
                 </div>
               </div>
             ) : (
-              <Link href="/auth/signin" className="text-sm ">
+              <Link href="/auth/signin" className="text-sm md:text-[20px] text-[16px]">
                 შესვლა
               </Link>
             )}
