@@ -110,7 +110,7 @@ const AdminDashboard = () => {
           <p className="text-black mb-6">თქვენ არ გაქვთ ამ გვერდზე წვდომა.</p>
           <Link
             href="/"
-            className="px-6 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide transition-colors"
+            className="px-6 py-2 bg-[#1B3729] md:text-[18px] text-[16px] text-white rounded-lg font-bold uppercase tracking-wide transition-colors"
           >
             მთავარ გვერდზე დაბრუნება
           </Link>
@@ -209,7 +209,7 @@ const AdminDashboard = () => {
             </div>
             <Link
               href="/"
-              className="px-4 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide transition-colors"
+              className="px-4 py-2 bg-[#1B3729] md:text-[18px] text-[16px] text-white rounded-lg font-bold uppercase tracking-wide transition-colors"
             >
               მთავარ გვერდზე დაბრუნება
             </Link>

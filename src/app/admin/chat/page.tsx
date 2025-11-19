@@ -318,7 +318,7 @@ const AdminChatPage = () => {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col">
             <div className="p-4 border-b border-gray-200">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">საუბრები</h2>
+                <h2 className="md:text-[20px] text-[16px] font-semibold text-gray-900">საუბრები</h2>
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
@@ -336,7 +336,7 @@ const AdminChatPage = () => {
               {chatRooms.length === 0 ? (
                 <div className="p-4 text-center text-gray-500">
                   <MessageCircle className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                  <p>საუბრები არ არის</p>
+                  <p className=" text-[16px]">საუბრები არ არის</p>
                 </div>
               ) : (
                 <div className="space-y-2 p-4">
