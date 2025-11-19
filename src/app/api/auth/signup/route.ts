@@ -17,10 +17,22 @@ const signupSchema = z.object({
     .regex(/^[\u10A0-\u10FF\s]+$/, "ადგილმდებარეობა უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს"),
   address: z.string()
     .min(2, "მისამართი აუცილებელია")
-    .regex(/^[\u10A0-\u10FF\s0-9№N]+$/, "მისამართი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, ციფრებს, № (ოფციონალური) და N"),
+    .regex(/^[\u10A0-\u10FF\s0-9№N]+$/, "მისამართი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, ციფრებს, № (ოფციონალური) და N")
+    .refine((val) => /[0-9]/.test(val), "მისამართი უნდა შეიცავდეს ციფრებს"),
   postalIndex: z.string().min(2, "საფოსტო ინდექსი აუცილებელია"),
   gender: z.enum(["MALE", "FEMALE"], { message: "სქესი აუცილებელია" }),
-  dateOfBirth: z.string().min(1, "დაბადების თარიღი აუცილებელია"),
+  dateOfBirth: z.string()
+    .min(1, "დაბადების თარიღი აუცილებელია")
+    .refine((date) => {
+      const birthDate = new Date(date)
+      const today = new Date()
+      let age = today.getFullYear() - birthDate.getFullYear()
+      const monthDiff = today.getMonth() - birthDate.getMonth()
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--
+      }
+      return age >= 18
+    }, "თქვენ უნდა იყოთ მინიმუმ 18 წლის რეგისტრაციისთვის"),
   personalId: z.string().min(6, "პირადობის ნომერი აუცილებელია"),
   email: z.string().email("არასწორი ელფოსტა"),
   password: z.string().min(6, "პაროლი უნდა იყოს მინიმუმ 6 სიმბოლო"),

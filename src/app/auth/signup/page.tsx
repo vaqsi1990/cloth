@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Mail, Lock, User, Eye, EyeOff } from 'lucide-react'
+import { showToast } from '@/utils/toast'
 
 const SignUpPage = () => {
   const [formData, setFormData] = useState({
@@ -33,6 +34,19 @@ const SignUpPage = () => {
   
   const router = useRouter()
 
+  // Function to calculate age from date of birth
+  const calculateAge = (dateOfBirth: string): number => {
+    if (!dateOfBirth) return 0
+    const birthDate = new Date(dateOfBirth)
+    const today = new Date()
+    let age = today.getFullYear() - birthDate.getFullYear()
+    const monthDiff = today.getMonth() - birthDate.getMonth()
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--
+    }
+    return age
+  }
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData({
@@ -41,6 +55,23 @@ const SignUpPage = () => {
     })
     setError('')
     setSuccess('')
+
+    // Validate age for date of birth
+    if (name === 'dateOfBirth' && value) {
+      const age = calculateAge(value)
+      if (age < 18) {
+        setFieldErrors(prev => ({
+          ...prev,
+          [name]: 'თქვენ უნდა იყოთ მინიმუმ 18 წლის რეგისტრაციისთვის'
+        }))
+      } else {
+        setFieldErrors(prev => {
+          const newErrors = { ...prev }
+          delete newErrors[name]
+          return newErrors
+        })
+      }
+    }
 
     // Validate Georgian characters for name, lastName, location, address in real-time
     if (['name', 'lastName', 'location'].includes(name)) {
@@ -61,10 +92,16 @@ const SignUpPage = () => {
       }
     } else if (name === 'address') {
       // Address allows Georgian characters, numbers, № (optional), and N
+      // Must contain at least one digit
       if (value && !/^[\u10A0-\u10FF\s0-9№N]+$/.test(value)) {
         setFieldErrors(prev => ({
           ...prev,
           [name]: 'მისამართი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, ციფრებს, № (ოფციონალური) და N'
+        }))
+      } else if (value && !/[0-9]/.test(value)) {
+        setFieldErrors(prev => ({
+          ...prev,
+          [name]: 'მისამართი უნდა შეიცავდეს ციფრებს'
         }))
       } else {
         setFieldErrors(prev => {
@@ -82,41 +119,54 @@ const SignUpPage = () => {
     
     // Check for field validation errors
     if (Object.keys(fieldErrors).length > 0) {
-      setError('გთხოვთ გაასწოროთ შეცდომები')
+      showToast('გთხოვთ გაასწოროთ შეცდომები', 'error')
       return
     }
     
     // Validate required fields before sending code
     if (!formData.name || !formData.lastName || !formData.phone || !formData.location || !formData.address || !formData.postalIndex || !formData.gender || !formData.dateOfBirth || !formData.personalId || !formData.email || !formData.password || !formData.confirmPassword) {
-      setError('გთხოვთ შეავსეთ ყველა ველი')
+      showToast('გთხოვთ შეავსეთ ყველა ველი', 'error')
       return
     }
     
     // Validate Georgian characters
     if (!/^[\u10A0-\u10FF\s]+$/.test(formData.name)) {
-      setError('სახელი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს')
+      showToast('სახელი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს', 'error')
       return
     }
     if (!/^[\u10A0-\u10FF\s]+$/.test(formData.lastName)) {
-      setError('გვარი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს')
+      showToast('გვარი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს', 'error')
       return
     }
     if (!/^[\u10A0-\u10FF\s]+$/.test(formData.location)) {
-      setError('ადგილმდებარეობა უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს')
+      showToast('ადგილმდებარეობა უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს', 'error')
       return
     }
     if (!/^[\u10A0-\u10FF\s0-9№N]+$/.test(formData.address)) {
-      setError('მისამართი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, ციფრებს, № (ოფციონალური) და N')
+      showToast('მისამართი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, ციფრებს, № (ოფციონალური) და N', 'error')
+      return
+    }
+    if (!/[0-9]/.test(formData.address)) {
+      showToast('მისამართი უნდა შეიცავდეს ციფრებს', 'error')
       return
     }
     
+    // Validate age (must be at least 18 years old)
+    if (formData.dateOfBirth) {
+      const age = calculateAge(formData.dateOfBirth)
+      if (age < 18) {
+        showToast('თქვენ უნდა იყოთ მინიმუმ 18 წლის რეგისტრაციისთვის', 'error')
+        return
+      }
+    }
+    
     if (formData.password !== formData.confirmPassword) {
-      setError('პაროლები არ ემთხვევა')
+      showToast('პაროლები არ ემთხვევა', 'error')
       return
     }
 
     if (formData.password.length < 6) {
-      setError('პაროლი უნდა იყოს მინიმუმ 6 სიმბოლო')
+      showToast('პაროლი უნდა იყოს მინიმუმ 6 სიმბოლო', 'error')
       return
     }
     
@@ -129,14 +179,14 @@ const SignUpPage = () => {
       })
       const data = await res.json()
       if (!res.ok) {
-        setError(data.error || 'ვერიფიკაციის კოდის გაგზავნა ვერ მოხერხდა')
+        showToast(data.error || 'ვერიფიკაციის კოდის გაგზავნა ვერ მოხერხდა', 'error')
         return
       }
       setCodeSent(true)
       setShowCodeInput(true)
-      setSuccess('ვერიფიკაციის კოდი გაიგზავნა ელფოსტაზე')
+      showToast('ვერიფიკაციის კოდი გაიგზავნა ელფოსტაზე', 'success')
     } catch {
-      setError('შეცდომა კოდის გაგზავნისას')
+      showToast('შეცდომა კოდის გაგზავნისას', 'error')
     } finally {
       setIsSendingCode(false)
     }
@@ -150,42 +200,57 @@ const SignUpPage = () => {
 
     // Check for field validation errors
     if (Object.keys(fieldErrors).length > 0) {
-      setError('გთხოვთ გაასწოროთ შეცდომები')
+      showToast('გთხოვთ გაასწოროთ შეცდომები', 'error')
       setIsLoading(false)
       return
     }
 
     // Validate Georgian characters
     if (!/^[\u10A0-\u10FF\s]+$/.test(formData.name)) {
-      setError('სახელი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს')
+      showToast('სახელი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს', 'error')
       setIsLoading(false)
       return
     }
     if (!/^[\u10A0-\u10FF\s]+$/.test(formData.lastName)) {
-      setError('გვარი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს')
+      showToast('გვარი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს', 'error')
       setIsLoading(false)
       return
     }
     if (!/^[\u10A0-\u10FF\s]+$/.test(formData.location)) {
-      setError('ადგილმდებარეობა უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს')
+      showToast('ადგილმდებარეობა უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს', 'error')
       setIsLoading(false)
       return
     }
     if (!/^[\u10A0-\u10FF\s0-9№N]+$/.test(formData.address)) {
-      setError('მისამართი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, ციფრებს, № და N')
+      showToast('მისამართი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, ციფრებს, № და N', 'error')
+      setIsLoading(false)
+      return
+    }
+    if (!/[0-9]/.test(formData.address)) {
+      showToast('მისამართი უნდა შეიცავდეს ციფრებს', 'error')
       setIsLoading(false)
       return
     }
 
+    // Validate age (must be at least 18 years old)
+    if (formData.dateOfBirth) {
+      const age = calculateAge(formData.dateOfBirth)
+      if (age < 18) {
+        showToast('თქვენ უნდა იყოთ მინიმუმ 18 წლის რეგისტრაციისთვის', 'error')
+        setIsLoading(false)
+        return
+      }
+    }
+
     // Validation
     if (formData.password !== formData.confirmPassword) {
-      setError('პაროლები არ ემთხვევა')
+      showToast('პაროლები არ ემთხვევა', 'error')
       setIsLoading(false)
       return
     }
 
     if (formData.password.length < 6) {
-      setError('პაროლი უნდა იყოს მინიმუმ 6 სიმბოლო')
+      showToast('პაროლი უნდა იყოს მინიმუმ 6 სიმბოლო', 'error')
       setIsLoading(false)
       return
     }
@@ -215,15 +280,15 @@ const SignUpPage = () => {
       const data = await response.json()
 
       if (data.success) {
-        setSuccess('ანგარიში წარმატებით შეიქმნა! ახლა შეგიძლიათ შეხვიდეთ.')
+        showToast('ანგარიში წარმატებით შეიქმნა! ახლა შეგიძლიათ შეხვიდეთ.', 'success')
         setTimeout(() => {
           router.push('/auth/signin')
         }, 2000)
       } else {
-        setError(data.error || 'შეცდომა ანგარიშის შექმნისას')
+        showToast(data.error || 'შეცდომა ანგარიშის შექმნისას', 'error')
       }
     } catch {
-      setError('შეცდომა სერვერთან კავშირისას')
+      showToast('შეცდომა სერვერთან კავშირისას', 'error')
     } finally {
       setIsLoading(false)
     }
@@ -248,18 +313,6 @@ const SignUpPage = () => {
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-red-800 text-[16px]">{error}</p>
-            </div>
-          )}
-
-          {success && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <p className="text-green-800 text-[16px]">{success}</p>
-            </div>
-          )}
-
           <div className="space-y-4">
             {/* Name */}
             <div>
@@ -414,9 +467,10 @@ const SignUpPage = () => {
                   required
                   value={formData.dateOfBirth}
                   onChange={handleChange}
-                  className="w-full pl-4 pr-4 py-3 placeholder:text-black border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                  className={`w-full pl-4 pr-4 py-3 placeholder:text-black border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300 ${fieldErrors.dateOfBirth ? 'border-red-500' : 'border-black'}`}
                 />
               </div>
+              {fieldErrors.dateOfBirth && <p className="text-red-500 md:text-[18px] text-[16px] mt-1">{fieldErrors.dateOfBirth}</p>}
             </div>
             {/* Personal ID */}
             <div>
