@@ -378,10 +378,10 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
           {/* Messages */}
           <div className="flex-1 p-4 overflow-y-auto bg-gray-50 ">
             {messages.length === 0 ? (
-              <div className="text-center md:text-[18px] text-[16px] text-black py-8">
+              <div className="text-center md:text-[18px] text-[16px]  py-8">
                 <MessageCircle className="w-12 h-12 mx-auto mb-4 text-gray-400" />
                 <p className="font-medium">დაიწყეთ საუბარი!</p>
-                <p className="text-[14px] text-gray-600 mt-2">ჩვენი გუნდი მზადაა დაგეხმაროთ</p>
+                <p className="text-[16px] text-gray-500 mt-2">ჩვენი გუნდი მზადაა დაგეხმაროთ</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -424,26 +424,26 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
             <div className="p-4 border-t border-gray-200 bg-white">
               <div className="space-y-3">
                 <div>
-                  <label className="block text-[16px] font-medium text-black mb-1">
+                  <label className="block text-[16px] font-medium  mb-1">
                     სახელი
                   </label>
                   <input
                     type="text"
                     value={guestName}
                     onChange={(e) => setGuestName(e.target.value)}
-                    className="w-full p-2 border placeholder:text-black border-gray-300 rounded-md focus:ring-2 focus:ring-[#1B3729] focus:border-transparent text-[14px]"
+                    className="w-full p-2 border placeholder:text-gray-500  border-black rounded-md focus:ring-2 focus:ring-[#1B3729] focus:border-transparent text-[16px]"
                     placeholder="შეიყვანეთ თქვენი სახელი"
                   />
                 </div>
                 <div>
-                  <label className="block text-[16px] font-medium text-black mb-1">
+                  <label className="block text-[16px] font-medium  mb-1">
                     ელ-ფოსტა
                   </label>
                   <input
                     type="email"
                     value={guestEmail}
                     onChange={(e) => setGuestEmail(e.target.value)}
-                    className="w-full p-2 border placeholder:text-black border-gray-300 rounded-md focus:ring-2 focus:ring-[#1B3729] focus:border-transparent text-[14px]"
+                    className="w-full p-2 border placeholder:text-gray-500 border-black rounded-md focus:ring-2 focus:ring-[#1B3729] focus:border-transparent text-[16px]"
                     placeholder="შეიყვანეთ თქვენი ელ-ფოსტა"
                   />
                 </div>
@@ -459,7 +459,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="შეიყვანეთ თქვენი შეტყობინება..."
-                className="flex-1 p-2 border border-gray-300 rounded-md resize-none focus:ring-2 focus:ring-[#1B3729] focus:border-transparent text-[14px]"
+                className="flex-1 p-2 border placeholder:text-gray-500 border-black rounded-md resize-none focus:ring-2 focus:ring-[#1B3729] focus:border-transparent text-[14px]"
                 rows={2}
                 disabled={isLoading}
               />
