@@ -1226,7 +1226,7 @@ const ProductPage = () => {
                                                 value={reviewComment}
                                                 onChange={(e) => setReviewComment(e.target.value)}
                                                 placeholder="დაწერეთ თქვენი კომენტარი..."
-                                                className="w-full px-4 py-3 border border-black rounded-lg "
+                                                className="w-full text-black px-4 py-3 border border-black rounded-lg "
                                                 rows={4}
                                             />
                                         </div>
@@ -1356,7 +1356,7 @@ const ProductPage = () => {
                                                             value={editingComment}
                                                             onChange={(e) => setEditingComment(e.target.value)}
                                                             placeholder="დაწერეთ თქვენი კომენტარი..."
-                                                            className="w-full px-4 placeholder:text-black md:text-[18px] text-[16px] py-3 border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                                                            className="w-full px-4 placeholder:text-black text-black md:text-[18px] text-[16px] py-3 border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                                                             rows={4}
                                                         />
                                                     </div>
@@ -1436,7 +1436,7 @@ const ProductPage = () => {
                                                                     value={replyComment}
                                                                     onChange={(e) => setReplyComment(e.target.value)}
                                                                     placeholder="დაწერეთ პასუხი..."
-                                                                        className="w-full px-4 py-3 border border-black rounded-lg focus:ring-2 focus:ring-[#1B3729] focus:border-transparent"
+                                                                        className="w-full text-black px-4 text-black py-3 border border-black rounded-lg focus:ring-2 focus:ring-[#1B3729] focus:border-transparent"
                                                                     rows={3}
                                                                 />
                                                             </div>

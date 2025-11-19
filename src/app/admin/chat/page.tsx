@@ -491,7 +491,7 @@ const AdminChatPage = () => {
                       onChange={(e) => setNewMessage(e.target.value)}
                       onKeyPress={handleKeyPress}
                       placeholder="შეიყვანეთ თქვენი პასუხი..."
-                      className="flex-1 p-3 border placeholder:text-[18px] border-gray-300 rounded-md resize-none focus:ring-2 focus:ring-[#1B3729] focus:border-transparent"
+                      className="flex-1 p-3 text-black border text-black placeholder:text-[18px] border-gray-300 rounded-md resize-none focus:ring-2 focus:ring-[#1B3729] focus:border-transparent"
                       rows={2}
                       disabled={isLoading}
                     />
@@ -540,7 +540,7 @@ const AdminChatPage = () => {
                 value={deleteConfirmText}
                 onChange={(e) => setDeleteConfirmText(e.target.value)}
                 placeholder="DELETE"
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                className="w-full p-2 border text-black border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
               />
             </div>
             <div className="flex space-x-3">

@@ -678,7 +678,7 @@ const EditProductPage = () => {
                 onChange={(e) => handleInputChange('description', e.target.value)}
                 placeholder="შეიყვანეთ პროდუქტის აღწერა"
                 rows={4}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                className="w-full text-black px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
               />
             </div>
 

@@ -629,7 +629,7 @@ const NewProductPage = () => {
                 onChange={(e) => handleInputChange('description', e.target.value)}
                 placeholder="შეიყვანეთ პროდუქტის აღწერა"
                 rows={4}
-                className={`w-full px-4 py-3 border rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black ${errors.description ? 'border-red-500' : 'border-gray-300'}`}
+                className={`w-full px-4 text-black py-3 border rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black ${errors.description ? 'border-red-500' : 'border-gray-300'}`}
               />
               {errors.description && <p className="text-red-500 md:text-[20px] text-[18px] mt-1">{errors.description}</p>}
             </div>
@@ -670,7 +670,7 @@ const NewProductPage = () => {
                         min="1"
                         value={tier.minDays}
                         onChange={(e) => updateRentalPriceTier(index, 'minDays', parseInt(e.target.value) || 1)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 text-black py-2 border border-gray-300 rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
 
@@ -685,7 +685,7 @@ const NewProductPage = () => {
                           const val = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0
                           updateRentalPriceTier(index, 'pricePerDay', val)
                         }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 text-black py-2 border border-gray-300 rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
 
@@ -715,7 +715,7 @@ const NewProductPage = () => {
                   step="0.01"
                   value={formData.deposit || ''}
                   onChange={(e) => handleInputChange('deposit', e.target.value ? parseFloat(e.target.value) : undefined)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  className="w-full px-4 text-black py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                 />
               </div>
               <div>

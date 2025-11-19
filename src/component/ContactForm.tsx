@@ -206,7 +206,7 @@ const ContactForm = () => {
                                         onChange={handleChange}
                                         required
                                         rows={5}
-                                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300 resize-none"
+                                        className="w-full text-black pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300 resize-none"
                                         placeholder="შეიყვანეთ თქვენი შეტყობინება..."
                                     />
                                 </div>

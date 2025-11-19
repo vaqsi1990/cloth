@@ -840,7 +840,7 @@ const ShopPageClient = () => {
                                                 </span>
 
                                             </div>
-                                            <Link href={`/product/${product.id}`} className="block w-full md:w-[200px]  mt-3 bg-[#1B3729] md:text-[18px] text-[16px] text-white text-center py-2 rounded-lg font-bold transition-colors duration-300">დეტალები</Link>
+                                            <Link href={`/product/${product.id}`} className="block w-full mx-auto  text-center md:w-[200px]  mt-3 bg-[#1B3729] md:text-[18px] text-[16px] text-white text-center py-2 rounded-lg font-bold transition-colors duration-300">დეტალები</Link>
                                         </div>
                                     </div>
                                 ))}

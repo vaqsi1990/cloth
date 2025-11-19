@@ -709,7 +709,7 @@ const EditProductPage = () => {
                 onChange={(e) => handleInputChange('description', e.target.value)}
                 placeholder="შეიყვანეთ პროდუქტის აღწერა"
                 rows={4}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                className="w-full px-4 text-black py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
               />
             </div>
           </div>
@@ -743,7 +743,7 @@ const EditProductPage = () => {
                         min="1"
                         value={tier.minDays}
                         onChange={(e) => updateRentalPriceTier(index, 'minDays', parseInt(e.target.value) || 1)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 text-black py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
 
@@ -755,7 +755,7 @@ const EditProductPage = () => {
                         min="0"
                         value={tier.pricePerDay}
                         onChange={(e) => updateRentalPriceTier(index, 'pricePerDay', parseFloat(e.target.value) || 0)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 text-black py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
 
@@ -784,7 +784,7 @@ const EditProductPage = () => {
                     step="0.01"
                     value={formData.deposit || ''}
                     onChange={(e) => handleInputChange('deposit', e.target.value ? parseFloat(e.target.value) : undefined)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                    className="w-full px-4 text-black py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                   />
                 </div>
                 <div>

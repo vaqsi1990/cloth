@@ -459,7 +459,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="შეიყვანეთ თქვენი შეტყობინება..."
-                className="flex-1 p-2 border placeholder:text-gray-500 border-black rounded-md resize-none focus:ring-2 focus:ring-[#1B3729] focus:border-transparent text-[14px]"
+                className="flex-1 text-black p-2 border placeholder:text-gray-500 border-black rounded-md resize-none focus:ring-2 focus:ring-[#1B3729] focus:border-transparent text-[14px]"
                 rows={2}
                 disabled={isLoading}
               />
