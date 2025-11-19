@@ -51,6 +51,8 @@ interface ProductItem {
   sku?: string | null
   images?: Array<{ url: string }>
   variants?: Array<{ price: number; size: string; stock: number; id: number }>
+  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED'
+  rejectionReason?: string | null
 }
 
 type VerificationState = 'PENDING' | 'APPROVED' | 'REJECTED' | null
@@ -540,6 +542,14 @@ const AccountPage = () => {
     }
     if (!status) return statusMap['PENDING']
     return statusMap[status] || status
+  }
+
+  const getProductApprovalLabel = (
+    status?: 'PENDING' | 'APPROVED' | 'REJECTED'
+  ) => {
+    if (status === 'APPROVED') return 'დამტკიცებულია'
+    if (status === 'REJECTED') return 'უარყოფილია'
+    return 'ველოდებით დამტკიცებას'
   }
 
   const renderProfileTab = () => (
@@ -1145,6 +1155,29 @@ const AccountPage = () => {
                         : `₾${minPrice.toFixed(2)} - ₾${maxPrice.toFixed(2)}`
                     })()}
                   </p>
+                  <div className="mb-3 space-y-1">
+                    <span
+                      className={`inline-flex px-3 py-1 rounded-full text-[16px] ${
+                        product.approvalStatus === 'APPROVED'
+                          ? 'bg-green-100 text-green-800'
+                          : product.approvalStatus === 'REJECTED'
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                      }`}
+                    >
+                      {getProductApprovalLabel(product.approvalStatus)}
+                    </span>
+                    {product.approvalStatus === 'REJECTED' && product.rejectionReason && (
+                      <p className="text-[16px] text-red-700 font-medium">
+                        მიზეზი: {product.rejectionReason}
+                      </p>
+                    )}
+                    {product.approvalStatus !== 'APPROVED' && (
+                      <p className="text-[16px] text-gray-600">
+                        პროდუქტი გამოჩნდება მომხმარებლებისთვის დამტკიცების შემდეგ.
+                      </p>
+                    )}
+                  </div>
                   <p className="md:text-[18px] text-[16px] text-black mb-3">დამატებული: {new Date(product.createdAt).toLocaleDateString('ka-GE')}</p>
 
                   <div className="mb-3">

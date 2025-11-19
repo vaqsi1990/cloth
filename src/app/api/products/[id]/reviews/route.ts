@@ -26,15 +26,27 @@ export async function GET(
     }
 
     const session = await getServerSession(authOptions)
+    const isAdmin = session?.user?.role === 'ADMIN'
+
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      select: { status: true, userId: true, approvalStatus: true },
+    })
+
+    const requesterId = session?.user?.id
+    const isOwner = requesterId && product?.userId === requesterId
+
+    if (!product || (!isAdmin && !isOwner && product.approvalStatus !== 'APPROVED')) {
+      return NextResponse.json(
+        { success: false, error: 'პროდუქტი ვერ მოიძებნა' },
+        { status: 404 }
+      )
+    }
+
     let canReview = false
 
     // Check if user can review (has rented the product)
     if (session?.user?.id) {
-      // Get product to check its status and userId
-      const product = await prisma.product.findUnique({
-        where: { id: productId },
-        select: { status: true, userId: true },
-      })
 
       // If user is the product owner, allow review regardless of rental status
       if (product?.userId === session.user.id) {

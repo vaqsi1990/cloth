@@ -59,6 +59,8 @@ interface Product {
     minDays: number
     pricePerDay: number
   }>
+  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED'
+  rejectionReason?: string | null
 }
 
 const AdminProductsPage = () => {
@@ -69,6 +71,7 @@ const AdminProductsPage = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterGender, setFilterGender] = useState('ALL')
   const [filterCategory, setFilterCategory] = useState('ALL')
+  const [approvalUpdatingId, setApprovalUpdatingId] = useState<number | null>(null)
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -228,6 +231,69 @@ const AdminProductsPage = () => {
       'MAINTENANCE': 'რესტავრაციაზე'
     }
     return statusMap[status || ''] || 'თავისუფალია'
+  }
+
+  const getApprovalStatusLabel = (status?: 'PENDING' | 'APPROVED' | 'REJECTED') => {
+    const map = {
+      PENDING: 'ველოდებით დამტკიცებას',
+      APPROVED: 'დამტკიცებულია',
+      REJECTED: 'უარყოფილია'
+    } as const
+    return map[status || 'PENDING']
+  }
+
+  const handleApprovalAction = async (
+    productId: number,
+    status: 'APPROVED' | 'REJECTED'
+  ) => {
+    let reason: string | undefined
+
+    if (status === 'REJECTED') {
+      reason = prompt('გთხოვთ მიუთითოთ უარყოფის მიზეზი:')
+      if (!reason) {
+        showToast('უარყოფის მიზეზი სავალდებულოა', 'warning')
+        return
+      }
+    }
+
+    try {
+      setApprovalUpdatingId(productId)
+      const response = await fetch(`/api/admin/products/${productId}/approval`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status, reason })
+      })
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        setProducts(prev =>
+          prev.map(product =>
+            product.id === productId
+              ? {
+                  ...product,
+                  approvalStatus: data.product.approvalStatus,
+                  rejectionReason: data.product.rejectionReason
+                }
+              : product
+          )
+        )
+        showToast(
+          status === 'APPROVED'
+            ? 'პროდუქტი წარმატებით დამტკიცდა'
+            : 'პროდუქტი უარყოფილია',
+          'success'
+        )
+      } else {
+        showToast(data.error || 'სტატუსის განახლება ვერ მოხერხდა', 'error')
+      }
+    } catch (error) {
+      console.error('Error updating approval status:', error)
+      showToast('სტატუსის განახლება ვერ მოხერხდა', 'error')
+    } finally {
+      setApprovalUpdatingId(null)
+    }
   }
 
   // Helper to get rental price from tier[0] (first tier with minimum days)
@@ -479,7 +545,22 @@ const AdminProductsPage = () => {
                          </div>
                          
                          <div className="flex items-center space-x-2">
-                          
+                          <span
+                            className={`px-2 py-1 rounded-full text-[16px] ${
+                              product.approvalStatus === 'APPROVED'
+                                ? 'bg-green-100 text-green-800'
+                                : product.approvalStatus === 'REJECTED'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-yellow-100 text-yellow-800'
+                            }`}
+                          >
+                            {getApprovalStatusLabel(product.approvalStatus)}
+                          </span>
+                          {product.approvalStatus === 'REJECTED' && product.rejectionReason && (
+                            <span className="text-[16px] text-red-700">
+                              მიზეზი: {product.rejectionReason}
+                            </span>
+                          )}
                           {product.discount && product.discount > 0 && (
                             <span className="px-2 py-1 bg-red-100 text-red-800 text-[16px] rounded-full">
                               -{product.discount}%
@@ -532,6 +613,26 @@ const AdminProductsPage = () => {
 
                        {/* Actions */}
                        <div className="flex items-center space-x-2 ml-4">
+                        <div className="flex flex-col space-y-2 mr-4">
+                          {product.approvalStatus !== 'APPROVED' && (
+                            <>
+                              <button
+                                onClick={() => handleApprovalAction(product.id, 'APPROVED')}
+                                disabled={approvalUpdatingId === product.id}
+                                className="px-3 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors md:text-[18px] text-[16px] disabled:opacity-50"
+                              >
+                                {approvalUpdatingId === product.id ? 'დამტკიცება...' : 'დამტკიცება'}
+                              </button>
+                              <button
+                                onClick={() => handleApprovalAction(product.id, 'REJECTED')}
+                                disabled={approvalUpdatingId === product.id}
+                                className="px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors md:text-[18px] text-[16px] disabled:opacity-50"
+                              >
+                                {approvalUpdatingId === product.id ? 'უარყოფა...' : 'უარყოფა'}
+                              </button>
+                            </>
+                          )}
+                        </div>
                          <Link
                            href={`/product/${product.id}`}
                            className="flex items-center space-x-1 px-3 py-2 bg-gray-100 text-black rounded-lg hover:bg-gray-200 transition-colors md:text-[18px] text-[16px]"

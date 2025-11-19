@@ -20,6 +20,12 @@ CREATE TYPE "public"."ProductStatus" AS ENUM ('AVAILABLE', 'RENTED', 'RESERVED',
 CREATE TYPE "public"."VerificationStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
 
 -- CreateEnum
+CREATE TYPE "public"."UserGender" AS ENUM ('MALE', 'FEMALE', 'OTHER');
+
+-- CreateEnum
+CREATE TYPE "public"."SizeSystem" AS ENUM ('EU', 'US', 'UK', 'CN');
+
+-- CreateEnum
 CREATE TYPE "public"."ChatStatus" AS ENUM ('ACTIVE', 'CLOSED', 'PENDING');
 
 -- CreateTable
@@ -50,8 +56,13 @@ CREATE TABLE "public"."User" (
     "id" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "name" TEXT,
+    "lastName" TEXT,
     "phone" TEXT,
     "location" TEXT,
+    "address" TEXT,
+    "postalIndex" TEXT,
+    "gender" "public"."UserGender",
+    "dateOfBirth" TIMESTAMP(3),
     "personalId" TEXT,
     "password" TEXT,
     "role" "public"."UserRole" NOT NULL DEFAULT 'USER',
@@ -61,6 +72,8 @@ CREATE TABLE "public"."User" (
     "banned" BOOLEAN NOT NULL DEFAULT false,
     "banReason" TEXT,
     "bannedAt" TIMESTAMP(3),
+    "verified" BOOLEAN NOT NULL DEFAULT false,
+    "blocked" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -118,25 +131,56 @@ CREATE TABLE "public"."Product" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
+    "brand" TEXT,
     "description" TEXT,
     "sku" TEXT,
     "gender" "public"."Gender" NOT NULL DEFAULT 'UNISEX',
     "color" TEXT,
     "location" TEXT,
+    "sizeSystem" "public"."SizeSystem",
+    "size" TEXT,
     "isNew" BOOLEAN NOT NULL DEFAULT false,
-    "hasSale" BOOLEAN NOT NULL DEFAULT false,
+    "discount" INTEGER,
     "rating" DOUBLE PRECISION DEFAULT 0,
     "isRentable" BOOLEAN NOT NULL DEFAULT false,
     "pricePerDay" DOUBLE PRECISION,
     "maxRentalDays" INTEGER,
     "deposit" DOUBLE PRECISION,
     "status" "public"."ProductStatus" NOT NULL DEFAULT 'AVAILABLE',
+    "approvalStatus" "public"."VerificationStatus" NOT NULL DEFAULT 'PENDING',
+    "rejectionReason" TEXT,
+    "approvedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "categoryId" INTEGER,
     "userId" TEXT,
 
     CONSTRAINT "Product_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."Review" (
+    "id" SERIAL NOT NULL,
+    "productId" INTEGER NOT NULL,
+    "userId" TEXT NOT NULL,
+    "rating" INTEGER NOT NULL,
+    "comment" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Review_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."ReviewReply" (
+    "id" SERIAL NOT NULL,
+    "reviewId" INTEGER NOT NULL,
+    "userId" TEXT NOT NULL,
+    "comment" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ReviewReply_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -154,7 +198,7 @@ CREATE TABLE "public"."ProductImage" (
 CREATE TABLE "public"."ProductVariant" (
     "id" SERIAL NOT NULL,
     "productId" INTEGER NOT NULL,
-    "size" TEXT NOT NULL,
+    "size" TEXT,
     "stock" INTEGER NOT NULL DEFAULT 0,
     "sku" TEXT,
     "price" DOUBLE PRECISION NOT NULL,
@@ -312,6 +356,11 @@ CREATE TABLE "public"."UserVerification" (
     "userId" TEXT NOT NULL,
     "idFrontUrl" TEXT,
     "idBackUrl" TEXT,
+    "entrepreneurCertificateUrl" TEXT,
+    "identityStatus" "public"."VerificationStatus" NOT NULL DEFAULT 'PENDING',
+    "entrepreneurStatus" "public"."VerificationStatus" NOT NULL DEFAULT 'PENDING',
+    "identityComment" TEXT,
+    "entrepreneurComment" TEXT,
     "status" "public"."VerificationStatus" NOT NULL DEFAULT 'PENDING',
     "comment" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -371,7 +420,22 @@ CREATE UNIQUE INDEX "Product_slug_key" ON "public"."Product"("slug");
 CREATE UNIQUE INDEX "Product_sku_key" ON "public"."Product"("sku");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "ProductVariant_productId_size_key" ON "public"."ProductVariant"("productId", "size");
+CREATE INDEX "Review_productId_idx" ON "public"."Review"("productId");
+
+-- CreateIndex
+CREATE INDEX "Review_userId_idx" ON "public"."Review"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Review_productId_userId_key" ON "public"."Review"("productId", "userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ReviewReply_reviewId_key" ON "public"."ReviewReply"("reviewId");
+
+-- CreateIndex
+CREATE INDEX "ReviewReply_reviewId_idx" ON "public"."ReviewReply"("reviewId");
+
+-- CreateIndex
+CREATE INDEX "ReviewReply_userId_idx" ON "public"."ReviewReply"("userId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Cart_userId_key" ON "public"."Cart"("userId");
@@ -420,6 +484,18 @@ ALTER TABLE "public"."Product" ADD CONSTRAINT "Product_categoryId_fkey" FOREIGN 
 
 -- AddForeignKey
 ALTER TABLE "public"."Product" ADD CONSTRAINT "Product_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."Review" ADD CONSTRAINT "Review_productId_fkey" FOREIGN KEY ("productId") REFERENCES "public"."Product"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."Review" ADD CONSTRAINT "Review_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."ReviewReply" ADD CONSTRAINT "ReviewReply_reviewId_fkey" FOREIGN KEY ("reviewId") REFERENCES "public"."Review"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."ReviewReply" ADD CONSTRAINT "ReviewReply_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."ProductImage" ADD CONSTRAINT "ProductImage_productId_fkey" FOREIGN KEY ("productId") REFERENCES "public"."Product"("id") ON DELETE CASCADE ON UPDATE CASCADE;

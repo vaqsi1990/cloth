@@ -82,6 +82,13 @@ export async function POST(request: NextRequest) {
     })
 
     if (!product) {
+    if (product.approvalStatus !== 'APPROVED') {
+      return NextResponse.json(
+        { error: 'Product is not available for rental until it is approved' },
+        { status: 403 }
+      )
+    }
+
       return NextResponse.json(
         { error: 'Product not found' },
         { status: 404 }

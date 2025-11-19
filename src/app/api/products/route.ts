@@ -68,6 +68,7 @@ export async function GET(request: NextRequest) {
           status: {
             not: 'MAINTENANCE' // Non-admin users don't see maintenance products
           },
+          approvalStatus: 'APPROVED',
           user: {
             blocked: false
           }
@@ -163,6 +164,8 @@ export async function POST(request: NextRequest) {
     // Generate unique SKU for the product
     const uniqueSKU = await generateUniqueSKU()
     
+    const shouldAutoApprove = session.user.role === 'ADMIN'
+
     // Create product in database using Prisma
     const newProduct = await prisma.product.create({
       data: {
@@ -185,6 +188,9 @@ export async function POST(request: NextRequest) {
         maxRentalDays: validatedData.maxRentalDays,
         deposit: validatedData.deposit,
         status: validatedData.status,
+        approvalStatus: shouldAutoApprove ? 'APPROVED' : 'PENDING',
+        approvedAt: shouldAutoApprove ? new Date() : null,
+        rejectionReason: null,
         userId: session.user.id, // Associate product with user
         // Create product images
         images: {

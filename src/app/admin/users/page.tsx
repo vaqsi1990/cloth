@@ -448,7 +448,7 @@ const AdminUsersPage = () => {
                             onClick={() => toggleUserExpansion(user.id)}
                             className="text-blue-600 hover:text-blue-800 text-[18px] font-medium"
                           >
-                            {expandedUser === user.id ? 'პროდუქტების დამალვა' : 'პროდუქტების ნახვა'}
+                            {expandedUser === user.id ? 'დეტალების დამალვა' : 'დეტალების ნახვა'}
                           </button>
                         </div>
                       </div>

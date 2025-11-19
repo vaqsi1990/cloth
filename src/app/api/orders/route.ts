@@ -35,6 +35,7 @@ const orderSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
+    const isAdmin = session?.user?.role === 'ADMIN'
     
     const body = await request.json()
     
@@ -44,6 +45,32 @@ export async function POST(request: NextRequest) {
     console.log('Creating order with data:', validatedData)
     console.log('Session user ID:', session?.user?.id)
     
+    const uniqueProductIds = Array.from(new Set(validatedData.items.map(item => item.productId)))
+    const products = await prisma.product.findMany({
+      where: { id: { in: uniqueProductIds } },
+      select: {
+        id: true,
+        approvalStatus: true
+      }
+    })
+    const productMap = new Map(products.map(product => [product.id, product]))
+
+    for (const item of validatedData.items) {
+      const product = productMap.get(item.productId)
+      if (!product) {
+        return NextResponse.json({
+          success: false,
+          message: `პროდუქტი (${item.productName}) ვერ მოიძებნა`
+        }, { status: 404 })
+      }
+      if (!isAdmin && product.approvalStatus !== 'APPROVED') {
+        return NextResponse.json({
+          success: false,
+          message: `პროდუქტი (${item.productName}) ჯერ არ არის დამტკიცებული`
+        }, { status: 403 })
+      }
+    }
+
     // Validate rental dates don't conflict with existing rentals
     for (const item of validatedData.items) {
       if (item.isRental && item.rentalStartDate && item.rentalEndDate) {

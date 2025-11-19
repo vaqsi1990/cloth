@@ -65,6 +65,9 @@ export interface Product {
   maxRentalDays?: number
   deposit?: number
   status?: 'AVAILABLE' | 'RENTED' | 'RESERVED' | 'MAINTENANCE'
+  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED'
+  rejectionReason?: string | null
+  approvedAt?: string | null
   images: ProductImage[]
   variants: ProductVariant[]
   rentalPriceTiers?: RentalPriceTier[]

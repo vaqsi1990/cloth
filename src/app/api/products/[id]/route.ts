@@ -65,6 +65,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions)
     const isAdmin = session?.user?.role === 'ADMIN'
+    const requesterId = session?.user?.id
     const resolvedParams = await params
     const productId = parseInt(resolvedParams.id)
     
@@ -97,7 +98,13 @@ export async function GET(
       }
     })
 
-    if (!product || (!isAdmin && product.user?.blocked)) {
+    const isOwner = requesterId && product?.userId === requesterId
+
+    if (
+      !product ||
+      (!isAdmin && product.user?.blocked) ||
+      (!isAdmin && !isOwner && product.approvalStatus !== 'APPROVED')
+    ) {
       return NextResponse.json({
         success: false,
         message: 'პროდუქტი ვერ მოიძებნა'
@@ -124,6 +131,15 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
+    const isAdmin = session.user.role === 'ADMIN'
     const resolvedParams = await params
     const productId = parseInt(resolvedParams.id)
     
@@ -148,6 +164,15 @@ export async function PUT(
         message: 'პროდუქტი ვერ მოიძებნა'
       }, { status: 404 })
     }
+
+    if (!isAdmin && existingProduct.userId !== session.user.id) {
+      return NextResponse.json(
+        { success: false, error: 'Permission denied' },
+        { status: 403 }
+      )
+    }
+
+    const shouldResetApproval = !isAdmin
 
     // First delete existing images and variants
     await prisma.productImage.deleteMany({
@@ -194,6 +219,9 @@ export async function PUT(
         maxRentalDays: validatedData.maxRentalDays,
         deposit: validatedData.deposit,
         status: validatedData.status,
+        approvalStatus: shouldResetApproval ? 'PENDING' : existingProduct.approvalStatus,
+        approvedAt: shouldResetApproval ? null : existingProduct.approvedAt,
+        rejectionReason: shouldResetApproval ? null : existingProduct.rejectionReason,
         // Create new images
         images: {
           create: validatedData.imageUrls.map((url, index) => ({

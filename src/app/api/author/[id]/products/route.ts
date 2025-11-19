@@ -44,7 +44,10 @@ export async function GET(
     const products = await prisma.product.findMany({
       where: { 
         userId: userId,
-        ...(isAdmin ? {} : { user: { blocked: false } })
+        ...(isAdmin ? {} : { 
+          user: { blocked: false },
+          approvalStatus: 'APPROVED'
+        })
       },
       include: {
         category: true,

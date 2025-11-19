@@ -27,6 +27,8 @@ export async function GET(
         categoryId: true,
         gender: true,
         id: true,
+        approvalStatus: true,
+        userId: true,
         user: {
           select: {
             blocked: true
@@ -42,10 +44,16 @@ export async function GET(
       }, { status: 404 })
     }
 
-    // Only show AVAILABLE products to non-admin users
+    // Only show AVAILABLE and APPROVED products to non-admin users
     const isAdmin = session?.user?.role === 'ADMIN'
+    const requesterId = session?.user?.id
+    const isOwner = requesterId && currentProduct.userId === requesterId
 
-    if (!isAdmin && currentProduct.user?.blocked) {
+    if (
+      !currentProduct ||
+      (!isAdmin && currentProduct.user?.blocked) ||
+      (!isAdmin && !isOwner && currentProduct.approvalStatus !== 'APPROVED')
+    ) {
       return NextResponse.json({
         success: false,
         message: 'პროდუქტი ვერ მოიძებნა'
@@ -60,6 +68,7 @@ export async function GET(
         gender: currentProduct.gender, // Same gender
         ...(isAdmin ? {} : { 
           status: 'AVAILABLE',
+          approvalStatus: 'APPROVED',
           user: {
             blocked: false
           }
