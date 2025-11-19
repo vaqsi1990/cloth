@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma'
 // PATCH - Update entrepreneur certificate verification status
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -17,7 +17,7 @@ export async function PATCH(
       )
     }
 
-    const userId = params.id
+    const userId = context.params.id
     const body = await request.json()
     const { status, comment } = body
 
