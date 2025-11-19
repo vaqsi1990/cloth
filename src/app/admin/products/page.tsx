@@ -249,11 +249,12 @@ const AdminProductsPage = () => {
     let reason: string | undefined
 
     if (status === 'REJECTED') {
-      reason = prompt('გთხოვთ მიუთითოთ უარყოფის მიზეზი:')
-      if (!reason) {
+      const rejectionInput = prompt('გთხოვთ მიუთითოთ უარყოფის მიზეზი:')?.trim()
+      if (!rejectionInput) {
         showToast('უარყოფის მიზეზი სავალდებულოა', 'warning')
         return
       }
+      reason = rejectionInput
     }
 
     try {
