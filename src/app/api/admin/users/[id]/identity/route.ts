@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma'
 // PATCH - Update identity verification status
 export async function PATCH(
   request: NextRequest,
-  context: { params: Record<string, string | string[]> }
+  context: any
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -17,7 +17,7 @@ export async function PATCH(
       )
     }
 
-    const userId = context.params.id as string
+    const userId = context.params?.id as string
     const body = await request.json()
     const { status, comment } = body
 
