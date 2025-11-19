@@ -431,7 +431,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
                     type="text"
                     value={guestName}
                     onChange={(e) => setGuestName(e.target.value)}
-                    className="w-full p-2 border placeholder:text-gray-500  border-black rounded-md focus:ring-2 focus:ring-[#1B3729] focus:border-transparent text-[16px]"
+                    className="w-full p-2 border text-black placeholder:text-gray-500  border-black rounded-md focus:ring-2 focus:ring-[#1B3729] focus:border-transparent text-[16px]"
                     placeholder="შეიყვანეთ თქვენი სახელი"
                   />
                 </div>
@@ -443,7 +443,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
                     type="email"
                     value={guestEmail}
                     onChange={(e) => setGuestEmail(e.target.value)}
-                    className="w-full p-2 border placeholder:text-gray-500 border-black rounded-md focus:ring-2 focus:ring-[#1B3729] focus:border-transparent text-[16px]"
+                    className="w-full p-2 border text-black placeholder:text-gray-500 border-black rounded-md focus:ring-2 focus:ring-[#1B3729] focus:border-transparent text-[16px]"
                     placeholder="შეიყვანეთ თქვენი ელ-ფოსტა"
                   />
                 </div>

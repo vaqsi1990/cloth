@@ -99,7 +99,7 @@ const SignInPage = () => {
                   required
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-3 placeholder:text-black border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                  className="w-full pl-10 pr-4 py-3 text-black placeholder:text-black border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
                   placeholder="შეიყვანეთ ელფოსტა"
                 />
               </div>
@@ -119,7 +119,7 @@ const SignInPage = () => {
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-12 py-3 placeholder:text-black border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                  className="w-full pl-10 pr-12 py-3 text-black placeholder:text-black border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
                   placeholder="შეიყვანეთ პაროლი"
                 />
                 <button

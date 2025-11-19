@@ -368,7 +368,7 @@ const SignUpPage = () => {
                   required
                   value={formData.phone}
                   onChange={handleChange}
-                  className="w-full pl-4 pr-4 py-3 placeholder:text-black border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                  className="w-full pl-4 pr-4 py-3 text-black placeholder:text-black border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
                   placeholder="შეიყვანეთ ტელეფონის ნომერი"
                 />
               </div>
@@ -386,7 +386,7 @@ const SignUpPage = () => {
                   required
                   value={formData.location}
                   onChange={handleChange}
-                  className={`w-full pl-4 pr-4 py-3 placeholder:text-black border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300 ${fieldErrors.location ? 'border-red-500' : 'border-black'}`}
+                  className={`w-full pl-4 pr-4 py-3 text-black placeholder:text-black border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300 ${fieldErrors.location ? 'border-red-500' : 'border-black'}`}
                   placeholder="შეიყვანეთ ადგილმდებარეობა"
                 />
               </div>
@@ -406,7 +406,7 @@ const SignUpPage = () => {
                   required
                   value={formData.address}
                   onChange={handleChange}
-                  className={`w-full pl-4 pr-4 py-3 placeholder:text-black border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300 ${fieldErrors.address ? 'border-red-500' : 'border-black'}`}
+                  className={`w-full pl-4 pr-4 py-3 text-black placeholder:text-black border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300 ${fieldErrors.address ? 'border-red-500' : 'border-black'}`}
                   placeholder="შეიყვანეთ მისამართი"
                 />
               </div>
@@ -426,7 +426,7 @@ const SignUpPage = () => {
                   required
                   value={formData.postalIndex}
                   onChange={handleChange}
-                  className="w-full pl-4 pr-4 py-3 placeholder:text-black border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                  className="w-full pl-4 pr-4 py-3 text-black placeholder:text-black border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
                   placeholder="შეიყვანეთ საფოსტო ინდექსი"
                 />
               </div>
@@ -444,7 +444,7 @@ const SignUpPage = () => {
                   required
                   value={formData.gender}
                   onChange={handleChange}
-                  className="w-full pl-4 pr-4 py-3 placeholder:text-black border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                  className="w-full pl-4 pr-4 py-3 text-black placeholder:text-black border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
                 >
                   <option value="">აირჩიეთ სქესი</option>
                   <option value="MALE">კაცი</option>
@@ -467,7 +467,7 @@ const SignUpPage = () => {
                   required
                   value={formData.dateOfBirth}
                   onChange={handleChange}
-                  className={`w-full pl-4 pr-4 py-3 placeholder:text-black border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300 ${fieldErrors.dateOfBirth ? 'border-red-500' : 'border-black'}`}
+                  className={`w-full pl-4 pr-4 py-3 text-black placeholder:text-black border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300 ${fieldErrors.dateOfBirth ? 'border-red-500' : 'border-black'}`}
                 />
               </div>
               {fieldErrors.dateOfBirth && <p className="text-red-500 md:text-[18px] text-[16px] mt-1">{fieldErrors.dateOfBirth}</p>}
@@ -485,7 +485,7 @@ const SignUpPage = () => {
                   required
                   value={formData.personalId}
                   onChange={handleChange}
-                  className="w-full pl-4 pr-4 py-3 placeholder:text-black border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                  className="w-full pl-4 pr-4 py-3 text-black placeholder:text-black border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
                   placeholder="შეიყვანეთ პირადობის ნომერი"
                 />
               </div>
@@ -505,7 +505,7 @@ const SignUpPage = () => {
                   required
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-3 border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                  className="w-full pl-10 pr-4 py-3 text-black border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
                   placeholder="შეიყვანეთ ელფოსტა"
                 />
               </div>
@@ -525,7 +525,7 @@ const SignUpPage = () => {
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-12 py-3 border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                  className="w-full pl-10 pr-12 py-3 text-black border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
                   placeholder="შეიყვანეთ პაროლი"
                 />
                 <button
@@ -552,7 +552,7 @@ const SignUpPage = () => {
                   required
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-12 py-3 placeholder:text-black border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                  className="w-full pl-10 pr-12 py-3 text-black placeholder:text-black border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
                   placeholder="დაადასტურეთ პაროლი"
                 />
                 <button
@@ -581,7 +581,7 @@ const SignUpPage = () => {
                     maxLength={6}
                     value={formData.code}
                     onChange={handleChange}
-                    className="w-full pl-4 pr-4 py-3 placeholder:text-black border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                    className="w-full pl-4 pr-4 py-3 text-black placeholder:text-black border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
                     placeholder="შეიყვანეთ 6-ნიშნა კოდი"
                   />
                 </div>
