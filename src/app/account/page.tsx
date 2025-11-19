@@ -53,6 +53,8 @@ interface ProductItem {
   variants?: Array<{ price: number; size: string; stock: number; id: number }>
 }
 
+type VerificationState = 'PENDING' | 'APPROVED' | 'REJECTED' | null
+
 const AccountPage = () => {
   const { data: session, status, update } = useSession()
   const router = useRouter()
@@ -79,10 +81,15 @@ const AccountPage = () => {
     idBackUrl?: string | null;
     entrepreneurCertificateUrl?: string | null;
     status?: 'PENDING' | 'APPROVED' | 'REJECTED';
+    identityStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+    entrepreneurStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
     comment?: string | null;
+    identityComment?: string | null;
+    entrepreneurComment?: string | null;
   } | null>(null)
   const [verifLoading, setVerifLoading] = useState(false)
   const [savingVerification, setSavingVerification] = useState(false)
+  const [savingEntrepreneurCertificate, setSavingEntrepreneurCertificate] = useState(false)
   const [userBlocked, setUserBlocked] = useState(false)
   const [userVerified, setUserVerified] = useState(false)
   const isSeller = userStats.productsCount > 0
@@ -321,17 +328,11 @@ const AccountPage = () => {
     }
   }
 
-  const saveVerification = async () => {
+  // პირადობის დამტკიცების ფუნქცია - დამოუკიდებელი
+  const saveIdentityVerification = async () => {
     try {
-      // პირადობის დოკუმენტი სავალდებულოა ყოველთვის
       if (!idFrontUrl || !idBackUrl) {
         showToast('გთხოვთ ატვირთოთ პირადობის დოკუმენტის წინა და უკანა მხარე', 'warning')
-        return
-      }
-      
-      // ინდმეწარმის საბუთი საჭიროა მხოლოდ როცა blocked (revenue >= 2₾)
-      if (userBlocked && !entrepreneurCertificateUrl) {
-        showToast('თქვენი შემოსავალი 2₾-ს აღემატება. გთხოვთ ატვირთოთ ინდმეწარმის საბუთი', 'warning')
         return
       }
       
@@ -342,35 +343,66 @@ const AccountPage = () => {
         body: JSON.stringify({ 
           idFrontUrl, 
           idBackUrl, 
-          entrepreneurCertificateUrl: userBlocked ? entrepreneurCertificateUrl : null 
+          entrepreneurCertificateUrl: verification?.entrepreneurCertificateUrl || null // შევინარჩუნოთ არსებული ინდმეწარმის საბუთი
         })
       })
       const data = await res.json()
       if (res.ok && data.success) {
         setVerification(data.verification)
-        showToast('დოკუმენტები წარმატებით გაიგზავნა ვალიდაციაზე', 'success')
+        showToast('პირადობის დოკუმენტები წარმატებით გაიგზავნა ვალიდაციაზე', 'success')
         setIdFrontUrl(null)
         setIdBackUrl(null)
-        // Clear entrepreneur certificate only if it was uploaded
-        if (entrepreneurCertificateUrl) {
-          setEntrepreneurCertificateUrl(null)
-        }
         // Clear localStorage after successful save
         if (typeof window !== 'undefined') {
           localStorage.removeItem('idFrontUrl')
           localStorage.removeItem('idBackUrl')
-          if (entrepreneurCertificateUrl) {
-            localStorage.removeItem('entrepreneurCertificateUrl')
-          }
         }
       } else {
         showToast(data.error || 'შეცდომა გაგზავნისას', 'error')
       }
     } catch (e) {
-      console.error('Error saving verification:', e)
+      console.error('Error saving identity verification:', e)
       showToast('შეცდომა ვერიფიკაციის შენახვისას', 'error')
     } finally {
       setSavingVerification(false)
+    }
+  }
+
+  // ინდმეწარმის საბუთის ატვირთვის ფუნქცია - დამოუკიდებელი
+  const saveEntrepreneurCertificate = async () => {
+    try {
+      if (!entrepreneurCertificateUrl) {
+        showToast('გთხოვთ ატვირთოთ ინდმეწარმის საბუთი', 'warning')
+        return
+      }
+      
+      setSavingEntrepreneurCertificate(true)
+      const res = await fetch('/api/user/verification', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          idFrontUrl: verification?.idFrontUrl || null, // შევინარჩუნოთ არსებული პირადობის დოკუმენტები
+          idBackUrl: verification?.idBackUrl || null,
+          entrepreneurCertificateUrl
+        })
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        setVerification(data.verification)
+        showToast('ინდმეწარმის საბუთი წარმატებით გაიგზავნა ვალიდაციაზე', 'success')
+        setEntrepreneurCertificateUrl(null)
+        // Clear localStorage after successful save
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('entrepreneurCertificateUrl')
+        }
+      } else {
+        showToast(data.error || 'შეცდომა გაგზავნისას', 'error')
+      }
+    } catch (e) {
+      console.error('Error saving entrepreneur certificate:', e)
+      showToast('შეცდომა ინდმეწარმის საბუთის შენახვისას', 'error')
+    } finally {
+      setSavingEntrepreneurCertificate(false)
     }
   }
 
@@ -385,6 +417,15 @@ const AccountPage = () => {
   if (!session) {
     return null
   }
+
+  const identityStatus: VerificationState =
+    verification?.identityStatus ??
+    verification?.status ??
+    (session.user.verificationStatus as 'PENDING' | 'APPROVED' | 'REJECTED' | null) ??
+    null
+  const identityComment = verification?.identityComment ?? verification?.comment ?? null
+  const identityApproved = identityStatus === 'APPROVED'
+  const shouldShowIdentityVerification = session.user.role !== 'ADMIN' && sellerNeedsVerification && !identityApproved
 
   const tabs = [
     { id: 'profile', label: 'პროფილი', icon: User },
@@ -595,28 +636,25 @@ const AccountPage = () => {
         {/* Blocked message */}
         {userBlocked && !userVerified && (
           <div className="mt-8 p-4 border-2 border-red-500 rounded-lg bg-red-50">
-            <h4 className="md:text-[20px] text-[18px] font-semibold text-red-600 mb-2"> ანგარიშის ვერიფიკაცია საჭიროა</h4>
-            
-            <p className="md:text-[18px] text-[16px] text-red-600 mt-2">
-              თქვენი შემოსავალი 100₾-ს აღემატება. გთხოვთ ატვირთოთ პირადობის დოკუმენტი ქვემოთ
+            <p className="md:text-[20px] text-[16px] text-red-600 mt-2">
+              თქვენი შემოსავალი 100₾-ს აღემატება. გთხოვთ ატვირთოთ ინდმეწარმის დამადასტურებელი დოკუმენტი ქვემოთ
             </p>
           </div>
         )}
 
-        {/* Verification Section for non-admin users - show if blocked or not approved */}
-        {session.user.role !== 'ADMIN' && sellerNeedsVerification && (userBlocked || session.user.verificationStatus !== 'APPROVED') && (
-          <div className={`mt-8 p-6 border-2 rounded-lg ${userBlocked ? 'border-black bg-gray-50' : 'border-black bg-gray-50'}`}>
+        {/* პირადობის დამტკიცების სექცია - დამოუკიდებელი */}
+        {shouldShowIdentityVerification && (
+          <div className="mt-8 p-6 border-2 border-black rounded-lg bg-gray-50">
             <div className="mb-4">
-              <h4 className="text-xl font-bold mb-2">
-                {userBlocked ? ' პირადობის ვერიფიკაცია საჭიროა' : 'პირადობის ვერიფიკაცია'}
-              </h4>
-              {userBlocked ? (
-                <p className="text-[18px] text-black font-medium mb-2">
-                  გთხოვთ ატვირთოთ ინდმეწარმის დამადასტურებელი დოკუმენტი
-                </p>
-              ) : (
+              <h4 className="text-xl font-bold mb-2">პირადობის ვერიფიკაცია</h4>
+              {identityStatus !== 'REJECTED' && (
                 <p className="text-[18px] text-black">
                   პირადობის სურათებით მოხდება თქვენი ვერიფიცირება, თუ არ ატვირთავთ სურათებს ვერ შეძლებთ ახალი პროდუქტის დამატებას ან ყიდვას და ქირაობას
+                </p>
+              )}
+              {identityStatus === 'REJECTED' && (
+                <p className="text-[18px] text-black">
+                  თქვენი პირადობის დოკუმენტები უარყოფილია. გთხოვთ ატვირთოთ სურათები თავიდან
                 </p>
               )}
             </div>
@@ -629,30 +667,23 @@ const AccountPage = () => {
             ) : (
               <>
                 {/* Status Badge */}
-                {verification?.status && (
+                {identityStatus && (
                   <div className="mb-4">
                     <span className={`inline-block px-4 py-2 text-[16px] font-semibold rounded-full ${
-                      verification.status === 'APPROVED'
-                        ? 'bg-green-100 text-green-800'
-                        : verification.status === 'REJECTED'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-yellow-100 text-yellow-800'
+                      identityStatus === 'REJECTED'
+                        ? 'bg-red-100 text-red-800'
+                        : 'bg-yellow-100 text-yellow-800'
                     }`}>
-                      სტატუსი: {getVerificationStatusLabel(verification.status)}
+                      სტატუსი: {getVerificationStatusLabel(identityStatus as 'PENDING' | 'APPROVED' | 'REJECTED')}
                     </span>
+                    {identityStatus === 'REJECTED' && identityComment && (
+                      <p className="mt-2 text-[16px] font-medium text-red-700">მიზეზი: {identityComment}</p>
+                    )}
                   </div>
                 )}
 
-                {/* Rejection Comment */}
-                {verification?.status === 'REJECTED' && verification?.comment && (
-                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-[16px] font-semibold text-red-800 mb-1">უარყოფის მიზეზი:</p>
-                    <p className="text-[16px] text-red-700">{verification.comment}</p>
-                  </div>
-                )}
-
-                {/* Document Upload Section */}
-                <div className={`grid gap-6 mb-6 ${userBlocked ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-1 md:grid-cols-2'}`}>
+                {/* პირადობის დოკუმენტების ატვირთვა */}
+                <div className="grid gap-6 mb-6 grid-cols-1 md:grid-cols-2">
                   <div className="space-y-2">
                     <label className="block text-[18px] font-semibold text-black mb-3">
                       დოკუმენტის წინა მხარე *
@@ -678,67 +709,89 @@ const AccountPage = () => {
                       <p className="text-sm text-green-600 mt-2">✓ სურათი ატვირთულია</p>
                     )}
                   </div>
-
-                  {/* ინდმეწარმის საბუთი - მხოლოდ როცა blocked */}
-                  {userBlocked && (
-                    <div className="space-y-2">
-                      <label className="block text-[18px] font-semibold text-black mb-3">
-                        ინდმეწარმის საბუთი * 
-                     
-                      </label>
-                      <ImageUpload 
-                        value={entrepreneurCertificateUrl ? [entrepreneurCertificateUrl] : []} 
-                        onChange={handleEntrepreneurCertificateUpload} 
-                      />
-                      {entrepreneurCertificateUrl && (
-                        <p className="text-sm text-green-600 mt-2">✓ სურათი ატვირთულია</p>
-                      )}
-                        {!entrepreneurCertificateUrl && (
-                          <p className="text-[18px] text-black mt-2"> აუცილებელია ატვირთვა</p>
-                        )}
-                    </div>
-                  )}
                 </div>
-
-              
 
                 {/* Submit Button */}
                 <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-600">
-                    {userBlocked ? (
-                      // როცა blocked - საჭიროა სამივე
-                      idFrontUrl && idBackUrl && entrepreneurCertificateUrl ? (
-                        <span className="text-green-600 font-semibold">✓ სამივე სურათი მზადაა გასაგზავნად</span>
-                      ) : (
-                        <span className="text-black text-[18px] ">გთხოვთ ატვირთოთ  სურათი</span>
-                      )
+                  <div className="text-[16px] text-gray-600">
+                    {idFrontUrl && idBackUrl ? (
+                      <span className="text-green-600 font-semibold">✓ ორივე სურათი მზადაა გასაგზავნად</span>
                     ) : (
-                      // როცა არაა blocked - საჭიროა მხოლოდ პირადობა
-                      idFrontUrl && idBackUrl ? (
-                        <span className="text-green-600 font-semibold">✓ ორივე სურათი მზადაა გასაგზავნად</span>
-                      ) : (
-                        <span className="text-orange-600">გთხოვთ ატვირთოთ პირადობის დოკუმენტის ორივე მხარე</span>
-                      )
+                      <span className="text-red-500">გთხოვთ ატვირთოთ პირადობის დოკუმენტის ორივე მხარე</span>
                     )}
                   </div>
                   <button
-                    onClick={saveVerification}
-                    disabled={
-                      savingVerification || 
-                      !idFrontUrl || 
-                      !idBackUrl || 
-                      (userBlocked && !entrepreneurCertificateUrl)
-                    }
+                    onClick={saveIdentityVerification}
+                    disabled={savingVerification || !idFrontUrl || !idBackUrl}
                     className={`px-6 py-3 rounded-lg font-bold text-[18px] uppercase tracking-wide transition-colors ${
-                      idFrontUrl && 
-                      idBackUrl && 
-                      (!userBlocked || entrepreneurCertificateUrl) && 
-                      !savingVerification
+                      idFrontUrl && idBackUrl && !savingVerification
                         ? 'bg-[#1B3729] text-white hover:bg-[#2a4d3a]'
                         : 'bg-gray-400 text-gray-600 cursor-not-allowed'
                     }`}
                   >
-                    {savingVerification ? 'გაგზავნა...' : 'დასტურის გაგზავნაზე'}
+                    {savingVerification ? 'გაგზავნა...' : 'პირადობის დამტკიცება'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ინდმეწარმის საბუთის სექცია - დამოუკიდებელი, მხოლოდ როცა blocked */}
+        {session.user.role !== 'ADMIN' && userBlocked && !userVerified && (
+          <div className="mt-8 p-6 border-2 border-black rounded-lg bg-gray-50">
+            <div className="mb-4">
+              <h4 className="text-xl font-bold mb-2">ინდმეწარმის საბუთის ატვირთვა</h4>
+              <p className="text-[18px] text-black font-medium mb-2">
+                გთხოვთ ატვირთოთ ინდმეწარმის დამადასტურებელი დოკუმენტი
+              </p>
+            </div>
+            
+            {verifLoading ? (
+              <div className="text-center py-8">
+                <div className="w-8 h-8 border-4 border-gray-300 border-t-[#1B3729] rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-[16px] text-black">იტვირთება...</p>
+              </div>
+            ) : (
+              <>
+                {/* ინდმეწარმის საბუთის ატვირთვა */}
+                <div className="grid gap-6 mb-6 grid-cols-1">
+                  <div className="space-y-2">
+                    <label className="block text-[18px] font-semibold text-black mb-3">
+                      ინდმეწარმის საბუთი * 
+                    </label>
+                    <ImageUpload 
+                      value={entrepreneurCertificateUrl ? [entrepreneurCertificateUrl] : []} 
+                      onChange={handleEntrepreneurCertificateUpload} 
+                    />
+                    {entrepreneurCertificateUrl && (
+                      <p className="text-sm text-green-600 mt-2">✓ სურათი ატვირთულია</p>
+                    )}
+                    {!entrepreneurCertificateUrl && (
+                      <p className="text-[18px] text-black mt-2">აუცილებელია ატვირთვა</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Submit Button */}
+                <div className="flex items-center justify-between">
+                  <div className="text-[16px] text-gray-600">
+                    {entrepreneurCertificateUrl ? (
+                      <span className="text-green-600 font-semibold">✓ ინდმეწარმის საბუთი მზადაა გასაგზავნად</span>
+                    ) : (
+                      <span className="text-black text-[18px]">გთხოვთ ატვირთოთ ინდმეწარმის საბუთი</span>
+                    )}
+                  </div>
+                  <button
+                    onClick={saveEntrepreneurCertificate}
+                    disabled={savingEntrepreneurCertificate || !entrepreneurCertificateUrl}
+                    className={`px-6 py-3 rounded-lg font-bold text-[18px] uppercase tracking-wide transition-colors ${
+                      entrepreneurCertificateUrl && !savingEntrepreneurCertificate
+                        ? 'bg-[#1B3729] text-white hover:bg-[#2a4d3a]'
+                        : 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                    }`}
+                  >
+                    {savingEntrepreneurCertificate ? 'გაგზავნა...' : 'ინდმეწარმის საბუთის გაგზავნა'}
                   </button>
                 </div>
               </>
@@ -747,7 +800,7 @@ const AccountPage = () => {
         )}
 
       </div>
-      {session.user.role !== 'ADMIN' && session.user.verificationStatus == 'APPROVED' && (
+      {session.user.role !== 'ADMIN' && identityApproved && (
         <h1 className="text-green-500 text-[20px] font-bold ">პირადობა დამტკიცებულია</h1>
       )}
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
@@ -1011,7 +1064,7 @@ const AccountPage = () => {
               <Search className="w-4 h-4" />
               <span>ძიება კოდის მიხედვით</span>
             </Link>
-            {session.user.role === 'ADMIN' || verification?.status === 'APPROVED' || session.user.verificationStatus === 'APPROVED' ? (
+            {session.user.role === 'ADMIN' || identityApproved ? (
               <Link
                 href="/account/products/new"
                 className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#1B3729] text-white rounded-lg font-semibold uppercase tracking-wide transition-colors hover:bg-[#164321]"
@@ -1031,7 +1084,7 @@ const AccountPage = () => {
             )}
           </div>
         </div>
-        {session.user.role !== 'ADMIN' && verification?.status !== 'APPROVED' && session.user.verificationStatus !== 'APPROVED' && (
+        {session.user.role !== 'ADMIN' && !identityApproved && (
           <div className="mb-4 p-3 border border-yellow-400 bg-yellow-50 text-yellow-800 rounded md:text-[18px] text-[16px]">
             გთხოვთ დაადასტუროთ პირადობა პროფილის გვერდზე, რომ შეძლოთ პროდუქტის დამატება.
           </div>

@@ -39,11 +39,15 @@ interface User {
     }>
   }>
   verification?: {
-    status: 'PENDING' | 'APPROVED' | 'REJECTED',
+    status?: 'PENDING' | 'APPROVED' | 'REJECTED', // Legacy field
+    identityStatus?: 'PENDING' | 'APPROVED' | 'REJECTED',
+    entrepreneurStatus?: 'PENDING' | 'APPROVED' | 'REJECTED',
     idFrontUrl?: string | null,
     idBackUrl?: string | null,
     entrepreneurCertificateUrl?: string | null,
-    comment?: string | null,
+    comment?: string | null, // Legacy field
+    identityComment?: string | null,
+    entrepreneurComment?: string | null,
     createdAt?: string,
     updatedAt?: string
   };
@@ -519,46 +523,27 @@ const AdminUsersPage = () => {
                     )}
                   </div>
 
-                  {/* Blocked User Verification Section - Always visible for blocked users */}
-                  {user.blocked && !user.verified && user._count.products > 0 && user.verification && (
-                    <div className="px-4 pb-4 border-t border-gray-200 bg-orange-50">
+                  {/* პირადობის დოკუმენტების გადამოწმების სექცია - დამოუკიდებელი */}
+                  {user.verification && (user.verification.idFrontUrl || user.verification.idBackUrl) && 
+                   (user.verification.identityStatus === 'PENDING' || user.verification.identityStatus === 'REJECTED' || 
+                    (!user.verification.identityStatus && (user.verification.status === 'PENDING' || user.verification.status === 'REJECTED'))) && (
+                    <div className="px-4 pb-4 border-t border-gray-50">
                       <div className="mb-4 pt-4">
                         <div className="flex items-center justify-between mb-3">
                           <div>
-                            <h4 className="text-[18px] font-bold text-orange-800">
-                               ვერიფიკაცია საჭიროა - პირადობის დოკუმენტები
+                            <h4 className="text-[18px] font-bold text-blue-800">
+                              პირადობის დოკუმენტების გადამოწმება
                             </h4>
-                            <p className="text-sm text-orange-700">
-                              ბლოკი საჭიროა მხოლოდ იმ მომხმარებლებისთვის, ვინც პროდუქტებს ყიდის.
+                            <p className="text-sm text-blue-700">
+                              გთხოვთ გადაამოწმოთ მომხმარებლის პირადობის დოკუმენტები
                             </p>
                           </div>
-                          <div className="text-right">
-                            {user.role === 'ADMIN' ? (
-                              <span className="px-3 py-1 bg-blue-600 text-white rounded text-[16px] font-semibold">
-                                ადმინი – ბლოკი არ მოქმედებს
-                              </span>
-                            ) : (
-                              <span className="px-3 py-1 bg-orange-600 text-white rounded text-[16px] font-semibold">
-                                შემოსავალი ≥ 2₾
-                              </span>
-                            )}
-                          </div>
                         </div>
-                        {user.role === 'ADMIN' ? (
-                          <p className="text-[16px] text-orange-700 mb-4">
-                            ეს არის ადმინისტრატორული ანგარიში – ბლოკი მხოლოდ სიგნალის სახით გვაჩვენებს,
-                            რომ გადამოწმდეს გამყიდველის დოკუმენტები.
-                          </p>
-                        ) : (
-                          <p className="text-[16px] text-orange-700 mb-4">
-                            გამყიდველი დაბლოკილია, რადგან მისი შემოსავალი 2₾-ს აღემატება. გთხოვთ გადაამოწმოთ დოკუმენტები და დაამტკიცოთ.
-                          </p>
-                        )}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                           {user.verification.idFrontUrl && (
                             <div className="flex flex-col items-center">
                               <span className="text-[16px] font-semibold mb-2 text-black">დოკუმენტის წინა მხარე</span>
-                              <div className="w-full max-w-[500px] h-[400px] relative border-2 border-orange-300 rounded-lg overflow-hidden shadow-lg">
+                              <div className="w-full max-w-[500px] h-[400px] relative border-2 border-blue-300 rounded-lg overflow-hidden shadow-lg">
                                 <Image
                                   src={user.verification.idFrontUrl}
                                   alt="ID Front"
@@ -571,7 +556,7 @@ const AdminUsersPage = () => {
                           {user.verification.idBackUrl && (
                             <div className="flex flex-col items-center">
                               <span className="text-[16px] font-semibold mb-2 text-black">დოკუმენტის უკანა მხარე</span>
-                              <div className="w-full max-w-[500px] h-[400px] relative border-2 border-orange-300 rounded-lg overflow-hidden shadow-lg">
+                              <div className="w-full max-w-[500px] h-[400px] relative border-2 border-blue-300 rounded-lg overflow-hidden shadow-lg">
                                 <Image
                                   src={user.verification.idBackUrl}
                                   alt="ID Back"
@@ -581,6 +566,88 @@ const AdminUsersPage = () => {
                               </div>
                             </div>
                           )}
+                        </div>
+                        <div className="flex items-center space-x-3 mb-3">
+                          <span className={`px-3 py-1 rounded-full text-[16px] font-semibold text-white ${
+                            (user.verification.identityStatus === 'REJECTED' || (!user.verification.identityStatus && user.verification.status === 'REJECTED')) ? 'bg-red-600' : 'bg-yellow-500'
+                          }`}>
+                            {(user.verification.identityStatus === 'PENDING' || (!user.verification.identityStatus && user.verification.status === 'PENDING')) && 'მიმდინარეობს გადამოწმება'}
+                            {(user.verification.identityStatus === 'REJECTED' || (!user.verification.identityStatus && user.verification.status === 'REJECTED')) && 'უარყოფილია'}
+                          </span>
+                          {user.verification.updatedAt && (
+                            <span className="text-[16px] text-black">განახლებულია: {new Date(user.verification.updatedAt).toLocaleDateString('ka-GE')}</span>
+                          )}
+                        </div>
+                        {(user.verification.identityComment || (!user.verification.identityComment && user.verification.comment)) && (
+                          <div className="bg-red-50 text-red-800 p-3 rounded mb-3 text-[16px] border border-red-200">
+                            <strong>კომენტარი:</strong> {user.verification.identityComment || user.verification.comment}
+                          </div>
+                        )}
+                        {/* ADMIN CONTROLS for identity verification */}
+                        {session.user.role === 'ADMIN' && user.verification && 
+                         (user.verification.identityStatus === 'PENDING' || user.verification.identityStatus === 'REJECTED' || 
+                          (!user.verification.identityStatus && (user.verification.status === 'PENDING' || user.verification.status === 'REJECTED'))) && (
+                          <div className="flex flex-col md:flex-row items-stretch gap-3">
+                            <button
+                              className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg text-[18px] font-semibold shadow-md transition-colors"
+                              onClick={async () => {
+                                const res = await fetch(`/api/admin/users/${user.id}/identity`, {
+                                  method: 'PATCH',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ status: 'APPROVED' })
+                                });
+                                if (res.ok) {
+                                  const data = await res.json();
+                                  setUsers((users: User[]) => users.map((u: User) => u.id === user.id ? { ...u, verification: data.verification, verified: true } : u));
+                                  showToast('პირადობის დოკუმენტები დამტკიცებულია', 'success');
+                                }
+                              }}
+                            >
+                              ✓ პირადობის დამტკიცება
+                            </button>
+                            <RejectVerificationButton user={user} setUsers={setUsers} verificationType="identity" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ინდმეწარმის საბუთის გადამოწმების სექცია - დამოუკიდებელი, მხოლოდ როცა blocked */}
+                  {user.blocked && !user.verified && user._count.products > 0 && user.verification?.entrepreneurCertificateUrl && (
+                    <div className="px-4 pb-4 border-t border-gray-200 bg-orange-50">
+                      <div className="mb-4 pt-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <h4 className="text-[18px] font-bold text-orange-800">
+                              ინდმეწარმის საბუთის გადამოწმება
+                            </h4>
+                            <p className="text-sm text-orange-700">
+                              გამყიდველი დაბლოკილია, რადგან მისი შემოსავალი 100₾-ს აღემატება
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            {user.role === 'ADMIN' ? (
+                              <span className="px-3 py-1 bg-blue-600 text-white rounded text-[16px] font-semibold">
+                                ადმინი – ბლოკი არ მოქმედებს
+                              </span>
+                            ) : (
+                              <span className="px-3 py-1 bg-orange-600 text-white rounded text-[16px] font-semibold">
+                                შემოსავალი ≥ 100₾
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {user.role === 'ADMIN' ? (
+                          <p className="text-[16px] text-orange-700 mb-4">
+                            ეს არის ადმინისტრატორული ანგარიში – ბლოკი მხოლოდ სიგნალის სახით გვაჩვენებს,
+                            რომ გადამოწმდეს გამყიდველის ინდმეწარმის საბუთი.
+                          </p>
+                        ) : (
+                          <p className="text-[16px] text-orange-700 mb-4">
+                            გამყიდველი დაბლოკილია, რადგან მისი შემოსავალი 100₾-ს აღემატება. გთხოვთ გადაამოწმოთ ინდმეწარმის საბუთი და დაამტკიცოთ.
+                          </p>
+                        )}
+                        <div className="grid grid-cols-1 gap-4 mb-4">
                           {user.verification.entrepreneurCertificateUrl && (
                             <div className="flex flex-col items-center">
                               <span className="text-[16px] font-semibold mb-2 text-black">ინდმეწარმის საბუთი</span>
@@ -597,43 +664,43 @@ const AdminUsersPage = () => {
                         </div>
                         <div className="flex items-center space-x-3 mb-3">
                           <span className={`px-3 py-1 rounded-full text-[16px] font-semibold text-white ${
-                            user.verification.status === 'APPROVED' ? 'bg-green-600' : user.verification.status === 'REJECTED' ? 'bg-red-600' : 'bg-yellow-500'
+                            (user.verification.entrepreneurStatus === 'REJECTED' || (!user.verification.entrepreneurStatus && user.verification.status === 'REJECTED')) ? 'bg-red-600' : 'bg-yellow-500'
                           }`}>
-                            {user.verification.status === 'PENDING' && 'მიმდინარეობს გადამოწმება'}
-                            {user.verification.status === 'APPROVED' && 'დამოწმებულია'}
-                            {user.verification.status === 'REJECTED' && 'უარყოფილია'}
+                            {(user.verification.entrepreneurStatus === 'PENDING' || (!user.verification.entrepreneurStatus && user.verification.status === 'PENDING')) && 'მიმდინარეობს გადამოწმება'}
+                            {(user.verification.entrepreneurStatus === 'REJECTED' || (!user.verification.entrepreneurStatus && user.verification.status === 'REJECTED')) && 'უარყოფილია'}
                           </span>
                           {user.verification.updatedAt && (
                             <span className="text-[16px] text-black">განახლებულია: {new Date(user.verification.updatedAt).toLocaleDateString('ka-GE')}</span>
                           )}
                         </div>
-                        {user.verification.comment && (
+                        {(user.verification.entrepreneurComment || (!user.verification.entrepreneurComment && user.verification.comment)) && (
                           <div className="bg-red-50 text-red-800 p-3 rounded mb-3 text-[16px] border border-red-200">
-                            <strong>კომენტარი:</strong> {user.verification.comment}
+                            <strong>კომენტარი:</strong> {user.verification.entrepreneurComment || user.verification.comment}
                           </div>
                         )}
-                        {/* ADMIN CONTROLS for verification */}
-                        {session.user.role === 'ADMIN' && user.verification && ['PENDING', 'REJECTED'].includes(user.verification.status) && (
+                        {/* ADMIN CONTROLS for entrepreneur certificate */}
+                        {session.user.role === 'ADMIN' && user.verification && 
+                         (user.verification.entrepreneurStatus === 'PENDING' || user.verification.entrepreneurStatus === 'REJECTED' || 
+                          (!user.verification.entrepreneurStatus && (user.verification.status === 'PENDING' || user.verification.status === 'REJECTED'))) && (
                           <div className="flex flex-col md:flex-row items-stretch gap-3">
                             <button
                               className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg text-[18px] font-semibold shadow-md transition-colors"
                               onClick={async () => {
-                                const res = await fetch('/api/admin/users', {
+                                const res = await fetch(`/api/admin/users/${user.id}/entrepreneur`, {
                                   method: 'PATCH',
                                   headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ userId: user.id, status: 'APPROVED' })
+                                  body: JSON.stringify({ status: 'APPROVED' })
                                 });
                                 if (res.ok) {
                                   const data = await res.json();
-                                  setUsers((users: User[]) => users.map((u: User) => u.id === user.id ? { ...u, verification: data.verification, blocked: false, verified: true } : u));
-                                  showToast('მომხმარებელი დამტკიცებულია და განბლოკილია', 'success');
+                                  setUsers((users: User[]) => users.map((u: User) => u.id === user.id ? { ...u, verification: data.verification, blocked: false } : u));
+                                  showToast('ინდმეწარმის საბუთი დამტკიცებულია და მომხმარებელი განბლოკილია', 'success');
                                 }
                               }}
-                              disabled={user.verification?.status === 'APPROVED'}
                             >
-                              ✓ დამტკიცება და განბლოკვა
+                              ✓ ინდმეწარმის საბუთის დამტკიცება და განბლოკვა
                             </button>
-                            <RejectVerificationButton user={user} setUsers={setUsers} />
+                            <RejectVerificationButton user={user} setUsers={setUsers} verificationType="entrepreneur" />
                           </div>
                         )}
                       </div>
@@ -689,41 +756,101 @@ const AdminUsersPage = () => {
                             )}
                           </div>
                           <div className="flex items-center space-x-3 mb-2">
-                            <span className={`px-2 py-1 rounded-full text-[18px] font-semibold text-white bg-${
-                              user.verification.status === 'APPROVED' ? 'green-600' : user.verification.status === 'REJECTED' ? 'red-600' : 'yellow-500'
-                            }`}>
-                              {user.verification.status === 'PENDING' && 'მიმდინარეობს გადამოწმება'}
-                              {user.verification.status === 'APPROVED' && 'დამოწმებულია'}
-                              {user.verification.status === 'REJECTED' && 'უარყოფილია'}
-                            </span>
+                            {/* Identity Status */}
+                            {user.verification.idFrontUrl && user.verification.idBackUrl && (
+                              <div className="flex items-center space-x-2">
+                                <span className="text-[16px] font-semibold text-black">პირადობა:</span>
+                                <span className={`px-2 py-1 rounded-full text-[18px] font-semibold text-white ${
+                                  (user.verification.identityStatus === 'APPROVED' || (!user.verification.identityStatus && user.verification.status === 'APPROVED')) ? 'bg-green-600' : 
+                                  (user.verification.identityStatus === 'REJECTED' || (!user.verification.identityStatus && user.verification.status === 'REJECTED')) ? 'bg-red-600' : 'bg-yellow-500'
+                                }`}>
+                                  {(user.verification.identityStatus === 'PENDING' || (!user.verification.identityStatus && user.verification.status === 'PENDING')) && 'მიმდინარეობს გადამოწმება'}
+                                  {(user.verification.identityStatus === 'APPROVED' || (!user.verification.identityStatus && user.verification.status === 'APPROVED')) && 'დამოწმებულია'}
+                                  {(user.verification.identityStatus === 'REJECTED' || (!user.verification.identityStatus && user.verification.status === 'REJECTED')) && 'უარყოფილია'}
+                                </span>
+                              </div>
+                            )}
+                            {/* Entrepreneur Status */}
+                            {user.verification.entrepreneurCertificateUrl && (
+                              <div className="flex items-center space-x-2">
+                                <span className="text-[16px] font-semibold text-black">ინდმეწარმი:</span>
+                                <span className={`px-2 py-1 rounded-full text-[18px] font-semibold text-white ${
+                                  (user.verification.entrepreneurStatus === 'APPROVED' || (!user.verification.entrepreneurStatus && user.verification.status === 'APPROVED')) ? 'bg-green-600' : 
+                                  (user.verification.entrepreneurStatus === 'REJECTED' || (!user.verification.entrepreneurStatus && user.verification.status === 'REJECTED')) ? 'bg-red-600' : 'bg-yellow-500'
+                                }`}>
+                                  {(user.verification.entrepreneurStatus === 'PENDING' || (!user.verification.entrepreneurStatus && user.verification.status === 'PENDING')) && 'მიმდინარეობს გადამოწმება'}
+                                  {(user.verification.entrepreneurStatus === 'APPROVED' || (!user.verification.entrepreneurStatus && user.verification.status === 'APPROVED')) && 'დამოწმებულია'}
+                                  {(user.verification.entrepreneurStatus === 'REJECTED' || (!user.verification.entrepreneurStatus && user.verification.status === 'REJECTED')) && 'უარყოფილია'}
+                                </span>
+                              </div>
+                            )}
                             {user.verification.updatedAt && (
                               <span className="text-[18px] text-black">{new Date(user.verification.updatedAt).toLocaleDateString('ka-GE')}</span>
                             )}
                           </div>
-                          {user.verification.comment && (
+                          {user.verification.identityComment && (
+                            <div className="bg-red-50 text-red-800 p-2 rounded mb-2 text-[18px]">
+                              <strong>პირადობის კომენტარი:</strong> {user.verification.identityComment}
+                            </div>
+                          )}
+                          {user.verification.entrepreneurComment && (
+                            <div className="bg-red-50 text-red-800 p-2 rounded mb-2 text-[18px]">
+                              <strong>ინდმეწარმის კომენტარი:</strong> {user.verification.entrepreneurComment}
+                            </div>
+                          )}
+                          {!user.verification.identityComment && !user.verification.entrepreneurComment && user.verification.comment && (
                             <div className="bg-red-50 text-red-800 p-2 rounded mb-2 text-[18px]">
                               {user.verification.comment}
                             </div>
                           )}
                           {/* ADMIN CONTROLS for verification */}
-                          {session.user.role === 'ADMIN' && user.verification && ['PENDING', 'REJECTED'].includes(user.verification.status) && (
+                          {session.user.role === 'ADMIN' && user.verification && (
                             <div className="flex flex-col md:flex-row items-stretch gap-2 mb-2">
-                              <button
-                                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-[18px]"
-                                onClick={async () => {
-                                  const res = await fetch('/api/admin/users', {
-                                    method: 'PATCH',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ userId: user.id, status: 'APPROVED' })
-                                  });
-                                  if (res.ok) {
-                                    const data = await res.json();
-                                    setUsers((users: User[]) => users.map((u: User) => u.id === user.id ? { ...u, verification: data.verification } : u));
-                                  }
-                                }}
-                                disabled={user.verification?.status === 'APPROVED'}
-                              >დამტკიცება</button>
-                              <RejectVerificationButton user={user} setUsers={setUsers} />
+                              {/* Determine verification type: if identity docs exist and not verified, it's identity; otherwise check if blocked */}
+                              {user.verification.idFrontUrl && user.verification.idBackUrl && 
+                               (user.verification.identityStatus === 'PENDING' || user.verification.identityStatus === 'REJECTED' || 
+                                (!user.verification.identityStatus && !user.verified)) && (
+                                <>
+                                  <button
+                                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-[18px]"
+                                    onClick={async () => {
+                                      const res = await fetch(`/api/admin/users/${user.id}/identity`, {
+                                        method: 'PATCH',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ status: 'APPROVED' })
+                                      });
+                                      if (res.ok) {
+                                        const data = await res.json();
+                                        setUsers((users: User[]) => users.map((u: User) => u.id === user.id ? { ...u, verification: data.verification, verified: true } : u));
+                                      }
+                                    }}
+                                    disabled={user.verified}
+                                  >პირადობის დამტკიცება</button>
+                                  <RejectVerificationButton user={user} setUsers={setUsers} verificationType="identity" />
+                                </>
+                              )}
+                              {user.verification.entrepreneurCertificateUrl && 
+                               (user.verification.entrepreneurStatus === 'PENDING' || user.verification.entrepreneurStatus === 'REJECTED' || 
+                                (!user.verification.entrepreneurStatus && user.blocked)) && (
+                                <>
+                                  <button
+                                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-[18px]"
+                                    onClick={async () => {
+                                      const res = await fetch(`/api/admin/users/${user.id}/entrepreneur`, {
+                                        method: 'PATCH',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ status: 'APPROVED' })
+                                      });
+                                      if (res.ok) {
+                                        const data = await res.json();
+                                        setUsers((users: User[]) => users.map((u: User) => u.id === user.id ? { ...u, verification: data.verification, blocked: false } : u));
+                                      }
+                                    }}
+                                    disabled={!user.blocked}
+                                  >ინდმეწარმის საბუთის დამტკიცება</button>
+                                  <RejectVerificationButton user={user} setUsers={setUsers} verificationType="entrepreneur" />
+                                </>
+                              )}
                             </div>
                           )}
                         </div>
@@ -744,7 +871,7 @@ const AdminUsersPage = () => {
 
 export default AdminUsersPage
 
-function RejectVerificationButton({ user, setUsers }: { user: User; setUsers: React.Dispatch<React.SetStateAction<User[]>> }) {
+function RejectVerificationButton({ user, setUsers, verificationType }: { user: User; setUsers: React.Dispatch<React.SetStateAction<User[]>>; verificationType?: 'identity' | 'entrepreneur' }) {
   const [comment, setComment] = useState('');
   const [showInput, setShowInput] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -760,10 +887,13 @@ function RejectVerificationButton({ user, setUsers }: { user: User; setUsers: Re
           onSubmit={async (e: React.FormEvent<HTMLFormElement>) => {
             e.preventDefault();
             setLoading(true);
-            const res = await fetch('/api/admin/users', {
+            const endpoint = verificationType === 'entrepreneur' 
+              ? `/api/admin/users/${user.id}/entrepreneur`
+              : `/api/admin/users/${user.id}/identity`;
+            const res = await fetch(endpoint, {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ userId: user.id, status: 'REJECTED', comment })
+              body: JSON.stringify({ status: 'REJECTED', comment })
             });
             setLoading(false);
             if (res.ok) {

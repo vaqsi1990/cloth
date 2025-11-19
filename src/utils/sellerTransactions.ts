@@ -38,7 +38,7 @@ export async function recordSellerTransactions(orderId: number) {
         userId: order.user.id,
       },
     })
-    await reevaluateUserBlocking(order.user.id, 2)
+    await reevaluateUserBlocking(order.user.id)
   }
 
   const sellerTotals = new Map<string, { userId: string; type: TransactionType; total: number }>()
@@ -86,7 +86,7 @@ export async function recordSellerTransactions(orderId: number) {
       },
     })
 
-    await checkAndBlockUser(entry.userId, 2)
+    await checkAndBlockUser(entry.userId)
   }
 }
 

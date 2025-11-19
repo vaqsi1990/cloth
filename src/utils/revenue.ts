@@ -35,7 +35,8 @@ export async function shouldBlockUser(userId: string, threshold: number = 2): Pr
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
-      verified: true,
+      verified: true, // პირადობის ვერიფიკაცია
+      blocked: true, // ინდმეწარმის საბუთის ვერიფიკაცია
       _count: {
         select: { products: true },
       },
@@ -46,8 +47,9 @@ export async function shouldBlockUser(userId: string, threshold: number = 2): Pr
     return false
   }
 
-  // Verified sellers stay unblocked
-  if (user.verified) {
+  // თუ ინდმეწარმის საბუთი უკვე დამტკიცებულია (blocked=false), არ უნდა დაბლოკოს
+  // ან თუ პირადობა დამტკიცებულია (verified=true), არ უნდა დაბლოკოს
+  if (!user.blocked || user.verified) {
     return false
   }
 
@@ -60,12 +62,12 @@ export async function shouldBlockUser(userId: string, threshold: number = 2): Pr
   // Calculate revenue
   const revenue = await calculateUserRevenue(userId)
 
-  // Block if revenue >= threshold and not verified
+  // Block if revenue >= threshold and entrepreneur certificate not verified
   return revenue >= threshold
 }
 
 /**
- * Block user if revenue threshold is met and user is not verified
+ * Block user if revenue threshold is met and entrepreneur certificate is not verified
  * @param userId - The user ID to check and potentially block
  * @param threshold - Revenue threshold in GEL (default: 2)
  * @returns true if user was blocked, false otherwise

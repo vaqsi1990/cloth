@@ -40,11 +40,15 @@ export async function GET(request: NextRequest) {
         },
         verification: {
           select: {
-            status: true,
+            status: true, // Legacy field
+            identityStatus: true, // May not exist in old databases
+            entrepreneurStatus: true, // May not exist in old databases
             idFrontUrl: true,
             idBackUrl: true,
             entrepreneurCertificateUrl: true,
-            comment: true,
+            comment: true, // Legacy field
+            identityComment: true, // May not exist in old databases
+            entrepreneurComment: true, // May not exist in old databases
             createdAt: true,
             updatedAt: true,
           },
@@ -79,36 +83,72 @@ export async function PATCH(request: NextRequest) {
       );
     }
     const body = await request.json();
-    const { userId, status, comment } = body;
+    const { userId, status, comment, verificationType } = body;
     if (!userId || !['APPROVED', 'REJECTED'].includes(status)) {
       return NextResponse.json(
         { success: false, error: 'Invalid data' },
         { status: 400 }
       );
     }
+    
+    // verificationType: 'identity' for idFrontUrl/idBackUrl, 'entrepreneur' for entrepreneurCertificateUrl
+    if (!verificationType || !['identity', 'entrepreneur'].includes(verificationType)) {
+      return NextResponse.json(
+        { success: false, error: 'verificationType must be "identity" or "entrepreneur"' },
+        { status: 400 }
+      );
+    }
+
     const verification = await prisma.userVerification.findUnique({ where: { userId } });
     if (!verification) {
       return NextResponse.json({ success: false, error: 'Verification not found' }, { status: 404 });
     }
     
-    // Update verification status
+    // Update verification status based on type
+    const updateData: {
+      identityStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+      entrepreneurStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+      identityComment?: string | null;
+      entrepreneurComment?: string | null;
+      status?: 'PENDING' | 'APPROVED' | 'REJECTED'; // Legacy field
+      comment?: string | null; // Legacy field
+    } = {};
+
+    if (verificationType === 'identity') {
+      updateData.identityStatus = status;
+      updateData.identityComment = status === 'REJECTED' ? comment || null : null;
+    } else if (verificationType === 'entrepreneur') {
+      updateData.entrepreneurStatus = status;
+      updateData.entrepreneurComment = status === 'REJECTED' ? comment || null : null;
+    }
+
+    // Update legacy fields for backward compatibility
+    updateData.status = status;
+    updateData.comment = status === 'REJECTED' ? comment || null : null;
+
     const updated = await prisma.userVerification.update({
       where: { userId },
-      data: {
-        status,
-        comment: status === 'REJECTED' ? comment || null : null,
-      },
+      data: updateData,
     });
 
-    // If approved, set verified=true and blocked=false
+    // Update user fields based on verification type
     if (status === 'APPROVED') {
-      await prisma.user.update({
-        where: { id: userId },
-        data: {
-          verified: true,
-          blocked: false,
-        },
-      });
+      const userUpdateData: { verified?: boolean; blocked?: boolean } = {};
+      
+      if (verificationType === 'identity') {
+        // პირადობის დოკუმენტების დამტკიცება → verified = true
+        userUpdateData.verified = true;
+      } else if (verificationType === 'entrepreneur') {
+        // ინდმეწარმის საბუთის დამტკიცება → blocked = false
+        userUpdateData.blocked = false;
+      }
+
+      if (Object.keys(userUpdateData).length > 0) {
+        await prisma.user.update({
+          where: { id: userId },
+          data: userUpdateData,
+        });
+      }
     }
 
     return NextResponse.json({ success: true, verification: updated });

@@ -473,6 +473,12 @@ model UserVerification {
   idFrontUrl             String?
   idBackUrl              String?
   entrepreneurCertificateUrl String?
+  // Separate statuses for identity and entrepreneur verification
+  identityStatus         VerificationStatus @default(PENDING)  // პირადობის დოკუმენტების სტატუსი
+  entrepreneurStatus     VerificationStatus @default(PENDING)  // ინდმეწარმის საბუთის სტატუსი
+  identityComment        String?  // პირადობის დოკუმენტების უარყოფის კომენტარი
+  entrepreneurComment    String?  // ინდმეწარმის საბუთის უარყოფის კომენტარი
+  // Legacy fields (deprecated, kept for backward compatibility)
   status                 VerificationStatus @default(PENDING)
   comment                String?
   createdAt              DateTime           @default(now())
