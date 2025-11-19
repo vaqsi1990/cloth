@@ -424,7 +424,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
             <div className="p-4 border-t border-gray-200 bg-white">
               <div className="space-y-3">
                 <div>
-                  <label className="block text-[16px] font-medium  mb-1">
+                  <label className="block text-[16px] text-black font-medium  mb-1">
                     სახელი
                   </label>
                   <input
@@ -436,7 +436,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-[16px] font-medium  mb-1">
+                  <label className="block text-[16px] text-black font-medium  mb-1">
                     ელ-ფოსტა
                   </label>
                   <input
@@ -477,7 +477,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
               {!chatRoomId && !showGuestForm && !session && (
                 <button
                   onClick={startNewChat}
-                  className="text-[14px] text-[#1B3729] hover:text-[#2a4d3a] transition-colors"
+                  className="text-[16px] text-black hover:text-[#2a4d3a] transition-colors"
                 >
                   ახალი საუბრის დაწყება
                 </button>

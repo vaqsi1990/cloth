@@ -336,7 +336,7 @@ const AdminChatPage = () => {
               {chatRooms.length === 0 ? (
                 <div className="p-4 text-center text-gray-500">
                   <MessageCircle className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                  <p className=" text-[16px]">საუბრები არ არის</p>
+                  <p className="md:text-[18px] text-[16px]">საუბრები არ არის</p>
                 </div>
               ) : (
                 <div className="space-y-2 p-4">
@@ -352,16 +352,13 @@ const AdminChatPage = () => {
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center space-x-2">
-                          {getStatusIcon(room.status)}
+                          
+                          
                           <span className="font-medium">
                             #{room.id}
                           </span>
                         </div>
-                        <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(room.status)}`}>
-                          {room.status === 'PENDING' && 'ლოდინი'}
-                          {room.status === 'ACTIVE' && 'აქტიური'}
-                          {room.status === 'CLOSED' && 'დახურული'}
-                        </span>
+                      
                       </div>
                       
                       <div className="md:text-[18px] text-[16px]">
@@ -374,16 +371,16 @@ const AdminChatPage = () => {
                         <p className="md:text-[18px] text-[16px] opacity-75 mt-1">
                           {formatDateTime(room.updatedAt)}
                         </p>
-                        <div className="mt-2">
+                        <div className="mt-2 flex justify-end">
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
                               openDeleteModal(room)
                             }}
-                            className="text-red-500 hover:text-red-700 md:text-[18px] text-[16px] flex items-center space-x-1"
+                            className="text-red-500 cursor-pointer md:text-[18px] text-[16px] flex items-end space-x-1"
                           >
-                            <Trash2 className="w-3 h-3" />
-                            <span>წაშლა</span>
+                            <Trash2 className="w-6 h-6" />
+                          
                           </button>
                         </div>
                       </div>
@@ -494,7 +491,7 @@ const AdminChatPage = () => {
                       onChange={(e) => setNewMessage(e.target.value)}
                       onKeyPress={handleKeyPress}
                       placeholder="შეიყვანეთ თქვენი პასუხი..."
-                      className="flex-1 p-3 border border-gray-300 rounded-md resize-none focus:ring-2 focus:ring-[#1B3729] focus:border-transparent"
+                      className="flex-1 p-3 border placeholder:text-[18px] border-gray-300 rounded-md resize-none focus:ring-2 focus:ring-[#1B3729] focus:border-transparent"
                       rows={2}
                       disabled={isLoading}
                     />
