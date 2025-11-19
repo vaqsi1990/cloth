@@ -264,7 +264,7 @@ const AdminDashboard = () => {
                     <action.icon className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900 group-hover:text-black transition-colors">
+                    <h3 className="font-semibold text-black md:text-[20px] text-[18px] group-hover:text-black transition-colors">
                       {action.title}
                     </h3>
                     <p className="md:text-[18px] text-[16px] text-black mt-1">

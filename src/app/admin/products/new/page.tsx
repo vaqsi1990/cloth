@@ -500,7 +500,7 @@ const NewProductPage = () => {
                   className={`w-full px-4 py-3 border rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black ${errors.name ? 'border-red-500' : 'border-gray-300'
                     }`}
                 />
-                {errors.name && <p className="text-red-500 md:text-[16px] text-[14px] mt-1">{errors.name}</p>}
+                {errors.name && <p className="text-red-500 md:text-[20px] text-[18px] mt-1">{errors.name}</p>}
               </div>
 
             
@@ -631,7 +631,7 @@ const NewProductPage = () => {
                 rows={4}
                 className={`w-full px-4 py-3 border rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black ${errors.description ? 'border-red-500' : 'border-gray-300'}`}
               />
-              {errors.description && <p className="text-red-500 md:text-[16px] text-[14px] mt-1">{errors.description}</p>}
+              {errors.description && <p className="text-red-500 md:text-[20px] text-[18px] mt-1">{errors.description}</p>}
             </div>
 
 
