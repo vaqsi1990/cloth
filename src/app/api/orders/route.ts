@@ -26,8 +26,7 @@ const orderSchema = z.object({
     isRental: z.boolean().optional(),
     rentalStartDate: z.string().optional(),
     rentalEndDate: z.string().optional(),
-    rentalDays: z.number().optional(),
-    deposit: z.number().optional()
+    rentalDays: z.number().optional()
   })).min(1, 'კალათა ცარიელია')
 })
 
@@ -188,8 +187,7 @@ export async function POST(request: NextRequest) {
             isRental: item.isRental || false,
             rentalStartDate: item.rentalStartDate ? new Date(item.rentalStartDate) : null,
             rentalEndDate: item.rentalEndDate ? new Date(item.rentalEndDate) : null,
-            rentalDays: item.rentalDays || null,
-            deposit: item.deposit || null
+            rentalDays: item.rentalDays || null
           }))
         }
       },

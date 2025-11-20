@@ -63,7 +63,6 @@ export interface Product {
   isRentable?: boolean
   pricePerDay?: number
   maxRentalDays?: number
-  deposit?: number
   status?: 'AVAILABLE' | 'RENTED' | 'RESERVED' | 'MAINTENANCE'
   approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED'
   rejectionReason?: string | null
@@ -88,5 +87,4 @@ export interface CartItem {
   rentalStartDate?: string
   rentalEndDate?: string
   rentalDays?: number
-  deposit?: number
 }

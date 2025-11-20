@@ -283,8 +283,7 @@ export async function POST(req: NextRequest) {
       isRental: item.isRental || false,
       rentalStartDate: item.rentalStartDate || null,
       rentalEndDate: item.rentalEndDate || null,
-      rentalDays: item.rentalDays || null,
-      deposit: item.deposit || null
+      rentalDays: item.rentalDays || null
     }))
 
     // Create the order in database FIRST (before calling BOG)

@@ -16,8 +16,7 @@ const cartItemSchema = z.object({
   isRental: z.boolean().optional(),
   rentalStartDate: z.string().optional(),
   rentalEndDate: z.string().optional(),
-  rentalDays: z.number().optional(),
-  deposit: z.number().optional()
+  rentalDays: z.number().optional()
 })
 
 // GET - Fetch user's cart
@@ -106,8 +105,7 @@ export async function GET(request: NextRequest) {
           isRental: item.isRental,
           rentalStartDate: item.rentalStartDate?.toISOString(),
           rentalEndDate: item.rentalEndDate?.toISOString(),
-          rentalDays: item.rentalDays,
-          deposit: item.deposit
+          rentalDays: item.rentalDays
         })),
         totalItems: cart.items.reduce((sum, item) => sum + item.quantity, 0),
         totalPrice: cart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
@@ -208,8 +206,7 @@ export async function POST(request: NextRequest) {
           isRental: validatedData.isRental || false,
           rentalStartDate: validatedData.rentalStartDate ? new Date(validatedData.rentalStartDate) : null,
           rentalEndDate: validatedData.rentalEndDate ? new Date(validatedData.rentalEndDate) : null,
-          rentalDays: validatedData.rentalDays,
-          deposit: validatedData.deposit
+          rentalDays: validatedData.rentalDays
         }
       })
     }

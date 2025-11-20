@@ -44,7 +44,6 @@ interface RentalOrder {
   endDate: string
   durationDays: number
   price: number
-  deposit?: number
   orderCreatedAt: string
 }
 
@@ -478,7 +477,6 @@ const AdminProductBySKUPage = () => {
                         <div>
                           <p className="text-gray-500">ფასი</p>
                           <p className="font-semibold">₾{order.price}</p>
-                          {order.deposit && <p className="text-black">გირაო: ₾{order.deposit}</p>}
                         </div>
                       </div>
                     </div>

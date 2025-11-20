@@ -40,7 +40,6 @@ const productSchema = z.object({
   isRentable: z.boolean().default(true),
   pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional(),
   maxRentalDays: z.number().optional(),
-  deposit: z.number().min(0, 'გირაო უნდა იყოს დადებითი').optional(),
   status: z.enum(['AVAILABLE', 'RENTED', 'RESERVED', 'MAINTENANCE']).default('AVAILABLE'),
   variants: z.array(z.object({
     size: z.preprocess(
@@ -222,7 +221,6 @@ export async function PUT(
         isRentable: validatedData.isRentable,
         pricePerDay: validatedData.pricePerDay,
         maxRentalDays: validatedData.maxRentalDays,
-        deposit: validatedData.deposit,
         status: validatedData.status,
         approvalStatus: shouldResetApproval ? 'PENDING' : existingProduct.approvalStatus,
         approvedAt: shouldResetApproval ? null : existingProduct.approvedAt,

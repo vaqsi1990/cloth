@@ -18,7 +18,6 @@ interface OrderItem {
     rentalStartDate?: string
     rentalEndDate?: string
     rentalDays?: number
-    deposit?: number
 }
 
 interface Order {
@@ -253,9 +252,6 @@ const OrderConfirmationContent = () => {
                                                     <div className="text-sm text-blue-600 mb-1">
                                                         <p>ქირაობის პერიოდი: {formatDate(item.rentalStartDate)} - {formatDate(item.rentalEndDate)}</p>
                                                         <p>დღეების რაოდენობა: {item.rentalDays}</p>
-                                                        {item.deposit && item.deposit > 0 && (
-                                                            <p>გირაო: ₾{item.deposit.toFixed(2)}</p>
-                                                        )}
                                                     </div>
                                                 )}
                                                 
@@ -298,14 +294,6 @@ const OrderConfirmationContent = () => {
                                             <span className="font-bold text-lg">₾{order.total.toFixed(2)}</span>
                                         </div>
                                     </div>
-                                    {order.items.some(item => item.isRental && item.deposit && item.deposit > 0) && (
-                                        <div className="flex justify-between text-blue-600">
-                                            <span>გირაო (ქირაობისთვის):</span>
-                                            <span className="font-medium">
-                                                ₾{order.items.filter(item => item.isRental).reduce((total, item) => total + (item.deposit || 0), 0).toFixed(2)}
-                                            </span>
-                                        </div>
-                                    )}
                                 </div>
 
                                 <div className="space-y-4">

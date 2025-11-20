@@ -72,7 +72,6 @@ const productSchema = z.object({
   isRentable: z.boolean().default(true), // 🆕
   pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional(), // 🆕
   maxRentalDays: z.number().optional(), // 🆕
-  deposit: z.number().min(0, 'გირაო უნდა იყოს დადებითი').optional(), // 🆕
   status: z.enum(['AVAILABLE', 'RENTED', 'RESERVED', 'MAINTENANCE']).default('AVAILABLE'),
   variants: z.array(
     z.object({
@@ -116,7 +115,6 @@ const NewProductPage = () => {
     isRentable: true, // 🆕
     pricePerDay: undefined,
     maxRentalDays: undefined,
-    deposit: undefined,
     status: 'AVAILABLE',
     variants: [],
     imageUrls: [],
@@ -707,18 +705,8 @@ const NewProductPage = () => {
               </div>
 
               {/* Additional Rental Parameters */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <label className="block text-[20px] text-black font-medium mb-2">გირაოს თანხა</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.deposit || ''}
-                  onChange={(e) => handleInputChange('deposit', e.target.value ? parseFloat(e.target.value) : undefined)}
-                  className="w-full px-4 text-black py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                />
-              </div>
-              <div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
                   <label className="block text-[20px] text-black font-medium mb-2">მაქს დღეები(არასავალდებულო)</label>
                   <input
                     type="number"
@@ -727,8 +715,6 @@ const NewProductPage = () => {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                   />
                 </div>
-
-
               </div>
             </div>
             {/* {formData.isRentable && (

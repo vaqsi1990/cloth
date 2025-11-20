@@ -197,7 +197,6 @@ model Product {
   isRentable    Boolean          @default(false)
   pricePerDay   Float?
   maxRentalDays Int?
-  deposit       Float?
   status        ProductStatus    @default(AVAILABLE)
   approvalStatus VerificationStatus @default(PENDING)
   rejectionReason String?
@@ -307,7 +306,6 @@ model CartItem {
   rentalStartDate DateTime?
   rentalEndDate   DateTime?
   rentalDays      Int?
-  deposit         Float?
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -362,7 +360,6 @@ model OrderItem {
   rentalStartDate DateTime?
   rentalEndDate   DateTime?
   rentalDays      Int?
-  deposit         Float?
 }
 
 model Transaction {

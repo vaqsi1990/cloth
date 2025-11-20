@@ -681,7 +681,6 @@ const ProductPage = () => {
             rentalEndDate,
             rentalDays: days,
             price: total,
-            deposit: product.deposit || 0,
         })
 
         if (!ok) showToast("შეცდომა ქირაობის დამატებისას", "error")
@@ -1051,11 +1050,6 @@ const ProductPage = () => {
                                                     ჯამური ფასი: ₾{priceForDays(calcDays()).toFixed(2)}
                                                 </div>
 
-                                                {product.deposit ? (
-                                                    <div className="text-[16px] text-black">
-                                                        + გირაო: ₾{product.deposit.toFixed(2)}
-                                                    </div>
-                                                ) : null}
                                             </div>
                                         )}
 

@@ -15,7 +15,6 @@ interface CartItem {
   rentalStartDate?: string
   rentalEndDate?: string
   rentalDays?: number
-  deposit?: number
 }
 
 interface Cart {

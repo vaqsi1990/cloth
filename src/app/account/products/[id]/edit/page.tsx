@@ -42,7 +42,6 @@ const productSchema = z.object({
   isRentable: z.boolean().default(true),
   pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').nullable().optional(),
   maxRentalDays: z.number().nullable().optional(),
-  deposit: z.number().min(0, 'გირაო უნდა იყოს დადებითი').nullable().optional(),
   status: z.enum(['AVAILABLE', 'RENTED', 'RESERVED', 'MAINTENANCE']).default('AVAILABLE'),
   variants: z.array(z.object({
     size: z.preprocess(
@@ -89,7 +88,6 @@ const EditProductPage = () => {
     isRentable: true,
     pricePerDay: undefined,
     maxRentalDays: undefined,
-    deposit: undefined,
     status: 'AVAILABLE',
     variants: [],
     imageUrls: [],
@@ -257,7 +255,6 @@ const EditProductPage = () => {
             isRentable: product.isRentable ?? true,
             pricePerDay: product.pricePerDay || undefined,
             maxRentalDays: product.maxRentalDays || undefined,
-            deposit: product.deposit || undefined,
             status: product.status || 'AVAILABLE',
             variants: (product.variants || []).map((variant: ProductVariant) => ({
               ...variant,
@@ -452,7 +449,6 @@ const EditProductPage = () => {
           : undefined,
         pricePerDay: formData.pricePerDay || undefined,
         maxRentalDays: formData.maxRentalDays || undefined,
-        deposit: formData.deposit || undefined,
         rentalPriceTiers: formData.rentalPriceTiers || []
       }
       
@@ -825,17 +821,7 @@ const EditProductPage = () => {
               </div>
 
               {/* Additional Rental Parameters */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <label className="block text-[20px] text-black font-medium mb-2">გირაოს თანხა</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.deposit || ''}
-                    onChange={(e) => handleInputChange('deposit', e.target.value ? parseFloat(e.target.value) : undefined)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                  />
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-[20px] text-black font-medium mb-2">მაქს დღეები(არასავალდებულო)</label>
                   <input

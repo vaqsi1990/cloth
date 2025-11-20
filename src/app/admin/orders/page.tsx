@@ -21,7 +21,6 @@ interface OrderItem {
   rentalStartDate?: string
   rentalEndDate?: string
   rentalDays?: number
-  deposit?: number
   product?: {
     id: number
     name: string
@@ -416,9 +415,6 @@ const AdminOrdersPage = () => {
                                   <div className="text-xs text-blue-600 mt-1 space-y-1">
                                     <p>📅 ქირაობის პერიოდი: {formatDate(item.rentalStartDate)} - {formatDate(item.rentalEndDate)}</p>
                                     <p>⏱️ დღეების რაოდენობა: {item.rentalDays} დღე</p>
-                                    {item.deposit && item.deposit > 0 && (
-                                      <p>💰 გირაო: ₾{item.deposit.toFixed(2)}</p>
-                                    )}
                                   </div>
                                 )}
                               </div>
@@ -444,13 +440,6 @@ const AdminOrdersPage = () => {
                             <span className="text-black">სულ თანხა:</span>
                             <span className="font-bold">₾{order.total.toFixed(2)}</span>
                           </div>
-                          {/* Show total deposit if any rental items have deposits */}
-                          {order.items.some(item => item.isRental && item.deposit && item.deposit > 0) && (
-                            <div className="flex justify-between">
-                              <span className="text-blue-600">გირაო (ქირაობისთვის):</span>
-                              <span className="font-medium text-blue-600">₾{order.items.filter(item => item.isRental).reduce((total, item) => total + (item.deposit || 0), 0).toFixed(2)}</span>
-                            </div>
-                          )}
                         </div>
                       </div>
 

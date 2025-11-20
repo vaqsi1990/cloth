@@ -143,7 +143,6 @@ export async function GET(
         endDate: item.rentalEndDate.toISOString(),
         durationDays: days,
         price: item.price,
-        deposit: item.deposit,
         orderCreatedAt: item.order.createdAt.toISOString()
       }
     }).filter(Boolean)

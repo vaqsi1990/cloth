@@ -53,7 +53,6 @@ interface Product {
   isRentable?: boolean
   pricePerDay?: number
   maxRentalDays?: number
-  deposit?: number
   rentalPriceTiers?: Array<{
     id: number
     minDays: number
@@ -169,7 +168,6 @@ const AdminProductsPage = () => {
         isRentable: product.isRentable || false,
         pricePerDay: product.pricePerDay || undefined,
         maxRentalDays: product.maxRentalDays || undefined,
-        deposit: product.deposit || undefined,
         status: newStatus,
         variants: (product.variants || []).map((v) => ({
           size: v.size,
