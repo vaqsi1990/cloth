@@ -380,7 +380,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
             {messages.length === 0 ? (
               <div className="text-center md:text-[18px] text-[16px]  py-8">
                 <MessageCircle className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                <p className="font-medium">დაიწყეთ საუბარი!</p>
+                <p className="font-medium text-black">დაიწყეთ საუბარი!</p>
                 <p className="text-[16px] text-gray-500 mt-2">ჩვენი გუნდი მზადაა დაგეხმაროთ</p>
               </div>
             ) : (

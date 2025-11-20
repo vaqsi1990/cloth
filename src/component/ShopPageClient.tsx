@@ -784,12 +784,12 @@ const ShopPageClient = () => {
                         <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0">
                                 <h3 className="md:text-[20px] font-bold text-[18px] text-black">ყიდვა / გაქირავება</h3>
-                                <div className="flex flex-col md:flex-row gap-2 items-center space-x-2">
+                                <div className="flex flex-col md:flex-row gap-2 text-black items-center space-x-2">
                                     <span className="md:text-[20px] text-[16px] text-black">დალაგება:</span>
                                     <select
                                         value={sortBy}
                                         onChange={(e) => setSortBy(e.target.value)}
-                                        className="px-3 py-2 md:text-[18px] text-[16px] border border-gray-300 rounded-lg  focus:outline-none focus:ring-2 focus:ring-black"
+                                        className="px-3 py-2 md:text-[18px] text-black text-[16px] border border-gray-300 rounded-lg  focus:outline-none focus:ring-2 focus:ring-black"
                                     >
                                         <option className='md:text-[18px] text-[16px] text-black' value="newest">ახალი</option>
                                         <option className='md:text-[18px] text-[16px] text-black' value="price-low">ფასი: დაბლიდან მაღლა</option>
@@ -810,7 +810,7 @@ const ShopPageClient = () => {
                                     <div
                                         key={product.id}
 
-                                        className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                                        className="group  text-center bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                                     >
                                         <div className="relative aspect-[3/4] bg-gray-100">
                                             <Image
@@ -834,7 +834,7 @@ const ShopPageClient = () => {
                                             <span className=" text-black md:text-[18px] text-[16px]">
                                                   {product.sku}
                                                 </span>
-                                            <div className="flex items-center justify-between">
+                                            <div className="flex items-center justify-center">
                                                 <span className="font-bold text-black md:text-[18px] text-[16px]">
                                                     ₾{getDisplayPrice(product).toFixed(2)}
                                                 </span>
