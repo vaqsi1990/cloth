@@ -61,6 +61,7 @@ export const authOptions: NextAuthOptions = {
           phone: user.phone,
           location: user.location,
           personalId: user.personalId,
+          iban: user.iban,
           verificationStatus: user.verification?.status || null,
         }
       }
@@ -80,6 +81,7 @@ export const authOptions: NextAuthOptions = {
         phone?: string | null
         location?: string | null
         personalId?: string | null
+        iban?: string | null
         verificationStatus?: string | null
       }
 
@@ -90,6 +92,7 @@ export const authOptions: NextAuthOptions = {
         if (typeof u.phone === 'string' || u.phone === null) token.phone = u.phone
         if (typeof u.location === 'string' || u.location === null) token.location = u.location
         if (typeof u.personalId === 'string' || u.personalId === null) token.personalId = u.personalId
+        if (typeof u.iban === 'string' || u.iban === null) token.iban = u.iban
         if (typeof u.verificationStatus === 'string' || u.verificationStatus === null) token.verificationStatus = u.verificationStatus
       }
 
@@ -115,6 +118,7 @@ export const authOptions: NextAuthOptions = {
           phone: string | null
           location: string | null
           personalId: string | null
+          iban: string | null
         }>
         const s = session as UpdatePayload
         token.image = s.image ?? token.image
@@ -123,6 +127,7 @@ export const authOptions: NextAuthOptions = {
         token.phone = s.phone ?? token.phone
         token.location = s.location ?? token.location
         token.personalId = s.personalId ?? token.personalId
+        token.iban = s.iban ?? token.iban
       }
 
       return token
@@ -137,6 +142,7 @@ export const authOptions: NextAuthOptions = {
         ;(session.user as { phone?: string | null }).phone = (token.phone as string | null | undefined) ?? undefined
         ;(session.user as { location?: string | null }).location = (token.location as string | null | undefined) ?? undefined
         ;(session.user as { personalId?: string | null }).personalId = (token.personalId as string | null | undefined) ?? undefined
+        ;(session.user as { iban?: string | null }).iban = (token.iban as string | null | undefined) ?? undefined
         ;(session.user as { verificationStatus?: string | null }).verificationStatus = (token.verificationStatus as string | null | undefined) ?? undefined
       }
       return session

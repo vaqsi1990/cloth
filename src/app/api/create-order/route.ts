@@ -225,11 +225,12 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Check if user is blocked
+    // Check if user is blocked and has IBAN
     let user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { 
-        blocked: true 
+        blocked: true,
+        iban: true
       }
     })
 
@@ -237,7 +238,7 @@ export async function POST(req: NextRequest) {
       await reevaluateUserBlocking(session.user.id, 2)
       user = await prisma.user.findUnique({
         where: { id: session.user.id },
-        select: { blocked: true }
+        select: { blocked: true, iban: true }
       })
 
       if (user?.blocked) {
@@ -249,6 +250,17 @@ export async function POST(req: NextRequest) {
           { status: 403 }
         )
       }
+    }
+
+    // Check if user has IBAN (required for purchases)
+    if (!user?.iban) {
+      return NextResponse.json(
+        { 
+          error: 'გთხოვთ შეიყვანოთ ბანკის IBAN პროფილში. IBAN აუცილებელია ყიდვისთვის.',
+          missingIban: true
+        },
+        { status: 403 }
+      )
     }
 
     // Get the user's cart

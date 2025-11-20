@@ -143,11 +143,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if user is blocked
+    // Check if user is blocked and has IBAN
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { 
-        blocked: true 
+        blocked: true,
+        iban: true
       }
     })
 
@@ -157,6 +158,18 @@ export async function POST(request: NextRequest) {
           success: false, 
           error: 'Your account requires identity verification. Please upload a document.',
           blocked: true
+        },
+        { status: 403 }
+      )
+    }
+
+    // Check if user has IBAN (required for sellers)
+    if (!user?.iban) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'გთხოვთ შეიყვანოთ ბანკის IBAN პროფილში. IBAN აუცილებელია პროდუქტის დასამატებლად.',
+          missingIban: true
         },
         { status: 403 }
       )

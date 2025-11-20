@@ -8,6 +8,7 @@ const verificationSchema = z.object({
   idFrontUrl: z.string().url().optional().nullable(),
   idBackUrl: z.string().url().optional().nullable(),
   entrepreneurCertificateUrl: z.string().url().optional().nullable(),
+  iban: z.string().optional().nullable(),
 })
 
 // GET - Get current user's verification
@@ -25,7 +26,19 @@ export async function GET() {
       where: { userId: session.user.id },
     })
 
-    return NextResponse.json({ success: true, verification })
+    // Get user's IBAN to include in response for admin review
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { iban: true }
+    })
+
+    return NextResponse.json({ 
+      success: true, 
+      verification: verification ? {
+        ...verification,
+        userIban: user?.iban || null
+      } : null
+    })
   } catch (error) {
     console.error('Error fetching verification:', error)
     return NextResponse.json(
@@ -47,7 +60,15 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { idFrontUrl, idBackUrl, entrepreneurCertificateUrl } = verificationSchema.parse(body)
+    const { idFrontUrl, idBackUrl, entrepreneurCertificateUrl, iban } = verificationSchema.parse(body)
+
+    // Save IBAN to user profile if provided
+    if (iban) {
+      await prisma.user.update({
+        where: { id: session.user.id },
+        data: { iban: iban }
+      })
+    }
 
     const upserted = await prisma.userVerification.upsert({
       where: { userId: session.user.id },
@@ -67,10 +88,19 @@ export async function PUT(request: NextRequest) {
       },
     })
 
+    // Get user's IBAN to include in response for admin review
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { iban: true }
+    })
+
     return NextResponse.json({
       success: true,
       message: 'დოკუმენტები ატვირთულია და ელოდება ადმინისტრატორის დამოწმებას',
-      verification: upserted,
+      verification: {
+        ...upserted,
+        userIban: user?.iban || null
+      },
     })
   } catch (error) {
     if (error instanceof z.ZodError) {

@@ -36,6 +36,25 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions)
     const isAdmin = session?.user?.role === 'ADMIN'
     
+    // Check if user has IBAN (required for purchases, except admins)
+    if (session?.user?.id && !isAdmin) {
+      const user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { iban: true }
+      })
+      
+      if (!user?.iban) {
+        return NextResponse.json(
+          { 
+            success: false,
+            message: 'გთხოვთ შეიყვანოთ ბანკის IBAN პროფილში. IBAN აუცილებელია ყიდვისთვის.',
+            missingIban: true
+          },
+          { status: 403 }
+        )
+      }
+    }
+    
     const body = await request.json()
     
     // Validate the request body

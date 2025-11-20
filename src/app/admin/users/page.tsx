@@ -11,6 +11,7 @@ import { showToast } from '@/utils/toast'
 interface User {
   personalId: string | null
   phone: string | null
+  iban: string | null
   id: string
   name: string | null
   email: string | null
@@ -755,6 +756,13 @@ const AdminUsersPage = () => {
                               </div>
                             )}
                           </div>
+                          {/* IBAN Display */}
+                          {user.iban && (
+                            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                              <h5 className="text-[18px] font-semibold text-black mb-2">ბანკის IBAN:</h5>
+                              <p className="text-[20px] font-mono text-blue-800">{user.iban}</p>
+                            </div>
+                          )}
                           <div className="flex items-center space-x-3 mb-2">
                             {/* Identity Status */}
                             {user.verification.idFrontUrl && user.verification.idBackUrl && (
@@ -786,9 +794,16 @@ const AdminUsersPage = () => {
                             )}
                             {user.verification.updatedAt && (
                               <span className="text-[18px] text-black">{new Date(user.verification.updatedAt).toLocaleDateString('ka-GE')}</span>
-                            )}
+                          )}
+                        </div>
+                        {/* IBAN Display */}
+                        {user.iban && (
+                          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <h5 className="text-[18px] font-semibold text-black mb-2">ბანკის IBAN:</h5>
+                            <p className="text-[20px] font-mono text-blue-800">{user.iban}</p>
                           </div>
-                          {user.verification.identityComment && (
+                        )}
+                        {user.verification.identityComment && (
                             <div className="bg-red-50 text-red-800 p-2 rounded mb-2 text-[18px]">
                               <strong>პირადობის კომენტარი:</strong> {user.verification.identityComment}
                             </div>

@@ -95,6 +95,7 @@ model User {
   location      String? // ადგილმდებარეობა
   address       String? // მისამართი
   postalIndex   String? // საფოსტო ინდექსი
+  iban          String? @db.VarChar(34)
   gender        UserGender? // სქესი
   dateOfBirth   DateTime? // დაბადების თარიღი
   personalId    String? @unique // პირადობის ნომერი

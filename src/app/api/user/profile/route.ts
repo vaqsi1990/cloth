@@ -4,6 +4,10 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
+const normalizeIban = (value: unknown) => typeof value === 'string'
+  ? value.replace(/\s+/g, '').toUpperCase()
+  : value
+
 const profileSchema = z.object({
   name: z.string().min(1, 'სახელი აუცილებელია'),
   email: z.string().email('არასწორი ელფოსტა'),
@@ -15,6 +19,13 @@ const profileSchema = z.object({
   postalIndex: z.string().min(2, 'საფოსტო ინდექსი არასწორია').optional(),
   gender: z.enum(["MALE", "FEMALE", "OTHER"], { message: "სქესი არასწორია" }).optional(),
   dateOfBirth: z.string().optional(),
+  iban: z.preprocess(
+    normalizeIban,
+    z.string()
+      .min(22, 'IBAN აუცილებელია')
+      .max(34, 'IBAN არასწორია')
+      .regex(/^GE\d{2}[0-9A-Z]{16,}$/, 'გთხოვთ შეიყვანოთ ქართული ბანკის IBAN (GE...)')
+  ),
   // personalId is not included in schema - should not be updatable
 })
 
@@ -31,7 +42,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, email, image, phone, location, lastName, address, postalIndex, gender, dateOfBirth } = profileSchema.parse(body)
+    const { name, email, image, phone, location, lastName, address, postalIndex, gender, dateOfBirth, iban } = profileSchema.parse(body)
 
     // Check if email is already taken by another user
     const existingUser = await prisma.user.findFirst({
@@ -82,6 +93,7 @@ export async function PUT(request: NextRequest) {
         postalIndex: postalIndex ?? undefined,
         gender: gender ?? undefined,
         dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+        iban,
       },
       select: {
         id: true,
@@ -97,6 +109,7 @@ export async function PUT(request: NextRequest) {
         postalIndex: true,
         gender: true,
         dateOfBirth: true,
+        iban: true,
       }
     })
 
@@ -152,6 +165,7 @@ export async function GET(request: NextRequest) {
         postalIndex: true,
         gender: true,
         dateOfBirth: true,
+        iban: true,
       }
     })
 
