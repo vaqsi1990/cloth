@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { Prisma } from '@prisma/client'
+import { ensureUniqueProductSlug } from '@/lib/productSlug'
 
 // Product validation schema
 const productSchema = z.object({
@@ -196,11 +197,15 @@ export async function PUT(
       sizeSystem: v.sizeSystem ?? validatedData.sizeSystem
     })))
     
+    const uniqueSlug = await ensureUniqueProductSlug(validatedData.slug, {
+      excludeProductId: productId
+    })
+
     const updatedProduct = await prisma.product.update({
       where: { id: productId },
       data: {
         name: validatedData.name,
-        slug: validatedData.slug,
+        slug: uniqueSlug,
         brand: validatedData.brand,
      
         description: validatedData.description,

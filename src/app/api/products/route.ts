@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { generateUniqueSKU } from '@/utils/skuUtils'
+import { ensureUniqueProductSlug } from '@/lib/productSlug'
 
 // Product validation schema
 const productSchema = z.object({
@@ -183,11 +184,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const uniqueSlug = await ensureUniqueProductSlug(validatedData.slug)
+
     // Create product in database using Prisma (approval fields rely on DB defaults)
     const createdProduct = await prisma.product.create({
       data: {
         name: validatedData.name,
-        slug: validatedData.slug,
+        slug: uniqueSlug,
         brand: validatedData.brand,
         description: validatedData.description,
         sku: uniqueSKU, // Auto-generated unique SKU
