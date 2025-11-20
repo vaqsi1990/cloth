@@ -41,7 +41,7 @@ const ImageUploadForProduct = ({ onChange, value }: ImageUploadProps): React.JSX
         }}
         appearance={{
           button: "bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm",
-          allowedContent: "text-gray-400 text-xs mt-1",
+          allowedContent: "text-gray-400 text-[16px] text-black mt-1",
         }}
       />
 
