@@ -19,21 +19,6 @@ interface CartItemInput {
   image?: string
 }
 
-interface OrderDataInput {
-  cart: {
-    items: CartItemInput[]
-  }
-  totalAmount: string | number
-  orderId: string
-  deliveryOption?: string
-  address?: {
-    firstName: string
-    lastName: string
-    email: string
-  }
-  paymentMethod?: 'google_pay' | 'card' | 'apple_pay'
-  googlePayToken?: string
-}
 
 interface BOGBasketItem {
   quantity: number
@@ -516,7 +501,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Config merge
-    const config: any = {}
+    const config: BOGRequestData['config'] = {}
 
     if (orderData.paymentMethod === 'google_pay' && orderData.googlePayToken) {
       config.google_pay = {
@@ -667,7 +652,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (axios.isAxiosError(error)) {
-      const axiosError = error as AxiosError<{ message?: string; error?: string; details?: any }>
+      const axiosError = error as AxiosError<{ message?: string; error?: string; details?: unknown }>
       const responseData = axiosError.response?.data
       const errorMessage = responseData?.message
         || responseData?.error
