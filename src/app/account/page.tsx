@@ -98,7 +98,6 @@ const AccountPage = () => {
   const isSeller = userStats.productsCount > 0
   // Show verification for all non-admin users who haven't been approved yet
   const sellerNeedsVerification = true // Always show for non-admin users
-console.log(sellerNeedsVerification,'sellerNeedsVerification')
   // Load uploaded images from localStorage on mount
   const [idFrontUrl, setIdFrontUrl] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {

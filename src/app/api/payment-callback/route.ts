@@ -14,6 +14,23 @@ tcBuHV4f7qsynQT+f2UYbESX/TLHwT5qFWZDHZ0YUOUIvb8n7JujVSGZO9/+ll/g
 PwIDAQAB
 -----END PUBLIC KEY-----`
 
+interface SplitPayment {
+  amount?: number | null
+  percent?: number
+  description?: string
+  iban: string
+  status: 'processing' | 'completed' | 'rejected'
+  reject_reason?: string
+}
+
+interface SplitObject {
+  split_status: 'processing' | 'completed' | 'rejected'
+  currency: string
+  request_channel?: string
+  split_reject_reason?: string
+  split_payments: SplitPayment[]
+}
+
 interface CallbackBody {
   event: string
   zoned_request_time: string
@@ -26,6 +43,7 @@ interface CallbackBody {
     }
     status?: string
     payment_status?: string
+    split?: SplitObject
     [key: string]: unknown
   }
 }
@@ -150,8 +168,8 @@ export async function POST(request: NextRequest) {
     // Now parse the JSON body
     const callbackData: CallbackBody = JSON.parse(rawBody)
 
-    // Validate callback structure
-    if (callbackData.event !== 'order_payment') {
+    // Validate callback structure - support both order_payment and split_payment events
+    if (callbackData.event !== 'order_payment' && callbackData.event !== 'split_payment') {
       console.error(`Unexpected event type: ${callbackData.event}`)
       return NextResponse.json(
         { error: 'Invalid event type' },
@@ -167,14 +185,67 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { order_id, order_status } = callbackData.body
+    const { order_id, order_status, split } = callbackData.body
     
+    // Handle split_payment event
+    if (callbackData.event === 'split_payment') {
+      console.log('💰 Split Payment Callback received:')
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      console.log(`Order ID: ${order_id}`)
+      
+      if (split) {
+        console.log(`Split Status: ${split.split_status}`)
+        console.log(`Currency: ${split.currency}`)
+        console.log(`Request Channel: ${split.request_channel || 'N/A'}`)
+        
+        if (split.split_status === 'rejected') {
+          console.error(`❌ Split payment rejected: ${split.split_reject_reason || 'Unknown reason'}`)
+        }
+        
+        console.log('Split Payments:')
+        split.split_payments.forEach((payment, index) => {
+          console.log(`  ${index + 1}. ${payment.description || 'Payment'}:`)
+          console.log(`     IBAN: ${payment.iban.substring(0, 8)}...`)
+          console.log(`     Amount: ${payment.amount || 'N/A'}, Percent: ${payment.percent || 'N/A'}%`)
+          console.log(`     Status: ${payment.status}`)
+          if (payment.status === 'rejected' && payment.reject_reason) {
+            console.error(`     ❌ Rejected: ${payment.reject_reason}`)
+          }
+        })
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      }
+      
+      // Always return 200 to acknowledge receipt
+      return NextResponse.json(
+        { 
+          success: true,
+          message: 'Split payment callback received and processed',
+          order_id,
+          split_status: split?.split_status
+        },
+        { status: 200 }
+      )
+    }
+    
+    // Handle order_payment event (existing logic)
     // Extract order_status.key from callback body
     // The callback body contains the same structure as the payment details API response
     const finalPaymentStatus = order_status?.key || callbackData.body.status || 'UNKNOWN'
     
-    console.log(`Payment callback received for order ${order_id} with status: ${finalPaymentStatus}`)
+    console.log(`💳 Payment callback received for order ${order_id} with status: ${finalPaymentStatus}`)
     console.log(`Callback time: ${callbackData.zoned_request_time}`)
+    
+    // Log split info if present in order_payment callback
+    if (split) {
+      console.log(`Split Status: ${split.split_status}`)
+      if (split.split_status === 'processing') {
+        console.log('⏳ Split payment is still processing...')
+      } else if (split.split_status === 'completed') {
+        console.log('✅ Split payment completed successfully!')
+      } else if (split.split_status === 'rejected') {
+        console.error(`❌ Split payment rejected: ${split.split_reject_reason || 'Unknown reason'}`)
+      }
+    }
 
     // Update order status in database
     const updateSuccess = await updateOrderStatus(order_id, finalPaymentStatus)
@@ -191,7 +262,8 @@ export async function POST(request: NextRequest) {
         success: true,
         message: 'Callback received and processed',
         order_id,
-        status: finalPaymentStatus
+        status: finalPaymentStatus,
+        split_status: split?.split_status
       },
       { status: 200 }
     )

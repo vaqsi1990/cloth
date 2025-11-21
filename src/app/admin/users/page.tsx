@@ -568,6 +568,13 @@ const AdminUsersPage = () => {
                             </div>
                           )}
                         </div>
+                        {/* IBAN Display */}
+                        {user.iban && (
+                          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <h5 className="text-[18px] font-semibold text-black mb-2">ბანკის IBAN:</h5>
+                            <p className="text-[20px] font-mono text-blue-800">{user.iban}</p>
+                          </div>
+                        )}
                         <div className="flex items-center space-x-3 mb-3">
                           <span className={`px-3 py-1 rounded-full text-[16px] font-semibold text-white ${
                             (user.verification.identityStatus === 'REJECTED' || (!user.verification.identityStatus && user.verification.status === 'REJECTED')) ? 'bg-red-600' : 'bg-yellow-500'

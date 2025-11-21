@@ -106,6 +106,17 @@ const CheckoutPage = () => {
                 orderData.googlePayToken = googlePayToken
             }
 
+            // Calculate split payment amounts (9% admin, 91% seller)
+            const adminAmount = totalAmount * 0.09
+            const sellerAmount = totalAmount * 0.91
+            
+            console.log('💰 Split Payment Breakdown:')
+            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+            console.log(`📊 მთლიანი თანხა: ₾${totalAmount.toFixed(2)}`)
+            console.log(`👤 ადმინის ნაწილი (9%): ₾${adminAmount.toFixed(2)}`)
+            console.log(`✍️ ავტორის ნაწილი (91%): ₾${sellerAmount.toFixed(2)}`)
+            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+
             // Step 3: Create payment order
             const res = await fetch('/api/create-order', {
                 method: 'POST',
@@ -117,6 +128,18 @@ const CheckoutPage = () => {
             })
 
             const data = await res.json()
+
+            // Log full response for debugging
+            console.log('📡 API Response Status:', res.status)
+            console.log('📡 API Response Data:', JSON.stringify(data, null, 2))
+
+            if (!res.ok) {
+                console.error('❌ API Error Response:', {
+                    status: res.status,
+                    statusText: res.statusText,
+                    data: data
+                })
+            }
 
             if (data.success) {
                 if (data.redirectUrl) {
@@ -136,8 +159,18 @@ const CheckoutPage = () => {
                     showToast('გადახდა წარმატებით დასრულდა', 'success')
                 }
             } else {
-                console.error('Payment order creation failed:', data)
-                showToast(data.error || 'დაფიქსირდა შეცდომა გადახდის დაწყებისას', 'error')
+                console.error('❌ Payment order creation failed:', {
+                    status: res.status,
+                    data: data,
+                    error: data.error,
+                    details: data.details
+                })
+                
+                const errorMessage = data.error 
+                    || data.message 
+                    || (data.details && typeof data.details === 'string' ? data.details : 'დაფიქსირდა შეცდომა გადახდის დაწყებისას')
+                
+                showToast(errorMessage, 'error')
                 setIsProcessing(false)
             }
         } catch (error) {

@@ -206,7 +206,6 @@ export async function PUT(
         name: validatedData.name,
         slug: uniqueSlug,
         brand: validatedData.brand,
-     
         description: validatedData.description,
         // SKU is not updated - keep existing unique code
         gender: validatedData.gender,
