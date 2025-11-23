@@ -476,6 +476,7 @@ const ProductPage = () => {
     // Helpers
     // -------------------------
     const minDaysGlobal = tiers.length ? Math.min(...tiers.map(t => t.minDays)) : 4
+    const MAX_RENTAL_DAYS = 60 // 2 months maximum rental period
 
     const getMainImage = () =>
         product?.images?.[activeImage]?.url || product?.images?.[0]?.url || "/placeholder.jpg"
@@ -647,6 +648,13 @@ const ProductPage = () => {
             return
         }
         
+        // Check if rental period exceeds 2 months (60 days)
+        const days = calcDays()
+        if (days > MAX_RENTAL_DAYS) {
+            showToast(`ქირაობა მაქსიმუმ ${MAX_RENTAL_DAYS} დღით შეიძლება (2 თვე)`, "warning")
+            return
+        }
+        
         // Check if the selected dates conflict with existing rentals
         const start = new Date(rentalStartDate)
         const end = new Date(rentalEndDate)
@@ -667,7 +675,6 @@ const ProductPage = () => {
         if (isAdding) return
         setIsAdding(true)
 
-        const days = calcDays()
         const total = priceForDays(days)
 
         const ok = await addToCart({
@@ -984,9 +991,27 @@ const ProductPage = () => {
                                                     filterDate={(date) => {
                                                         if (!date) return false;
                                                         const blocked = isDateBlocked(date);
-                                                        return !blocked;
+                                                        if (blocked) return false;
+                                                        
+                                                        // Check 60-day limit from start date
+                                                        if (rentalStartDate) {
+                                                            const start = new Date(rentalStartDate)
+                                                            start.setHours(0, 0, 0, 0)
+                                                            const checkDate = new Date(date)
+                                                            checkDate.setHours(0, 0, 0, 0)
+                                                            const diffTime = checkDate.getTime() - start.getTime()
+                                                            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1
+                                                            if (diffDays > MAX_RENTAL_DAYS) return false
+                                                        }
+                                                        
+                                                        return true;
                                                     }}
                                                     minDate={rentalStartDate ? new Date(rentalStartDate) : new Date()}
+                                                    maxDate={rentalStartDate ? (() => {
+                                                        const maxDate = new Date(rentalStartDate)
+                                                        maxDate.setDate(maxDate.getDate() + MAX_RENTAL_DAYS - 1)
+                                                        return maxDate
+                                                    })() : undefined}
                                                     placeholderText="აირჩიე თარიღი"
                                                     dateFormat="dd/MM/yyyy"
                                                     className="w-full text-[16px] placeholder:text-[16px] placeholder:text-black px-3 py-2 border rounded-lg"
@@ -1022,6 +1047,19 @@ const ProductPage = () => {
 
                                         {/* Info message about dates */}
                                       
+
+                                        {/* Show warning if rental period exceeds 60 days */}
+                                        {(rentalStartDate && rentalEndDate) && (() => {
+                                            const days = calcDays()
+                                            if (days > MAX_RENTAL_DAYS) {
+                                                return (
+                                                    <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
+                                                        ქირაობა მაქსიმუმ {MAX_RENTAL_DAYS} დღით შეიძლება (2 თვე). არჩეული პერიოდი: {days} დღე.
+                                                    </div>
+                                                )
+                                            }
+                                            return null
+                                        })()}
 
                                         {/* Show warning if dates conflict with existing rentals */}
                                         {(rentalStartDate && rentalEndDate) && (() => {
@@ -1074,6 +1112,17 @@ const ProductPage = () => {
                                         </p>
                                     )}
                                     {(purchaseMode === "rent" && canRent && rentalStartDate && rentalEndDate) && (() => {
+                                        const days = calcDays()
+                                        
+                                        // Check if rental period exceeds 60 days
+                                        if (days > MAX_RENTAL_DAYS) {
+                                            return (
+                                                <p className="text-[16px] text-red-600 font-medium text-center">
+                                                    ქირაობა მაქსიმუმ {MAX_RENTAL_DAYS} დღით შეიძლება (2 თვე)
+                                                </p>
+                                            )
+                                        }
+                                        
                                         // Check if the selected dates conflict with existing rentals
                                         const start = new Date(rentalStartDate)
                                         const end = new Date(rentalEndDate)
@@ -1103,7 +1152,7 @@ const ProductPage = () => {
                                             ) : purchaseMode === "rent" && selectedSize && canRent ? (
                                                 <button
                                                     onClick={handleRental}
-                                                    disabled={!rentalStartDate || !rentalEndDate}
+                                                    disabled={Boolean(!rentalStartDate || !rentalEndDate || (rentalStartDate && rentalEndDate && calcDays() > MAX_RENTAL_DAYS))}
                                                     className="w-full py-4 rounded-xl md:text-[18px] text-[16px] text-white font-bold transition bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
                                                 >
                                                     {isAdding ? "მუშავდება..." : "ქირაობა"}

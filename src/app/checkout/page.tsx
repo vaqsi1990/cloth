@@ -118,6 +118,14 @@ const CheckoutPage = () => {
             console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
 
             // Step 3: Create payment order
+            console.log('📤 [CHECKOUT] Sending order creation request...')
+            console.log('📤 [CHECKOUT] Order data:', {
+                totalAmount: orderData.totalAmount,
+                itemsCount: orderData.cart.items.length,
+                productIds: orderData.cart.items.map(i => i.productId),
+                paymentMethod: orderData.paymentMethod || 'card'
+            })
+            
             const res = await fetch('/api/create-order', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
