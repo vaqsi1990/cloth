@@ -36,8 +36,11 @@ const ShopPageClient = () => {
         isAvailable: boolean;
     }[]>>({})
     const [isCategoryOpen, setIsCategoryOpen] = useState(true)
+    const [isRatingOpen, setIsRatingOpen] = useState(true)
     const [currentPage, setCurrentPage] = useState(1)
     const [itemsPerPage] = useState(20)
+    const [activeMobileFilter, setActiveMobileFilter] = useState<string | null>(null)
+    const [isMobileFilterOverlayOpen, setIsMobileFilterOverlayOpen] = useState(false)
 
     // Helper functions for price calculation
     const getRentalPrice = (product: Product): number => {
@@ -480,8 +483,664 @@ const ShopPageClient = () => {
 
 
             <div className="container mx-auto px-2 py-8">
-                {/* Mobile Filter Toggle */}
-                <div className="lg:hidden mb-6">
+                {/* Mobile Filter Bar - Temu Style */}
+                <div className="lg:hidden mb-4">
+                    <div className="bg-white rounded-lg shadow-sm border">
+                        <div className="flex items-center justify-center px-2 py-2">
+                            <button
+                                onClick={() => {
+                                    setIsMobileFilterOverlayOpen(true)
+                                    setActiveMobileFilter('all')
+                                }}
+                                className="flex items-center gap-1 px-3 py-2 text-[16px] font-medium text-black whitespace-nowrap hover:bg-gray-50 rounded"
+                            >
+                                <Filter className="w-4 h-4" />
+                                <span>ფილტრები</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Mobile Filter Overlay - Temu Style */}
+                {isMobileFilterOverlayOpen && (
+                    <div className="lg:hidden fixed inset-0 z-50 bg-white">
+                        <div className="flex h-full">
+                            {/* Left Sidebar - Filter Categories */}
+                            <div className="w-32 bg-gray-50 border-r border-gray-200 overflow-y-auto">
+                                <div className="p-2">
+                                    <button
+                                        onClick={() => setActiveMobileFilter('all')}
+                                        className={`w-full text-left px-3 py-3 text-[16px] font-medium rounded mb-1 ${
+                                            activeMobileFilter === 'all'
+                                                ? 'bg-[#1B3729] text-white'
+                                                : 'text-black hover:bg-gray-200'
+                                        }`}
+                                    >
+                                        ყველა
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveMobileFilter('sort')}
+                                        className={`w-full text-left px-3 py-3 text-[16px] font-medium rounded mb-1 ${
+                                            activeMobileFilter === 'sort'
+                                                ? 'bg-[#1B3729] text-white'
+                                                : 'text-black hover:bg-gray-200'
+                                        }`}
+                                    >
+                                        დალაგება
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveMobileFilter('size')}
+                                        className={`w-full text-left px-3 py-3 text-[16px] font-medium rounded mb-1 ${
+                                            activeMobileFilter === 'size'
+                                                ? 'bg-[#1B3729] text-white'
+                                                : 'text-black hover:bg-gray-200'
+                                        }`}
+                                    >
+                                        ზომა
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveMobileFilter('color')}
+                                        className={`w-full text-left px-3 py-3 text-[16px] font-medium rounded mb-1 ${
+                                            activeMobileFilter === 'color'
+                                                ? 'bg-[#1B3729] text-white'
+                                                : 'text-black hover:bg-gray-200'
+                                        }`}
+                                    >
+                                        ფერი
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveMobileFilter('category')}
+                                        className={`w-full text-left px-3 py-3 text-[16px] font-medium rounded mb-1 ${
+                                            activeMobileFilter === 'category'
+                                                ? 'bg-[#1B3729] text-white'
+                                                : 'text-black hover:bg-gray-200'
+                                        }`}
+                                    >
+                                        კატეგორია
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveMobileFilter('price')}
+                                        className={`w-full text-left px-3 py-3 text-[16px] font-medium rounded mb-1 ${
+                                            activeMobileFilter === 'price'
+                                                ? 'bg-[#1B3729] text-white'
+                                                : 'text-black hover:bg-gray-200'
+                                        }`}
+                                    >
+                                        ფასი
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveMobileFilter('location')}
+                                        className={`w-full text-left px-3 py-3 text-[16px] font-medium rounded mb-1 ${
+                                            activeMobileFilter === 'location'
+                                                ? 'bg-[#1B3729] text-white'
+                                                : 'text-black hover:bg-gray-200'
+                                        }`}
+                                    >
+                                        მდებარეობა
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveMobileFilter('type')}
+                                        className={`w-full text-left px-3 py-3 text-[16px] font-medium rounded mb-1 ${
+                                            activeMobileFilter === 'type'
+                                                ? 'bg-[#1B3729] text-white'
+                                                : 'text-black hover:bg-gray-200'
+                                        }`}
+                                    >
+                                        ტიპი
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveMobileFilter('rating')}
+                                        className={`w-full text-left px-3 py-3 text-[16px] font-medium rounded mb-1 ${
+                                            activeMobileFilter === 'rating'
+                                                ? 'bg-[#1B3729] text-white'
+                                                : 'text-black hover:bg-gray-200'
+                                        }`}
+                                    >
+                                        რეიტინგი
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Right Content Area */}
+                            <div className="flex-1 overflow-y-auto">
+                                <div className="p-2">
+                                    {/* Sort Options */}
+                                    {activeMobileFilter === 'sort' && (
+                                        <div>
+                                            <h3 className="text-lg font-semibold mb-4 text-black">დალაგება</h3>
+                                            <div className="space-y-2">
+                                                {[
+                                                    { value: 'newest', label: 'ახალი' },
+                                                    { value: 'price-low', label: 'ფასი: დაბლიდან მაღლა' },
+                                                    { value: 'price-high', label: 'ფასი: მაღლიდან დაბლა' },
+                                                    { value: 'rating', label: 'რეიტინგი' }
+                                                ].map((option) => (
+                                                    <button
+                                                        key={option.value}
+                                                        onClick={() => {
+                                                            setSortBy(option.value)
+                                                            setIsMobileFilterOverlayOpen(false)
+                                                        }}
+                                                        className={`w-full text-left px-4 py-3 rounded-lg border ${
+                                                            sortBy === option.value
+                                                                ? 'bg-[#1B3729] text-white border-[#1B3729]'
+                                                                : 'bg-white text-black border-gray-300 hover:border-orange-500'
+                                                        }`}
+                                                    >
+                                                        {option.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Size Options */}
+                                    {activeMobileFilter === 'size' && (
+                                        <div>
+                                            <h3 className="text-lg font-semibold mb-4 text-black">ზომის სისტემა</h3>
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <h4 className="text-[16px] font-medium mb-2 text-gray-600">ზომის სისტემა</h4>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {sizeSystems.map((sizeSystem) => (
+                                                            <button
+                                                                key={sizeSystem.id}
+                                                                onClick={() => toggleSizeSystem(sizeSystem.id)}
+                                                                className={`w-10 h-10 rounded-full border-2 flex items-center justify-center text-[16px] font-medium ${
+                                                                    selectedSizeSystems.includes(sizeSystem.id)
+                                                                        ? 'bg-[#1B3729] text-white border-[#1B3729]'
+                                                                        : 'bg-white text-black border-gray-300 hover:border-orange-500'
+                                                                }`}
+                                                            >
+                                                                {sizeSystem.label}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Color Options */}
+                                    {activeMobileFilter === 'color' && (
+                                        <div>
+                                            <h3 className="text-lg font-semibold mb-4 text-black">ფერი</h3>
+                                            <div className="flex flex-wrap gap-3">
+                                                {colors.map((color) => (
+                                                    <button
+                                                        key={color.id}
+                                                        onClick={() => toggleColor(color.id)}
+                                                        className={`relative w-10 h-10 rounded-full border-2 ${
+                                                            selectedColors.includes(color.id)
+                                                                ? 'border-[#1B3729]  '
+                                                                : 'border-gray-300 hover:border-orange-500'
+                                                        }`}
+                                                        style={{ backgroundColor: color.color }}
+                                                    >
+                                                        {selectedColors.includes(color.id) && (
+                                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                                <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
+                                                                    <div className="w-3 h-3 bg-[#1B3729] rounded-full"></div>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Category Options */}
+                                    {activeMobileFilter === 'category' && (
+                                        <div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsCategoryOpen(!isCategoryOpen)}
+                                                className="w-full flex items-center justify-between mb-4"
+                                            >
+                                                <h3 className="text-lg font-semibold text-black">კატეგორია</h3>
+                                                <ChevronDown className={`w-5 h-5 text-black transition-transform ${isCategoryOpen ? "rotate-180" : "rotate-0"}`} />
+                                            </button>
+                                            {isCategoryOpen && (
+                                                <div className="space-y-2">
+                                                    {categories.map((category) => {
+                                                        const categoryCount = products.filter(product =>
+                                                            product.category?.name === category.label
+                                                        ).length;
+                                                        const isSelected = selectedCategories.includes(category.label);
+
+                                                        return (
+                                                            <button
+                                                                key={category.id}
+                                                                onClick={() => toggleCategory(category.label)}
+                                                                className={`w-full text-left px-3 py-2 rounded-md text-[16px] transition-colors flex justify-between items-center ${
+                                                                    isSelected
+                                                                        ? "bg-black text-white"
+                                                                        : "text-black hover:bg-gray-100"
+                                                                }`}
+                                                            >
+                                                                <span>{category.label}</span>
+                                                                <span className={`text-[14px] px-2 py-1 rounded-full ${
+                                                                    isSelected
+                                                                        ? "bg-gray-600 text-white"
+                                                                        : "bg-gray-200 text-black"
+                                                                }`}>
+                                                                    {categoryCount}
+                                                                </span>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Price Range */}
+                                    {activeMobileFilter === 'price' && (
+                                        <div>
+                                            <h3 className="text-lg font-semibold mb-4 text-black">ფასის დიაპაზონი</h3>
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <input
+                                                        type="range"
+                                                        min="0"
+                                                        max={maxPrice}
+                                                        value={priceRange[1]}
+                                                        onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
+                                                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                                                       
+                                                    />
+                                                </div>
+                                                <div className="flex items-center justify-between text-black">
+                                                    <span>₾{priceRange[0]}</span>
+                                                    <span>₾{priceRange[1]}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Location Options */}
+                                    {activeMobileFilter === 'location' && (
+                                        <div>
+                                            <h3 className="text-lg font-semibold mb-4 text-black">მდებარეობა</h3>
+                                            <div className="flex flex-wrap gap-2">
+                                                {locations.map((location) => (
+                                                    <button
+                                                        key={location.id}
+                                                        onClick={() => toggleLocation(location.id)}
+                                                        className={`px-4 py-2 rounded-lg border text-[16px] font-medium ${
+                                                            selectedLocations.includes(location.id)
+                                                                ? 'bg-[#1B3729] text-white border-[#1B3729]'
+                                                                : 'bg-white text-black border-gray-300 hover:border-orange-500'
+                                                        }`}
+                                                    >
+                                                        {location.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Type Options */}
+                                    {activeMobileFilter === 'type' && (
+                                        <div>
+                                            <h3 className="text-lg font-semibold mb-4 text-black">ტიპი</h3>
+                                            <div className="space-y-2">
+                                                <button
+                                                    onClick={() => setPurchaseType("all")}
+                                                    className={`w-full text-left px-4 py-3 rounded-lg border flex justify-between items-center ${
+                                                        purchaseType === "all"
+                                                            ? 'bg-[#1B3729] text-white border-[#1B3729]'
+                                                            : 'bg-white text-black border-gray-300 hover:border-orange-500'
+                                                    }`}
+                                                >
+                                                    <span>ყველა</span>
+                                                    <span className={`text-[16px] px-2 py-1 rounded-full ${
+                                                        purchaseType === "all"
+                                                            ? "bg-white/20 text-white"
+                                                            : "bg-gray-200 text-black"
+                                                    }`}>
+                                                        {products.length}
+                                                    </span>
+                                                </button>
+                                                <button
+                                                    onClick={() => setPurchaseType("rent-only")}
+                                                    className={`w-full text-left px-4 py-3 rounded-lg border flex justify-between items-center ${
+                                                        purchaseType === "rent-only"
+                                                            ? 'bg-[#1B3729] text-white border-[#1B3729]'
+                                                            : 'bg-white text-black border-gray-300 hover:border-orange-500'
+                                                    }`}
+                                                >
+                                                    <span>მხოლოდ გაქირავება</span>
+                                                    <span className={`text-[16px] px-2 py-1 rounded-full ${
+                                                        purchaseType === "rent-only"
+                                                            ? "bg-white/20 text-white"
+                                                            : "bg-gray-200 text-black"
+                                                    }`}>
+                                                        {products.filter(p => isRentOnly(p)).length}
+                                                    </span>
+                                                </button>
+                                                <button
+                                                    onClick={() => setPurchaseType("sale-only")}
+                                                    className={`w-full text-left px-4 py-3 rounded-lg border flex justify-between items-center ${
+                                                        purchaseType === "sale-only"
+                                                            ? 'bg-[#1B3729] text-white border-[#1B3729]'
+                                                            : 'bg-white text-black border-gray-300 hover:border-orange-500'
+                                                    }`}
+                                                >
+                                                    <span>მხოლოდ ყიდვა</span>
+                                                    <span className={`text-[16px] px-2 py-1 rounded-full ${
+                                                        purchaseType === "sale-only"
+                                                            ? "bg-white/20 text-white"
+                                                            : "bg-gray-200 text-black"
+                                                    }`}>
+                                                        {products.filter(p => isSaleOnly(p)).length}
+                                                    </span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Rating Options */}
+                                    {activeMobileFilter === 'rating' && (
+                                        <div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsRatingOpen(!isRatingOpen)}
+                                                className="w-full flex items-center justify-between mb-4"
+                                            >
+                                                <h3 className="text-lg font-semibold text-black">რეიტინგი</h3>
+                                                <ChevronDown className={`w-5 h-5 text-black transition-transform ${isRatingOpen ? "rotate-180" : "rotate-0"}`} />
+                                            </button>
+                                            {isRatingOpen && (
+                                                <div className="space-y-2">
+                                                    {[5, 4, 3, 2, 1].map((rating) => {
+                                                        const count = products.filter(
+                                                            (product) => Math.floor(product.rating || 0) === rating
+                                                        ).length;
+
+                                                        return (
+                                                            <button
+                                                                key={rating}
+                                                                onClick={() => toggleRating(rating)}
+                                                                className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-[16px] transition-colors border ${
+                                                                    selectedRatings.includes(rating)
+                                                                        ? "bg-[#1B3729] text-white border-[#1B3729]"
+                                                                        : "bg-white text-black border-gray-300 hover:bg-gray-100"
+                                                                }`}
+                                                            >
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="flex items-center">
+                                                                        {[1, 2, 3, 4, 5].map((star) => (
+                                                                            <Star
+                                                                                key={star}
+                                                                                className={`w-4 h-4 ${
+                                                                                    star <= rating
+                                                                                        ? "fill-amber-500 text-amber-500"
+                                                                                        : "fill-gray-200 text-gray-300"
+                                                                                }`}
+                                                                            />
+                                                                        ))}
+                                                                    </div>
+                                                                    <span className="ml-1">{rating} ★</span>
+                                                                </div>
+                                                                <span className={`text-[14px] px-2 py-1 rounded-full ${
+                                                                    selectedRatings.includes(rating)
+                                                                        ? "bg-gray-600 text-white"
+                                                                        : "bg-gray-200 text-black"
+                                                                }`}>
+                                                                    {count}
+                                                                </span>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* All Filters View */}
+                                    {activeMobileFilter === 'all' && (
+                                        <div>
+                                            <h3 className="text-lg font-semibold mb-4 text-black">ყველა ფილტრი</h3>
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <h4 className="text-[16px] font-medium mb-2 text-gray-600">ტიპი</h4>
+                                                    <div className="space-y-2">
+                                                        <button
+                                                            onClick={() => setPurchaseType("all")}
+                                                            className={`w-full text-left px-4 py-3 rounded-lg border flex justify-between items-center ${
+                                                                purchaseType === "all"
+                                                                    ? 'bg-[#1B3729] text-white border-[#1B3729]'
+                                                                    : 'bg-white text-black border-gray-300 hover:border-orange-500'
+                                                            }`}
+                                                        >
+                                                            <span>ყველა</span>
+                                                            <span className={`text-[16px] px-2 py-1 rounded-full ${
+                                                                purchaseType === "all"
+                                                                    ? "bg-white/20 text-white"
+                                                                    : "bg-gray-200 text-black"
+                                                            }`}>
+                                                                {products.length}
+                                                            </span>
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setPurchaseType("rent-only")}
+                                                            className={`w-full text-left px-4 py-3 rounded-lg border flex justify-between items-center ${
+                                                                purchaseType === "rent-only"
+                                                                    ? 'bg-[#1B3729] text-white border-[#1B3729]'
+                                                                    : 'bg-white text-black border-gray-300 hover:border-orange-500'
+                                                            }`}
+                                                        >
+                                                            <span>მხოლოდ გაქირავება</span>
+                                                            <span className={`text-[16px] px-2 py-1 rounded-full ${
+                                                                purchaseType === "rent-only"
+                                                                    ? "bg-white/20 text-white"
+                                                                    : "bg-gray-200 text-black"
+                                                            }`}>
+                                                                {products.filter(p => isRentOnly(p)).length}
+                                                            </span>
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setPurchaseType("sale-only")}
+                                                            className={`w-full text-left px-4 py-3 rounded-lg border flex justify-between items-center ${
+                                                                purchaseType === "sale-only"
+                                                                    ? 'bg-[#1B3729] text-white border-[#1B3729]'
+                                                                    : 'bg-white text-black border-gray-300 hover:border-orange-500'
+                                                            }`}
+                                                        >
+                                                            <span>მხოლოდ ყიდვა</span>
+                                                            <span className={`text-[16px] px-2 py-1 rounded-full ${
+                                                                purchaseType === "sale-only"
+                                                                    ? "bg-white/20 text-white"
+                                                                    : "bg-gray-200 text-black"
+                                                            }`}>
+                                                                {products.filter(p => isSaleOnly(p)).length}
+                                                            </span>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setIsCategoryOpen(!isCategoryOpen)}
+                                                        className="w-full flex items-center justify-between mb-2"
+                                                    >
+                                                        <h4 className="text-[16px] font-medium text-gray-600">კატეგორია</h4>
+                                                        <ChevronDown className={`w-5 h-5 text-gray-600 transition-transform ${isCategoryOpen ? "rotate-180" : "rotate-0"}`} />
+                                                    </button>
+                                                    {isCategoryOpen && (
+                                                        <div className="space-y-2 max-h-60 overflow-y-auto">
+                                                            {categories.map((category) => {
+                                                                const categoryCount = products.filter(product =>
+                                                                    product.category?.name === category.label
+                                                                ).length;
+                                                                const isSelected = selectedCategories.includes(category.label);
+
+                                                                return (
+                                                                    <button
+                                                                        key={category.id}
+                                                                        onClick={() => toggleCategory(category.label)}
+                                                                        className={`w-full text-left px-3 py-2 rounded-md text-[16px] transition-colors flex justify-between items-center ${
+                                                                            isSelected
+                                                                                ? "bg-black text-white"
+                                                                                : "text-black hover:bg-gray-100"
+                                                                        }`}
+                                                                    >
+                                                                        <span>{category.label}</span>
+                                                                        <span className={`text-[14px] px-2 py-1 rounded-full ${
+                                                                            isSelected
+                                                                                ? "bg-gray-600 text-white"
+                                                                                : "bg-gray-200 text-black"
+                                                                        }`}>
+                                                                            {categoryCount}
+                                                                        </span>
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setIsRatingOpen(!isRatingOpen)}
+                                                        className="w-full flex items-center justify-between mb-2"
+                                                    >
+                                                        <h4 className="text-[16px] font-medium text-gray-600">რეიტინგი</h4>
+                                                        <ChevronDown className={`w-5 h-5 text-gray-600 transition-transform ${isRatingOpen ? "rotate-180" : "rotate-0"}`} />
+                                                    </button>
+                                                    {isRatingOpen && (
+                                                        <div className="space-y-2">
+                                                            {[5, 4, 3, 2, 1].map((rating) => {
+                                                                const count = products.filter(
+                                                                    (product) => Math.floor(product.rating || 0) === rating
+                                                                ).length;
+
+                                                                return (
+                                                                    <button
+                                                                        key={rating}
+                                                                        onClick={() => toggleRating(rating)}
+                                                                        className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-[16px] transition-colors border ${
+                                                                            selectedRatings.includes(rating)
+                                                                                ? "bg-[#1B3729] text-white border-[#1B3729]"
+                                                                                : "bg-white text-black border-gray-300 hover:bg-gray-100"
+                                                                        }`}
+                                                                    >
+                                                                        <div className="flex items-center gap-2">
+                                                                            <div className="flex items-center">
+                                                                                {[1, 2, 3, 4, 5].map((star) => (
+                                                                                    <Star
+                                                                                        key={star}
+                                                                                        className={`w-4 h-4 ${
+                                                                                            star <= rating
+                                                                                                ? "fill-amber-500 text-amber-500"
+                                                                                                : "fill-gray-200 text-gray-300"
+                                                                                        }`}
+                                                                                    />
+                                                                                ))}
+                                                                            </div>
+                                                                            <span className="ml-1">{rating} ★</span>
+                                                                        </div>
+                                                                        <span className={`text-[14px] px-2 py-1 rounded-full ${
+                                                                            selectedRatings.includes(rating)
+                                                                                ? "bg-gray-600 text-white"
+                                                                                : "bg-gray-200 text-black"
+                                                                        }`}>
+                                                                            {count}
+                                                                        </span>
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-[16px] font-medium mb-2 text-gray-600">დალაგება</h4>
+                                                    <select
+                                                        value={sortBy}
+                                                        onChange={(e) => setSortBy(e.target.value)}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black"
+                                                    >
+                                                        <option value="newest">ახალი</option>
+                                                        <option value="price-low">ფასი: დაბლიდან მაღლა</option>
+                                                        <option value="price-high">ფასი: მაღლიდან დაბლა</option>
+                                                        <option value="rating">რეიტინგი</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-[16px] font-medium mb-2 text-gray-600">ზომის სისტემა</h4>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {sizeSystems.map((sizeSystem) => (
+                                                            <button
+                                                                key={sizeSystem.id}
+                                                                onClick={() => toggleSizeSystem(sizeSystem.id)}
+                                                                className={`w-9 h-9 rounded-full border-2 flex items-center justify-center text-sm font-medium ${
+                                                                    selectedSizeSystems.includes(sizeSystem.id)
+                                                                        ? 'bg-[#1B3729] text-white border-[#1B3729]'
+                                                                        : 'bg-white text-black border-gray-300 hover:border-orange-500'
+                                                                }`}
+                                                            >
+                                                                {sizeSystem.label}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-[16px] font-medium mb-2 text-gray-600">ფერი</h4>
+                                                    <div className="flex flex-wrap gap-3">
+                                                        {colors.map((color) => (
+                                                            <button
+                                                                key={color.id}
+                                                                onClick={() => toggleColor(color.id)}
+                                                                className={`relative w-10 h-10 rounded-full border-2 ${
+                                                                    selectedColors.includes(color.id)
+                                                                        ? ' ring-2 ring-[#1B3729] '
+                                                                        : 'border-gray-300 hover:border-orange-500'
+                                                                }`}
+                                                                style={{ backgroundColor: color.color }}
+                                                            >
+                                                                {selectedColors.includes(color.id) && (
+                                                                    <div className="absolute inset-0 flex items-center justify-center">
+                                                                        <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
+                                                                            <div className="w-3 h-3 bg-[#1B3729] rounded-full"></div>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Bottom Action Buttons */}
+                        <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 flex gap-3">
+                            <button
+                                onClick={() => {
+                                    clearFilters()
+                                    setIsMobileFilterOverlayOpen(false)
+                                }}
+                                className="flex-1 px-4 py-3 bg-white text-black border border-gray-300 rounded-lg font-medium hover:bg-gray-50"
+                            >
+                                გაწმენდა
+                            </button>
+                            <button
+                                onClick={() => setIsMobileFilterOverlayOpen(false)}
+                                className="flex-1 px-4 py-3 bg-[#1B3729] text-white rounded-lg font-medium hover:bg-[#1B3729]"
+                            >
+                                ჩვენება {filteredProducts.length}+ შედეგი
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Desktop Filter Toggle (keep existing) */}
+                <div className="hidden lg:block mb-6">
                     <button
                         onClick={() => setIsFilterOpen(!isFilterOpen)}
                         className="flex items-center space-x-2 bg-white px-4 py-3 rounded-lg shadow-sm border w-full justify-between"
@@ -662,7 +1321,7 @@ const ShopPageClient = () => {
                                             setSelectedColors([])
                                         }
                                     }}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md md:text-[18px] text-[16px] focus:outline-none focus:ring-2 focus:ring-black"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md md:text-[18px] text-[16px] "
                                 >
                                     <option value="">ყველა ფერი</option>
                                     {colors.map((color) => (
