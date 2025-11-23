@@ -95,6 +95,8 @@ const AccountPage = () => {
   const [userBlocked, setUserBlocked] = useState(false)
   const [userVerified, setUserVerified] = useState(false)
   const [userIban, setUserIban] = useState<string | null>(null)
+  const [hasActiveRentals, setHasActiveRentals] = useState(false)
+  const [checkingRentals, setCheckingRentals] = useState(false)
   const isSeller = userStats.productsCount > 0
   // Show verification for all non-admin users who haven't been approved yet
   const sellerNeedsVerification = true // Always show for non-admin users
@@ -171,6 +173,14 @@ const AccountPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab])
 
+  // Check for active rentals when settings tab is active
+  useEffect(() => {
+    if (activeTab === 'settings' && session?.user?.id) {
+      checkActiveRentals()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab])
+
   // Check ban status and blocked/verified status
   useEffect(() => {
     if (session?.user?.id) {
@@ -229,6 +239,45 @@ const AccountPage = () => {
       console.error('Error fetching user stats:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const checkActiveRentals = async () => {
+    try {
+      setCheckingRentals(true)
+      const now = new Date()
+      
+      // Check active rentals from Rental table - fetch all rentals and filter
+      const rentalsResponse = await fetch('/api/rental')
+      const rentalsData = await rentalsResponse.json()
+      
+      const activeRentalsFromTable = rentalsData.rentals?.filter((rental: { status: string; endDate: string }) => {
+        const endDate = new Date(rental.endDate)
+        return (rental.status === 'RESERVED' || rental.status === 'ACTIVE') && endDate >= now
+      }) || []
+
+      // Check active rental orders
+      const ordersResponse = await fetch('/api/user/orders')
+      const ordersData = await ordersResponse.json()
+      
+      const activeRentalOrders = ordersData.success && ordersData.orders
+        ? ordersData.orders.filter((order: { status: string; items?: Array<{ isRental?: boolean; rentalEndDate?: string }> }) => {
+            if (!['PENDING', 'PAID', 'SHIPPED'].includes(order.status)) return false
+            return order.items?.some((item: { isRental?: boolean; rentalEndDate?: string }) => {
+              if (!item.isRental || !item.rentalEndDate) return false
+              const endDate = new Date(item.rentalEndDate)
+              return endDate >= now
+            })
+          })
+        : []
+
+      setHasActiveRentals(activeRentalsFromTable.length > 0 || activeRentalOrders.length > 0)
+    } catch (error) {
+      console.error('Error checking active rentals:', error)
+      // On error, allow deletion (fail open)
+      setHasActiveRentals(false)
+    } finally {
+      setCheckingRentals(false)
     }
   }
 
@@ -1293,6 +1342,11 @@ const AccountPage = () => {
   )
 
   const handleDeleteProfile = async () => {
+    if (hasActiveRentals) {
+      showToast('თქვენ გაქვთ აქტიური ქირები. გთხოვთ დააბრუნოთ პროდუქტები და შემდეგ სცადოთ პროფილის წაშლა.', 'warning')
+      return
+    }
+
     const confirmMessage = 'ნამდვილად გსურთ თქვენი პროფილის გაუქმება?'
 
     if (!confirm(confirmMessage)) {
@@ -1331,7 +1385,7 @@ const AccountPage = () => {
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <h3 className="md:text-[20px] text-[18px] font-bold text-black mb-6">პარამეტრები</h3>
         {/* Profile edit form */}
-        <ProfileSettingsForm />
+        <ProfileSettingsForm hasActiveRentals={hasActiveRentals} checkingRentals={checkingRentals} />
       </div>
 
   
@@ -1417,7 +1471,7 @@ const AccountPage = () => {
   )
 }
 
-function ProfileSettingsForm() {
+function ProfileSettingsForm({ hasActiveRentals, checkingRentals }: { hasActiveRentals: boolean; checkingRentals: boolean }) {
   const { data: session, update } = useSession()
   const [form, setForm] = useState({
     name: '',
@@ -1518,6 +1572,11 @@ function ProfileSettingsForm() {
     }
   }
   const handleDeleteProfile = async () => {
+    if (hasActiveRentals) {
+      showToast('თქვენ გაქვთ აქტიური ქირები. გთხოვთ დააბრუნოთ პროდუქტები და შემდეგ სცადოთ პროფილის წაშლა.', 'warning')
+      return
+    }
+
     const confirmMessage = 'ნამდვილად გსურთ თქვენი პროფილის გაუქმება?'
 
     if (!confirm(confirmMessage)) {
@@ -1657,13 +1716,32 @@ function ProfileSettingsForm() {
         {saving ? 'ინახება...' : 'პროფილის შენახვა'}
       </button>
 
-      <button
-        onClick={handleDeleteProfile}
-        className="flex w-full md:w-[30%] items-center space-x-2 px-6 py-3 text-center items-center justify-center bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition-colors"
-      >
-        <Trash2 className="w-4 h-4" />
-        <span className="md:text-[18px] text-[16px]">პროფილის გაუქმება</span>
-      </button>
+      {checkingRentals ? (
+        <div className="w-full md:w-[30%] px-6 py-3 text-center bg-gray-200 text-gray-600 font-bold rounded-lg">
+          <span className="md:text-[18px] text-[16px]">შემოწმება...</span>
+        </div>
+      ) : hasActiveRentals ? (
+        <div className="w-full md:w-[30%]">
+          <div className="mb-3 p-3 border-2 border-yellow-400 bg-yellow-50 text-yellow-800 rounded-lg md:text-[16px] text-[14px]">
+            თქვენ გაქვთ აქტიური ქირები. პროფილის წაშლა შესაძლებელია მხოლოდ მაშინ, როცა დააბრუნებთ ყველა პროდუქტს.
+          </div>
+          <button
+            disabled
+            className="flex w-full items-center space-x-2 px-6 py-3 text-center items-center justify-center bg-gray-400 text-white font-bold rounded-lg cursor-not-allowed"
+          >
+            <Trash2 className="w-4 h-4" />
+            <span className="md:text-[18px] text-[16px]">პროფილის გაუქმება</span>
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={handleDeleteProfile}
+          className="flex w-full md:w-[30%] items-center space-x-2 px-6 py-3 text-center items-center justify-center bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition-colors"
+        >
+          <Trash2 className="w-4 h-4" />
+          <span className="md:text-[18px] text-[16px]">პროფილის გაუქმება</span>
+        </button>
+      )}
     </form>
   )
 }

@@ -215,6 +215,50 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
+    // Check if user has active rentals
+    const now = new Date()
+    
+    // Check active rentals from Rental table
+    const activeRentals = await prisma.rental.findFirst({
+      where: {
+        userId: session.user.id,
+        status: {
+          in: ['RESERVED', 'ACTIVE']
+        },
+        endDate: {
+          gte: now // Rental hasn't ended yet
+        }
+      }
+    })
+
+    // Check active rental orders
+    const activeRentalOrders = await prisma.order.findFirst({
+      where: {
+        userId: session.user.id,
+        status: {
+          in: ['PENDING', 'PAID', 'SHIPPED']
+        },
+        items: {
+          some: {
+            isRental: true,
+            rentalEndDate: {
+              gte: now // Rental period hasn't ended yet
+            }
+          }
+        }
+      }
+    })
+
+    if (activeRentals || activeRentalOrders) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'თქვენ გაქვთ აქტიური ქირები. გთხოვთ დააბრუნოთ პროდუქტები და შემდეგ სცადოთ პროფილის წაშლა.' 
+        },
+        { status: 400 }
+      )
+    }
+
     // Delete all user sessions to log them out
     await prisma.session.deleteMany({
       where: { userId: session.user.id }

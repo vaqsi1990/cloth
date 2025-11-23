@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import axios, { AxiosError } from 'axios'
+import axios from 'axios'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { recordSellerTransactions } from '@/utils/sellerTransactions'
 import { reevaluateUserBlocking } from '@/utils/revenue'
 import { bogTokenManager } from '@/lib/bog-token'
 import { z } from 'zod'
@@ -49,6 +48,33 @@ interface BOGRequestData {
     split?: {
       split_payments: BOGSplitPayment[]
     }
+  }
+}
+
+interface BOGSplitPaymentResponse {
+  description?: string
+  iban?: string
+  percent?: number
+  amount?: number | string
+  status?: string
+}
+
+interface BOGResponseData {
+  id?: string
+  order_id?: string
+  links?: {
+    redirect?: { href: string }
+    approve?: { href: string }
+  }
+  _links?: {
+    redirect?: { href: string }
+    approve?: { href: string }
+  }
+  split?: {
+    split_status?: string
+    currency?: string
+    request_channel?: string
+    split_payments?: BOGSplitPaymentResponse[]
   }
 }
 
@@ -221,7 +247,7 @@ function transformCartItemsToBasket(items: CartItemInput[]): BOGBasketItem[] {
   }))
 }
 
-function extractRedirectUrl(responseData: any) {
+function extractRedirectUrl(responseData: BOGResponseData): string | undefined {
   const links = responseData.links || responseData._links || {}
   return links.redirect?.href || links.approve?.href
 }
@@ -229,7 +255,7 @@ function extractRedirectUrl(responseData: any) {
 export async function POST(req: NextRequest) {
   try {
     const json = await req.json()
-    const { token, orderData } = orderDataSchema.parse(json)
+    const { orderData } = orderDataSchema.parse(json)
 
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
@@ -296,7 +322,7 @@ export async function POST(req: NextRequest) {
       payment_method: [orderData.paymentMethod || 'card']
     }
 
-    const config: any = {}
+    const config: BOGRequestData['config'] = {}
 
     if (orderData.paymentMethod === 'google_pay' && orderData.googlePayToken) {
       config.google_pay = {
@@ -393,7 +419,7 @@ export async function POST(req: NextRequest) {
       console.log('   Request Channel:', response.data.split.request_channel)
       if (response.data.split.split_payments) {
         console.log(`   Split Payments (${response.data.split.split_payments.length}):`)
-        response.data.split.split_payments.forEach((sp: any, index: number) => {
+        response.data.split.split_payments.forEach((sp: BOGSplitPaymentResponse, index: number) => {
           console.log(`     ${index + 1}. ${sp.description || 'Payment'}:`)
           console.log(`        IBAN: ${sp.iban ? sp.iban.substring(0, 8) + '...' + sp.iban.substring(sp.iban.length - 4) : 'N/A'}`)
           console.log(`        Percent: ${sp.percent || 'N/A'}%`)
