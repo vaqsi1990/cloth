@@ -503,8 +503,18 @@ const ShopPageClient = () => {
 
                 {/* Mobile Filter Overlay - Temu Style */}
                 {isMobileFilterOverlayOpen && (
-                    <div className="lg:hidden fixed inset-0 z-50 bg-white">
-                        <div className="flex h-full">
+                    <div className="lg:hidden fixed inset-0 z-50 bg-white flex flex-col">
+                        {/* Header with Close Button */}
+                        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                            <h2 className="text-lg font-semibold text-black">ფილტრები</h2>
+                            <button
+                                onClick={() => setIsMobileFilterOverlayOpen(false)}
+                                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                            >
+                                <X className="w-6 h-6 text-black" />
+                            </button>
+                        </div>
+                        <div className="flex flex-1 overflow-hidden">
                             {/* Left Sidebar - Filter Categories */}
                             <div className="w-32 bg-gray-50 border-r border-gray-200 overflow-y-auto">
                                 <div className="p-2">
