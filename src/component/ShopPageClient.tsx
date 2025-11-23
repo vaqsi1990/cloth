@@ -516,11 +516,11 @@ const ShopPageClient = () => {
                         </div>
                         <div className="flex flex-1 overflow-hidden">
                             {/* Left Sidebar - Filter Categories */}
-                            <div className="w-32 bg-gray-50 border-r border-gray-200 overflow-y-auto">
+                            <div className="w-32 bg-gray-50 border-r border-gray-200 mb-10 overflow-y-auto">
                                 <div className="p-2">
                                     <button
                                         onClick={() => setActiveMobileFilter('all')}
-                                        className={`w-full text-left px-3 py-3 text-[16px] font-medium rounded mb-1 ${
+                                        className={`w-full text-left px-2 py-3 text-[16px] font-medium rounded mb-1 ${
                                             activeMobileFilter === 'all'
                                                 ? 'bg-[#1B3729] text-white'
                                                 : 'text-black hover:bg-gray-200'
@@ -530,7 +530,7 @@ const ShopPageClient = () => {
                                     </button>
                                     <button
                                         onClick={() => setActiveMobileFilter('sort')}
-                                        className={`w-full text-left px-3 py-3 text-[16px] font-medium rounded mb-1 ${
+                                        className={`w-full text-left px-2 py-2 text-[16px] font-medium rounded mb-1 ${
                                             activeMobileFilter === 'sort'
                                                 ? 'bg-[#1B3729] text-white'
                                                 : 'text-black hover:bg-gray-200'
@@ -540,7 +540,7 @@ const ShopPageClient = () => {
                                     </button>
                                     <button
                                         onClick={() => setActiveMobileFilter('size')}
-                                        className={`w-full text-left px-3 py-3 text-[16px] font-medium rounded mb-1 ${
+                                        className={`w-full text-left px-3 py-2 text-[16px] font-medium rounded mb-1 ${
                                             activeMobileFilter === 'size'
                                                 ? 'bg-[#1B3729] text-white'
                                                 : 'text-black hover:bg-gray-200'
@@ -550,7 +550,7 @@ const ShopPageClient = () => {
                                     </button>
                                     <button
                                         onClick={() => setActiveMobileFilter('color')}
-                                        className={`w-full text-left px-3 py-3 text-[16px] font-medium rounded mb-1 ${
+                                        className={`w-full text-left px-3 py-2 text-[16px] font-medium rounded mb-1 ${
                                             activeMobileFilter === 'color'
                                                 ? 'bg-[#1B3729] text-white'
                                                 : 'text-black hover:bg-gray-200'
@@ -560,7 +560,7 @@ const ShopPageClient = () => {
                                     </button>
                                     <button
                                         onClick={() => setActiveMobileFilter('category')}
-                                        className={`w-full text-left px-3 py-3 text-[16px] font-medium rounded mb-1 ${
+                                        className={`w-full text-left px-3 py-2 text-[16px] font-medium rounded mb-1 ${
                                             activeMobileFilter === 'category'
                                                 ? 'bg-[#1B3729] text-white'
                                                 : 'text-black hover:bg-gray-200'
@@ -570,7 +570,7 @@ const ShopPageClient = () => {
                                     </button>
                                     <button
                                         onClick={() => setActiveMobileFilter('price')}
-                                        className={`w-full text-left px-3 py-3 text-[16px] font-medium rounded mb-1 ${
+                                        className={`w-full text-left px-3 py-2 text-[16px] font-medium rounded mb-1 ${
                                             activeMobileFilter === 'price'
                                                 ? 'bg-[#1B3729] text-white'
                                                 : 'text-black hover:bg-gray-200'
@@ -580,7 +580,7 @@ const ShopPageClient = () => {
                                     </button>
                                     <button
                                         onClick={() => setActiveMobileFilter('location')}
-                                        className={`w-full text-left px-3 py-3 text-[16px] font-medium rounded mb-1 ${
+                                        className={`w-full text-left px-3 py-2 text-[16px] font-medium rounded mb-1 ${
                                             activeMobileFilter === 'location'
                                                 ? 'bg-[#1B3729] text-white'
                                                 : 'text-black hover:bg-gray-200'
@@ -590,7 +590,7 @@ const ShopPageClient = () => {
                                     </button>
                                     <button
                                         onClick={() => setActiveMobileFilter('type')}
-                                        className={`w-full text-left px-3 py-3 text-[16px] font-medium rounded mb-1 ${
+                                        className={`w-full text-left px-3 py-2 text-[16px] font-medium rounded mb-1 ${
                                             activeMobileFilter === 'type'
                                                 ? 'bg-[#1B3729] text-white'
                                                 : 'text-black hover:bg-gray-200'
@@ -600,7 +600,7 @@ const ShopPageClient = () => {
                                     </button>
                                     <button
                                         onClick={() => setActiveMobileFilter('rating')}
-                                        className={`w-full text-left px-3 py-3 text-[16px] font-medium rounded mb-1 ${
+                                            className={`w-full text-left px-3 py-2 text-[16px] font-medium rounded mb-1 ${
                                             activeMobileFilter === 'rating'
                                                 ? 'bg-[#1B3729] text-white'
                                                 : 'text-black hover:bg-gray-200'
@@ -1098,7 +1098,7 @@ const ShopPageClient = () => {
                                                 </div>
                                                 <div>
                                                     <h4 className="text-[16px] font-medium mb-2 text-gray-600">ფერი</h4>
-                                                    <div className="flex flex-wrap gap-3">
+                                                    <div className="flex flex-wrap mb-10 gap-3">
                                                         {colors.map((color) => (
                                                             <button
                                                                 key={color.id}
@@ -1129,7 +1129,7 @@ const ShopPageClient = () => {
                         </div>
 
                         {/* Bottom Action Buttons */}
-                        <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 flex gap-3">
+                        <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-2 flex gap-3">
                             <button
                                 onClick={() => {
                                     clearFilters()
