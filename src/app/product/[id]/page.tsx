@@ -1097,7 +1097,7 @@ const ProductPage = () => {
                             </div>
 
                             {/* Action button */}
-                            {(session && userVerification?.status === 'APPROVED') ? (
+                            {(session && (purchaseMode === "buy" || userVerification?.status === 'APPROVED')) ? (
                                 <div className="space-y-2">
                                     {product.status !== 'AVAILABLE' && (
                                         <p className="text-sm text-white font-medium text-center">
@@ -1164,8 +1164,17 @@ const ProductPage = () => {
                             ) : (
                                 <div className="space-y-2">
                                     <div className="p-4 text-center  border-2 border-red-500 text-red-500 rounded-lg font-bold">
-                                    პროდუქტის შეძენა ან ქირაობა შესაძლებელია მხოლოდ ვერიფიცირებული მომხმარებლებისთვის.
-                                    გთხოვთ, შეხვიდეთ ანგარიშში და გაიაროთ ვერიფიკაცია!
+                                        {purchaseMode === "rent" ? (
+                                            <div className="space-y-1">
+                                                <p>პროდუქტის ქირაობა შესაძლებელია მხოლოდ ვერიფიცირებული მომხმარებლებისთვის.</p>
+                                                <p>გთხოვთ, შეხვიდეთ ანგარიშში და გაიაროთ ვერიფიკაცია!</p>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-1">
+                                                <p>პროდუქტის შეძენისთვის საჭიროა ანგარიში.</p>
+                                                <p>გთხოვთ, შეხვიდეთ ანგარიშში განაგრძეთ შესყიდვა.</p>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}
