@@ -21,9 +21,22 @@ const CheckoutPage = () => {
         address: '',
         city: ''
     })
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
     
     const [isProcessing, setIsProcessing] = useState(false)
     const [paymentMethod, setPaymentMethod] = useState<'card' | 'google_pay'>('card')
+
+    const georgianTextRegex = /^[\u10A0-\u10FF\s]+$/
+    const georgianAddressRegex = /^[\u10A0-\u10FF\s0-9№N]+$/
+
+    const clearFieldError = (field: string) => {
+        setFieldErrors(prev => {
+            if (!prev[field]) return prev
+            const next = { ...prev }
+            delete next[field]
+            return next
+        })
+    }
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target
@@ -31,6 +44,63 @@ const CheckoutPage = () => {
             ...prev,
             [name]: value
         }))
+
+        if (['firstName', 'lastName', 'city'].includes(name)) {
+            if (value && !georgianTextRegex.test(value)) {
+                const fieldName = name === 'firstName' ? 'სახელი' : name === 'lastName' ? 'გვარი' : 'ქალაქი'
+                setFieldErrors(prev => ({
+                    ...prev,
+                    [name]: `${fieldName} უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს`
+                }))
+            } else {
+                clearFieldError(name)
+            }
+        } else if (name === 'address') {
+            if (value && !georgianAddressRegex.test(value)) {
+                setFieldErrors(prev => ({
+                    ...prev,
+                    address: 'მისამართი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, ციფრებს და სიმბოლოებს № ან N'
+                }))
+            } else if (value && !/[0-9]/.test(value)) {
+                setFieldErrors(prev => ({
+                    ...prev,
+                    address: 'მისამართი უნდა შეიცავდეს ციფრებს'
+                }))
+            } else {
+                clearFieldError('address')
+            }
+        }
+    }
+
+    const validateCheckoutFields = () => {
+        const errors: Record<string, string> = {}
+
+        if (!formData.firstName || !georgianTextRegex.test(formData.firstName.trim())) {
+            errors.firstName = 'სახელი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს'
+        }
+
+        if (!formData.lastName || !georgianTextRegex.test(formData.lastName.trim())) {
+            errors.lastName = 'გვარი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს'
+        }
+
+        if (!formData.city || !georgianTextRegex.test(formData.city.trim())) {
+            errors.city = 'ქალაქი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს'
+        }
+
+        if (!formData.address || !georgianAddressRegex.test(formData.address.trim())) {
+            errors.address = 'მისამართი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, ციფრებს და სიმბოლოებს № ან N'
+        } else if (!/[0-9]/.test(formData.address)) {
+            errors.address = 'მისამართი უნდა შეიცავდეს ციფრებს'
+        }
+
+        setFieldErrors(errors)
+
+        if (Object.keys(errors).length > 0) {
+            showToast('გთხოვთ შეავსოთ ყველა ველი ქართულად', 'error')
+            return false
+        }
+
+        return true
     }
 
     const getToken = async () => {
@@ -51,6 +121,10 @@ const CheckoutPage = () => {
 
     const processOrder = async (googlePayToken?: string) => {
         setIsProcessing(true)
+        if (!validateCheckoutFields()) {
+            setIsProcessing(false)
+            return
+        }
         
         try {
             // Step 1: Get BOG token
@@ -205,6 +279,10 @@ const CheckoutPage = () => {
             }
         }
     }) => {
+        if (!validateCheckoutFields()) {
+            return
+        }
+
         try {
             // Extract the payment token from Google Pay response
             const paymentMethodData = paymentData.paymentMethodData
@@ -260,6 +338,16 @@ const CheckoutPage = () => {
         )
     }
 
+    const hasErrors = Object.keys(fieldErrors).length > 0
+    const requiredFieldsFilled = Object.values({
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        address: formData.address.trim(),
+        city: formData.city.trim()
+    }).every(Boolean)
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 py-16">
             <div className="container mx-auto px-4">
@@ -298,6 +386,9 @@ const CheckoutPage = () => {
                                             required
                                             className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-[#1B3729]"
                                         />
+                                        {fieldErrors.firstName && (
+                                            <p className="text-red-500 md:text-[18px] text-[16px] mt-1">{fieldErrors.firstName}</p>
+                                        )}
                                     </div>
                                     <div>
                                         <label className="block md:text-[18px] text-[16px] text-black font-medium mb-2">
@@ -311,6 +402,9 @@ const CheckoutPage = () => {
                                             required
                                             className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-[#1B3729]"
                                         />
+                                        {fieldErrors.lastName && (
+                                            <p className="text-red-500 md:text-[18px] text-[16px] mt-1">{fieldErrors.lastName}</p>
+                                        )}
                                     </div>
                                 </div>
 
@@ -359,6 +453,9 @@ const CheckoutPage = () => {
                                         required
                                         className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-[#1B3729]"
                                     />
+                                    {fieldErrors.address && (
+                                        <p className="text-red-500 md:text-[18px] text-[16px] mt-1">{fieldErrors.address}</p>
+                                    )}
                                 </div>
 
                                 <div>
@@ -371,6 +468,9 @@ const CheckoutPage = () => {
                                         required
                                         className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-[#1B3729]"
                                     />
+                                    {fieldErrors.city && (
+                                        <p className="text-red-500 md:text-[18px] text-[16px] mt-1">{fieldErrors.city}</p>
+                                    )}
                                 </div>
 
                                 {/* Payment Method Selection */}
@@ -405,7 +505,7 @@ const CheckoutPage = () => {
                                 {paymentMethod === 'card' ? (
                                     <button
                                         type="submit"
-                                        disabled={isProcessing}
+                                        disabled={isProcessing || hasErrors || !requiredFieldsFilled}
                                         className="flex cursor-pointer md:text-[18px] text-[16px] font-bold justify-center items-center w-full mx-auto mt-6 bg-[#1B3729] text-white px-8 py-4 rounded-lg font-bold uppercase tracking-wide transition-colors duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed hover:opacity-95"
                                     >
                                         {isProcessing ? 'მუშავდება...' : 'ბარათით ყიდვა'}
@@ -417,7 +517,7 @@ const CheckoutPage = () => {
                                             currency="GEL"
                                             onPaymentSuccess={handleGooglePaySuccess}
                                             onError={handleGooglePayError}
-                                            disabled={isProcessing}
+                                            disabled={isProcessing || hasErrors || !requiredFieldsFilled}
                                         />
                                     </div>
                                 )}
