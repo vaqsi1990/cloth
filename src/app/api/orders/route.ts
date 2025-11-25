@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
+import { removePurchasedProducts } from '@/utils/removePurchasedProducts'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
@@ -237,6 +238,14 @@ export async function POST(request: NextRequest) {
           }
         }
       }
+    }
+
+    const soldProductIds = newOrder.items
+      .filter(item => !item.isRental && typeof item.productId === 'number')
+      .map(item => item.productId as number)
+
+    if (soldProductIds.length > 0) {
+      await removePurchasedProducts(soldProductIds, { orderId: newOrder.id })
     }
     
     return NextResponse.json({

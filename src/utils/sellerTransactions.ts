@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { checkAndBlockUser, reevaluateUserBlocking } from '@/utils/revenue'
+import { removePurchasedProducts } from '@/utils/removePurchasedProducts'
 
 type TransactionType = 'SALE' | 'RENT'
 
@@ -87,6 +88,14 @@ export async function recordSellerTransactions(orderId: number) {
     })
 
     await checkAndBlockUser(entry.userId)
+  }
+
+  const soldProductIds = order.items
+    .filter((item) => !item.isRental && typeof item.productId === 'number')
+    .map((item) => item.productId as number)
+
+  if (soldProductIds.length) {
+    await removePurchasedProducts(soldProductIds, { orderId: order.id })
   }
 }
 
