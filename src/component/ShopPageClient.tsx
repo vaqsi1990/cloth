@@ -1098,7 +1098,7 @@ const ShopPageClient = () => {
                                                 </div>
                                                 <div>
                                                     <h4 className="text-[16px] font-medium mb-2 text-gray-600">ფერი</h4>
-                                                    <div className="flex flex-wrap mb-10 gap-3">
+                                                    <div className="flex flex-wrap pb-24 gap-3">
                                                         {colors.map((color) => (
                                                             <button
                                                                 key={color.id}
@@ -1255,7 +1255,7 @@ const ShopPageClient = () => {
                                                 <button
                                                     key={category.id}
                                                     onClick={() => toggleCategory(category.label)}
-                                                    className={`w-full text-left px-3 py-2 rounded-md md:text-[18px] text-[16px] transition-colors flex justify-between items-center ${
+                                                    className={`w-full pb-10 text-left px-3 py-2 rounded-md md:text-[18px] text-[16px] transition-colors flex justify-between items-center ${
                                                         isSelected
                                                             ? "bg-black text-white"
                                                             : "text-black hover:bg-gray-100"
