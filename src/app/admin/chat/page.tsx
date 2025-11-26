@@ -308,8 +308,8 @@ const AdminChatPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <div className="flex-shrink-0 px-4 sm:px-6 lg:px-8 py-6 bg-white border-b border-gray-200">
-        <h1 className="text-3xl font-bold text-gray-900">Live Chat მართვა</h1>
-        <p className="mt-2 text-black">მომხმარებლებთან საუბარი და მხარდაჭერა</p>
+        <h1 className="md:text-[20px] text-[18px] font-bold text-black">Live Chat მართვა</h1>
+      
       </div>
 
       <div className="flex-1 px-4 sm:px-6 lg:px-8 py-6">
@@ -410,7 +410,7 @@ const AdminChatPage = () => {
                       {selectedChatRoom.status === 'PENDING' && (
                         <button
                           onClick={() => updateChatRoomStatus(selectedChatRoom.id, 'assign')}
-                          className="px-3 py-1 bg-[#1B3729] text-white rounded-md md:text-[18px] text-[16px] hover:bg-[#2a4d3a] transition-colors"
+                          className="px-3 py-1 bg-[#1B3729] text-white rounded-md md:text-[18px] font-bold text-[16px] hover:bg-[#2a4d3a] transition-colors"
                         >
                           მიღება
                         </button>
@@ -418,7 +418,7 @@ const AdminChatPage = () => {
                       {selectedChatRoom.status === 'ACTIVE' && (
                         <button
                           onClick={() => updateChatRoomStatus(selectedChatRoom.id, 'close')}
-                          className="px-3 py-1 bg-red-500 text-white rounded-md md:text-[18px] text-[16px] hover:bg-red-600 transition-colors"
+                          className="px-3 py-1 bg-red-500 text-white rounded-md md:text-[18px] font-bold text-[16px] hover:bg-red-600 transition-colors"
                         >
                           დახურვა
                         </button>
@@ -491,7 +491,7 @@ const AdminChatPage = () => {
                       onChange={(e) => setNewMessage(e.target.value)}
                       onKeyPress={handleKeyPress}
                       placeholder="შეიყვანეთ თქვენი პასუხი..."
-                      className="flex-1 p-3 text-black border text-black placeholder:text-[18px] border-gray-300 rounded-md resize-none focus:ring-2 focus:ring-[#1B3729] focus:border-transparent"
+                      className="flex-1 p-3 text-black border placeholder:text-gray-500 text-black placeholder:text-[18px] border-gray-300 rounded-md resize-none focus:ring-2 focus:ring-[#1B3729] focus:border-transparent"
                       rows={2}
                       disabled={isLoading}
                     />
@@ -540,20 +540,20 @@ const AdminChatPage = () => {
                 value={deleteConfirmText}
                 onChange={(e) => setDeleteConfirmText(e.target.value)}
                 placeholder="DELETE"
-                className="w-full p-2 border text-black border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                className="w-full p-2 border text-black border-gray-300 rounded-md placeholder:text-gray-500"
               />
             </div>
             <div className="flex space-x-3">
               <button
                 onClick={deleteChatRoom}
                 disabled={deleteConfirmText !== 'DELETE'}
-                className="flex-1 bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                className="flex-1 bg-red-500 md:text-[18px] text-[16px] font-bold text-white py-2 px-4 rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
               >
                 წაშლა
               </button>
               <button
                 onClick={closeDeleteModal}
-                className="flex-1 bg-gray-300 text-black py-2 px-4 rounded-md hover:bg-gray-400 transition-colors"
+                className="flex-1 bg-gray-300 md:text-[18px] text-[16px] font-bold text-black py-2 px-4 rounded-md  transition-colors"
               >
                 გაუქმება
               </button>

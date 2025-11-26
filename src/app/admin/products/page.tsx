@@ -410,7 +410,7 @@ const AdminProductsPage = () => {
                 placeholder="პროდუქტის ძებნა..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 text-black border placeholder:text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                className="w-full pl-10 pr-4 py-3 text-black border placeholder:text-gray-500 border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
               />
             </div>
 
@@ -420,7 +420,7 @@ const AdminProductsPage = () => {
               <select
                 value={filterGender}
                 onChange={(e) => setFilterGender(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 text-black  border placeholder:text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent appearance-none"
+                className="w-full pl-10 pr-4 py-3 text-black  border placeholder:text-gray-500 border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent appearance-none"
               >
                 <option value="ALL">ყველა გენდერი</option>
                 <option value="MEN">კაცი</option>
@@ -436,7 +436,7 @@ const AdminProductsPage = () => {
               <select
                 value={filterCategory}
                 onChange={(e) => setFilterCategory(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 text-black  border placeholder:text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent appearance-none"
+                className="w-full pl-10 pr-4 py-3 text-black  border placeholder:text-gray-500 border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent appearance-none"
               >
                 <option value="ALL">ყველა კატეგორია</option>
                 <option value="dresses">კაბები</option>

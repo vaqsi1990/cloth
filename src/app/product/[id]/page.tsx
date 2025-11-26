@@ -972,7 +972,7 @@ const ProductPage = () => {
                                                     minDate={new Date()}
                                                     placeholderText="აირჩიე თარიღი"
                                                     dateFormat="dd/MM/yyyy"
-                                                    className="w-full text-[16px] placeholder:text-[16px] placeholder:text-black px-3 py-2 border rounded-lg"
+                                                    className="w-full text-[16px] placeholder:text-[16px] placeholder:text-gray-500 px-3 py-2 border rounded-lg"
                                                 />
                                             </div>
                                             <div>
@@ -1014,7 +1014,7 @@ const ProductPage = () => {
                                                     })() : undefined}
                                                     placeholderText="აირჩიე თარიღი"
                                                     dateFormat="dd/MM/yyyy"
-                                                    className="w-full text-[16px] placeholder:text-[16px] placeholder:text-black px-3 py-2 border rounded-lg"
+                                                    className="w-full text-[16px] placeholder:text-[16px] placeholder:text-gray-500 px-3 py-2 border rounded-lg"
                                                 />
                                             </div>
                                         </div>
@@ -1408,7 +1408,7 @@ const ProductPage = () => {
                                                             value={editingComment}
                                                             onChange={(e) => setEditingComment(e.target.value)}
                                                             placeholder="დაწერეთ თქვენი კომენტარი..."
-                                                            className="w-full px-4 placeholder:text-black text-black md:text-[18px] text-[16px] py-3 border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                                                            className="w-full px-4 placeholder:text-gray-500 text-black md:text-[18px] text-[16px] py-3 border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                                                             rows={4}
                                                         />
                                                     </div>

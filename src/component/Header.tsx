@@ -442,7 +442,7 @@ const Header = () => {
                 placeholder="მოძებნე ნივთები..."
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
-                className="w-full placeholder:text-black md:text-[18px] text-[16px] text-black bg-white pl-12 pr-4 py-3 border border-black rounded-xl"
+                className="w-full placeholder:text-gray-500 md:text-[18px] text-[16px] text-black bg-white pl-12 pr-4 py-3 border border-black rounded-xl"
               />
               <button type="submit" className="absolute left-4 top-3.5 text-black">
                 <Search className="w-5 h-5" />

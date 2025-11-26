@@ -237,7 +237,7 @@ const AdminUsersPage = () => {
                 placeholder="მომხმარებლის ძებნა..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 placeholder:text-black border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                className="w-full pl-10 pr-4 py-3 placeholder:text-gray-500 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
               />
             </div>
 
@@ -247,7 +247,7 @@ const AdminUsersPage = () => {
               <select
                 value={filterRole}
                 onChange={(e) => setFilterRole(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 placeholder:text-black border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent appearance-none"
+                className="w-full pl-10 pr-4 py-3 placeholder:text-gray-500 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent appearance-none"
               >
                 <option value="ALL">ყველა როლი</option>
                 <option value="USER">მომხმარებელი</option>

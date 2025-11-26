@@ -80,7 +80,7 @@ export default function ResetPasswordPage() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-7 pr-7  py-3 text-black placeholder:text-black border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                    className="w-full pl-7 pr-7  py-3 text-black placeholder:text-gray-500 border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
                     placeholder="შეიყვანეთ ელ-ფოსტა"
                   />
                 </div>
