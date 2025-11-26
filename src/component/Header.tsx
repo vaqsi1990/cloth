@@ -13,6 +13,7 @@ const Header = () => {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
   const [mobileDropdownOpen, setMobileDropdownOpen] = useState<string | null>(null)
   const [isMobileUserDropdownOpen, setIsMobileUserDropdownOpen] = useState(false)
+  const [isDesktopUserDropdownOpen, setIsDesktopUserDropdownOpen] = useState(false)
   const [cartItemCount, setCartItemCount] = useState(0)
   const [searchValue, setSearchValue] = useState('')
   const { data: session } = useSession()
@@ -74,6 +75,26 @@ const Header = () => {
       document.removeEventListener('touchstart', handleClickOutside)
     }
   }, [isMobileUserDropdownOpen])
+
+  // Close desktop user dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: Event) => {
+      const target = event.target as HTMLElement
+      if (isDesktopUserDropdownOpen && !target.closest('.desktop-user-dropdown')) {
+        setIsDesktopUserDropdownOpen(false)
+      }
+    }
+
+    if (isDesktopUserDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener('touchstart', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('touchstart', handleClickOutside)
+    }
+  }, [isDesktopUserDropdownOpen])
 
   // --- MENU HANDLERS ---
   const handleMouseEnterMain = () => {
@@ -278,24 +299,41 @@ const Header = () => {
 
               {/* Account Section */}
               {session ? (
-                <div className="relative group">
-                  <button className="p-2 text-white ">
+                <div className="relative group desktop-user-dropdown">
+                  <button 
+                    onClick={() => setIsDesktopUserDropdownOpen(!isDesktopUserDropdownOpen)}
+                    className="p-2 text-white touch-manipulation"
+                    aria-label="User menu"
+                  >
                     <User className="w-5 h-5" />
                   </button>
-                  <div className="absolute -right-20 top-full mt-2 w-54 bg-white border border-gray-200 rounded-xl shadow-xl z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300">
+                  <div className={`absolute -right-20 top-full mt-2 w-54 bg-white border border-gray-200 rounded-xl shadow-xl z-50 transition-all duration-300 ${
+                    isDesktopUserDropdownOpen ? 'opacity-100 visible' : 'opacity-0 invisible group-hover:opacity-100 group-hover:visible'
+                  }`}>
                     <div className="py-2 text-black">
                       <p className="px-4 font-semibold">{session.user.name}</p>
                       {session.user.role === 'ADMIN' ? (
-                        <Link href="/admin" className="block md:text-[20px] text-[16px] px-4 py-2 hover:bg-gray-100">
+                        <Link 
+                          href="/admin" 
+                          className="block md:text-[20px] text-[16px] px-4 py-2 hover:bg-gray-100"
+                          onClick={() => setIsDesktopUserDropdownOpen(false)}
+                        >
                           ადმინისტრატორი
                         </Link>
                       ) : (
-                        <Link href="/account" className="block  md:text-[20px] text-[16px] hover:bg-gray-100 text-black px-4 py-2 ">
+                        <Link 
+                          href="/account" 
+                          className="block  md:text-[20px] text-[16px] hover:bg-gray-100 text-black px-4 py-2"
+                          onClick={() => setIsDesktopUserDropdownOpen(false)}
+                        >
                           პროფილი
                         </Link>
                       )}
                       <button
-                        onClick={() => signOut()}
+                        onClick={() => {
+                          setIsDesktopUserDropdownOpen(false)
+                          signOut()
+                        }}
                         className="w-full text-left cursor-pointer md:text-[20px] text-[16px] px-4 py-2 hover:bg-gray-100 flex items-center space-x-2"
                       >
                         <LogOut className="w-4 h-4" />
