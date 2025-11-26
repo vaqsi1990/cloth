@@ -1138,22 +1138,7 @@ const ShopPageClient = () => {
                 )}
 
                 {/* Desktop Filter Toggle (keep existing) */}
-                <div className="hidden lg:block mb-6">
-                    <button
-                        onClick={() => setIsFilterOpen(!isFilterOpen)}
-                        className="flex items-center space-x-2 bg-white px-4 py-3 rounded-lg shadow-sm border w-full justify-between"
-                    >
-                        <div className="flex items-center space-x-2">
-                            <Filter className="w-5 h-5 text-black" />
-                            <span className="font-medium text-black">ფილტრები</span>
-                        </div>
-                        {isFilterOpen ? (
-                            <X className="w-5 h-5 text-black" />
-                        ) : (
-                            <ChevronDown className="w-5 h-5 text-black" />
-                        )}
-                    </button>
-                </div>
+               
 
                 <div className="flex flex-col lg:flex-row gap-8">
                     {/* Sidebar Filters */}

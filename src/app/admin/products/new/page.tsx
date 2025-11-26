@@ -1,7 +1,7 @@
 "use client"
 import React, { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Plus, X } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, X } from 'lucide-react'
 import Link from 'next/link'
 import { z } from 'zod'
 
@@ -472,8 +472,8 @@ const NewProductPage = () => {
         <div className="px-6 py-4">
         <div className=" mx-auto px-4 py-4">
                     <Link href="/" className="flex md:text-[20px] text-[18px] items-center text-black hover:opacity-80">
-                        <ArrowLeft className="w-5 h-5 mr-2" />
-                        უკან დაბრუნება
+                        <ArrowLeft className="w-7 font-bold h-7 mr-2" />
+                 
                     </Link>
                 </div>
         </div>
@@ -495,7 +495,7 @@ const NewProductPage = () => {
                   value={formData.name}
                   onChange={(e) => handleNameChange(e.target.value)}
                   placeholder="შეიყვანეთ პროდუქტის სახელი"
-                  className={`w-full px-4 py-3 border rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black ${errors.name ? 'border-red-500' : 'border-gray-300'
+                  className={`w-full px-4 py-3 border rounded-lg text-[18px] placeholder:text-gray-500 text-black focus:outline-none focus:ring-2 focus:ring-black ${errors.name ? 'border-red-500' : 'border-gray-300'
                     }`}
                 />
                 {errors.name && <p className="text-red-500 md:text-[20px] text-[18px] mt-1">{errors.name}</p>}
@@ -523,7 +523,7 @@ const NewProductPage = () => {
                 <select
                   value={formData.location || ''}
                   onChange={(e) => handleInputChange('location', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[18px] placeholder:text-gray-500 text-black focus:outline-none focus:ring-2 focus:ring-black"
                 >
                   <option value="">მდებარეობის არჩევა</option>
                   <option value="თბილისი">თბილისი</option>
@@ -541,7 +541,7 @@ const NewProductPage = () => {
                   type="text"
                   value={formData.brand || ''}
                   onChange={(e) => handleInputChange('brand', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[18px] placeholder:text-gray-500 text-black focus:outline-none focus:ring-2 focus:ring-black"
                 />
               </div>
 
@@ -552,7 +552,7 @@ const NewProductPage = () => {
                 <select
                   value={formData.categoryId || ''}
                   onChange={(e) => handleInputChange('categoryId', e.target.value ? parseInt(e.target.value) : undefined)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[18px] placeholder:text-gray-500 text-black focus:outline-none focus:ring-2 focus:ring-black"
                 >
                   <option value="">
                     აირჩიეთ კატეგორია
@@ -572,7 +572,7 @@ const NewProductPage = () => {
                 <select
                   value={formData.gender}
                   onChange={(e) => handleInputChange('gender', e.target.value as 'MEN' | 'WOMEN' | 'CHILDREN' | 'UNISEX')}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[18px] placeholder:text-gray-500 text-black focus:outline-none focus:ring-2 focus:ring-black"
                 >
                   <option value="UNISEX">უნივერსალური</option>
                   <option value="MEN">კაცისთვის</option>
@@ -586,7 +586,7 @@ const NewProductPage = () => {
                 <select
                   value={formData.color || ''}
                   onChange={(e) => handleInputChange('color', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[18px] placeholder:text-gray-500 text-black focus:outline-none focus:ring-2 focus:ring-black"
                 >
                   <option value="">აირჩიეთ ფერი</option>
                   {colors.map((color) => (
@@ -607,7 +607,7 @@ const NewProductPage = () => {
               <select
                 value={sizeSystem && selectedSize ? `${sizeSystem}:${selectedSize}` : ''}
                 onChange={(e) => handleCombinedSizeSelect(e.target.value)}
-                className="w-full px-4 py-3 md:w-1/2 w-full border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                className="w-full px-4 py-3 md:w-1/2 w-full border border-gray-300 rounded-lg text-[18px] placeholder:text-gray-500 text-black focus:outline-none focus:ring-2 focus:ring-black"
               >
                 <option value="">აირჩიეთ ზომა</option>
                 {combinedSizeOptions.map((option) => (
@@ -627,7 +627,7 @@ const NewProductPage = () => {
                 onChange={(e) => handleInputChange('description', e.target.value)}
                 placeholder="შეიყვანეთ პროდუქტის აღწერა"
                 rows={4}
-                className={`w-full px-4 text-black py-3 border rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black ${errors.description ? 'border-red-500' : 'border-gray-300'}`}
+                className={`w-full px-4 text-black py-3 border rounded-lg text-[18px] placeholder:text-gray-500 text-black focus:outline-none focus:ring-2 focus:ring-black ${errors.description ? 'border-red-500' : 'border-gray-300'}`}
               />
               {errors.description && <p className="text-red-500 md:text-[20px] text-[18px] mt-1">{errors.description}</p>}
             </div>
@@ -651,10 +651,10 @@ const NewProductPage = () => {
                   <button
                     type="button"
                     onClick={addRentalPriceTier}
-                    className="bg-black text-white px-4 py-2 rounded-lg text-[20px] flex items-center space-x-2"
+                    className="bg-black text-white px-4 py-2 rounded-lg text-[20px] flex items-center space-x-2 font-bold"
                   >
-                    <Plus className="w-4 h-4" />
-                    <span>ფასის გეგმის დამატება</span>
+                    <Plus className="w-5 h-5 font-bold" />
+             
                   </button>
                 </div>
 
@@ -692,10 +692,10 @@ const NewProductPage = () => {
                         <button
                           type="button"
                           onClick={() => removeRentalPriceTier(index)}
-                          className="bg-red-500 text-white px-3 py-2 rounded-lg text-[20px] flex items-center space-x-2"
+                          className=" text-white px-3 py-2 rounded-lg text-[20px] flex items-center space-x-2"
                         >
-                          <X className="w-4 h-4" />
-                          <span>წაშლა</span>
+                          <Trash2 className="w-7 h-7 text-red-500" />
+                          
                         </button>
                       )}
                     </div>
@@ -712,7 +712,7 @@ const NewProductPage = () => {
                     type="number"
                     value={formData.maxRentalDays || ''}
                     onChange={(e) => handleInputChange('maxRentalDays', e.target.value ? parseInt(e.target.value) : undefined)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[18px] placeholder:text-gray-500 text-black focus:outline-none focus:ring-2 focus:ring-black"
                   />
                 </div>
               </div>
@@ -736,10 +736,10 @@ const NewProductPage = () => {
                 <button
                   type="button"
                   onClick={addVariant}
-                  className="bg-black text-white px-4 py-2 rounded-lg text-[20px] text-black flex items-center space-x-2"
+                  className="bg-black text-white px-4 py-2 rounded-lg text-[20px] text-black font-bold flex items-center space-x-2"
                 >
-                  <Plus className="w-4 h-4" />
-                  <span> დამატება</span>
+                  <Plus className="w-7 h-7 font-bold" />
+                
                 </button>
               )}
             </div>
@@ -752,7 +752,7 @@ const NewProductPage = () => {
                     type="number"
                     value={variant.stock}
                     onChange={(e) => updateVariant(index, 'stock', parseInt(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[18px] placeholder:text-gray-500 text-black focus:outline-none focus:ring-2 focus:ring-black"
                   />
                 </div>
                 <div>
@@ -765,7 +765,7 @@ const NewProductPage = () => {
                       const val = e.target.value === '' ? undefined : (e.target.value ? parseFloat(e.target.value) : undefined)
                       updateVariant(index, 'price', val)
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[18px] placeholder:text-gray-500 text-black focus:outline-none focus:ring-2 focus:ring-black"
                   />
                 </div>
                 <div>
@@ -782,10 +782,10 @@ const NewProductPage = () => {
                   <button
                     type="button"
                     onClick={() => removeVariant(index)}
-                    className="bg-red-500 text-white px-3 py-2 rounded-lg text-[20px] text-black flex items-center space-x-2"
+                    className=" text-white px-3 py-2 rounded-lg text-[20px] text-black flex items-center space-x-2"
                   >
-                    <X className="w-4 h-4" />
-                    <span>წაშლა</span>
+                    <Trash2 className="w-7 h-7 text-red-500" />
+                    
                   </button>
                 </div>
               </div>
@@ -797,11 +797,12 @@ const NewProductPage = () => {
           </div>
 
           {/* Images */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="bg-white  rounded-lg shadow-sm p-6">
             <h2 className="text-[20px] text-black font-semibold mb-6">სურათები</h2>
             <ImageUploadForProduct
               value={formData.imageUrls}
               onChange={handleImageChange}
+              
             />
           </div>
 
@@ -809,14 +810,14 @@ const NewProductPage = () => {
           <div className="flex justify-end space-x-4">
             <Link
               href="/admin"
-              className="bg-gray-500 text-white px-6 py-3 rounded-lg text-[20px] text-black hover:bg-gray-600 transition-colors"
+              className="bg-gray-500 text-white px-6 py-3 rounded-lg text-[20px] text-black font-bold hover:bg-gray-600 transition-colors"
             >
               გაუქმება
             </Link>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="bg-black text-white px-6 py-3 rounded-lg text-[20px] text-black hover:bg-gray-800 transition-colors disabled:bg-gray-400"
+              className="bg-black text-white px-6 py-3 rounded-lg text-[20px] text-black font-bold hover:bg-gray-800 transition-colors disabled:bg-gray-400"
             >
               {isSubmitting ? 'მუშავდება...' : 'პროდუქტის დამატება'}
             </button>

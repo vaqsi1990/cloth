@@ -237,8 +237,8 @@ const AdminSettingsPage = () => {
                 href="/admin"
                 className="flex items-center space-x-2 text-black hover:text-gray-900 transition-colors"
               >
-                <ArrowLeft className="w-5 h-5" />
-                <span>ადმინ პანელი</span>
+                <ArrowLeft className="w-7 h-7 font-bold" />
+               
               </Link>
               
             </div>
@@ -253,7 +253,7 @@ const AdminSettingsPage = () => {
             <div className="bg-white w-full max-w-xl rounded-2xl p-8 shadow-sm border border-gray-100">
               <div className="flex items-center space-x-3 mb-6">
                
-                <h2 className="text-2xl font-bold text-gray-900">პროფილის ინფორმაცია</h2>
+                <h2 className="md:text-[20px] text-[18px] font-bold text-black">პროფილის ინფორმაცია</h2>
               </div>
 
               {/* Profile Image Section */}
@@ -364,7 +364,7 @@ const AdminSettingsPage = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-black text-white py-3 px-6 rounded-lg font-medium hover:bg-gray-800 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                  className="w-full bg-[#1B3729] md:text-[18px] text-[16px] font-bold text-white py-3 px-6 rounded-lg  hover:bg-gray-800 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                 >
                   {loading ? (
                     <>
@@ -380,7 +380,7 @@ const AdminSettingsPage = () => {
                 </button>
               </form>
               <div className="text-center mt-2">
-                <Link href="/auth/forgot-password" className="text-[16px] text-blue-700 underline hover:text-blue-900">
+                <Link href="/auth/forgot-password" className="md:text-[18px] text-[16px] font-bold text-blue-700  hover:text-blue-900">
                   დაგავიწყდა პაროლი? აღადგინე
                 </Link>
               </div>

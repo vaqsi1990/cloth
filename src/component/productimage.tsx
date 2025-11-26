@@ -29,9 +29,9 @@ const ImageUploadForProduct = ({ onChange, value }: ImageUploadProps): React.JSX
   };
 
   return (
-    <div className="bg-black text-white p-2 rounded">
+    <div className=" text-white p-2 rounded">
       <UploadButton
-        className="text-white font-bold py-1 px-3 rounded text-sm"
+        className="text-white  font-bold py-1 px-3 rounded text-sm"
         endpoint="imageUploader"
         onClientUploadComplete={handleUploadComplete}
       
@@ -40,8 +40,8 @@ const ImageUploadForProduct = ({ onChange, value }: ImageUploadProps): React.JSX
           allowedContent: "ყველა ტიპის სურათი (PNG, JPG, GIF, WebP) - შეგიძლიათ რამდენიმე ატვირთოთ",
         }}
         appearance={{
-          button: "bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm",
-          allowedContent: "text-gray-400 text-[16px] text-black mt-1",
+          button: "bg-blue-600 md:w-[50%] w-full text-center hover:bg-blue-700 text-white font-bold py-2 px-4 rounded md:text-[18px] text-[16px]",
+          allowedContent: "text-black text-[16px] text-black mt-1",
         }}
       />
 
@@ -60,7 +60,7 @@ const ImageUploadForProduct = ({ onChange, value }: ImageUploadProps): React.JSX
            </div>
          </div>
        ) : (
-         <p className="mt-1 text-gray-400 text-sm">სურათები ჯერ არ არის ატვირთული. შეგიძლიათ რამდენიმე სურათი ერთდროულად ატვირთოთ (Ctrl+Click ან Shift+Click).</p>
+         <p className="mt-1 text-gray-400 text-sm text-center">სურათები ჯერ არ არის ატვირთული. შეგიძლიათ რამდენიმე სურათი ერთდროულად ატვირთოთ (Ctrl+Click ან Shift+Click).</p>
        )}
     </div>
   );
