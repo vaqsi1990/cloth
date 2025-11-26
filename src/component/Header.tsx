@@ -12,6 +12,7 @@ const Header = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
   const [mobileDropdownOpen, setMobileDropdownOpen] = useState<string | null>(null)
+  const [isMobileUserDropdownOpen, setIsMobileUserDropdownOpen] = useState(false)
   const [cartItemCount, setCartItemCount] = useState(0)
   const [searchValue, setSearchValue] = useState('')
   const { data: session } = useSession()
@@ -53,6 +54,26 @@ const Header = () => {
       }
     }
   }, [])
+
+  // Close mobile user dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: Event) => {
+      const target = event.target as HTMLElement
+      if (isMobileUserDropdownOpen && !target.closest('.mobile-user-dropdown')) {
+        setIsMobileUserDropdownOpen(false)
+      }
+    }
+
+    if (isMobileUserDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener('touchstart', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('touchstart', handleClickOutside)
+    }
+  }, [isMobileUserDropdownOpen])
 
   // --- MENU HANDLERS ---
   const handleMouseEnterMain = () => {
@@ -101,7 +122,7 @@ const Header = () => {
             <div className="relative overflow-hidden rounded-full">
               <Image
                 src="/logo.jpg"
-                className="rounded-full transition-transform duration-300 group-hover:scale-110"
+                className="w-[50px] h-[50px] md:w-20 md:h-20 rounded-full transition-transform duration-300 group-hover:scale-110"
                 alt="logo"
                 width={80}
                 height={80}
@@ -308,31 +329,48 @@ const Header = () => {
 
             {/* Account Section */}
             {session ? (
-              <div className="relative group">
-                <button className="p-2 text-white ">
+              <div className="relative mobile-user-dropdown">
+                <button 
+                  onClick={() => setIsMobileUserDropdownOpen(!isMobileUserDropdownOpen)}
+                  className="p-2 text-white touch-manipulation"
+                  aria-label="User menu"
+                >
                   <User className="w-5 h-5" />
                 </button>
-                <div className="absolute right-0 top-full mt-2 w-48 bg-black border border-black rounded-xl shadow-xl z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300">
-                  <div className="py-2 text-black">
-                    <p className="px-4 font-semibold">{session.user.name}</p>
-                    {session.user.role === 'ADMIN' ? (
-                      <Link href="/admin" className="block px-4 py-2 hover:bg-gray-100">
-                        ადმინისტრატორი
-                      </Link>
-                    ) : (
-                      <Link href="/account" className="block px-4 py-2 hover:bg-black">
-                        პროფილი
-                      </Link>
-                    )}
-                    <button
-                      onClick={() => signOut()}
-                      className="w-full text-left px-4 py-2 hover:bg-black flex items-center space-x-2"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      <span>გასვლა</span>
-                    </button>
+                {isMobileUserDropdownOpen && (
+                  <div className="absolute left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-xl z-50">
+                    <div className="py-2">
+                      <p className="px-4 py-2 font-semibold text-black">{session.user.name}</p>
+                      {session.user.role === 'ADMIN' ? (
+                        <Link 
+                          href="/admin" 
+                          className="block px-4 py-2 text-black hover:bg-gray-100"
+                          onClick={() => setIsMobileUserDropdownOpen(false)}
+                        >
+                          ადმინისტრატორი
+                        </Link>
+                      ) : (
+                        <Link 
+                          href="/account" 
+                          className="block px-4 py-2 text-black hover:bg-gray-100"
+                          onClick={() => setIsMobileUserDropdownOpen(false)}
+                        >
+                          პროფილი
+                        </Link>
+                      )}
+                      <button
+                        onClick={() => {
+                          setIsMobileUserDropdownOpen(false)
+                          signOut()
+                        }}
+                        className="w-full text-left px-4 py-2 text-black hover:bg-gray-100 flex items-center space-x-2"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        <span>გასვლა</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             ) : (
               <Link href="/auth/signin" className="text-sm md:text-[20px] text-[16px]">

@@ -1451,7 +1451,7 @@ const ShopPageClient = () => {
                     <div className="flex-1">
                         {/* Top Bar with Sorting */}
                         <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0">
+                            <div className="flex flex-col sm:flex-row justify-between md:items-start  items-center space-y-3 sm:space-y-0">
                                 <h3 className="md:text-[20px] font-bold text-[18px] text-black">ყიდვა / გაქირავება</h3>
                                 <div className="flex flex-col md:flex-row gap-2 text-black items-center space-x-2">
                                     <span className="md:text-[20px] text-[16px] text-black">დალაგება:</span>
