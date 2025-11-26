@@ -773,8 +773,8 @@ const AccountPage = () => {
                   <div className="mb-4">
                     <span className={`inline-block px-4 py-2 text-[16px] font-semibold rounded-full ${
                       identityStatus === 'REJECTED'
-                        ? 'bg-red-100 text-red-800'
-                        : 'bg-yellow-100 text-yellow-800'
+                        ? ' text-red-500'
+                        : ' text-yellow-500'
                     }`}>
                       სტატუსი: {getVerificationStatusLabel(identityStatus as 'PENDING' | 'APPROVED' | 'REJECTED')}
                     </span>
@@ -1119,12 +1119,12 @@ const AccountPage = () => {
                             order.status === 'PAID'
                               ? 'text-green-500'
                               : order.status === 'SHIPPED'
-                                ? 'bg-blue-100 text-blue-800'
+                                ? ' text-blue-500'
                                 : order.status === 'CANCELED'
-                                  ? 'bg-red-100 text-red-800'
+                                  ? ' text-red-500'
                                   : order.status === 'REFUNDED'
-                                    ? 'bg-gray-100 text-gray-800'
-                                    : 'bg-yellow-100 text-yellow-800'
+                                    ? ' text-gray-500'
+                                    : ' text-yellow-500'
                           }`}
                         >
                           {order.status === 'PAID'
@@ -1283,10 +1283,10 @@ const AccountPage = () => {
                     <span
                       className={`inline-flex px-3 py-1 rounded-full text-[16px] ${
                         product.approvalStatus === 'APPROVED'
-                          ? 'bg-green-100 text-green-800'
+                          ? ' text-green-500'
                           : product.approvalStatus === 'REJECTED'
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-yellow-100 text-yellow-800'
+                            ? ' text-red-500'
+                            : ' text-yellow-500'
                       }`}
                     >
                       {getProductApprovalLabel(product.approvalStatus)}

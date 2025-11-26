@@ -659,7 +659,7 @@ const ShopPageClient = () => {
                                                                 className={`w-10 h-10 rounded-full border-2 flex items-center justify-center text-[16px] font-medium ${
                                                                     selectedSizeSystems.includes(sizeSystem.id)
                                                                         ? 'bg-[#1B3729] text-white border-[#1B3729]'
-                                                                        : 'bg-white text-black border-gray-300 hover:border-orange-500'
+                                                                        : 'bg-white text-black border-gray-300 '
                                                                 }`}
                                                             >
                                                                 {sizeSystem.label}
@@ -683,7 +683,7 @@ const ShopPageClient = () => {
                                                         className={`relative w-10 h-10 rounded-full border-2 ${
                                                             selectedColors.includes(color.id)
                                                                 ? 'border-[#1B3729]  '
-                                                                : 'border-gray-300 hover:border-orange-500'
+                                                                : 'border-gray-300 '
                                                         }`}
                                                         style={{ backgroundColor: color.color }}
                                                     >
@@ -775,7 +775,7 @@ const ShopPageClient = () => {
                                                         className={`px-4 py-2 rounded-lg border text-[16px] font-medium ${
                                                             selectedLocations.includes(location.id)
                                                                 ? 'bg-[#1B3729] text-white border-[#1B3729]'
-                                                                : 'bg-white text-black border-gray-300 hover:border-orange-500'
+                                                                : 'bg-white text-black border-gray-300 '
                                                         }`}
                                                     >
                                                         {location.label}
@@ -795,7 +795,7 @@ const ShopPageClient = () => {
                                                     className={`w-full text-left px-4 py-3 rounded-lg border flex justify-between items-center ${
                                                         purchaseType === "all"
                                                             ? 'bg-[#1B3729] text-white border-[#1B3729]'
-                                                            : 'bg-white text-black border-gray-300 hover:border-orange-500'
+                                                            : 'bg-white text-black border-gray-300 '
                                                     }`}
                                                 >
                                                     <span>ყველა</span>
@@ -812,7 +812,7 @@ const ShopPageClient = () => {
                                                     className={`w-full text-left px-4 py-3 rounded-lg border flex justify-between items-center ${
                                                         purchaseType === "rent-only"
                                                             ? 'bg-[#1B3729] text-white border-[#1B3729]'
-                                                            : 'bg-white text-black border-gray-300 hover:border-orange-500'
+                                                            : 'bg-white text-black border-gray-300 '
                                                     }`}
                                                 >
                                                     <span>მხოლოდ გაქირავება</span>
@@ -829,7 +829,7 @@ const ShopPageClient = () => {
                                                     className={`w-full text-left px-4 py-3 rounded-lg border flex justify-between items-center ${
                                                         purchaseType === "sale-only"
                                                             ? 'bg-[#1B3729] text-white border-[#1B3729]'
-                                                            : 'bg-white text-black border-gray-300 hover:border-orange-500'
+                                                            : 'bg-white text-black border-gray-300 '
                                                     }`}
                                                 >
                                                     <span className='flex flex-col'>მხოლოდ ყიდვა</span>
@@ -1275,7 +1275,7 @@ const ShopPageClient = () => {
                                             max={maxPrice}
                                             value={priceRange[1]}
                                             onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
-                                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                                            className="w-full  h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
                                         />
                                     </div>
                                     <div className="flex items-center justify-between md:text-[18px] text-[16px] text-black">
@@ -1318,7 +1318,7 @@ const ShopPageClient = () => {
                                             className={`relative w-10 h-10 rounded-full border-2 transition-all duration-200 ${
                                                 selectedColors.includes(color.id)
                                                     ? 'border-[#1B3729] ring-2 ring-[#1B3729] ring-offset-2'
-                                                    : 'border-gray-300 hover:border-orange-500 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2'
+                                                    : 'border-gray-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2'
                                             }`}
                                             style={{ backgroundColor: color.color }}
                                         >
@@ -1410,7 +1410,7 @@ const ShopPageClient = () => {
                                             minDate={new Date()}
                                             placeholderText="აირჩიე თარიღი"
                                             dateFormat="dd/MM/yyyy"
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md md:text-[18px] text-[16px] focus:outline-none focus:ring-2 focus:ring-black"
+                                            className="w-full px-3 py-2  border border-gray-300 rounded-md md:text-[18px] text-[16px] focus:outline-none focus:ring-2 focus:ring-black"
                                         />
                                     </div>
                                     <div>

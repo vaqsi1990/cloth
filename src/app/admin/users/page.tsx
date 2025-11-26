@@ -119,26 +119,7 @@ const AdminUsersPage = () => {
     }
   }
 
-  const handleDeleteUser = async (userId: string) => {
-    if (!confirm('ნამდვილად გსურთ მომხმარებლის წაშლა? ეს ქმედება შეუქცევადია.')) {
-      return
-    }
 
-    try {
-      const response = await fetch(`/api/admin/users/${userId}`, {
-        method: 'DELETE'
-      })
-      
-      if (response.ok) {
-        setUsers(users.filter(u => u.id !== userId))
-      } else {
-        showToast('შეცდომა მომხმარებლის წაშლისას', 'error')
-      }
-    } catch (error) {
-      console.error('Error deleting user:', error)
-      showToast('შეცდომა მომხმარებლის წაშლისას', 'error')
-    }
-  }
 
   const handleToggleRole = async (userId: string, currentRole: string) => {
     const newRole = currentRole === 'USER' ? 'ADMIN' : 'USER'
@@ -306,9 +287,9 @@ const AdminUsersPage = () => {
                         <td className="px-4 py-2 text-sm text-black">{seller._count.products}</td>
                         <td className="px-4 py-2 text-sm">
                           {seller.verified ? (
-                            <span className="px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs font-semibold">დამოწმებული</span>
+                            <span className="px-2 py-1 rounded-full text-green-800 text-xs font-semibold">დამოწმებული</span>
                           ) : (
-                            <span className="px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs font-semibold">ველოდებით დოკუმენტებს</span>
+                            <span className="px-2 py-1 rounded-full  text-yellow-800 text-xs font-semibold">ველოდებით დოკუმენტებს</span>
                           )}
                         </td>
                         <td className="px-4 py-2 text-right">
@@ -399,8 +380,8 @@ const AdminUsersPage = () => {
                           </h3>
                           <span className={`px-2 py-1 text-xs rounded-full ${
                             user.role === 'ADMIN' 
-                              ? 'bg-red-100 text-red-800' 
-                              : 'bg-green-100 text-green-800'
+                              ? 'inline-block px-2 py-1 md:text-[18px] text-[16px] font-bold rounded-full  text-red-800' 
+                              : ' inline-block px-2 py-1 md:text-[18px] text-[16px] font-bold rounded-full text-green-500'
                           }`}>
                             {user.role === 'ADMIN' ? 'ადმინისტრატორი' : 'მომხმარებელი'}
                           </span>
@@ -459,34 +440,8 @@ const AdminUsersPage = () => {
                     {user.name && user.email && (
                       <>
                         <div className="flex items-center space-x-2">
-                          <button
-                            onClick={() => handleToggleRole(user.id, user.role)}
-                            className={`flex items-center space-x-1 px-3 py-2 rounded-lg text-[18px] transition-colors ${
-                              user.role === 'ADMIN'
-                                ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                                : 'bg-green-100 text-green-700 hover:bg-green-200'
-                            }`}
-                          >
-                            {user.role === 'ADMIN' ? (
-                              <>
-                                <UserX className="w-4 h-4" />
-                                <span>მომხმარებლად</span>
-                              </>
-                            ) : (
-                              <>
-                                <UserCheck className="w-4 h-4" />
-                                <span>ადმინად</span>
-                              </>
-                            )}
-                          </button>
-                          
-                          <button
-                            onClick={() => handleDeleteUser(user.id)}
-                            className="flex items-center space-x-1 px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-[18px]"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            <span>წაშლა</span>
-                          </button>
+                      
+                         
                         </div>
 
                         {/* Ban status badge */}
@@ -543,7 +498,7 @@ const AdminUsersPage = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                           {user.verification.idFrontUrl && (
                             <div className="flex flex-col items-center">
-                              <span className="text-[16px] font-semibold mb-2 text-black">დოკუმენტის წინა მხარე</span>
+                              <span className="text-[18px] font-semibold mb-2 text-black">დოკუმენტის წინა მხარე</span>
                               <div className="w-full max-w-[500px] h-[400px] relative border-2 border-blue-300 rounded-lg overflow-hidden shadow-lg">
                                 <Image
                                   src={user.verification.idFrontUrl}
@@ -556,7 +511,7 @@ const AdminUsersPage = () => {
                           )}
                           {user.verification.idBackUrl && (
                             <div className="flex flex-col items-center">
-                              <span className="text-[16px] font-semibold mb-2 text-black">დოკუმენტის უკანა მხარე</span>
+                              <span className="text-[18px] font-semibold mb-2 text-black">დოკუმენტის უკანა მხარე</span>
                               <div className="w-full max-w-[500px] h-[400px] relative border-2 border-blue-300 rounded-lg overflow-hidden shadow-lg">
                                 <Image
                                   src={user.verification.idBackUrl}
@@ -570,8 +525,8 @@ const AdminUsersPage = () => {
                         </div>
                         {/* IBAN Display */}
                         {user.iban && (
-                          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                            <h5 className="text-[18px] font-semibold text-black mb-2">ბანკის IBAN:</h5>
+                          <div className="mb-4 p-4  border border-blue-200 rounded-lg">
+                            <h5 className="text-[18px] font-semibold text-black mb-2">პირადობის ნომერი:</h5>
                             <p className="text-[20px] font-mono text-blue-800">{user.iban}</p>
                           </div>
                         )}
@@ -765,8 +720,8 @@ const AdminUsersPage = () => {
                           </div>
                           {/* IBAN Display */}
                           {user.iban && (
-                            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                              <h5 className="text-[18px] font-semibold text-black mb-2">ბანკის IBAN:</h5>
+                            <div className="mb-4 p-4  border  rounded-lg">
+                              <h5 className="text-[18px] font-semibold text-black mb-2">პირადობის ნომერი:</h5>
                               <p className="text-[20px] font-mono text-blue-800">{user.iban}</p>
                             </div>
                           )}
@@ -774,7 +729,7 @@ const AdminUsersPage = () => {
                             {/* Identity Status */}
                             {user.verification.idFrontUrl && user.verification.idBackUrl && (
                               <div className="flex items-center space-x-2">
-                                <span className="text-[16px] font-semibold text-black">პირადობა:</span>
+                                <span className="text-[18px] font-semibold text-black">პირადობის ნომერი:</span>
                                 <span className={`px-2 py-1 rounded-full text-[18px] font-semibold text-white ${
                                   (user.verification.identityStatus === 'APPROVED' || (!user.verification.identityStatus && user.verification.status === 'APPROVED')) ? 'bg-green-600' : 
                                   (user.verification.identityStatus === 'REJECTED' || (!user.verification.identityStatus && user.verification.status === 'REJECTED')) ? 'bg-red-600' : 'bg-yellow-500'
@@ -805,8 +760,8 @@ const AdminUsersPage = () => {
                         </div>
                         {/* IBAN Display */}
                         {user.iban && (
-                          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                            <h5 className="text-[18px] font-semibold text-black mb-2">ბანკის IBAN:</h5>
+                          <div className="mb-4 p-4  border  rounded-lg">
+                            <h5 className="text-[18px] font-semibold text-black mb-2">პირადობის ნომერი:</h5>
                             <p className="text-[20px] font-mono text-blue-800">{user.iban}</p>
                           </div>
                         )}
@@ -951,10 +906,31 @@ function BanUserInline({ user, setUsers }: { user: User; setUsers: React.Dispatc
   const [open, setOpen] = useState(false)
   const [reason, setReason] = useState('')
   const [loading, setLoading] = useState(false)
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm('ნამდვილად გსურთ მომხმარებლის წაშლა? ეს ქმედება შეუქცევადია.')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: 'DELETE'
+      })
+      
+      if (response.ok) {
+        setUsers(prev => prev.filter(u => u.id !== userId))
+      } else {
+        showToast('შეცდომა მომხმარებლის წაშლისას', 'error')
+      }
+    } catch (error) {
+      console.error('Error deleting user:', error)
+      showToast('შეცდომა მომხმარებლის წაშლისას', 'error')
+    }
+  }
+
   return (
     <div className="flex items-center gap-2">
       <button
-        className="px-3 py-2 bg-red-600 text-white rounded text-[18px] hover:bg-red-700"
+        className="px-3 py-2 font-bold bg-red-600 rounded-lg text-white rounded text-[18px] hover:bg-red-700"
         onClick={() => setOpen(v => !v)}
       >ბანი</button>
       {open && (
@@ -991,6 +967,13 @@ function BanUserInline({ user, setUsers }: { user: User; setUsers: React.Dispatc
           >დადასტურება</button>
         </form>
       )}
+       <button
+                            onClick={() => handleDeleteUser(user.id)}
+                            className="flex items-center space-x-1 px-3 py-2  rounded-lg  transition-colors "
+                          >
+                            <Trash2 className="w-8 h-8 text-red-500" />
+                            
+                          </button>
     </div>
   )
 }

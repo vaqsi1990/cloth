@@ -252,9 +252,7 @@ const AdminSettingsPage = () => {
           <div className="w-full flex justify-center lg:col-span-2">
             <div className="bg-white w-full max-w-xl rounded-2xl p-8 shadow-sm border border-gray-100">
               <div className="flex items-center space-x-3 mb-6">
-                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <User className="w-5 h-5 text-blue-600" />
-                </div>
+               
                 <h2 className="text-2xl font-bold text-gray-900">პროფილის ინფორმაცია</h2>
               </div>
 
