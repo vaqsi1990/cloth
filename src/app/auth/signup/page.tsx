@@ -298,7 +298,7 @@ const SignUpPage = () => {
     <div className="min-h-screen  flex  justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
-          <h2 className="text-[20px] text-center md:text-[30px] font-semibold uppercase tracking-widesttext-black">
+          <h2 className="text-[16px] text-center md:text-[20px] font-semibold uppercase tracking-widesttext-black">
             რეგისტრაცია
           </h2>
           <p className="mt-2 text-center text-lg text-black">
@@ -595,7 +595,7 @@ const SignUpPage = () => {
                 type="button"
                 onClick={handleSendCode}
                 disabled={isSendingCode}
-                className="w-full md:text-[18px] text-[16px] bg-black cursor-pointer text-white py-3 px-6 rounded-lg font-medium hover:bg-gray-800 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                className="w-full md:text-[18px] font-bold text-[16px] bg-[#1B3729] cursor-pointer text-white py-3 px-6 rounded-lg hover:bg-gray-800 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
               >
                 {isSendingCode ? (
                   <>
@@ -610,7 +610,7 @@ const SignUpPage = () => {
               <button
                 type="submit"
                 disabled={isLoading || !formData.code || !/^[A-Za-z0-9]{6}$/.test(formData.code)}
-                className="w-full bg-black md:text-[18px] text-[16px]  cursor-pointer text-white py-3 px-6 rounded-lg font-medium hover:bg-gray-800 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                className="w-full md:text-[18px] font-bold text-[16px] bg-[#1B3729] cursor-pointer text-white py-3 px-6 rounded-lg hover:bg-gray-800 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
               >
                 {isLoading ? (
                   <>
