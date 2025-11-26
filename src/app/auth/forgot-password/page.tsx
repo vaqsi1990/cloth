@@ -52,10 +52,10 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="mt-10  flex flex-col justify-center py-9 sm:px-6 ">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
      
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-black">
+        <h2 className="text-[16px] text-center md:text-[20px] font-semibold uppercase tracking-widesttext-black">
           პაროლის აღდგენა
         </h2>
         <p className="mt-4 text-center block text-black md:text-[18px] text-[16px]">
@@ -80,7 +80,7 @@ export default function ResetPasswordPage() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="appearance-none block w-full px-8 py-4 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    className="w-full pl-7 pr-7  py-3 text-black placeholder:text-black border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
                     placeholder="შეიყვანეთ ელ-ფოსტა"
                   />
                 </div>
@@ -98,7 +98,7 @@ export default function ResetPasswordPage() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="inline-flex w-full text-white cursor-pointer items-center justify-center px-8 py-4 bg-[#034e64]  md:text-[20px] text-[18px] font-bold rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 shadow-lg"
+                  className="w-full md:text-[18px] font-bold text-[16px] bg-[#1B3729] cursor-pointer text-white py-3 px-6 rounded-lg hover:bg-gray-800 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                 >
                   {isLoading ? 'მიმდინარეობს...' : 'გაგზავნა'}
                 </button>

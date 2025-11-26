@@ -91,12 +91,12 @@ const SignUpPage = () => {
         })
       }
     } else if (name === 'address') {
-      // Address allows Georgian characters, numbers, № (optional), and N
+      // Address allows Georgian characters, numbers, № (optional), N, and punctuation marks
       // Must contain at least one digit
-      if (value && !/^[\u10A0-\u10FF\s0-9№N]+$/.test(value)) {
+      if (value && !/^[\u10A0-\u10FF\s0-9№N,.\-:;()\[\]{}/"]+$/.test(value)) {
         setFieldErrors(prev => ({
           ...prev,
-          [name]: 'მისამართი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, ციფრებს, № (ოფციონალური) და N'
+          [name]: 'მისამართი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, ციფრებს, №, N და სასვენი ნიშნებს'
         }))
       } else if (value && !/[0-9]/.test(value)) {
         setFieldErrors(prev => ({
@@ -142,8 +142,8 @@ const SignUpPage = () => {
       showToast('ადგილმდებარეობა უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს', 'error')
       return
     }
-    if (!/^[\u10A0-\u10FF\s0-9№N]+$/.test(formData.address)) {
-      showToast('მისამართი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, ციფრებს, № (ოფციონალური) და N', 'error')
+    if (!/^[\u10A0-\u10FF\s0-9№N,.\-:;()\[\]{}/"]+$/.test(formData.address)) {
+      showToast('მისამართი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, ციფრებს, №, N და სასვენი ნიშნებს', 'error')
       return
     }
     if (!/[0-9]/.test(formData.address)) {
@@ -221,8 +221,8 @@ const SignUpPage = () => {
       setIsLoading(false)
       return
     }
-    if (!/^[\u10A0-\u10FF\s0-9№N]+$/.test(formData.address)) {
-      showToast('მისამართი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, ციფრებს, № და N', 'error')
+    if (!/^[\u10A0-\u10FF\s0-9№N,.\-:;()\[\]{}/"]+$/.test(formData.address)) {
+      showToast('მისამართი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, ციფრებს, №, N და სასვენი ნიშნებს', 'error')
       setIsLoading(false)
       return
     }

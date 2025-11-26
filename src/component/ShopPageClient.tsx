@@ -838,7 +838,7 @@ const ShopPageClient = () => {
                                                             : 'bg-white text-black border-gray-300 hover:border-orange-500'
                                                     }`}
                                                 >
-                                                    <span>მხოლოდ ყიდვა</span>
+                                                    <span className='flex flex-col'>მხოლოდ ყიდვა</span>
                                                     <span className={`text-[16px] px-2 py-1 rounded-full ${
                                                         purchaseType === "sale-only"
                                                             ? "bg-white/20 text-white"
@@ -959,7 +959,7 @@ const ShopPageClient = () => {
                                                                     : 'bg-white text-black border-gray-300 hover:border-orange-500'
                                                             }`}
                                                         >
-                                                            <span>მხოლოდ ყიდვა</span>
+                                                            <span className='flex  flex-col'>მხოლოდ <br /> ყიდვა</span>
                                                             <span className={`text-[16px] px-2 py-1 rounded-full ${
                                                                 purchaseType === "sale-only"
                                                                     ? "bg-white/20 text-white"
@@ -1222,7 +1222,7 @@ const ShopPageClient = () => {
                                                 : "text-black hover:bg-gray-100"
                                             }`}
                                     >
-                                        <span>მხოლოდ ყიდვა</span>
+                                        <span className='flex flex-row'>მხოლოდ მხოლოდ <br /> ყიდვა ყიდვა</span>
                                         <span className={`text-[14px] px-2 py-1 rounded-full ${purchaseType === "sale-only"
                                                 ? "bg-gray-600 text-white"
                                                 : "bg-gray-200 text-black"
