@@ -213,12 +213,12 @@ const AdminUsersPage = () => {
                 href="/admin"
                 className="flex items-center space-x-2 text-black hover:text-black transition-colors"
               >
-                <ArrowLeft className="w-5 h-5" />
-                <span>ადმინ პანელი</span>
+                <ArrowLeft className="w-7 font-bold h-7" />
+                
               </Link>
               <div>
-                <h1 className="text-3xl font-bold text-black">მომხმარებლების მართვა</h1>
-                <p className="text-black mt-1">მართე ყველა მომხმარებელი</p>
+                <h1 className="md:text-[20px] text-[18px] font-bold text-black">მომხმარებლების მართვა</h1>
+               
               </div>
             </div>
           </div>
@@ -237,7 +237,7 @@ const AdminUsersPage = () => {
                 placeholder="მომხმარებლის ძებნა..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                className="w-full pl-10 pr-4 py-3 placeholder:text-black border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
               />
             </div>
 
@@ -247,7 +247,7 @@ const AdminUsersPage = () => {
               <select
                 value={filterRole}
                 onChange={(e) => setFilterRole(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent appearance-none"
+                className="w-full pl-10 pr-4 py-3 placeholder:text-black border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent appearance-none"
               >
                 <option value="ALL">ყველა როლი</option>
                 <option value="USER">მომხმარებელი</option>
@@ -676,7 +676,7 @@ const AdminUsersPage = () => {
                       {/* User Verification Section */}
                       {user.verification && !(user.blocked && !user.verified) && (
                         <div className="mb-6">
-                          <h4 className="text-[16px] font-semibold text-black mt-4 mb-2">ვერიფიკაცია (პირადობის სურათები)</h4>
+                          <h4 className="text-[16px] md:text-[18px] font-semibold text-black mt-4 mb-2">ვერიფიკაცია (პირადობის სურათები)</h4>
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
                             {user.verification.idFrontUrl && (
                               <div className="flex flex-col items-center">

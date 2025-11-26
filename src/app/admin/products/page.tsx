@@ -369,26 +369,26 @@ const AdminProductsPage = () => {
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-black">პროდუქტების მართვა</h1>
-              <p className="text-black mt-1">მართე ყველა პროდუქტი</p>
+              <h1 className="md:text-[20px] text-[18px] font-bold text-black">პროდუქტების მართვა</h1>
+              
             </div>
             <div className="flex items-center space-x-4">
               <Link
                 href="/admin/products/sku"
-                className="px-4 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
+                className="px-4 py-2 bg-[#1B3729] md:text-[20px] text-[16px]   text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
               >
                
                 <span>ძიება კოდის მიხედვით</span>
               </Link>
               <Link
                 href="/admin"
-                className="px-4 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
+                className="px-4 py-2 bg-[#1B3729] md:text-[20px] text-[16px] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
               >
                 ადმინ პანელი
               </Link>
               <Link
                 href="/admin/products/new"
-                className="flex items-center space-x-2 px-4 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
+                className="flex items-center space-x-2 px-4 py-2 bg-[#1B3729] text-white rounded-lg md:text-[20px] text-[16px] font-bold uppercase tracking-wide  transition-colors"
               >
                 <Plus className="w-4 h-4" />
                 <span>ახალი პროდუქტი</span>
@@ -410,7 +410,7 @@ const AdminProductsPage = () => {
                 placeholder="პროდუქტის ძებნა..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 text-black border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                className="w-full pl-10 pr-4 py-3 text-black border placeholder:text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
               />
             </div>
 
@@ -420,7 +420,7 @@ const AdminProductsPage = () => {
               <select
                 value={filterGender}
                 onChange={(e) => setFilterGender(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 text-black  border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent appearance-none"
+                className="w-full pl-10 pr-4 py-3 text-black  border placeholder:text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent appearance-none"
               >
                 <option value="ALL">ყველა გენდერი</option>
                 <option value="MEN">კაცი</option>
@@ -436,7 +436,7 @@ const AdminProductsPage = () => {
               <select
                 value={filterCategory}
                 onChange={(e) => setFilterCategory(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 text-black  border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent appearance-none"
+                className="w-full pl-10 pr-4 py-3 text-black  border placeholder:text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent appearance-none"
               >
                 <option value="ALL">ყველა კატეგორია</option>
                 <option value="dresses">კაბები</option>
@@ -452,7 +452,7 @@ const AdminProductsPage = () => {
         {/* Products Grid */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-black">
+            <h2 className="md:text-[20px] text-[18px] font-bold text-black">
               პროდუქტები ({filteredProducts.length})
             </h2>
           </div>
@@ -497,7 +497,7 @@ const AdminProductsPage = () => {
                    <div className="flex-1 min-w-0">
                      <div className="flex items-start justify-between">
                        <div className="flex-1">
-                         <h3 className="font-semibold text-black mb-1 truncate">
+                         <h3 className="font-semibold md:text-[18px] text-[16px] text-black mb-1 truncate">
                            {product.name}
                          </h3>
                          
@@ -505,8 +505,8 @@ const AdminProductsPage = () => {
                          <div className="mb-2">
                            <span className={`md:text-[18px] text-[16px] font-mono px-2 py-1 rounded ${
                              product.sku 
-                               ? 'text-black bg-gray-100' 
-                               : 'text-orange-600 bg-orange-50'
+                               ? 'text-black ' 
+                               : 'text-orange-600 '
                            }`}>
                              კოდი: {product.sku || 'არ არის მინიჭებული'}
                            </span>
@@ -515,8 +515,8 @@ const AdminProductsPage = () => {
                          <div className="mb-2">
                            <span className={`md:text-[18px] text-[16px] font-mono px-2 py-1 rounded ${
                              product.user?.name 
-                               ? 'text-black bg-gray-100' 
-                               : 'text-orange-600 bg-orange-50'
+                               ? 'text-black ' 
+                               : 'text-orange-600 '
                            }`}>
                              ავტორი: {product.user?.name || 'არ არის მინიჭებული'}
                            </span>
@@ -545,12 +545,12 @@ const AdminProductsPage = () => {
                          
                          <div className="flex items-center space-x-2">
                           <span
-                            className={`px-2 py-1 rounded-full text-[16px] ${
+                            className={`px-2 py-1 rounded-full font-bold md:text-[18px] text-[16px] ${
                               product.approvalStatus === 'APPROVED'
-                                ? 'bg-green-100 text-green-800'
+                                ? 'text-green-500'
                                 : product.approvalStatus === 'REJECTED'
-                                  ? 'bg-red-100 text-red-800'
-                                  : 'bg-yellow-100 text-yellow-800'
+                                  ? 'text-red-500'
+                                  : 'text-yellow-500'
                             }`}
                           >
                             {getApprovalStatusLabel(product.approvalStatus)}
@@ -593,10 +593,10 @@ const AdminProductsPage = () => {
                                        <span key={index} className="ml-2">
                                          {formatDate(period.startDate)}-{formatDate(period.endDate)}
                                          
-                                         <span className={`ml-1 px-1 py-0.5 rounded text-[16px] ${
+                                         <span className={`ml-1 px-1 py-0.5 rounded font-bold md:text-[18px] text-[16px] ${
                                            period.status === 'ACTIVE' 
-                                             ? 'bg-green-100 text-green-800' 
-                                             : 'bg-blue-100 text-blue-800'
+                                             ? 'text-green-500' 
+                                             : 'text-blue-500'
                                          }`}>
                                            {period.status === 'ACTIVE' ? 'აქტიური' : 'დაჯავშნული'}
                                          </span>
@@ -637,7 +637,7 @@ const AdminProductsPage = () => {
                            className="flex items-center space-x-1 px-3 py-2 bg-gray-100 text-black rounded-lg hover:bg-gray-200 transition-colors md:text-[18px] text-[16px]"
                          >
                            <Eye className="w-4 h-4" />
-                           <span>ნახვა</span>
+                           <span className='font-bold'>ნახვა</span>
                          </Link>
                          
                          <Link
@@ -645,15 +645,15 @@ const AdminProductsPage = () => {
                            className="flex items-center space-x-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors md:text-[18px] text-[16px]"
                          >
                            <Edit className="w-4 h-4" />
-                           <span>რედაქტირება</span>
+                           <span className='font-bold'>რედაქტირება</span>
                          </Link>
                          
                          <button
                            onClick={() => handleDeleteProduct(product.id)}
-                           className="flex items-center space-x-1 px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors md:text-[18px] text-[16px]"
+                           className="flex items-center space-x-1 px-3 py-2  rounded-lg  transition-colors md:text-[18px] text-[16px]"
                          >
-                           <Trash2 className="w-4 h-4" />
-                           <span>წაშლა</span>
+                           <Trash2 className="w-7 text-red-500 h-7" />
+                          
                          </button>
                        </div>
                      </div>
