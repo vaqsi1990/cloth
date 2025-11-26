@@ -35,7 +35,7 @@ const ShopPageClient = () => {
         activeRentals: Array<{ startDate: string; endDate: string; status: string }>;
         isAvailable: boolean;
     }[]>>({})
-    const [isCategoryOpen, setIsCategoryOpen] = useState(true)
+    const [isCategoryOpen, setIsCategoryOpen] = useState(false)
     const [isRatingOpen, setIsRatingOpen] = useState(true)
     const [currentPage, setCurrentPage] = useState(1)
     const [itemsPerPage] = useState(20)
@@ -426,8 +426,8 @@ const ShopPageClient = () => {
     const toggleColor = (color: string) => {
         setSelectedColors(prev =>
             prev.includes(color)
-                ? prev.filter(c => c !== color)
-                : [...prev, color]
+                ? [] // თუ იგივე ფერია, გაუქმდება
+                : [color] // თუ სხვა ფერია, მხოლოდ ის იქნება არჩეული
         )
     }
 
@@ -687,13 +687,7 @@ const ShopPageClient = () => {
                                                         }`}
                                                         style={{ backgroundColor: color.color }}
                                                     >
-                                                        {selectedColors.includes(color.id) && (
-                                                            <div className="absolute inset-0 flex items-center justify-center">
-                                                                <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
-                                                                    <div className="w-3 h-3 bg-[#1B3729] rounded-full"></div>
-                                                                </div>
-                                                            </div>
-                                                        )}
+                                                     
                                                     </button>
                                                 ))}
                                             </div>
@@ -1110,13 +1104,7 @@ const ShopPageClient = () => {
                                                                 }`}
                                                                 style={{ backgroundColor: color.color }}
                                                             >
-                                                                {selectedColors.includes(color.id) && (
-                                                                    <div className="absolute inset-0 flex items-center justify-center">
-                                                                        <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
-                                                                            <div className="w-3 h-3 bg-[#1B3729] rounded-full"></div>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
+                                                               
                                                             </button>
                                                         ))}
                                                     </div>
@@ -1322,24 +1310,22 @@ const ShopPageClient = () => {
                             {/* Color Filter */}
                             <div className="mb-6 border-b border-gray-200 pb-6">
                                 <h4 className="font-medium text-black md:text-[20px] text-[16px] mb-3">ფერი</h4>
-                                <select
-                                    value={selectedColors.length > 0 ? selectedColors[0] : ''}
-                                    onChange={(e) => {
-                                        if (e.target.value) {
-                                            setSelectedColors([e.target.value])
-                                        } else {
-                                            setSelectedColors([])
-                                        }
-                                    }}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md md:text-[18px] text-[16px] "
-                                >
-                                    <option value="">ყველა ფერი</option>
+                                <div className="flex flex-wrap gap-3">
                                     {colors.map((color) => (
-                                        <option key={color.id} value={color.id}>
-                                            {color.label}
-                                        </option>
+                                        <button
+                                            key={color.id}
+                                            onClick={() => toggleColor(color.id)}
+                                            className={`relative w-10 h-10 rounded-full border-2 transition-all duration-200 ${
+                                                selectedColors.includes(color.id)
+                                                    ? 'border-[#1B3729] ring-2 ring-[#1B3729] ring-offset-2'
+                                                    : 'border-gray-300 hover:border-orange-500 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2'
+                                            }`}
+                                            style={{ backgroundColor: color.color }}
+                                        >
+                                            
+                                        </button>
                                     ))}
-                                </select>
+                                </div>
                             </div>
 
                             {/* Location Filter */}
