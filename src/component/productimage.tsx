@@ -48,13 +48,13 @@ const ImageUploadForProduct = ({ onChange, value }: ImageUploadProps): React.JSX
              {imageUrls.filter(url => url && typeof url === 'string' && url.trim() !== '').length > 0 ? (
          <div className="mt-2 space-y-1">
            <h2 className="text-sm font-semibold">ატვირთული სურათები ({imageUrls.filter(url => url && typeof url === 'string' && url.trim() !== '').length})</h2>
-           <div className="grid grid-cols-3 gap-2">
+           <div className="grid md:grid-cols-3 grid-cols-2 gap-2">
              {imageUrls.filter(url => url && typeof url === 'string' && url.trim() !== '').map((url, index) => (
                <ImageModal  
                  key={index}
                  src={url}
                  alt={`ატვირთული ${index}`}
-                 className="rounded border border-gray-500 w-[120px] h-[120px] object-cover"
+                 className="rounded border border-gray-500 items-center h-[320px] object-cover"
                />
              ))}
            </div>
