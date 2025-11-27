@@ -653,7 +653,7 @@ const NewProductPage = () => {
                   <button
                     type="button"
                     onClick={addRentalPriceTier}
-                    className="bg-black text-white px-4 py-2 rounded-lg text-[20px] flex items-center space-x-2"
+                    className="bg-black text-white px-4 font-bold py-2 rounded-lg text-[20px] flex items-center space-x-2"
                   >
                     <Plus className="w-4 h-4" />
                     <span>გეგმის დამატება</span>
@@ -739,7 +739,7 @@ const NewProductPage = () => {
                 <button
                   type="button"
                   onClick={addVariant}
-                  className="bg-black text-white px-4 py-2 rounded-lg text-[20px] text-black flex items-center space-x-2"
+                  className="bg-black text-white px-4 font-bold py-2 rounded-lg text-[20px] text-black flex items-center space-x-2"
                 >
                   <Plus className="w-4 h-4" />
                   <span>დამატება</span>
