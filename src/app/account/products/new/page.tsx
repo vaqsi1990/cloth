@@ -803,12 +803,15 @@ const NewProductPage = () => {
           </div>
 
           {/* Images */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="bg-white rounded-lg shadow-sm p-6 ">
+            <div className="md:max-w-[60%] text-center w-full mx-auto">
+
             <h2 className="text-[20px] text-black font-semibold mb-6">სურათები</h2>
             <ImageUploadForProduct
               value={formData.imageUrls}
               onChange={handleImageChange}
             />
+            </div>
           </div>
 
           {/* Submit Button */}
