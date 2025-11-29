@@ -1475,7 +1475,7 @@ const ShopPageClient = () => {
                                                   {product.sku}
                                                 </span>
                                             <div className="flex items-center justify-center">
-                                                <span className="font-bold text-black md:text-[18px] text-[16px]">
+                                                <span className="font-bold text-black md:text-[18px] text-[18px]">
                                                     ₾{getDisplayPrice(product).toFixed(2)}
                                                 </span>
 

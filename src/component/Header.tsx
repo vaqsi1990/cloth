@@ -124,6 +124,11 @@ const Header = () => {
   const toggleSearch = () => setIsSearchOpen(!isSearchOpen)
   const toggleMobileDropdown = (dropdown: string) =>
     setMobileDropdownOpen(mobileDropdownOpen === dropdown ? null : dropdown)
+  
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false)
+    setMobileDropdownOpen(null)
+  }
 
   const handleSearchSubmit = (event?: React.FormEvent) => {
     event?.preventDefault()
@@ -472,39 +477,39 @@ const Header = () => {
                       <div className="pl-4 space-y-1 mt-1">
                         {item === 'ქალი' && (
                           <>
-                            <Link href="/shop?gender=women" className="block px-4 py-2 text-white dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-[16px]">
+                            <Link href="/shop?gender=women" onClick={closeMobileMenu} className="block px-4 py-2 text-white dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-[16px]">
                               პალტოები და მოსასხამი
                             </Link>
-                            <Link href="/shop?gender=women&category=dresses" className="block px-4 py-2 text-white dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-[16px]">
+                            <Link href="/shop?gender=women&category=dresses" onClick={closeMobileMenu} className="block px-4 py-2 text-white dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-[16px]">
                               კაბები
                             </Link>
-                            <Link href="/shop?gender=women&category=tops" className="block px-4 py-2 text-white dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-[16px]">
+                            <Link href="/shop?gender=women&category=tops" onClick={closeMobileMenu} className="block px-4 py-2 text-white dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-[16px]">
                               შარვლები
                             </Link>
-                            <Link href="/shop?gender=women&category=bottoms" className="block px-4 py-2 text-white dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-[16px]">
+                            <Link href="/shop?gender=women&category=bottoms" onClick={closeMobileMenu} className="block px-4 py-2 text-white dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-[16px]">
                               ქვედაბოლოები
                             </Link>
                           </>
                         )}
                         {item === 'მამაკაცი' && (
                           <>
-                            <Link href="/shop?gender=men" className="block px-4 py-2 text-white dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-[16px]">
+                            <Link href="/shop?gender=men" onClick={closeMobileMenu} className="block px-4 py-2 text-white dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-[16px]">
                               შარვალ კოსტუმი
                             </Link>
-                            <Link href="/shop?gender=men&category=suits" className="block px-4 py-2 text-white dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-[16px]">
+                            <Link href="/shop?gender=men&category=suits" onClick={closeMobileMenu} className="block px-4 py-2 text-white dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-[16px]">
                               პიჯაკი
                             </Link>
-                            <Link href="/shop?gender=men&category=pants" className="block px-4 py-2 text-white dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-[16px]">
+                            <Link href="/shop?gender=men&category=pants" onClick={closeMobileMenu} className="block px-4 py-2 text-white dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-[16px]">
                               ტრადიციული და კულტურული ტანსაცმელი
                             </Link>
                           </>
                         )}
                         {item === 'ბავშვები' && (
                           <>
-                            <Link href="/shop?gender=children" className="block px-4 py-2 text-white   dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-[16px]">
+                            <Link href="/shop?gender=children" onClick={closeMobileMenu} className="block px-4 py-2 text-white   dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-[16px]">
                               კაბები
                             </Link>
-                            <Link href="/shop?gender=children&category=dresses" className="block px-4 py-2 text-white dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-[16px]">
+                            <Link href="/shop?gender=children&category=dresses" onClick={closeMobileMenu} className="block px-4 py-2 text-white dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-[16px]">
                               სათხილამურო ტანსაცმელი
                             </Link>
                           </>
@@ -516,10 +521,10 @@ const Header = () => {
               </div>
               
               {/* Other Links */}
-              <Link href="/about" className="block px-4 py-3 text-white dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-[18px]">
+              <Link href="/about" onClick={closeMobileMenu} className="block px-4 py-3 text-white dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-[18px]">
                 ჩვენს შესახებ
               </Link>
-              <Link href="/politics" className="block px-4 py-3 text-white dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-[18px]">
+              <Link href="/politics" onClick={closeMobileMenu} className="block px-4 py-3 text-white dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-[18px]">
                 საიტის პოლიტიკა
               </Link>
             </nav>
