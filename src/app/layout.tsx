@@ -19,7 +19,66 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Dressla.ge",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://www.dressla.ge'),
+  title: {
+    default: "Dressla.ge - მოდის ქირაობა და შეძენა საქართველოში",
+    template: "%s | Dressla.ge"
+  },
+  description: "Dressla.ge - ინოვაციური ონლაინ პლატფორმა მოდის ქირაობისა და შეძენისთვის საქართველოში. იქირაოთ ან გააქირაოთ კაბები, ტანსაცმელი და სხვა მოდური ნივთები. მდგრადი მოდა, ხარისხი და ხელმისაწვდომობა.",
+  keywords: [
+    "მოდის ქირაობა",
+    "კაბების ქირაობა",
+    "ტანსაცმლის ქირაობა",
+    "მოდა საქართველოში",
+    "დრესლა",
+    "dressla.ge",
+    "fashion rental",
+    "clothing rental",
+    "მოდური ნივთები",
+    "ქორწილის კაბები",
+    "წვეულების კაბები"
+  ],
+  authors: [{ name: "Dressla.ge" }],
+  creator: "Dressla.ge",
+  publisher: "Dressla.ge",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  openGraph: {
+    type: "website",
+    locale: "ka_GE",
+    url: "/",
+    siteName: "Dressla.ge",
+    title: "Dressla.ge - მოდის ქირაობა და შეძენა საქართველოში",
+    description: "ინოვაციური ონლაინ პლატფორმა მოდის ქირაობისა და შეძენისთვის საქართველოში",
+    images: [
+      {
+        url: "/logo.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Dressla.ge - მოდის ქირაობა და შეძენა",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Dressla.ge - მოდის ქირაობა და შეძენა საქართველოში",
+    description: "ინოვაციური ონლაინ პლატფორმა მოდის ქირაობისა და შეძენისთვის საქართველოში",
+    images: ["/logo.jpg"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
   icons: {
     icon: [
       { url: '/logo.jpg', type: 'image/jpeg' },
@@ -30,6 +89,9 @@ export const metadata: Metadata = {
     shortcut: '/logo.jpg',
     apple: '/logo.jpg',
   },
+  alternates: {
+    canonical: "/",
+  },
 };
 
 export default function RootLayout({
@@ -38,7 +100,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="ka">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

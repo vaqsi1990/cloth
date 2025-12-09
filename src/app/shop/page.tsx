@@ -1,5 +1,16 @@
 import ShopPageClient from '@/component/ShopPageClient'
 import React, { Suspense } from 'react'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: "მაღაზია",
+  description: "გაეცანით Dressla.ge-ის მრავალფეროვან ასორტიმენტს. იპოვეთ იდეალური ნივთები ქალების, კაცებისა და ბავშვების კოლექციებიდან. ფილტრები ფასით, კატეგორიით, ზომით, ფერით და მდებარეობით.",
+  openGraph: {
+    title: "მაღაზია - Dressla.ge",
+    description: "გაეცანით მრავალფეროვან ასორტიმენტს და იპოვეთ იდეალური მოდური ნივთები",
+    images: ["/logo.jpg"],
+  },
+};
 
 const page = () => {
     return (

@@ -98,7 +98,7 @@ const AuthorPage = () => {
     return (
         <div className="min-h-screen">
             {/* Header */}
-            <header className="sticky top-0 z-30 ">
+            <header className=" top-0 z-30 ">
                 <div className="max-w-[1200px] mx-auto px-4 py-4">
                     <Link href="/" className="flex md:text-[20px] text-[18px] items-center text-black hover:opacity-80">
                         <ArrowLeft className="w-5 h-5 mr-2" />

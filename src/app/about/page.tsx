@@ -1,4 +1,15 @@
 import React from 'react'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: "ჩვენს შესახებ",
+  description: "გაეცანით Dressla.ge-ს - ინოვაციურ ონლაინ პლატფორმას, რომელიც ქმნის ახალ სტანდარტს მოდის გამოცდილებაში საქართველოში. მდგრადობა, ხელმისაწვდომობა და ხარისხი.",
+  openGraph: {
+    title: "ჩვენს შესახებ - Dressla.ge",
+    description: "გაეცანით Dressla.ge-ს და გაიგეთ რატომ ვართ საუკეთესო არჩევანი მოდის ქირაობისა და შეძენისთვის",
+    images: ["/logo.jpg"],
+  },
+};
 
 const page = () => {
     return (
