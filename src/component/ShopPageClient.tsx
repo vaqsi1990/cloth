@@ -465,8 +465,8 @@ const ShopPageClient = () => {
         <div className="min-h-screen ">
 
             {/* Category Section moved from Header */}
-            <div className="bg-[#FAFAFA] py-12">
-                <div className="container mx-auto max-w-7xl mx-auto px-6">
+            <div className="bg-[#FAFAFA]">
+                <div className="container  max-w-6xl mx-auto px-4 py-8 space-y-6 ">
                     <div className="flex items-center justify-between mb-8">
                         <h2 className="md:text-[24px] text-[20px] font-bold text-gray-900 text-start">
                             მოძებნეთ კატეგორიის მიხედვით

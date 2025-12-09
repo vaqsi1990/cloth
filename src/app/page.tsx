@@ -25,15 +25,8 @@ export default function Home() {
     <>
       <StructuredData type="Organization" />
       <StructuredData type="WebSite" />
-      <main className="max-w-6xl mx-auto px-4 py-8 space-y-6">
-        <header className="text-center space-y-3">
-          <h1 className="text-3xl md:text-4xl font-extrabold text-black">
-            Dressla.ge — ტანსაცმლის ქირაობა, კოლექციები და პროდუქტები საქართველოში
-          </h1>
-          <p className="text-lg md:text-xl text-black">
-            ქალი, კაცი და ბავშვების კოლექცია
-          </p>
-        </header>
+      <main className=" mx-auto px-4  ">
+      
         <Suspense
           fallback={
             <div className="min-h-screen flex items-center justify-center">
