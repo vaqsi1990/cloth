@@ -479,7 +479,7 @@ const ShopPageClient = () => {
     // }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50">
+        <div className="min-h-screen ">
 
 
             <div className="container mx-auto px-2 py-8">
