@@ -134,10 +134,10 @@ const AdminChatPage = () => {
   useEffect(() => {
     if (selectedChatRoom) {
       fetchMessages()
-      // Poll for new messages every 2 seconds
+      // Poll for new messages every 5 seconds (reduced frequency)
       const interval = setInterval(() => {
         fetchMessages()
-      }, 2000)
+      }, 5000)
       return () => clearInterval(interval)
     }
   }, [selectedChatRoom, fetchMessages])

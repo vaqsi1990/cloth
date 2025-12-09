@@ -32,6 +32,7 @@ const Hero = () => {
                                     src="/hero/1.jpg"
                                     alt="Background 1"
                                     fill
+                                    sizes="(max-width: 768px) 256px, 320px"
                                     className="object-cover opacity-90"
                                 />
                             </div>
@@ -41,6 +42,7 @@ const Hero = () => {
                                     src="/hero/3.jpg"
                                     alt="Background 2"
                                     fill
+                                    sizes="(max-width: 768px) 256px, 320px"
                                     className="object-cover opacity-90"
                                 />
                             </div>
@@ -51,6 +53,7 @@ const Hero = () => {
                                     src="/hero/2.jpg"
                                     alt="Fashion Model"
                                     fill
+                                    sizes="(max-width: 768px) 256px, 320px"
                                     className="object-cover"
                                     priority
                                 />

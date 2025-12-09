@@ -484,6 +484,7 @@ const AdminProductsPage = () => {
                          src={product.images[0].url}
                          alt={product.images[0].alt || product.name}
                          fill
+                         sizes="64px"
                          className="object-cover rounded-lg"
                        />
                      ) : (

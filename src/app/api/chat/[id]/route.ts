@@ -20,7 +20,11 @@ export async function GET(
     
     if (isNaN(chatRoomId)) {
       return NextResponse.json(
-        { error: 'Invalid chat room ID' },
+        { 
+          success: false,
+          error: 'Invalid chat room ID',
+          message: 'Invalid chat room ID'
+        },
         { status: 400 }
       )
     }
@@ -59,8 +63,13 @@ export async function GET(
     }
 
     if (chatRoom.length === 0) {
+      console.log(`Chat room ${chatRoomId} not found or access denied for user ${session?.user?.id || 'guest'}`)
       return NextResponse.json(
-        { error: 'Chat room not found or access denied' },
+        { 
+          success: false,
+          error: 'Chat room not found or access denied',
+          message: 'Chat room not found or access denied'
+        },
         { status: 404 }
       )
     }
@@ -85,9 +94,15 @@ export async function GET(
       ORDER BY cm."createdAt" ASC
     `
 
+    // Serialize dates to ISO strings for JSON response
+    const serializedMessages = messages.map(msg => ({
+      ...msg,
+      createdAt: msg.createdAt instanceof Date ? msg.createdAt.toISOString() : msg.createdAt
+    }))
+
     return NextResponse.json({
       success: true,
-      messages
+      messages: serializedMessages
     })
 
   } catch (error) {
@@ -114,7 +129,11 @@ export async function POST(
     
     if (isNaN(chatRoomId)) {
       return NextResponse.json(
-        { error: 'Invalid chat room ID' },
+        { 
+          success: false,
+          error: 'Invalid chat room ID',
+          message: 'Invalid chat room ID'
+        },
         { status: 400 }
       )
     }
@@ -155,8 +174,13 @@ export async function POST(
     }
 
     if (chatRoom.length === 0) {
+      console.log(`Chat room ${chatRoomId} not found or access denied for user ${session?.user?.id || 'guest'}`)
       return NextResponse.json(
-        { error: 'Chat room not found or access denied' },
+        { 
+          success: false,
+          error: 'Chat room not found or access denied',
+          message: 'Chat room not found or access denied'
+        },
         { status: 404 }
       )
     }
@@ -243,7 +267,11 @@ export async function DELETE(
     
     if (isNaN(chatRoomId)) {
       return NextResponse.json(
-        { error: 'Invalid chat room ID' },
+        { 
+          success: false,
+          error: 'Invalid chat room ID',
+          message: 'Invalid chat room ID'
+        },
         { status: 400 }
       )
     }
@@ -279,8 +307,13 @@ export async function DELETE(
     }
 
     if (chatRoom.length === 0) {
+      console.log(`Chat room ${chatRoomId} not found or access denied for user ${session?.user?.id || 'guest'}`)
       return NextResponse.json(
-        { error: 'Chat room not found or access denied' },
+        { 
+          success: false,
+          error: 'Chat room not found or access denied',
+          message: 'Chat room not found or access denied'
+        },
         { status: 404 }
       )
     }

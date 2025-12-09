@@ -55,16 +55,13 @@ const AuthorPage = () => {
                 const data = await response.json()
 
                 if (data?.success) {
-                    console.log('API Response:', data)
-                    console.log('Products count:', data.products?.length || 0)
                     setProducts(data.products || [])
                     setAuthor(data.author || { id: authorId, name: "უცნობი ავტორი" })
                 } else {
-                    console.log('API Error:', data)
                     setAuthor({ id: authorId, name: "უცნობი ავტორი" })
                 }
             } catch (e) {
-                console.error(e)
+                console.error('Error fetching author data:', e)
                 setAuthor({ id: authorId, name: "უცნობი ავტორი" })
             } finally {
                 setLoading(false)
@@ -117,6 +114,7 @@ const AuthorPage = () => {
                                     src={author.image}
                                     alt={author.name || "ავტორი"}
                                     fill
+                                    sizes="(max-width: 768px) 150px, 200px"
                                     className="object-cover"
                                 />
                             ) : (
@@ -151,6 +149,7 @@ const AuthorPage = () => {
                                                 src={product.images?.[0]?.url || "/placeholder.jpg"}
                                                 alt={product.name}
                                                 fill
+                                                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                                                 className="object-cover  transition-transform duration-300"
                                             />
                                             <div className="absolute top-4 left-4 flex gap-2">

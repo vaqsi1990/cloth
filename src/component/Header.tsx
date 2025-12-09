@@ -57,7 +57,8 @@ const Header = () => {
   useEffect(() => {
     if (session?.user?.id) {
       fetchCartCount()
-      const interval = setInterval(fetchCartCount, 2000)
+      // Poll cart count every 10 seconds (reduced frequency)
+      const interval = setInterval(fetchCartCount, 10000)
       return () => clearInterval(interval)
     }
   }, [session?.user?.id])

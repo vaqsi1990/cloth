@@ -504,6 +504,7 @@ const AdminUsersPage = () => {
                                   src={user.verification.idFrontUrl}
                                   alt="ID Front"
                                   fill
+                                  sizes="(max-width: 768px) 100vw, 500px"
                                   className="object-contain"
                                 />
                               </div>
@@ -517,6 +518,7 @@ const AdminUsersPage = () => {
                                   src={user.verification.idBackUrl}
                                   alt="ID Back"
                                   fill
+                                  sizes="(max-width: 768px) 100vw, 500px"
                                   className="object-contain"
                                 />
                               </div>
@@ -619,6 +621,7 @@ const AdminUsersPage = () => {
                                   src={user.verification.entrepreneurCertificateUrl}
                                   alt="Entrepreneur Certificate"
                                   fill
+                                  sizes="(max-width: 768px) 100vw, 500px"
                                   className="object-contain"
                                 />
                               </div>
@@ -686,6 +689,7 @@ const AdminUsersPage = () => {
                                     src={user.verification.idFrontUrl}
                                     alt="ID Front"
                                     fill
+                                    sizes="400px"
                                     className="object-cover"
                                   />
                                 </div>
@@ -699,6 +703,7 @@ const AdminUsersPage = () => {
                                     src={user.verification.idBackUrl}
                                     alt="ID Back"
                                     fill
+                                    sizes="400px"
                                     className="object-cover"
                                   />
                                 </div>
@@ -712,6 +717,7 @@ const AdminUsersPage = () => {
                                     src={user.verification.entrepreneurCertificateUrl}
                                     alt="Entrepreneur Certificate"
                                     fill
+                                    sizes="400px"
                                     className="object-cover"
                                   />
                                 </div>

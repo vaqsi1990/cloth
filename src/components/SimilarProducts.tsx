@@ -77,6 +77,7 @@ const SimilarProducts: React.FC<SimilarProductsProps> = ({ productId, categoryNa
                   src={firstImage}
                   alt={product.name}
                   fill
+                  sizes="(max-width: 768px) 50vw, 25vw"
                   className="object-cover group-hover:scale-105 transition-transform duration-300"
                 />
                 

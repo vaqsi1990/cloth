@@ -320,6 +320,9 @@ input[type="range"].slider::-moz-range-thumb {
   }
 }
 
+/* React DatePicker styles - imported here to avoid render blocking */
+@import "react-datepicker/dist/react-datepicker.css";
+
 /* React DatePicker blocked dates styling */
 .react-datepicker__day--excluded {
   background-color: #f3f4f6 !important;

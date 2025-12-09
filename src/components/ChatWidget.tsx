@@ -31,8 +31,10 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [isFetchingMessages, setIsFetchingMessages] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const fetchingRef = useRef(false)
   const [guestName, setGuestName] = useState('')
   const [guestEmail, setGuestEmail] = useState('')
   const [showGuestForm, setShowGuestForm] = useState(true)
@@ -41,19 +43,28 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
 
   // Load guest info from localStorage on component mount
   useEffect(() => {
-    const savedName = localStorage.getItem('chatGuestName')
-    const savedEmail = localStorage.getItem('chatGuestEmail')
-    const savedChatRoomId = localStorage.getItem('chatRoomId')
+    if (typeof window === 'undefined') return
+    
+    try {
+      const savedName = localStorage.getItem('chatGuestName')
+      const savedEmail = localStorage.getItem('chatGuestEmail')
+      const savedChatRoomId = localStorage.getItem('chatRoomId')
 
-    if (savedName && savedEmail) {
-      setGuestName(savedName)
-      setGuestEmail(savedEmail)
-      setShowGuestForm(false)
+      if (savedName && savedEmail) {
+        setGuestName(savedName)
+        setGuestEmail(savedEmail)
+        setShowGuestForm(false)
 
-      // If there's a saved chat room ID, try to restore it
-      if (savedChatRoomId && savedChatRoomId !== '0') {
-        onChatRoomCreated(parseInt(savedChatRoomId))
+        // If there's a saved chat room ID, try to restore it
+        if (savedChatRoomId && savedChatRoomId !== '0') {
+          const roomId = parseInt(savedChatRoomId)
+          if (!isNaN(roomId)) {
+            onChatRoomCreated(roomId)
+          }
+        }
       }
+    } catch (error) {
+      console.error('Error loading chat data from localStorage:', error)
     }
   }, [onChatRoomCreated])
 
@@ -71,8 +82,16 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
   }, [messages, isMinimized])
 
   const fetchMessages = useCallback(async () => {
-    if (!chatRoomId) return
+    if (!chatRoomId || chatRoomId === 0) {
+      setMessages([])
+      return
+    }
 
+    // Prevent multiple simultaneous fetches
+    if (fetchingRef.current) return
+    fetchingRef.current = true
+    setIsFetchingMessages(true)
+    
     try {
       const response = await fetch(`/api/chat/${chatRoomId}`, {
         cache: 'no-store', // Ensure fresh data
@@ -86,14 +105,18 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
         try {
           errorData = await response.json()
         } catch (e) {
-          console.log('Could not parse error response as JSON')
+          console.debug('Could not parse error response as JSON')
         }
 
         // If chat room not found, reset chat room ID to allow creating new one
         if (response.status === 404) {
-          console.log('Chat room not found, resetting chat room ID')
+          console.log(`Chat room ${chatRoomId} not found, resetting...`)
           onChatRoomCreated(0)
           setMessages([])
+          // Clear invalid chat room ID from localStorage
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('chatRoomId')
+          }
           return
         }
 
@@ -110,12 +133,12 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
 
       const data = await response.json()
 
-      if (data.success && data.messages) {
+      if (data.success && Array.isArray(data.messages)) {
         // Transform the raw query results to match the expected format
         const transformedMessages = data.messages.map((msg: {
           id: number
           content: string
-          createdAt: string
+          createdAt: string | Date
           isFromAdmin: boolean
           user_name?: string
           user_email?: string
@@ -124,54 +147,47 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
         }) => ({
           id: msg.id,
           content: msg.content,
-          createdAt: msg.createdAt,
+          createdAt: typeof msg.createdAt === 'string' ? msg.createdAt : (msg.createdAt instanceof Date ? msg.createdAt.toISOString() : String(msg.createdAt)),
           isFromAdmin: msg.isFromAdmin,
           user: msg.user_name ? { name: msg.user_name, email: msg.user_email } : undefined,
           admin: msg.admin_name ? { name: msg.admin_name, email: msg.admin_email } : undefined
         }))
 
-        // Remove duplicates based on message ID
-        const uniqueMessages = transformedMessages.filter((msg: ChatMessage, index: number, self: ChatMessage[]) =>
-          index === self.findIndex(m => m.id === msg.id)
-        )
+        // Remove duplicates based on message ID and sort by creation time
+        const uniqueMessages = transformedMessages
+          .filter((msg: ChatMessage, index: number, self: ChatMessage[]) =>
+            index === self.findIndex(m => m.id === msg.id)
+          )
+          .sort((a: ChatMessage, b: ChatMessage) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
 
         setMessages(uniqueMessages)
+      } else if (data.success && !data.messages) {
+        // Chat room exists but has no messages yet
+        setMessages([])
       }
     } catch (error) {
       console.error('Error fetching messages:', error)
       // Don't show error to user for fetch failures, just log them
+    } finally {
+      fetchingRef.current = false
+      setIsFetchingMessages(false)
     }
   }, [chatRoomId, onChatRoomCreated])
-  useEffect(() => {
-    if (chatRoomId && isOpen) {
-      fetchMessages()
-      // Poll for new messages every 2 seconds (more frequent)
-      const interval = setInterval(fetchMessages, 2000)
-      return () => clearInterval(interval)
-    }
-  }, [chatRoomId, isOpen, fetchMessages])
-  useEffect(() => {
-    if (chatRoomId && isOpen) {
-      fetchMessages()
-      // Poll for new messages every 2 seconds (more frequent)
-      const interval = setInterval(fetchMessages, 2000)
-      return () => clearInterval(interval)
-    }
-  }, [chatRoomId, isOpen, fetchMessages])
 
-  // Auto-scroll to bottom when new messages arrive
+  // Fetch messages and poll when chat is open
   useEffect(() => {
-    if (messagesEndRef.current && !isMinimized) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
-    }
-  }, [messages, isMinimized])
-
-  useEffect(() => {
-    if (chatRoomId && isOpen) {
+    if (chatRoomId && chatRoomId > 0 && isOpen) {
       fetchMessages()
-      // Poll for new messages every 2 seconds (more frequent)
-      const interval = setInterval(fetchMessages, 2000)
+      // Poll for new messages every 5 seconds, but only if we have a valid chat room
+      const interval = setInterval(() => {
+        if (chatRoomId && chatRoomId > 0) {
+          fetchMessages()
+        }
+      }, 5000)
       return () => clearInterval(interval)
+    } else if (!chatRoomId || chatRoomId === 0) {
+      // Clear messages if no valid chat room
+      setMessages([])
     }
   }, [chatRoomId, isOpen, fetchMessages])
 
@@ -191,6 +207,19 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
       return
     }
 
+    // Validate guest form if creating new chat room
+    if (!chatRoomId && !session && (!guestName.trim() || !guestEmail.trim())) {
+      showToast('გთხოვთ შეიყვანოთ სახელი და ელ-ფოსტა', 'warning')
+      setShowGuestForm(true)
+      return
+    }
+
+    // Validate email format if provided
+    if (guestEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail)) {
+      showToast('გთხოვთ შეიყვანოთ სწორი ელ-ფოსტა', 'warning')
+      return
+    }
+
     setIsLoading(true)
     const messageToSend = newMessage.trim()
     setNewMessage('') // Clear input immediately for better UX
@@ -204,15 +233,11 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
           guestEmail: guestEmail || undefined
         }
 
-        console.log('Creating chat room with:', requestBody)
-
         const response = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(requestBody)
         })
-
-        console.log('Create chat room response status:', response.status)
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}))
@@ -221,15 +246,16 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
         }
 
         const data = await response.json()
-        console.log('Create chat room success:', data)
 
-        if (data.success) {
+        if (data.success && data.chatRoomId) {
           onChatRoomCreated(data.chatRoomId)
           setShowGuestForm(false)
           // Save guest info and chat room ID to localStorage
-          localStorage.setItem('chatGuestName', guestName)
-          localStorage.setItem('chatGuestEmail', guestEmail)
-          localStorage.setItem('chatRoomId', data.chatRoomId.toString())
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('chatGuestName', guestName)
+            localStorage.setItem('chatGuestEmail', guestEmail)
+            localStorage.setItem('chatRoomId', data.chatRoomId.toString())
+          }
           // Clear messages and let the useEffect handle fetching
           setMessages([])
         } else {
@@ -239,15 +265,11 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
         // Send message to existing chat room
         const requestBody = { content: messageToSend }
 
-        console.log('Sending message to chat room:', chatRoomId, requestBody)
-
         const response = await fetch(`/api/chat/${chatRoomId}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(requestBody)
         })
-
-        console.log('Send message response status:', response.status)
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}))
@@ -256,7 +278,6 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
         }
 
         const data = await response.json()
-        console.log('Send message success:', data)
 
         if (data.success && data.message) {
           // Transform the message to match expected format
@@ -320,9 +341,15 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
 
       if (response.ok) {
         // Clear localStorage
-        localStorage.removeItem('chatGuestName')
-        localStorage.removeItem('chatGuestEmail')
-        localStorage.removeItem('chatRoomId')
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.removeItem('chatGuestName')
+            localStorage.removeItem('chatGuestEmail')
+            localStorage.removeItem('chatRoomId')
+          } catch (error) {
+            console.error('Error clearing localStorage:', error)
+          }
+        }
 
         // Reset state
         setMessages([])
@@ -333,7 +360,8 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
 
         showToast('ლაპარაკი წარმატებით დასრულდა', 'success')
       } else {
-        showToast('შეცდომა ლაპარაკის დასრულებისას', 'error')
+        const errorData = await response.json().catch(() => ({}))
+        showToast(errorData.message || 'შეცდომა ლაპარაკის დასრულებისას', 'error')
       }
     } catch (error) {
       console.error('Error ending chat:', error)
@@ -377,7 +405,12 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
         <div className="flex flex-col flex-1 ">
           {/* Messages */}
           <div className="flex-1 p-4 overflow-y-auto bg-gray-50 ">
-            {messages.length === 0 ? (
+            {isFetchingMessages && messages.length === 0 ? (
+              <div className="text-center md:text-[18px] text-[16px] py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B3729] mx-auto mb-4"></div>
+                <p className="text-gray-500">იტვირთება...</p>
+              </div>
+            ) : messages.length === 0 ? (
               <div className="text-center md:text-[18px] text-[16px]  py-8">
                 <MessageCircle className="w-12 h-12 mx-auto mb-4 text-gray-400" />
                 <p className="font-medium text-black">დაიწყეთ საუბარი!</p>

@@ -6,7 +6,6 @@ import { Filter, X, ChevronDown, Calendar, ChevronLeft, ChevronRight, Plus } fro
 import { useSearchParams } from 'next/navigation'
 import { Product } from '@/types/product'
 import DatePicker from "react-datepicker"
-import "react-datepicker/dist/react-datepicker.css"
 
 
 const ShopPageClient = () => {
@@ -194,23 +193,54 @@ const ShopPageClient = () => {
         fetchProducts()
     }, [genderParam, searchParam])
 
-    // Fetch rental status for rentable products
+    // Fetch rental status for rentable products (batched)
     useEffect(() => {
         const fetchRentalStatus = async () => {
             const rentableProducts = products.filter(p => p.isRentable)
+            
+            if (rentableProducts.length === 0) return
 
-            for (const product of rentableProducts) {
-                try {
-                    const response = await fetch(`/api/products/${product.id}/rental-status`)
-                    const data = await response.json()
-                    if (data.success) {
-                        setProductRentalStatus(prev => ({
-                            ...prev,
-                            [product.id]: data.variants
-                        }))
+            // Batch fetch rental status for all products at once
+            try {
+                const productIds = rentableProducts.map(p => p.id).join(',')
+                const response = await fetch(`/api/products/rental-status?ids=${productIds}`)
+                const data = await response.json()
+                
+                if (data.success && data.statuses) {
+                    setProductRentalStatus(data.statuses)
+                } else {
+                    // Fallback to individual requests if batch endpoint doesn't exist
+                    for (const product of rentableProducts) {
+                        try {
+                            const response = await fetch(`/api/products/${product.id}/rental-status`)
+                            const data = await response.json()
+                            if (data.success) {
+                                setProductRentalStatus(prev => ({
+                                    ...prev,
+                                    [product.id]: data.variants
+                                }))
+                            }
+                        } catch (error) {
+                            console.error(`Error fetching rental status for product ${product.id}:`, error)
+                        }
                     }
-                } catch (error) {
-                    console.error(`Error fetching rental status for product ${product.id}:`, error)
+                }
+            } catch (error) {
+                console.error('Error fetching batch rental status:', error)
+                // Fallback to individual requests
+                for (const product of rentableProducts) {
+                    try {
+                        const response = await fetch(`/api/products/${product.id}/rental-status`)
+                        const data = await response.json()
+                        if (data.success) {
+                            setProductRentalStatus(prev => ({
+                                ...prev,
+                                [product.id]: data.variants
+                            }))
+                        }
+                    } catch (err) {
+                        console.error(`Error fetching rental status for product ${product.id}:`, err)
+                    }
                 }
             }
         }
@@ -917,7 +947,7 @@ const ShopPageClient = () => {
                         {/* Products Grid */}
                         {currentProducts.length > 0 ? (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
-                                {currentProducts.map((product) => (
+                                {currentProducts.map((product, index) => (
                                     <div
                                         key={product.id}
                                         className="group bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
@@ -927,7 +957,10 @@ const ShopPageClient = () => {
                                                 src={product.images?.[0]?.url || "/placeholder.jpg"}
                                                 alt={product.name}
                                                 fill
+                                                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
                                                 className="object-cover transition-transform duration-300 group-hover:scale-[1.01]"
+                                                loading={index < 4 ? "eager" : "lazy"}
+                                                priority={index < 4}
                                             />
                                             {product.discount && product.discount > 0 && (
                                                 <span className="absolute top-3 left-3 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-semibold">

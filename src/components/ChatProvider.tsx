@@ -97,8 +97,8 @@ const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     // Check immediately
     checkUnreadMessages()
     
-    // Then check every 5 seconds (more frequent)
-    const interval = setInterval(checkUnreadMessages, 5000)
+    // Then check every 15 seconds (reduced frequency)
+    const interval = setInterval(checkUnreadMessages, 15000)
     return () => clearInterval(interval)
   }, [session?.user?.id, isChatOpen])
 

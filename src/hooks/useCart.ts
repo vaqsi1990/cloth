@@ -56,16 +56,11 @@ export const useCart = () => {
 
   // Add item to cart
   const addToCart = async (item: Omit<CartItem, 'id'>) => {
-    console.log('addToCart called with:', item)
-    console.log('Session:', session)
-    
     if (!session?.user?.id) {
-      console.log('No session found, returning false')
       return false
     }
 
     try {
-      console.log('Making POST request to /api/cart')
       const response = await fetch('/api/cart', {
         method: 'POST',
         headers: {
@@ -75,7 +70,6 @@ export const useCart = () => {
       })
 
       const data = await response.json()
-      console.log('Cart API response:', data)
       
       if (data.success) {
         await fetchCart() // Refresh cart

@@ -215,6 +215,7 @@ const AdminProductBySKUPage = () => {
                       src={productData.product.images[0].url}
                       alt={productData.product.name}
                       fill
+                      sizes="192px"
                       className="object-cover rounded-lg"
                     />
                   ) : (

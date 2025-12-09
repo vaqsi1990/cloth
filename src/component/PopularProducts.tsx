@@ -163,7 +163,7 @@ const PopularProducts = () => {
                             {Array.from({ length: totalSlides }).map((_, slideIndex) => (
                                 <div key={slideIndex} className="w-full flex-shrink-0">
                                         <div className="grid pb-10 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                                        {paddedProducts.slice(slideIndex * slidesToShow, (slideIndex + 1) * slidesToShow).map((product) => (
+                                        {paddedProducts.slice(slideIndex * slidesToShow, (slideIndex + 1) * slidesToShow).map((product, productIndex) => (
                                             <div key={product.id} className="group">
                                                 <div className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden ">
 
@@ -172,7 +172,10 @@ const PopularProducts = () => {
                                                             src={product.image}
                                                             alt={product.name}
                                                             fill
+                                                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                                                             className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                                            loading={slideIndex === 0 && productIndex < 4 ? "eager" : "lazy"}
+                                                            priority={slideIndex === 0 && productIndex < 4}
                                                         />
 
 

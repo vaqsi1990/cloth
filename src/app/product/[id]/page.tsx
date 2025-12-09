@@ -4,7 +4,6 @@ import { useParams } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
 import DatePicker from "react-datepicker"
-import "react-datepicker/dist/react-datepicker.css"
 import {
     ArrowLeft,
     CalendarDays,
@@ -189,7 +188,7 @@ const ProductPage = () => {
                     setRentalStatus(map)
                 }
             } catch (e) {
-                console.error(e)
+                console.error('Error fetching product data:', e)
                 setError('შეცდომა პროდუქტის ჩატვირთვისას')
                 setProduct(null)
             } finally {
@@ -755,7 +754,13 @@ const ProductPage = () => {
                                             : "border-gray-200 hover:border-black"
                                             }`}
                                     >
-                                        <Image src={img.url} alt={`${product.name}-${i}`} fill className="object-cover" />
+                                        <Image 
+                                            src={img.url} 
+                                            alt={`${product.name}-${i}`} 
+                                            fill 
+                                            sizes="80px"
+                                            className="object-cover" 
+                                        />
                                     </button>
                                 ))}
                             </div>
@@ -766,8 +771,10 @@ const ProductPage = () => {
                                     src={getMainImage()}
                                     alt={product.name}
                                     fill
+                                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 40vw"
                                     className="object-cover"
                                     priority
+                                    loading="eager"
                                 />
                                 <div className="absolute top-4 left-4 flex gap-2">
                                     {product.discount && product.discount > 0 && (
