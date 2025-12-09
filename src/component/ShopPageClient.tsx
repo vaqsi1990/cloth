@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Filter, X, ChevronDown, Calendar, Star, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
+import { Filter, X, ChevronDown, Calendar, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 import { Product } from '@/types/product'
 import DatePicker from "react-datepicker"
@@ -24,7 +24,7 @@ const ShopPageClient = () => {
     const [selectedSizeSystems, setSelectedSizeSystems] = useState<string[]>([])
     const [selectedColors, setSelectedColors] = useState<string[]>([])
     const [selectedLocations, setSelectedLocations] = useState<string[]>([])
-    const [selectedRatings, setSelectedRatings] = useState<number[]>([])
+    
     const [rentalStartDate, setRentalStartDate] = useState<Date | null>(null)
     const [rentalEndDate, setRentalEndDate] = useState<Date | null>(null)
     const [purchaseType, setPurchaseType] = useState<"all" | "rent-only" | "sale-only">("all")
@@ -36,7 +36,7 @@ const ShopPageClient = () => {
         isAvailable: boolean;
     }[]>>({})
     const [isCategoryOpen, setIsCategoryOpen] = useState(false)
-    const [isRatingOpen, setIsRatingOpen] = useState(true)
+    
     const [currentPage, setCurrentPage] = useState(1)
     const [itemsPerPage] = useState(20)
     const [activeMobileFilter, setActiveMobileFilter] = useState<string | null>(null)
@@ -360,10 +360,6 @@ const ShopPageClient = () => {
         const locationMatch = selectedLocations.length === 0 ||
             selectedLocations.includes(product.location || '')
 
-        // Rating filter
-        const ratingMatch = selectedRatings.length === 0 ||
-            selectedRatings.some(rating => Math.floor(product.rating || 0) === rating)
-
         // Rental availability filter
         const rentalAvailabilityMatch = isProductAvailable(product)
 
@@ -372,7 +368,7 @@ const ShopPageClient = () => {
             (purchaseType === "rent-only" && isRentOnly(product)) ||
             (purchaseType === "sale-only" && isSaleOnly(product))
 
-        return categoryMatch && priceMatch && sizeSystemMatch && colorMatch && locationMatch && ratingMatch && rentalAvailabilityMatch && purchaseTypeMatch
+        return categoryMatch && priceMatch && sizeSystemMatch && colorMatch && locationMatch && rentalAvailabilityMatch && purchaseTypeMatch
     })
 
 
@@ -401,7 +397,7 @@ const ShopPageClient = () => {
     // Reset to page 1 when filters change
     useEffect(() => {
         setCurrentPage(1)
-    }, [selectedCategories, priceRange, selectedSizeSystems, selectedColors, selectedLocations, selectedRatings, rentalStartDate, rentalEndDate, sortBy, purchaseType])
+    }, [selectedCategories, priceRange, selectedSizeSystems, selectedColors, selectedLocations, rentalStartDate, rentalEndDate, sortBy, purchaseType])
 
     // Handle category selection
     const toggleCategory = (categoryName: string) => {
@@ -440,14 +436,7 @@ const ShopPageClient = () => {
         )
     }
 
-    // Handle rating selection
-    const toggleRating = (rating: number) => {
-        setSelectedRatings(prev =>
-            prev.includes(rating)
-                ? prev.filter(r => r !== rating)
-                : [...prev, rating]
-        )
-    }
+    
 
     // Clear all filters
     const clearFilters = () => {
@@ -456,7 +445,6 @@ const ShopPageClient = () => {
         setSelectedSizeSystems([])
         setSelectedColors([])
         setSelectedLocations([])
-        setSelectedRatings([])
         setRentalStartDate(null)
         setRentalEndDate(null)
         setPurchaseType("all")
@@ -644,16 +632,6 @@ const ShopPageClient = () => {
                                         }`}
                                     >
                                         ტიპი
-                                    </button>
-                                    <button
-                                        onClick={() => setActiveMobileFilter('rating')}
-                                            className={`w-full text-left px-3 py-2 text-[16px] font-medium rounded mb-1 ${
-                                            activeMobileFilter === 'rating'
-                                                ? 'bg-[#1B3729] text-white'
-                                                : 'text-black hover:bg-gray-200'
-                                        }`}
-                                    >
-                                        რეიტინგი
                                     </button>
                                 </div>
                             </div>
@@ -892,64 +870,6 @@ const ShopPageClient = () => {
                                         </div>
                                     )}
 
-                                    {/* Rating Options */}
-                                    {activeMobileFilter === 'rating' && (
-                                        <div>
-                                            <button
-                                                type="button"
-                                                onClick={() => setIsRatingOpen(!isRatingOpen)}
-                                                className="w-full flex items-center justify-between mb-4"
-                                            >
-                                                <h3 className="text-lg font-semibold text-black">რეიტინგი</h3>
-                                                <ChevronDown className={`w-5 h-5 text-black transition-transform ${isRatingOpen ? "rotate-180" : "rotate-0"}`} />
-                                            </button>
-                                            {isRatingOpen && (
-                                                <div className="space-y-2">
-                                                    {[5, 4, 3, 2, 1].map((rating) => {
-                                                        const count = products.filter(
-                                                            (product) => Math.floor(product.rating || 0) === rating
-                                                        ).length;
-
-                                                        return (
-                                                            <button
-                                                                key={rating}
-                                                                onClick={() => toggleRating(rating)}
-                                                                className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-[16px] transition-colors border ${
-                                                                    selectedRatings.includes(rating)
-                                                                        ? "bg-[#1B3729] text-white border-[#1B3729]"
-                                                                        : "bg-white text-black border-gray-300 hover:bg-gray-100"
-                                                                }`}
-                                                            >
-                                                                <div className="flex items-center gap-2">
-                                                                    <div className="flex items-center">
-                                                                        {[1, 2, 3, 4, 5].map((star) => (
-                                                                            <Star
-                                                                                key={star}
-                                                                                className={`w-4 h-4 ${
-                                                                                    star <= rating
-                                                                                        ? "fill-amber-500 text-amber-500"
-                                                                                        : "fill-gray-200 text-gray-300"
-                                                                                }`}
-                                                                            />
-                                                                        ))}
-                                                                    </div>
-                                                                    <span className="ml-1">{rating} ★</span>
-                                                                </div>
-                                                                <span className={`text-[14px] px-2 py-1 rounded-full ${
-                                                                    selectedRatings.includes(rating)
-                                                                        ? "bg-gray-600 text-white"
-                                                                        : "bg-gray-200 text-black"
-                                                                }`}>
-                                                                    {count}
-                                                                </span>
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-
                                     {/* All Filters View */}
                                     {activeMobileFilter === 'all' && (
                                         <div>
@@ -1053,60 +973,6 @@ const ShopPageClient = () => {
                                                     )}
                                                 </div>
                                                 <div>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setIsRatingOpen(!isRatingOpen)}
-                                                        className="w-full flex items-center justify-between mb-2"
-                                                    >
-                                                        <h4 className="text-[16px] font-medium text-gray-600">რეიტინგი</h4>
-                                                        <ChevronDown className={`w-5 h-5 text-gray-600 transition-transform ${isRatingOpen ? "rotate-180" : "rotate-0"}`} />
-                                                    </button>
-                                                    {isRatingOpen && (
-                                                        <div className="space-y-2">
-                                                            {[5, 4, 3, 2, 1].map((rating) => {
-                                                                const count = products.filter(
-                                                                    (product) => Math.floor(product.rating || 0) === rating
-                                                                ).length;
-
-                                                                return (
-                                                                    <button
-                                                                        key={rating}
-                                                                        onClick={() => toggleRating(rating)}
-                                                                        className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-[16px] transition-colors border ${
-                                                                            selectedRatings.includes(rating)
-                                                                                ? "bg-[#1B3729] text-white border-[#1B3729]"
-                                                                                : "bg-white text-black border-gray-300 hover:bg-gray-100"
-                                                                        }`}
-                                                                    >
-                                                                        <div className="flex items-center gap-2">
-                                                                            <div className="flex items-center">
-                                                                                {[1, 2, 3, 4, 5].map((star) => (
-                                                                                    <Star
-                                                                                        key={star}
-                                                                                        className={`w-4 h-4 ${
-                                                                                            star <= rating
-                                                                                                ? "fill-amber-500 text-amber-500"
-                                                                                                : "fill-gray-200 text-gray-300"
-                                                                                        }`}
-                                                                                    />
-                                                                                ))}
-                                                                            </div>
-                                                                            <span className="ml-1">{rating} ★</span>
-                                                                        </div>
-                                                                        <span className={`text-[14px] px-2 py-1 rounded-full ${
-                                                                            selectedRatings.includes(rating)
-                                                                                ? "bg-gray-600 text-white"
-                                                                                : "bg-gray-200 text-black"
-                                                                        }`}>
-                                                                            {count}
-                                                                        </span>
-                                                                    </button>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div>
                                                     <h4 className="text-[16px] font-medium mb-2 text-gray-600">დალაგება</h4>
                                                     <select
                                                         value={sortBy}
@@ -1190,7 +1056,7 @@ const ShopPageClient = () => {
                 <div className="flex flex-col lg:flex-row gap-8">
                     {/* Sidebar Filters */}
                     <div className={`lg:w-80 ${isFilterOpen ? 'block' : 'hidden lg:block'}`}>
-                            <div className="bg-white rounded-lg shadow-sm p-6 sticky top-24 space-y-6">
+                            <div className="bg-white  p-6  top-24 space-y-6">
                             {/* Filter Header */}
                             <div className="flex items-center justify-between mb-6">
                                 <h3 className="font-semibold text-black md:text-[20px] text-[16px]">ფილტრები</h3>
@@ -1330,89 +1196,28 @@ const ShopPageClient = () => {
                                 </div>
                             </div>
 
-                            {/* Color Filter */}
-                            <div className="mb-6 border-b border-gray-200 pb-6">
-                                <h4 className="font-medium text-black md:text-[20px] text-[16px] mb-3">ფერი</h4>
-                                <div className="flex flex-wrap gap-3">
-                                    {colors.map((color) => (
-                                        <button
-                                            key={color.id}
-                                            onClick={() => toggleColor(color.id)}
-                                            className={`relative w-10 h-10 rounded-full border-2 transition-all duration-200 ${
-                                                selectedColors.includes(color.id)
-                                                    ? 'border-[#1B3729] ring-2 ring-[#1B3729] ring-offset-2'
-                                                    : 'border-gray-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2'
-                                            }`}
-                                            style={{ backgroundColor: color.color }}
-                                        >
-                                            
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Location Filter */}
-                            <div className="mb-6 border-b border-gray-200 pb-6">
-                                <h4 className="font-medium text-black md:text-[20px] text-[16px] mb-3">მდებარეობა</h4>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {locations.map((location) => (
-                                        <button
-                                            key={location.id}
-                                            onClick={() => toggleLocation(location.id)}
-                                            className={`px-3 py-2 md:text-[18px] text-[16px] rounded-md border transition-colors ${selectedLocations.includes(location.id)
-                                                ? "bg-black text-white border-black"
-                                                : "bg-white text-black border-gray-300 hover:border-black"
-                                                }`}
-                                        >
-                                            {location.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Rating Filter */}
-                            <div className="mb-6 border-b border-gray-200 pb-6">
-                                <h4 className="font-medium text-black md:text-[20px] text-[16px] mb-3">რეიტინგი</h4>
-                                <div className="space-y-2">
-                                    {[5, 4, 3, 2, 1].map((rating) => {
-                                        const count = products.filter(
-                                            (product) => Math.floor(product.rating || 0) === rating
-                                        ).length;
-
+                            {/* Location Filter (styled like type) */}
+                            <div className="mb-6  pb-6">
+                                <h4 className="font-medium text-black md:text-[18px] text-[16px] mb-3">მდებარეობა</h4>
+                                <div className="space-y-2 text-[15px] text-black">
+                                    {locations.map((location) => {
+                                        const active = selectedLocations.includes(location.id)
                                         return (
-                                            <button
-                                                key={rating}
-                                                onClick={() => toggleRating(rating)}
-                                                className={`w-full flex items-center justify-between px-3 py-2 md:text-[18px] text-[16px] rounded-md border transition-colors ${selectedRatings.includes(rating)
-                                                    ? "bg-[#1B3729] text-white border-[#1B3729]"
-                                                    : "bg-white text-black border-gray-300 hover:border-black"
-                                                    }`}
+                                            <label
+                                                key={location.id}
+                                                className={`flex items-center justify-between gap-2 cursor-pointer rounded-md px-3 py-2 ${active ? ' text-black' : 'hover:bg-gray-100 text-black'}`}
                                             >
-                                                <div className="flex items-center gap-2">
-                                                    <div className="flex items-center">
-                                                        {[1, 2, 3, 4, 5].map((star) => (
-                                                            <Star
-                                                                key={star}
-                                                                className={`w-4 h-4 ${star <= rating
-                                                                    ? "fill-amber-500 text-amber-500"
-                                                                    : "fill-gray-200 text-gray-300"
-                                                                    }`}
-                                                            />
-                                                        ))}
-                                                    </div>
-                                                    <span className="ml-1">{rating} ★</span>
-                                                </div>
-
-                                                <span
-                                                    className={`text-[14px] px-2 py-1 rounded-full ${selectedRatings.includes(rating)
-                                                        ? "bg-gray-600 text-white"
-                                                        : "bg-gray-200 text-black"
-                                                        }`}
-                                                >
-                                                    {count}
+                                                <span className="flex items-center gap-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={active}
+                                                        onChange={() => toggleLocation(location.id)}
+                                                        className="w-4 h-4 accent-black"
+                                                    />
+                                                    {location.label}
                                                 </span>
-                                            </button>
-                                        );
+                                            </label>
+                                        )
                                     })}
                                 </div>
                             </div>
@@ -1451,6 +1256,27 @@ const ShopPageClient = () => {
                                 </div>
                             </div>
 
+                            {/* Color Filter (moved below rental date) */}
+                            <div className="mb-6  pb-6">
+                                <h4 className="font-medium text-black md:text-[20px] text-[16px] mb-3">ფერი</h4>
+                                <div className="flex flex-wrap gap-3">
+                                    {colors.map((color) => (
+                                        <button
+                                            key={color.id}
+                                            onClick={() => toggleColor(color.id)}
+                                            className={`relative w-10 h-10 rounded-full border-2 transition-all duration-200 ${
+                                                selectedColors.includes(color.id)
+                                                    ? 'border-[#1B3729] ring-2 ring-[#1B3729] ring-offset-2'
+                                                    : 'border-gray-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2'
+                                            }`}
+                                            style={{ backgroundColor: color.color }}
+                                        >
+                                            
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
                             {/* Results Count */}
 
                         </div>
@@ -1459,7 +1285,7 @@ const ShopPageClient = () => {
                     {/* Main Content */}
                     <div className="flex-1">
                         {/* Top Bar with Sorting */}
-                        <div className="bg-white rounded-lg shadow-sm p-4 mb-6 border border-gray-200">
+                        <div className=" p-4 mb-6 ">
                             <div className="flex flex-col sm:flex-row justify-between md:items-center items-start gap-3">
                                 <div className="flex items-center gap-2 text-black">
                                     <span className="text-[16px] md:text-[18px]">ნაპოვნია</span>
