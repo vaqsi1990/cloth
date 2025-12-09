@@ -169,7 +169,7 @@ const Header = () => {
                 height={64}
               />
             </div>
-            <span className="hidden md:block text-xl font-bold text-gray-900">DRESSLA</span>
+         
           </Link>
 
           {/* --- Desktop Search Bar (Centered) --- */}
@@ -526,59 +526,6 @@ const Header = () => {
       </div>
 
 
-      {/* --- Category Section --- */}
-      <div className="bg-[#FAFAFA] py-12">
-        <div className="container mx-auto px-6">
-          <h2 className="md:text-[24px] text-[20px] font-bold text-gray-900 mb-8 text-start">
-            მოძებნეთ კატეგორიის მიხედვით
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Category Box 1 */}
-            <Link
-              href="/shop?category=everyday"
-              className="bg-gray-100 hover:bg-gray-200 rounded-lg p-6 transition-colors cursor-pointer"
-            >
-              <div className="text-center ">
-                <p className="text-black   font-medium md:text-[18px] text-[16px] mb-1">ყოველდღიური</p>
-                <p className="text-black   md:text-[18px] text-[16px]">ტანსაცმელი</p>
-              </div>
-            </Link>
-
-            {/* Category Box 2 */}
-            <Link
-              href="/shop?category=wedding"
-              className="bg-gray-100 hover:bg-gray-200 rounded-lg p-6 transition-colors cursor-pointer"
-            >
-              <div className="text-center">
-                <p className="text-black   font-medium md:text-[18px] text-[16px] mb-1">საქორწინო და</p>
-                <p className="text-black   md:text-[18px] text-[16px]">სადღესასწაულო</p>
-              </div>
-            </Link>
-
-            {/* Category Box 3 */}
-            <Link
-              href="/shop?category=sports"
-              className="bg-gray-100 hover:bg-gray-200 rounded-lg p-6 transition-colors cursor-pointer"
-            >
-              <div className="text-center">
-                <p className="text-black   font-medium md:text-[18px] text-[16px] mb-1">სათხილამურო და</p>
-                <p className="text-black   md:text-[18px] text-[16px]">სპორტული</p>
-              </div>
-            </Link>
-
-            {/* Category Box 4 */}
-            <Link
-              href="/shop?category=cultural"
-              className="bg-gray-100 hover:bg-gray-200 rounded-lg p-6 transition-colors cursor-pointer"
-            >
-              <div className="text-center">
-                <p className="text-black   font-medium md:text-[18px] text-[16px] mb-1">კულტურული და</p>
-                <p className="text-black   md:text-[18px] text-[16px]">თემატური</p>
-              </div>
-            </Link>
-          </div>
-        </div>
-      </div>
     </header>
   )
 }
