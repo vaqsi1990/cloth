@@ -10,13 +10,13 @@ import { ensureUniqueProductSlug } from '@/lib/productSlug'
 const productSchema = z.object({
   name: z.string()
     .min(1, 'სახელი აუცილებელია')
-    .regex(/^[\u10A0-\u10FF\s]+$/, 'სახელი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს'),
+    .regex(/^[\u10A0-\u10FF\s.,:;!?\-()""'']+$/, 'სახელი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს და პუნქტუაციას'),
   slug: z.string().min(1, 'Slug აუცილებელია').regex(/^[a-z0-9-]+$/, 'Slug უნდა შეიცავდეს მხოლოდ პატარა ასოებს, ციფრებს და ტირეებს'),
   brand: z.string().optional(),
   description: z.string()
     .optional()
-    .refine((val) => !val || /^[\u10A0-\u10FF\s]+$/.test(val), {
-      message: 'აღწერა უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს'
+    .refine((val) => !val || /^[\u10A0-\u10FF\s.,:;!?\-()""'']+$/.test(val), {
+      message: 'აღწერა უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს და პუნქტუაციას'
     }),
   stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი').default(0),
   gender: z.enum(['MEN', 'WOMEN', 'CHILDREN', 'UNISEX']).default('UNISEX'),

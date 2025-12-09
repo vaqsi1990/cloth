@@ -465,7 +465,7 @@ const ShopPageClient = () => {
 
             {/* Category Section moved from Header */}
             <div className="bg-[#FAFAFA] py-12">
-                <div className="container mx-auto px-6">
+                <div className="container mx-auto max-w-7xl mx-auto px-6">
                     <h2 className="md:text-[24px] text-[20px] font-bold text-gray-900 mb-8 text-start">
                         მოძებნეთ კატეგორიის მიხედვით
                     </h2>
@@ -517,7 +517,7 @@ const ShopPageClient = () => {
                 </div>
             </div>
 
-            <div className="container mx-auto px-2 py-8">
+            <div className="container max-w-7xl mx-auto px-2 py-8">
                 {/* Mobile Filter Bar - Temu Style */}
                 <div className="lg:hidden mb-4">
                     <div className="bg-white rounded-lg shadow-sm border">
@@ -1056,7 +1056,7 @@ const ShopPageClient = () => {
                 <div className="flex flex-col lg:flex-row gap-8">
                     {/* Sidebar Filters */}
                     <div className={`lg:w-80 ${isFilterOpen ? 'block' : 'hidden lg:block'}`}>
-                            <div className="bg-white  p-6  top-24 space-y-6">
+                            <div className="bg-white shadow-sm p-6  top-24 space-y-6">
                             {/* Filter Header */}
                             <div className="flex items-center justify-between mb-6">
                                 <h3 className="font-semibold text-black md:text-[20px] text-[16px]">ფილტრები</h3>

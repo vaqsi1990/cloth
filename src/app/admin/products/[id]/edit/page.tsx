@@ -10,13 +10,13 @@ import { showToast } from '@/utils/toast'
 const productSchema = z.object({
   name: z.string()
     .min(1, 'სახელი აუცილებელია')
-    .regex(/^[\u10A0-\u10FF\s]+$/, 'სახელი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს'),
+    .regex(/^[\u10A0-\u10FF\s.,:;!?\-()""'']+$/, 'სახელი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს და პუნქტუაციას'),
   slug: z.string().min(1, 'Slug აუცილებელია').regex(/^[a-z0-9-]+$/, 'Slug უნდა შეიცავდეს მხოლოდ პატარა ასოებს, ციფრებს და ტირეებს'),
   brand: z.string().optional(),
   description: z.string()
     .optional()
-    .refine((val) => !val || /^[\u10A0-\u10FF\s]+$/.test(val), {
-      message: 'აღწერა უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს'
+    .refine((val) => !val || /^[\u10A0-\u10FF\s.,:;!?\-()""'']+$/.test(val), {
+      message: 'აღწერა უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს და პუნქტუაციას'
     }),
   stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი').default(0),
   gender: z.enum(['MEN', 'WOMEN', 'CHILDREN', 'UNISEX']).default('UNISEX'),
@@ -319,10 +319,10 @@ const EditProductPage = () => {
     }))
     
     // Validate Georgian characters in real-time
-    if (name && !/^[\u10A0-\u10FF\s]+$/.test(name)) {
+    if (name && !/^[\u10A0-\u10FF\s.,:;!?\-()""'']+$/.test(name)) {
       setErrors(prev => ({
         ...prev,
-        name: 'სახელი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს'
+        name: 'სახელი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს და პუნქტუაციას'
       }))
     } else {
       // Clear errors when valid
@@ -351,10 +351,10 @@ const EditProductPage = () => {
     
     // Validate Georgian characters for description in real-time
     if (field === 'description' && typeof value === 'string') {
-      if (value && !/^[\u10A0-\u10FF\s]+$/.test(value)) {
+      if (value && !/^[\u10A0-\u10FF\s.,:;!?\-()""'']+$/.test(value)) {
         setErrors(prev => ({
           ...prev,
-          description: 'აღწერა უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს'
+          description: 'აღწერა უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს და პუნქტუაციას'
         }))
       } else {
         // Clear errors when valid
