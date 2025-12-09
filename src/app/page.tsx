@@ -9,11 +9,13 @@ import ShopPageClient from "../component/ShopPageClient";
 import StructuredData from "@/components/StructuredData";
 
 export const metadata: Metadata = {
-  title: "მთავარი",
-  description: "Dressla.ge - იპოვეთ იდეალური მოდური ნივთები ქირაობისა და შეძენისთვის",
+  title: "Dressla.ge • ტანსაცმლის ქირაობა",
+  description:
+    "Dressla.ge - ტანსაცმლის ქირაობა და შეძენა საქართველოში",
   openGraph: {
-    title: "Dressla.ge - მოდის ქირაობა და შეძენა საქართველოში",
-    description: "იპოვეთ იდეალური მოდური ნივთები ქირაობისა და შეძენისთვის",
+    title: "Dressla.ge - ტანსაცმლის ქირაობა და შეძენა საქართველოში",
+    description:
+      "Dressla.ge — ტანსაცმლის ქირაობა, კოლექცია და პროდუქტები საქართველოში",
     images: ["/logo.jpg"],
   },
 };
@@ -23,16 +25,28 @@ export default function Home() {
     <>
       <StructuredData type="Organization" />
       <StructuredData type="WebSite" />
-    <Suspense fallback={
+      <main className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+        <header className="text-center space-y-3">
+          <h1 className="text-3xl md:text-4xl font-extrabold text-black">
+            Dressla.ge — ტანსაცმლის ქირაობა, კოლექციები და პროდუქტები საქართველოში
+          </h1>
+          <p className="text-lg md:text-xl text-black">
+            ქალი, კაცი და ბავშვების კოლექცია
+          </p>
+        </header>
+        <Suspense
+          fallback={
             <div className="min-h-screen flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-teal-600 mx-auto mb-4"></div>
-                    <p className="text-black">იტვირთება...</p>
-                </div>
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-teal-600 mx-auto mb-4"></div>
+                <p className="text-black">იტვირთება...</p>
+              </div>
             </div>
-        }>
-            <ShopPageClient />
+          }
+        >
+          <ShopPageClient />
         </Suspense>
+      </main>
     </>
   );
 }
