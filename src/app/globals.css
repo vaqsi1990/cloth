@@ -218,6 +218,25 @@ body {
   left: 100%;
 }
 
+/* Range slider thumb (black) */
+input[type="range"].slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: #000;
+  cursor: pointer;
+}
+input[type="range"].slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: #000;
+  border: none;
+  cursor: pointer;
+}
+
 /* Responsive improvements */
 @media (max-width: 767px) {
   .gi-ofr-banners .gi-bnr-body {

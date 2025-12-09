@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Filter, X, ChevronDown, Calendar, Star, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Filter, X, ChevronDown, Calendar, Star, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 import { Product } from '@/types/product'
 import DatePicker from "react-datepicker"
@@ -1190,7 +1190,7 @@ const ShopPageClient = () => {
                 <div className="flex flex-col lg:flex-row gap-8">
                     {/* Sidebar Filters */}
                     <div className={`lg:w-80 ${isFilterOpen ? 'block' : 'hidden lg:block'}`}>
-                        <div className="bg-white rounded-lg shadow-sm p-6 sticky top-24">
+                            <div className="bg-white rounded-lg shadow-sm p-6 sticky top-24 space-y-6">
                             {/* Filter Header */}
                             <div className="flex items-center justify-between mb-6">
                                 <h3 className="font-semibold text-black md:text-[20px] text-[16px]">ფილტრები</h3>
@@ -1202,69 +1202,82 @@ const ShopPageClient = () => {
                                 </button>
                             </div>
 
-                            <div className="mb-6 border-b border-gray-200 pb-6">
-                                <h4 className="font-medium text-black md:text-[20px] text-[16px] mb-3">ტიპი</h4>
-                                <div className="space-y-2">
-                                    <button
-                                        onClick={() => setPurchaseType("all")}
-                                        className={`w-full text-left px-3 py-2 rounded-md md:text-[18px] text-[16px] transition-colors flex justify-between items-center ${purchaseType === "all"
-                                                ? "bg-black text-white"
-                                                : "text-black hover:bg-gray-100"
-                                            }`}
-                                    >
-                                        <span>ყველა</span>
-                                        <span className={`text-[14px] px-2 py-1 rounded-full ${purchaseType === "all"
-                                                ? "bg-gray-600 text-white"
-                                                : "bg-gray-200 text-black"
-                                            }`}>
-                                            {products.length}
-                                        </span>
-                                    </button>
-                                    <button
-                                        onClick={() => setPurchaseType("rent-only")}
-                                        className={`w-full text-left px-3 py-2 rounded-md md:text-[18px] text-[16px] transition-colors flex justify-between items-center ${purchaseType === "rent-only"
-                                                ? "bg-black text-white"
-                                                : "text-black hover:bg-gray-100"
-                                            }`}
-                                    >
-                                        <span>მხოლოდ გაქირავება</span>
-                                        <span className={`text-[14px] px-2 py-1 rounded-full ${purchaseType === "rent-only"
-                                                ? "bg-gray-600 text-white"
-                                                : "bg-gray-200 text-black"
-                                            }`}>
-                                            {products.filter(p => isRentOnly(p)).length}
-                                        </span>
-                                    </button>
-                                    <button
-                                        onClick={() => setPurchaseType("sale-only")}
-                                        className={`w-full text-left px-3 py-2 rounded-md md:text-[18px] text-[16px] transition-colors flex justify-between items-center ${purchaseType === "sale-only"
-                                                ? "bg-black text-white"
-                                                : "text-black hover:bg-gray-100"
-                                            }`}
-                                    >
-                                        <span className='flex flex-row'>მხოლოდ მხოლოდ <br /> ყიდვა ყიდვა</span>
-                                        <span className={`text-[14px] px-2 py-1 rounded-full ${purchaseType === "sale-only"
-                                                ? "bg-gray-600 text-white"
-                                                : "bg-gray-200 text-black"
-                                            }`}>
-                                            {products.filter(p => isSaleOnly(p)).length}
-                                        </span>
-                                    </button>
+                            {/* Price Range FIRST */}
+                            <div className="border-b border-gray-200 pb-6">
+                                <h4 className="font-medium text-black md:text-[18px] text-[16px] mb-3">ფასის დიაპაზონი</h4>
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="number"
+                                            value={priceRange[0]}
+                                            onChange={(e) => setPriceRange([Number(e.target.value) || 0, priceRange[1]])}
+                                            className="w-1/2 px-3 py-2 border border-gray-300 rounded text-[14px] text-black"
+                                        />
+                                        <input
+                                            type="number"
+                                            value={priceRange[1]}
+                                            onChange={(e) => setPriceRange([priceRange[0], Number(e.target.value) || 0])}
+                                            className="w-1/2 px-3 py-2 border border-gray-300 rounded text-[14px] text-black"
+                                        />
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max={maxPrice}
+                                        value={priceRange[1]}
+                                        onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
+                                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                                    />
+                                    <div className="flex items-center justify-between md:text-[16px] text-[14px] text-black">
+                                        <span>₾{priceRange[0]}</span>
+                                        <span>₾{priceRange[1]}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Type */}
+                            <div className="border-b border-gray-200 pb-6">
+                                <h4 className="font-medium text-black md:text-[18px] text-[16px] mb-3">ტიპი</h4>
+                                <div className="space-y-2 text-[15px] text-black">
+                                    {[
+                                        { value: "all", label: "ყველა", count: products.length },
+                                        { value: "rent-only", label: "მხოლოდ გაქირავება", count: products.filter(p => isRentOnly(p)).length },
+                                        { value: "sale-only", label: "მხოლოდ ყიდვა", count: products.filter(p => isSaleOnly(p)).length },
+                                    ].map(({ value, label, count }) => {
+                                        const active = purchaseType === value
+                                        return (
+                                            <label
+                                                key={value}
+                                                className={`flex items-center justify-between gap-2 cursor-pointer rounded-md px-3 py-2 ${active ? ' text-black' : 'hover:bg-gray-100 text-black'}`}
+                                            >
+                                                <span className="flex items-center gap-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={active}
+                                                        onChange={() => setPurchaseType(value as "all" | "rent-only" | "sale-only")}
+                                                        className="w-4 h-4 accent-black"
+                                                    />
+                                                    {label}
+                                                </span>
+                                                <span className={`text-[16px] ${active ? 'text-black' : 'text-black'}`}>{count}</span>
+                                            </label>
+                                        )
+                                    })}
                                 </div>
                             </div>
 
                             {/* Category Filters */}
-                            <div className="mb-6 border-b border-gray-200 pb-6">
+                            <div className="border-b border-gray-200 pb-6">
                                 <button
                                     type="button"
                                     onClick={() => setIsCategoryOpen(!isCategoryOpen)}
                                     className="w-full flex items-center justify-between mb-3"
                                 >
-                                    <h4 className="font-medium text-black md:text-[20px] text-[16px]">კატეგორია</h4>
+                                    <h4 className="font-medium text-black md:text-[18px] text-[16px]">კატეგორია</h4>
                                     <ChevronDown className={`w-5 h-5 text-black transition-transform ${isCategoryOpen ? "rotate-180" : "rotate-0"}`} />
                                 </button>
                                 {isCategoryOpen && (
-                                    <div className="space-y-2">
+                                    <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                                         {categories.map((category) => {
                                             const categoryCount = products.filter(product =>
                                                 product.category?.name === category.label
@@ -1272,69 +1285,47 @@ const ShopPageClient = () => {
                                             const isSelected = selectedCategories.includes(category.label);
 
                                             return (
-                                                <button
+                                                <label
                                                     key={category.id}
-                                                    onClick={() => toggleCategory(category.label)}
-                                                    className={`w-full pb-10 text-left px-3 py-2 rounded-md md:text-[18px] text-[16px] transition-colors flex justify-between items-center ${
-                                                        isSelected
-                                                            ? "bg-black text-white"
-                                                            : "text-black hover:bg-gray-100"
-                                                    }`}
+                                                    className="flex items-center justify-between text-[15px] text-black cursor-pointer py-1"
                                                 >
-                                                    <span>{category.label}</span>
-                                                    <span className={`text-[14px] px-2 py-1 rounded-full ${
-                                                        isSelected
-                                                            ? "bg-gray-600 text-white"
-                                                            : "bg-gray-200 text-black"
-                                                    }`}>
-                                                        {categoryCount}
+                                                    <span className="flex items-center gap-2">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isSelected}
+                                                            onChange={() => toggleCategory(category.label)}
+                                                            className="w-4 h-4"
+                                                        />
+                                                        {category.label}
                                                     </span>
-                                                </button>
+                                                    <span className="text-xs text-gray-500">{categoryCount}</span>
+                                                </label>
                                             );
                                         })}
                                     </div>
                                 )}
                             </div>
 
-                            {/* Price Range */}
-                            <div className="mb-6">
-                                <h4 className="font-medium text-black md:text-[20px] text-[16px] mb-3">ფასის დიაპაზონი</h4>
-                                <div className="space-y-3">
-                                    <div className="flex items-center space-x-2">
-                                        <input
-                                            type="range"
-                                            min="0"
-                                            max={maxPrice}
-                                            value={priceRange[1]}
-                                            onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
-                                            className="w-full  h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-                                        />
-                                    </div>
-                                    <div className="flex items-center justify-between md:text-[18px] text-[16px] text-black">
-                                        <span>₾{priceRange[0]}</span>
-                                        <span>₾{priceRange[1]}</span>
-                                    </div>
-                                </div>
-                            </div>
-
                             {/* Purchase Type Filter */}
 
 
                             {/* Size System Filter */}
-                            <div className="mb-6 border-b border-gray-200 pb-6">
-                                <h4 className="font-medium text-black md:text-[20px] text-[16px] mb-3">ზომის სისტემა</h4>
-                                <div className="grid grid-cols-2 gap-2">
+                            <div className="border-b border-gray-200 pb-6">
+                                <h4 className="font-medium text-black md:text-[18px] text-[16px] mb-3">ზომის სისტემა</h4>
+                                <div className="space-y-2">
                                     {sizeSystems.map((sizeSystem) => (
-                                        <button
+                                        <label
                                             key={sizeSystem.id}
-                                            onClick={() => toggleSizeSystem(sizeSystem.id)}
-                                            className={`px-3 py-2 md:text-[18px] text-[16px] rounded-md border transition-colors ${selectedSizeSystems.includes(sizeSystem.id)
-                                                ? "bg-black text-white border-black"
-                                                : "bg-white text-black border-gray-300 hover:border-black"
-                                                }`}
+                                            className="flex items-center gap-2 text-[15px] text-black cursor-pointer"
                                         >
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedSizeSystems.includes(sizeSystem.id)}
+                                                onChange={() => toggleSizeSystem(sizeSystem.id)}
+                                                className="w-4 h-4"
+                                            />
                                             {sizeSystem.label}
-                                        </button>
+                                        </label>
                                     ))}
                                 </div>
                             </div>
@@ -1468,15 +1459,18 @@ const ShopPageClient = () => {
                     {/* Main Content */}
                     <div className="flex-1">
                         {/* Top Bar with Sorting */}
-                        <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-                            <div className="flex flex-col sm:flex-row justify-between md:items-start  items-center space-y-3 sm:space-y-0">
-                                <h3 className="md:text-[20px] font-bold text-[18px] text-black">ყიდვა / გაქირავება</h3>
-                                <div className="flex flex-col md:flex-row gap-2 text-black items-center space-x-2">
-                                    <span className="md:text-[20px] text-[16px] text-black">დალაგება:</span>
+                        <div className="bg-white rounded-lg shadow-sm p-4 mb-6 border border-gray-200">
+                            <div className="flex flex-col sm:flex-row justify-between md:items-center items-start gap-3">
+                                <div className="flex items-center gap-2 text-black">
+                                    <span className="text-[16px] md:text-[18px]">ნაპოვნია</span>
+                                    <span className="font-semibold md:text-[18px] text-[16px]">{filteredProducts.length}</span>
+                                </div>
+                                <div className="flex flex-col md:flex-row gap-2 text-black items-center">
+                                    <span className="md:text-[18px] text-[16px]">დალაგება:</span>
                                     <select
                                         value={sortBy}
                                         onChange={(e) => setSortBy(e.target.value)}
-                                        className="px-3 py-2 md:text-[18px] text-black text-[16px] border border-gray-300 rounded-lg  focus:outline-none focus:ring-2 focus:ring-black"
+                                        className="px-3 py-2 md:text-[18px] text-black text-[16px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
                                     >
                                         <option className='md:text-[18px] text-[16px] text-black' value="newest">ახალი</option>
                                         <option className='md:text-[18px] text-[16px] text-black' value="price-low">ფასი: დაბლიდან მაღლა</option>
@@ -1484,50 +1478,51 @@ const ShopPageClient = () => {
                                         <option className='md:text-[18px] text-[16px] text-black' value="rating">რეიტინგი</option>
                                     </select>
                                 </div>
-
-
                             </div>
                         </div>
 
 
                         {/* Products Grid */}
                         {currentProducts.length > 0 ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
                                 {currentProducts.map((product) => (
                                     <div
                                         key={product.id}
-
-                                        className="group  text-center bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                                        className="group bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                                     >
                                         <div className="relative aspect-[3/4] bg-gray-100">
                                             <Image
                                                 src={product.images?.[0]?.url || "/placeholder.jpg"}
                                                 alt={product.name}
                                                 fill
-                                                className="object-cover  transition-transform duration-300"
+                                                className="object-cover transition-transform duration-300 group-hover:scale-[1.01]"
                                             />
-                                            <div className="absolute top-4 left-4 flex gap-2">
-                                                {product.discount && product.discount > 0 && (
-                                                    <span className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
-                                                        -{product.discount}%
-                                                    </span>
-                                                )}
-                                            </div>
+                                            {product.discount && product.discount > 0 && (
+                                                <span className="absolute top-3 left-3 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                                                    -{product.discount}%
+                                                </span>
+                                            )}
                                         </div>
-                                        <div className="p-4">
-                                            <h3 className="font-semibold text-black md:text-[20px] text-[16px] mb-2 line-clamp-2">
+                                        <div className="p-4 space-y-2">
+                                            <div className="flex items-center justify-between">
+
+                                            <h3 className="font-semibold text-black md:text-[18px] text-[16px] leading-snug line-clamp-2">
                                                 {product.name}
                                             </h3>
-                                            <span className=" text-black md:text-[18px] text-[16px]">
-                                                  {product.sku}
-                                                </span>
-                                            <div className="flex items-center justify-center">
-                                                <span className="font-bold text-black md:text-[18px] text-[18px]">
-                                                    ₾{getDisplayPrice(product).toFixed(2)}
-                                                </span>
+                                                <Link
+                                                    href={`/product/${product.id}`}
+                                                    className="w-9 h-9 rounded-full bg-black text-white flex items-center justify-center hover:bg-gray-800 transition"
+                                                    aria-label="დეტალები"
+                                                >
+                                                    <Plus className="w-5 h-5" />
+                                                </Link>
 
                                             </div>
-                                            <Link href={`/product/${product.id}`} className="block w-full mx-auto  text-center md:w-[200px]  mt-3 bg-[#1B3729] md:text-[18px] text-[16px] text-white text-center py-2 rounded-lg font-bold transition-colors duration-300">დეტალები</Link>
+                                            <div className="flex items-center justify-between">
+                                                <span className="font-bold text-black md:text-[18px] text-[16px]">
+                                                    ₾{getDisplayPrice(product).toFixed(2)}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
