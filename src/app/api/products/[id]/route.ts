@@ -10,13 +10,13 @@ import { ensureUniqueProductSlug } from '@/lib/productSlug'
 const productSchema = z.object({
   name: z.string()
     .min(1, 'სახელი აუცილებელია')
-    .regex(/^[\u10A0-\u10FF\s.,:;!?\-()""'']+$/, 'სახელი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს და პუნქტუაციას'),
+    .regex(/^[\u10A0-\u10FF\s.,:;!?\-()""''0-9]+$/, 'სახელი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, პუნქტუაციას და ციფრებს'),
   slug: z.string().min(1, 'Slug აუცილებელია').regex(/^[a-z0-9-]+$/, 'Slug უნდა შეიცავდეს მხოლოდ პატარა ასოებს, ციფრებს და ტირეებს'),
   brand: z.string().optional(),
   description: z.string()
     .optional()
-    .refine((val) => !val || /^[\u10A0-\u10FF\s.,:;!?\-()""'']+$/.test(val), {
-      message: 'აღწერა უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს და პუნქტუაციას'
+    .refine((val) => !val || /^[\u10A0-\u10FF\s.,:;!?\-()""''0-9]+$/.test(val), {
+      message: 'აღწერა უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, პუნქტუაციას და ციფრებს'
     }),
   stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი').default(0),
   gender: z.enum(['MEN', 'WOMEN', 'CHILDREN', 'UNISEX']).default('UNISEX'),
@@ -51,10 +51,20 @@ const productSchema = z.object({
     sizeSystem: z.enum(['EU', 'US', 'UK', 'CN']).optional()
   })).default([]),
   imageUrls: z.array(z.string().min(1, 'URL აუცილებელია')).default([]),
-  rentalPriceTiers: z.array(z.object({
-    minDays: z.number().int().min(1, 'მინიმალური დღეები უნდა იყოს დადებითი'),
-    pricePerDay: z.number().positive('ფასი დღეში უნდა იყოს დადებითი')
-  })).optional()
+  rentalPriceTiers: z.preprocess(
+    (val) => {
+      // If it's an array with all pricePerDay = 0, convert to undefined
+      if (Array.isArray(val) && val.length > 0) {
+        const hasValidPrice = val.some((tier: any) => tier?.pricePerDay > 0)
+        return hasValidPrice ? val : undefined
+      }
+      return val
+    },
+    z.array(z.object({
+      minDays: z.number().int().min(1, 'მინიმალური დღეები უნდა იყოს დადებითი'),
+      pricePerDay: z.number().min(0, 'ფასი დღეში უნდა იყოს დადებითი ან ნული')
+    })).optional()
+  )
 })
 
 // GET - Fetch single product by ID

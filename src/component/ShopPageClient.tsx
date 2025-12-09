@@ -41,6 +41,7 @@ const ShopPageClient = () => {
     const [itemsPerPage] = useState(20)
     const [activeMobileFilter, setActiveMobileFilter] = useState<string | null>(null)
     const [isMobileFilterOverlayOpen, setIsMobileFilterOverlayOpen] = useState(false)
+    const [isCategorySectionOpen, setIsCategorySectionOpen] = useState(false)
 
     // Helper functions for price calculation
     const getRentalPrice = (product: Product): number => {
@@ -466,10 +467,26 @@ const ShopPageClient = () => {
             {/* Category Section moved from Header */}
             <div className="bg-[#FAFAFA] py-12">
                 <div className="container mx-auto max-w-7xl mx-auto px-6">
-                    <h2 className="md:text-[24px] text-[20px] font-bold text-gray-900 mb-8 text-start">
-                        მოძებნეთ კატეგორიის მიხედვით
-                    </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="flex items-center justify-between mb-8">
+                        <h2 className="md:text-[24px] text-[20px] font-bold text-gray-900 text-start">
+                            მოძებნეთ კატეგორიის მიხედვით
+                        </h2>
+                        {/* Toggle button - only visible on mobile */}
+                        <button
+                            onClick={() => setIsCategorySectionOpen(!isCategorySectionOpen)}
+                            className="md:hidden flex items-center gap-2 text-gray-700 hover:text-gray-900"
+                            aria-label="კატეგორიების გახსნა/დახურვა"
+                        >
+                            <span className="text-[16px] font-medium">
+                                {isCategorySectionOpen ? 'დამალვა' : 'გახსნა'}
+                            </span>
+                            <ChevronDown 
+                                className={`w-5 h-5 transition-transform ${isCategorySectionOpen ? 'rotate-180' : ''}`} 
+                            />
+                        </button>
+                    </div>
+                    {/* Category grid - hidden on mobile by default, always visible on desktop */}
+                    <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 ${isCategorySectionOpen ? 'block' : 'hidden md:grid'}`}>
                         {/* Category Box 1 */}
                         <Link
                             href="/shop?category=everyday"
@@ -636,397 +653,6 @@ const ShopPageClient = () => {
                                 </div>
                             </div>
 
-                            {/* Right Content Area */}
-                            <div className="flex-1 overflow-y-auto">
-                                <div className="p-2">
-                                    {/* Sort Options */}
-                                    {activeMobileFilter === 'sort' && (
-                                        <div>
-                                            <h3 className="text-lg font-semibold mb-4 text-black">დალაგება</h3>
-                                            <div className="space-y-2">
-                                                {[
-                                                    { value: 'newest', label: 'ახალი' },
-                                                    { value: 'price-low', label: 'ფასი: დაბლიდან მაღლა' },
-                                                    { value: 'price-high', label: 'ფასი: მაღლიდან დაბლა' },
-                                                    { value: 'rating', label: 'რეიტინგი' }
-                                                ].map((option) => (
-                                                    <button
-                                                        key={option.value}
-                                                        onClick={() => {
-                                                            setSortBy(option.value)
-                                                            setIsMobileFilterOverlayOpen(false)
-                                                        }}
-                                                        className={`w-full text-left px-4 py-3 rounded-lg border ${
-                                                            sortBy === option.value
-                                                                ? 'bg-[#1B3729] text-white border-[#1B3729]'
-                                                                : 'bg-white text-black border-gray-300 hover:border-orange-500'
-                                                        }`}
-                                                    >
-                                                        {option.label}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Size Options */}
-                                    {activeMobileFilter === 'size' && (
-                                        <div>
-                                            <h3 className="text-lg font-semibold mb-4 text-black">ზომის სისტემა</h3>
-                                            <div className="space-y-4">
-                                                <div>
-                                                    <h4 className="text-[16px] font-medium mb-2 text-gray-600">ზომის სისტემა</h4>
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {sizeSystems.map((sizeSystem) => (
-                                                            <button
-                                                                key={sizeSystem.id}
-                                                                onClick={() => toggleSizeSystem(sizeSystem.id)}
-                                                                className={`w-10 h-10 rounded-full border-2 flex items-center justify-center text-[16px] font-medium ${
-                                                                    selectedSizeSystems.includes(sizeSystem.id)
-                                                                        ? 'bg-[#1B3729] text-white border-[#1B3729]'
-                                                                        : 'bg-white text-black border-gray-300 '
-                                                                }`}
-                                                            >
-                                                                {sizeSystem.label}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Color Options */}
-                                    {activeMobileFilter === 'color' && (
-                                        <div>
-                                            <h3 className="text-lg font-semibold mb-4 text-black">ფერი</h3>
-                                            <div className="flex flex-wrap gap-3">
-                                                {colors.map((color) => (
-                                                    <button
-                                                        key={color.id}
-                                                        onClick={() => toggleColor(color.id)}
-                                                        className={`relative w-10 h-10 rounded-full border-2 ${
-                                                            selectedColors.includes(color.id)
-                                                                ? 'border-[#1B3729]  '
-                                                                : 'border-gray-300 '
-                                                        }`}
-                                                        style={{ backgroundColor: color.color }}
-                                                    >
-                                                     
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Category Options */}
-                                    {activeMobileFilter === 'category' && (
-                                        <div>
-                                            <button
-                                                type="button"
-                                                onClick={() => setIsCategoryOpen(!isCategoryOpen)}
-                                                className="w-full flex items-center justify-between mb-4"
-                                            >
-                                                <h3 className="text-lg font-semibold text-black">კატეგორია</h3>
-                                                <ChevronDown className={`w-5 h-5 text-black transition-transform ${isCategoryOpen ? "rotate-180" : "rotate-0"}`} />
-                                            </button>
-                                            {isCategoryOpen && (
-                                                <div className="space-y-2">
-                                                    {categories.map((category) => {
-                                                        const categoryCount = products.filter(product =>
-                                                            product.category?.name === category.label
-                                                        ).length;
-                                                        const isSelected = selectedCategories.includes(category.label);
-
-                                                        return (
-                                                            <button
-                                                                key={category.id}
-                                                                onClick={() => toggleCategory(category.label)}
-                                                                className={`w-full text-left px-3 py-2 rounded-md text-[16px] transition-colors flex justify-between items-center ${
-                                                                    isSelected
-                                                                        ? "bg-black text-white"
-                                                                        : "text-black hover:bg-gray-100"
-                                                                }`}
-                                                            >
-                                                                <span>{category.label}</span>
-                                                                <span className={`text-[14px] px-2 py-1 rounded-full ${
-                                                                    isSelected
-                                                                        ? "bg-gray-600 text-white"
-                                                                        : "bg-gray-200 text-black"
-                                                                }`}>
-                                                                    {categoryCount}
-                                                                </span>
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {/* Price Range */}
-                                    {activeMobileFilter === 'price' && (
-                                        <div>
-                                            <h3 className="text-lg font-semibold mb-4 text-black">ფასის დიაპაზონი</h3>
-                                            <div className="space-y-4">
-                                                <div>
-                                                    <input
-                                                        type="range"
-                                                        min="0"
-                                                        max={maxPrice}
-                                                        value={priceRange[1]}
-                                                        onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
-                                                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                                                       
-                                                    />
-                                                </div>
-                                                <div className="flex items-center justify-between text-black">
-                                                    <span>₾{priceRange[0]}</span>
-                                                    <span>₾{priceRange[1]}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Location Options */}
-                                    {activeMobileFilter === 'location' && (
-                                        <div>
-                                            <h3 className="text-lg font-semibold mb-4 text-black">მდებარეობა</h3>
-                                            <div className="flex flex-wrap gap-2">
-                                                {locations.map((location) => (
-                                                    <button
-                                                        key={location.id}
-                                                        onClick={() => toggleLocation(location.id)}
-                                                        className={`px-4 py-2 rounded-lg border text-[16px] font-medium ${
-                                                            selectedLocations.includes(location.id)
-                                                                ? 'bg-[#1B3729] text-white border-[#1B3729]'
-                                                                : 'bg-white text-black border-gray-300 '
-                                                        }`}
-                                                    >
-                                                        {location.label}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Type Options */}
-                                    {activeMobileFilter === 'type' && (
-                                        <div>
-                                            <h3 className="text-lg font-semibold mb-4 text-black">ტიპი</h3>
-                                            <div className="space-y-2">
-                                                <button
-                                                    onClick={() => setPurchaseType("all")}
-                                                    className={`w-full text-left px-4 py-3 rounded-lg border flex justify-between items-center ${
-                                                        purchaseType === "all"
-                                                            ? 'bg-[#1B3729] text-white border-[#1B3729]'
-                                                            : 'bg-white text-black border-gray-300 '
-                                                    }`}
-                                                >
-                                                    <span>ყველა</span>
-                                                    <span className={`text-[16px] px-2 py-1 rounded-full ${
-                                                        purchaseType === "all"
-                                                            ? "bg-white/20 text-white"
-                                                            : "bg-gray-200 text-black"
-                                                    }`}>
-                                                        {products.length}
-                                                    </span>
-                                                </button>
-                                                <button
-                                                    onClick={() => setPurchaseType("rent-only")}
-                                                    className={`w-full text-left px-4 py-3 rounded-lg border flex justify-between items-center ${
-                                                        purchaseType === "rent-only"
-                                                            ? 'bg-[#1B3729] text-white border-[#1B3729]'
-                                                            : 'bg-white text-black border-gray-300 '
-                                                    }`}
-                                                >
-                                                    <span>მხოლოდ გაქირავება</span>
-                                                    <span className={`text-[16px] px-2 py-1 rounded-full ${
-                                                        purchaseType === "rent-only"
-                                                            ? "bg-white/20 text-white"
-                                                            : "bg-gray-200 text-black"
-                                                    }`}>
-                                                        {products.filter(p => isRentOnly(p)).length}
-                                                    </span>
-                                                </button>
-                                                <button
-                                                    onClick={() => setPurchaseType("sale-only")}
-                                                    className={`w-full text-left px-4 py-3 rounded-lg border flex justify-between items-center ${
-                                                        purchaseType === "sale-only"
-                                                            ? 'bg-[#1B3729] text-white border-[#1B3729]'
-                                                            : 'bg-white text-black border-gray-300 '
-                                                    }`}
-                                                >
-                                                    <span className='flex flex-col'>მხოლოდ ყიდვა</span>
-                                                    <span className={`text-[16px] px-2 py-1 rounded-full ${
-                                                        purchaseType === "sale-only"
-                                                            ? "bg-white/20 text-white"
-                                                            : "bg-gray-200 text-black"
-                                                    }`}>
-                                                        {products.filter(p => isSaleOnly(p)).length}
-                                                    </span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* All Filters View */}
-                                    {activeMobileFilter === 'all' && (
-                                        <div>
-                                            <h3 className="text-lg font-semibold mb-4 text-black">ყველა ფილტრი</h3>
-                                            <div className="space-y-4">
-                                                <div>
-                                                    <h4 className="text-[16px] font-medium mb-2 text-gray-600">ტიპი</h4>
-                                                    <div className="space-y-2">
-                                                        <button
-                                                            onClick={() => setPurchaseType("all")}
-                                                            className={`w-full text-left px-4 py-3 rounded-lg border flex justify-between items-center ${
-                                                                purchaseType === "all"
-                                                                    ? 'bg-[#1B3729] text-white border-[#1B3729]'
-                                                                    : 'bg-white text-black border-gray-300 hover:border-orange-500'
-                                                            }`}
-                                                        >
-                                                            <span>ყველა</span>
-                                                            <span className={`text-[16px] px-2 py-1 rounded-full ${
-                                                                purchaseType === "all"
-                                                                    ? "bg-white/20 text-white"
-                                                                    : "bg-gray-200 text-black"
-                                                            }`}>
-                                                                {products.length}
-                                                            </span>
-                                                        </button>
-                                                        <button
-                                                            onClick={() => setPurchaseType("rent-only")}
-                                                            className={`w-full text-left px-4 py-3 rounded-lg border flex justify-between items-center ${
-                                                                purchaseType === "rent-only"
-                                                                    ? 'bg-[#1B3729] text-white border-[#1B3729]'
-                                                                    : 'bg-white text-black border-gray-300 hover:border-orange-500'
-                                                            }`}
-                                                        >
-                                                            <span>მხოლოდ გაქირავება</span>
-                                                            <span className={`text-[16px] px-2 py-1 rounded-full ${
-                                                                purchaseType === "rent-only"
-                                                                    ? "bg-white/20 text-white"
-                                                                    : "bg-gray-200 text-black"
-                                                            }`}>
-                                                                {products.filter(p => isRentOnly(p)).length}
-                                                            </span>
-                                                        </button>
-                                                        <button
-                                                            onClick={() => setPurchaseType("sale-only")}
-                                                            className={`w-full text-left px-4 py-3 rounded-lg border flex justify-between items-center ${
-                                                                purchaseType === "sale-only"
-                                                                    ? 'bg-[#1B3729] text-white border-[#1B3729]'
-                                                                    : 'bg-white text-black border-gray-300 hover:border-orange-500'
-                                                            }`}
-                                                        >
-                                                            <span className='flex  flex-col'>მხოლოდ <br /> ყიდვა</span>
-                                                            <span className={`text-[16px] px-2 py-1 rounded-full ${
-                                                                purchaseType === "sale-only"
-                                                                    ? "bg-white/20 text-white"
-                                                                    : "bg-gray-200 text-black"
-                                                            }`}>
-                                                                {products.filter(p => isSaleOnly(p)).length}
-                                                            </span>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setIsCategoryOpen(!isCategoryOpen)}
-                                                        className="w-full flex items-center justify-between mb-2"
-                                                    >
-                                                        <h4 className="text-[16px] font-medium text-gray-600">კატეგორია</h4>
-                                                        <ChevronDown className={`w-5 h-5 text-gray-600 transition-transform ${isCategoryOpen ? "rotate-180" : "rotate-0"}`} />
-                                                    </button>
-                                                    {isCategoryOpen && (
-                                                        <div className="space-y-2 max-h-60 overflow-y-auto">
-                                                            {categories.map((category) => {
-                                                                const categoryCount = products.filter(product =>
-                                                                    product.category?.name === category.label
-                                                                ).length;
-                                                                const isSelected = selectedCategories.includes(category.label);
-
-                                                                return (
-                                                                    <button
-                                                                        key={category.id}
-                                                                        onClick={() => toggleCategory(category.label)}
-                                                                        className={`w-full text-left px-3 py-2 rounded-md text-[16px] transition-colors flex justify-between items-center ${
-                                                                            isSelected
-                                                                                ? "bg-black text-white"
-                                                                                : "text-black hover:bg-gray-100"
-                                                                        }`}
-                                                                    >
-                                                                        <span>{category.label}</span>
-                                                                        <span className={`text-[14px] px-2 py-1 rounded-full ${
-                                                                            isSelected
-                                                                                ? "bg-gray-600 text-white"
-                                                                                : "bg-gray-200 text-black"
-                                                                        }`}>
-                                                                            {categoryCount}
-                                                                        </span>
-                                                                    </button>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div>
-                                                    <h4 className="text-[16px] font-medium mb-2 text-gray-600">დალაგება</h4>
-                                                    <select
-                                                        value={sortBy}
-                                                        onChange={(e) => setSortBy(e.target.value)}
-                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black"
-                                                    >
-                                                        <option value="newest">ახალი</option>
-                                                        <option value="price-low">ფასი: დაბლიდან მაღლა</option>
-                                                        <option value="price-high">ფასი: მაღლიდან დაბლა</option>
-                                                        <option value="rating">რეიტინგი</option>
-                                                    </select>
-                                                </div>
-                                                <div>
-                                                    <h4 className="text-[16px] font-medium mb-2 text-gray-600">ზომის სისტემა</h4>
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {sizeSystems.map((sizeSystem) => (
-                                                            <button
-                                                                key={sizeSystem.id}
-                                                                onClick={() => toggleSizeSystem(sizeSystem.id)}
-                                                                className={`w-9 h-9 rounded-full border-2 flex items-center justify-center text-sm font-medium ${
-                                                                    selectedSizeSystems.includes(sizeSystem.id)
-                                                                        ? 'bg-[#1B3729] text-white border-[#1B3729]'
-                                                                        : 'bg-white text-black border-gray-300 hover:border-orange-500'
-                                                                }`}
-                                                            >
-                                                                {sizeSystem.label}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <h4 className="text-[16px] font-medium mb-2 text-gray-600">ფერი</h4>
-                                                    <div className="flex flex-wrap pb-24 gap-3">
-                                                        {colors.map((color) => (
-                                                            <button
-                                                                key={color.id}
-                                                                onClick={() => toggleColor(color.id)}
-                                                                className={`relative w-10 h-10 rounded-full border-2 ${
-                                                                    selectedColors.includes(color.id)
-                                                                        ? ' ring-2 ring-[#1B3729] '
-                                                                        : 'border-gray-300 hover:border-orange-500'
-                                                                }`}
-                                                                style={{ backgroundColor: color.color }}
-                                                            >
-                                                               
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
                         </div>
 
                         {/* Bottom Action Buttons */}
@@ -1285,27 +911,7 @@ const ShopPageClient = () => {
                     {/* Main Content */}
                     <div className="flex-1">
                         {/* Top Bar with Sorting */}
-                        <div className=" p-4 mb-6 ">
-                            <div className="flex flex-col sm:flex-row justify-between md:items-center items-start gap-3">
-                                <div className="flex items-center gap-2 text-black">
-                                    <span className="text-[16px] md:text-[18px]">ნაპოვნია</span>
-                                    <span className="font-semibold md:text-[18px] text-[16px]">{filteredProducts.length}</span>
-                                </div>
-                                <div className="flex flex-col md:flex-row gap-2 text-black items-center">
-                                    <span className="md:text-[18px] text-[16px]">დალაგება:</span>
-                                    <select
-                                        value={sortBy}
-                                        onChange={(e) => setSortBy(e.target.value)}
-                                        className="px-3 py-2 md:text-[18px] text-black text-[16px] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
-                                    >
-                                        <option className='md:text-[18px] text-[16px] text-black' value="newest">ახალი</option>
-                                        <option className='md:text-[18px] text-[16px] text-black' value="price-low">ფასი: დაბლიდან მაღლა</option>
-                                        <option className='md:text-[18px] text-[16px] text-black' value="price-high">ფასი: მაღლიდან დაბლა</option>
-                                        <option className='md:text-[18px] text-[16px] text-black' value="rating">რეიტინგი</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
+                        
 
 
                         {/* Products Grid */}

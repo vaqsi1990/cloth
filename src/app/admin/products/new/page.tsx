@@ -51,13 +51,13 @@ type Category = {
 const productSchema = z.object({
   name: z.string()
     .min(1, 'სახელი აუცილებელია')
-    .regex(/^[\u10A0-\u10FF\s.,:;!?\-()""'']+$/, 'სახელი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს და პუნქტუაციას'),
+    .regex(/^[\u10A0-\u10FF\s.,:;!?\-()""''0-9]+$/, 'სახელი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, პუნქტუაციას და ციფრებს'),
   slug: z.string().min(1, 'Slug აუცილებელია').regex(/^[a-z0-9-]+$/, 'Slug უნდა შეიცავდეს მხოლოდ პატარა ასოებს, ციფრებს და ტირეებს'),
   brand: z.string().optional(),
   description: z.string()
     .optional()
-    .refine((val) => !val || /^[\u10A0-\u10FF\s.,:;!?\-()""'']+$/.test(val), {
-      message: 'აღწერა უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს და პუნქტუაციას'
+    .refine((val) => !val || /^[\u10A0-\u10FF\s.,:;!?\-()""''0-9]+$/.test(val), {
+      message: 'აღწერა უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, პუნქტუაციას და ციფრებს'
     }),
   stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი').default(0),
   gender: z.enum(['MEN', 'WOMEN', 'CHILDREN', 'UNISEX']).default('UNISEX'),
@@ -86,10 +86,20 @@ const productSchema = z.object({
     })
   ).default([]),
   imageUrls: z.array(z.string().url('არასწორი URL')).default([]),
-  rentalPriceTiers: z.array(z.object({
-    minDays: z.number().int().min(1, 'მინიმალური დღეები უნდა იყოს დადებითი'),
-    pricePerDay: z.number().positive('ფასი დღეში უნდა იყოს დადებითი')
-  })).optional()
+  rentalPriceTiers: z.preprocess(
+    (val) => {
+      // If it's an array with all pricePerDay = 0, convert to undefined
+      if (Array.isArray(val) && val.length > 0) {
+        const hasValidPrice = val.some((tier: any) => tier?.pricePerDay > 0)
+        return hasValidPrice ? val : undefined
+      }
+      return val
+    },
+    z.array(z.object({
+      minDays: z.number().int().min(1, 'მინიმალური დღეები უნდა იყოს დადებითი'),
+      pricePerDay: z.number().min(0, 'ფასი დღეში უნდა იყოს დადებითი ან ნული')
+    })).optional()
+  )
 })
 
 
@@ -229,10 +239,10 @@ const NewProductPage = () => {
 
     // Validate Georgian characters for description in real-time
     if (field === 'description' && typeof value === 'string') {
-      if (value && !/^[\u10A0-\u10FF\s.,:;!?\-()""'']+$/.test(value)) {
+      if (value && !/^[\u10A0-\u10FF\s.,:;!?\-()""''0-9]+$/.test(value)) {
         setErrors(prev => ({
           ...prev,
-          description: 'აღწერა უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს და პუნქტუაციას'
+          description: 'აღწერა უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, პუნქტუაციას და ციფრებს'
         }))
       } else {
         // Clear errors when valid
@@ -284,10 +294,10 @@ const NewProductPage = () => {
     }))
 
     // Validate Georgian characters in real-time
-    if (name && !/^[\u10A0-\u10FF\s.,:;!?\-()""'']+$/.test(name)) {
+    if (name && !/^[\u10A0-\u10FF\s.,:;!?\-()""''0-9]+$/.test(name)) {
       setErrors(prev => ({
         ...prev,
-        name: 'სახელი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს და პუნქტუაციას'
+        name: 'სახელი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, პუნქტუაციას და ციფრებს'
       }))
     } else {
       // Clear errors when valid
@@ -381,8 +391,18 @@ const NewProductPage = () => {
     setErrors({})
 
     try {
+      // Clean up rentalPriceTiers if all prices are 0
+      const hasRentalPrice = formData.rentalPriceTiers && formData.rentalPriceTiers.length > 0 && formData.rentalPriceTiers.some(tier => tier.pricePerDay > 0)
+      
+      // Prepare data for validation
+      const dataToValidate: any = {
+        ...formData,
+        // If no rental price is set, set rentalPriceTiers to undefined
+        rentalPriceTiers: hasRentalPrice ? formData.rentalPriceTiers : undefined
+      }
+
       // Validate form data
-      const validatedData = productSchema.parse(formData)
+      const validatedData = productSchema.parse(dataToValidate)
 
       // Send data to API
       const response = await fetch('/api/products', {

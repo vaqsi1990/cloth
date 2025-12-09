@@ -10,13 +10,13 @@ import { showToast } from '@/utils/toast'
 const productSchema = z.object({
   name: z.string()
     .min(1, 'სახელი აუცილებელია')
-    .regex(/^[\u10A0-\u10FF\s.,:;!?\-()""'']+$/, 'სახელი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს და პუნქტუაციას'),
+    .regex(/^[\u10A0-\u10FF\s.,:;!?\-()""''0-9]+$/, 'სახელი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, პუნქტუაციას და ციფრებს'),
   slug: z.string().min(1, 'Slug აუცილებელია').regex(/^[a-z0-9-]+$/, 'Slug უნდა შეიცავდეს მხოლოდ პატარა ასოებს, ციფრებს და ტირეებს'),
   brand: z.string().optional(),
   description: z.string()
     .optional()
-    .refine((val) => !val || /^[\u10A0-\u10FF\s.,:;!?\-()""'']+$/.test(val), {
-      message: 'აღწერა უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს და პუნქტუაციას'
+    .refine((val) => !val || /^[\u10A0-\u10FF\s.,:;!?\-()""''0-9]+$/.test(val), {
+      message: 'აღწერა უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, პუნქტუაციას და ციფრებს'
     }),
   stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი').default(0),
   gender: z.enum(['MEN', 'WOMEN', 'CHILDREN', 'UNISEX']).default('UNISEX'),
@@ -52,10 +52,20 @@ const productSchema = z.object({
     sizeSystem: z.enum(['EU', 'US', 'UK', 'CN']).optional()
   })).default([]),
   imageUrls: z.array(z.string().min(1, 'URL აუცილებელია')).default([]),
-  rentalPriceTiers: z.array(z.object({
-    minDays: z.number().int().min(1, 'მინიმალური დღეები უნდა იყოს დადებითი'),
-    pricePerDay: z.number().positive('ფასი დღეში უნდა იყოს დადებითი')
-  })).default([])
+  rentalPriceTiers: z.preprocess(
+    (val) => {
+      // If it's an array with all pricePerDay = 0, convert to empty array
+      if (Array.isArray(val) && val.length > 0) {
+        const hasValidPrice = val.some((tier: any) => tier?.pricePerDay > 0)
+        return hasValidPrice ? val : []
+      }
+      return val || []
+    },
+    z.array(z.object({
+      minDays: z.number().int().min(1, 'მინიმალური დღეები უნდა იყოს დადებითი'),
+      pricePerDay: z.number().min(0, 'ფასი დღეში უნდა იყოს დადებითი ან ნული')
+    })).default([])
+  )
 })
 
 type ProductFormData = z.infer<typeof productSchema>
@@ -319,10 +329,10 @@ const EditProductPage = () => {
     }))
     
     // Validate Georgian characters in real-time
-    if (name && !/^[\u10A0-\u10FF\s.,:;!?\-()""'']+$/.test(name)) {
+    if (name && !/^[\u10A0-\u10FF\s.,:;!?\-()""''0-9]+$/.test(name)) {
       setErrors(prev => ({
         ...prev,
-        name: 'სახელი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს და პუნქტუაციას'
+        name: 'სახელი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, პუნქტუაციას და ციფრებს'
       }))
     } else {
       // Clear errors when valid
@@ -351,10 +361,10 @@ const EditProductPage = () => {
     
     // Validate Georgian characters for description in real-time
     if (field === 'description' && typeof value === 'string') {
-      if (value && !/^[\u10A0-\u10FF\s.,:;!?\-()""'']+$/.test(value)) {
+      if (value && !/^[\u10A0-\u10FF\s.,:;!?\-()""''0-9]+$/.test(value)) {
         setErrors(prev => ({
           ...prev,
-          description: 'აღწერა უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს და პუნქტუაციას'
+          description: 'აღწერა უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, პუნქტუაციას და ციფრებს'
         }))
       } else {
         // Clear errors when valid
@@ -454,6 +464,9 @@ const EditProductPage = () => {
       console.log('Image URLs in form data:', formData.imageUrls)
       console.log('Rental price tiers:', formData.rentalPriceTiers)
       
+      // Clean up rentalPriceTiers if all prices are 0
+      const hasRentalPrice = formData.rentalPriceTiers && formData.rentalPriceTiers.some(tier => tier.pricePerDay > 0)
+      
       // Ensure rentalPriceTiers is properly formatted and handle null values
       const dataToValidate = {
         ...formData,
@@ -471,7 +484,8 @@ const EditProductPage = () => {
           : undefined,
         pricePerDay: formData.pricePerDay || undefined,
         maxRentalDays: formData.maxRentalDays || undefined,
-        rentalPriceTiers: formData.rentalPriceTiers || []
+        // If no rental price is set, remove rentalPriceTiers
+        rentalPriceTiers: hasRentalPrice ? (formData.rentalPriceTiers || []) : []
       }
       
       console.log('Data to validate:', JSON.stringify(dataToValidate, null, 2))

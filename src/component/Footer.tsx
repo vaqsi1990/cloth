@@ -13,7 +13,7 @@ const Footer = () => {
 
             {/* Logo & Company Info */}
             <div className="space-y-4 flex flex-col items-center">
-              
+
 
               <div className="flex items-center justify-around space-x-4">
                 <Link href="#" className="text-white font-bold text-[18px] hover:text-white transition-colors">
@@ -49,16 +49,18 @@ const Footer = () => {
                 <div className="flex items-center justify-center space-x-3">
                   <MapPin className="w-4 h-4 text-white" />
                   <span className="text-white font-normal text-[18px]">
-                    123 Fashion Street<br />Tbilisi, Georgia
+
+                    ლეო დავითაშვილის ქუჩა 120, 0190 თბილისი, საქართველო
                   </span>
                 </div>
                 <div className="flex items-center justify-center space-x-3">
                   <Phone className="w-4 h-4 text-white" />
-                  <span className="text-white font-normal text-[18px]">+995 123 456 789</span>
+                  <span className="text-white font-normal text-[18px]">
+                    (+995)599 55 53 95</span>
                 </div>
                 <div className="flex items-center justify-center space-x-3">
                   <Mail className="w-4 h-4 text-white" />
-                  <span className="text-white font-normal text-[18px]">info@style.ge</span>
+                  <span className="text-white font-normal text-[18px]">dressla.online@gmail.com</span>
                 </div>
               </div>
             </div>
