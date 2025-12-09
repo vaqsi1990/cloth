@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Suspense } from "react";
 import "./globals.css";
 import Header from "@/component/Header";
 import Footer from "@/component/Footer";
@@ -44,7 +45,9 @@ export default function RootLayout({
         <AuthProvider>
           <ChatProvider>
             <ToastProvider />
-            <Header />
+            <Suspense fallback={null}>
+              <Header />
+            </Suspense>
             {children}
             <Footer />
           </ChatProvider>
