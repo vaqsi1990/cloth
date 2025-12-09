@@ -144,16 +144,24 @@ export async function GET(request: NextRequest) {
 // POST - Create new product
 export async function POST(request: NextRequest) {
   try {
+    console.log('=== PRODUCT CREATION REQUEST STARTED ===')
+    
     // Check authentication
     const session = await getServerSession(authOptions)
+    console.log('Session:', session ? { userId: session.user?.id, role: session.user?.role, email: session.user?.email } : 'No session')
+    
     if (!session) {
+      console.log('ERROR: No session found')
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
         { status: 401 }
       )
     }
 
-    // Check if user is blocked and has IBAN
+    const isAdmin = session.user.role === 'ADMIN'
+    console.log('Is Admin:', isAdmin)
+
+    // Check if user is blocked and has IBAN (admins are exempt)
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { 
@@ -161,8 +169,11 @@ export async function POST(request: NextRequest) {
         iban: true
       }
     })
+    console.log('User data:', { blocked: user?.blocked, hasIban: !!user?.iban })
 
-    if (user?.blocked) {
+    // Admins can create products even if blocked
+    if (user?.blocked && !isAdmin) {
+      console.log('ERROR: User is blocked and not admin')
       return NextResponse.json(
         { 
           success: false, 
@@ -173,22 +184,26 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if user has IBAN (required for sellers)
-    if (!user?.iban) {
+    // Check if user has IBAN (required for sellers, but not for admins)
+    if (!user?.iban && !isAdmin) {
+      console.log('ERROR: User missing IBAN and not admin')
       return NextResponse.json(
         { 
           success: false, 
           error: 'გთხოვთ შეიყვანოთ ბანკის IBAN პროფილში. IBAN აუცილებელია პროდუქტის დასამატებლად.',
           missingIban: true
         },
-        { status: 403 }
       )
     }
 
+  
     const body = await request.json()
+
     
     // Validate the request body
+    console.log('Validating data with schema...')
     const validatedData = productSchema.parse(body)
+    console.log('Validation successful:', JSON.stringify(validatedData, null, 2))
     
     console.log('Creating product with data:', validatedData)
     
