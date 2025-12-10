@@ -755,9 +755,11 @@ const ProductPage = () => {
                                             }`}
                                     >
                                         <Image 
+                                            width={164}
+                                            height={164}
                                             src={img.url} 
                                             alt={`${product.name}-${i}`} 
-                                            fill 
+                                          
                                             sizes="80px"
                                             className="object-cover" 
                                         />
@@ -768,9 +770,11 @@ const ProductPage = () => {
                             {/* Main image */}
                             <div className="relative flex-1 aspect-[3/4] bg-white rounded-2xl overflow-hidden shadow border">
                                 <Image
+                                    width={1264}
+                                    height={1264}
                                     src={getMainImage()}
                                     alt={product.name}
-                                    fill
+                                    
                                     sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 40vw"
                                     className="object-cover"
                                     priority
@@ -799,9 +803,11 @@ const ProductPage = () => {
                                     <div className="relative w-16 h-16 rounded-full overflow-hidden bg-black">
                                         {product.user?.image ? (
                                             <Image
+                                                width={64}
+                                                height={64}
                                                 src={product.user.image}
                                                 alt={product.user.name || "ავტორი"}
-                                                fill
+                                             
                                                 className="object-cover"
                                             />
                                         ) : (
@@ -1349,7 +1355,9 @@ const ProductPage = () => {
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center overflow-hidden">
                                                         {review.user.image ? (
-                                                            <img
+                                                            <Image
+                                                                width={64}
+                                                                height={64}
                                                                 src={review.user.image}
                                                                 alt={review.user.name || 'User'}
                                                                 className="w-full h-full object-cover"

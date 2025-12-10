@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { ArrowLeft, Save, User, Mail, Lock, AlertTriangle, Eye, EyeOff, Camera } from 'lucide-react'
 import ImageUpload from '@/component/CloudinaryUploader'
 import { showToast } from '@/utils/toast'
-
+import Image from 'next/image'
 const AdminSettingsPage = () => {
   const { data: session, status, update } = useSession()
   const router = useRouter()
@@ -262,7 +262,9 @@ const AdminSettingsPage = () => {
                   <div className="relative">
                     <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
                       {profileImage ? (
-                        <img
+                        <Image
+                          width={64}
+                          height={64}
                           src={profileImage}
                           alt="Profile"
                           className="w-full h-full object-cover"
