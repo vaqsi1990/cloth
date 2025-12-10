@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 // import Hero from "@/component/Hero";
 // import HowItWorks from "@/component/HowItWorks";
-import PopularProducts from "@/component/PopularProducts";
-import About from "@/component/About";
-import ContactForm from "@/component/ContactForm";
+
 import { Suspense } from "react";
 import ShopPageClient from "../component/ShopPageClient";
 import StructuredData from "@/components/StructuredData";
@@ -11,11 +9,11 @@ import StructuredData from "@/components/StructuredData";
 export const metadata: Metadata = {
   title: "Dressla.ge - ტანსაცმლის ქირაობა და შეძენა საქართველოში",
   description:
-    "Dressla.ge - ტანსაცმლის ქირაობა და შეძენა საქართველოში",
+    "Dressla.ge — ტანსაცმლის ქირაობისა და შეძენის პლატფორმა საქართველოში. იპოვეთ საღამოს კაბები, საქორწინო ლუქები, კოსტუმები და აქსესუარები. მიიღეთ სწრაფი მიწოდება და მოქნილი ქირაობის პირობები.",
   openGraph: {
     title: "Dressla.ge - ტანსაცმლის ქირაობა და შეძენა საქართველოში",
     description:
-      "Dressla.ge — ტანსაცმლის ქირაობა, კოლექცია და პროდუქტები საქართველოში",
+      "Dressla.ge — ტანსაცმლის ქირაობისა და შეძენის პლატფორმა საქართველოში. იპოვეთ საღამოს კაბები, საქორწინო ლუქები, კოსტუმები და აქსესუარები. მიიღეთ სწრაფი მიწოდება და მოქნილი ქირაობის პირობები.",
     images: ["/logo.jpg"],
   },
 };
