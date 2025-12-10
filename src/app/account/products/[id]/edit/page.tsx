@@ -514,7 +514,7 @@ const EditProductPage = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-black mb-4">იტვირთება...</h1>
+          <h2 className="text-2xl font-bold text-black mb-4">იტვირთება...</h2>
         </div>
       </div>
     )

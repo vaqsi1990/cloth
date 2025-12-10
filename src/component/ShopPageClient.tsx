@@ -498,9 +498,9 @@ const ShopPageClient = () => {
             <div className="bg-[#FAFAFA]">
                 <div className="container  max-w-6xl mx-auto px-4 py-8 space-y-6 ">
                     <div className="flex items-center justify-between mb-8">
-                        <h2 className="md:text-[24px] text-[20px] font-bold text-gray-900 text-start">
+                        <h1 className="md:text-[24px] text-[20px] font-bold text-gray-900 text-start">
                             მოძებნეთ კატეგორიის მიხედვით
-                        </h2>
+                        </h1>
                         {/* Toggle button - only visible on mobile */}
                         <button
                             onClick={() => setIsCategorySectionOpen(!isCategorySectionOpen)}
