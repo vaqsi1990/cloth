@@ -26,8 +26,8 @@ const CheckoutPage = () => {
     const [isProcessing, setIsProcessing] = useState(false)
     const [paymentMethod, setPaymentMethod] = useState<'card' | 'google_pay'>('card')
 
-    const georgianTextRegex = /^[\u10A0-\u10FF\s]+$/
-    const georgianAddressRegex = /^[\u10A0-\u10FF\s0-9№N]+$/
+    const georgianTextRegex = /^[\u10A0-\u10FF\s.,\-'():;!?/\\"]+$/
+    const georgianAddressRegex = /^[\u10A0-\u10FF\s0-9№N.,\-'():;!?/\\"#]+$/
 
     const clearFieldError = (field: string) => {
         setFieldErrors(prev => {
@@ -50,7 +50,7 @@ const CheckoutPage = () => {
                 const fieldName = name === 'firstName' ? 'სახელი' : name === 'lastName' ? 'გვარი' : 'ქალაქი'
                 setFieldErrors(prev => ({
                     ...prev,
-                    [name]: `${fieldName} უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს`
+                    [name]: `${fieldName} უნდა შეიცავდეს ქართულ სიმბოლოებს`
                 }))
             } else {
                 clearFieldError(name)
@@ -59,7 +59,7 @@ const CheckoutPage = () => {
             if (value && !georgianAddressRegex.test(value)) {
                 setFieldErrors(prev => ({
                     ...prev,
-                    address: 'მისამართი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, ციფრებს და სიმბოლოებს № ან N'
+                    address: 'მისამართი უნდა შეიცავდეს ქართულ სიმბოლოებს, ციფრებს და სასვენი ნიშნებს'
                 }))
             } else if (value && !/[0-9]/.test(value)) {
                 setFieldErrors(prev => ({
@@ -76,19 +76,19 @@ const CheckoutPage = () => {
         const errors: Record<string, string> = {}
 
         if (!formData.firstName || !georgianTextRegex.test(formData.firstName.trim())) {
-            errors.firstName = 'სახელი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს'
+            errors.firstName = 'სახელი უნდა შეიცავდეს ქართულ სიმბოლოებს'
         }
 
         if (!formData.lastName || !georgianTextRegex.test(formData.lastName.trim())) {
-            errors.lastName = 'გვარი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს'
+            errors.lastName = 'გვარი უნდა შეიცავდეს ქართულ სიმბოლოებს'
         }
 
         if (!formData.city || !georgianTextRegex.test(formData.city.trim())) {
-            errors.city = 'ქალაქი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს'
+            errors.city = 'ქალაქი უნდა შეიცავდეს ქართულ სიმბოლოებს'
         }
 
         if (!formData.address || !georgianAddressRegex.test(formData.address.trim())) {
-            errors.address = 'მისამართი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, ციფრებს და სიმბოლოებს № ან N'
+            errors.address = 'მისამართი უნდა შეიცავდეს ქართულ სიმბოლოებს, ციფრებს და სასვენი ნიშნებს'
         } else if (!/[0-9]/.test(formData.address)) {
             errors.address = 'მისამართი უნდა შეიცავდეს ციფრებს'
         }
