@@ -9,7 +9,7 @@ import ShopPageClient from "../component/ShopPageClient";
 import StructuredData from "@/components/StructuredData";
 
 export const metadata: Metadata = {
-  title: "Dressla.ge • ტანსაცმლის ქირაობა",
+  title: "Dressla.ge - ტანსაცმლის ქირაობა და შეძენა საქართველოში",
   description:
     "Dressla.ge - ტანსაცმლის ქირაობა და შეძენა საქართველოში",
   openGraph: {

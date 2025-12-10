@@ -496,11 +496,16 @@ const ShopPageClient = () => {
 
             {/* Category Section moved from Header */}
             <div className="bg-[#FAFAFA]">
-                <div className="container  max-w-6xl mx-auto px-4 py-8 space-y-6 ">
+                <div className="container  max-w-7xl mx-auto px-4 py-8 space-y-6 ">
                     <div className="flex items-center justify-between mb-8">
-                        <h1 className="md:text-[24px] text-[20px] font-bold text-gray-900 text-start">
-                            მოძებნეთ კატეგორიის მიხედვით
-                        </h1>
+                        <div>
+                            <h1 className="md:text-[24px] text-[20px] font-bold text-gray-900 text-start">
+                                მოძებნეთ კატეგორიის მიხედვით
+                            </h1>
+                            <p className="text-gray-600 hidden md:text-[16px] text-[14px] mt-2">
+                                Dressla.ge - ტანსაცმლის ქირაობა და შეძენა საქართველოში
+                            </p>
+                        </div>
                         {/* Toggle button - only visible on mobile */}
                         <button
                             onClick={() => setIsCategorySectionOpen(!isCategorySectionOpen)}
