@@ -489,7 +489,7 @@ const ShopPageClient = () => {
         return '/placeholder.jpg'
     }
 
-console.log('asd')
+
 
     return (
         <div className="min-h-screen ">
@@ -966,6 +966,7 @@ console.log('asd')
                                                 className="object-cover transition-transform duration-300 group-hover:scale-[1.01]"
                                                 loading={index < 4 ? "eager" : "lazy"}
                                                 priority={index < 4}
+                                                
                                             />
                                             {product.discount && product.discount > 0 && (
                                                 <span className="absolute top-3 left-3 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-semibold">

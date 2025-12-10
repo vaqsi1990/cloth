@@ -657,6 +657,7 @@ const AccountPage = () => {
                   width={64}
                   height={64}
                   className="w-full h-full object-cover"
+                  
                 />
               ) : (
                 <User className="w-8 h-8 text-black" />
