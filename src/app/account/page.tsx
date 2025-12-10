@@ -679,7 +679,7 @@ const AccountPage = () => {
 
         {isEditingProfile && (
           <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-            <h4 className="text-lg font-semibold text-black mb-3">პროფილის სურათის ატვირთვა</h4>
+            <h2 className="text-lg font-semibold text-black mb-3">პროფილის სურათის ატვირთვა</h2>
             <ImageUpload
               value={profileImage ? [profileImage] : []}
               onChange={handleImageUpload}
@@ -749,7 +749,7 @@ const AccountPage = () => {
         {shouldShowIdentityVerification && (
           <div className="mt-8 p-6 border-2 border-black rounded-lg bg-gray-50">
             <div className="mb-4">
-              <h4 className="text-xl font-bold mb-2">პირადობის ვერიფიკაცია</h4>
+              <h2 className="text-xl font-bold mb-2">პირადობის ვერიფიკაცია</h2>
               {identityStatus !== 'REJECTED' && (
                 <p className="text-[18px] text-black">
                   პირადობის სურათებით მოხდება თქვენი ვერიფიცირება, თუ არ ატვირთავთ სურათებს ვერ შეძლებთ ახალი პროდუქტის დამატებას ან ყიდვას და ქირაობას

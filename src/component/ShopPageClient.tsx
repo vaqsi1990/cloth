@@ -731,7 +731,7 @@ const ShopPageClient = () => {
 
                             {/* Price Range FIRST */}
                             <div className="border-b border-gray-200 pb-6">
-                                <h4 className="font-medium text-black md:text-[18px] text-[16px] mb-3">ფასის დიაპაზონი</h4>
+                                <h2 className="font-medium text-black md:text-[18px] text-[16px] mb-3">ფასის დიაპაზონი</h2>
                                 <div className="space-y-3">
                                     <div className="flex items-center gap-2">
                                         <input
@@ -838,7 +838,7 @@ const ShopPageClient = () => {
 
                             {/* Size System Filter */}
                             <div className="border-b border-gray-200 pb-6">
-                                <h4 className="font-medium text-black md:text-[18px] text-[16px] mb-3">ზომის სისტემა</h4>
+                                <h2 className="font-medium text-black md:text-[18px] text-[16px] mb-3">ზომის სისტემა</h2>
                                 <div className="space-y-2">
                                     {sizeSystems.map((sizeSystem) => (
                                         <label
@@ -859,7 +859,7 @@ const ShopPageClient = () => {
 
                             {/* Location Filter (styled like type) */}
                             <div className="mb-6  pb-6">
-                                <h4 className="font-medium text-black md:text-[18px] text-[16px] mb-3">მდებარეობა</h4>
+                                <h2 className="font-medium text-black md:text-[18px] text-[16px] mb-3">მდებარეობა</h2>
                                 <div className="space-y-2 text-[15px] text-black">
                                     {locations.map((location) => {
                                         const active = selectedLocations.includes(location.id)

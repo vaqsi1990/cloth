@@ -69,7 +69,7 @@ const ContactForm = () => {
                                     <Mail className="w-6 h-6 text-white" />
                                 </div>
                                 <div>
-                                    <h4 className="block md:text-[18px] text-[16px] font-medium text-black mb-2">ელფოსტა</h4>
+                                    <h2 className="block md:text-[18px] text-[16px] font-medium text-black mb-2">ელფოსტა</h2>
                                     <p className="text-black">info@cloth.ge</p>
                                     <p className="text-black">support@cloth.ge</p>
                                 </div>
@@ -80,7 +80,7 @@ const ContactForm = () => {
                                     <Phone className="w-6 h-6 text-white" />
                                 </div>
                                 <div>
-                                    <h4 className="block md:text-[18px] text-[16px] font-medium text-black mb-2">ტელეფონი</h4>
+                                    <h2 className="block md:text-[18px] text-[16px] font-medium text-black mb-2">ტელეფონი</h2>
                                     <p className="text-black">+995 555 123 456</p>
                                     <p className="text-black">+995 555 789 012</p>
                                 </div>
