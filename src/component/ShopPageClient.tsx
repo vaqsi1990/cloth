@@ -489,7 +489,7 @@ const ShopPageClient = () => {
         return '/placeholder.jpg'
     }
 
-
+console.log('asd')
 
     return (
         <div className="min-h-screen ">
