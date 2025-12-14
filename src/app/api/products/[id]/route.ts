@@ -342,7 +342,7 @@ export async function PUT(
     console.log('Updated product:', JSON.stringify(updatedProduct, null, 2))
 
     // If product status is AVAILABLE, delete all order items for this product
-    if (validatedData.status === 'AVAILABLE' && existingProduct.status !== 'AVAILABLE') {
+    if (validatedData.status === 'AVAILABLE' && updatedProduct.status !== 'AVAILABLE') {
       const deletedCount = await prisma.orderItem.deleteMany({
         where: {
           productId: productId,
