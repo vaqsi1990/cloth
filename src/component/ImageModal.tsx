@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-
+import Image from 'next/image'
 interface ImageModalProps {
   src: string
   alt: string
@@ -17,7 +17,9 @@ export default function ImageModal({ src, alt, className = '' }: ImageModalProps
   return (
     <>
       {/* Clickable Image */}
-      <img
+      <Image
+        width={580}
+        height={580}
         src={src}
         alt={alt}
         className={`cursor-pointer transition-transform hover:scale-105 ${className}`}
@@ -40,7 +42,9 @@ export default function ImageModal({ src, alt, className = '' }: ImageModalProps
             </div>
 
             {/* Image */}
-            <img
+            <Image
+              width={580}
+              height={580}
               src={src}
               alt={alt}
               className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"

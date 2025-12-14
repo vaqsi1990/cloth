@@ -32,7 +32,7 @@ const Footer = () => {
 
             {/* Navigation */}
             <div className="space-y-4 flex flex-col items-center">
-              <h4 className="text-white font-bold text-[18px] font-semibold text-white mb-4">ნავიგაცია</h4>
+              <h2 className="text-white font-bold text-[18px] font-semibold text-white mb-4">ნავიგაცია</h2>
               <ul className="space-y-2 text-center">
                 <li><Link href="/" className="text-white font-normal text-[18px] transition-colors text-sm">მთავარი</Link></li>
                 <li><Link href="/shop?gender=women&category=dresses" className="text-white font-normal text-[18px] transition-colors text-sm">მაღაზია</Link></li>

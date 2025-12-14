@@ -487,9 +487,9 @@ const AdminUsersPage = () => {
                       <div className="mb-4 pt-4">
                         <div className="flex items-center justify-between mb-3">
                           <div>
-                            <h4 className="text-[18px] font-bold text-blue-800">
+                            <h2 className="text-[18px] font-bold text-blue-800">
                               პირადობის დოკუმენტების გადამოწმება
-                            </h4>
+                            </h2>
                             <p className="text-sm text-blue-700">
                               გთხოვთ გადაამოწმოთ მომხმარებლის პირადობის დოკუმენტები
                             </p>
@@ -583,9 +583,9 @@ const AdminUsersPage = () => {
                       <div className="mb-4 pt-4">
                         <div className="flex items-center justify-between mb-3">
                           <div>
-                            <h4 className="text-[18px] font-bold text-orange-800">
+                            <h2 className="text-[18px] font-bold text-orange-800">
                               ინდმეწარმის საბუთის გადამოწმება
-                            </h4>
+                            </h2>
                             <p className="text-sm text-orange-700">
                               გამყიდველი დაბლოკილია, რადგან მისი შემოსავალი 100₾-ს აღემატება
                             </p>

@@ -393,7 +393,7 @@ const AdminOrdersPage = () => {
 
                       {/* Order Items */}
                       <div className="mb-4">
-                        <h4 className="font-medium text-gray-900 mb-2">შეკვეთის პროდუქტები:</h4>
+                        <h2 className="font-medium text-gray-900 mb-2">შეკვეთის პროდუქტები:</h2>
                         <div className="space-y-2">
                           {order.items.map((item) => (
                             <div key={item.id} className={`flex items-center space-x-3 p-2 rounded-lg ${item.isRental ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50'}`}>
