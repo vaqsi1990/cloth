@@ -609,6 +609,20 @@ const EditProductPage = () => {
 
               <div>
                 <label className="block text-[20px] text-black font-medium mb-2">
+                  საწყობი *
+                </label>
+                <input
+                  type="number"
+                  value={formData.stock}
+                  onChange={(e) => handleInputChange('stock', parseInt(e.target.value) || 0)}
+                  className={`w-full px-4 py-3 border rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black ${errors.stock ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                />
+                {errors.stock && <p className="text-red-500 md:text-[20px] text-[18px] mt-1">{errors.stock}</p>}
+              </div>
+
+              <div>
+                <label className="block text-[20px] text-black font-medium mb-2">
                   მდებარეობა
                 </label>
                 <select
@@ -830,16 +844,7 @@ const EditProductPage = () => {
             </div>
 
             {formData.variants.length > 0 && formData.variants.map((variant, index) => (
-              <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border border-gray-200 rounded-lg mb-4">
-                <div>
-                  <label className="block text-[20px] text-black font-medium mb-2">საწყობი</label>
-                  <input
-                    type="number"
-                    value={variant.stock}
-                    onChange={(e) => updateVariant(index, 'stock', parseInt(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                  />
-                </div>
+              <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border border-gray-200 rounded-lg mb-4">
                 <div>
                   <label className="block text-[20px] text-black font-medium mb-2">ფასი </label>
                   <input

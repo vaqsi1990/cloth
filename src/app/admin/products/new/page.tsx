@@ -521,9 +521,7 @@ const NewProductPage = () => {
                 {errors.name && <p className="text-red-500 md:text-[20px] text-[18px] mt-1">{errors.name}</p>}
               </div>
 
-            
-
-              {/* <div>
+              <div>
                 <label className="block text-[20px] text-black font-medium mb-2">
                   საწყობი *
                 </label>
@@ -531,11 +529,12 @@ const NewProductPage = () => {
                   type="number"
                   value={formData.stock}
                   onChange={(e) => handleInputChange('stock', parseInt(e.target.value) || 0)}
-                  className={`w-full px-4 py-3 border rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black ${errors.stock ? 'border-red-500' : 'border-gray-300'
+                  className={`w-full pl-10 pr-4 py-3 placeholder:text-gray-500 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${errors.stock ? 'border-red-500' : 'border-gray-300'
                     }`}
                 />
-                {errors.stock && <p className="text-red-500 md:text-[16px] text-[14px] mt-1">{errors.stock}</p>}
-              </div> */}
+                {errors.stock && <p className="text-red-500 md:text-[20px] text-[18px] mt-1">{errors.stock}</p>}
+              </div>
+
               <div>
                 <label className="block text-[20px] text-black font-medium mb-2">
                   მდებარეობა
@@ -617,25 +616,24 @@ const NewProductPage = () => {
                 </select>
               </div>
 
+              <div>
+                <label className="block text-[20px] text-black font-medium mb-2">
+                  ზომა (არასავალდებულო)
+                </label>
+                <select
+                  value={sizeSystem && selectedSize ? `${sizeSystem}:${selectedSize}` : ''}
+                  onChange={(e) => handleCombinedSizeSelect(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 placeholder:text-gray-500 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                >
+                  <option value="">აირჩიეთ ზომა</option>
+                  {combinedSizeOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-
-            </div>
-            <div className="mt-6">
-              <label className="block text-[20px] text-black font-medium mb-2">
-                ზომა (არასავალდებულო)
-              </label>
-              <select
-                value={sizeSystem && selectedSize ? `${sizeSystem}:${selectedSize}` : ''}
-                onChange={(e) => handleCombinedSizeSelect(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 placeholder:text-gray-500 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-              >
-                <option value="">აირჩიეთ ზომა</option>
-                {combinedSizeOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
             </div>
             
             <div className="mt-6">
@@ -765,16 +763,7 @@ const NewProductPage = () => {
             </div>
 
             {showPurchaseOptions && formData.variants.map((variant, index) => (
-              <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border border-gray-200 rounded-lg mb-4">
-                <div>
-                  <label className="block text-[20px] text-black font-medium mb-2">საწყობი</label>
-                  <input
-                    type="number"
-                    value={variant.stock}
-                    onChange={(e) => updateVariant(index, 'stock', parseInt(e.target.value) || 0)}
-                    className="w-full pl-10 pr-4 py-3 placeholder:text-gray-500 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                  />
-                </div>
+              <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border border-gray-200 rounded-lg mb-4">
                 <div>
                   <label className="block text-[20px] text-black font-medium mb-2">ფასი </label>
                   <input
