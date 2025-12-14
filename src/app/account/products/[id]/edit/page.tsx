@@ -109,6 +109,7 @@ const EditProductPage = () => {
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [customColor, setCustomColor] = useState('')
 
   const sizeOptions = {
     XS: { UK: [4, 6], EU: [32, 34], US: [0, 2] },
@@ -223,7 +224,8 @@ const EditProductPage = () => {
     { id: "pink", label: "ვარდისფერი", color: "#FFC0CB" },
     { id: "purple", label: "იისფერი", color: "#800080" },
     { id: "gray", label: "ნაცრისფერი", color: "#A52A2A" },
-    { id: "beige", label: "ბეჟი", color: "#8B4513" }
+    { id: "beige", label: "ბეჟი", color: "#8B4513" },
+    { id: "other", label: "სხვა ფერი", color: "#CCCCCC" }
   ]
 
   const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
@@ -251,6 +253,14 @@ const EditProductPage = () => {
           const product = data.product
           const imageUrls = product.images?.map((img: { url: string }) => img.url) || []
           setProduct(product)
+          const productColor = product.color || ''
+          // Check if color is in the predefined list
+          const isPredefinedColor = colors.some(c => c.label === productColor)
+          if (productColor && !isPredefinedColor) {
+            setCustomColor(productColor)
+          } else {
+            setCustomColor('')
+          }
           setFormData({
             name: product.name,
             slug: product.slug,
@@ -258,7 +268,7 @@ const EditProductPage = () => {
             brand: product.brand || '',
             stock: product.stock || 0,
             gender: product.gender || 'UNISEX',
-            color: product.color || '',
+            color: productColor,
             location: product.location || '',
             sizeSystem: product.sizeSystem,
             size: product.size || undefined,
@@ -645,8 +655,22 @@ const EditProductPage = () => {
                   ფერი
                 </label>
                 <select
-                  value={formData.color || ''}
-                  onChange={(e) => handleInputChange('color', e.target.value)}
+                  value={
+                    formData.color && colors.some(c => c.label === formData.color)
+                      ? formData.color
+                      : formData.color && !colors.some(c => c.label === formData.color)
+                        ? 'სხვა ფერი'
+                        : formData.color || ''
+                  }
+                  onChange={(e) => {
+                    const selectedValue = e.target.value
+                    if (selectedValue === 'სხვა ფერი') {
+                      handleInputChange('color', customColor || 'სხვა ფერი')
+                    } else {
+                      handleInputChange('color', selectedValue)
+                      setCustomColor('')
+                    }
+                  }}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                 >
                   <option value="">აირჩიეთ ფერი</option>
@@ -656,6 +680,19 @@ const EditProductPage = () => {
                     </option>
                   ))}
                 </select>
+                {(formData.color === 'სხვა ფერი' || (formData.color && !colors.some(c => c.label === formData.color))) && (
+                  <input
+                    type="text"
+                    value={customColor || (formData.color && !colors.some(c => c.label === formData.color) ? formData.color : '')}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      setCustomColor(value)
+                      handleInputChange('color', value || 'სხვა ფერი')
+                    }}
+                    placeholder="შეიყვანეთ ფერი"
+                    className="w-full mt-2 px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  />
+                )}
               </div>
 
               <div>

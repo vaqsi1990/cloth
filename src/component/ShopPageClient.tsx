@@ -1035,12 +1035,15 @@ const ShopPageClient = () => {
                                             </div>
 
                                             {product.discount && product.discount > 0 && (
-                                                <p className='bg-[#228460] text-white px-2 py-1 rounded-md text-[15px] font-regular'>
-                                                    დანაზოგი: ₾{product.discount.toFixed(2)}
+                                                <div className="bg-[#228460] rounded-md text-[#FFFFFF] font-regular flex items-center">
+
+                                                <div className='px-2 py-1 text-[15px] flex items-center gap-2 flex-1'>
+                                                    <span className='whitespace-nowrap'>დანაზოგი: ₾{product.discount.toFixed(2)}</span>
                                                     {product.discountDays && (
-                                                        <span className="ml-2">({product.discountDays} დღე)</span>
+                                                        <span className="bg-white text-black px-2 py-1 rounded whitespace-nowrap">{product.discountDays} დღე</span>
                                                     )}
-                                                </p>
+                                                </div>
+                                                </div>
                                             )}
                                             {product.stock !== undefined && (
                                                 <p className='text-black text-[16px] font-regular'>

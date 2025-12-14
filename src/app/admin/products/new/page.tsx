@@ -138,6 +138,7 @@ const NewProductPage = () => {
   const [showPurchaseOptions, setShowPurchaseOptions] = useState(false)
   const [sizeSystem, setSizeSystem] = useState(formData.sizeSystem ?? '')
   const [selectedSize, setSelectedSize] = useState('')
+  const [customColor, setCustomColor] = useState('')
 
   type SizeSystem = NonNullable<ProductFormData['sizeSystem']>
   type MeasurementSystem = Exclude<SizeSystem, 'CN'>
@@ -229,7 +230,8 @@ const NewProductPage = () => {
     { id: "pink", label: "ვარდისფერი", color: "#FFC0CB" },
     { id: "purple", label: "იისფერი", color: "#800080" },
     { id: "gray", label: "ნაცრისფერი", color: "#A52A2A" },
-    { id: "beige", label: "ბეჟი", color: "#8B4513" }
+    { id: "beige", label: "ბეჟი", color: "#8B4513" },
+    { id: "other", label: "სხვა ფერი", color: "#CCCCCC" }
   ]
 
   const handleInputChange = (field: keyof ProductFormData, value: string | number | boolean | undefined) => {
@@ -604,7 +606,15 @@ const NewProductPage = () => {
                 <label className="block text-[20px] text-black font-medium mb-2">ფერი</label>
                 <select
                   value={formData.color || ''}
-                  onChange={(e) => handleInputChange('color', e.target.value)}
+                  onChange={(e) => {
+                    const selectedValue = e.target.value
+                    if (selectedValue === 'სხვა ფერი') {
+                      handleInputChange('color', customColor || 'სხვა ფერი')
+                    } else {
+                      handleInputChange('color', selectedValue)
+                      setCustomColor('')
+                    }
+                  }}
                   className="w-full pl-10 pr-4 py-3 placeholder:text-gray-500 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                 >
                   <option value="">აირჩიეთ ფერი</option>
@@ -614,6 +624,19 @@ const NewProductPage = () => {
                     </option>
                   ))}
                 </select>
+                {formData.color === 'სხვა ფერი' && (
+                  <input
+                    type="text"
+                    value={customColor}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      setCustomColor(value)
+                      handleInputChange('color', value || 'სხვა ფერი')
+                    }}
+                    placeholder="შეიყვანეთ ფერი"
+                    className="w-full mt-2 pl-10 pr-4 py-3 placeholder:text-gray-500 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                  />
+                )}
               </div>
 
               <div>
