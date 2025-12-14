@@ -33,7 +33,7 @@ const productSchema = z.object({
   isNew: z.boolean().default(false),
   discount: z.preprocess(
     (val) => (val === null ? undefined : val),
-    z.number().int().min(0).max(100).optional()
+    z.number().min(0).optional()
   ),
   rating: z.number().min(0).max(5).optional(),
   categoryId: z.number().optional(),
@@ -850,16 +850,23 @@ const EditProductPage = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                   />
                 </div>
-                <div>
-                  <label className="block text-[20px] text-black font-medium mb-2">ფასდაკლება </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={variant.discount ?? ''}
-                    onChange={(e) => updateVariant(index, 'discount', e.target.value ? parseFloat(e.target.value) : undefined)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                  />
-                </div>
+                <div className=" ">
+                  <div>
+                    <label className="block text-[20px] text-black font-medium mb-2">
+                    ფასდაკლება (₾)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.discount ?? ''}
+                      onChange={(e) => handleInputChange('discount', e.target.value ? parseFloat(e.target.value) : undefined)}
+                      placeholder="0.00"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                    />
+                  </div>
+               
+              </div>
                 <div className="flex items-end">
                   <button
                     type="button"
@@ -876,6 +883,8 @@ const EditProductPage = () => {
             {formData.variants.length === 0 && (
               <p className="text-sm text-gray-500">თქვენ შეგიძლიათ დაამატოთ ზომები და საწყობის რაოდენობა.</p>
             )}
+
+        
           </div>
 
           {/* Images */}

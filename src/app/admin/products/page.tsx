@@ -563,7 +563,7 @@ const AdminProductsPage = () => {
                           )}
                           {product.discount && product.discount > 0 && (
                             <span className="px-2 py-1 bg-red-100 text-red-800 text-[16px] rounded-full">
-                              -{product.discount}%
+                              -₾{product.discount.toFixed(2)}
                             </span>
                           )}
                            {hasActiveRentals(product) && (

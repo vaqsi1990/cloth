@@ -23,7 +23,7 @@ const ShopPageClient = () => {
     const [selectedSizeSystems, setSelectedSizeSystems] = useState<string[]>([])
     const [selectedColors, setSelectedColors] = useState<string[]>([])
     const [selectedLocations, setSelectedLocations] = useState<string[]>([])
-    
+
     const [rentalStartDate, setRentalStartDate] = useState<Date | null>(null)
     const [rentalEndDate, setRentalEndDate] = useState<Date | null>(null)
     const [purchaseType, setPurchaseType] = useState<"all" | "rent-only" | "sale-only">("all")
@@ -35,7 +35,7 @@ const ShopPageClient = () => {
         isAvailable: boolean;
     }[]>>({})
     const [isCategoryOpen, setIsCategoryOpen] = useState(false)
-    
+
     const [currentPage, setCurrentPage] = useState(1)
     const [itemsPerPage] = useState(20)
     const [activeMobileFilter, setActiveMobileFilter] = useState<string | null>(null)
@@ -197,7 +197,7 @@ const ShopPageClient = () => {
     useEffect(() => {
         const fetchRentalStatus = async () => {
             const rentableProducts = products.filter(p => p.isRentable)
-            
+
             if (rentableProducts.length === 0) return
 
             // Batch fetch rental status for all products at once
@@ -205,7 +205,7 @@ const ShopPageClient = () => {
                 const productIds = rentableProducts.map(p => p.id).join(',')
                 const response = await fetch(`/api/products/rental-status?ids=${productIds}`)
                 const data = await response.json()
-                
+
                 if (data.success && data.statuses) {
                     setProductRentalStatus(data.statuses)
                 } else {
@@ -349,7 +349,7 @@ const ShopPageClient = () => {
     // Filter products by all criteria (excluding gender since it's handled by API)
     const filteredProducts = products.filter(product => {
         // Category filter (multiple selection)
-        const categoryMatch = selectedCategories.length === 0 || 
+        const categoryMatch = selectedCategories.length === 0 ||
             selectedCategories.includes(product.category?.name || '')
 
         // Price filter
@@ -467,7 +467,7 @@ const ShopPageClient = () => {
         )
     }
 
-    
+
 
     // Clear all filters
     const clearFilters = () => {
@@ -495,12 +495,10 @@ const ShopPageClient = () => {
         <div className="min-h-screen ">
 
             {/* Category Section moved from Header */}
-            <div className="bg-[#FAFAFA]">
-                <div className="container  max-w-6xl mx-auto px-4 py-8 space-y-6 ">
+            <div className="">
+                <div className="container  max-w-7xl mx-auto  space-y-6 ">
                     <div className="flex items-center justify-between mb-8">
-                        <h2 className="md:text-[24px] text-[20px] font-bold text-gray-900 text-start">
-                            მოძებნეთ კატეგორიის მიხედვით
-                        </h2>
+
                         {/* Toggle button - only visible on mobile */}
                         <button
                             onClick={() => setIsCategorySectionOpen(!isCategorySectionOpen)}
@@ -510,8 +508,8 @@ const ShopPageClient = () => {
                             <span className="text-[16px] font-medium">
                                 {isCategorySectionOpen ? 'დამალვა' : 'გახსნა'}
                             </span>
-                            <ChevronDown 
-                                className={`w-5 h-5 transition-transform ${isCategorySectionOpen ? 'rotate-180' : ''}`} 
+                            <ChevronDown
+                                className={`w-5 h-5 transition-transform ${isCategorySectionOpen ? 'rotate-180' : ''}`}
                             />
                         </button>
                     </div>
@@ -520,46 +518,83 @@ const ShopPageClient = () => {
                         {/* Category Box 1 */}
                         <Link
                             href="/shop?category=everyday"
-                            className="bg-gray-100 hover:bg-gray-200 rounded-lg p-6 transition-colors cursor-pointer"
+                            className=" bg-white
+    border border-gray-300
+    w-[265px]
+    h-[42px]
+    rounded-full
+    flex items-center justify-center
+    hover:border-gray-400
+    transition-colors
+    cursor-pointer
+  "
                         >
-                            <div className="text-center ">
-                                <p className="text-black   font-medium md:text-[18px] text-[16px] mb-1">ყოველდღიური</p>
-                                <p className="text-black   md:text-[18px] text-[16px]">ტანსაცმელი</p>
-                            </div>
+                            <p className="text-gray-400 text-[16px] font-normal">
+                                ყოველდღიური ტანსაცმელი
+                            </p>
                         </Link>
+
 
                         {/* Category Box 2 */}
                         <Link
                             href="/shop?category=wedding"
-                            className="bg-gray-100 hover:bg-gray-200 rounded-lg p-6 transition-colors cursor-pointer"
+                            className="
+    bg-white
+    border border-gray-300
+    w-[265px]
+    h-[42px]
+    rounded-full
+    flex items-center justify-center
+    hover:border-gray-400
+    transition-colors
+    cursor-pointer
+  "
                         >
-                            <div className="text-center">
-                                <p className="text-black   font-medium md:text-[18px] text-[16px] mb-1">საქორწილო და</p>
-                                <p className="text-black   md:text-[18px] text-[16px]">სადღესასწაულო</p>
-                            </div>
+                            <p className="text-gray-400 text-[16px]">
+                                საქორწილო და სადღესასწაულო
+                            </p>
                         </Link>
 
                         {/* Category Box 3 */}
                         <Link
                             href="/shop?category=sports"
-                            className="bg-gray-100 hover:bg-gray-200 rounded-lg p-6 transition-colors cursor-pointer"
+                            className="
+    bg-white
+    border border-gray-300
+    w-[265px]
+    h-[42px]
+    rounded-full
+    flex items-center justify-center
+    hover:border-gray-400
+    transition-colors
+    cursor-pointer
+  "
                         >
-                            <div className="text-center">
-                                <p className="text-black   font-medium md:text-[18px] text-[16px] mb-1">სათხილამურო და</p>
-                                <p className="text-black   md:text-[18px] text-[16px]">სპორტული</p>
-                            </div>
+                            <p className="text-gray-400 text-[16px]">
+                                სათხილამურო და სპორტული
+                            </p>
                         </Link>
 
                         {/* Category Box 4 */}
                         <Link
                             href="/shop?category=cultural"
-                            className="bg-gray-100 hover:bg-gray-200 rounded-lg p-6 transition-colors cursor-pointer"
+                            className="
+    bg-white
+    border border-gray-300
+    w-[265px]
+    h-[42px]
+    rounded-full
+    flex items-center justify-center
+    hover:border-gray-400
+    transition-colors
+    cursor-pointer
+  "
                         >
-                            <div className="text-center">
-                                <p className="text-black   font-medium md:text-[18px] text-[16px] mb-1">კულტურული და</p>
-                                <p className="text-black   md:text-[18px] text-[16px]">თემატური</p>
-                            </div>
+                            <p className="text-gray-400 text-[16px]">
+                                კულტურული და თემატური
+                            </p>
                         </Link>
+
                     </div>
                 </div>
             </div>
@@ -602,81 +637,73 @@ const ShopPageClient = () => {
                                 <div className="p-2">
                                     <button
                                         onClick={() => setActiveMobileFilter('all')}
-                                        className={`w-full text-left px-2 py-3 text-[16px] font-medium rounded mb-1 ${
-                                            activeMobileFilter === 'all'
-                                                ? 'bg-[#1B3729] text-white'
-                                                : 'text-black hover:bg-gray-200'
-                                        }`}
+                                        className={`w-full text-left px-2 py-3 text-[16px] font-medium rounded mb-1 ${activeMobileFilter === 'all'
+                                            ? 'bg-[#1B3729] text-white'
+                                            : 'text-black hover:bg-gray-200'
+                                            }`}
                                     >
                                         ყველა
                                     </button>
                                     <button
                                         onClick={() => setActiveMobileFilter('sort')}
-                                        className={`w-full text-left px-2 py-2 text-[16px] font-medium rounded mb-1 ${
-                                            activeMobileFilter === 'sort'
-                                                ? 'bg-[#1B3729] text-white'
-                                                : 'text-black hover:bg-gray-200'
-                                        }`}
+                                        className={`w-full text-left px-2 py-2 text-[16px] font-medium rounded mb-1 ${activeMobileFilter === 'sort'
+                                            ? 'bg-[#1B3729] text-white'
+                                            : 'text-black hover:bg-gray-200'
+                                            }`}
                                     >
                                         დალაგება
                                     </button>
                                     <button
                                         onClick={() => setActiveMobileFilter('size')}
-                                        className={`w-full text-left px-3 py-2 text-[16px] font-medium rounded mb-1 ${
-                                            activeMobileFilter === 'size'
-                                                ? 'bg-[#1B3729] text-white'
-                                                : 'text-black hover:bg-gray-200'
-                                        }`}
+                                        className={`w-full text-left px-3 py-2 text-[16px] font-medium rounded mb-1 ${activeMobileFilter === 'size'
+                                            ? 'bg-[#1B3729] text-white'
+                                            : 'text-black hover:bg-gray-200'
+                                            }`}
                                     >
                                         ზომა
                                     </button>
                                     <button
                                         onClick={() => setActiveMobileFilter('color')}
-                                        className={`w-full text-left px-3 py-2 text-[16px] font-medium rounded mb-1 ${
-                                            activeMobileFilter === 'color'
-                                                ? 'bg-[#1B3729] text-white'
-                                                : 'text-black hover:bg-gray-200'
-                                        }`}
+                                        className={`w-full text-left px-3 py-2 text-[16px] font-medium rounded mb-1 ${activeMobileFilter === 'color'
+                                            ? 'bg-[#1B3729] text-white'
+                                            : 'text-black hover:bg-gray-200'
+                                            }`}
                                     >
                                         ფერი
                                     </button>
                                     <button
                                         onClick={() => setActiveMobileFilter('category')}
-                                        className={`w-full text-left px-3 py-2 text-[16px] font-medium rounded mb-1 ${
-                                            activeMobileFilter === 'category'
-                                                ? 'bg-[#1B3729] text-white'
-                                                : 'text-black hover:bg-gray-200'
-                                        }`}
+                                        className={`w-full text-left px-3 py-2 text-[16px] font-medium rounded mb-1 ${activeMobileFilter === 'category'
+                                            ? 'bg-[#1B3729] text-white'
+                                            : 'text-black hover:bg-gray-200'
+                                            }`}
                                     >
                                         კატეგორია
                                     </button>
                                     <button
                                         onClick={() => setActiveMobileFilter('price')}
-                                        className={`w-full text-left px-3 py-2 text-[16px] font-medium rounded mb-1 ${
-                                            activeMobileFilter === 'price'
-                                                ? 'bg-[#1B3729] text-white'
-                                                : 'text-black hover:bg-gray-200'
-                                        }`}
+                                        className={`w-full text-left px-3 py-2 text-[16px] font-medium rounded mb-1 ${activeMobileFilter === 'price'
+                                            ? 'bg-[#1B3729] text-white'
+                                            : 'text-black hover:bg-gray-200'
+                                            }`}
                                     >
                                         ფასი
                                     </button>
                                     <button
                                         onClick={() => setActiveMobileFilter('location')}
-                                        className={`w-full text-left px-3 py-2 text-[16px] font-medium rounded mb-1 ${
-                                            activeMobileFilter === 'location'
-                                                ? 'bg-[#1B3729] text-white'
-                                                : 'text-black hover:bg-gray-200'
-                                        }`}
+                                        className={`w-full text-left px-3 py-2 text-[16px] font-medium rounded mb-1 ${activeMobileFilter === 'location'
+                                            ? 'bg-[#1B3729] text-white'
+                                            : 'text-black hover:bg-gray-200'
+                                            }`}
                                     >
                                         მდებარეობა
                                     </button>
                                     <button
                                         onClick={() => setActiveMobileFilter('type')}
-                                        className={`w-full text-left px-3 py-2 text-[16px] font-medium rounded mb-1 ${
-                                            activeMobileFilter === 'type'
-                                                ? 'bg-[#1B3729] text-white'
-                                                : 'text-black hover:bg-gray-200'
-                                        }`}
+                                        className={`w-full text-left px-3 py-2 text-[16px] font-medium rounded mb-1 ${activeMobileFilter === 'type'
+                                            ? 'bg-[#1B3729] text-white'
+                                            : 'text-black hover:bg-gray-200'
+                                            }`}
                                     >
                                         ტიპი
                                     </button>
@@ -707,12 +734,12 @@ const ShopPageClient = () => {
                 )}
 
                 {/* Desktop Filter Toggle (keep existing) */}
-               
+
 
                 <div className="flex flex-col lg:flex-row gap-8">
                     {/* Sidebar Filters */}
                     <div className={`lg:w-80 ${isFilterOpen ? 'block' : 'hidden lg:block'}`}>
-                            <div className="bg-white shadow-sm p-6  top-24 space-y-6">
+                        <div className="bg-white shadow-sm p-6  top-24 space-y-6">
                             {/* Filter Header */}
                             <div className="flex items-center justify-between mb-6">
                                 <h3 className="font-semibold text-black md:text-[20px] text-[16px]">ფილტრები</h3>
@@ -920,14 +947,13 @@ const ShopPageClient = () => {
                                         <button
                                             key={color.id}
                                             onClick={() => toggleColor(color.id)}
-                                            className={`relative w-10 h-10 rounded-full border-2 transition-all duration-200 ${
-                                                selectedColors.includes(color.id)
-                                                    ? 'border-[#1B3729] ring-2 ring-[#1B3729] ring-offset-2'
-                                                    : 'border-gray-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2'
-                                            }`}
+                                            className={`relative w-10 h-10 rounded-full border-2 transition-all duration-200 ${selectedColors.includes(color.id)
+                                                ? 'border-[#1B3729] ring-2 ring-[#1B3729] ring-offset-2'
+                                                : 'border-gray-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2'
+                                                }`}
                                             style={{ backgroundColor: color.color }}
                                         >
-                                            
+
                                         </button>
                                     ))}
                                 </div>
@@ -941,7 +967,7 @@ const ShopPageClient = () => {
                     {/* Main Content */}
                     <div className="flex-1">
                         {/* Top Bar with Sorting */}
-                        
+
 
 
                         {/* Products Grid */}
@@ -950,44 +976,64 @@ const ShopPageClient = () => {
                                 {currentProducts.map((product, index) => (
                                     <div
                                         key={product.id}
-                                        className="group bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                                        className="group bg-white rounded-xl  overflow-hidden  transition-shadow"
                                     >
-                                        <div className="relative aspect-[3/4] bg-gray-100">
+                                        <div className="rounded-xl overflow-hidden">
+                                        <div className="relative w-[265px] h-[273px] bg-gray-100  overflow-hidden">
                                             <Image
                                                 src={product.images?.[0]?.url || "/placeholder.jpg"}
                                                 alt={product.name}
                                                 fill
-                                                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
-                                                className="object-cover transition-transform duration-300 group-hover:scale-[1.01]"
+                                            
+                                                className="object-cover transition-transform duration-300 "
                                                 loading={index < 4 ? "eager" : "lazy"}
                                                 priority={index < 4}
                                             />
-                                            {product.discount && product.discount > 0 && (
-                                                <span className="absolute top-3 left-3 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
-                                                    -{product.discount}%
-                                                </span>
-                                            )}
+
+                                           
                                         </div>
-                                        <div className="p-4 space-y-2">
+                                        </div>
+                                        <div className="mt-2 space-y-2">
                                             <div className="flex items-center justify-between">
 
-                                            <h3 className="font-semibold text-black md:text-[18px] text-[16px] leading-snug line-clamp-2">
-                                                {product.name}
-                                            </h3>
+                                                <h3 className="font-regular text-black md:text-[18px] text-[16px] leading-snug line-clamp-2">
+                                                    {product.name}
+                                                </h3>
                                                 <Link
                                                     href={`/product/${product.id}`}
-                                                    className="w-9 h-9 rounded-full bg-black text-white flex items-center justify-center hover:bg-gray-800 transition"
+                                                    className="w-9 h-9 rounded-xl bg-black text-white flex items-center justify-center hover:bg-gray-800 transition"
                                                     aria-label="დეტალები"
                                                 >
                                                     <Plus className="w-5 h-5" />
                                                 </Link>
 
                                             </div>
-                                            <div className="flex items-center justify-between">
-                                                <span className="font-bold text-black md:text-[18px] text-[16px]">
-                                                    ₾{getDisplayPrice(product).toFixed(2)}
-                                                </span>
+                                            <div className="flex items-center justify-between gap-2">
+                                                {product.discount && product.discount > 0 ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-regular text-black md:text-[18px] text-[16px]">
+                                                            ₾{(() => {
+                                                                const originalPrice = getDisplayPrice(product)
+                                                                const discountedPrice = originalPrice - (product.discount || 0)
+                                                                return Math.max(0, discountedPrice).toFixed(2)
+                                                            })()}
+                                                        </span>
+                                                       <span className="font-regular text-black md:text-[18px] text-[16px] line-through decoration-black" style={{ textDecorationThickness: '1px' }}>
+                                                            ₾{getDisplayPrice(product).toFixed(2)}
+                                                        </span>
+                                                       
+                                                    </div>
+                                                ) : (
+                                                    <span className="font-regular text-black md:text-[18px] text-[16px]">
+                                                        ₾{getDisplayPrice(product).toFixed(2)}
+                                                    </span>
+                                                )}
                                             </div>
+                                            {product.discount && product.discount > 0 && (
+                                                <p className='bg-[#228460] text-white px-2 py-1 rounded-xl text-[16px] font-regular'>
+                                                    დანაზოგი: ₾{product.discount.toFixed(2)}
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
                                 ))}
@@ -1011,8 +1057,8 @@ const ShopPageClient = () => {
                                         onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                                         disabled={currentPage === 1}
                                         className={`px-4 py-2 rounded-lg border transition-colors md:text-[18px] text-[16px] flex items-center gap-2 ${currentPage === 1
-                                                ? 'bg-gray-100 text-black cursor-not-allowed border-gray-300'
-                                                : 'bg-white text-black border-gray-300 hover:bg-gray-50 hover:border-black'
+                                            ? 'bg-gray-100 text-black cursor-not-allowed border-gray-300'
+                                            : 'bg-white text-black border-gray-300 hover:bg-gray-50 hover:border-black'
                                             }`}
                                     >
                                         <ChevronLeft className="w-5 h-5" />
@@ -1032,8 +1078,8 @@ const ShopPageClient = () => {
                                                         key={page}
                                                         onClick={() => setCurrentPage(page)}
                                                         className={`px-4 py-2 rounded-lg border transition-colors md:text-[18px] text-[16px] ${currentPage === page
-                                                                ? 'bg-black text-white border-black'
-                                                                : 'bg-white text-black border-gray-300 hover:bg-gray-50 hover:border-black'
+                                                            ? 'bg-black text-white border-black'
+                                                            : 'bg-white text-black border-gray-300 hover:bg-gray-50 hover:border-black'
                                                             }`}
                                                     >
                                                         {page}
@@ -1057,8 +1103,8 @@ const ShopPageClient = () => {
                                         onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                                         disabled={currentPage === totalPages}
                                         className={`px-4 py-2 rounded-lg border transition-colors md:text-[18px] text-[16px] flex items-center gap-2 ${currentPage === totalPages
-                                                ? 'bg-gray-100 text-black cursor-not-allowed border-gray-300'
-                                                : 'bg-white text-black border-gray-300 hover:bg-gray-50 hover:border-black'
+                                            ? 'bg-gray-100 text-black cursor-not-allowed border-gray-300'
+                                            : 'bg-white text-black border-gray-300 hover:bg-gray-50 hover:border-black'
                                             }`}
                                     >
                                         შემდეგი

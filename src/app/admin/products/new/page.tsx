@@ -66,7 +66,7 @@ const productSchema = z.object({
   sizeSystem: z.enum(['EU', 'US', 'UK', 'CN']).optional(),
   size: z.string().optional(),
   isNew: z.boolean().default(false),
-  discount: z.number().int().min(0).max(100).optional(),
+  discount: z.number().min(0).optional(),
   rating: z.number().min(0).max(5).optional(),
   categoryId: z.number().optional(),
   isRentable: z.boolean().default(true), // 🆕
@@ -81,7 +81,7 @@ const productSchema = z.object({
       ),
       stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი'),
       price: z.number().min(0, 'ფასი უნდა იყოს დადებითი'),
-      discount: z.number().min(0).max(100).optional(),
+      discount: z.number().min(0).optional(),
       sizeSystem: z.enum(['EU', 'US', 'UK', 'CN']).optional()
     })
   ).default([]),

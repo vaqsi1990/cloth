@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Search, Menu, User, LogOut, ShoppingCart, ChevronRight, Heart } from 'lucide-react'
+import { Search, Menu, User, LogOut, ShoppingCart, ChevronRight,  } from 'lucide-react'
 import Image from 'next/image'
 import { useSession, signOut } from 'next-auth/react'
 
@@ -156,7 +156,7 @@ const Header = () => {
   }
 
   return (
-    <header className="bg-white text-gray-900 shadow-sm  top-0 z-50">
+    <header className="bg-[#228460] text-gray-900 shadow-sm  top-0 z-50">
       <div className="container max-w-7xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between gap-4">
           {/* --- Logo --- */}
@@ -192,22 +192,19 @@ const Header = () => {
           {/* --- Desktop Navigation Links and Icons --- */}
           <nav className="hidden lg:flex items-center space-x-6 flex-shrink-0">
             {/* Navigation Links */}
-            <Link href="/" className="text-black transition-colors  text-[16px] md:text-[18px] font-regular">
+            <Link href="/" className="text-white font-bold transition-colors  text-[16px] md:text-[18px] font-regular">
               მთავარი
             </Link>
-            <Link href="/shop" className="text-black transition-colors  text-[16px] md:text-[18px] font-regular">
+            <Link href="/shop" className="text-white font-bold transition-colors  text-[16px] md:text-[18px] font-regular">
               პროდუქტები
             </Link>
 
             {/* Icons */}
             <div className="flex items-center space-x-4 ml-2">
-              {/* Wishlist Icon */}
-              <Link href="/wishlist" className="relative p-2 text-gray-700  transition-colors">
-                <Heart className="w-6 h-6" />
-              </Link>
+            
 
               {/* Cart Icon */}
-              <Link href="/cart" className="relative p-2 text-gray-700  transition-colors">
+              <Link href="/cart" className="relative p-2 text-white  transition-colors">
                 <ShoppingCart className="w-6 h-6" />
                 {cartItemCount > 0 && (
                   <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
@@ -221,7 +218,7 @@ const Header = () => {
                 <div className="relative group desktop-user-dropdown">
                   <button
                     onClick={() => setIsDesktopUserDropdownOpen(!isDesktopUserDropdownOpen)}
-                    className="p-2 text-gray-700 cursor-pointer transition-colors touch-manipulation"
+                    className="p-2 text-white font-bold cursor-pointer transition-colors touch-manipulation"
                     aria-label="User menu"
                   >
                     <User className="w-6 h-6" />
@@ -261,7 +258,7 @@ const Header = () => {
                   </div>
                 </div>
               ) : (
-                <Link href="/auth/signin" className="p-2 text-gray-700 hover:text-purple-600 transition-colors">
+                <Link href="/auth/signin" className="p-2 text-white font-bold hover:text-purple-600 transition-colors">
                   <User className="w-6 h-6" />
                 </Link>
               )}
@@ -438,7 +435,7 @@ const Header = () => {
 
       {/* --- Category Navigation Bar --- */}
       {/* --- Category Navigation Bar (DESKTOP styled like image) --- */}
-      <div className="bg-[#6E7FF3] shadow-md hidden lg:block relative">
+      <div className="bg-[#228460] shadow-md hidden lg:block relative">
         <div className="container mx-auto px-6">
           <nav className="flex  items-center justify-center gap-10">
             <div className="h-9 w-[2px] bg-white/50"></div>

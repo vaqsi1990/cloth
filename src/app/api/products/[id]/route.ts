@@ -33,7 +33,7 @@ const productSchema = z.object({
   isNew: z.boolean().default(false),
   discount: z.preprocess(
     (val) => (val === null ? undefined : val),
-    z.number().int().min(0).max(100).optional()
+    z.number().min(0).optional()
   ),
   rating: z.number().min(0).max(5).optional(),
   categoryId: z.number().optional(),
