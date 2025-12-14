@@ -1267,7 +1267,7 @@ const AccountPage = () => {
 
                       const variantPrices = product.variants as Array<{ price: number; size: string; id: number }>
                       const prices = variantPrices
-                        .filter((v: { price: number; size: string; stock: number; id: number }) => typeof v.price === 'number')
+                        .filter((v: { price: number; size: string; id: number }) => typeof v.price === 'number')
                         .map((v: { price: number }) => v.price)
 
                       if (prices.length === 0) return '₾0.00'

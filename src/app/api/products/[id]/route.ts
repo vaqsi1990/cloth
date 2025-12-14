@@ -208,55 +208,57 @@ export async function PUT(
       excludeProductId: productId
     })
 
+    const updateData: any = {
+      name: validatedData.name,
+      slug: uniqueSlug,
+      brand: validatedData.brand,
+      description: validatedData.description,
+      stock: validatedData.stock,
+      // SKU is not updated - keep existing unique code
+      gender: validatedData.gender,
+      color: validatedData.color,
+      location: validatedData.location,
+      sizeSystem: validatedData.sizeSystem,
+      size: validatedData.size,
+      isNew: validatedData.isNew,
+      discount: validatedData.discount,
+      rating: validatedData.rating,
+      categoryId: validatedData.categoryId,
+      isRentable: validatedData.isRentable,
+      pricePerDay: validatedData.pricePerDay,
+      maxRentalDays: validatedData.maxRentalDays,
+      status: validatedData.status,
+      approvalStatus: shouldResetApproval ? 'PENDING' : existingProduct.approvalStatus,
+      approvedAt: shouldResetApproval ? null : existingProduct.approvedAt,
+      rejectionReason: shouldResetApproval ? null : existingProduct.rejectionReason,
+      // Create new images
+      images: {
+        create: validatedData.imageUrls.map((url, index) => ({
+          url: url,
+          alt: `${validatedData.name} - სურათი ${index + 1}`,
+          position: index
+        }))
+      },
+      // Create new variants
+      variants: {
+        create: validatedData.variants.map(variant => ({
+          size: variant.size,
+          price: variant.price
+        }))
+      },
+      // Update rental price tiers if provided
+      rentalPriceTiers: validatedData.rentalPriceTiers ? {
+        deleteMany: {}, // Delete existing tiers
+        create: validatedData.rentalPriceTiers.map(tier => ({
+          minDays: tier.minDays,
+          pricePerDay: tier.pricePerDay
+        }))
+      } : undefined
+    }
+
     const updatedProduct = await prisma.product.update({
       where: { id: productId },
-      data: {
-        name: validatedData.name,
-        slug: uniqueSlug,
-        brand: validatedData.brand,
-        description: validatedData.description,
-        stock: validatedData.stock,
-        // SKU is not updated - keep existing unique code
-        gender: validatedData.gender,
-        color: validatedData.color,
-        location: validatedData.location,
-        sizeSystem: validatedData.sizeSystem,
-        size: validatedData.size,
-        isNew: validatedData.isNew,
-        discount: validatedData.discount,
-        rating: validatedData.rating,
-        categoryId: validatedData.categoryId,
-        isRentable: validatedData.isRentable,
-        pricePerDay: validatedData.pricePerDay,
-        maxRentalDays: validatedData.maxRentalDays,
-        status: validatedData.status,
-        approvalStatus: shouldResetApproval ? 'PENDING' : existingProduct.approvalStatus,
-        approvedAt: shouldResetApproval ? null : existingProduct.approvedAt,
-        rejectionReason: shouldResetApproval ? null : existingProduct.rejectionReason,
-        // Create new images
-        images: {
-          create: validatedData.imageUrls.map((url, index) => ({
-            url: url,
-            alt: `${validatedData.name} - სურათი ${index + 1}`,
-            position: index
-          }))
-        },
-        // Create new variants
-        variants: {
-          create: validatedData.variants.map(variant => ({
-            size: variant.size,
-            price: variant.price
-          }))
-        },
-        // Update rental price tiers if provided
-        rentalPriceTiers: validatedData.rentalPriceTiers ? {
-          deleteMany: {}, // Delete existing tiers
-          create: validatedData.rentalPriceTiers.map(tier => ({
-            minDays: tier.minDays,
-            pricePerDay: tier.pricePerDay
-          }))
-        } : undefined
-      },
+      data: updateData,
       include: { 
         images: true, 
         variants: true, 
