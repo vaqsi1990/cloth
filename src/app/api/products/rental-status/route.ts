@@ -143,7 +143,6 @@ export async function GET(request: NextRequest) {
         return {
           variantId: variant.id,
           size: variant.size,
-          stock: variant.stock,
           activeRentals: variantRentals,
           isAvailable: variantRentals.length === 0
         }

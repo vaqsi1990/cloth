@@ -37,7 +37,6 @@ const productSchema = z.object({
       (val) => (val === '' || val === null ? undefined : val),
       z.string().optional()
     ),
-    stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი'),
     price: z.number().min(0, 'ფასი უნდა იყოს დადებითი'),
     sizeSystem: z.enum(['EU', 'US', 'UK', 'CN']).optional()
   })).default([]),
@@ -230,6 +229,7 @@ export async function POST(request: NextRequest) {
         slug: uniqueSlug,
         brand: validatedData.brand,
         description: validatedData.description,
+        stock: validatedData.stock,
         sku: uniqueSKU, // Auto-generated unique SKU
         gender: validatedData.gender,
         color: validatedData.color,
@@ -257,7 +257,6 @@ export async function POST(request: NextRequest) {
         variants: {
           create: validatedData.variants.map(variant => ({
             size: variant.size,
-            stock: variant.stock,
             price: variant.price
           }))
         },

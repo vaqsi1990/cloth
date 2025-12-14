@@ -46,7 +46,6 @@ const productSchema = z.object({
       (val) => (val === '' || val === null ? undefined : val),
       z.string().optional()
     ),
-    stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი'),
     price: z.number().min(0, 'ფასი უნდა იყოს დადებითი'),
     sizeSystem: z.enum(['EU', 'US', 'UK', 'CN']).optional()
   })).default([]),
@@ -201,7 +200,6 @@ export async function PUT(
     console.log('Variants length:', validatedData.variants.length)
     console.log('Each variant:', validatedData.variants.map(v => ({
       size: v.size,
-      stock: v.stock,
       price: v.price,
       sizeSystem: v.sizeSystem ?? validatedData.sizeSystem
     })))
@@ -217,6 +215,7 @@ export async function PUT(
         slug: uniqueSlug,
         brand: validatedData.brand,
         description: validatedData.description,
+        stock: validatedData.stock,
         // SKU is not updated - keep existing unique code
         gender: validatedData.gender,
         color: validatedData.color,
@@ -246,7 +245,6 @@ export async function PUT(
         variants: {
           create: validatedData.variants.map(variant => ({
             size: variant.size,
-            stock: variant.stock,
             price: variant.price
           }))
         },

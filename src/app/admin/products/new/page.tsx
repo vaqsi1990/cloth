@@ -79,7 +79,6 @@ const productSchema = z.object({
         (val) => (val === '' || val === null ? undefined : val),
         z.string().optional()
       ),
-      stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი'),
       price: z.number().min(0, 'ფასი უნდა იყოს დადებითი'),
       discount: z.number().min(0).optional(),
       sizeSystem: z.enum(['EU', 'US', 'UK', 'CN']).optional()
@@ -324,7 +323,6 @@ const NewProductPage = () => {
         ...prev.variants,
         {
           size: defaultSize,
-          stock: 0,
           price: 0,
           discount: undefined,
           sizeSystem: prev.sizeSystem

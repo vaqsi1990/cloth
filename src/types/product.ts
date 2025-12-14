@@ -8,7 +8,6 @@ export interface ProductImage {
 export interface ProductVariant {
   id: number
   size: string
-  stock: number
   price: number  // required price for this variant
   sku?: string
   sizeSystem?: 'EU' | 'US' | 'UK' | 'CN'

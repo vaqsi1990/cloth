@@ -48,7 +48,6 @@ const productSchema = z.object({
       (val) => (val === '' || val === null ? undefined : val),
       z.string().optional()
     ),
-    stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი'),
     price: z.number().min(0, 'ფასი უნდა იყოს დადებითი'),
     discount: z.number().min(0).max(100).optional(),
     sizeSystem: z.enum(['EU', 'US', 'UK', 'CN']).optional()
@@ -252,7 +251,7 @@ const EditProductPage = () => {
             slug: product.slug,
             description: product.description || '',
             brand: product.brand || '',
-            stock: parseInt(product.sku) || 0,
+            stock: product.stock || 0,
             gender: product.gender || 'UNISEX',
             color: product.color || '',
             location: product.location || '',
@@ -374,7 +373,7 @@ const EditProductPage = () => {
       ...prev,
       variants: [
         ...prev.variants,
-        { size: undefined, stock: 0, price: 0, discount: undefined, sizeSystem: prev.sizeSystem }
+        { size: undefined, price: 0, discount: undefined, sizeSystem: prev.sizeSystem }
       ]
     }))
   }

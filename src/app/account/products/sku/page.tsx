@@ -254,8 +254,7 @@ const UserProductBySKUPage = () => {
                       <div className="flex flex-wrap gap-2">
                         {productData.product.variants.map((variant: ProductVariant) => (
                           <div key={variant.id} className="bg-gray-50 px-3 py-2 rounded border">
-                            <span className="font-semibold">{variant.size}</span> - ₾{variant.price} 
-                            {variant.stock > 0 && <span className="text-green-600 ml-2">({variant.stock} ცალი)</span>}
+                            <span className="font-semibold">{variant.size}</span> - ₾{variant.price}
                           </div>
                         ))}
                       </div>

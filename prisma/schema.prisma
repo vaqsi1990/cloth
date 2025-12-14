@@ -187,6 +187,7 @@ model Product {
   brand         String?
   description   String?
   sku           String?          @unique
+  stock         Int              @default(0)
   gender        Gender           @default(UNISEX)
   color         String?
   location      String?
@@ -266,7 +267,6 @@ model ProductVariant {
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId Int
   size      String?
-  stock     Int     @default(0)
   sku       String? 
   price     Float   // required price for this variant
   createdAt DateTime @default(now())
