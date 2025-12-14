@@ -55,6 +55,8 @@ export interface Product {
   size?: string
   isNew: boolean
   discount?: number
+  discountDays?: number
+  discountStartDate?: string | null
   rating?: number
   categoryId?: number
   category?: Category

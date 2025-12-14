@@ -35,6 +35,10 @@ const productSchema = z.object({
     (val) => (val === null ? undefined : val),
     z.number().min(0).optional()
   ),
+  discountDays: z.preprocess(
+    (val) => (val === null ? undefined : val),
+    z.number().int().min(1).optional()
+  ),
   rating: z.number().min(0).max(5).optional(),
   categoryId: z.number().optional(),
   isRentable: z.boolean().default(true),
@@ -90,6 +94,7 @@ const EditProductPage = () => {
     size: undefined,
     isNew: false,
     discount: undefined,
+    discountDays: undefined,
     rating: 0,
     categoryId: undefined,
     isRentable: true,
@@ -265,6 +270,7 @@ const EditProductPage = () => {
             size: product.size || undefined,
             isNew: product.isNew,
             discount: product.discount,
+            discountDays: product.discountDays,
             rating: product.rating || 0,
             categoryId: product.categoryId,
             isRentable: product.isRentable ?? true,
@@ -480,6 +486,9 @@ const EditProductPage = () => {
         // Convert null to undefined for discount
         discount: formData.discount !== null && formData.discount !== undefined 
           ? formData.discount 
+          : undefined,
+        discountDays: formData.discountDays !== null && formData.discountDays !== undefined 
+          ? formData.discountDays 
           : undefined,
         pricePerDay: formData.pricePerDay || undefined,
         maxRentalDays: formData.maxRentalDays || undefined,
@@ -737,6 +746,37 @@ const EditProductPage = () => {
                 className="w-full px-4 text-black py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
               />
             </div>
+
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-[20px] text-black font-medium mb-2">
+                  ფასდაკლება (₾)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={formData.discount ?? ''}
+                  onChange={(e) => handleInputChange('discount', e.target.value ? parseFloat(e.target.value) : undefined)}
+                  placeholder="0.00"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                />
+              </div>
+              <div>
+                <label className="block text-[20px] text-black font-medium mb-2">
+                  ფასდაკლების ვადა (დღეები)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={formData.discountDays ?? ''}
+                  onChange={(e) => handleInputChange('discountDays', e.target.value ? parseInt(e.target.value) : undefined)}
+                  placeholder="დღეები"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                />
+              </div>
+            </div>
           </div>
 
           {/* Rental Options */}
@@ -873,6 +913,20 @@ const EditProductPage = () => {
                   </div>
                
               </div>
+                  <div >
+                    <label className="block text-[20px] text-black font-medium mb-2">
+                    ფასდაკლების ვადა (დღეები)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={formData.discountDays ?? ''}
+                      onChange={(e) => handleInputChange('discountDays', e.target.value ? parseInt(e.target.value) : undefined)}
+                      placeholder="დღეები"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                    />
+                  </div>
                 <div className="flex items-end">
                   <button
                     type="button"

@@ -195,6 +195,8 @@ model Product {
   size          String?
   isNew         Boolean          @default(false)
   discount      Int?
+  discountDays  Int?
+  discountStartDate DateTime?    // When discount was set
   rating        Float?           @default(0)
   isRentable    Boolean          @default(false)
   pricePerDay   Float?

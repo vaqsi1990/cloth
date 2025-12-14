@@ -67,6 +67,7 @@ const productSchema = z.object({
   size: z.string().optional(),
   isNew: z.boolean().default(false),
   discount: z.number().min(0).optional(),
+  discountDays: z.number().int().min(1).optional(),
   rating: z.number().min(0).max(5).optional(),
   categoryId: z.number().optional(),
   isRentable: z.boolean().default(true), // 🆕
@@ -119,6 +120,7 @@ const NewProductPage = () => {
     size: undefined,
     isNew: false,
     discount: undefined,
+    discountDays: undefined,
     rating: 0,
     categoryId: undefined,
     isRentable: true, // 🆕

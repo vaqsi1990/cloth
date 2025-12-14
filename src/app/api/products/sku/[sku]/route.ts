@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { checkAndClearExpiredDiscount, processExpiredDiscount } from '@/utils/discountUtils'
 
 // GET - Fetch product by SKU with detailed rental information
 export async function GET(
@@ -50,6 +51,41 @@ export async function GET(
         message: 'პროდუქტი ამ SKU-ით ვერ მოიძებნა'
       }, { status: 404 })
     }
+
+    // Check and clear expired discount if needed
+    await checkAndClearExpiredDiscount(product.id)
+    
+    // Re-fetch product to get updated data
+    const updatedProduct = await prisma.product.findUnique({
+      where: { sku: sku },
+      include: {
+        category: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true
+          }
+        },
+        images: {
+          orderBy: { position: 'asc' }
+        },
+        variants: true,
+        rentalPriceTiers: {
+          orderBy: { minDays: 'asc' }
+        }
+      }
+    })
+
+    if (!updatedProduct) {
+      return NextResponse.json({
+        success: false,
+        message: 'პროდუქტი ამ SKU-ით ვერ მოიძებნა'
+      }, { status: 404 })
+    }
+
+    const processedProduct = processExpiredDiscount(updatedProduct)
 
     // Get all rentals for this product (active and past)
     const rentals = await prisma.rental.findMany({
@@ -154,9 +190,9 @@ export async function GET(
     return NextResponse.json({
       success: true,
       product: {
-        ...product,
-        createdAt: product.createdAt.toISOString(),
-        updatedAt: product.updatedAt.toISOString()
+        ...processedProduct,
+        createdAt: processedProduct.createdAt.toISOString(),
+        updatedAt: processedProduct.updatedAt.toISOString()
       },
       rentals: {
         all: rentalsWithDuration,

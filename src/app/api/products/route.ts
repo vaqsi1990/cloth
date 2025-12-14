@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { generateUniqueSKU } from '@/utils/skuUtils'
 import { ensureUniqueProductSlug } from '@/lib/productSlug'
+import { checkAndClearExpiredDiscounts, processExpiredDiscount } from '@/utils/discountUtils'
 
 // Product validation schema
 const productSchema = z.object({
@@ -26,6 +27,7 @@ const productSchema = z.object({
   size: z.string().optional(),
   isNew: z.boolean().default(false),
   discount: z.number().min(0).optional(),
+  discountDays: z.number().int().min(1).optional(),
   rating: z.number().min(0).max(5).optional(),
   categoryId: z.number().optional(),
   isRentable: z.boolean().default(true),
@@ -126,9 +128,76 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' }
     })
 
+    // Check and clear expired discounts
+    const productIds = products
+      .filter(p => p.discount && p.discountDays && p.discountStartDate)
+      .map(p => p.id)
+    
+    if (productIds.length > 0) {
+      await checkAndClearExpiredDiscounts(productIds)
+      // Re-fetch products to get updated data
+      const updatedProducts = await prisma.product.findMany({
+        where: {
+          ...(isAdmin ? {} : { 
+            status: {
+              not: 'MAINTENANCE'
+            },
+            approvalStatus: 'APPROVED',
+            user: {
+              blocked: false
+            }
+          }),
+          ...(search ? {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' } },
+              { description: { contains: search, mode: 'insensitive' } },
+              { sku: { contains: search, mode: 'insensitive' } }
+            ]
+          } : {}),
+          ...(category && category !== 'ALL' ? { 
+            category: { 
+              slug: category === 'DRESSES' ? 'dresses' :
+                    category === 'TOPS' ? 'tops' :
+                    category === 'BOTTOMS' ? 'bottoms' :
+                    category === 'OUTERWEAR' ? 'outerwear' :
+                    category === 'ACCESSORIES' ? 'accessories' : category
+            } 
+          } : {}),
+          ...(gender && gender !== 'ALL' ? { 
+            gender: gender === 'women' ? 'WOMEN' as const :
+                    gender === 'men' ? 'MEN' as const :
+                    gender === 'children' ? 'CHILDREN' as const : undefined
+          } : {}),
+          ...(isNew === 'true' ? { isNew: true } : {})
+        },
+        include: {
+          category: true,
+          images: {
+            orderBy: { position: 'asc' }
+          },
+          variants: true,
+          rentalPriceTiers: {
+            orderBy: { minDays: 'asc' }
+          },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              image: true
+            }
+          }
+        },
+        orderBy: { createdAt: 'desc' }
+      })
+      return NextResponse.json({
+        success: true,
+        products: updatedProducts.map(processExpiredDiscount)
+      })
+    }
+
     return NextResponse.json({
       success: true,
-      products: products
+      products: products.map(processExpiredDiscount)
     })
     
   } catch (error) {
@@ -238,6 +307,8 @@ export async function POST(request: NextRequest) {
         size: validatedData.size,
         isNew: validatedData.isNew,
         discount: validatedData.discount,
+        discountDays: validatedData.discountDays,
+        discountStartDate: validatedData.discount && validatedData.discountDays ? new Date() : null,
         rating: validatedData.rating,
         categoryId: validatedData.categoryId,
         isRentable: validatedData.isRentable,

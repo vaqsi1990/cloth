@@ -975,7 +975,7 @@ const ShopPageClient = () => {
 
                         {/* Products Grid */}
                         {currentProducts.length > 0 ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10 mb-8">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 gap-y-16 mb-8">
                                 {currentProducts.map((product, index) => (
                                     <div
                                         key={product.id}
@@ -1035,8 +1035,11 @@ const ShopPageClient = () => {
                                             </div>
 
                                             {product.discount && product.discount > 0 && (
-                                                <p className='bg-[#228460] text-white px-2 py-1 rounded-xl text-[16px] font-regular'>
+                                                <p className='bg-[#228460] text-white px-2 py-1 rounded-md text-[15px] font-regular'>
                                                     დანაზოგი: ₾{product.discount.toFixed(2)}
+                                                    {product.discountDays && (
+                                                        <span className="ml-2">({product.discountDays} დღე)</span>
+                                                    )}
                                                 </p>
                                             )}
                                             {product.stock !== undefined && (

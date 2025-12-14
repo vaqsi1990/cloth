@@ -784,6 +784,9 @@ const ProductPage = () => {
                                     {product.discount && product.discount > 0 && (
                                         <span className="bg-red-500 text-white px-3 py-1 rounded-full text-[16px] font-semibold">
                                             -₾{product.discount.toFixed(2)}
+                                            {product.discountDays && (
+                                                <span className="ml-1">({product.discountDays} დღე)</span>
+                                            )}
                                         </span>
                                     )}
                                    

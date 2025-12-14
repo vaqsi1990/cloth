@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { checkAndClearExpiredDiscounts, processExpiredDiscount } from '@/utils/discountUtils'
 
 // GET - Fetch user's products
 export async function GET(request: NextRequest) {
@@ -32,9 +33,39 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    // Check and clear expired discounts
+    const productIds = products
+      .filter(p => p.discount && p.discountDays && p.discountStartDate)
+      .map(p => p.id)
+    
+    if (productIds.length > 0) {
+      await checkAndClearExpiredDiscounts(productIds)
+      // Re-fetch products to get updated data
+      const updatedProducts = await prisma.product.findMany({
+        where: {
+          userId: session.user.id
+        },
+        include: {
+          images: true,
+          category: true,
+          variants: true,
+          rentalPriceTiers: {
+            orderBy: { minDays: 'asc' }
+          }
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      })
+      return NextResponse.json({
+        success: true,
+        products: updatedProducts.map(processExpiredDiscount)
+      })
+    }
+
     return NextResponse.json({
       success: true,
-      products
+      products: products.map(processExpiredDiscount)
     })
 
   } catch (error) {

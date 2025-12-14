@@ -37,6 +37,10 @@ const productSchema = z.object({
     (val) => (val === null ? undefined : val),
     z.number().int().min(0).max(100).optional()
   ),
+  discountDays: z.preprocess(
+    (val) => (val === null ? undefined : val),
+    z.number().int().min(1).optional()
+  ),
   rating: z.number().min(0).max(5).optional(),
   categoryId: z.number().optional(),
   isRentable: z.boolean().default(true),
@@ -92,6 +96,7 @@ const EditProductPage = () => {
     size: undefined,
     isNew: false,
     discount: undefined,
+    discountDays: undefined,
     rating: 0,
     categoryId: undefined,
     isRentable: true,
@@ -259,6 +264,7 @@ const EditProductPage = () => {
             size: product.size || undefined,
             isNew: product.isNew,
             discount: product.discount,
+            discountDays: product.discountDays,
             rating: product.rating || 0,
             categoryId: product.categoryId,
             isRentable: product.isRentable ?? true,
@@ -458,6 +464,9 @@ const EditProductPage = () => {
         // Convert null to undefined for discount
         discount: formData.discount !== null && formData.discount !== undefined 
           ? formData.discount 
+          : undefined,
+        discountDays: formData.discountDays !== null && formData.discountDays !== undefined 
+          ? formData.discountDays 
           : undefined,
         pricePerDay: formData.pricePerDay || undefined,
         maxRentalDays: formData.maxRentalDays || undefined,

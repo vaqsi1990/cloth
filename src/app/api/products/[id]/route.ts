@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { Prisma } from '@prisma/client'
 import { ensureUniqueProductSlug } from '@/lib/productSlug'
+import { checkAndClearExpiredDiscount, processExpiredDiscount } from '@/utils/discountUtils'
 
 // Product validation schema
 const productSchema = z.object({
@@ -34,6 +35,10 @@ const productSchema = z.object({
   discount: z.preprocess(
     (val) => (val === null ? undefined : val),
     z.number().min(0).optional()
+  ),
+  discountDays: z.preprocess(
+    (val) => (val === null ? undefined : val),
+    z.number().int().min(1).optional()
   ),
   rating: z.number().min(0).max(5).optional(),
   categoryId: z.number().optional(),
@@ -120,9 +125,42 @@ export async function GET(
       }, { status: 404 })
     }
 
+    // Check and clear expired discount if needed
+    await checkAndClearExpiredDiscount(productId)
+    
+    // Re-fetch product to get updated data
+    const updatedProduct = await prisma.product.findUnique({
+      where: { id: productId },
+      include: {
+        category: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+            blocked: true
+          }
+        },
+        images: {
+          orderBy: { position: 'asc' }
+        },
+        variants: true,
+        rentalPriceTiers: {
+          orderBy: { minDays: 'asc' }
+        }
+      }
+    })
+
+    if (!updatedProduct) {
+      return NextResponse.json({
+        success: false,
+        message: 'პროდუქტი ვერ მოიძებნა'
+      }, { status: 404 })
+    }
+
     return NextResponse.json({
       success: true,
-      product: product
+      product: processExpiredDiscount(updatedProduct)
     })
     
   } catch (error) {
@@ -164,7 +202,17 @@ export async function PUT(
 
     // Check if product exists
     const existingProduct = await prisma.product.findUnique({
-      where: { id: productId }
+      where: { id: productId },
+      select: {
+        id: true,
+        userId: true,
+        discount: true,
+        discountDays: true,
+        discountStartDate: true,
+        approvalStatus: true,
+        approvedAt: true,
+        rejectionReason: true,
+      }
     })
 
     if (!existingProduct) {
@@ -208,6 +256,25 @@ export async function PUT(
       excludeProductId: productId
     })
 
+    // Determine discountStartDate: set to now if discount is being set, keep existing if discount unchanged, null if clearing
+    let discountStartDate: Date | null = null
+    if (validatedData.discount && validatedData.discountDays) {
+      // If discount is being set, check if it's a new discount or updating existing
+      if (existingProduct.discount !== validatedData.discount || existingProduct.discountDays !== validatedData.discountDays) {
+        // Discount changed, set new start date
+        discountStartDate = new Date()
+      } else {
+        // Discount unchanged, keep existing date
+        discountStartDate = existingProduct.discountStartDate
+      }
+    } else if (validatedData.discount === null || validatedData.discount === undefined) {
+      // Clearing discount
+      discountStartDate = null
+    } else {
+      // No discount, keep existing (should be null)
+      discountStartDate = existingProduct.discountStartDate
+    }
+
     const updateData: any = {
       name: validatedData.name,
       slug: uniqueSlug,
@@ -222,6 +289,8 @@ export async function PUT(
       size: validatedData.size,
       isNew: validatedData.isNew,
       discount: validatedData.discount,
+      discountDays: validatedData.discountDays,
+      discountStartDate: discountStartDate,
       rating: validatedData.rating,
       categoryId: validatedData.categoryId,
       isRentable: validatedData.isRentable,
