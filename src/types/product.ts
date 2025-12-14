@@ -47,6 +47,7 @@ export interface Product {
   brand?: string
   description?: string
   sku?: string
+  stock?: number
   gender: 'MEN' | 'WOMEN' | 'CHILDREN' | 'UNISEX'
   color?: string
   location?: string

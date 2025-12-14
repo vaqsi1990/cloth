@@ -510,7 +510,7 @@ const ProductPage = () => {
         product?.status === 'RESERVED' ||
         typeof product?.status === 'undefined'
     const showRentOption = Boolean(canRent && rentStatusAllowed)
-    const selectedStock = selectedVariant?.stock ?? 0
+    const selectedStock = product?.stock ?? 0
 
     const handleSizeClick = (size: string) => {
         // Allow size selection in both buy and rent modes, as long as product is not in maintenance
