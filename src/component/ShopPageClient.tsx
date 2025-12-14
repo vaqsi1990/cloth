@@ -6,6 +6,7 @@ import { Filter, X, ChevronDown, Calendar, ChevronLeft, ChevronRight, Plus } fro
 import { useSearchParams } from 'next/navigation'
 import { Product } from '@/types/product'
 import DatePicker from "react-datepicker"
+import StarRating from "@/components/StarRating"
 
 
 const ShopPageClient = () => {
@@ -974,27 +975,27 @@ const ShopPageClient = () => {
 
                         {/* Products Grid */}
                         {currentProducts.length > 0 ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10 mb-8">
                                 {currentProducts.map((product, index) => (
                                     <div
                                         key={product.id}
                                         className="group bg-white rounded-xl  overflow-hidden  transition-shadow"
                                     >
                                         <div className="rounded-xl overflow-hidden">
-                                        <div className="relative w-[265px] h-[273px] bg-gray-100  overflow-hidden">
-                                            <Image
-                                                src={product.images?.[0]?.url || "/placeholder.jpg"}
-                                                alt={product.name}
-                                                fill
-                                            
-                                                className="object-cover transition-transform duration-300 "
-                                                loading={index < 4 ? "eager" : "lazy"}
-                                                priority={index < 4}
-                                                
-                                            />
+                                            <div className="relative w-[265px] h-[273px] bg-gray-100  overflow-hidden">
+                                                <Image
+                                                    src={product.images?.[0]?.url || "/placeholder.jpg"}
+                                                    alt={product.name}
+                                                    fill
 
-                                           
-                                        </div>
+                                                    className="object-cover transition-transform duration-300 "
+                                                    loading={index < 4 ? "eager" : "lazy"}
+                                                    priority={index < 4}
+
+                                                />
+
+
+                                            </div>
                                         </div>
                                         <div className="mt-2 space-y-2">
                                             <div className="flex items-center justify-between">
@@ -1021,10 +1022,10 @@ const ShopPageClient = () => {
                                                                 return Math.max(0, discountedPrice).toFixed(2)
                                                             })()}
                                                         </span>
-                                                       <span className="font-regular text-black md:text-[18px] text-[16px] line-through decoration-black" style={{ textDecorationThickness: '1px' }}>
+                                                        <span className="font-regular text-black md:text-[18px] text-[16px] line-through decoration-black" style={{ textDecorationThickness: '1px' }}>
                                                             ₾{getDisplayPrice(product).toFixed(2)}
                                                         </span>
-                                                       
+
                                                     </div>
                                                 ) : (
                                                     <span className="font-regular text-black md:text-[18px] text-[16px]">
@@ -1032,11 +1033,31 @@ const ShopPageClient = () => {
                                                     </span>
                                                 )}
                                             </div>
+
                                             {product.discount && product.discount > 0 && (
                                                 <p className='bg-[#228460] text-white px-2 py-1 rounded-xl text-[16px] font-regular'>
                                                     დანაზოგი: ₾{product.discount.toFixed(2)}
                                                 </p>
                                             )}
+                                            {product.stock !== undefined && (
+                                                <p className='text-black text-[16px] font-regular'>
+                                                    მარაგში: {product.stock}
+                                                </p>
+                                            )}
+
+                                            <div className="flex items-center gap-2">
+                                                <StarRating
+                                                    rating={product.rating && product.rating > 0 ? Math.round(product.rating) : 0}
+                                                    readonly
+                                                    size="sm"
+                                                    color={product.rating && product.rating > 0 ? 'green' : 'silver'}
+                                                />
+                                                {product.rating && product.rating > 0 && (
+                                                    <span className="text-black text-[14px] font-regular">
+                                                        {product.rating.toFixed(1)}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 ))}

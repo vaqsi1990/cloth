@@ -8,7 +8,7 @@ interface StarRatingProps {
   onRatingChange?: (rating: number) => void
   readonly?: boolean
   size?: 'sm' | 'md' | 'lg'
-  color?: 'gold' | 'silver' | 'default'
+  color?: 'gold' | 'silver' | 'default' | 'green'
 }
 
 const StarRating: React.FC<StarRatingProps> = ({
@@ -36,6 +36,8 @@ const StarRating: React.FC<StarRatingProps> = ({
         return 'fill-amber-500 text-amber-500'
       case 'silver':
         return 'fill-gray-400 text-gray-400'
+      case 'green':
+        return 'fill-[#228460] text-[#228460]'
       default:
         return 'fill-yellow-400 text-yellow-400'
     }
