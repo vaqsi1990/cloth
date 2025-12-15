@@ -115,7 +115,9 @@ export default function RootLayout({
             <Suspense fallback={null}>
               <Header />
             </Suspense>
-            <ScrollRestorer />
+            <Suspense fallback={null}>
+              <ScrollRestorer />
+            </Suspense>
             {children}
             <Footer />
           </ChatProvider>

@@ -1,10 +1,10 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, Suspense } from "react"
 import { usePathname, useSearchParams } from "next/navigation"
 
 // Saves and restores scroll position per route+query within the session.
-const ScrollRestorer = () => {
+const ScrollRestorerContent = () => {
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
@@ -41,6 +41,14 @@ const ScrollRestorer = () => {
   }, [key])
 
   return null
+}
+
+const ScrollRestorer = () => {
+  return (
+    <Suspense fallback={null}>
+      <ScrollRestorerContent />
+    </Suspense>
+  )
 }
 
 export default ScrollRestorer
