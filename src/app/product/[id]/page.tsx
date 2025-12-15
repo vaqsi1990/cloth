@@ -13,6 +13,8 @@ import {
     Shield,
     Edit,
     Trash2,
+    MessageCircle,
+    X,
 } from "lucide-react"
 import { useCart } from "@/hooks/useCart"
 import { useSession } from 'next-auth/react';
@@ -86,6 +88,62 @@ const ProductPage = () => {
     const [replyComment, setReplyComment] = useState('')
     const [submittingReply, setSubmittingReply] = useState(false)
     const [deletingReplyId, setDeletingReplyId] = useState<number | null>(null)
+    
+    // Chat state
+    const [isChatOpen, setIsChatOpen] = useState(false)
+    const [chatRoomId, setChatRoomId] = useState<number | null>(null)
+    const [chatMessages, setChatMessages] = useState<Array<{
+        id: number
+        content: string
+        createdAt: string
+        isFromAdmin: boolean
+        userId?: string | null
+        user_name?: string | null
+        user_email?: string | null
+        admin_name?: string | null
+        admin_email?: string | null
+    }>>([])
+    const [newChatMessage, setNewChatMessage] = useState('')
+    const [sendingChatMessage, setSendingChatMessage] = useState(false)
+    const [loadingChatMessages, setLoadingChatMessages] = useState(false)
+    const [buyerInfo, setBuyerInfo] = useState<{ name?: string | null; email?: string | null; image?: string | null } | null>(null)
+    const [chatRoomInfo, setChatRoomInfo] = useState<{ userId?: string | null; adminId?: string | null } | null>(null)
+    
+    // Check if user has an active chat for this product
+    useEffect(() => {
+        const checkExistingChat = async () => {
+            if (!session?.user?.id || !product?.user?.id || session.user.id === product?.user?.id) return
+            
+            try {
+                const response = await fetch('/api/chat')
+                const data = await response.json()
+                if (data.success && product?.user?.id) {
+                    // Find chat room where current user is buyer (userId) and product author is seller (adminId)
+                    const existingChat = data.chatRooms.find((room: any) => 
+                        room.userId === session.user.id && 
+                        room.adminId === product?.user?.id &&
+                        (room.status === 'ACTIVE' || room.status === 'PENDING')
+                    )
+                    
+                    if (existingChat) {
+                        setChatRoomId(existingChat.id)
+                        setChatRoomInfo({
+                            userId: existingChat.userId,
+                            adminId: existingChat.adminId
+                        })
+                        // Auto-open chat if it exists
+                        setIsChatOpen(true)
+                        fetchChatMessages(existingChat.id)
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking existing chat:', error)
+            }
+        }
+        
+        checkExistingChat()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [session?.user?.id, product?.user?.id])
 
     const tiers: Tier[] = useMemo(() => {
         if (!product) return []
@@ -635,6 +693,136 @@ const ProductPage = () => {
         setIsAdding(false)
     }
 
+    const fetchChatMessages = async (roomId: number) => {
+        try {
+            setLoadingChatMessages(true)
+            const response = await fetch(`/api/chat/${roomId}`)
+            const data = await response.json()
+            if (data.success) {
+                setChatMessages(data.messages || [])
+                
+                // Store chat room info from API response
+                if (data.chatRoom) {
+                    setChatRoomInfo({
+                        userId: data.chatRoom.userId,
+                        adminId: data.chatRoom.adminId
+                    })
+                }
+                
+                // Fetch chat room info to get buyer/author details for display
+                const roomResponse = await fetch('/api/chat')
+                const roomData = await roomResponse.json()
+                if (roomData.success) {
+                    const room = roomData.chatRooms.find((r: any) => r.id === roomId)
+                    if (room) {
+                        // If current user is the author (adminId), show buyer info
+                        if (session?.user?.id === product?.user?.id) {
+                            setBuyerInfo({
+                                name: room.user_name || null,
+                                email: room.user_email || null,
+                                image: null
+                            })
+                        } else {
+                            // If current user is the buyer, show author info
+                            setBuyerInfo({
+                                name: room.admin_name || product?.user?.name || null,
+                                email: room.admin_email || null,
+                                image: product?.user?.image || null
+                            })
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching messages:', error)
+        } finally {
+            setLoadingChatMessages(false)
+        }
+    }
+
+    const sendChatMessage = async () => {
+        if (!newChatMessage.trim() || !chatRoomId) return
+
+        setSendingChatMessage(true)
+        const messageToSend = newChatMessage.trim()
+        setNewChatMessage('')
+
+        try {
+            const response = await fetch(`/api/chat/${chatRoomId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: messageToSend })
+            })
+
+            const data = await response.json()
+            if (data.success) {
+                // Refresh messages
+                fetchChatMessages(chatRoomId)
+            } else {
+                showToast(data.error || 'შეცდომა შეტყობინების გაგზავნისას', 'error')
+                setNewChatMessage(messageToSend) // Restore message on error
+            }
+        } catch (error) {
+            console.error('Error sending message:', error)
+            showToast('შეცდომა შეტყობინების გაგზავნისას', 'error')
+            setNewChatMessage(messageToSend) // Restore message on error
+        } finally {
+            setSendingChatMessage(false)
+        }
+    }
+
+    // Poll for new messages when chat is open
+    useEffect(() => {
+        if (isChatOpen && chatRoomId) {
+            fetchChatMessages(chatRoomId)
+            const interval = setInterval(() => {
+                fetchChatMessages(chatRoomId)
+            }, 3000)
+            return () => clearInterval(interval)
+        }
+    }, [isChatOpen, chatRoomId])
+
+    const handleContactAuthor = async () => {
+        if (!session) {
+            showToast('გთხოვთ შეხვიდეთ სისტემაში ავტორთან დასაკონტაქტებლად', 'warning')
+            return
+        }
+
+        if (!product?.user?.id) {
+            showToast('ავტორის ინფორმაცია ვერ მოიძებნა', 'error')
+            return
+        }
+
+        // Don't allow users to chat with themselves
+        if (session.user.id === product.user.id) {
+            showToast('თქვენ არ შეგიძლიათ საკუთარ თავთან დაკონტაქტება', 'warning')
+            return
+        }
+
+        try {
+            const response = await fetch(`/api/chat/product/${productId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+
+            const data = await response.json()
+
+            if (data.success) {
+                showToast('ჩათი შექმნილია', 'success')
+                // Open chat on the same page
+                setChatRoomId(data.chatRoomId)
+                setIsChatOpen(true)
+                // Fetch initial messages
+                fetchChatMessages(data.chatRoomId)
+            } else {
+                showToast(data.error || 'შეცდომა ჩათის შექმნისას', 'error')
+            }
+        } catch (error) {
+            console.error('Error creating chat:', error)
+            showToast('შეცდომა ჩათის შექმნისას', 'error')
+        }
+    }
+
     const handleRental = async () => {
         if (!product || !selectedSize) return
         
@@ -807,40 +995,51 @@ const ProductPage = () => {
 
                             {/* Author Info */}
                             <div className="bg-white  p-6 ">
-                                <div className="flex items-center space-x-4">
-                                    <div className="relative w-16 h-16 rounded-full overflow-hidden bg-black">
-                                        {product.user?.image ? (
-                                            <Image
-                                                width={64}
-                                                height={64}
-                                                src={product.user.image}
-                                                alt={product.user.name || "ავტორი"}
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-4">
+                                        <div className="relative w-16 h-16 rounded-full overflow-hidden bg-black">
+                                            {product.user?.image ? (
+                                                <Image
+                                                    width={64}
+                                                    height={64}
+                                                    src={product.user.image}
+                                                    alt={product.user.name || "ავტორი"}
                                              
-                                                className="object-cover"
-                                            />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center bg-black text-white font-semibold">
-                                                {product.user?.name ? product.user.name.charAt(0).toUpperCase() : "?"}
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div>
-                                        {product.user ? (
-                                            <Link
-                                                href={`/author/${product.user.id}`}
-                                                className="hover:opacity-80 transition-opacity"
-                                            >
-                                                <h3 className="md:text-[18px] text-[16px] font-semibold text-black hover:text-underline transition-colors">
-                                                    {product.user.name || "უცნობი ავტორი"}
+                                                    className="object-cover"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center bg-black text-white font-semibold">
+                                                    {product.user?.name ? product.user.name.charAt(0).toUpperCase() : "?"}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div>
+                                            {product.user ? (
+                                                <Link
+                                                    href={`/author/${product.user.id}`}
+                                                    className="hover:opacity-80 transition-opacity"
+                                                >
+                                                    <h3 className="md:text-[18px] text-[16px] font-semibold text-black hover:text-underline transition-colors">
+                                                        {product.user.name || "უცნობი ავტორი"}
+                                                    </h3>
+                                                </Link>
+                                            ) : (
+                                                <h3 className="md:text-[20px] text-[18px] font-semibold text-black">
+                                                    უცნობი ავტორი
                                                 </h3>
-                                            </Link>
-                                        ) : (
-                                            <h3 className="md:text-[20px] text-[18px] font-semibold text-black">
-                                                უცნობი ავტორი
-                                            </h3>
-                                        )}
-                                        <p className="md:text-[20px] text-[18px] text-black">პროდუქტის ავტორი</p>
+                                            )}
+                                            <p className="md:text-[20px] text-[18px] text-black">პროდუქტის ავტორი</p>
+                                        </div>
                                     </div>
+                                    {product.user && session?.user?.id !== product.user.id && (
+                                        <button
+                                            onClick={handleContactAuthor}
+                                            className="flex items-center space-x-2 px-4 py-2 bg-[#1B3729] text-white rounded-lg hover:opacity-90 transition-opacity md:text-[16px] text-[14px] font-medium"
+                                        >
+                                            <MessageCircle className="w-4 h-4" />
+                                            <span>დაეკონტაქტე</span>
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                             {/* Title */}
@@ -1554,6 +1753,152 @@ const ProductPage = () => {
                 </div>
 
             </main>
+
+            {/* Chat Widget - Visible to buyer and product author */}
+            {isChatOpen && chatRoomId && session?.user?.id && (
+                (session.user.id === product?.user?.id) || 
+                (chatRoomInfo && chatRoomInfo.userId === session.user.id && chatRoomInfo.adminId === product?.user?.id)
+            ) && (
+                <div className="fixed bottom-4 right-4 w-96 h-[600px] bg-white rounded-lg shadow-2xl border border-gray-200 z-50 flex flex-col">
+                    {/* Chat Header */}
+                    <div className="bg-[#1B3729] text-white p-4 rounded-t-lg flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                            {session?.user?.id === product?.user?.id ? (
+                                // Author view - show buyer
+                                buyerInfo?.image ? (
+                                    <Image
+                                        width={40}
+                                        height={40}
+                                        src={buyerInfo.image}
+                                        alt={buyerInfo.name || "მომხმარებელი"}
+                                        className="rounded-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="w-10 h-10 rounded-full bg-white text-[#1B3729] flex items-center justify-center font-semibold">
+                                        {buyerInfo?.name ? buyerInfo.name.charAt(0).toUpperCase() : "?"}
+                                    </div>
+                                )
+                            ) : (
+                                // Buyer view - show author
+                                product?.user?.image ? (
+                                    <Image
+                                        width={40}
+                                        height={40}
+                                        src={product.user.image}
+                                        alt={product.user.name || "ავტორი"}
+                                        className="rounded-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="w-10 h-10 rounded-full bg-white text-[#1B3729] flex items-center justify-center font-semibold">
+                                        {product?.user?.name ? product.user.name.charAt(0).toUpperCase() : "?"}
+                                    </div>
+                                )
+                            )}
+                            <div>
+                                <h3 className="font-semibold md:text-[16px] text-[14px]">
+                                    {session?.user?.id === product?.user?.id 
+                                        ? (buyerInfo?.name || buyerInfo?.email || "მომხმარებელი")
+                                        : (product?.user?.name || "ავტორი")
+                                    }
+                                </h3>
+                                <p className="text-xs text-gray-200">
+                                    {session?.user?.id === product?.user?.id 
+                                        ? "პროდუქტის მყიდველი"
+                                        : "პროდუქტის ავტორი"
+                                    }
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => setIsChatOpen(false)}
+                            className="text-white hover:text-gray-200 transition-colors"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
+
+                    {/* Messages */}
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+                        {loadingChatMessages && chatMessages.length === 0 ? (
+                            <div className="text-center py-8">
+                                <div className="w-8 h-8 border-4 border-gray-300 border-t-[#1B3729] rounded-full animate-spin mx-auto mb-2"></div>
+                                <p className="text-black md:text-[14px] text-[12px]">იტვირთება...</p>
+                            </div>
+                        ) : chatMessages.length === 0 ? (
+                            <div className="text-center py-8">
+                                <MessageCircle className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                                <p className="text-black md:text-[14px] text-[12px]">დაიწყეთ საუბარი!</p>
+                            </div>
+                        ) : (
+                            chatMessages.map((message) => {
+                                // Determine message position and style
+                                const isCurrentUserAuthor = session?.user?.id === product?.user?.id
+                                
+                                // Check if message is from author (seller)
+                                const isFromAuthor = message.isFromAdmin
+                                
+                                // Check if message is from current user (buyer)
+                                const isFromBuyer = !message.isFromAdmin && message.userId === session?.user?.id
+                                
+                                // Determine position: author messages on right, buyer messages on left
+                                const isOnRight = isFromAuthor
+                                const isOnLeft = isFromBuyer
+                                
+                                return (
+                                    <div
+                                        key={message.id}
+                                        className={`flex ${isOnRight ? 'justify-end' : 'justify-start'}`}
+                                    >
+                                        <div
+                                            className={`max-w-[75%] rounded-lg px-4 py-2 ${
+                                                isFromAuthor
+                                                    ? 'bg-[#228460] text-white'
+                                                    : 'bg-white text-black border border-gray-200'
+                                            }`}
+                                        >
+                                            <p className="md:text-[14px] text-[12px] break-words">{message.content}</p>
+                                            <p className={`text-xs mt-1 ${
+                                                isFromAuthor ? 'text-gray-300' : 'text-gray-500'
+                                            }`}>
+                                                {new Date(message.createdAt).toLocaleTimeString('ka-GE', {
+                                                    hour: '2-digit',
+                                                    minute: '2-digit'
+                                                })}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )
+                            })
+                        )}
+                    </div>
+
+                    {/* Message Input */}
+                    <div className="p-4 border-t border-gray-200 bg-white rounded-b-lg">
+                        <div className="flex space-x-2">
+                            <input
+                                type="text"
+                                value={newChatMessage}
+                                onChange={(e) => setNewChatMessage(e.target.value)}
+                                onKeyPress={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault()
+                                        sendChatMessage()
+                                    }
+                                }}
+                                placeholder="დაწერეთ შეტყობინება..."
+                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B3729] md:text-[14px] text-[12px]"
+                            />
+                            <button
+                                onClick={sendChatMessage}
+                                disabled={!newChatMessage.trim() || sendingChatMessage}
+                                className="px-4 py-2 bg-[#1B3729] text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity md:text-[14px] text-[12px] font-medium"
+                            >
+                                {sendingChatMessage ? '...' : 'გაგზავნა'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

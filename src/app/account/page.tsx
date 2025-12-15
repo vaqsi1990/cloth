@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, Suspense } from 'react'
 import { useSession, signOut } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { User, Package, ShoppingCart, Settings, MapPin, Phone, Mail, Camera, MessageCircle, Search, Trash2, TrendingUp } from 'lucide-react'
@@ -57,9 +57,10 @@ interface ProductItem {
 
 type VerificationState = 'PENDING' | 'APPROVED' | 'REJECTED' | null
 
-const AccountPage = () => {
+const AccountPageContent = () => {
   const { data: session, status, update } = useSession()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState('profile')
   const [userStats, setUserStats] = useState({
     ordersCount: 0,
@@ -97,6 +98,12 @@ const AccountPage = () => {
   const [userIban, setUserIban] = useState<string | null>(null)
   const [hasActiveRentals, setHasActiveRentals] = useState(false)
   const [checkingRentals, setCheckingRentals] = useState(false)
+  const [chatRooms, setChatRooms] = useState<any[]>([])
+  const [loadingChats, setLoadingChats] = useState(false)
+  const [selectedChatRoom, setSelectedChatRoom] = useState<any | null>(null)
+  const [chatMessages, setChatMessages] = useState<any[]>([])
+  const [newMessage, setNewMessage] = useState('')
+  const [sendingMessage, setSendingMessage] = useState(false)
   const isSeller = userStats.productsCount > 0
   // Show verification for all non-admin users who haven't been approved yet
   const sellerNeedsVerification = true // Always show for non-admin users
@@ -180,6 +187,66 @@ const AccountPage = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab])
+
+  // Check URL parameters on mount
+  useEffect(() => {
+    const tabParam = searchParams.get('tab')
+    const chatParam = searchParams.get('chat')
+    
+    if (tabParam) {
+      setActiveTab(tabParam)
+    }
+    
+    if (chatParam) {
+      const chatId = parseInt(chatParam)
+      if (!isNaN(chatId)) {
+        // Wait for chat rooms to load, then select the chat
+        setTimeout(() => {
+          const room = chatRooms.find(r => r.id === chatId)
+          if (room) {
+            setSelectedChatRoom(room)
+          }
+        }, 500)
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
+
+  // Fetch chats when tab changes to chats
+  useEffect(() => {
+    if (activeTab === 'chats' && session?.user?.id) {
+      fetchChatRooms()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab])
+
+  // Select chat room when chatRooms are loaded and chat param exists
+  useEffect(() => {
+    const chatParam = searchParams.get('chat')
+    if (chatParam && chatRooms.length > 0) {
+      const chatId = parseInt(chatParam)
+      if (!isNaN(chatId)) {
+        const room = chatRooms.find(r => r.id === chatId)
+        if (room && !selectedChatRoom) {
+          setSelectedChatRoom(room)
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatRooms, searchParams])
+
+  // Fetch messages when chat room is selected
+  useEffect(() => {
+    if (selectedChatRoom?.id) {
+      fetchChatMessages(selectedChatRoom.id)
+      // Poll for new messages every 3 seconds
+      const interval = setInterval(() => {
+        fetchChatMessages(selectedChatRoom.id)
+      }, 3000)
+      return () => clearInterval(interval)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedChatRoom])
 
   // Check ban status and blocked/verified status
   useEffect(() => {
@@ -278,6 +345,66 @@ const AccountPage = () => {
       setHasActiveRentals(false)
     } finally {
       setCheckingRentals(false)
+    }
+  }
+
+  const fetchChatRooms = async () => {
+    try {
+      setLoadingChats(true)
+      const response = await fetch('/api/chat')
+      const data = await response.json()
+      if (data.success) {
+        setChatRooms(data.chatRooms || [])
+      }
+    } catch (error) {
+      console.error('Error fetching chat rooms:', error)
+    } finally {
+      setLoadingChats(false)
+    }
+  }
+
+  const fetchChatMessages = async (chatRoomId: number) => {
+    try {
+      const response = await fetch(`/api/chat/${chatRoomId}`)
+      const data = await response.json()
+      if (data.success) {
+        setChatMessages(data.messages || [])
+      }
+    } catch (error) {
+      console.error('Error fetching messages:', error)
+    }
+  }
+
+  const sendChatMessage = async () => {
+    if (!newMessage.trim() || !selectedChatRoom) return
+
+    setSendingMessage(true)
+    const messageToSend = newMessage.trim()
+    setNewMessage('')
+
+    try {
+      const response = await fetch(`/api/chat/${selectedChatRoom.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: messageToSend })
+      })
+
+      const data = await response.json()
+      if (data.success) {
+        // Refresh messages
+        fetchChatMessages(selectedChatRoom.id)
+        // Refresh chat rooms to update last message
+        fetchChatRooms()
+      } else {
+        showToast(data.error || 'შეცდომა შეტყობინების გაგზავნისას', 'error')
+        setNewMessage(messageToSend) // Restore message on error
+      }
+    } catch (error) {
+      console.error('Error sending message:', error)
+      showToast('შეცდომა შეტყობინების გაგზავნისას', 'error')
+      setNewMessage(messageToSend) // Restore message on error
+    } finally {
+      setSendingMessage(false)
     }
   }
 
@@ -525,6 +652,7 @@ const AccountPage = () => {
     { id: 'profile', label: 'პროფილი', icon: User },
     { id: 'orders', label: 'შეკვეთები', icon: ShoppingCart },
     { id: 'sales', label: 'გაყიდვები', icon: TrendingUp },
+    { id: 'chats', label: 'ჩათები', icon: MessageCircle },
     { id: 'Contact', label: 'კონტაქტი', icon: MessageCircle },
     { id: 'products', label: 'ჩემი პროდუქტები', icon: Package },
     { id: 'settings', label: 'პარამეტრები', icon: Settings },
@@ -1388,10 +1516,150 @@ const AccountPage = () => {
         {/* Profile edit form */}
         <ProfileSettingsForm hasActiveRentals={hasActiveRentals} checkingRentals={checkingRentals} />
       </div>
+    </div>
+  )
 
-  
+  const renderChatsTab = () => (
+    <div className="space-y-6">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
+        <div className="flex flex-col lg:flex-row h-[calc(100vh-300px)]">
+          {/* Chat Rooms List */}
+          <div className="lg:w-1/3 border-r border-gray-200 flex flex-col">
+            <div className="p-4 border-b border-gray-200">
+              <h3 className="md:text-[20px] text-[18px] font-bold text-black">ჩათები</h3>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {loadingChats ? (
+                <div className="p-4 text-center">
+                  <div className="w-8 h-8 border-4 border-gray-300 border-t-[#1B3729] rounded-full animate-spin mx-auto mb-2"></div>
+                  <p className="text-black md:text-[16px] text-[14px]">იტვირთება...</p>
+                </div>
+              ) : chatRooms.length === 0 ? (
+                <div className="p-4 text-center">
+                  <MessageCircle className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                  <p className="text-black md:text-[16px] text-[14px]">ჩათები არ არის</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-200">
+                  {chatRooms.map((room) => {
+                    const otherUser = session?.user?.id === room.userId ? room.admin_name : room.user_name
+                    const otherUserEmail = session?.user?.id === room.userId ? room.admin_email : room.user_email
+                    const isSelected = selectedChatRoom?.id === room.id
+                    
+                    return (
+                      <button
+                        key={room.id}
+                        onClick={() => setSelectedChatRoom(room)}
+                        className={`w-full text-left p-4 hover:bg-gray-50 transition-colors ${
+                          isSelected ? 'bg-[#1B3729] text-white' : ''
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 min-w-0">
+                            <p className={`font-semibold md:text-[16px] text-[14px] truncate ${
+                              isSelected ? 'text-white' : 'text-black'
+                            }`}>
+                              {otherUser || otherUserEmail || 'უცნობი მომხმარებელი'}
+                            </p>
+                            {room.last_message && (
+                              <p className={`mt-1 truncate md:text-[14px] text-[12px] ${
+                                isSelected ? 'text-gray-200' : 'text-gray-600'
+                              }`}>
+                                {room.last_message}
+                              </p>
+                            )}
+                          </div>
+                          {room.message_count > 0 && (
+                            <span className={`ml-2 px-2 py-1 rounded-full text-xs font-bold ${
+                              isSelected ? 'bg-white text-[#1B3729]' : 'bg-[#1B3729] text-white'
+                            }`}>
+                              {room.message_count}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
 
-
+          {/* Chat Messages */}
+          <div className="lg:w-2/3 flex flex-col">
+            {selectedChatRoom ? (
+              <>
+                <div className="p-4 border-b border-gray-200">
+                  <h3 className="md:text-[18px] text-[16px] font-semibold text-black">
+                    {session?.user?.id === selectedChatRoom.userId 
+                      ? selectedChatRoom.admin_name || selectedChatRoom.admin_email || 'ავტორი'
+                      : selectedChatRoom.user_name || selectedChatRoom.user_email || 'მომხმარებელი'}
+                  </h3>
+                </div>
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                  {chatMessages.map((message) => {
+                    const isFromMe = message.userId === session?.user?.id && !message.isFromAdmin
+                    const isFromOther = !isFromMe
+                    
+                    return (
+                      <div
+                        key={message.id}
+                        className={`flex ${isFromMe ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div
+                          className={`max-w-[70%] rounded-lg px-4 py-2 ${
+                            isFromMe
+                              ? 'bg-[#1B3729] text-white'
+                              : 'bg-gray-200 text-black'
+                          }`}
+                        >
+                          <p className="md:text-[16px] text-[14px]">{message.content}</p>
+                          <p className={`text-xs mt-1 ${
+                            isFromMe ? 'text-gray-300' : 'text-gray-600'
+                          }`}>
+                            {new Date(message.createdAt).toLocaleString('ka-GE')}
+                          </p>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+                <div className="p-4 border-t border-gray-200">
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault()
+                          sendChatMessage()
+                        }
+                      }}
+                      placeholder="დაწერეთ შეტყობინება..."
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B3729] md:text-[16px] text-[14px]"
+                    />
+                    <button
+                      onClick={sendChatMessage}
+                      disabled={!newMessage.trim() || sendingMessage}
+                      className="px-6 py-2 bg-[#1B3729] text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity md:text-[16px] text-[14px] font-medium"
+                    >
+                      {sendingMessage ? '...' : 'გაგზავნა'}
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-center">
+                  <MessageCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <p className="text-black md:text-[18px] text-[16px]">აირჩიეთ ჩათი საუბრის დასაწყებად</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   )
 
@@ -1410,6 +1678,8 @@ const AccountPage = () => {
             <ContactForm />
           </div>
         )
+      case 'chats':
+        return renderChatsTab()
       case 'products':
         return renderProductsTab()
       case 'settings':
@@ -1744,6 +2014,21 @@ function ProfileSettingsForm({ hasActiveRentals, checkingRentals }: { hasActiveR
         </button>
       )}
     </form>
+  )
+}
+
+const AccountPage = () => {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-gray-300 border-t-[#1B3729] rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-black">იტვირთება...</p>
+        </div>
+      </div>
+    }>
+      <AccountPageContent />
+    </Suspense>
   )
 }
 

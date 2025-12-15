@@ -53,6 +53,8 @@ export async function GET(request: NextRequest) {
       WHERE cr."userId" = ${session.user.id} OR cr."adminId" = ${session.user.id}
       ORDER BY cr."updatedAt" DESC
     `
+    
+    // Note: adminId is used to store product author/seller ID for product-related chats
 
     // Transform the data to include messages array for compatibility
     const transformedChatRooms = chatRooms.map(room => ({

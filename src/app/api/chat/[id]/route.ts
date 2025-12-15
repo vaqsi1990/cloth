@@ -32,7 +32,8 @@ export async function GET(
     const session = await getServerSession(authOptions)
     
     // Check if user has access to this chat room
-    // Admin users can access any chat room, regular users can only access their own
+    // Admin users can access any chat room
+    // Regular users can access chat rooms where they are userId (buyer) or adminId (seller/product author)
     let chatRoom
     if (session?.user?.role === 'ADMIN') {
       // Admin can access any chat room
@@ -42,14 +43,14 @@ export async function GET(
         LIMIT 1
       `
     } else {
-      // Regular users can only access their own chat rooms
+      // Regular users can access their own chat rooms (as buyer) or chat rooms where they are seller (adminId)
       // For guest users, we need to check if they have access via session or if it's a guest chat
       if (session?.user?.id) {
-        // Authenticated user
+        // Authenticated user - can be buyer (userId) or seller (adminId)
         chatRoom = await prisma.$queryRaw<Array<{ id: number }>>`
           SELECT id FROM "ChatRoom" 
           WHERE id = ${chatRoomId}
-          AND "userId" = ${session.user.id}
+          AND ("userId" = ${session.user.id} OR "adminId" = ${session.user.id})
           LIMIT 1
         `
       } else {
@@ -73,6 +74,17 @@ export async function GET(
         { status: 404 }
       )
     }
+
+    // Get chat room info
+    const chatRoomData = await prisma.$queryRaw<Array<{
+      userId: string | null
+      adminId: string | null
+    }>>`
+      SELECT "userId", "adminId"
+      FROM "ChatRoom"
+      WHERE id = ${chatRoomId}
+      LIMIT 1
+    `
 
     const messages = await prisma.$queryRaw<Array<{
       id: number
@@ -102,7 +114,11 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
-      messages: serializedMessages
+      messages: serializedMessages,
+      chatRoom: chatRoomData.length > 0 ? {
+        userId: chatRoomData[0].userId,
+        adminId: chatRoomData[0].adminId
+      } : null
     })
 
   } catch (error) {
@@ -143,7 +159,8 @@ export async function POST(
     const validatedData = sendMessageSchema.parse(body)
 
     // Check if chat room exists and user has access
-    // Admin users can access any chat room, regular users can only access their own
+    // Admin users can access any chat room
+    // Regular users can access chat rooms where they are userId (buyer) or adminId (seller/product author)
     let chatRoom
     if (session?.user?.role === 'ADMIN') {
       // Admin can access any chat room
@@ -153,14 +170,14 @@ export async function POST(
         LIMIT 1
       `
     } else {
-      // Regular users can only access their own chat rooms
+      // Regular users can access their own chat rooms (as buyer) or chat rooms where they are seller (adminId)
       // For guest users, we need to check if they have access via session or if it's a guest chat
       if (session?.user?.id) {
-        // Authenticated user
+        // Authenticated user - can be buyer (userId) or seller (adminId)
         chatRoom = await prisma.$queryRaw<Array<{ id: number }>>`
           SELECT id FROM "ChatRoom" 
           WHERE id = ${chatRoomId}
-          AND "userId" = ${session.user.id}
+          AND ("userId" = ${session.user.id} OR "adminId" = ${session.user.id})
           LIMIT 1
         `
       } else {
@@ -185,8 +202,16 @@ export async function POST(
       )
     }
 
-    // Determine if message is from admin and ensure admin exists when needed
-    const isFromAdmin = session?.user?.role === 'ADMIN'
+    // Check if user is the seller (adminId) in this chat room
+    const chatRoomInfo = await prisma.$queryRaw<Array<{ userId: string | null; adminId: string | null }>>`
+      SELECT "userId", "adminId" FROM "ChatRoom" WHERE id = ${chatRoomId} LIMIT 1
+    `
+    
+    const isUserSeller = chatRoomInfo.length > 0 && chatRoomInfo[0].adminId === session?.user?.id
+    const isUserAdmin = session?.user?.role === 'ADMIN'
+    
+    // Determine if message is from admin/seller
+    const isFromAdmin = isUserAdmin || isUserSeller
     let adminId: string | null = null
     if (isFromAdmin && session?.user?.id) {
       const adminUser = await prisma.user.findUnique({
