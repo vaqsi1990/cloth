@@ -366,31 +366,31 @@ const AdminProductsPage = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
+        <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
             <div>
-              <h1 className="md:text-[20px] text-[18px] font-bold text-black">პროდუქტების მართვა</h1>
+              <h1 className="text-base sm:text-lg md:text-[20px] font-bold text-black">პროდუქტების მართვა</h1>
               
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 md:gap-4">
               <Link
                 href="/admin/products/sku"
-                className="px-4 py-2 bg-[#1B3729] md:text-[20px] text-[16px]   text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
+                className="px-3 sm:px-4 py-2 bg-[#1B3729] text-xs sm:text-sm md:text-[20px] text-white rounded-lg font-bold uppercase tracking-wide transition-colors whitespace-nowrap"
               >
                
                 <span>ძიება კოდის მიხედვით</span>
               </Link>
               <Link
                 href="/admin"
-                className="px-4 py-2 bg-[#1B3729] md:text-[20px] text-[16px] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
+                className="px-3 sm:px-4 py-2 bg-[#1B3729] text-xs sm:text-sm md:text-[20px] text-white rounded-lg font-bold uppercase tracking-wide transition-colors whitespace-nowrap"
               >
                 ადმინ პანელი
               </Link>
               <Link
                 href="/admin/products/new"
-                className="flex items-center space-x-2 px-4 py-2 bg-[#1B3729] text-white rounded-lg md:text-[20px] text-[16px] font-bold uppercase tracking-wide  transition-colors"
+                className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-[#1B3729] text-white rounded-lg text-xs sm:text-sm md:text-[20px] font-bold uppercase tracking-wide transition-colors whitespace-nowrap"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
                 <span>ახალი პროდუქტი</span>
               </Link>
             </div>
@@ -398,10 +398,10 @@ const AdminProductsPage = () => {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
         {/* Filters */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 mb-6 sm:mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
             {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-black" />
@@ -450,17 +450,17 @@ const AdminProductsPage = () => {
         </div>
 
         {/* Products Grid */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="md:text-[20px] text-[18px] font-bold text-black">
+        <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <h2 className="text-base sm:text-lg md:text-[20px] font-bold text-black">
               პროდუქტები ({filteredProducts.length})
             </h2>
           </div>
 
           {filteredProducts.length === 0 ? (
-            <div className="text-center py-12">
-              <Package className="w-12 h-12 text-black mx-auto mb-4" />
-              <p className="text-black mb-4">
+            <div className="text-center py-8 sm:py-12">
+              <Package className="w-10 h-10 sm:w-12 sm:h-12 text-black mx-auto mb-3 sm:mb-4" />
+              <p className="text-sm sm:text-base text-black mb-3 sm:mb-4">
                 {searchTerm || filterGender !== 'ALL' || filterCategory !== 'ALL'
                   ? 'ფილტრის შედეგები ვერ მოიძებნა'
                   : 'ჯერ არ არის პროდუქტები'
@@ -468,43 +468,43 @@ const AdminProductsPage = () => {
               </p>
               <Link
                 href="/admin/products/new"
-                className="inline-block px-6 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
+                className="inline-block px-4 sm:px-6 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide text-xs sm:text-sm transition-colors"
               >
                 პირველი პროდუქტის დამატება
               </Link>
             </div>
            ) : (
-             <div className="space-y-4">
+             <div className="space-y-3 sm:space-y-4">
                {filteredProducts.map((product) => (
-                 <div key={product.id} className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
+                 <div key={product.id} className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
                    {/* Product Image */}
-                   <div className="w-16 h-20 bg-gray-200 rounded-lg relative flex-shrink-0">
+                   <div className="w-full sm:w-16 sm:h-20 h-62 bg-gray-200 rounded-lg relative flex-shrink-0">
                      {product.images.length > 0 ? (
                        <Image
                          src={product.images[0].url}
                          alt={product.images[0].alt || product.name}
                          fill
-                         sizes="64px"
+                         sizes="(max-width: 640px) 100vw, 64px"
                          className="object-cover rounded-lg"
                        />
                      ) : (
                        <div className="w-full h-full flex items-center justify-center">
-                         <Package className="w-6 h-6 text-black" />
+                         <Package className="w-6 h-6 sm:w-6 sm:h-6 text-black" />
                        </div>
                      )}
                    </div>
 
                    {/* Product Info */}
                    <div className="flex-1 min-w-0">
-                     <div className="flex items-start justify-between">
-                       <div className="flex-1">
-                         <h3 className="font-semibold md:text-[18px] text-[16px] text-black mb-1 truncate">
+                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+                       <div className="flex-1 min-w-0">
+                         <h3 className="font-semibold text-sm sm:text-base md:text-[18px] text-black mb-1 break-words">
                            {product.name}
                          </h3>
                          
                          {/* SKU Code - Always show */}
                          <div className="mb-2">
-                           <span className={`md:text-[18px] text-[16px] font-mono px-2 py-1 rounded ${
+                           <span className={`text-xs sm:text-sm md:text-[18px] font-mono px-2 py-1 rounded break-all ${
                              product.sku 
                                ? 'text-black ' 
                                : 'text-orange-600 '
@@ -514,7 +514,7 @@ const AdminProductsPage = () => {
                          </div>
 
                          <div className="mb-2">
-                           <span className={`md:text-[18px] text-[16px] font-mono px-2 py-1 rounded ${
+                           <span className={`text-xs sm:text-sm md:text-[18px] font-mono px-2 py-1 rounded break-all ${
                              product.user?.name 
                                ? 'text-black ' 
                                : 'text-orange-600 '
@@ -527,7 +527,7 @@ const AdminProductsPage = () => {
                           <select
                             value={product.status || 'AVAILABLE'}
                             onChange={(e) => handleStatusChange(product.id, e.target.value)}
-                            className="md:text-[18px] text-[16px] border border-gray-300 rounded px-2 py-1 text-black focus:outline-none focus:ring-1 focus:ring-black"
+                            className="text-xs sm:text-sm md:text-[18px] border border-gray-300 rounded px-2 py-1 text-black focus:outline-none focus:ring-1 focus:ring-black w-full sm:w-auto"
                           >
                             <option value="AVAILABLE">თავისუფალია</option>
                             <option value="RENTED">გაქირავებულია</option>
@@ -536,17 +536,17 @@ const AdminProductsPage = () => {
                           </select>
                          
                         </div>
-                         <div className="flex items-center space-x-4 text-[16px] text-black mb-2">
-                           <span>₾{getDisplayPrice(product).toFixed(2)}</span>
-                           <span>{product.gender}</span>
+                         <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm md:text-[16px] text-black mb-2">
+                           <span className="whitespace-nowrap">₾{getDisplayPrice(product).toFixed(2)}</span>
+                           <span className="whitespace-nowrap">{product.gender}</span>
                            {product.category && (
-                             <span>{product.category.name}</span>
+                             <span className="whitespace-nowrap">{product.category.name}</span>
                            )}
                          </div>
                          
-                         <div className="flex items-center space-x-2">
+                         <div className="flex flex-wrap items-center gap-2 mb-2">
                           <span
-                            className={`px-2 py-1 rounded-full font-bold md:text-[18px] text-[16px] ${
+                            className={`px-2 py-1 rounded-full font-bold text-xs sm:text-sm md:text-[18px] whitespace-nowrap ${
                               product.approvalStatus === 'APPROVED'
                                 ? 'text-green-500'
                                 : product.approvalStatus === 'REJECTED'
@@ -557,17 +557,17 @@ const AdminProductsPage = () => {
                             {getApprovalStatusLabel(product.approvalStatus)}
                           </span>
                           {product.approvalStatus === 'REJECTED' && product.rejectionReason && (
-                            <span className="text-[16px] text-red-700">
+                            <span className="text-xs sm:text-sm md:text-[16px] text-red-700 break-words">
                               მიზეზი: {product.rejectionReason}
                             </span>
                           )}
                           {product.discount && product.discount > 0 && (
-                            <span className="px-2 py-1 bg-red-100 text-red-800 text-[16px] rounded-full">
+                            <span className="px-2 py-1 bg-red-100 text-red-800 text-xs sm:text-sm md:text-[16px] rounded-full whitespace-nowrap">
                               -₾{product.discount.toFixed(2)}
                             </span>
                           )}
                            {hasActiveRentals(product) && (
-                             <span className="px-2 py-1 bg-orange-100 text-orange-800 text-[16px] rounded-full flex items-center">
+                             <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs sm:text-sm md:text-[16px] rounded-full flex items-center whitespace-nowrap">
                                <Clock className="w-3 h-3 mr-1" />
                                გაქირავებული
                              </span>
@@ -577,10 +577,10 @@ const AdminProductsPage = () => {
                          
                          {/* Rental Status Details */}
                          {hasActiveRentals(product) && (
-                           <div className="mt-2 p-2 bg-orange-50 border border-orange-200 rounded text-[16px]">
+                           <div className="mt-2 p-2 bg-orange-50 border border-orange-200 rounded text-xs sm:text-sm md:text-[16px]">
                              <div className="flex items-center text-orange-800 font-medium mb-1">
-                               <Calendar className="w-3 h-3 mr-1" />
-                               აქტიური გაქირავებები:
+                               <Calendar className="w-3 h-3 mr-1 flex-shrink-0" />
+                               <span>აქტიური გაქირავებები:</span>
                              </div>
                              <div className="space-y-1">
                                {Object.keys(product.rentalStatus || {}).map(size => {
@@ -588,13 +588,13 @@ const AdminProductsPage = () => {
                                  if (periods.length === 0) return null
                                  
                                  return (
-                                   <div key={size} className="text-orange-700">
+                                   <div key={size} className="text-orange-700 break-words">
                                      <span className="font-medium">{size}:</span>
                                      {periods.map((period, index) => (
-                                       <span key={index} className="ml-2">
+                                       <span key={index} className="ml-2 block sm:inline">
                                          {formatDate(period.startDate)}-{formatDate(period.endDate)}
                                          
-                                         <span className={`ml-1 px-1 py-0.5 rounded font-bold md:text-[18px] text-[16px] ${
+                                         <span className={`ml-1 px-1 py-0.5 rounded font-bold text-xs sm:text-sm md:text-[18px] ${
                                            period.status === 'ACTIVE' 
                                              ? 'text-green-500' 
                                              : 'text-blue-500'
@@ -612,50 +612,51 @@ const AdminProductsPage = () => {
                        </div>
 
                        {/* Actions */}
-                       <div className="flex items-center space-x-2 ml-4">
-                        <div className="flex flex-col space-y-2 mr-4">
+                       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2 sm:ml-4">
+                        <div className="flex flex-row sm:flex-col sm:space-y-2 gap-2 sm:mr-4">
                           {product.approvalStatus !== 'APPROVED' && (
                             <>
                               <button
                                 onClick={() => handleApprovalAction(product.id, 'APPROVED')}
                                 disabled={approvalUpdatingId === product.id}
-                                className="px-3 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors md:text-[18px] text-[16px] disabled:opacity-50"
+                                className="px-3 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-xs sm:text-sm md:text-[18px] disabled:opacity-50 whitespace-nowrap"
                               >
                                 {approvalUpdatingId === product.id ? 'დამტკიცება...' : 'დამტკიცება'}
                               </button>
                               <button
                                 onClick={() => handleApprovalAction(product.id, 'REJECTED')}
                                 disabled={approvalUpdatingId === product.id}
-                                className="px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors md:text-[18px] text-[16px] disabled:opacity-50"
+                                className="px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-xs sm:text-sm md:text-[18px] disabled:opacity-50 whitespace-nowrap"
                               >
                                 {approvalUpdatingId === product.id ? 'უარყოფა...' : 'უარყოფა'}
                               </button>
                             </>
                           )}
                         </div>
-                         <Link
-                           href={`/product/${product.id}`}
-                           className="flex items-center space-x-1 px-3 py-2 bg-gray-100 text-black rounded-lg hover:bg-gray-200 transition-colors md:text-[18px] text-[16px]"
-                         >
-                           <Eye className="w-4 h-4" />
-                           <span className='font-bold'>ნახვა</span>
-                         </Link>
-                         
-                         <Link
-                           href={`/admin/products/${product.id}/edit`}
-                           className="flex items-center space-x-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors md:text-[18px] text-[16px]"
-                         >
-                           <Edit className="w-4 h-4" />
-                           <span className='font-bold'>რედაქტირება</span>
-                         </Link>
-                         
-                         <button
-                           onClick={() => handleDeleteProduct(product.id)}
-                           className="flex items-center space-x-1 px-3 py-2  rounded-lg  transition-colors md:text-[18px] text-[16px]"
-                         >
-                           <Trash2 className="w-7 text-red-500 h-7" />
-                          
-                         </button>
+                         <div className="flex flex-row sm:flex-col gap-2 sm:gap-2">
+                           <Link
+                             href={`/product/${product.id}`}
+                             className="flex items-center justify-center space-x-1 px-3 py-2 bg-gray-100 text-black rounded-lg hover:bg-gray-200 transition-colors text-xs sm:text-sm md:text-[18px] whitespace-nowrap"
+                           >
+                             <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
+                             <span className='font-bold'>ნახვა</span>
+                           </Link>
+                           
+                           <Link
+                             href={`/admin/products/${product.id}/edit`}
+                             className="flex items-center justify-center space-x-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-xs sm:text-sm md:text-[18px] whitespace-nowrap"
+                           >
+                             <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
+                             <span className='font-bold'>რედაქტირება</span>
+                           </Link>
+                           
+                           <button
+                             onClick={() => handleDeleteProduct(product.id)}
+                             className="flex items-center justify-center space-x-1 px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm md:text-[18px]"
+                           >
+                             <Trash2 className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-red-500" />
+                           </button>
+                         </div>
                        </div>
                      </div>
                    </div>

@@ -241,30 +241,30 @@ const AdminOrdersPage = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+        <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               <button
                 type="button"
                 onClick={() => router.back()}
                 className="flex items-center space-x-2 text-black hover:text-gray-900 transition-colors"
               >
-                <ArrowLeft className="w-5 h-5" />
-                <span>ადმინ პანელი</span>
+                <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="text-sm sm:text-base">ადმინ პანელი</span>
               </button>
               <div>
-                <h1 className="md:text-[24px] text-[20px] font-bold text-gray-900">შეკვეთების მართვა</h1>
-                <p className="text-black mt-1">მართე ყველა შეკვეთა</p>
+                <h1 className="text-lg sm:text-xl md:text-[24px] font-bold text-gray-900">შეკვეთების მართვა</h1>
+                <p className="text-xs sm:text-sm text-black mt-1">მართე ყველა შეკვეთა</p>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
         {/* Filters */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 mb-6 sm:mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -297,17 +297,17 @@ const AdminOrdersPage = () => {
         </div>
 
         {/* Orders List */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-gray-900">
+        <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900">
               შეკვეთები ({filteredOrders.length})
             </h2>
           </div>
 
           {filteredOrders.length === 0 ? (
-            <div className="text-center py-12">
-              <ShoppingCart className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-black mb-4">
+            <div className="text-center py-8 sm:py-12">
+              <ShoppingCart className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-3 sm:mb-4" />
+              <p className="text-sm sm:text-base text-black mb-4">
                 {searchTerm || filterStatus !== 'ALL'
                   ? 'ფილტრის შედეგები ვერ მოიძებნა'
                   : 'ჯერ არ არის შეკვეთები'
@@ -315,44 +315,44 @@ const AdminOrdersPage = () => {
               </p>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {filteredOrders.map((order) => (
-                <div key={order.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                <div key={order.id} className="border border-gray-200 rounded-lg p-3 sm:p-6 hover:shadow-md transition-shadow">
                   {/* Order Header */}
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                        <ShoppingCart className="w-5 h-5 text-black" />
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
+                    <div className="flex items-center space-x-2 sm:space-x-4">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
+                        <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5 text-black" />
                       </div>
-                      <div>
-                        <h3 className="font-semibold text-gray-900">შეკვეთა #{order.id}</h3>
-                        <p className="text-sm text-black">
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-sm sm:text-base text-gray-900">შეკვეთა #{order.id}</h3>
+                        <p className="text-xs sm:text-sm text-black">
                           {formatDate(order.createdAt)}
                         </p>
                       </div>
                     </div>
                     
-                    <div className="flex items-center space-x-3">
-                      <span className={`px-3 py-1 rounded-full text-sm flex items-center space-x-1 ${getStatusColor(order.status)}`}>
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                      <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm flex items-center space-x-1 whitespace-nowrap ${getStatusColor(order.status)}`}>
                         {getStatusIcon(order.status)}
                         <span>{getStatusText(order.status)}</span>
                       </span>
                       {/* Rental indicator */}
                       {order.items.some(item => item.isRental) && (
-                        <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium">
+                        <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap">
                           ქირაობა
                         </span>
                       )}
-                      <span className="text-lg font-bold text-gray-900">₾{order.total}</span>
+                      <span className="text-base sm:text-lg font-bold text-gray-900 whitespace-nowrap">₾{order.total}</span>
                       <button
                         onClick={() => toggleOrderExpansion(order.id)}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
                         title={expandedOrders.has(order.id) ? 'დეტალების დამალვა' : 'დეტალების ჩვენება'}
                       >
                         {expandedOrders.has(order.id) ? (
-                          <ChevronUp className="w-5 h-5 text-black" />
+                          <ChevronUp className="w-4 h-4 sm:w-5 sm:h-5 text-black" />
                         ) : (
-                          <ChevronDown className="w-5 h-5 text-black" />
+                          <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5 text-black" />
                         )}
                       </button>
                     </div>
@@ -362,50 +362,50 @@ const AdminOrdersPage = () => {
                   {expandedOrders.has(order.id) && (
                     <>
                       {/* Customer Info */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-3 sm:mb-4">
                         <div className="space-y-2">
-                          <div className="flex items-center space-x-2 text-sm text-black">
-                            <User className="w-4 h-4" />
-                            <span>{order.customerName}</span>
+                          <div className="flex items-start sm:items-center space-x-2 text-xs sm:text-sm text-black">
+                            <User className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0 mt-0.5 sm:mt-0" />
+                            <span className="break-words">{order.customerName}</span>
                           </div>
-                          <div className="flex items-center space-x-2 text-sm text-black">
-                            <Mail className="w-4 h-4" />
-                            <span>{order.email || 'N/A'}</span>
+                          <div className="flex items-start sm:items-center space-x-2 text-xs sm:text-sm text-black">
+                            <Mail className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0 mt-0.5 sm:mt-0" />
+                            <span className="break-all">{order.email || 'N/A'}</span>
                           </div>
-                          <div className="flex items-center space-x-2 text-sm text-black">
-                            <Phone className="w-4 h-4" />
-                            <span>{order.phone}</span>
+                          <div className="flex items-center space-x-2 text-xs sm:text-sm text-black">
+                            <Phone className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                            <span className="break-all">{order.phone}</span>
                           </div>
                         </div>
                         
                         <div className="space-y-2">
-                          <div className="flex items-center space-x-2 text-sm text-black">
-                            <MapPin className="w-4 h-4" />
-                            <span>{order.address}</span>
+                          <div className="flex items-start sm:items-center space-x-2 text-xs sm:text-sm text-black">
+                            <MapPin className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0 mt-0.5 sm:mt-0" />
+                            <span className="break-words">{order.address}</span>
                           </div>
                           {order.user && (
-                            <div className="flex items-center space-x-2 text-sm text-black">
-                              <User className="w-4 h-4" />
-                              <span>რეგისტრირებული მომხმარებელი: {order.user.name}</span>
+                            <div className="flex items-start sm:items-center space-x-2 text-xs sm:text-sm text-black">
+                              <User className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0 mt-0.5 sm:mt-0" />
+                              <span className="break-words">რეგისტრირებული მომხმარებელი: {order.user.name}</span>
                             </div>
                           )}
                         </div>
                       </div>
 
                       {/* Order Items */}
-                      <div className="mb-4">
-                        <h2 className="font-medium text-gray-900 mb-2">შეკვეთის პროდუქტები:</h2>
+                      <div className="mb-3 sm:mb-4">
+                        <h2 className="font-medium text-sm sm:text-base text-gray-900 mb-2">შეკვეთის პროდუქტები:</h2>
                         <div className="space-y-2">
                           {order.items.map((item) => (
-                            <div key={item.id} className={`flex items-center space-x-3 p-2 rounded-lg ${item.isRental ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50'}`}>
-                              <div className={`w-8 h-8 rounded flex items-center justify-center ${item.isRental ? 'bg-blue-200' : 'bg-gray-200'}`}>
-                                <Package className={`w-4 h-4 ${item.isRental ? 'text-blue-600' : 'text-black'}`} />
+                            <div key={item.id} className={`flex items-start sm:items-center gap-2 sm:gap-3 p-2 rounded-lg ${item.isRental ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50'}`}>
+                              <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded flex items-center justify-center flex-shrink-0 ${item.isRental ? 'bg-blue-200' : 'bg-gray-200'}`}>
+                                <Package className={`w-3 h-3 sm:w-4 sm:h-4 ${item.isRental ? 'text-blue-600' : 'text-black'}`} />
                               </div>
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <p className="text-sm font-medium text-gray-900">{item.product?.name || item.productName || 'პროდუქტი ვერ მოიძებნა'}</p>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <p className="text-xs sm:text-sm font-medium text-gray-900 break-words">{item.product?.name || item.productName || 'პროდუქტი ვერ მოიძებნა'}</p>
                                   {item.isRental && (
-                                    <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">
+                                    <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full whitespace-nowrap">
                                       ქირაობა
                                     </span>
                                   )}
@@ -419,16 +419,16 @@ const AdminOrdersPage = () => {
                                   </div>
                                 )}
                               </div>
-                              <span className="text-sm font-medium text-gray-900">₾{item.price}</span>
+                              <span className="text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap flex-shrink-0">₾{item.price}</span>
                             </div>
                           ))}
                         </div>
                       </div>
 
                       {/* Order Summary */}
-                      <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                        <h4 className="font-medium text-gray-900 mb-2">შეკვეთის შეჯამება:</h4>
-                        <div className="space-y-1 text-sm">
+                      <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-gray-50 rounded-lg">
+                        <h4 className="font-medium text-xs sm:text-sm text-gray-900 mb-2">შეკვეთის შეჯამება:</h4>
+                        <div className="space-y-1 text-xs sm:text-sm">
                           <div className="flex justify-between">
                             <span className="text-black">ყიდვის ნივთები:</span>
                             <span className="font-medium">{order.items.filter(item => !item.isRental).reduce((total, item) => total + item.quantity, 0)}</span>
@@ -445,13 +445,13 @@ const AdminOrdersPage = () => {
                       </div>
 
                       {/* Status Actions */}
-                      <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-sm text-black">სტატუსის შეცვლა:</span>
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 pt-3 sm:pt-4 border-t border-gray-200">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-2">
+                          <span className="text-xs sm:text-sm text-black whitespace-nowrap">სტატუსის შეცვლა:</span>
                           <select
                             value={order.status}
                             onChange={(e) => handleStatusUpdate(order.id, e.target.value)}
-                            className="px-3 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-black focus:border-transparent"
+                            className="px-2 sm:px-3 py-1 border border-gray-300 rounded text-xs sm:text-sm focus:ring-2 focus:ring-black focus:border-transparent w-full sm:w-auto"
                           >
                             <option value="PENDING">მოლოდინი</option>
                             <option value="PAID">გადახდილი</option>
@@ -461,19 +461,19 @@ const AdminOrdersPage = () => {
                           </select>
                         </div>
                         
-                        <div className="flex items-center space-x-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                           <span className="text-xs text-gray-500">
                             განახლდა: {formatDate(order.updatedAt)}
                           </span>
-                        </div>
                           <button
                             onClick={() => deleteOrder(order.id)}
-                            className="flex items-center space-x-1 px-3 py-1 bg-red-100 text-red-700 rounded text-sm hover:bg-red-200 transition-colors"
+                            className="flex items-center justify-center sm:justify-start space-x-1 px-3 py-1 bg-red-100 text-red-700 rounded text-xs sm:text-sm hover:bg-red-200 transition-colors whitespace-nowrap"
                             title="შეკვეთის წაშლა"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
                             <span>წაშლა</span>
                           </button>
+                        </div>
                       </div>
                     </>
                   )}

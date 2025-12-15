@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { MessageCircle, Send, Clock, XCircle, Play, Trash2 } from 'lucide-react'
+import { MessageCircle, Send, Clock, XCircle, Play, Trash2, Menu, X, ArrowLeft } from 'lucide-react'
 import { formatDateTime } from '@/utils/dateUtils'
 import { showToast } from '@/utils/toast'
 
@@ -41,6 +41,7 @@ const AdminChatPage = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [chatRoomToDelete, setChatRoomToDelete] = useState<ChatRoom | null>(null)
+  const [showChatList, setShowChatList] = useState(true)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
  
@@ -134,11 +135,27 @@ const AdminChatPage = () => {
   useEffect(() => {
     if (selectedChatRoom) {
       fetchMessages()
+      // On mobile, hide chat list when chat is selected
+      const handleResize = () => {
+        if (window.innerWidth < 1024) {
+          setShowChatList(false)
+        } else {
+          setShowChatList(true)
+        }
+      }
+      handleResize()
+      window.addEventListener('resize', handleResize)
       // Poll for new messages every 5 seconds (reduced frequency)
       const interval = setInterval(() => {
         fetchMessages()
       }, 5000)
-      return () => clearInterval(interval)
+      return () => {
+        clearInterval(interval)
+        window.removeEventListener('resize', handleResize)
+      }
+    } else {
+      // Show chat list when no chat is selected
+      setShowChatList(true)
     }
   }, [selectedChatRoom, fetchMessages])
 
@@ -307,22 +324,22 @@ const AdminChatPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <div className="flex-shrink-0 px-4 sm:px-6 lg:px-8 py-6 bg-white border-b border-gray-200">
-        <h1 className="md:text-[20px] text-[18px] font-bold text-black">Live Chat მართვა</h1>
+      <div className="flex-shrink-0 px-3 sm:px-4 lg:px-6 py-4 sm:py-6 bg-white border-b border-gray-200">
+        <h1 className="text-base sm:text-lg md:text-[20px] font-bold text-black">Live Chat მართვა</h1>
       
       </div>
 
-      <div className="flex-1 px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-200px)]">
+      <div className="flex-1 px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
+        <div className="relative flex lg:grid lg:grid-cols-3 gap-4 sm:gap-6 h-[calc(100vh-180px)] sm:h-[calc(100vh-200px)]">
           {/* Chat Rooms List */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col">
-            <div className="p-4 border-b border-gray-200">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="md:text-[20px] text-[16px] font-semibold text-gray-900">საუბრები</h2>
+          <div className={`bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col h-full w-full lg:w-auto transition-all duration-300 ${selectedChatRoom && !showChatList ? 'hidden lg:flex' : 'flex'}`}>
+            <div className="p-3 sm:p-4 border-b border-gray-200">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-3 sm:mb-4">
+                <h2 className="text-base sm:text-lg md:text-[20px] font-semibold text-gray-900">საუბრები</h2>
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="px-3 py-1 border border-gray-300 rounded-md md:text-[18px] text-[16px] focus:ring-2 focus:ring-[#1B3729] focus:border-transparent"
+                  className="px-2 sm:px-3 py-1 border border-gray-300 rounded-md text-xs sm:text-sm md:text-[18px] focus:ring-2 focus:ring-[#1B3729] focus:border-transparent w-full sm:w-auto"
                 >
                   <option value="">ყველა</option>
                   <option value="PENDING">ლოდინი</option>
@@ -334,53 +351,55 @@ const AdminChatPage = () => {
 
             <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
               {chatRooms.length === 0 ? (
-                <div className="p-4 text-center text-gray-500">
-                  <MessageCircle className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                  <p className="md:text-[18px] text-[16px]">საუბრები არ არის</p>
+                <div className="p-3 sm:p-4 text-center text-gray-500">
+                  <MessageCircle className="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 text-gray-300" />
+                  <p className="text-sm sm:text-base md:text-[18px]">საუბრები არ არის</p>
                 </div>
               ) : (
-                <div className="space-y-2 p-4">
+                <div className="space-y-2 p-2 sm:p-4">
                   {chatRooms.map((room) => (
                     <div
                       key={room.id}
-                      onClick={() => setSelectedChatRoom(room)}
-                      className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                      onClick={() => {
+                        setSelectedChatRoom(room)
+                        // On mobile, hide chat list when chat is selected
+                        if (window.innerWidth < 1024) {
+                          setShowChatList(false)
+                        }
+                      }}
+                      className={`p-2 sm:p-3 rounded-lg cursor-pointer transition-colors ${
                         selectedChatRoom?.id === room.id
                           ? 'bg-[#1B3729] text-white'
                           : 'bg-gray-50 hover:bg-gray-100'
                       }`}
                     >
-                      <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center justify-between mb-1 sm:mb-2">
                         <div className="flex items-center space-x-2">
-                          
-                          
-                          <span className="font-medium">
+                          <span className="font-medium text-xs sm:text-sm md:text-base">
                             #{room.id}
                           </span>
                         </div>
-                      
                       </div>
                       
-                      <div className="md:text-[18px] text-[16px]">
-                        <p className="font-medium">
+                      <div className="text-xs sm:text-sm md:text-[18px]">
+                        <p className="font-medium break-words">
                           {room.user?.name || room.guestName || 'უცნობი მომხმარებელი'}
                         </p>
-                        <p className="md:text-[18px] text-[16px] opacity-75">
+                        <p className="text-xs sm:text-sm md:text-[18px] opacity-75 break-all">
                           {room.user?.email || room.guestEmail}
                         </p>
-                        <p className="md:text-[18px] text-[16px] opacity-75 mt-1">
+                        <p className="text-xs sm:text-sm md:text-[18px] opacity-75 mt-1">
                           {formatDateTime(room.updatedAt)}
                         </p>
-                        <div className="mt-2 flex justify-end">
+                        <div className="mt-1 sm:mt-2 flex justify-end">
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
                               openDeleteModal(room)
                             }}
-                            className="text-red-500 cursor-pointer md:text-[18px] text-[16px] flex items-end space-x-1"
+                            className="text-red-500 cursor-pointer text-xs sm:text-sm md:text-[18px] flex items-center space-x-1"
                           >
-                            <Trash2 className="w-6 h-6" />
-                          
+                            <Trash2 className="w-4 h-4 sm:w-5 sm:h-6" />
                           </button>
                         </div>
                       </div>
@@ -392,25 +411,37 @@ const AdminChatPage = () => {
           </div>
 
           {/* Chat Messages */}
-          <div className="lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col chat-container">
+          <div className={`lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col chat-container h-full w-full lg:w-auto ${selectedChatRoom && !showChatList ? 'flex' : 'hidden lg:flex'} ${!selectedChatRoom ? 'hidden lg:flex' : ''}`}>
             {selectedChatRoom ? (
               <>
                 {/* Chat Header */}
-                <div className="flex-shrink-0 p-4 border-b border-gray-200 bg-white">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="md:text-[18px] text-[16px] font-semibold text-black">
-                        საუბარი #{selectedChatRoom.id}
-                      </h3>
-                      <p className="md:text-[18px] text-[16px] text-black">
-                        {selectedChatRoom.user?.name || selectedChatRoom.guestName || 'უცნობი მომხმარებელი'}
-                      </p>
+                <div className="flex-shrink-0 p-3 sm:p-4 border-b border-gray-200 bg-white">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+                    <div className="min-w-0 flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          setShowChatList(true)
+                          setSelectedChatRoom(null)
+                        }}
+                        className="lg:hidden p-1 hover:bg-gray-100 rounded transition-colors flex-shrink-0"
+                        title="სიაში დაბრუნება"
+                      >
+                        <ArrowLeft className="w-5 h-5 text-black" />
+                      </button>
+                      <div className="min-w-0">
+                        <h3 className="text-sm sm:text-base md:text-[18px] font-semibold text-black">
+                          საუბარი #{selectedChatRoom.id}
+                        </h3>
+                        <p className="text-xs sm:text-sm md:text-[18px] text-black break-words">
+                          {selectedChatRoom.user?.name || selectedChatRoom.guestName || 'უცნობი მომხმარებელი'}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       {selectedChatRoom.status === 'PENDING' && (
                         <button
                           onClick={() => updateChatRoomStatus(selectedChatRoom.id, 'assign')}
-                          className="px-3 py-1 bg-[#1B3729] text-white rounded-md md:text-[18px] font-bold text-[16px] hover:bg-[#2a4d3a] transition-colors"
+                          className="px-2 sm:px-3 py-1 bg-[#1B3729] text-white rounded-md text-xs sm:text-sm md:text-[18px] font-bold hover:bg-[#2a4d3a] transition-colors whitespace-nowrap"
                         >
                           მიღება
                         </button>
@@ -418,7 +449,7 @@ const AdminChatPage = () => {
                       {selectedChatRoom.status === 'ACTIVE' && (
                         <button
                           onClick={() => updateChatRoomStatus(selectedChatRoom.id, 'close')}
-                          className="px-3 py-1 bg-red-500 text-white rounded-md md:text-[18px] font-bold text-[16px] hover:bg-red-600 transition-colors"
+                          className="px-2 sm:px-3 py-1 bg-red-500 text-white rounded-md text-xs sm:text-sm md:text-[18px] font-bold hover:bg-red-600 transition-colors whitespace-nowrap"
                         >
                           დახურვა
                         </button>
@@ -426,7 +457,7 @@ const AdminChatPage = () => {
                       {selectedChatRoom.status === 'CLOSED' && (
                         <button
                           onClick={() => updateChatRoomStatus(selectedChatRoom.id, 'reopen')}
-                          className="px-3 py-1 bg-green-500 text-white rounded-md md:text-[18px] text-[16px] hover:bg-green-600 transition-colors"
+                          className="px-2 sm:px-3 py-1 bg-green-500 text-white rounded-md text-xs sm:text-sm md:text-[18px] hover:bg-green-600 transition-colors whitespace-nowrap"
                         >
                           გახსნა
                         </button>
@@ -437,21 +468,21 @@ const AdminChatPage = () => {
 
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto bg-gray-50 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                  <div className="p-4 h-full">
+                  <div className="p-2 sm:p-4 h-full">
                     {messages.length === 0 ? (
-                      <div className="text-center text-gray-500 py-8 h-full flex flex-col items-center justify-center">
-                        <MessageCircle className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                        <p>შეტყობინებები არ არის</p>
+                      <div className="text-center text-gray-500 py-6 sm:py-8 h-full flex flex-col items-center justify-center">
+                        <MessageCircle className="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 text-gray-300" />
+                        <p className="text-xs sm:text-sm md:text-base">შეტყობინებები არ არის</p>
                       </div>
                     ) : (
-                      <div className="space-y-4 pb-4">
+                      <div className="space-y-3 sm:space-y-4 pb-2 sm:pb-4">
                         {messages.map((message, index) => (
                           <div
                             key={`${message.id}-${message.createdAt}-${index}`}
                             className={`flex ${message.isFromAdmin ? 'justify-end' : 'justify-start'}`}
                           >
                             <div
-                              className={`max-w-[70%] p-3 rounded-lg ${
+                              className={`max-w-[85%] sm:max-w-[70%] p-2 sm:p-3 rounded-lg ${
                                 message.isFromAdmin
                                   ? 'bg-[#1B3729] text-white'
                                   : 'bg-white text-gray-800 border border-gray-200'
@@ -459,7 +490,7 @@ const AdminChatPage = () => {
                             >
                               {/* Show sender name */}
                               <div className="flex items-center justify-between mb-1">
-                                <p className={`md:text-[18px] text-[16px] font-medium ${
+                                <p className={`text-xs sm:text-sm md:text-[18px] font-medium ${
                                   message.isFromAdmin ? 'text-gray-300' : 'text-black'
                                 }`}>
                                   {message.isFromAdmin 
@@ -468,8 +499,8 @@ const AdminChatPage = () => {
                                   }
                                 </p>
                               </div>
-                              <p className="md:text-[18px] text-[16px]">{message.content}</p>
-                              <p className={`md:text-[18px] text-[16px] mt-1 ${
+                              <p className="text-xs sm:text-sm md:text-[18px] break-words">{message.content}</p>
+                              <p className={`text-xs sm:text-sm md:text-[18px] mt-1 ${
                                 message.isFromAdmin ? 'text-gray-300' : 'text-gray-500'
                               }`}>
                                 {formatDateTime(message.createdAt)}
@@ -484,33 +515,33 @@ const AdminChatPage = () => {
                 </div>
 
                 {/* Message Input */}
-                <div className="flex-shrink-0 p-4 border-t border-gray-200 bg-white">
-                  <div className="flex space-x-2">
+                <div className="flex-shrink-0 p-2 sm:p-4 border-t border-gray-200 bg-white">
+                  <div className="flex gap-2">
                     <textarea
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
                       onKeyPress={handleKeyPress}
                       placeholder="შეიყვანეთ თქვენი პასუხი..."
-                      className="flex-1 p-3 text-black border placeholder:text-gray-500 text-black placeholder:text-[18px] border-gray-300 rounded-md resize-none focus:ring-2 focus:ring-[#1B3729] focus:border-transparent"
+                      className="flex-1 p-2 sm:p-3 text-xs sm:text-sm md:text-base text-black border placeholder:text-gray-500 border-gray-300 rounded-md resize-none focus:ring-2 focus:ring-[#1B3729] focus:border-transparent"
                       rows={2}
                       disabled={isLoading}
                     />
                     <button
                       onClick={sendMessage}
                       disabled={isLoading || !newMessage.trim()}
-                      className="bg-[#1B3729] text-white p-3 rounded-md hover:bg-[#2a4d3a] disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                      className="bg-[#1B3729] text-white p-2 sm:p-3 rounded-md hover:bg-[#2a4d3a] disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex-shrink-0"
                     >
-                      <Send className="w-4 h-4" />
+                      <Send className="w-4 h-4 sm:w-5 sm:h-5" />
                     </button>
                   </div>
                 </div>
               </>
             ) : (
               <div className="flex-1 flex items-center justify-center text-gray-500">
-                <div className="text-center">
-                  <MessageCircle className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                  <p className="md:text-[18px] text-[16px]">აირჩიეთ საუბარი</p>
-                  <p className="md:text-[18px] text-[16px]">მარცხნივ ჩამონათვალიდან</p>
+                <div className="text-center p-4">
+                  <MessageCircle className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 text-gray-300" />
+                  <p className="text-sm sm:text-base md:text-[18px]">აირჩიეთ საუბარი</p>
+                  <p className="text-sm sm:text-base md:text-[18px]">მარცხნივ ჩამონათვალიდან</p>
                 </div>
               </div>
             )}
@@ -520,19 +551,19 @@ const AdminChatPage = () => {
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-              <h3 className="md:text-[18px] text-[16px] font-semibold text-black mb-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3 sm:p-4">
+          <div className="bg-white rounded-lg p-4 sm:p-6 max-w-md w-full">
+              <h3 className="text-base sm:text-lg md:text-[18px] font-semibold text-black mb-3 sm:mb-4">
               საუბრის წაშლა
             </h3>
-            <p className="text-black mb-4">
+            <p className="text-sm sm:text-base text-black mb-3 sm:mb-4">
               ნამდვილად გსურთ საუბრის წაშლა? ეს მოქმედება შეუქცევადია.
             </p>
-            <p className="md:text-[18px] text-[16px] text-black mb-4">
+            <p className="text-xs sm:text-sm md:text-[18px] text-black mb-3 sm:mb-4 break-words">
               საუბარი #{chatRoomToDelete?.id} - {chatRoomToDelete?.user?.name || chatRoomToDelete?.guestName || 'უცნობი მომხმარებელი'}
             </p>
-            <div className="mb-4">
-              <label className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
+            <div className="mb-3 sm:mb-4">
+              <label className="block text-xs sm:text-sm md:text-[18px] font-medium text-black mb-2">
                 დასადასტურებლად შეიყვანეთ &quot;DELETE&quot;:
               </label>
               <input
@@ -540,20 +571,20 @@ const AdminChatPage = () => {
                 value={deleteConfirmText}
                 onChange={(e) => setDeleteConfirmText(e.target.value)}
                 placeholder="DELETE"
-                className="w-full p-2 border text-black border-gray-300 rounded-md placeholder:text-gray-500"
+                className="w-full p-2 text-sm sm:text-base text-black border border-gray-300 rounded-md placeholder:text-gray-500"
               />
             </div>
-            <div className="flex space-x-3">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <button
                 onClick={deleteChatRoom}
                 disabled={deleteConfirmText !== 'DELETE'}
-                className="flex-1 bg-red-500 md:text-[18px] text-[16px] font-bold text-white py-2 px-4 rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                className="flex-1 bg-red-500 text-xs sm:text-sm md:text-[18px] font-bold text-white py-2 px-4 rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
               >
                 წაშლა
               </button>
               <button
                 onClick={closeDeleteModal}
-                className="flex-1 bg-gray-300 md:text-[18px] text-[16px] font-bold text-black py-2 px-4 rounded-md  transition-colors"
+                className="flex-1 bg-gray-300 text-xs sm:text-sm md:text-[18px] font-bold text-black py-2 px-4 rounded-md transition-colors"
               >
                 გაუქმება
               </button>

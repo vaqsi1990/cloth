@@ -206,19 +206,19 @@ const AdminUsersPage = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-4 py-6">
+        <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               <button
                 type="button"
                 onClick={() => router.back()}
                 className="flex items-center space-x-2 text-black hover:text-black transition-colors"
               >
-                <ArrowLeft className="w-7 font-bold h-7" />
+                <ArrowLeft className="w-5 h-5 sm:w-7 sm:h-7 font-bold" />
                 
               </button>
               <div>
-                <h1 className="md:text-[20px] text-[18px] font-bold text-black">მომხმარებლების მართვა</h1>
+                <h1 className="text-base sm:text-lg md:text-[20px] font-bold text-black">მომხმარებლების მართვა</h1>
                
               </div>
             </div>
@@ -226,10 +226,10 @@ const AdminUsersPage = () => {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
         {/* Filters */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-8 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 mb-6 sm:mb-8 space-y-4 sm:space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-black" />
@@ -258,45 +258,49 @@ const AdminUsersPage = () => {
           </div>
 
           {blockedSellers.length > 0 && (
-            <div className="border border-red-200 rounded-xl bg-red-50 p-4">
-              <div className="flex items-center justify-between mb-3">
+            <div className="border border-red-200 rounded-xl bg-red-50 p-3 sm:p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-2">
                 <div>
-                  <h3 className="text-lg font-semibold text-red-900">
+                  <h3 className="text-base sm:text-lg font-semibold text-red-900">
                     დაბლოკილი პროდუქტის ავტორები ({blockedSellers.length})
                   </h3>
-                  <p className="text-sm text-red-700">
+                  <p className="text-xs sm:text-sm text-red-700">
                     ეს მომხმარებლები დაბლოკილნი არიან შემოსავლის ზღვრის გადაჭარბების გამო. ადმინისტრატორი ხედავს მათ მონაცემებს.
                   </p>
                 </div>
               </div>
-              <div className="overflow-x-auto rounded-lg border border-red-100 bg-white">
+              <div className="overflow-x-auto rounded-lg border border-red-100 bg-white -mx-2 sm:mx-0">
                 <table className="min-w-full divide-y divide-red-100">
                   <thead className="bg-red-50">
                     <tr>
-                      <th className="px-4 py-2 text-left text-xs font-semibold text-red-800 uppercase tracking-wider">სახელი</th>
-                      <th className="px-4 py-2 text-left text-xs font-semibold text-red-800 uppercase tracking-wider">ელფოსტა</th>
-                      <th className="px-4 py-2 text-left text-xs font-semibold text-red-800 uppercase tracking-wider">პროდუქტები</th>
-                      <th className="px-4 py-2 text-left text-xs font-semibold text-red-800 uppercase tracking-wider">სტატუსი</th>
-                      <th className="px-4 py-2"></th>
+                      <th className="px-2 sm:px-4 py-2 text-left text-xs font-semibold text-red-800 uppercase tracking-wider">სახელი</th>
+                      <th className="px-2 sm:px-4 py-2 text-left text-xs font-semibold text-red-800 uppercase tracking-wider hidden sm:table-cell">ელფოსტა</th>
+                      <th className="px-2 sm:px-4 py-2 text-left text-xs font-semibold text-red-800 uppercase tracking-wider">პროდუქტები</th>
+                      <th className="px-2 sm:px-4 py-2 text-left text-xs font-semibold text-red-800 uppercase tracking-wider">სტატუსი</th>
+                      <th className="px-2 sm:px-4 py-2"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-red-100">
                     {blockedSellers.map((seller) => (
                       <tr key={seller.id}>
-                        <td className="px-4 py-2 text-sm text-black">{seller.name || 'უცნობი მომხმარებელი'}</td>
-                        <td className="px-4 py-2 text-sm text-black">{seller.email || '---'}</td>
-                        <td className="px-4 py-2 text-sm text-black">{seller._count.products}</td>
-                        <td className="px-4 py-2 text-sm">
+                        <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-black">
+                          <div className="sm:hidden font-semibold">{seller.name || 'უცნობი მომხმარებელი'}</div>
+                          <div className="hidden sm:block">{seller.name || 'უცნობი მომხმარებელი'}</div>
+                          <div className="sm:hidden text-xs text-gray-600 mt-1">{seller.email || '---'}</div>
+                        </td>
+                        <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-black hidden sm:table-cell">{seller.email || '---'}</td>
+                        <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-black">{seller._count.products}</td>
+                        <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm">
                           {seller.verified ? (
                             <span className="px-2 py-1 rounded-full text-green-800 text-xs font-semibold">დამოწმებული</span>
                           ) : (
                             <span className="px-2 py-1 rounded-full  text-yellow-800 text-xs font-semibold">ველოდებით დოკუმენტებს</span>
                           )}
                         </td>
-                        <td className="px-4 py-2 text-right">
+                        <td className="px-2 sm:px-4 py-2 text-right">
                           <button
                             onClick={() => toggleUserExpansion(seller.id)}
-                            className="text-sm text-red-600 hover:text-red-800 font-semibold"
+                            className="text-xs sm:text-sm text-red-600 hover:text-red-800 font-semibold whitespace-nowrap"
                           >
                             დეტალები
                           </button>
@@ -310,31 +314,31 @@ const AdminUsersPage = () => {
           )}
 
           {sellersNeedingVerification.length > 0 && (
-            <div className="border border-orange-200 rounded-xl bg-orange-50 p-4">
-              <div className="flex items-center justify-between mb-3">
+            <div className="border border-orange-200 rounded-xl bg-orange-50 p-3 sm:p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-2">
                 <div>
-                  <h3 className="text-lg font-semibold text-orange-900">
+                  <h3 className="text-base sm:text-lg font-semibold text-orange-900">
                     ვერიფიკაცია სჭირდება გამყიდველებს ({sellersNeedingVerification.length})
                   </h3>
-                  <p className="text-sm text-orange-700">
+                  <p className="text-xs sm:text-sm text-orange-700">
                     ამ მომხმარებლების შემოსავალი 2₾-ს აღემატება და საჭიროა დოკუმენტების გადამოწმება.
                   </p>
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {sellersNeedingVerification.map(seller => (
                   <button
                     key={seller.id}
                     onClick={() => toggleUserExpansion(seller.id)}
-                    className="flex items-center justify-between bg-white border border-orange-200 rounded-lg px-4 py-3 text-left hover:shadow-sm transition-shadow"
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white border border-orange-200 rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-left hover:shadow-sm transition-shadow gap-2"
                   >
-                    <div>
-                      <p className="font-semibold text-black">{seller.name || seller.email || 'უცნობი მომხმარებელი'}</p>
-                      <p className="text-sm text-gray-600">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-black text-sm sm:text-base truncate">{seller.name || seller.email || 'უცნობი მომხმარებელი'}</p>
+                      <p className="text-xs sm:text-sm text-gray-600 truncate">
                         {seller.email || 'ელფოსტა უცნობია'}
                       </p>
                     </div>
-                    <span className="px-3 py-1 text-sm bg-orange-100 text-orange-800 rounded-full">
+                    <span className="px-2 sm:px-3 py-1 text-xs sm:text-sm bg-orange-100 text-orange-800 rounded-full whitespace-nowrap self-start sm:self-center">
                       პროდუქტები: {seller._count.products}
                     </span>
                   </button>
@@ -345,9 +349,9 @@ const AdminUsersPage = () => {
         </div>
 
         {/* Users List */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-black">
+        <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <h2 className="text-lg sm:text-xl font-bold text-black">
               მომხმარებლები ({filteredUsers.length})
             </h2>
           </div>
@@ -363,73 +367,73 @@ const AdminUsersPage = () => {
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {filteredUsers.map((user) => (
                 <div key={user.id} className="border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
                   {/* User Card */}
-                  <div className="flex items-center justify-between p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 gap-3 sm:gap-4">
                     {/* User Info */}
-                    <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                        <Users className="w-6 h-6 text-black" />
+                    <div className="flex items-start sm:items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
+                        <Users className="w-5 h-5 sm:w-6 sm:h-6 text-black" />
                       </div>
                       
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-1">
-                          <h3 className="font-semibold text-black md:text-[18px] text-[16px]">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <h3 className="font-semibold text-black text-sm sm:text-base md:text-[18px] break-words">
                             {user.name || (user.personalId ? `წაშლილი მომხმარებელი (${user.personalId})` : 'წაშლილი მომხმარებელი')}
                           </h3>
-                          <span className={`px-2 py-1 text-xs rounded-full ${
+                          <span className={`px-2 py-1 text-xs sm:text-sm md:text-[16px] font-bold rounded-full whitespace-nowrap ${
                             user.role === 'ADMIN' 
-                              ? 'inline-block px-2 py-1 md:text-[18px] text-[16px] font-bold rounded-full  text-red-800' 
-                              : ' inline-block px-2 py-1 md:text-[18px] text-[16px] font-bold rounded-full text-green-500'
+                              ? 'text-red-800' 
+                              : 'text-green-500'
                           }`}>
                             {user.role === 'ADMIN' ? 'ადმინისტრატორი' : 'მომხმარებელი'}
                           </span>
                           {(!user.name || !user.email) && (
-                            <span className="px-2 py-1 text-xs rounded-full bg-gray-200 text-black">
+                            <span className="px-2 py-1 text-xs rounded-full bg-gray-200 text-black whitespace-nowrap">
                               წაშლილი
                             </span>
                           )}
                         </div>
                         
-                        <div className="flex items-center space-x-4 text-[16px] text-black">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm md:text-[16px] text-black">
                           {user.email && user.name && (
-                            <div className="flex items-center space-x-1">
-                              <Mail className="w-4 h-4" />
-                              <span>{user.email}</span>
+                            <div className="flex items-center space-x-1 min-w-0">
+                              <Mail className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                              <span className="truncate">{user.email}</span>
                             </div>
                           )}
-                          <div className="flex items-center space-x-1">
-                            <Calendar className="w-4 h-4" />
+                          <div className="flex items-center space-x-1 whitespace-nowrap">
+                            <Calendar className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                             <span>{new Date(user.createdAt).toLocaleDateString('ka-GE')}</span>
                           </div>
                           {user.personalId && (
-                            <div className="flex items-center space-x-1">
-                              <User className="w-4 h-4" />
+                            <div className="flex items-center space-x-1 whitespace-nowrap">
+                              <User className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                               <span>{user.personalId}</span>
                             </div>
                           )}
                           {user.phone && (
-                            <div className="flex items-center space-x-1">
-                              <Phone className="w-4 h-4" />
+                            <div className="flex items-center space-x-1 whitespace-nowrap">
+                              <Phone className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                               <span>{user.phone}</span>
                             </div>
                           )}
                         </div>
                         
-                        <div className="flex items-center space-x-4 text-[16px] text-black mt-1">
-                          <div className="flex items-center space-x-1">
-                            <Package className="w-3 h-3" />
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm md:text-[16px] text-black mt-1">
+                          <div className="flex items-center space-x-1 whitespace-nowrap">
+                            <Package className="w-3 h-3 flex-shrink-0" />
                             <span>{user._count.products} პროდუქტი</span>
                           </div>
-                          <div className="flex items-center space-x-1">
-                            <ShoppingCart className="w-3 h-3" />
+                          <div className="flex items-center space-x-1 whitespace-nowrap">
+                            <ShoppingCart className="w-3 h-3 flex-shrink-0" />
                             <span>{user._count.orders} შეკვეთა</span>
                           </div>
                           <button
                             onClick={() => toggleUserExpansion(user.id)}
-                            className="text-blue-600 hover:text-blue-800 text-[18px] font-medium"
+                            className="text-blue-600 hover:text-blue-800 text-xs sm:text-sm md:text-[18px] font-medium whitespace-nowrap"
                           >
                             {expandedUser === user.id ? 'დეტალების დამალვა' : 'დეტალების ნახვა'}
                           </button>
@@ -439,27 +443,22 @@ const AdminUsersPage = () => {
 
                     {/* Actions - Only show for non-deleted users */}
                     {user.name && user.email && (
-                      <>
-                        <div className="flex items-center space-x-2">
-                      
-                         
-                        </div>
-
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2 flex-shrink-0">
                         {/* Ban status badge */}
                         {user.banned && (
-                          <span className="ml-2 px-2 py-1 bg-red-600 text-white rounded text-[18px]">დაბლოკილი</span>
+                          <span className="px-2 py-1 bg-red-600 text-white rounded text-xs sm:text-sm md:text-[18px] text-center whitespace-nowrap">დაბლოკილი</span>
                         )}
                         {/* Blocked status badge (for revenue threshold) */}
                         {user.blocked && !user.verified && user._count.products > 0 && (
-                          <span className="ml-2 px-2 py-1 bg-orange-600 text-white rounded text-[18px]">ვერიფიკაცია საჭიროა</span>
+                          <span className="px-2 py-1 bg-orange-600 text-white rounded text-xs sm:text-sm md:text-[18px] text-center whitespace-nowrap">ვერიფიკაცია საჭიროა</span>
                         )}
                         {/* Ban/Unban buttons */}
-                        <div className="flex items-center gap-2 mt-2">
+                        <div className="flex items-center gap-2">
                           {!user.banned ? (
                             <BanUserInline user={user} setUsers={setUsers} />
                           ) : (
                             <button
-                              className="px-3 py-2 bg-gray-200 text-black rounded text-[18px] hover:bg-gray-300"
+                              className="px-3 py-2 bg-gray-200 text-black rounded text-xs sm:text-sm md:text-[18px] hover:bg-gray-300 whitespace-nowrap"
                               onClick={async () => {
                                 const res = await fetch(`/api/admin/users/${user.id}/ban`, {
                                   method: 'PUT',
@@ -474,9 +473,9 @@ const AdminUsersPage = () => {
                           )}
                         </div>
                         {user.banned && user.banReason && (
-                          <div className="mt-2 text-red-700 bg-red-50 border border-red-200 rounded p-2 text-[18px]">მიზეზი: {user.banReason}</div>
+                          <div className="text-red-700 bg-red-50 border border-red-200 rounded p-2 text-xs sm:text-sm md:text-[18px]">მიზეზი: {user.banReason}</div>
                         )}
-                      </>
+                      </div>
                     )}
                   </div>
 
@@ -484,23 +483,23 @@ const AdminUsersPage = () => {
                   {user.verification && (user.verification.idFrontUrl || user.verification.idBackUrl) && 
                    (user.verification.identityStatus === 'PENDING' || user.verification.identityStatus === 'REJECTED' || 
                     (!user.verification.identityStatus && (user.verification.status === 'PENDING' || user.verification.status === 'REJECTED'))) && (
-                    <div className="px-4 pb-4 border-t border-gray-50">
-                      <div className="mb-4 pt-4">
-                        <div className="flex items-center justify-between mb-3">
+                    <div className="px-3 sm:px-4 pb-3 sm:pb-4 border-t border-gray-50">
+                      <div className="mb-3 sm:mb-4 pt-3 sm:pt-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-2">
                           <div>
-                            <h2 className="text-[18px] font-bold text-blue-800">
+                            <h2 className="text-base sm:text-[18px] font-bold text-blue-800">
                               პირადობის დოკუმენტების გადამოწმება
                             </h2>
-                            <p className="text-sm text-blue-700">
+                            <p className="text-xs sm:text-sm text-blue-700">
                               გთხოვთ გადაამოწმოთ მომხმარებლის პირადობის დოკუმენტები
                             </p>
                           </div>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-3 sm:mb-4">
                           {user.verification.idFrontUrl && (
                             <div className="flex flex-col items-center">
-                              <span className="text-[18px] font-semibold mb-2 text-black">დოკუმენტის წინა მხარე</span>
-                              <div className="w-full max-w-[500px] h-[400px] relative border-2 border-blue-300 rounded-lg overflow-hidden shadow-lg">
+                              <span className="text-sm sm:text-[18px] font-semibold mb-2 text-black">დოკუმენტის წინა მხარე</span>
+                              <div className="w-full max-w-[500px] h-[250px] sm:h-[300px] md:h-[400px] relative border-2 border-blue-300 rounded-lg overflow-hidden shadow-lg">
                                 <Image
                                   src={user.verification.idFrontUrl}
                                   alt="ID Front"
@@ -513,8 +512,8 @@ const AdminUsersPage = () => {
                           )}
                           {user.verification.idBackUrl && (
                             <div className="flex flex-col items-center">
-                              <span className="text-[18px] font-semibold mb-2 text-black">დოკუმენტის უკანა მხარე</span>
-                              <div className="w-full max-w-[500px] h-[400px] relative border-2 border-blue-300 rounded-lg overflow-hidden shadow-lg">
+                              <span className="text-sm sm:text-[18px] font-semibold mb-2 text-black">დოკუმენტის უკანა მხარე</span>
+                              <div className="w-full max-w-[500px] h-[250px] sm:h-[300px] md:h-[400px] relative border-2 border-blue-300 rounded-lg overflow-hidden shadow-lg">
                                 <Image
                                   src={user.verification.idBackUrl}
                                   alt="ID Back"
@@ -528,24 +527,24 @@ const AdminUsersPage = () => {
                         </div>
                         {/* IBAN Display */}
                         {user.iban && (
-                          <div className="mb-4 p-4  border border-blue-200 rounded-lg">
-                            <h5 className="text-[18px] font-semibold text-black mb-2">პირადობის ნომერი:</h5>
-                            <p className="text-[20px] font-mono text-blue-800">{user.iban}</p>
+                          <div className="mb-3 sm:mb-4 p-3 sm:p-4 border border-blue-200 rounded-lg">
+                            <h5 className="text-sm sm:text-[18px] font-semibold text-black mb-2">პირადობის ნომერი:</h5>
+                            <p className="text-base sm:text-[20px] font-mono text-blue-800 break-all">{user.iban}</p>
                           </div>
                         )}
-                        <div className="flex items-center space-x-3 mb-3">
-                          <span className={`px-3 py-1 rounded-full text-[16px] font-semibold text-white ${
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3">
+                          <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm md:text-[16px] font-semibold text-white whitespace-nowrap ${
                             (user.verification.identityStatus === 'REJECTED' || (!user.verification.identityStatus && user.verification.status === 'REJECTED')) ? 'bg-red-600' : 'bg-yellow-500'
                           }`}>
                             {(user.verification.identityStatus === 'PENDING' || (!user.verification.identityStatus && user.verification.status === 'PENDING')) && 'მიმდინარეობს გადამოწმება'}
                             {(user.verification.identityStatus === 'REJECTED' || (!user.verification.identityStatus && user.verification.status === 'REJECTED')) && 'უარყოფილია'}
                           </span>
                           {user.verification.updatedAt && (
-                            <span className="text-[16px] text-black">განახლებულია: {new Date(user.verification.updatedAt).toLocaleDateString('ka-GE')}</span>
+                            <span className="text-xs sm:text-sm md:text-[16px] text-black">განახლებულია: {new Date(user.verification.updatedAt).toLocaleDateString('ka-GE')}</span>
                           )}
                         </div>
                         {(user.verification.identityComment || (!user.verification.identityComment && user.verification.comment)) && (
-                          <div className="bg-red-50 text-red-800 p-3 rounded mb-3 text-[16px] border border-red-200">
+                          <div className="bg-red-50 text-red-800 p-2 sm:p-3 rounded mb-3 text-xs sm:text-sm md:text-[16px] border border-red-200">
                             <strong>კომენტარი:</strong> {user.verification.identityComment || user.verification.comment}
                           </div>
                         )}
@@ -553,9 +552,9 @@ const AdminUsersPage = () => {
                         {session.user.role === 'ADMIN' && user.verification && 
                          (user.verification.identityStatus === 'PENDING' || user.verification.identityStatus === 'REJECTED' || 
                           (!user.verification.identityStatus && (user.verification.status === 'PENDING' || user.verification.status === 'REJECTED'))) && (
-                          <div className="flex flex-col md:flex-row items-stretch gap-3">
+                          <div className="flex flex-col sm:flex-row items-stretch gap-2 sm:gap-3">
                             <button
-                              className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg text-[18px] font-semibold shadow-md transition-colors"
+                              className="px-4 sm:px-6 py-2 sm:py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm sm:text-base md:text-[18px] font-semibold shadow-md transition-colors"
                               onClick={async () => {
                                 const res = await fetch(`/api/admin/users/${user.id}/identity`, {
                                   method: 'PATCH',
@@ -580,44 +579,44 @@ const AdminUsersPage = () => {
 
                   {/* ინდმეწარმის საბუთის გადამოწმების სექცია - დამოუკიდებელი, მხოლოდ როცა blocked */}
                   {user.blocked && !user.verified && user._count.products > 0 && user.verification?.entrepreneurCertificateUrl && (
-                    <div className="px-4 pb-4 border-t border-gray-200 bg-orange-50">
-                      <div className="mb-4 pt-4">
-                        <div className="flex items-center justify-between mb-3">
+                    <div className="px-3 sm:px-4 pb-3 sm:pb-4 border-t border-gray-200 bg-orange-50">
+                      <div className="mb-3 sm:mb-4 pt-3 sm:pt-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-2">
                           <div>
-                            <h2 className="text-[18px] font-bold text-orange-800">
+                            <h2 className="text-base sm:text-[18px] font-bold text-orange-800">
                               ინდმეწარმის საბუთის გადამოწმება
                             </h2>
-                            <p className="text-sm text-orange-700">
+                            <p className="text-xs sm:text-sm text-orange-700">
                               გამყიდველი დაბლოკილია, რადგან მისი შემოსავალი 100₾-ს აღემატება
                             </p>
                           </div>
-                          <div className="text-right">
+                          <div className="text-left sm:text-right">
                             {user.role === 'ADMIN' ? (
-                              <span className="px-3 py-1 bg-blue-600 text-white rounded text-[16px] font-semibold">
+                              <span className="inline-block px-2 sm:px-3 py-1 bg-blue-600 text-white rounded text-xs sm:text-sm md:text-[16px] font-semibold whitespace-nowrap">
                                 ადმინი – ბლოკი არ მოქმედებს
                               </span>
                             ) : (
-                              <span className="px-3 py-1 bg-orange-600 text-white rounded text-[16px] font-semibold">
+                              <span className="inline-block px-2 sm:px-3 py-1 bg-orange-600 text-white rounded text-xs sm:text-sm md:text-[16px] font-semibold whitespace-nowrap">
                                 შემოსავალი ≥ 100₾
                               </span>
                             )}
                           </div>
                         </div>
                         {user.role === 'ADMIN' ? (
-                          <p className="text-[16px] text-orange-700 mb-4">
+                          <p className="text-xs sm:text-sm md:text-[16px] text-orange-700 mb-3 sm:mb-4">
                             ეს არის ადმინისტრატორული ანგარიში – ბლოკი მხოლოდ სიგნალის სახით გვაჩვენებს,
                             რომ გადამოწმდეს გამყიდველის ინდმეწარმის საბუთი.
                           </p>
                         ) : (
-                          <p className="text-[16px] text-orange-700 mb-4">
+                          <p className="text-xs sm:text-sm md:text-[16px] text-orange-700 mb-3 sm:mb-4">
                             გამყიდველი დაბლოკილია, რადგან მისი შემოსავალი 100₾-ს აღემატება. გთხოვთ გადაამოწმოთ ინდმეწარმის საბუთი და დაამტკიცოთ.
                           </p>
                         )}
-                        <div className="grid grid-cols-1 gap-4 mb-4">
+                        <div className="grid grid-cols-1 gap-3 sm:gap-4 mb-3 sm:mb-4">
                           {user.verification.entrepreneurCertificateUrl && (
                             <div className="flex flex-col items-center">
-                              <span className="text-[16px] font-semibold mb-2 text-black">ინდმეწარმის საბუთი</span>
-                              <div className="w-full max-w-[500px] h-[400px] relative border-2 border-orange-300 rounded-lg overflow-hidden shadow-lg">
+                              <span className="text-xs sm:text-sm md:text-[16px] font-semibold mb-2 text-black">ინდმეწარმის საბუთი</span>
+                              <div className="w-full max-w-[500px] h-[250px] sm:h-[300px] md:h-[400px] relative border-2 border-orange-300 rounded-lg overflow-hidden shadow-lg">
                                 <Image
                                   src={user.verification.entrepreneurCertificateUrl}
                                   alt="Entrepreneur Certificate"
@@ -629,19 +628,19 @@ const AdminUsersPage = () => {
                             </div>
                           )}
                         </div>
-                        <div className="flex items-center space-x-3 mb-3">
-                          <span className={`px-3 py-1 rounded-full text-[16px] font-semibold text-white ${
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3">
+                          <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm md:text-[16px] font-semibold text-white whitespace-nowrap ${
                             (user.verification.entrepreneurStatus === 'REJECTED' || (!user.verification.entrepreneurStatus && user.verification.status === 'REJECTED')) ? 'bg-red-600' : 'bg-yellow-500'
                           }`}>
                             {(user.verification.entrepreneurStatus === 'PENDING' || (!user.verification.entrepreneurStatus && user.verification.status === 'PENDING')) && 'მიმდინარეობს გადამოწმება'}
                             {(user.verification.entrepreneurStatus === 'REJECTED' || (!user.verification.entrepreneurStatus && user.verification.status === 'REJECTED')) && 'უარყოფილია'}
                           </span>
                           {user.verification.updatedAt && (
-                            <span className="text-[16px] text-black">განახლებულია: {new Date(user.verification.updatedAt).toLocaleDateString('ka-GE')}</span>
+                            <span className="text-xs sm:text-sm md:text-[16px] text-black">განახლებულია: {new Date(user.verification.updatedAt).toLocaleDateString('ka-GE')}</span>
                           )}
                         </div>
                         {(user.verification.entrepreneurComment || (!user.verification.entrepreneurComment && user.verification.comment)) && (
-                          <div className="bg-red-50 text-red-800 p-3 rounded mb-3 text-[16px] border border-red-200">
+                          <div className="bg-red-50 text-red-800 p-2 sm:p-3 rounded mb-3 text-xs sm:text-sm md:text-[16px] border border-red-200">
                             <strong>კომენტარი:</strong> {user.verification.entrepreneurComment || user.verification.comment}
                           </div>
                         )}
@@ -649,9 +648,9 @@ const AdminUsersPage = () => {
                         {session.user.role === 'ADMIN' && user.verification && 
                          (user.verification.entrepreneurStatus === 'PENDING' || user.verification.entrepreneurStatus === 'REJECTED' || 
                           (!user.verification.entrepreneurStatus && (user.verification.status === 'PENDING' || user.verification.status === 'REJECTED'))) && (
-                          <div className="flex flex-col md:flex-row items-stretch gap-3">
+                          <div className="flex flex-col sm:flex-row items-stretch gap-2 sm:gap-3">
                             <button
-                              className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg text-[18px] font-semibold shadow-md transition-colors"
+                              className="px-4 sm:px-6 py-2 sm:py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm sm:text-base md:text-[18px] font-semibold shadow-md transition-colors"
                               onClick={async () => {
                                 const res = await fetch(`/api/admin/users/${user.id}/entrepreneur`, {
                                   method: 'PATCH',
@@ -676,21 +675,21 @@ const AdminUsersPage = () => {
 
                   {/* User Expansion Section */}
                   {expandedUser === user.id && (
-                    <div className="px-4 pb-4 border-t border-gray-200">
+                    <div className="px-3 sm:px-4 pb-3 sm:pb-4 border-t border-gray-200">
                       {/* User Verification Section */}
                       {user.verification && !(user.blocked && !user.verified) && (
-                        <div className="mb-6">
-                          <h4 className="text-[16px] md:text-[18px] font-semibold text-black mt-4 mb-2">ვერიფიკაცია (პირადობის სურათები)</h4>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
+                        <div className="mb-4 sm:mb-6">
+                          <h4 className="text-sm sm:text-base md:text-[18px] font-semibold text-black mt-3 sm:mt-4 mb-2">ვერიფიკაცია (პირადობის სურათები)</h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 mb-2">
                             {user.verification.idFrontUrl && (
                               <div className="flex flex-col items-center">
-                                <span className="text-[18px] mb-1">წინა მხარე</span>
-                                <div className="w-[400px] h-[400px] relative border rounded overflow-hidden">
+                                <span className="text-xs sm:text-sm md:text-[18px] mb-1">წინა მხარე</span>
+                                <div className="w-full max-w-[400px] h-[250px] sm:h-[300px] md:h-[400px] relative border rounded overflow-hidden">
                                   <Image
                                     src={user.verification.idFrontUrl}
                                     alt="ID Front"
                                     fill
-                                    sizes="400px"
+                                    sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 400px"
                                     className="object-cover"
                                   />
                                 </div>
@@ -698,13 +697,13 @@ const AdminUsersPage = () => {
                             )}
                             {user.verification.idBackUrl && (
                               <div className="flex flex-col items-center">
-                                <span className="text-[18px] mb-1">უკანა მხარე</span>
-                                <div className="w-[400px] h-[400px] relative border rounded overflow-hidden">
+                                <span className="text-xs sm:text-sm md:text-[18px] mb-1">უკანა მხარე</span>
+                                <div className="w-full max-w-[400px] h-[250px] sm:h-[300px] md:h-[400px] relative border rounded overflow-hidden">
                                   <Image
                                     src={user.verification.idBackUrl}
                                     alt="ID Back"
                                     fill
-                                    sizes="400px"
+                                    sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 400px"
                                     className="object-cover"
                                   />
                                 </div>
@@ -712,13 +711,13 @@ const AdminUsersPage = () => {
                             )}
                             {user.verification.entrepreneurCertificateUrl && (
                               <div className="flex flex-col items-center">
-                                <span className="text-[18px] mb-1">ინდმეწარმის საბუთი</span>
-                                <div className="w-[400px] h-[400px] relative border rounded overflow-hidden">
+                                <span className="text-xs sm:text-sm md:text-[18px] mb-1">ინდმეწარმის საბუთი</span>
+                                <div className="w-full max-w-[400px] h-[250px] sm:h-[300px] md:h-[400px] relative border rounded overflow-hidden">
                                   <Image
                                     src={user.verification.entrepreneurCertificateUrl}
                                     alt="Entrepreneur Certificate"
                                     fill
-                                    sizes="400px"
+                                    sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 400px"
                                     className="object-cover"
                                   />
                                 </div>
@@ -727,17 +726,17 @@ const AdminUsersPage = () => {
                           </div>
                           {/* IBAN Display */}
                           {user.iban && (
-                            <div className="mb-4 p-4  border  rounded-lg">
-                              <h5 className="text-[18px] font-semibold text-black mb-2">პირადობის ნომერი:</h5>
-                              <p className="text-[20px] font-mono text-blue-800">{user.iban}</p>
+                            <div className="mb-3 sm:mb-4 p-3 sm:p-4 border rounded-lg">
+                              <h5 className="text-sm sm:text-base md:text-[18px] font-semibold text-black mb-2">პირადობის ნომერი:</h5>
+                              <p className="text-base sm:text-lg md:text-[20px] font-mono text-blue-800 break-all">{user.iban}</p>
                             </div>
                           )}
-                          <div className="flex items-center space-x-3 mb-2">
+                          <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
                             {/* Identity Status */}
                             {user.verification.idFrontUrl && user.verification.idBackUrl && (
-                              <div className="flex items-center space-x-2">
-                                <span className="text-[18px] font-semibold text-black">პირადობის ნომერი:</span>
-                                <span className={`px-2 py-1 rounded-full text-[18px] font-semibold text-white ${
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-xs sm:text-sm md:text-[18px] font-semibold text-black">პირადობის ნომერი:</span>
+                                <span className={`px-2 py-1 rounded-full text-xs sm:text-sm md:text-[18px] font-semibold text-white whitespace-nowrap ${
                                   (user.verification.identityStatus === 'APPROVED' || (!user.verification.identityStatus && user.verification.status === 'APPROVED')) ? 'bg-green-600' : 
                                   (user.verification.identityStatus === 'REJECTED' || (!user.verification.identityStatus && user.verification.status === 'REJECTED')) ? 'bg-red-600' : 'bg-yellow-500'
                                 }`}>
@@ -749,9 +748,9 @@ const AdminUsersPage = () => {
                             )}
                             {/* Entrepreneur Status */}
                             {user.verification.entrepreneurCertificateUrl && (
-                              <div className="flex items-center space-x-2">
-                                <span className="text-[16px] font-semibold text-black">ინდმეწარმი:</span>
-                                <span className={`px-2 py-1 rounded-full text-[18px] font-semibold text-white ${
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-xs sm:text-sm md:text-[16px] font-semibold text-black">ინდმეწარმი:</span>
+                                <span className={`px-2 py-1 rounded-full text-xs sm:text-sm md:text-[18px] font-semibold text-white whitespace-nowrap ${
                                   (user.verification.entrepreneurStatus === 'APPROVED' || (!user.verification.entrepreneurStatus && user.verification.status === 'APPROVED')) ? 'bg-green-600' : 
                                   (user.verification.entrepreneurStatus === 'REJECTED' || (!user.verification.entrepreneurStatus && user.verification.status === 'REJECTED')) ? 'bg-red-600' : 'bg-yellow-500'
                                 }`}>
@@ -762,41 +761,34 @@ const AdminUsersPage = () => {
                               </div>
                             )}
                             {user.verification.updatedAt && (
-                              <span className="text-[18px] text-black">{new Date(user.verification.updatedAt).toLocaleDateString('ka-GE')}</span>
+                              <span className="text-xs sm:text-sm md:text-[18px] text-black">{new Date(user.verification.updatedAt).toLocaleDateString('ka-GE')}</span>
                           )}
                         </div>
-                        {/* IBAN Display */}
-                        {user.iban && (
-                          <div className="mb-4 p-4  border  rounded-lg">
-                            <h5 className="text-[18px] font-semibold text-black mb-2">პირადობის ნომერი:</h5>
-                            <p className="text-[20px] font-mono text-blue-800">{user.iban}</p>
-                          </div>
-                        )}
                         {user.verification.identityComment && (
-                            <div className="bg-red-50 text-red-800 p-2 rounded mb-2 text-[18px]">
+                            <div className="bg-red-50 text-red-800 p-2 rounded mb-2 text-xs sm:text-sm md:text-[18px]">
                               <strong>პირადობის კომენტარი:</strong> {user.verification.identityComment}
                             </div>
                           )}
                           {user.verification.entrepreneurComment && (
-                            <div className="bg-red-50 text-red-800 p-2 rounded mb-2 text-[18px]">
+                            <div className="bg-red-50 text-red-800 p-2 rounded mb-2 text-xs sm:text-sm md:text-[18px]">
                               <strong>ინდმეწარმის კომენტარი:</strong> {user.verification.entrepreneurComment}
                             </div>
                           )}
                           {!user.verification.identityComment && !user.verification.entrepreneurComment && user.verification.comment && (
-                            <div className="bg-red-50 text-red-800 p-2 rounded mb-2 text-[18px]">
+                            <div className="bg-red-50 text-red-800 p-2 rounded mb-2 text-xs sm:text-sm md:text-[18px]">
                               {user.verification.comment}
                             </div>
                           )}
                           {/* ADMIN CONTROLS for verification */}
                           {session.user.role === 'ADMIN' && user.verification && (
-                            <div className="flex flex-col md:flex-row items-stretch gap-2 mb-2">
+                            <div className="flex flex-col sm:flex-row items-stretch gap-2 mb-2">
                               {/* Determine verification type: if identity docs exist and not verified, it's identity; otherwise check if blocked */}
                               {user.verification.idFrontUrl && user.verification.idBackUrl && 
                                (user.verification.identityStatus === 'PENDING' || user.verification.identityStatus === 'REJECTED' || 
                                 (!user.verification.identityStatus && !user.verified)) && (
                                 <>
                                   <button
-                                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-[18px]"
+                                    className="px-3 sm:px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-xs sm:text-sm md:text-[18px]"
                                     onClick={async () => {
                                       const res = await fetch(`/api/admin/users/${user.id}/identity`, {
                                         method: 'PATCH',
@@ -818,7 +810,7 @@ const AdminUsersPage = () => {
                                 (!user.verification.entrepreneurStatus && user.blocked)) && (
                                 <>
                                   <button
-                                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-[18px]"
+                                    className="px-3 sm:px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-xs sm:text-sm md:text-[18px]"
                                     onClick={async () => {
                                       const res = await fetch(`/api/admin/users/${user.id}/entrepreneur`, {
                                         method: 'PATCH',
@@ -860,9 +852,9 @@ function RejectVerificationButton({ user, setUsers, verificationType }: { user: 
   const [showInput, setShowInput] = useState(false);
   const [loading, setLoading] = useState(false);
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
       <button
-        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-[18px]"
+        className="px-3 sm:px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-xs sm:text-sm md:text-[18px] whitespace-nowrap"
         disabled={user.verification?.status === 'REJECTED'}
         onClick={() => setShowInput(v => !v)}
         >უარყოფა</button>
@@ -887,7 +879,7 @@ function RejectVerificationButton({ user, setUsers, verificationType }: { user: 
               setComment('');
             }
           }}
-          className="flex items-center gap-2"
+          className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1"
         >
           <input
             type="text"
@@ -895,12 +887,12 @@ function RejectVerificationButton({ user, setUsers, verificationType }: { user: 
             disabled={loading}
             onChange={e => setComment(e.target.value)}
             placeholder="მიუთითეთ უარყოფის მიზეზი"
-            className="border px-2 py-1 text-[18px] rounded"
+            className="border px-2 py-1 text-xs sm:text-sm md:text-[18px] rounded flex-1"
             required
           />
           <button
             type="submit"
-            className="px-3 py-1 bg-red-700 text-white font-bold rounded text-[18px]"
+            className="px-3 py-1 bg-red-700 text-white font-bold rounded text-xs sm:text-sm md:text-[18px] whitespace-nowrap"
             disabled={loading || !comment.trim()}
           >დადასტურება</button>
         </form>
@@ -935,9 +927,9 @@ function BanUserInline({ user, setUsers }: { user: User; setUsers: React.Dispatc
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
       <button
-        className="px-3 py-2 font-bold bg-red-600 rounded-lg text-white rounded text-[18px] hover:bg-red-700"
+        className="px-3 py-2 font-bold bg-red-600 rounded-lg text-white text-xs sm:text-sm md:text-[18px] hover:bg-red-700 whitespace-nowrap"
         onClick={() => setOpen(v => !v)}
       >ბანი</button>
       {open && (
@@ -957,28 +949,28 @@ function BanUserInline({ user, setUsers }: { user: User; setUsers: React.Dispatc
               setReason('')
             }
           }}
-          className="flex items-center gap-2"
+          className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1"
         >
           <input
             value={reason}
             onChange={e => setReason(e.target.value)}
             placeholder="ბანის მიზეზი"
-            className="border px-2 py-1 rounded text-[18px]"
+            className="border px-2 py-1 rounded text-xs sm:text-sm md:text-[18px] flex-1"
             required
             disabled={loading}
           />
           <button
             type="submit"
-            className="px-3 py-2 bg-red-700 text-white rounded text-[18px]"
+            className="px-3 py-2 bg-red-700 text-white rounded text-xs sm:text-sm md:text-[18px] whitespace-nowrap"
             disabled={loading || !reason.trim()}
           >დადასტურება</button>
         </form>
       )}
        <button
                             onClick={() => handleDeleteUser(user.id)}
-                            className="flex items-center space-x-1 px-3 py-2  rounded-lg  transition-colors "
+                            className="flex items-center justify-center sm:justify-start space-x-1 px-2 sm:px-3 py-2 rounded-lg transition-colors"
                           >
-                            <Trash2 className="w-8 h-8 text-red-500" />
+                            <Trash2 className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-red-500" />
                             
                           </button>
     </div>
