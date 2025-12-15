@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { generateUniqueSKU } from '@/utils/skuUtils'
@@ -328,54 +329,58 @@ export async function POST(request: NextRequest) {
     const purposeRelation = buildPurposeRelation(validatedData.purposeId, validatedData.purposeSlug)
 
     // Create product in database using Prisma (approval fields rely on DB defaults)
-    const createdProduct = await prisma.product.create({
-      data: {
-        name: validatedData.name,
-        slug: uniqueSlug,
-        brand: validatedData.brand,
-        description: validatedData.description,
-        stock: validatedData.stock,
-        sku: uniqueSKU, // Auto-generated unique SKU
-        gender: validatedData.gender,
-        color: validatedData.color,
-        location: validatedData.location,
-        sizeSystem: validatedData.sizeSystem,
-        size: validatedData.size,
-        isNew: validatedData.isNew,
-        discount: validatedData.discount,
-        discountDays: validatedData.discountDays,
-        discountStartDate: validatedData.discount && validatedData.discountDays ? new Date() : null,
-        rating: validatedData.rating,
-        categoryId: validatedData.categoryId,
-        purpose: purposeRelation,
-        isRentable: validatedData.isRentable,
-        pricePerDay: validatedData.pricePerDay,
-        maxRentalDays: validatedData.maxRentalDays,
-        status: validatedData.status,
-        userId: session.user.id, // Associate product with user
-        // Create product images
-        images: {
-          create: validatedData.imageUrls.map((url, index) => ({
-            url: url,
-            alt: `${validatedData.name} - სურათი ${index + 1}`,
-            position: index
-          }))
-        },
-        // Create product variants
-        variants: {
-          create: validatedData.variants.map(variant => ({
-            size: variant.size,
-            price: variant.price
-          }))
-        },
-        // Create rental price tiers if provided
-        rentalPriceTiers: validatedData.rentalPriceTiers ? {
-          create: validatedData.rentalPriceTiers.map(tier => ({
-            minDays: tier.minDays,
-            pricePerDay: tier.pricePerDay
-          }))
-        } : undefined
+    const productData: Prisma.ProductCreateInput = {
+      name: validatedData.name,
+      slug: uniqueSlug,
+      brand: validatedData.brand,
+      description: validatedData.description,
+      stock: validatedData.stock,
+      sku: uniqueSKU, // Auto-generated unique SKU
+      gender: validatedData.gender,
+      color: validatedData.color,
+      location: validatedData.location,
+      sizeSystem: validatedData.sizeSystem,
+      size: validatedData.size,
+      isNew: validatedData.isNew,
+      discount: validatedData.discount,
+      discountDays: validatedData.discountDays,
+      discountStartDate: validatedData.discount && validatedData.discountDays ? new Date() : null,
+      rating: validatedData.rating,
+      category: validatedData.categoryId
+        ? { connect: { id: validatedData.categoryId } }
+        : undefined,
+      isRentable: validatedData.isRentable,
+      pricePerDay: validatedData.pricePerDay,
+      maxRentalDays: validatedData.maxRentalDays,
+      status: validatedData.status,
+      user: { connect: { id: session.user.id } },
+      images: {
+        create: validatedData.imageUrls.map((url, index) => ({
+          url: url,
+          alt: `${validatedData.name} - სურათი ${index + 1}`,
+          position: index
+        }))
       },
+      variants: {
+        create: validatedData.variants.map(variant => ({
+          size: variant.size,
+          price: variant.price
+        }))
+      },
+      rentalPriceTiers: validatedData.rentalPriceTiers ? {
+        create: validatedData.rentalPriceTiers.map(tier => ({
+          minDays: tier.minDays,
+          pricePerDay: tier.pricePerDay
+        }))
+      } : undefined
+    }
+
+    if (purposeRelation) {
+      productData.purpose = purposeRelation
+    }
+
+    const createdProduct = await prisma.product.create({
+      data: productData,
       include: productInclude
     })
 
