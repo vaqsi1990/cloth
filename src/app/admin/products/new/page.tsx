@@ -494,10 +494,14 @@ const NewProductPage = () => {
       <div className="bg-white shadow-sm border-b">
         <div className="px-6 py-4">
         <div className=" mx-auto px-4 py-4">
-                    <Link href="/" className="flex md:text-[20px] text-[18px] items-center text-black hover:opacity-80">
+                    <button
+                        type="button"
+                        onClick={() => router.back()}
+                        className="flex md:text-[20px] text-[18px] items-center text-black hover:opacity-80"
+                    >
                         <ArrowLeft className="w-7 font-bold h-7 mr-2" />
                  
-                    </Link>
+                    </button>
                 </div>
         </div>
       </div>

@@ -209,13 +209,14 @@ const AdminUsersPage = () => {
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <Link
-                href="/admin"
+              <button
+                type="button"
+                onClick={() => router.back()}
                 className="flex items-center space-x-2 text-black hover:text-black transition-colors"
               >
                 <ArrowLeft className="w-7 font-bold h-7" />
                 
-              </Link>
+              </button>
               <div>
                 <h1 className="md:text-[20px] text-[18px] font-bold text-black">მომხმარებლების მართვა</h1>
                

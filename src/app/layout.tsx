@@ -7,6 +7,7 @@ import Footer from "@/component/Footer";
 import AuthProvider from "@/components/AuthProvider";
 import ChatProvider from "@/components/ChatProvider";
 import ToastProvider from "@/components/ToastProvider";
+import ScrollRestorer from "@/components/ScrollRestorer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -114,6 +115,7 @@ export default function RootLayout({
             <Suspense fallback={null}>
               <Header />
             </Suspense>
+            <ScrollRestorer />
             {children}
             <Footer />
           </ChatProvider>

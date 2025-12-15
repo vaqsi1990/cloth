@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Search, ArrowLeft, Package, Calendar, User, Clock, DollarSign, AlertCircle } from 'lucide-react'
@@ -51,6 +52,7 @@ interface ProductData {
 
 const UserProductBySKUPage = () => {
   const { data: session, status } = useSession()
+  const router = useRouter()
   const [sku, setSku] = useState('')
   const [loading, setLoading] = useState(false)
   const [productData, setProductData] = useState<ProductData | null>(null)
@@ -135,13 +137,14 @@ const UserProductBySKUPage = () => {
               <p className="text-black mt-1">მოძებნე შენი პროდუქტი და ნახე დეტალური ინფორმაცია</p>
             </div>
             <div className="flex items-center space-x-4">
-              <Link
-                href="/account"
+              <button
+                type="button"
+                onClick={() => router.back()}
                 className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-black rounded-lg hover:bg-gray-200 transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>უკან</span>
-              </Link>
+              </button>
               <Link
                 href="/account"
                 className="px-4 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide transition-colors"

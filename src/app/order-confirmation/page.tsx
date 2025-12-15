@@ -95,13 +95,14 @@ const OrderConfirmationContent = () => {
                                 {error || 'შეკვეთა ვერ მოიძებნა'}
                             </h1>
                         </div>
-                        <Link
-                            href="/shop"
+                        <button
+                            type="button"
+                            onClick={() => router.back()}
                             className="inline-flex items-center bg-black text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-800 transition-colors"
                         >
                             <ArrowLeft className="w-5 h-5 mr-2" />
                             მაღაზიაში დაბრუნება
-                        </Link>
+                        </button>
                     </div>
                 </div>
             </div>

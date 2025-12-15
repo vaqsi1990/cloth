@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Filter, X, ChevronDown, Calendar, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
@@ -46,6 +46,113 @@ const ShopPageClient = () => {
     const [activeMobileFilter, setActiveMobileFilter] = useState<string | null>(null)
     const [isMobileFilterOverlayOpen, setIsMobileFilterOverlayOpen] = useState(false)
     const [isCategorySectionOpen, setIsCategorySectionOpen] = useState(false)
+
+    // Persist state across navigation
+    const scrollYRef = useRef(0)
+    const [savedScrollY, setSavedScrollY] = useState<number | null>(null)
+    const [hasRestoredState, setHasRestoredState] = useState(false)
+
+    useEffect(() => {
+        const handleScroll = () => {
+            scrollYRef.current = window.scrollY
+        }
+        window.addEventListener('scroll', handleScroll)
+        return () => window.removeEventListener('scroll', handleScroll)
+    }, [])
+
+    const saveState = useCallback(() => {
+        if (typeof window === 'undefined') return
+        const state = {
+            selectedCategories,
+            selectedPurposes,
+            priceRange,
+            selectedSizeSystems,
+            selectedColors,
+            selectedLocations,
+            rentalStartDate: rentalStartDate ? rentalStartDate.toISOString() : null,
+            rentalEndDate: rentalEndDate ? rentalEndDate.toISOString() : null,
+            sortBy,
+            purchaseType,
+            currentPage,
+            scrollY: scrollYRef.current,
+        }
+        sessionStorage.setItem('shopPageState', JSON.stringify(state))
+    }, [
+        selectedCategories,
+        selectedPurposes,
+        priceRange,
+        selectedSizeSystems,
+        selectedColors,
+        selectedLocations,
+        rentalStartDate,
+        rentalEndDate,
+        sortBy,
+        purchaseType,
+        currentPage
+    ])
+
+    // Restore saved state on mount
+    useEffect(() => {
+        if (typeof window === 'undefined') return
+        const saved = sessionStorage.getItem('shopPageState')
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved)
+                setSelectedCategories(parsed.selectedCategories || [])
+                setSelectedPurposes(parsed.selectedPurposes || [])
+                setPriceRange(parsed.priceRange || [0, 0])
+                setSelectedSizeSystems(parsed.selectedSizeSystems || [])
+                setSelectedColors(parsed.selectedColors || [])
+                setSelectedLocations(parsed.selectedLocations || [])
+                setRentalStartDate(parsed.rentalStartDate ? new Date(parsed.rentalStartDate) : null)
+                setRentalEndDate(parsed.rentalEndDate ? new Date(parsed.rentalEndDate) : null)
+                setSortBy(parsed.sortBy || 'newest')
+                setPurchaseType(parsed.purchaseType || 'all')
+                setCurrentPage(parsed.currentPage || 1)
+                setSavedScrollY(typeof parsed.scrollY === 'number' ? parsed.scrollY : null)
+            } catch (e) {
+                console.warn('Failed to restore shop state', e)
+            }
+        }
+        setHasRestoredState(true)
+    }, [])
+
+    // Save when key filters/page change
+    useEffect(() => {
+        saveState()
+    }, [
+        selectedCategories,
+        selectedPurposes,
+        priceRange,
+        selectedSizeSystems,
+        selectedColors,
+        selectedLocations,
+        rentalStartDate,
+        rentalEndDate,
+        sortBy,
+        purchaseType,
+        currentPage,
+        saveState
+    ])
+
+    // Save on unload/navigation away
+    useEffect(() => {
+        const handleBeforeUnload = () => saveState()
+        window.addEventListener('beforeunload', handleBeforeUnload)
+        return () => {
+            handleBeforeUnload()
+            window.removeEventListener('beforeunload', handleBeforeUnload)
+        }
+    }, [saveState])
+
+    // Restore scroll after data load
+    const [scrollRestored, setScrollRestored] = useState(false)
+    useEffect(() => {
+        if (!loading && hasRestoredState && !scrollRestored && savedScrollY !== null) {
+            window.scrollTo(0, savedScrollY)
+            setScrollRestored(true)
+        }
+    }, [loading, hasRestoredState, scrollRestored, savedScrollY])
 
     const clearSearch = () => {
         const params = new URLSearchParams(Array.from(searchParams.entries()))

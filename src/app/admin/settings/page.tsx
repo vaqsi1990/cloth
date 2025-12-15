@@ -233,13 +233,14 @@ const AdminSettingsPage = () => {
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <Link
-                href="/admin"
+              <button
+                type="button"
+                onClick={() => router.back()}
                 className="flex items-center space-x-2 text-black hover:text-gray-900 transition-colors"
               >
                 <ArrowLeft className="w-7 h-7 font-bold" />
                
-              </Link>
+              </button>
               
             </div>
           </div>

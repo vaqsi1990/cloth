@@ -1,9 +1,11 @@
 "use client"
 import React from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { XCircle, ArrowLeft, Home, ShoppingBag, CreditCard } from 'lucide-react'
 
 const PaymentFailPage = () => {
+    const router = useRouter()
     return (
         <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 py-16">
             <div className="container mx-auto px-4">
@@ -71,13 +73,14 @@ const PaymentFailPage = () => {
                                 კალათაში დაბრუნება
                             </Link>
                             
-                            <Link
-                                href="/shop"
+                            <button
+                                type="button"
+                                onClick={() => router.back()}
                                 className="flex items-center justify-center w-full bg-gray-100 text-black py-4 px-6 rounded-lg font-semibold text-lg hover:bg-gray-200 transition-colors"
                             >
                                 <ArrowLeft className="w-5 h-5 mr-2" />
                                 მაღაზიაში დაბრუნება
-                            </Link>
+                            </button>
                             
                             <Link
                                 href="/"

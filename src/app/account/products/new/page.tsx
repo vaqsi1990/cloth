@@ -507,13 +507,14 @@ const NewProductPage = () => {
       <div className="bg-white shadow-sm border-b">
         <div className="px-6 py-4">
           <div className="flex items-center space-x-4">
-            <Link
-              href="/account"
+            <button
+              type="button"
+              onClick={() => router.back()}
               className="flex items-center text-[20px] text-black hover:text-black"
             >
               <ArrowLeft className="w-5 h-5 mr-2" />
               დაბრუნება
-            </Link>
+            </button>
             <h1 className="md:text-[20px] text-[18px] text-black font-bold">ახალი პროდუქტის დამატება</h1>
           </div>
         </div>
