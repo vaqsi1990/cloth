@@ -150,7 +150,7 @@ const AdminProductBySKUPage = () => {
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">პროდუქტის ძიება კოდის მიხედვით</h1>
+              <h1 className="md:text-[24px] text-[20px] font-bold text-gray-900">პროდუქტის ძიება კოდის მიხედვით</h1>
               <p className="text-black mt-1">მოძებნე პროდუქტი და ნახე დეტალური ინფორმაცია</p>
             </div>
             <div className="flex items-center space-x-4">

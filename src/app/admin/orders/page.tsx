@@ -253,7 +253,7 @@ const AdminOrdersPage = () => {
                 <span>ადმინ პანელი</span>
               </button>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">შეკვეთების მართვა</h1>
+                <h1 className="md:text-[24px] text-[20px] font-bold text-gray-900">შეკვეთების მართვა</h1>
                 <p className="text-black mt-1">მართე ყველა შეკვეთა</p>
               </div>
             </div>

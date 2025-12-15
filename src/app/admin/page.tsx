@@ -204,7 +204,7 @@ const AdminDashboard = () => {
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">ადმინ პანელი</h1>
+              <h1 className="md:text-[24px] text-[20px] font-bold text-gray-900">ადმინ პანელი</h1>
               <p className="text-black mt-1">მოგესალმებით, {session.user.name}</p>
             </div>
             <Link

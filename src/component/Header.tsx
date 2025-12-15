@@ -181,9 +181,9 @@ const HeaderContent = () => {
                 placeholder="მოძებნე სასურველი პროდუქტი"
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
-                className="w-full placeholder:text-gray-400 text-gray-900 bg-gray-50 pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full bg-white pl-10 pr-4 py-3 text-black border placeholder:text-gray-500 border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
               />
-              <button type="submit" className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
+              <button type="submit" className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500  ">
                 <Search className="w-5 h-5" />
               </button>
             </form>
@@ -258,7 +258,7 @@ const HeaderContent = () => {
                   </div>
                 </div>
               ) : (
-                <Link href="/auth/signin" className="p-2 text-white font-bold hover:text-purple-600 transition-colors">
+                <Link href="/auth/signin" className="p-2 text-white font-bold  transition-colors">
                   <User className="w-6 h-6" />
                 </Link>
               )}
@@ -267,7 +267,7 @@ const HeaderContent = () => {
 
           {/* --- Mobile/Tablet: Search Icon and Menu --- */}
           <div className="flex lg:hidden items-center space-x-4">
-            <button onClick={toggleSearch} className="group cursor-pointer p-2 text-gray-700">
+            <button onClick={toggleSearch} className="group cursor-pointer p-2 text-white">
               <Search className="w-5 h-5 group-hover:scale-110 transition-transform" />
             </button>
 
@@ -284,11 +284,11 @@ const HeaderContent = () => {
                 {isMobileUserDropdownOpen && (
                   <div className="absolute left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-xl z-50">
                     <div className="py-2">
-                      <p className="px-4 py-2 font-semibold text-black">{session.user.name}</p>
+                      <p className="px-4 py-2 font-semibold text-white">{session.user.name}</p>
                       {session.user.role === 'ADMIN' ? (
                         <Link
                           href="/admin"
-                          className="block px-4 py-2 text-black hover:bg-gray-100"
+                          className="block px-4 py-2 text-white hover:bg-gray-100"
                           onClick={() => setIsMobileUserDropdownOpen(false)}
                         >
                           ადმინისტრატორი
@@ -296,7 +296,7 @@ const HeaderContent = () => {
                       ) : (
                         <Link
                           href="/account"
-                          className="block px-4 py-2 text-black hover:bg-gray-100"
+                          className="block px-4 py-2 text-white hover:bg-gray-100"
                           onClick={() => setIsMobileUserDropdownOpen(false)}
                         >
                           პროფილი
@@ -307,7 +307,7 @@ const HeaderContent = () => {
                           setIsMobileUserDropdownOpen(false)
                           signOut()
                         }}
-                        className="w-full text-left px-4 py-2 text-black hover:bg-gray-100 flex items-center space-x-2"
+                        className="w-full text-left px-4 py-2 text-white hover:bg-gray-100 flex items-center space-x-2"
                       >
                         <LogOut className="w-4 h-4" />
                         <span>გასვლა</span>
@@ -317,12 +317,12 @@ const HeaderContent = () => {
                 )}
               </div>
             ) : (
-              <Link href="/auth/signin" className="text-sm md:text-[20px] text-[16px] text-gray-700">
+              <Link href="/auth/signin" className="text-sm md:text-[20px] text-[16px] text-white">
                 შესვლა
               </Link>
             )}
 
-            <Link href="/cart" className="relative p-2 text-gray-700">
+            <Link href="/cart" className="relative p-2 text-white">
               <ShoppingCart className="w-5 h-5" />
               {cartItemCount > 0 && (
                 <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
@@ -331,7 +331,7 @@ const HeaderContent = () => {
               )}
             </Link>
 
-            <button onClick={toggleMobileMenu} className="md:hidden p-2 text-gray-700">
+            <button onClick={toggleMobileMenu} className="md:hidden p-2 text-white">
               <Menu className="w-6 h-6" />
             </button>
           </div>
@@ -348,7 +348,7 @@ const HeaderContent = () => {
                 placeholder="მოძებნე სასურველი პროდუქტი"
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
-                className="w-full placeholder:text-gray-400 md:text-[18px] text-[16px] text-gray-900 bg-gray-50 pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full placeholder:text-gray-400 md:text-[18px] text-[16px] text-gray-900 bg-gray-50 pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 "
               />
               <button type="submit" className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
                 <Search className="w-5 h-5" />

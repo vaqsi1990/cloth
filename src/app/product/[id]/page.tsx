@@ -1000,7 +1000,7 @@ const ProductPage = () => {
 
                     {/* RIGHT — Details */}
                     <section className="space-y-6">
-                        <div className="bg-white  p-6">
+                        <div className="bg-white ">
 
 
                             {/* Author Info */}
