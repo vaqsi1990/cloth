@@ -185,8 +185,21 @@ export async function POST(
       )
     }
 
-    // Determine if message is from admin
+    // Determine if message is from admin and ensure admin exists when needed
     const isFromAdmin = session?.user?.role === 'ADMIN'
+    let adminId: string | null = null
+    if (isFromAdmin && session?.user?.id) {
+      const adminUser = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { id: true }
+      })
+      if (adminUser) {
+        adminId = adminUser.id
+      } else {
+        // allow sending without admin record; use null adminId to avoid FK issues
+        adminId = null
+      }
+    }
     
     let newMessage
     if (isFromAdmin) {
@@ -197,7 +210,7 @@ export async function POST(
         isFromAdmin: boolean
       }>>`
         INSERT INTO "ChatMessage" ("content", "chatRoomId", "adminId", "isFromAdmin", "createdAt")
-        VALUES (${validatedData.content}, ${chatRoomId}, ${session.user.id}, true, NOW())
+        VALUES (${validatedData.content}, ${chatRoomId}, ${adminId}, true, NOW())
         RETURNING id, content, "createdAt", "isFromAdmin"
       `
     } else {

@@ -84,14 +84,25 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions)
     const body = await request.json()
     
-    // If user is authenticated, create chat room
-    if (session?.user?.id) {
-      const validatedData = createChatRoomSchema.parse(body)
-      
-      // Check if user already has an active chat room
+    // Determine user context (optional)
+    let userId: string | null = session?.user?.id || null
+    if (userId) {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true }
+      })
+      if (!dbUser) {
+        userId = null // fallback to guest flow if user record missing
+      }
+    }
+
+    const validatedData = createChatRoomSchema.parse(body)
+
+    // If we have a valid user, try to reuse/create a chat room with userId
+    if (userId) {
       const existingChatRoom = await prisma.$queryRaw<Array<{ id: number }>>`
         SELECT id FROM "ChatRoom" 
-        WHERE "userId" = ${session.user.id} 
+        WHERE "userId" = ${userId} 
         AND status IN ('PENDING', 'ACTIVE')
         ORDER BY "createdAt" DESC
         LIMIT 1
@@ -100,79 +111,67 @@ export async function POST(request: NextRequest) {
       if (existingChatRoom.length > 0) {
         const roomId = existingChatRoom[0].id
         
-        // Add message to existing chat room
         await prisma.$executeRaw`
           INSERT INTO "ChatMessage" ("content", "chatRoomId", "userId", "isFromAdmin", "createdAt")
-          VALUES (${validatedData.message}, ${roomId}, ${session.user.id}, false, NOW())
+          VALUES (${validatedData.message}, ${roomId}, ${userId}, false, NOW())
         `
 
-        // Update chat room status to active
         await prisma.$executeRaw`
           UPDATE "ChatRoom" 
           SET status = 'ACTIVE', "updatedAt" = NOW()
           WHERE id = ${roomId}
         `
 
-        console.log(`✅ User ${session.user.id} sent message to existing chat room ${roomId}`)
+        console.log(`✅ User ${userId} sent message to existing chat room ${roomId}`)
         
         return NextResponse.json({
           success: true,
           message: 'Message sent',
           chatRoomId: roomId
         })
-      } else {
-        // Create new chat room
-        const newRoom = await prisma.$queryRaw<Array<{ id: number }>>`
-          INSERT INTO "ChatRoom" ("userId", status, "createdAt", "updatedAt")
-          VALUES (${session.user.id}, 'PENDING', NOW(), NOW())
-          RETURNING id
-        `
-
-        const roomId = newRoom[0].id
-
-        await prisma.$executeRaw`
-          INSERT INTO "ChatMessage" ("content", "chatRoomId", "userId", "isFromAdmin", "createdAt")
-          VALUES (${validatedData.message}, ${roomId}, ${session.user.id}, false, NOW())
-        `
-
-        console.log(`✅ Created new chat room ${roomId} for user ${session.user.id}`)
-        
-        return NextResponse.json({
-          success: true,
-          message: 'Chat room created',
-          chatRoomId: roomId
-        })
-      }
-    } else {
-      // Guest user - create chat room with guest info
-      const validatedData = createChatRoomSchema.parse(body)
-      
-      if (!validatedData.guestName || !validatedData.guestEmail) {
-        return NextResponse.json({
-          success: false,
-          message: 'Guest name and email are required'
-        }, { status: 400 })
       }
 
       const newRoom = await prisma.$queryRaw<Array<{ id: number }>>`
-        INSERT INTO "ChatRoom" ("guestName", "guestEmail", status, "createdAt", "updatedAt")
-        VALUES (${validatedData.guestName}, ${validatedData.guestEmail}, 'PENDING', NOW(), NOW())
+        INSERT INTO "ChatRoom" ("userId", status, "createdAt", "updatedAt")
+        VALUES (${userId}, 'PENDING', NOW(), NOW())
         RETURNING id
       `
 
       const roomId = newRoom[0].id
 
       await prisma.$executeRaw`
-        INSERT INTO "ChatMessage" ("content", "chatRoomId", "isFromAdmin", "createdAt")
-        VALUES (${validatedData.message}, ${roomId}, false, NOW())
+        INSERT INTO "ChatMessage" ("content", "chatRoomId", "userId", "isFromAdmin", "createdAt")
+        VALUES (${validatedData.message}, ${roomId}, ${userId}, false, NOW())
       `
 
+      console.log(`✅ Created new chat room ${roomId} for user ${userId}`)
+      
       return NextResponse.json({
         success: true,
         message: 'Chat room created',
         chatRoomId: roomId
       })
     }
+
+    // Guest (or missing user) flow - no required guest fields
+    const newRoom = await prisma.$queryRaw<Array<{ id: number }>>`
+      INSERT INTO "ChatRoom" ("guestName", "guestEmail", status, "createdAt", "updatedAt")
+      VALUES (${validatedData.guestName || null}, ${validatedData.guestEmail || null}, 'PENDING', NOW(), NOW())
+      RETURNING id
+    `
+
+    const roomId = newRoom[0].id
+
+    await prisma.$executeRaw`
+      INSERT INTO "ChatMessage" ("content", "chatRoomId", "isFromAdmin", "createdAt")
+      VALUES (${validatedData.message}, ${roomId}, false, NOW())
+    `
+
+    return NextResponse.json({
+      success: true,
+      message: 'Chat room created',
+      chatRoomId: roomId
+    })
 
   } catch (error) {
     console.error('Error creating chat room:', error)
