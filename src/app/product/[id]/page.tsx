@@ -58,20 +58,20 @@ const ProductPage = () => {
     const [rentalEndDate, setRentalEndDate] = useState("")
     const [isAdding, setIsAdding] = useState(false)
     const [userVerification, setUserVerification] = useState<{ status?: 'PENDING' | 'APPROVED' | 'REJECTED' } | null>(null);
-    
+
     // Reviews state
     const [reviews, setReviews] = useState<Array<{
-      id: number
-      rating: number
-      comment: string | null
-      createdAt: string
-      user: { id: string; name: string | null; image: string | null }
-      reply?: {
         id: number
-        comment: string
+        rating: number
+        comment: string | null
         createdAt: string
         user: { id: string; name: string | null; image: string | null }
-      } | null
+        reply?: {
+            id: number
+            comment: string
+            createdAt: string
+            user: { id: string; name: string | null; image: string | null }
+        } | null
     }>>([])
     const [averageRating, setAverageRating] = useState(0)
     const [totalReviews, setTotalReviews] = useState(0)
@@ -88,7 +88,7 @@ const ProductPage = () => {
     const [replyComment, setReplyComment] = useState('')
     const [submittingReply, setSubmittingReply] = useState(false)
     const [deletingReplyId, setDeletingReplyId] = useState<number | null>(null)
-    
+
     // Chat state
     const [isChatOpen, setIsChatOpen] = useState(false)
     const [chatRoomId, setChatRoomId] = useState<number | null>(null)
@@ -108,23 +108,23 @@ const ProductPage = () => {
     const [loadingChatMessages, setLoadingChatMessages] = useState(false)
     const [buyerInfo, setBuyerInfo] = useState<{ name?: string | null; email?: string | null; image?: string | null } | null>(null)
     const [chatRoomInfo, setChatRoomInfo] = useState<{ userId?: string | null; adminId?: string | null } | null>(null)
-    
+
     // Check if user has an active chat for this product
     useEffect(() => {
         const checkExistingChat = async () => {
             if (!session?.user?.id || !product?.user?.id || session.user.id === product?.user?.id) return
-            
+
             try {
                 const response = await fetch('/api/chat')
                 const data = await response.json()
                 if (data.success && product?.user?.id) {
                     // Find chat room where current user is buyer (userId) and product author is seller (adminId)
-                    const existingChat = data.chatRooms.find((room: any) => 
-                        room.userId === session.user.id && 
+                    const existingChat = data.chatRooms.find((room: any) =>
+                        room.userId === session.user.id &&
                         room.adminId === product?.user?.id &&
                         (room.status === 'ACTIVE' || room.status === 'PENDING')
                     )
-                    
+
                     if (existingChat) {
                         setChatRoomId(existingChat.id)
                         setChatRoomInfo({
@@ -140,7 +140,7 @@ const ProductPage = () => {
                 console.error('Error checking existing chat:', error)
             }
         }
-        
+
         checkExistingChat()
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [session?.user?.id, product?.user?.id])
@@ -322,7 +322,7 @@ const ProductPage = () => {
                 }),
             })
             const data = await response.json()
-            
+
             if (data.success) {
                 // Refresh reviews
                 const reviewsRes = await fetch(`/api/products/${productId}/reviews`)
@@ -381,7 +381,7 @@ const ProductPage = () => {
                 }),
             })
             const data = await response.json()
-            
+
             if (data.success) {
                 // Refresh reviews
                 const reviewsRes = await fetch(`/api/products/${productId}/reviews`)
@@ -421,7 +421,7 @@ const ProductPage = () => {
                 method: 'DELETE',
             })
             const data = await response.json()
-            
+
             if (data.success) {
                 // Refresh reviews
                 const reviewsRes = await fetch(`/api/products/${productId}/reviews`)
@@ -474,7 +474,7 @@ const ProductPage = () => {
                 }),
             })
             const data = await response.json()
-            
+
             if (data.success) {
                 // Refresh reviews
                 const reviewsRes = await fetch(`/api/products/${productId}/reviews`)
@@ -509,7 +509,7 @@ const ProductPage = () => {
                 method: 'DELETE',
             })
             const data = await response.json()
-            
+
             if (data.success) {
                 // Refresh reviews
                 const reviewsRes = await fetch(`/api/products/${productId}/reviews`)
@@ -700,7 +700,7 @@ const ProductPage = () => {
             const data = await response.json()
             if (data.success) {
                 setChatMessages(data.messages || [])
-                
+
                 // Store chat room info from API response
                 if (data.chatRoom) {
                     setChatRoomInfo({
@@ -708,7 +708,7 @@ const ProductPage = () => {
                         adminId: data.chatRoom.adminId
                     })
                 }
-                
+
                 // Fetch chat room info to get buyer/author details for display
                 const roomResponse = await fetch('/api/chat')
                 const roomData = await roomResponse.json()
@@ -825,25 +825,25 @@ const ProductPage = () => {
 
     const handleRental = async () => {
         if (!product || !selectedSize) return
-        
+
         // Only block if product is in maintenance or completely unavailable
         if (product.status === 'MAINTENANCE') {
             showToast("პროდუქტი რესტავრაციაზეა და ამჟამად ხელმისაწვდომი არ არის", "warning")
             return
         }
-        
+
         if (!rentalStartDate || !rentalEndDate) {
             showToast("აირჩიე ქირაობის თარიღები", "warning")
             return
         }
-        
+
         // Check if rental period exceeds 2 months (60 days)
         const days = calcDays()
         if (days > MAX_RENTAL_DAYS) {
             showToast(`ქირაობა მაქსიმუმ ${MAX_RENTAL_DAYS} დღით შეიძლება (2 თვე)`, "warning")
             return
         }
-        
+
         // Check if the selected dates conflict with existing rentals
         const start = new Date(rentalStartDate)
         const end = new Date(rentalEndDate)
@@ -855,12 +855,12 @@ const ProductPage = () => {
             // Check for overlap
             return start < periodLastBlockedDate && end >= periodStart
         })
-        
+
         if (conflicts.length > 0) {
             showToast("ამ თარიღებზე პროდუქტი დაკავებულია. გთხოვთ აირჩიოთ სხვა თარიღები", "warning")
             return
         }
-        
+
         if (isAdding) return
         setIsAdding(true)
 
@@ -935,55 +935,65 @@ const ProductPage = () => {
                 <div className="grid lg:grid-cols-2 gap-10">
                     {/* LEFT — Gallery */}
                     <section>
-                        <div className="flex gap-4">
-                            {/* Small images on the left */}
-                            <div className="flex flex-col gap-3">
+                        <div className="flex flex-col lg:flex-row gap-4">
+                            {/* Main image - First on mobile, second on desktop */}
+                            <div className="relative w-full lg:flex-1 
+                aspect-[3/4] sm:w-[100px] lg:aspect-[3/4]
+                bg-white rounded-2xl overflow-hidden shadow border
+                order-1 lg:order-2">
+
+                                <Image
+                                    src={getMainImage()}
+                                    alt={product.name}
+                                    fill
+                                    sizes="(max-width: 640px) 20vw,
+               (max-width: 1024px) 50vw,
+               40vw"
+                                    className="object-cover"
+                                    priority={false}
+                                />
+
+                                <div className="absolute top-3 left-3 sm:top-4 sm:left-4 flex gap-2">
+                                    {product.discount && product.discount > 0 && (
+                                        <span className="bg-red-500 text-white 
+                             px-2 sm:px-3 py-1 
+                             rounded-full 
+                             text-sm sm:text-[16px] 
+                             font-semibold">
+                                            -₾{product.discount.toFixed(2)}
+                                            {product.discountDays && (
+                                                <span className="ml-1">
+                                                    ({product.discountDays} დღე)
+                                                </span>
+                                            )}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+
+
+                            {/* Small images - Below on mobile, left on desktop */}
+                            <div className="flex flex-row lg:flex-col gap-3 order-2 lg:order-1 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0">
                                 {product.images?.map((img, i) => (
                                     <button
                                         key={i}
                                         onClick={() => setActiveImage(i)}
-                                        className={`relative w-20 h-20 rounded-xl overflow-hidden border-2 transition ${activeImage === i
+                                        className={`relative w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden border-2 transition ${activeImage === i
                                             ? "border-black"
                                             : "border-gray-200 hover:border-black"
                                             }`}
                                     >
-                                        <Image 
+                                        <Image
                                             width={164}
                                             height={164}
-                                            src={img.url} 
-                                            alt={`${product.name}-${i}`} 
-                                          
+                                            src={img.url}
+                                            alt={`${product.name}-${i}`}
+
                                             sizes="80px"
-                                            className="object-cover" 
+                                            className="object-cover"
                                         />
                                     </button>
                                 ))}
-                            </div>
-
-                            {/* Main image */}
-                            <div className="relative flex-1 aspect-[3/4] bg-white rounded-2xl overflow-hidden shadow border">
-                                <Image
-                                    width={1264}
-                                    height={1264}
-                                    src={getMainImage()}
-                                    alt={product.name}
-                                    
-                                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 40vw"
-                                    className="object-cover"
-                                    priority
-                                    loading="eager"
-                                />
-                                <div className="absolute top-4 left-4 flex gap-2">
-                                    {product.discount && product.discount > 0 && (
-                                        <span className="bg-red-500 text-white px-3 py-1 rounded-full text-[16px] font-semibold">
-                                            -₾{product.discount.toFixed(2)}
-                                            {product.discountDays && (
-                                                <span className="ml-1">({product.discountDays} დღე)</span>
-                                            )}
-                                        </span>
-                                    )}
-                                   
-                                </div>
                             </div>
                         </div>
                     </section>
@@ -995,7 +1005,7 @@ const ProductPage = () => {
 
                             {/* Author Info */}
                             <div className="bg-white  p-6 ">
-                                <div className="flex items-center justify-between">
+                                <div className="flex flex-col md:flex-row gap-4 md:gap-2 items-center justify-between">
                                     <div className="flex items-center space-x-4">
                                         <div className="relative w-16 h-16 rounded-full overflow-hidden bg-black">
                                             {product.user?.image ? (
@@ -1004,7 +1014,7 @@ const ProductPage = () => {
                                                     height={64}
                                                     src={product.user.image}
                                                     alt={product.user.name || "ავტორი"}
-                                             
+
                                                     className="object-cover"
                                                 />
                                             ) : (
@@ -1214,7 +1224,7 @@ const ProductPage = () => {
                                                         if (!date) return false;
                                                         const blocked = isDateBlocked(date);
                                                         if (blocked) return false;
-                                                        
+
                                                         // Check 60-day limit from start date
                                                         if (rentalStartDate) {
                                                             const start = new Date(rentalStartDate)
@@ -1225,7 +1235,7 @@ const ProductPage = () => {
                                                             const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1
                                                             if (diffDays > MAX_RENTAL_DAYS) return false
                                                         }
-                                                        
+
                                                         return true;
                                                     }}
                                                     minDate={rentalStartDate ? new Date(rentalStartDate) : new Date()}
@@ -1248,13 +1258,13 @@ const ProductPage = () => {
                                             const lastPeriod = periods.length > 0
                                                 ? periods.sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime())[0]
                                                 : null
-                                            
+
                                             if (!lastPeriod) return null
-                                            
+
                                             // Add 2 days: 1 day for return + 1 day for maintenance
                                             const availableDate = new Date(new Date(lastPeriod.endDate).getTime() + 2 * 24 * 60 * 60 * 1000)
                                             const maintenanceEndDate = new Date(new Date(lastPeriod.endDate).getTime() + 24 * 60 * 60 * 1000)
-                                            
+
                                             return (
                                                 <div className="text-[16px] bg-white border border-gray-200 rounded-lg p-3">
                                                     <div className="font-medium text-black mb-2">დაკავებული პერიოდი:</div>
@@ -1268,7 +1278,7 @@ const ProductPage = () => {
                                         })()}
 
                                         {/* Info message about dates */}
-                                      
+
 
                                         {/* Show warning if rental period exceeds 60 days */}
                                         {(rentalStartDate && rentalEndDate) && (() => {
@@ -1299,7 +1309,7 @@ const ProductPage = () => {
 
                                             return conflicts.length > 0 ? (
                                                 <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
-                                                     ამ თარიღებზე პროდუქტი დაკავებულია. გთხოვთ აირჩიოთ სხვა თარიღები.
+                                                    ამ თარიღებზე პროდუქტი დაკავებულია. გთხოვთ აირჩიოთ სხვა თარიღები.
                                                 </div>
                                             ) : null
                                         })()}
@@ -1313,7 +1323,7 @@ const ProductPage = () => {
                                             </div>
                                         )}
 
-                                       
+
                                     </div>
                                 )}
                             </div>
@@ -1335,7 +1345,7 @@ const ProductPage = () => {
                                     )}
                                     {(purchaseMode === "rent" && canRent && rentalStartDate && rentalEndDate) && (() => {
                                         const days = calcDays()
-                                        
+
                                         // Check if rental period exceeds 60 days
                                         if (days > MAX_RENTAL_DAYS) {
                                             return (
@@ -1344,7 +1354,7 @@ const ProductPage = () => {
                                                 </p>
                                             )
                                         }
-                                        
+
                                         // Check if the selected dates conflict with existing rentals
                                         const start = new Date(rentalStartDate)
                                         const end = new Date(rentalEndDate)
@@ -1354,10 +1364,10 @@ const ProductPage = () => {
                                             const periodLastBlockedDate = new Date(periodEnd.getTime() + 24 * 60 * 60 * 1000)
                                             return start < periodLastBlockedDate && end >= periodStart
                                         })
-                                        
+
                                         return conflicts.length > 0 ? (
                                             <p className="text-[16px] text-red-600 font-medium text-center">
-                                                 ამ თარიღებზე პროდუქტი დაკავებულია
+                                                ამ თარიღებზე პროდუქტი დაკავებულია
                                             </p>
                                         ) : null
                                     })()}
@@ -1408,21 +1418,21 @@ const ProductPage = () => {
                                         <span className="font-semibold">კატეგორია: </span>
                                         {product.category?.name || "—"}
                                     </li>
-                                   
+
                                     {product.sizeSystem && (
                                         <li>
                                             <span className="font-semibold">ზომის სისტემა: </span>
                                             {product.sizeSystem?.toUpperCase() || "—"}
                                         </li>
                                     )}
-                                   
+
                                     {product.brand && (
                                         <li>
                                             <span className="font-semibold">ბრენდი: </span>
                                             {product.brand}
                                         </li>
                                     )}
-                                  
+
                                     <li>
                                         <span className="font-semibold">ფერი: </span>
                                         {product.color || "—"}
@@ -1463,7 +1473,7 @@ const ProductPage = () => {
                 <div className="mt-12">
                     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                         <h2 className="text-2xl font-bold text-black mb-6">კომენტარები და რეიტინგები</h2>
-                        
+
                         {/* Average Rating */}
                         <div className="flex items-center gap-4 mb-6 pb-6 border-b">
                             <div className="text-center">
@@ -1555,7 +1565,7 @@ const ProductPage = () => {
                                     const isReplying = replyingToReviewId === review.id
                                     // Determine star color: gold for renters, silver for product owners
                                     const starColor = product?.userId === review.user.id ? 'silver' : 'gold'
-                                    
+
                                     return (
                                         <div key={review.id} className="border-b border-gray-200 pb-6 last:border-b-0">
                                             <div className="flex items-start justify-between mb-2">
@@ -1658,7 +1668,7 @@ const ProductPage = () => {
                                                     {review.comment && (
                                                         <p className="text-black md:text-[18px] text-[16px] mt-3">{review.comment}</p>
                                                     )}
-                                                    
+
                                                     {/* Admin Reply Section */}
                                                     {isAdmin && !isReplying && (
                                                         <div className="mt-4">
@@ -1700,7 +1710,7 @@ const ProductPage = () => {
                                                             )}
                                                         </div>
                                                     )}
-                                                    
+
                                                     {/* Reply Form */}
                                                     {isReplying && (
                                                         <div className="mt-4 ml-6 pl-4 border-l-2 border-[#1B3729] bg-black rounded-lg p-4">
@@ -1712,7 +1722,7 @@ const ProductPage = () => {
                                                                     value={replyComment}
                                                                     onChange={(e) => setReplyComment(e.target.value)}
                                                                     placeholder="დაწერეთ პასუხი..."
-                                                                        className="w-full text-black px-4 text-black py-3 border border-black rounded-lg focus:ring-2 focus:ring-[#1B3729] focus:border-transparent"
+                                                                    className="w-full text-black px-4 text-black py-3 border border-black rounded-lg focus:ring-2 focus:ring-[#1B3729] focus:border-transparent"
                                                                     rows={3}
                                                                 />
                                                             </div>
@@ -1756,149 +1766,147 @@ const ProductPage = () => {
 
             {/* Chat Widget - Visible to buyer and product author */}
             {isChatOpen && chatRoomId && session?.user?.id && (
-                (session.user.id === product?.user?.id) || 
+                (session.user.id === product?.user?.id) ||
                 (chatRoomInfo && chatRoomInfo.userId === session.user.id && chatRoomInfo.adminId === product?.user?.id)
             ) && (
-                <div className="fixed bottom-4 right-4 w-96 h-[600px] bg-white rounded-lg shadow-2xl border border-gray-200 z-50 flex flex-col">
-                    {/* Chat Header */}
-                    <div className="bg-[#1B3729] text-white p-4 rounded-t-lg flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                            {session?.user?.id === product?.user?.id ? (
-                                // Author view - show buyer
-                                buyerInfo?.image ? (
-                                    <Image
-                                        width={40}
-                                        height={40}
-                                        src={buyerInfo.image}
-                                        alt={buyerInfo.name || "მომხმარებელი"}
-                                        className="rounded-full object-cover"
-                                    />
-                                ) : (
-                                    <div className="w-10 h-10 rounded-full bg-white text-[#1B3729] flex items-center justify-center font-semibold">
-                                        {buyerInfo?.name ? buyerInfo.name.charAt(0).toUpperCase() : "?"}
-                                    </div>
-                                )
-                            ) : (
-                                // Buyer view - show author
-                                product?.user?.image ? (
-                                    <Image
-                                        width={40}
-                                        height={40}
-                                        src={product.user.image}
-                                        alt={product.user.name || "ავტორი"}
-                                        className="rounded-full object-cover"
-                                    />
-                                ) : (
-                                    <div className="w-10 h-10 rounded-full bg-white text-[#1B3729] flex items-center justify-center font-semibold">
-                                        {product?.user?.name ? product.user.name.charAt(0).toUpperCase() : "?"}
-                                    </div>
-                                )
-                            )}
-                            <div>
-                                <h3 className="font-semibold md:text-[16px] text-[14px]">
-                                    {session?.user?.id === product?.user?.id 
-                                        ? (buyerInfo?.name || buyerInfo?.email || "მომხმარებელი")
-                                        : (product?.user?.name || "ავტორი")
-                                    }
-                                </h3>
-                                <p className="text-xs text-gray-200">
-                                    {session?.user?.id === product?.user?.id 
-                                        ? "პროდუქტის მყიდველი"
-                                        : "პროდუქტის ავტორი"
-                                    }
-                                </p>
-                            </div>
-                        </div>
-                        <button
-                            onClick={() => setIsChatOpen(false)}
-                            className="text-white hover:text-gray-200 transition-colors"
-                        >
-                            <X className="w-5 h-5" />
-                        </button>
-                    </div>
-
-                    {/* Messages */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-                        {loadingChatMessages && chatMessages.length === 0 ? (
-                            <div className="text-center py-8">
-                                <div className="w-8 h-8 border-4 border-gray-300 border-t-[#1B3729] rounded-full animate-spin mx-auto mb-2"></div>
-                                <p className="text-black md:text-[14px] text-[12px]">იტვირთება...</p>
-                            </div>
-                        ) : chatMessages.length === 0 ? (
-                            <div className="text-center py-8">
-                                <MessageCircle className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                                <p className="text-black md:text-[14px] text-[12px]">დაიწყეთ საუბარი!</p>
-                            </div>
-                        ) : (
-                            chatMessages.map((message) => {
-                                // Determine message position and style
-                                const isCurrentUserAuthor = session?.user?.id === product?.user?.id
-                                
-                                // Check if message is from author (seller)
-                                const isFromAuthor = message.isFromAdmin
-                                
-                                // Check if message is from current user (buyer)
-                                const isFromBuyer = !message.isFromAdmin && message.userId === session?.user?.id
-                                
-                                // Determine position: author messages on right, buyer messages on left
-                                const isOnRight = isFromAuthor
-                                const isOnLeft = isFromBuyer
-                                
-                                return (
-                                    <div
-                                        key={message.id}
-                                        className={`flex ${isOnRight ? 'justify-end' : 'justify-start'}`}
-                                    >
-                                        <div
-                                            className={`max-w-[75%] rounded-lg px-4 py-2 ${
-                                                isFromAuthor
-                                                    ? 'bg-[#228460] text-white'
-                                                    : 'bg-white text-black border border-gray-200'
-                                            }`}
-                                        >
-                                            <p className="md:text-[14px] text-[12px] break-words">{message.content}</p>
-                                            <p className={`text-xs mt-1 ${
-                                                isFromAuthor ? 'text-gray-300' : 'text-gray-500'
-                                            }`}>
-                                                {new Date(message.createdAt).toLocaleTimeString('ka-GE', {
-                                                    hour: '2-digit',
-                                                    minute: '2-digit'
-                                                })}
-                                            </p>
+                    <div className="fixed bottom-4 right-4 w-96 h-[600px] bg-white rounded-lg shadow-2xl border border-gray-200 z-50 flex flex-col">
+                        {/* Chat Header */}
+                        <div className="bg-[#1B3729] text-white p-4 rounded-t-lg flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                                {session?.user?.id === product?.user?.id ? (
+                                    // Author view - show buyer
+                                    buyerInfo?.image ? (
+                                        <Image
+                                            width={40}
+                                            height={40}
+                                            src={buyerInfo.image}
+                                            alt={buyerInfo.name || "მომხმარებელი"}
+                                            className="rounded-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="w-10 h-10 rounded-full bg-white text-[#1B3729] flex items-center justify-center font-semibold">
+                                            {buyerInfo?.name ? buyerInfo.name.charAt(0).toUpperCase() : "?"}
                                         </div>
-                                    </div>
-                                )
-                            })
-                        )}
-                    </div>
-
-                    {/* Message Input */}
-                    <div className="p-4 border-t border-gray-200 bg-white rounded-b-lg">
-                        <div className="flex space-x-2">
-                            <input
-                                type="text"
-                                value={newChatMessage}
-                                onChange={(e) => setNewChatMessage(e.target.value)}
-                                onKeyPress={(e) => {
-                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                        e.preventDefault()
-                                        sendChatMessage()
-                                    }
-                                }}
-                                placeholder="დაწერეთ შეტყობინება..."
-                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B3729] md:text-[14px] text-[12px]"
-                            />
+                                    )
+                                ) : (
+                                    // Buyer view - show author
+                                    product?.user?.image ? (
+                                        <Image
+                                            width={40}
+                                            height={40}
+                                            src={product.user.image}
+                                            alt={product.user.name || "ავტორი"}
+                                            className="rounded-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="w-10 h-10 rounded-full bg-white text-[#1B3729] flex items-center justify-center font-semibold">
+                                            {product?.user?.name ? product.user.name.charAt(0).toUpperCase() : "?"}
+                                        </div>
+                                    )
+                                )}
+                                <div>
+                                    <h3 className="font-semibold md:text-[16px] text-[14px]">
+                                        {session?.user?.id === product?.user?.id
+                                            ? (buyerInfo?.name || buyerInfo?.email || "მომხმარებელი")
+                                            : (product?.user?.name || "ავტორი")
+                                        }
+                                    </h3>
+                                    <p className="text-xs text-gray-200">
+                                        {session?.user?.id === product?.user?.id
+                                            ? "პროდუქტის მყიდველი"
+                                            : "პროდუქტის ავტორი"
+                                        }
+                                    </p>
+                                </div>
+                            </div>
                             <button
-                                onClick={sendChatMessage}
-                                disabled={!newChatMessage.trim() || sendingChatMessage}
-                                className="px-4 py-2 bg-[#1B3729] text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity md:text-[14px] text-[12px] font-medium"
+                                onClick={() => setIsChatOpen(false)}
+                                className="text-white hover:text-gray-200 transition-colors"
                             >
-                                {sendingChatMessage ? '...' : 'გაგზავნა'}
+                                <X className="w-5 h-5" />
                             </button>
                         </div>
+
+                        {/* Messages */}
+                        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+                            {loadingChatMessages && chatMessages.length === 0 ? (
+                                <div className="text-center py-8">
+                                    <div className="w-8 h-8 border-4 border-gray-300 border-t-[#1B3729] rounded-full animate-spin mx-auto mb-2"></div>
+                                    <p className="text-black md:text-[14px] text-[12px]">იტვირთება...</p>
+                                </div>
+                            ) : chatMessages.length === 0 ? (
+                                <div className="text-center py-8">
+                                    <MessageCircle className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                                    <p className="text-black md:text-[14px] text-[12px]">დაიწყეთ საუბარი!</p>
+                                </div>
+                            ) : (
+                                chatMessages.map((message) => {
+                                    // Determine message position and style
+                                    const isCurrentUserAuthor = session?.user?.id === product?.user?.id
+
+                                    // Check if message is from author (seller)
+                                    const isFromAuthor = message.isFromAdmin
+
+                                    // Check if message is from current user (buyer)
+                                    const isFromBuyer = !message.isFromAdmin && message.userId === session?.user?.id
+
+                                    // Determine position: author messages on right, buyer messages on left
+                                    const isOnRight = isFromAuthor
+                                    const isOnLeft = isFromBuyer
+
+                                    return (
+                                        <div
+                                            key={message.id}
+                                            className={`flex ${isOnRight ? 'justify-end' : 'justify-start'}`}
+                                        >
+                                            <div
+                                                className={`max-w-[75%] rounded-lg px-4 py-2 ${isFromAuthor
+                                                        ? 'bg-[#228460] text-white'
+                                                        : 'bg-white text-black border border-gray-200'
+                                                    }`}
+                                            >
+                                                <p className="md:text-[14px] text-[12px] break-words">{message.content}</p>
+                                                <p className={`text-xs mt-1 ${isFromAuthor ? 'text-gray-300' : 'text-gray-500'
+                                                    }`}>
+                                                    {new Date(message.createdAt).toLocaleTimeString('ka-GE', {
+                                                        hour: '2-digit',
+                                                        minute: '2-digit'
+                                                    })}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )
+                                })
+                            )}
+                        </div>
+
+                        {/* Message Input */}
+                        <div className="p-4 border-t border-gray-200 bg-white rounded-b-lg">
+                            <div className="flex space-x-2">
+                                <input
+                                    type="text"
+                                    value={newChatMessage}
+                                    onChange={(e) => setNewChatMessage(e.target.value)}
+                                    onKeyPress={(e) => {
+                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                            e.preventDefault()
+                                            sendChatMessage()
+                                        }
+                                    }}
+                                    placeholder="დაწერეთ შეტყობინება..."
+                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B3729] md:text-[14px] text-[12px]"
+                                />
+                                <button
+                                    onClick={sendChatMessage}
+                                    disabled={!newChatMessage.trim() || sendingChatMessage}
+                                    className="px-4 py-2 bg-[#1B3729] text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity md:text-[14px] text-[12px] font-medium"
+                                >
+                                    {sendingChatMessage ? '...' : 'გაგზავნა'}
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
         </div>
     )
 }
