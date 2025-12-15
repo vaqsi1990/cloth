@@ -84,7 +84,7 @@ const CartPage = () => {
 
                                 <div className="space-y-6">
                                     {cartItems.map((item) => (
-                                            <div key={item.id} className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 border border-gray-200 rounded-lg">
+                                            <div key={item.id} className="flex flex-col sm:flex-row text-center md:text-start items-center md:items-start gap-4 p-4 border border-gray-200 rounded-lg">
                                             {/* Product Image */}
                                             <div className="relative w-full md:w-24 h-62 md:h-32 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                                                 <Image
@@ -126,7 +126,7 @@ const CartPage = () => {
 
                                             {/* Quantity Controls - Only show for non-rental items */}
                                             {!item.isRental && (
-                                                <div className="flex items-center space-x-2 sm:self-auto self-start">
+                                                <div className="flex items-center text-center mt-0  md:mt-10 space-x-2 ">
                                                     <button
                                                         onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
                                                         className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
@@ -138,7 +138,7 @@ const CartPage = () => {
                                                     </span>
                                                     <button
                                                         onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
-                                                        className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                                                        className="w-8 h-8 rounded-full border border-gray-300  flex items-center justify-center hover:bg-gray-50 transition-colors"
                                                     >
                                                         <Plus className="w-4 h-4 text-black" />
                                                     </button>
@@ -156,7 +156,7 @@ const CartPage = () => {
                                             {/* Remove Button */}
                                             <button
                                                 onClick={() => handleRemoveItem(item.id)}
-                                                className="p-2 text-black hover:text-red-600 transition-colors"
+                                                className="p-2 text-black mt-0  md:mt-10 hover:text-red-600 transition-colors"
                                             >
                                                 <Trash2 className="w-5 h-5" />
                                             </button>

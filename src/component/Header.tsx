@@ -276,7 +276,7 @@ const HeaderContent = () => {
               <div className="relative mobile-user-dropdown">
                 <button
                   onClick={() => setIsMobileUserDropdownOpen(!isMobileUserDropdownOpen)}
-                  className="p-2 text-gray-700 touch-manipulation"
+                  className="p-2 text-white touch-manipulation"
                   aria-label="User menu"
                 >
                   <User className="w-5 h-5" />
@@ -284,11 +284,11 @@ const HeaderContent = () => {
                 {isMobileUserDropdownOpen && (
                   <div className="absolute left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-xl z-50">
                     <div className="py-2">
-                      <p className="px-4 py-2 font-semibold text-white">{session.user.name}</p>
+                      <p className="px-4 py-2 font-semibold text-black">{session.user.name}</p>
                       {session.user.role === 'ADMIN' ? (
                         <Link
                           href="/admin"
-                          className="block px-4 py-2 text-white hover:bg-gray-100"
+                          className="block px-4 py-2 text-black hover:bg-gray-100"
                           onClick={() => setIsMobileUserDropdownOpen(false)}
                         >
                           ადმინისტრატორი
@@ -296,7 +296,7 @@ const HeaderContent = () => {
                       ) : (
                         <Link
                           href="/account"
-                          className="block px-4 py-2 text-white hover:bg-gray-100"
+                          className="block px-4 py-2 text-black hover:bg-gray-100"
                           onClick={() => setIsMobileUserDropdownOpen(false)}
                         >
                           პროფილი
@@ -307,7 +307,7 @@ const HeaderContent = () => {
                           setIsMobileUserDropdownOpen(false)
                           signOut()
                         }}
-                        className="w-full text-left px-4 py-2 text-white hover:bg-gray-100 flex items-center space-x-2"
+                        className="w-full text-left px-4 py-2 text-black hover:bg-gray-100 flex items-center space-x-2"
                       >
                         <LogOut className="w-4 h-4" />
                         <span>გასვლა</span>
@@ -317,7 +317,7 @@ const HeaderContent = () => {
                 )}
               </div>
             ) : (
-              <Link href="/auth/signin" className="text-sm md:text-[20px] text-[16px] text-white">
+              <Link href="/auth/signin" className="text-sm md:text-[20px] text-[16px] text-black">
                 შესვლა
               </Link>
             )}
@@ -369,7 +369,7 @@ const HeaderContent = () => {
                   <div key={item}>
                     <button
                       onClick={() => toggleMobileDropdown(item)}
-                      className="w-full flex items-center justify-between px-4 py-3 text-gray-900 md:text-[18px] text-[16px] hover:bg-gray-100 rounded-lg text-[18px]"
+                      className="w-full flex items-center justify-between px-4 py-3 text-black md:text-[18px] text-[16px] hover:bg-gray-100 rounded-lg text-[18px]"
                     >
                       <span>{item}</span>
                       <ChevronRight className={`w-4 h-4 transition-transform ${mobileDropdownOpen === item ? 'rotate-90' : ''}`} />
@@ -378,39 +378,39 @@ const HeaderContent = () => {
                       <div className="pl-4 space-y-1 mt-1">
                         {item === 'ქალი' && (
                           <>
-                            <Link href="/shop?gender=women" onClick={closeMobileMenu} className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-[16px]">
+                            <Link href="/shop?gender=women" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
                               პალტოები და მოსასხამი
                             </Link>
-                            <Link href="/shop?gender=women&category=dresses" onClick={closeMobileMenu} className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-[16px]">
+                            <Link href="/shop?gender=women&category=dresses" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
                               კაბები
                             </Link>
-                            <Link href="/shop?gender=women&category=tops" onClick={closeMobileMenu} className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-[16px]">
+                            <Link href="/shop?gender=women&category=tops" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
                               შარვლები
                             </Link>
-                            <Link href="/shop?gender=women&category=bottoms" onClick={closeMobileMenu} className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-[16px]">
+                            <Link href="/shop?gender=women&category=bottoms" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
                               ქვედაბოლოები
                             </Link>
                           </>
                         )}
                         {item === 'მამაკაცი' && (
                           <>
-                            <Link href="/shop?gender=men" onClick={closeMobileMenu} className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-[16px]">
+                            <Link href="/shop?gender=men" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
                               შარვალ კოსტუმი
                             </Link>
-                            <Link href="/shop?gender=men&category=suits" onClick={closeMobileMenu} className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-[16px]">
+                            <Link href="/shop?gender=men&category=suits" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
                               პიჯაკი
                             </Link>
-                            <Link href="/shop?gender=men&category=pants" onClick={closeMobileMenu} className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-[16px]">
+                            <Link href="/shop?gender=men&category=pants" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
                               ტრადიციული და კულტურული ტანსაცმელი
                             </Link>
                           </>
                         )}
                         {item === 'ბავშვები' && (
                           <>
-                            <Link href="/shop?gender=children" onClick={closeMobileMenu} className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-[16px]">
+                            <Link href="/shop?gender=children" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
                               კაბები
                             </Link>
-                            <Link href="/shop?gender=children&category=dresses" onClick={closeMobileMenu} className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-[16px]">
+                            <Link href="/shop?gender=children&category=dresses" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
                               სათხილამურო ტანსაცმელი
                             </Link>
                           </>
@@ -422,10 +422,10 @@ const HeaderContent = () => {
               </div>
 
               {/* Other Links */}
-              <Link href="/about" onClick={closeMobileMenu} className="block px-4 py-3 text-gray-900 hover:bg-gray-100 rounded-lg text-[18px]">
+              <Link href="/about" onClick={closeMobileMenu} className="block px-4 py-3 text-black hover:bg-gray-100 rounded-lg text-[18px]">
                 ჩვენს შესახებ
               </Link>
-              <Link href="/politics" onClick={closeMobileMenu} className="block px-4 py-3 text-gray-900 hover:bg-gray-100 rounded-lg text-[18px]">
+              <Link href="/politics" onClick={closeMobileMenu} className="block px-4 py-3 text-black hover:bg-gray-100 rounded-lg text-[18px]">
                 საიტის პოლიტიკა
               </Link>
             </nav>
