@@ -21,48 +21,95 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20')
     const skip = (page - 1) * limit
 
-    const whereClause: Record<string, unknown> = {}
-    if (status && ['PENDING', 'ACTIVE', 'CLOSED'].includes(status)) {
-      whereClause.status = status
+    // Filter to only show admin chats (not buyer-to-author chats)
+    // We need to exclude chat rooms where adminId points to a regular user (product author)
+    // Only show: adminId is NULL OR adminId points to a user with role ADMIN
+    const validStatus = status && ['PENDING', 'ACTIVE', 'CLOSED'].includes(status) ? status : null
+
+    // Build queries conditionally based on status filter
+    let chatRooms: Array<{
+      id: number
+      createdAt: Date
+      updatedAt: Date
+      status: string
+      userId: string | null
+      adminId: string | null
+      guestName: string | null
+      guestEmail: string | null
+      user_name: string | null
+      user_email: string | null
+      admin_name: string | null
+      admin_email: string | null
+      message_count: number
+    }>
+
+    let totalResult: Array<{ count: bigint }>
+
+    if (validStatus) {
+      chatRooms = await prisma.$queryRaw`
+        SELECT 
+          cr.id,
+          cr."createdAt",
+          cr."updatedAt",
+          cr.status,
+          cr."userId",
+          cr."adminId",
+          cr."guestName",
+          cr."guestEmail",
+          u.name as user_name,
+          u.email as user_email,
+          a.name as admin_name,
+          a.email as admin_email,
+          (SELECT COUNT(*) FROM "ChatMessage" WHERE "chatRoomId" = cr.id)::int as message_count
+        FROM "ChatRoom" cr
+        LEFT JOIN "User" u ON cr."userId" = u.id
+        LEFT JOIN "User" a ON cr."adminId" = a.id
+        WHERE (cr."adminId" IS NULL OR a.role = 'ADMIN')
+          AND cr.status = ${validStatus}
+        ORDER BY cr."updatedAt" DESC
+        LIMIT ${limit} OFFSET ${skip}
+      `
+
+      totalResult = await prisma.$queryRaw`
+        SELECT COUNT(*)::int as count
+        FROM "ChatRoom" cr
+        LEFT JOIN "User" a ON cr."adminId" = a.id
+        WHERE (cr."adminId" IS NULL OR a.role = 'ADMIN')
+          AND cr.status = ${validStatus}
+      `
+    } else {
+      chatRooms = await prisma.$queryRaw`
+        SELECT 
+          cr.id,
+          cr."createdAt",
+          cr."updatedAt",
+          cr.status,
+          cr."userId",
+          cr."adminId",
+          cr."guestName",
+          cr."guestEmail",
+          u.name as user_name,
+          u.email as user_email,
+          a.name as admin_name,
+          a.email as admin_email,
+          (SELECT COUNT(*) FROM "ChatMessage" WHERE "chatRoomId" = cr.id)::int as message_count
+        FROM "ChatRoom" cr
+        LEFT JOIN "User" u ON cr."userId" = u.id
+        LEFT JOIN "User" a ON cr."adminId" = a.id
+        WHERE (cr."adminId" IS NULL OR a.role = 'ADMIN')
+        ORDER BY cr."updatedAt" DESC
+        LIMIT ${limit} OFFSET ${skip}
+      `
+
+      totalResult = await prisma.$queryRaw`
+        SELECT COUNT(*)::int as count
+        FROM "ChatRoom" cr
+        LEFT JOIN "User" a ON cr."adminId" = a.id
+        WHERE (cr."adminId" IS NULL OR a.role = 'ADMIN')
+      `
     }
 
-    // Use Prisma's findMany with proper relations instead of raw SQL
-    const chatRooms = await prisma.chatRoom.findMany({
-      where: whereClause,
-      include: {
-        user: {
-          select: {
-            name: true,
-            email: true
-          }
-        },
-        admin: {
-          select: {
-            name: true,
-            email: true
-          }
-        },
-        messages: {
-          select: {
-            id: true
-          }
-        },
-        _count: {
-          select: {
-            messages: true
-          }
-        }
-      },
-      orderBy: {
-        updatedAt: 'desc'
-      },
-      skip,
-      take: limit
-    })
-
-    const total = await prisma.chatRoom.count({
-      where: whereClause
-    })
+    const total = Number(totalResult[0]?.count || 0)
 
     // Transform data to include proper user/admin objects
     const transformedChatRooms = chatRooms.map(room => ({
@@ -72,9 +119,17 @@ export async function GET(request: NextRequest) {
       status: room.status,
       guestName: room.guestName,
       guestEmail: room.guestEmail,
-      user: room.user,
-      admin: room.admin,
-      _count: room._count,
+      user: room.user_name ? {
+        name: room.user_name,
+        email: room.user_email || ''
+      } : null,
+      admin: room.admin_name ? {
+        name: room.admin_name,
+        email: room.admin_email || ''
+      } : null,
+      _count: {
+        messages: room.message_count
+      },
       messages: []
     }))
 

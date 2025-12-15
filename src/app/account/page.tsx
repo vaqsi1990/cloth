@@ -408,6 +408,37 @@ const AccountPageContent = () => {
     }
   }
 
+  const handleDeleteChat = async (chatRoomId: number, e: React.MouseEvent) => {
+    e.stopPropagation() // Prevent selecting the chat room when clicking delete
+
+    if (!confirm('ნამდვილად გსურთ ამ ჩათის წაშლა? ეს ქმედება შეუქცევადია.')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/chat/${chatRoomId}`, {
+        method: 'DELETE'
+      })
+
+      const data = await response.json()
+      if (data.success) {
+        showToast('ჩათი წარმატებით წაიშალა', 'success')
+        // Remove from chat rooms list
+        setChatRooms(chatRooms.filter(room => room.id !== chatRoomId))
+        // If deleted chat was selected, clear selection
+        if (selectedChatRoom?.id === chatRoomId) {
+          setSelectedChatRoom(null)
+          setChatMessages([])
+        }
+      } else {
+        showToast(data.error || 'შეცდომა ჩათის წაშლისას', 'error')
+      }
+    } catch (error) {
+      console.error('Error deleting chat:', error)
+      showToast('შეცდომა ჩათის წაშლისას', 'error')
+    }
+  }
+
   const handleImageUpload = async (urls: string[]) => {
     if (urls.length === 0) return
 
@@ -1547,37 +1578,54 @@ const AccountPageContent = () => {
                     const isSelected = selectedChatRoom?.id === room.id
                     
                     return (
-                      <button
+                      <div
                         key={room.id}
-                        onClick={() => setSelectedChatRoom(room)}
-                        className={`w-full text-left p-4 hover:bg-gray-50 transition-colors ${
-                          isSelected ? 'bg-[#1B3729] text-white' : ''
+                        className={`flex items-center group ${
+                          isSelected ? 'bg-[#1B3729]' : ''
                         }`}
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1 min-w-0">
-                            <p className={`font-semibold md:text-[16px] text-[14px] truncate ${
-                              isSelected ? 'text-white' : 'text-black'
-                            }`}>
-                              {otherUser || otherUserEmail || 'უცნობი მომხმარებელი'}
-                            </p>
-                            {room.last_message && (
-                              <p className={`mt-1 truncate md:text-[14px] text-[12px] ${
-                                isSelected ? 'text-gray-200' : 'text-gray-600'
+                        <button
+                          onClick={() => setSelectedChatRoom(room)}
+                          className={`flex-1 text-left p-4 hover:bg-gray-50 transition-colors ${
+                            isSelected ? 'bg-[#1B3729] text-white hover:bg-[#1B3729]' : ''
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                              <p className={`font-semibold md:text-[16px] text-[14px] truncate ${
+                                isSelected ? 'text-white' : 'text-black'
                               }`}>
-                                {room.last_message}
+                                {otherUser || otherUserEmail || 'უცნობი მომხმარებელი'}
                               </p>
+                              {room.last_message && (
+                                <p className={`mt-1 truncate md:text-[14px] text-[12px] ${
+                                  isSelected ? 'text-gray-200' : 'text-gray-600'
+                                }`}>
+                                  {room.last_message}
+                                </p>
+                              )}
+                            </div>
+                            {room.message_count > 0 && (
+                              <span className={`ml-2 px-2 py-1 rounded-full text-xs font-bold ${
+                                isSelected ? 'bg-white text-[#1B3729]' : 'bg-[#1B3729] text-white'
+                              }`}>
+                                {room.message_count}
+                              </span>
                             )}
                           </div>
-                          {room.message_count > 0 && (
-                            <span className={`ml-2 px-2 py-1 rounded-full text-xs font-bold ${
-                              isSelected ? 'bg-white text-[#1B3729]' : 'bg-[#1B3729] text-white'
-                            }`}>
-                              {room.message_count}
-                            </span>
-                          )}
-                        </div>
-                      </button>
+                        </button>
+                        <button
+                          onClick={(e) => handleDeleteChat(room.id, e)}
+                          className={`p-2 mr-2 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-100 rounded ${
+                            isSelected ? 'hover:bg-red-900' : ''
+                          }`}
+                          title="ჩათის წაშლა"
+                        >
+                          <Trash2 className={`w-4 h-4 ${
+                            isSelected ? 'text-white' : 'text-red-600'
+                          }`} />
+                        </button>
+                      </div>
                     )
                   })}
                 </div>

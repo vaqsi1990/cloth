@@ -326,12 +326,12 @@ export async function DELETE(
         LIMIT 1
       `
     } else {
-      // Regular users can only delete their own chat rooms
+      // Regular users can delete their own chat rooms (as buyer) or chat rooms where they are seller (adminId)
       if (session?.user?.id) {
         chatRoom = await prisma.$queryRaw<Array<{ id: number }>>`
           SELECT id FROM "ChatRoom" 
           WHERE id = ${chatRoomId}
-          AND "userId" = ${session.user.id}
+          AND ("userId" = ${session.user.id} OR "adminId" = ${session.user.id})
           LIMIT 1
         `
       } else {
