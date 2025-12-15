@@ -3,20 +3,24 @@ import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Filter, X, ChevronDown, Calendar, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Product } from '@/types/product'
 import DatePicker from "react-datepicker"
 import StarRating from "@/components/StarRating"
+import { PURPOSE_OPTIONS } from '@/data/purposes'
 
 
 const ShopPageClient = () => {
     const searchParams = useSearchParams()
+    const router = useRouter()
     const genderParam = searchParams.get('gender')
     const searchParam = searchParams.get('search')
+    const purposeParam = searchParams.get('purpose')
 
     const [products, setProducts] = useState<Product[]>([])
     const [loading, setLoading] = useState(true)
     const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+    const [selectedPurposes, setSelectedPurposes] = useState<string[]>([])
     const [sortBy, setSortBy] = useState("newest")
     const [isFilterOpen, setIsFilterOpen] = useState(false)
     const [priceRange, setPriceRange] = useState([0, 0])
@@ -42,6 +46,24 @@ const ShopPageClient = () => {
     const [activeMobileFilter, setActiveMobileFilter] = useState<string | null>(null)
     const [isMobileFilterOverlayOpen, setIsMobileFilterOverlayOpen] = useState(false)
     const [isCategorySectionOpen, setIsCategorySectionOpen] = useState(false)
+
+    const clearSearch = () => {
+        const params = new URLSearchParams(Array.from(searchParams.entries()))
+        params.delete('search')
+        const query = params.toString()
+        router.push(query ? `/shop?${query}` : '/shop')
+    }
+
+    const clearPurpose = () => {
+        const params = new URLSearchParams(Array.from(searchParams.entries()))
+        params.delete('purpose')
+        const query = params.toString()
+        router.push(query ? `/shop?${query}` : '/shop')
+    }
+
+    useEffect(() => {
+        setSelectedPurposes(purposeParam ? [purposeParam] : [])
+    }, [purposeParam])
 
     // Helper functions for price calculation
     const getRentalPrice = (product: Product): number => {
@@ -73,6 +95,8 @@ const ShopPageClient = () => {
         // If no variants, check if it's rentable
         return getRentalPrice(product)
     }
+
+    const purposes = PURPOSE_OPTIONS
 
     const categories = [
         // ძირითადი
@@ -108,11 +132,6 @@ const ShopPageClient = () => {
         { id: "ბავშვთა კაბები", label: "ბავშვთა კაბები", slug: "kids-dresses" },
         { id: "ბავშვთა ტრადიციული ტანსაცმელი", label: "ბავშვთა ტრადიციული ტანსაცმელი", slug: "kids-traditional" },
         { id: "ბავშვთა სათხილამურო ტანსაცმელი", label: "ბავშვთა სათხილამურო ტანსაცმელი", slug: "kids-ski" },
-
-        // სხვა
-        { id: "ყოველდღიური ტანსაცმელი", label: "ყოველდღიური ტანსაცმელი", slug: "everyday" },
-        { id: "სპორტული ტანსაცმელი", label: "სპორტული ტანსაცმელი", slug: "sportwear" },
-        { id: "სადღესასწაულო ტანსაცმელი", label: "სადღესასწაულო ტანსაცმელი", slug: "festive" },
     ]
 
     const sizeSystems = [
@@ -155,6 +174,9 @@ const ShopPageClient = () => {
                 if (searchParam) {
                     params.append('search', searchParam)
                 }
+                if (purposeParam) {
+                    params.append('purpose', purposeParam)
+                }
 
                 const response = await fetch(`/api/products?${params.toString()}`)
                 const data = await response.json()
@@ -192,7 +214,7 @@ const ShopPageClient = () => {
         }
 
         fetchProducts()
-    }, [genderParam, searchParam])
+    }, [genderParam, searchParam, purposeParam])
 
     // Fetch rental status for rentable products (batched)
     useEffect(() => {
@@ -353,6 +375,11 @@ const ShopPageClient = () => {
         const categoryMatch = selectedCategories.length === 0 ||
             selectedCategories.includes(product.category?.name || '')
 
+        // Purpose filter
+        const purposeMatch = selectedPurposes.length === 0 ||
+            selectedPurposes.includes(product.purpose?.slug || '') ||
+            selectedPurposes.includes(product.purpose?.name || '')
+
         // Price filter
         const minPrice = getMinPrice(product)
         const maxPrice = getMaxPrice(product)
@@ -400,7 +427,7 @@ const ShopPageClient = () => {
             (purchaseType === "rent-only" && isRentOnly(product)) ||
             (purchaseType === "sale-only" && isSaleOnly(product))
 
-        return categoryMatch && priceMatch && sizeSystemMatch && colorMatch && locationMatch && rentalAvailabilityMatch && purchaseTypeMatch
+        return categoryMatch && purposeMatch && priceMatch && sizeSystemMatch && colorMatch && locationMatch && rentalAvailabilityMatch && purchaseTypeMatch
     })
 
 
@@ -429,7 +456,7 @@ const ShopPageClient = () => {
     // Reset to page 1 when filters change
     useEffect(() => {
         setCurrentPage(1)
-    }, [selectedCategories, priceRange, selectedSizeSystems, selectedColors, selectedLocations, rentalStartDate, rentalEndDate, sortBy, purchaseType])
+    }, [selectedCategories, selectedPurposes, priceRange, selectedSizeSystems, selectedColors, selectedLocations, rentalStartDate, rentalEndDate, sortBy, purchaseType])
 
     // Handle category selection
     const toggleCategory = (categoryName: string) => {
@@ -437,6 +464,14 @@ const ShopPageClient = () => {
             prev.includes(categoryName)
                 ? prev.filter(c => c !== categoryName)
                 : [...prev, categoryName]
+        )
+    }
+
+    const togglePurpose = (purposeSlug: string) => {
+        setSelectedPurposes(prev =>
+            prev.includes(purposeSlug)
+                ? prev.filter(p => p !== purposeSlug)
+                : [...prev, purposeSlug]
         )
     }
 
@@ -473,6 +508,7 @@ const ShopPageClient = () => {
     // Clear all filters
     const clearFilters = () => {
         setSelectedCategories([])
+        setSelectedPurposes([])
         setPriceRange([0, maxPrice])
         setSelectedSizeSystems([])
         setSelectedColors([])
@@ -500,8 +536,18 @@ const ShopPageClient = () => {
                 <div className="container  max-w-6xl mx-auto px-4 py-8 space-y-6 ">
                     <div className="flex items-center justify-between mb-8">
                         <h2 className="md:text-[24px] text-[20px] font-bold text-gray-900 text-start">
-                            მოძებნეთ კატეგორიის მიხედვით
+                            მოძებნეთ დანიშნულების მიხედვით
                         </h2>
+                        {(searchParam || purposeParam) && (
+                            <button
+                                onClick={searchParam ? clearSearch : clearPurpose}
+                                className="flex items-center gap-2 text-gray-700 hover:text-gray-900 text-[15px] md:text-base"
+                                aria-label={searchParam ? "ძიების გასუფთავება" : "დანიშნულების გასუფთავება"}
+                            >
+                                <X className="w-7 h-7" />
+                                <span>{searchParam ? 'ძიების გასუფთავება' : 'დანიშნულების გასუფთავება'}</span>
+                            </button>
+                        )}
                         {/* Toggle button - only visible on mobile */}
                         <button
                             onClick={() => setIsCategorySectionOpen(!isCategorySectionOpen)}
@@ -509,7 +555,7 @@ const ShopPageClient = () => {
                             aria-label="კატეგორიების გახსნა/დახურვა"
                         >
                             <span className="text-[16px] font-medium">
-                                {isCategorySectionOpen ? 'დამალვა' : 'გახსნა'}
+                                {isCategorySectionOpen ? '' : ''}
                             </span>
                             <ChevronDown
                                 className={`w-5 h-5 transition-transform ${isCategorySectionOpen ? 'rotate-180' : ''}`}
@@ -520,7 +566,7 @@ const ShopPageClient = () => {
                     <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 ${isCategorySectionOpen ? 'block' : 'hidden md:grid'}`}>
                         {/* Category Box 1 */}
                         <Link
-                            href="/shop?category=everyday"
+                            href="/shop?purpose=everyday"
                             className=" bg-white
     border border-gray-300
     w-[265px]
@@ -532,7 +578,7 @@ const ShopPageClient = () => {
     cursor-pointer
   "
                         >
-                            <p className="text-gray-400 text-[16px] font-normal">
+                            <p className="text-black text-[16px] font-normal">
                                 ყოველდღიური ტანსაცმელი
                             </p>
                         </Link>
@@ -540,7 +586,7 @@ const ShopPageClient = () => {
 
                         {/* Category Box 2 */}
                         <Link
-                            href="/shop?category=wedding"
+                            href="/shop?purpose=wedding"
                             className="
     bg-white
     border border-gray-300
@@ -548,19 +594,19 @@ const ShopPageClient = () => {
     h-[42px]
     rounded-full
     flex items-center justify-center
-    hover:border-gray-400
+
     transition-colors
     cursor-pointer
   "
                         >
-                            <p className="text-gray-400 text-[16px]">
+                            <p className="text-black text-[16px]">
                                 საქორწილო და სადღესასწაულო
                             </p>
                         </Link>
 
                         {/* Category Box 3 */}
                         <Link
-                            href="/shop?category=sports"
+                            href="/shop?purpose=sports"
                             className="
     bg-white
     border border-gray-300
@@ -568,19 +614,19 @@ const ShopPageClient = () => {
     h-[42px]
     rounded-full
     flex items-center justify-center
-    hover:border-gray-400
+   
     transition-colors
     cursor-pointer
   "
                         >
-                            <p className="text-gray-400 text-[16px]">
+                            <p className="text-black text-[16px]">
                                 სათხილამურო და სპორტული
                             </p>
                         </Link>
 
                         {/* Category Box 4 */}
                         <Link
-                            href="/shop?category=cultural"
+                            href="/shop?purpose=cultural"
                             className="
     bg-white
     border border-gray-300
@@ -588,12 +634,12 @@ const ShopPageClient = () => {
     h-[42px]
     rounded-full
     flex items-center justify-center
-    hover:border-gray-400
+   
     transition-colors
     cursor-pointer
   "
                         >
-                            <p className="text-gray-400 text-[16px]">
+                            <p className="text-black text-[16px]">
                                 კულტურული და თემატური
                             </p>
                         </Link>
@@ -818,6 +864,37 @@ const ShopPageClient = () => {
                                 </div>
                             </div>
 
+                            {/* Purpose Filters */}
+                            <div className="border-b border-gray-200 pb-6">
+                                <h4 className="font-medium text-black md:text-[18px] text-[16px] mb-3">დანიშნულება</h4>
+                                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                                    {purposes.map((purpose) => {
+                                        const purposeCount = products.filter(product =>
+                                            product.purpose?.slug === purpose.slug
+                                        ).length
+                                        const isSelected = selectedPurposes.includes(purpose.slug)
+
+                                        return (
+                                            <label
+                                                key={purpose.slug}
+                                                className="flex items-center justify-between text-[15px] text-black cursor-pointer py-1"
+                                            >
+                                                <span className="flex items-center gap-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isSelected}
+                                                        onChange={() => togglePurpose(purpose.slug)}
+                                                        className="w-4 h-4"
+                                                    />
+                                                    {purpose.name}
+                                                </span>
+                                                <span className="text-xs text-gray-500">{purposeCount}</span>
+                                            </label>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+
                             {/* Category Filters */}
                             <div className="border-b border-gray-200 pb-6">
                                 <button
@@ -975,14 +1052,14 @@ const ShopPageClient = () => {
 
                         {/* Products Grid */}
                         {currentProducts.length > 0 ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 gap-y-16 mb-8">
+                            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 gap-y-16 mb-8">
                                 {currentProducts.map((product, index) => (
                                     <div
                                         key={product.id}
                                         className="group bg-white rounded-xl  overflow-hidden  transition-shadow"
                                     >
                                         <div className="rounded-xl overflow-hidden">
-                                            <div className="relative w-[265px] h-[273px] bg-gray-100  overflow-hidden">
+                                            <div className="relative  w-full  h-[273px] bg-gray-100  overflow-hidden">
                                                 <Image
                                                     src={product.images?.[0]?.url || "/placeholder.jpg"}
                                                     alt={product.name}
@@ -1037,7 +1114,7 @@ const ShopPageClient = () => {
                                             {product.discount && product.discount > 0 && (
                                                 <div className="bg-[#228460] rounded-md text-[#FFFFFF] font-regular flex items-center">
 
-                                                <div className='px-2 py-1 text-[15px] flex items-center gap-2 flex-1'>
+                                                <div className='px-2 py-1 text-[15px] flex flex-col md:flex-row items-center gap-2 flex-1'>
                                                     <span className='whitespace-nowrap'>დანაზოგი: ₾{product.discount.toFixed(2)}</span>
                                                     {product.discountDays && (
                                                         <span className="bg-white text-black px-3 py-1 rounded whitespace-nowrap">{product.discountDays} დღე</span>

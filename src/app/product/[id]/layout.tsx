@@ -21,6 +21,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       where: { id: productId },
       include: {
         category: true,
+        purpose: true,
         images: {
           orderBy: { position: "asc" },
           take: 1,
@@ -56,6 +57,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       keywords: [
         product.name,
         product.category?.name || "",
+        product.purpose?.name || "",
         product.brand || "",
         product.color || "",
         "მოდის ქირაობა",

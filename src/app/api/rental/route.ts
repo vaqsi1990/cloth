@@ -210,7 +210,8 @@ export async function POST(request: NextRequest) {
         product: {
           include: {
             images: true,
-            category: true
+            category: true,
+            purpose: true
           }
         },
         variant: true,
@@ -297,7 +298,8 @@ export async function GET(request: NextRequest) {
         product: {
           include: {
             images: true,
-            category: true
+            category: true,
+            purpose: true
           }
         },
         variant: true,

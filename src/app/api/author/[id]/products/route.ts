@@ -52,6 +52,7 @@ export async function GET(
       },
       include: {
         category: true,
+        purpose: true,
         user: {
           select: {
             id: true,
@@ -92,6 +93,7 @@ export async function GET(
         },
         include: {
           category: true,
+          purpose: true,
           user: {
             select: {
               id: true,

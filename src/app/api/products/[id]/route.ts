@@ -6,6 +6,7 @@ import { authOptions } from '@/lib/auth'
 import { Prisma } from '@prisma/client'
 import { ensureUniqueProductSlug } from '@/lib/productSlug'
 import { checkAndClearExpiredDiscount, processExpiredDiscount } from '@/utils/discountUtils'
+import { PURPOSE_NAME_BY_SLUG } from '@/data/purposes'
 
 // Product validation schema
 const productSchema = z.object({
@@ -42,6 +43,8 @@ const productSchema = z.object({
   ),
   rating: z.number().min(0).max(5).optional(),
   categoryId: z.number().optional(),
+  purposeId: z.number().optional(),
+  purposeSlug: z.string().optional(),
   isRentable: z.boolean().default(true),
   pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional(),
   maxRentalDays: z.number().optional(),
@@ -71,6 +74,24 @@ const productSchema = z.object({
   )
 })
 
+const buildPurposeRelation = (purposeId?: number, purposeSlug?: string) => {
+  if (purposeId) {
+    return { connect: { id: purposeId } }
+  }
+  if (purposeSlug) {
+    return {
+      connectOrCreate: {
+        where: { slug: purposeSlug },
+        create: {
+          slug: purposeSlug,
+          name: PURPOSE_NAME_BY_SLUG[purposeSlug] || purposeSlug
+        }
+      }
+    }
+  }
+  return undefined
+}
+
 // GET - Fetch single product by ID
 export async function GET(
   request: NextRequest,
@@ -94,6 +115,7 @@ export async function GET(
       where: { id: productId },
       include: {
         category: true,
+        purpose: true,
         user: {
           select: {
             id: true,
@@ -133,6 +155,7 @@ export async function GET(
       where: { id: productId },
       include: {
         category: true,
+        purpose: true,
         user: {
           select: {
             id: true,
@@ -275,6 +298,14 @@ export async function PUT(
       discountStartDate = existingProduct.discountStartDate
     }
 
+    const purposeRelation = buildPurposeRelation(validatedData.purposeId, validatedData.purposeSlug)
+    const categoryRelation =
+      validatedData.categoryId !== undefined
+        ? (validatedData.categoryId
+            ? { connect: { id: validatedData.categoryId } }
+            : { disconnect: true })
+        : undefined
+
     const updateData: any = {
       name: validatedData.name,
       slug: uniqueSlug,
@@ -292,7 +323,6 @@ export async function PUT(
       discountDays: validatedData.discountDays,
       discountStartDate: discountStartDate,
       rating: validatedData.rating,
-      categoryId: validatedData.categoryId,
       isRentable: validatedData.isRentable,
       pricePerDay: validatedData.pricePerDay,
       maxRentalDays: validatedData.maxRentalDays,
@@ -325,6 +355,14 @@ export async function PUT(
       } : undefined
     }
 
+    if (categoryRelation) {
+      updateData.category = categoryRelation
+    }
+
+    if (purposeRelation) {
+      updateData.purpose = purposeRelation
+    }
+
     const updatedProduct = await prisma.product.update({
       where: { id: productId },
       data: updateData,
@@ -332,6 +370,7 @@ export async function PUT(
         images: true, 
         variants: true, 
         category: true,
+        purpose: true,
         rentalPriceTiers: {
           orderBy: { minDays: 'asc' }
         }

@@ -34,6 +34,12 @@ export interface Category {
   slug: string
 }
 
+export interface Purpose {
+  id: number
+  name: string
+  slug: string
+}
+
 export interface User {
   id: string
   name?: string
@@ -71,6 +77,8 @@ export interface Product {
   approvedAt?: string | null
   images: ProductImage[]
   variants: ProductVariant[]
+  purposeId?: number
+  purpose?: Purpose
   rentalPriceTiers?: RentalPriceTier[]
   createdAt: string
   updatedAt: string

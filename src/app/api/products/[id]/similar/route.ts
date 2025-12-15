@@ -76,6 +76,7 @@ export async function GET(
       },
       include: {
         category: true,
+        purpose: true,
         images: {
           orderBy: { position: 'asc' },
           take: 1 // Only get first image for thumbnails

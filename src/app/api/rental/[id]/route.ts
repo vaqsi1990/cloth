@@ -35,6 +35,7 @@ export async function GET(
           include: {
             images: true,
             category: true,
+            purpose: true,
             rentalPriceTiers: {
               orderBy: { minDays: 'asc' }
             }
@@ -142,6 +143,7 @@ export async function PATCH(
           include: {
             images: true,
             category: true,
+            purpose: true,
             rentalPriceTiers: {
               orderBy: { minDays: 'asc' }
             }

@@ -6,6 +6,7 @@ import { authOptions } from '@/lib/auth'
 import { generateUniqueSKU } from '@/utils/skuUtils'
 import { ensureUniqueProductSlug } from '@/lib/productSlug'
 import { checkAndClearExpiredDiscounts, processExpiredDiscount } from '@/utils/discountUtils'
+import { PURPOSE_NAME_BY_SLUG } from '@/data/purposes'
 
 // Product validation schema
 const productSchema = z.object({
@@ -30,6 +31,8 @@ const productSchema = z.object({
   discountDays: z.number().int().min(1).optional(),
   rating: z.number().min(0).max(5).optional(),
   categoryId: z.number().optional(),
+  purposeId: z.number().optional(),
+  purposeSlug: z.string().optional(),
   isRentable: z.boolean().default(true),
   pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional(),
   maxRentalDays: z.number().optional(),
@@ -59,6 +62,24 @@ const productSchema = z.object({
   )
 })
 
+const buildPurposeRelation = (purposeId?: number, purposeSlug?: string) => {
+  if (purposeId) {
+    return { connect: { id: purposeId } }
+  }
+  if (purposeSlug) {
+    return {
+      connectOrCreate: {
+        where: { slug: purposeSlug },
+        create: {
+          slug: purposeSlug,
+          name: PURPOSE_NAME_BY_SLUG[purposeSlug] || purposeSlug
+        }
+      }
+    }
+  }
+  return undefined
+}
+
 // GET - Fetch all products
 export async function GET(request: NextRequest) {
   try {
@@ -67,6 +88,7 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category')
     const gender = searchParams.get('gender')
     const isNew = searchParams.get('isNew')
+    const purpose = searchParams.get('purpose')
     const search = searchParams.get('search')?.trim()
     
     // Show products based on status
@@ -101,6 +123,11 @@ export async function GET(request: NextRequest) {
                   category === 'ACCESSORIES' ? 'accessories' : category
           } 
         } : {}),
+        ...(purpose ? {
+          purpose: {
+            slug: purpose
+          }
+        } : {}),
         ...(gender && gender !== 'ALL' ? { 
           gender: gender === 'women' ? 'WOMEN' as const :
                   gender === 'men' ? 'MEN' as const :
@@ -110,6 +137,7 @@ export async function GET(request: NextRequest) {
       },
       include: {
         category: true,
+        purpose: true,
         images: {
           orderBy: { position: 'asc' }
         },
@@ -163,6 +191,11 @@ export async function GET(request: NextRequest) {
                     category === 'ACCESSORIES' ? 'accessories' : category
             } 
           } : {}),
+          ...(purpose ? {
+            purpose: {
+              slug: purpose
+            }
+          } : {}),
           ...(gender && gender !== 'ALL' ? { 
             gender: gender === 'women' ? 'WOMEN' as const :
                     gender === 'men' ? 'MEN' as const :
@@ -172,6 +205,7 @@ export async function GET(request: NextRequest) {
         },
         include: {
           category: true,
+          purpose: true,
           images: {
             orderBy: { position: 'asc' }
           },
@@ -284,12 +318,14 @@ export async function POST(request: NextRequest) {
       images: true,
       variants: true,
       category: true,
+      purpose: true,
       rentalPriceTiers: {
         orderBy: { minDays: 'asc' as const }
       }
     }
 
     const uniqueSlug = await ensureUniqueProductSlug(validatedData.slug)
+    const purposeRelation = buildPurposeRelation(validatedData.purposeId, validatedData.purposeSlug)
 
     // Create product in database using Prisma (approval fields rely on DB defaults)
     const createdProduct = await prisma.product.create({
@@ -311,6 +347,7 @@ export async function POST(request: NextRequest) {
         discountStartDate: validatedData.discount && validatedData.discountDays ? new Date() : null,
         rating: validatedData.rating,
         categoryId: validatedData.categoryId,
+        purpose: purposeRelation,
         isRentable: validatedData.isRentable,
         pricePerDay: validatedData.pricePerDay,
         maxRentalDays: validatedData.maxRentalDays,

@@ -180,6 +180,16 @@ model Category {
   products  Product[]
 }
 
+model Purpose {
+  id        Int       @id @default(autoincrement())
+  name      String
+  slug      String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  products  Product[]
+}
+
 model Product {
   id            Int              @id @default(autoincrement())
   name          String
@@ -210,6 +220,8 @@ model Product {
 
   categoryId    Int?
   category      Category?        @relation(fields: [categoryId], references: [id])
+  purposeId     Int?
+  purpose       Purpose?         @relation(fields: [purposeId], references: [id])
   
   userId        String?
   user          User?            @relation(fields: [userId], references: [id])

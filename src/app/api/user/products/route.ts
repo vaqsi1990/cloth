@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
       include: {
         images: true,
         category: true,
+        purpose: true,
         variants: true,
         rentalPriceTiers: {
           orderBy: { minDays: 'asc' }
@@ -48,6 +49,7 @@ export async function GET(request: NextRequest) {
         include: {
           images: true,
           category: true,
+          purpose: true,
           variants: true,
           rentalPriceTiers: {
             orderBy: { minDays: 'asc' }

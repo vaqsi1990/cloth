@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { z } from 'zod'
 import ImageUploadForProduct from '@/component/productimage'
 import { showToast } from '@/utils/toast'
+import { PURPOSE_OPTIONS } from '@/data/purposes'
 
 const sizeOptions = {
   XS: { UK: [4, 6], EU: [32, 34], US: [0, 2] },
@@ -18,6 +19,7 @@ const sizeOptions = {
  
 }
 const FALLBACK_SIZE = 'STANDARD'
+const purposes = PURPOSE_OPTIONS
 const categories = [
   { id: 1, name: 'კაბები', slug: 'dresses' },
   { id: 2, name: 'ბლუზები', slug: 'tops' },
@@ -39,9 +41,6 @@ const categories = [
   { id: 18, name: 'ბავშვთა კაბები', slug: 'kids-dresses' },
   { id: 19, name: 'ბავშვთა ტრადიციული ტანსაცმელი', slug: 'kids-traditional' },
   { id: 20, name: 'ბავშვთა სათხილამურო ტანსაცმელი', slug: 'kids-ski' },
-  { id: 21, name: 'ყოველდღიური ტანსაცმელი', slug: 'everyday' },
-  { id: 22, name: 'სპორტული ტანსაცმელი', slug: 'sportwear' },
-  { id: 23, name: 'სადღესასწაულო ტანსაცმელი', slug: 'festive' },
 ]
 
 const productSchema = z.object({
@@ -66,6 +65,7 @@ const productSchema = z.object({
   discountDays: z.number().int().min(1).optional(),
   rating: z.number().min(0).max(5).optional(),
   categoryId: z.number().optional(),
+  purposeSlug: z.string().optional(),
   isRentable: z.boolean().default(true),
   pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional(),
   maxRentalDays: z.number().optional(),
@@ -118,6 +118,7 @@ const NewProductPage = () => {
     discountDays: undefined,
     rating: 0,
     categoryId: undefined,
+    purposeSlug: undefined,
     isRentable: true,
     pricePerDay: undefined,
     maxRentalDays: undefined,
@@ -579,6 +580,24 @@ const NewProductPage = () => {
                   {categories.map(category => (
                     <option key={category.id} value={category.id}>
                       {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block md:text-[18px] text-[16px] text-black font-medium mb-2">
+                  დანიშნულება
+                </label>
+                <select
+                  value={formData.purposeSlug || ''}
+                  onChange={(e) => handleInputChange('purposeSlug', e.target.value ? e.target.value : undefined)}
+                  className="w-full text-black px-4 py-3 border border-gray-300 rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                >
+                  <option value="">აირჩიეთ დანიშნულება</option>
+                  {purposes.map((purpose) => (
+                    <option key={purpose.slug} value={purpose.slug}>
+                      {purpose.name}
                     </option>
                   ))}
                 </select>
