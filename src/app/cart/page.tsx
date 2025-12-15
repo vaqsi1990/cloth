@@ -31,7 +31,7 @@ const CartPage = () => {
 
     if (initialized && !loading && cartItems.length === 0) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 py-16">
+            <div className="min-h-screen  py-16">
                 <div className="container mx-auto px-4">
                     <div className="max-w-2xl mx-auto text-center">
                         <div className="mb-8">
@@ -60,7 +60,7 @@ const CartPage = () => {
 
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 py-16">
+        <div className="min-h-screen  py-16">
             <div className="container mx-auto px-4">
                 <div className="max-w-6xl mx-auto">
                    
@@ -84,9 +84,9 @@ const CartPage = () => {
 
                                 <div className="space-y-6">
                                     {cartItems.map((item) => (
-                                        <div key={item.id} className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg">
+                                            <div key={item.id} className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 border border-gray-200 rounded-lg">
                                             {/* Product Image */}
-                                            <div className="relative w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                                            <div className="relative w-full md:w-24 h-62 md:h-32 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                                                 <Image
                                                     src={item.image || '/placeholder.jpg'}
                                                     alt={item.productName}
@@ -107,7 +107,7 @@ const CartPage = () => {
                                                 <h3 className="text-lg font-medium text-black truncate">
                                                     {item.productName}
                                                 </h3>
-                                                <p className="text-black მდ:ტეხტ-[18px] text-[16px]">
+                                                <p className="text-black md:text-[18px] text-[16px]">
                                                     ზომა: <span className="font-medium">{item.size}</span>
                                                 </p>
 
@@ -126,7 +126,7 @@ const CartPage = () => {
 
                                             {/* Quantity Controls - Only show for non-rental items */}
                                             {!item.isRental && (
-                                                <div className="flex items-center space-x-2">
+                                                <div className="flex items-center space-x-2 sm:self-auto self-start">
                                                     <button
                                                         onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
                                                         className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
@@ -147,7 +147,7 @@ const CartPage = () => {
 
                                             {/* Rental items show quantity as 1 */}
                                             {item.isRental && (
-                                                <div className="text-center">
+                                                <div className="text-center sm:self-auto self-start">
                                                     <span className="md:text-[18px] text-[16px] text-black">რაოდენობა:</span>
                                                     <div className="font-medium text-black">1</div>
                                                 </div>
@@ -168,7 +168,7 @@ const CartPage = () => {
 
                         {/* Order Summary */}
                         <div className="lg:col-span-1">
-                            <div className="bg-white rounded-2xl shadow-sm p-6 sticky top-8">
+                            <div className="bg-white rounded-2xl shadow-sm p-6 lg:sticky lg:top-8">
                                 <h2 className="text-xl font-semibold text-black mb-6">შეკვეთის შეჯამება</h2>
 
                                 <div className="space-y-4 mb-6">
