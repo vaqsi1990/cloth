@@ -324,22 +324,22 @@ const AdminChatPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <div className="flex-shrink-0 px-3 sm:px-4 lg:px-6 py-4 sm:py-6 bg-white border-b border-gray-200">
+      <div className="flex-shrink-0 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 bg-white border-b border-gray-200">
         <h1 className="text-base sm:text-lg md:text-[20px] font-bold text-black">Live Chat მართვა</h1>
       
       </div>
 
-      <div className="flex-1 px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
-        <div className="relative flex lg:grid lg:grid-cols-3 gap-4 sm:gap-6 h-[calc(100vh-180px)] sm:h-[calc(100vh-200px)]">
+      <div className="flex-1 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 min-h-0">
+        <div className="relative flex lg:grid lg:grid-cols-4 gap-4 sm:gap-6 h-[calc(100vh-120px)] sm:h-[calc(100vh-140px)] lg:h-[calc(100vh-100px)]">
           {/* Chat Rooms List */}
-          <div className={`bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col h-full w-full lg:w-auto transition-all duration-300 ${selectedChatRoom && !showChatList ? 'hidden lg:flex' : 'flex'}`}>
-            <div className="p-3 sm:p-4 border-b border-gray-200">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-3 sm:mb-4">
+          <div className={`bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col h-full min-h-0 w-full lg:w-auto transition-all duration-300 ${selectedChatRoom && !showChatList ? 'hidden lg:flex' : 'flex'}`}>
+            <div className="flex-shrink-0 p-3 sm:p-4 lg:p-4 border-b border-gray-200">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
                 <h2 className="text-base sm:text-lg md:text-[20px] font-semibold text-gray-900">საუბრები</h2>
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="px-2 sm:px-3 py-1 border border-gray-300 rounded-md text-xs sm:text-sm md:text-[18px] focus:ring-2 focus:ring-[#1B3729] focus:border-transparent w-full sm:w-auto"
+                  className="px-2 sm:px-3 py-1.5 border border-gray-300 rounded-md text-xs sm:text-sm md:text-[16px] focus:ring-2 focus:ring-[#1B3729] focus:border-transparent w-full sm:w-auto bg-white"
                 >
                   <option value="">ყველა</option>
                   <option value="PENDING">ლოდინი</option>
@@ -349,14 +349,14 @@ const AdminChatPage = () => {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+            <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
               {chatRooms.length === 0 ? (
                 <div className="p-3 sm:p-4 text-center text-gray-500">
                   <MessageCircle className="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 text-gray-300" />
                   <p className="text-sm sm:text-base md:text-[18px]">საუბრები არ არის</p>
                 </div>
               ) : (
-                <div className="space-y-2 p-2 sm:p-4">
+                <div className="space-y-2 p-2 sm:p-4 lg:p-3">
                   {chatRooms.map((room) => (
                     <div
                       key={room.id}
@@ -367,10 +367,10 @@ const AdminChatPage = () => {
                           setShowChatList(false)
                         }
                       }}
-                      className={`p-2 sm:p-3 rounded-lg cursor-pointer transition-colors ${
+                      className={`p-2.5 sm:p-3 lg:p-3 rounded-lg cursor-pointer transition-all duration-200 ${
                         selectedChatRoom?.id === room.id
-                          ? 'bg-[#1B3729] text-white'
-                          : 'bg-gray-50 hover:bg-gray-100'
+                          ? 'bg-[#1B3729] text-white shadow-md'
+                          : 'bg-gray-50 hover:bg-gray-100 hover:shadow-sm'
                       }`}
                     >
                       <div className="flex items-center justify-between mb-1 sm:mb-2">
@@ -411,13 +411,13 @@ const AdminChatPage = () => {
           </div>
 
           {/* Chat Messages */}
-          <div className={`lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col chat-container h-full w-full lg:w-auto ${selectedChatRoom && !showChatList ? 'flex' : 'hidden lg:flex'} ${!selectedChatRoom ? 'hidden lg:flex' : ''}`}>
+          <div className={`lg:col-span-3 bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col  h-full min-h-0 w-full lg:w-auto ${selectedChatRoom && !showChatList ? 'flex' : 'hidden lg:flex'} ${!selectedChatRoom ? 'hidden lg:flex' : ''}`}>
             {selectedChatRoom ? (
               <>
                 {/* Chat Header */}
-                <div className="flex-shrink-0 p-3 sm:p-4 border-b border-gray-200 bg-white">
+                <div className="flex-shrink-0 p-3 sm:p-4 lg:p-5 border-b border-gray-200 bg-white">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
-                    <div className="min-w-0 flex items-center gap-2">
+                    <div className="min-w-0 flex items-center gap-2 lg:gap-3">
                       <button
                         onClick={() => {
                           setShowChatList(true)
@@ -429,10 +429,10 @@ const AdminChatPage = () => {
                         <ArrowLeft className="w-5 h-5 text-black" />
                       </button>
                       <div className="min-w-0">
-                        <h3 className="text-sm sm:text-base md:text-[18px] font-semibold text-black">
+                        <h3 className="text-sm sm:text-base md:text-lg lg:text-xl font-semibold text-black">
                           საუბარი #{selectedChatRoom.id}
                         </h3>
-                        <p className="text-xs sm:text-sm md:text-[18px] text-black break-words">
+                        <p className="text-xs sm:text-sm md:text-base lg:text-lg text-gray-600 break-words mt-0.5">
                           {selectedChatRoom.user?.name || selectedChatRoom.guestName || 'უცნობი მომხმარებელი'}
                         </p>
                       </div>
@@ -467,22 +467,22 @@ const AdminChatPage = () => {
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto bg-gray-50 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                  <div className="p-2 sm:p-4 h-full">
+                <div className="flex-1 min-h-0 overflow-y-auto bg-gray-50 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                  <div className="p-3 sm:p-4 lg:p-6">
                     {messages.length === 0 ? (
-                      <div className="text-center text-gray-500 py-6 sm:py-8 h-full flex flex-col items-center justify-center">
+                      <div className="text-center text-gray-500 py-12 flex flex-col items-center justify-center">
                         <MessageCircle className="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 text-gray-300" />
                         <p className="text-xs sm:text-sm md:text-base">შეტყობინებები არ არის</p>
                       </div>
                     ) : (
-                      <div className="space-y-3 sm:space-y-4 pb-2 sm:pb-4">
+                      <div className="space-y-3 sm:space-y-4 pb-4">
                         {messages.map((message, index) => (
                           <div
                             key={`${message.id}-${message.createdAt}-${index}`}
                             className={`flex ${message.isFromAdmin ? 'justify-end' : 'justify-start'}`}
                           >
                             <div
-                              className={`max-w-[85%] sm:max-w-[70%] p-2 sm:p-3 rounded-lg ${
+                              className={`max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] p-3 sm:p-4 rounded-lg shadow-sm ${
                                 message.isFromAdmin
                                   ? 'bg-[#1B3729] text-white'
                                   : 'bg-white text-gray-800 border border-gray-200'
@@ -515,21 +515,21 @@ const AdminChatPage = () => {
                 </div>
 
                 {/* Message Input */}
-                <div className="flex-shrink-0 p-2 sm:p-4 border-t border-gray-200 bg-white">
-                  <div className="flex gap-2">
+                <div className="flex-shrink-0 p-3 sm:p-4 lg:p-5 border-t border-gray-200 bg-white">
+                  <div className="flex gap-2 lg:gap-3">
                     <textarea
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
                       onKeyPress={handleKeyPress}
                       placeholder="შეიყვანეთ თქვენი პასუხი..."
-                      className="flex-1 p-2 sm:p-3 text-xs sm:text-sm md:text-base text-black border placeholder:text-gray-500 border-gray-300 rounded-md resize-none focus:ring-2 focus:ring-[#1B3729] focus:border-transparent"
+                      className="flex-1 p-3 sm:p-3.5 lg:p-4 text-sm sm:text-base text-black border placeholder:text-gray-500 border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-[#1B3729] focus:border-transparent"
                       rows={2}
                       disabled={isLoading}
                     />
                     <button
                       onClick={sendMessage}
                       disabled={isLoading || !newMessage.trim()}
-                      className="bg-[#1B3729] text-white p-2 sm:p-3 rounded-md hover:bg-[#2a4d3a] disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+                      className="bg-[#1B3729] text-white px-4 sm:px-5 lg:px-6 py-3 sm:py-3.5 lg:py-4 rounded-lg hover:bg-[#2a4d3a] disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex-shrink-0 flex items-center justify-center"
                     >
                       <Send className="w-4 h-4 sm:w-5 sm:h-5" />
                     </button>
