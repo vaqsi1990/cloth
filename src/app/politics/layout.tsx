@@ -1,5 +1,4 @@
-import React from 'react'
-import type { Metadata } from 'next'
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "საიტის პოლიტიკა - Dressla.ge",
@@ -11,12 +10,11 @@ export const metadata: Metadata = {
   },
 };
 
-const page = () => {
-    return (
-        <div>
-            საიტის პოლიტიკა
-        </div>
-    )
+export default function PoliticsLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return children;
 }
 
-export default page
