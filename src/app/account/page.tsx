@@ -849,7 +849,7 @@ const AccountPageContent = () => {
             <div className="mt-3 flex space-x-2">
               <button
                 onClick={() => setIsEditingProfile(false)}
-                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                className="px-4 py-2 bg-gray-500 text-white rounded-lg transition-colors"
               >
                 გაუქმება
               </button>
@@ -988,7 +988,7 @@ const AccountPageContent = () => {
                     placeholder="მაგ: GE00TB0000000000000000"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                   />
-                  <p className="text-sm text-gray-600 mt-1">IBAN უნდა იწყებოდეს GE-ით და შეიცავდეს 22 სიმბოლოს</p>
+                  <p className="text-sm text-black mt-1">IBAN უნდა იწყებოდეს GE-ით და შეიცავდეს 22 სიმბოლოს</p>
                   {userIban && userIban.startsWith('GE') && userIban.length >= 22 && (
                     <p className="text-sm text-green-600 mt-1">✓ IBAN სწორია</p>
                   )}
@@ -996,7 +996,7 @@ const AccountPageContent = () => {
 
                 {/* Submit Button */}
                 <div className="flex items-center justify-between">
-                  <div className="text-[16px] text-gray-600">
+                  <div className="text-[16px] text-black">
                     {idFrontUrl && idBackUrl && userIban && userIban.startsWith('GE') && userIban.length >= 22 ? (
                       <span className="text-green-600 font-semibold">✓ ორივე სურათი და IBAN მზადაა გასაგზავნად</span>
                     ) : (
@@ -1014,7 +1014,7 @@ const AccountPageContent = () => {
                     className={`px-6 py-3 rounded-lg font-bold text-[18px] uppercase tracking-wide transition-colors ${
                       idFrontUrl && idBackUrl && userIban && userIban.startsWith('GE') && userIban.length >= 22 && !savingVerification
                         ? 'bg-[#1B3729] text-white hover:bg-[#2a4d3a]'
-                        : 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                        : 'bg-white text-black cursor-not-allowed'
                     }`}
                   >
                     {savingVerification ? 'გაგზავნა...' : 'პირადობის დამტკიცება'}
@@ -1064,7 +1064,7 @@ const AccountPageContent = () => {
 
                 {/* Submit Button */}
                 <div className="flex items-center justify-between">
-                  <div className="text-[16px] text-gray-600">
+                  <div className="text-[16px] text-black">
                     {entrepreneurCertificateUrl ? (
                       <span className="text-green-600 font-semibold">✓ ინდმეწარმის საბუთი მზადაა გასაგზავნად</span>
                     ) : (
@@ -1077,7 +1077,7 @@ const AccountPageContent = () => {
                     className={`px-6 py-3 rounded-lg font-bold text-[18px] uppercase tracking-wide transition-colors ${
                       entrepreneurCertificateUrl && !savingEntrepreneurCertificate
                         ? 'bg-[#1B3729] text-white hover:bg-[#2a4d3a]'
-                        : 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                        : 'bg-white text-black cursor-not-allowed'
                     }`}
                   >
                     {savingEntrepreneurCertificate ? 'გაგზავნა...' : 'ინდმეწარმის საბუთის გაგზავნა'}
@@ -1162,7 +1162,7 @@ const AccountPageContent = () => {
                     <span className={`inline-block px-2 py-1 md:text-[20px] text-[18px] font-bold rounded-full ${order.status === 'PAID' ? ' text-green-500' :
                       order.status === 'SHIPPED' ? ' text-blue-500' :
                         order.status === 'CANCELED' ? ' text-red-500' :
-                          order.status === 'REFUNDED' ? ' text-gray-500' : ' text-yellow-500'
+                          order.status === 'REFUNDED' ? ' text-black' : ' text-yellow-500'
                       }`}>
                       {order.status === 'PAID'
                         ? 'გადახდილი'
@@ -1242,7 +1242,7 @@ const AccountPageContent = () => {
             <div className="text-center py-8">
               <TrendingUp className="w-12 h-12 text-black mx-auto mb-4" />
               <p className="text-[18px] text-black">ჯერ არ გაქვთ გაყიდვები</p>
-              <p className="text-[16px] text-gray-500">დაამატეთ პროდუქტი და დაიწყეთ გაყიდვები</p>
+              <p className="text-[16px] text-black">დაამატეთ პროდუქტი და დაიწყეთ გაყიდვები</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -1264,10 +1264,10 @@ const AccountPageContent = () => {
                       <div>
                         <h4 className="font-semibold md:text-[18px] text-[16px] text-black">გაყიდვა #{order.id}</h4>
                         <p className="text-[16px] text-black">
-                          {saleDateLabel} • <span className="text-gray-600 text-[14px]">{saleTimeLabel}</span>
+                          {saleDateLabel} • <span className="text-black text-[14px]">{saleTimeLabel}</span>
                         </p>
                         {order.buyer && (
-                          <p className="text-[16px] text-gray-600">
+                          <p className="text-[16px] text-black">
                             მყიდველი: {order.buyer.name || 'უცნობი'} ({order.buyer.email || '---'})
                           </p>
                         )}
@@ -1283,7 +1283,7 @@ const AccountPageContent = () => {
                                 : order.status === 'CANCELED'
                                   ? ' text-red-500'
                                   : order.status === 'REFUNDED'
-                                    ? ' text-gray-500'
+                                    ? ' text-black'
                                     : ' text-yellow-500'
                           }`}
                         >
@@ -1348,7 +1348,7 @@ const AccountPageContent = () => {
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
             <Link
               href="/account/products/sku"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-black rounded-lg hover:bg-gray-200 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-black rounded-lg  transition-colors"
             >
               <Search className="w-4 h-4" />
               <span>ძიება კოდის მიხედვით</span>
@@ -1457,7 +1457,7 @@ const AccountPageContent = () => {
                       </p>
                     )}
                     {product.approvalStatus !== 'APPROVED' && (
-                      <p className="text-[16px] text-gray-600">
+                      <p className="text-[16px] text-black">
                         პროდუქტი გამოჩნდება მომხმარებლებისთვის დამტკიცების შემდეგ.
                       </p>
                     )}
@@ -1481,7 +1481,7 @@ const AccountPageContent = () => {
                   <div className="mt-4 flex space-x-2">
                     <Link
                       href={`/account/products/${product.id}/edit`}
-                      className="flex-1 px-3 py-2 bg-black text-white rounded-lg hover:bg-gray-800 font-bold transition-colors md:text-[18px] text-[16px] text-center"
+                      className="flex-1 px-3 py-2 bg-black text-white rounded-lg  font-bold transition-colors md:text-[18px] text-[16px] text-center"
                     >
                       რედაქტირება
                     </Link>
@@ -1567,7 +1567,7 @@ const AccountPageContent = () => {
                 </div>
               ) : chatRooms.length === 0 ? (
                 <div className="p-4 text-center">
-                  <MessageCircle className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                  <MessageCircle className="w-12 h-12 text-black mx-auto mb-2" />
                   <p className="text-black md:text-[16px] text-[14px]">ჩათები არ არის</p>
                 </div>
               ) : (
@@ -1586,8 +1586,8 @@ const AccountPageContent = () => {
                       >
                         <button
                           onClick={() => setSelectedChatRoom(room)}
-                          className={`flex-1 text-left p-4 hover:bg-gray-50 transition-colors ${
-                            isSelected ? 'bg-[#1B3729] text-white hover:bg-[#1B3729]' : ''
+                          className={`flex-1 text-left p-4  transition-colors ${
+                            isSelected ? ' text-white ' : ''
                           }`}
                         >
                           <div className="flex items-center justify-between">
@@ -1598,8 +1598,8 @@ const AccountPageContent = () => {
                                 {otherUser || otherUserEmail || 'უცნობი მომხმარებელი'}
                               </p>
                               {room.last_message && (
-                                <p className={`mt-1 truncate md:text-[14px] text-[12px] ${
-                                  isSelected ? 'text-gray-200' : 'text-gray-600'
+                                <p className={`mt-1 truncate md:text-[16px] text-[14px] ${
+                                  isSelected ? 'text-white' : 'text-black'
                                 }`}>
                                   {room.last_message}
                                 </p>
@@ -1607,7 +1607,7 @@ const AccountPageContent = () => {
                             </div>
                             {room.message_count > 0 && (
                               <span className={`ml-2 px-2 py-1 rounded-full text-xs font-bold ${
-                                isSelected ? 'bg-white text-[#1B3729]' : 'bg-[#1B3729] text-white'
+                                isSelected ? 'bg-white text-[#1B3729]' : ' text-white'
                               }`}>
                                 {room.message_count}
                               </span>
@@ -1663,7 +1663,7 @@ const AccountPageContent = () => {
                         >
                           <p className="md:text-[16px] text-[14px]">{message.content}</p>
                           <p className={`text-xs mt-1 ${
-                            isFromMe ? 'text-gray-300' : 'text-gray-600'
+                            isFromMe ? 'text-black' : 'text-black'
                           }`}>
                             {new Date(message.createdAt).toLocaleString('ka-GE')}
                           </p>
@@ -1700,7 +1700,7 @@ const AccountPageContent = () => {
             ) : (
               <div className="flex-1 flex items-center justify-center">
                 <div className="text-center">
-                  <MessageCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <MessageCircle className="w-16 h-16 text-black mx-auto mb-4" />
                   <p className="text-black md:text-[18px] text-[16px]">აირჩიეთ ჩათი საუბრის დასაწყებად</p>
                 </div>
               </div>
@@ -2031,12 +2031,12 @@ function ProfileSettingsForm({ hasActiveRentals, checkingRentals }: { hasActiveR
       </div>
 
 
-      <button type="submit" disabled={saving} className="w-full md:w-[30%] md:text-[18px] text-[16px] font-bold bg-black text-white py-3 px-6 rounded-lg  hover:bg-gray-800 transition-colors disabled:opacity-50">
+      <button type="submit" disabled={saving} className="w-full md:w-[30%] md:text-[18px] text-[16px] font-bold bg-black text-white py-3 px-6 rounded-lg   transition-colors disabled:opacity-50">
         {saving ? 'ინახება...' : 'პროფილის შენახვა'}
       </button>
 
       {checkingRentals ? (
-        <div className="w-full md:w-[30%] px-6 py-3 text-center bg-gray-200 text-gray-600 font-bold rounded-lg">
+        <div className="w-full md:w-[30%] px-6 py-3 text-center bg-gray-200 text-black font-bold rounded-lg">
           <span className="md:text-[18px] text-[16px]">შემოწმება...</span>
         </div>
       ) : hasActiveRentals ? (

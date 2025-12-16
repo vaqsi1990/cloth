@@ -335,7 +335,7 @@ const AdminChatPage = () => {
           <div className={`bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col h-full min-h-0 w-full lg:w-auto transition-all duration-300 ${selectedChatRoom && !showChatList ? 'hidden lg:flex' : 'flex'}`}>
             <div className="flex-shrink-0 p-3 sm:p-4 lg:p-4 border-b border-gray-200">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
-                <h2 className="text-base sm:text-lg md:text-[20px] font-semibold text-gray-900">საუბრები</h2>
+                <h2 className="text-base sm:text-lg md:text-[20px] font-semibold text-black">საუბრები</h2>
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
@@ -351,8 +351,8 @@ const AdminChatPage = () => {
 
             <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
               {chatRooms.length === 0 ? (
-                <div className="p-3 sm:p-4 text-center text-gray-500">
-                  <MessageCircle className="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 text-gray-300" />
+                <div className="p-3 sm:p-4 text-center text-black">
+                  <MessageCircle className="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 text-black" />
                   <p className="text-sm sm:text-base md:text-[18px]">საუბრები არ არის</p>
                 </div>
               ) : (
@@ -385,7 +385,7 @@ const AdminChatPage = () => {
                         <p className="font-medium break-words">
                           {room.user?.name || room.guestName || 'უცნობი მომხმარებელი'}
                         </p>
-                        <p className="text-xs sm:text-sm md:text-[18px] opacity-75 break-all">
+                        <p className="text-xs sm:text-sm black md:text-[18px] opacity-75 break-all">
                           {room.user?.email || room.guestEmail}
                         </p>
                         <p className="text-xs sm:text-sm md:text-[18px] opacity-75 mt-1">
@@ -432,7 +432,7 @@ const AdminChatPage = () => {
                         <h3 className="text-sm sm:text-base md:text-lg lg:text-xl font-semibold text-black">
                           საუბარი #{selectedChatRoom.id}
                         </h3>
-                        <p className="text-xs sm:text-sm md:text-base lg:text-lg text-gray-600 break-words mt-0.5">
+                        <p className="text-xs sm:text-sm md:text-base lg:text-lg text-black break-words mt-0.5">
                           {selectedChatRoom.user?.name || selectedChatRoom.guestName || 'უცნობი მომხმარებელი'}
                         </p>
                       </div>
@@ -471,7 +471,7 @@ const AdminChatPage = () => {
                   <div className="p-3 sm:p-4 lg:p-6">
                     {messages.length === 0 ? (
                       <div className="text-center text-gray-500 py-12 flex flex-col items-center justify-center">
-                        <MessageCircle className="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 text-gray-300" />
+                        <MessageCircle className="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 text-black" />
                         <p className="text-xs sm:text-sm md:text-base">შეტყობინებები არ არის</p>
                       </div>
                     ) : (
@@ -485,13 +485,13 @@ const AdminChatPage = () => {
                               className={`max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] p-3 sm:p-4 rounded-lg shadow-sm ${
                                 message.isFromAdmin
                                   ? 'bg-[#1B3729] text-white'
-                                  : 'bg-white text-gray-800 border border-gray-200'
+                                  : 'bg-white text-black border border-gray-200'
                               }`}
                             >
                               {/* Show sender name */}
                               <div className="flex items-center justify-between mb-1">
                                 <p className={`text-xs sm:text-sm md:text-[18px] font-medium ${
-                                  message.isFromAdmin ? 'text-gray-300' : 'text-black'
+                                  message.isFromAdmin ? 'text-white' : 'text-black'
                                 }`}>
                                   {message.isFromAdmin 
                                     ? (message.admin?.name || 'ადმინისტრატორი')
@@ -501,7 +501,7 @@ const AdminChatPage = () => {
                               </div>
                               <p className="text-xs sm:text-sm md:text-[18px] break-words">{message.content}</p>
                               <p className={`text-xs sm:text-sm md:text-[18px] mt-1 ${
-                                message.isFromAdmin ? 'text-gray-300' : 'text-gray-500'
+                                message.isFromAdmin ? 'text-white' : 'text-black'
                               }`}>
                                 {formatDateTime(message.createdAt)}
                               </p>
