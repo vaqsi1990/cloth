@@ -1,12 +1,12 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, Suspense } from 'react'
 import { signIn, getSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
 
-const SignInPage = () => {
+const SignInContent = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -273,4 +273,10 @@ const SignInPage = () => {
   )
 }
 
-export default SignInPage
+export default function SignInPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <SignInContent />
+    </Suspense>
+  )
+}
