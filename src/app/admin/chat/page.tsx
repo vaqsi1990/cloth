@@ -367,28 +367,28 @@ const AdminChatPage = () => {
                           setShowChatList(false)
                         }
                       }}
-                      className={`p-2.5 sm:p-3 lg:p-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                      className={`p-3 sm:p-3 lg:p-3 rounded-lg cursor-pointer transition-all duration-200 ${
                         selectedChatRoom?.id === room.id
-                          ? 'bg-[#1B3729] text-white shadow-md'
-                          : 'bg-gray-50 hover:bg-gray-100 hover:shadow-sm'
+                          ? 'bg-[#1B3729]  shadow-md'
+                          : 'bg-white text-black hover:shadow-sm'
                       }`}
                     >
                       <div className="flex items-center justify-between mb-1 sm:mb-2">
                         <div className="flex items-center space-x-2">
-                          <span className="font-medium text-xs sm:text-sm md:text-base">
+                          <span className="font-medium text-sm sm:text-base md:text-lg">
                             #{room.id}
                           </span>
                         </div>
                       </div>
                       
-                      <div className="text-xs sm:text-sm md:text-[18px]">
-                        <p className="font-medium break-words">
+                      <div className="text-sm sm:text-base md:text-[18px]">
+                        <p className="font-medium break-words text-sm sm:text-base md:text-[18px]">
                           {room.user?.name || room.guestName || 'უცნობი მომხმარებელი'}
                         </p>
-                        <p className="text-xs sm:text-sm black md:text-[18px] opacity-75 break-all">
+                        <p className="text-xs sm:text-sm md:text-[16px] opacity-75 break-all mt-1">
                           {room.user?.email || room.guestEmail}
                         </p>
-                        <p className="text-xs sm:text-sm md:text-[18px] opacity-75 mt-1">
+                        <p className="text-xs sm:text-sm md:text-[16px] opacity-75 mt-1">
                           {formatDateTime(room.updatedAt)}
                         </p>
                         <div className="mt-1 sm:mt-2 flex justify-end">
@@ -397,7 +397,7 @@ const AdminChatPage = () => {
                               e.stopPropagation()
                               openDeleteModal(room)
                             }}
-                            className="text-red-500 cursor-pointer text-xs sm:text-sm md:text-[18px] flex items-center space-x-1"
+                            className="text-red-500 cursor-pointer text-sm sm:text-base md:text-[18px] flex items-center space-x-1"
                           >
                             <Trash2 className="w-4 h-4 sm:w-5 sm:h-6" />
                           </button>
