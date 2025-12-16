@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { processExpiredDiscount } from '@/utils/discountUtils'
 
 // Cart item validation schema
 const cartItemSchema = z.object({
@@ -41,6 +42,9 @@ export async function GET(request: NextRequest) {
               select: {
                 id: true,
                 name: true,
+                discount: true,
+                discountDays: true,
+                discountStartDate: true,
                 images: {
                   select: {
                     url: true,
@@ -73,6 +77,9 @@ export async function GET(request: NextRequest) {
                 select: {
                   id: true,
                   name: true,
+                  discount: true,
+                  discountDays: true,
+                  discountStartDate: true,
                   images: {
                     select: {
                       url: true,
@@ -90,25 +97,42 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    // Process items and check for expired discounts
+    const processedItems = cart.items.map(item => {
+      const product = item.product ? processExpiredDiscount(item.product) : null
+      const discount = product?.discount && product.discount > 0 ? product.discount : null
+      const finalPrice = discount ? (item.price - discount) : item.price
+      
+      return {
+        id: item.id,
+        productId: item.productId,
+        productName: item.productName,
+        image: item.image || item.product?.images?.[0]?.url,
+        size: item.size,
+        price: item.price,
+        quantity: item.quantity,
+        isRental: item.isRental,
+        rentalStartDate: item.rentalStartDate?.toISOString(),
+        rentalEndDate: item.rentalEndDate?.toISOString(),
+        rentalDays: item.rentalDays,
+        discount: discount,
+        discountDays: product?.discountDays ?? null,
+        discountStartDate: product?.discountStartDate?.toISOString() ?? null
+      }
+    })
+
     return NextResponse.json({
       success: true,
       cart: {
         id: cart.id,
-        items: cart.items.map(item => ({
-          id: item.id,
-          productId: item.productId,
-          productName: item.productName,
-          image: item.image || item.product?.images?.[0]?.url,
-          size: item.size,
-          price: item.price,
-          quantity: item.quantity,
-          isRental: item.isRental,
-          rentalStartDate: item.rentalStartDate?.toISOString(),
-          rentalEndDate: item.rentalEndDate?.toISOString(),
-          rentalDays: item.rentalDays
-        })),
+        items: processedItems,
         totalItems: cart.items.reduce((sum, item) => sum + item.quantity, 0),
-        totalPrice: cart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+        totalPrice: processedItems.reduce((sum, item) => {
+          const itemPrice = item.discount && item.discount > 0 
+            ? (item.price - item.discount) 
+            : item.price
+          return sum + (itemPrice * item.quantity)
+        }, 0)
       }
     })
 

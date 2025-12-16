@@ -78,7 +78,7 @@ const OrderConfirmationContent = () => {
 
     // if (loading) {
     //     return (
-    //         <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center px-4">
+    //         <div className="min-h-screen  flex items-center justify-center px-4">
     //             <AnimatedDotsLoader />
     //         </div>
     //     )
@@ -86,7 +86,7 @@ const OrderConfirmationContent = () => {
 
     if (error || !order) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 py-16">
+            <div className="min-h-screen  py-16">
                 <div className="container mx-auto px-4">
                     <div className="max-w-2xl mx-auto text-center">
                         <div className="mb-8">
@@ -132,7 +132,7 @@ const OrderConfirmationContent = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 py-16">
+        <div className="min-h-screen  py-16">
             <div className="container mx-auto px-4">
                 <div className="max-w-4xl mx-auto">
                     {/* Success Header */}
@@ -335,7 +335,7 @@ const OrderConfirmationPage = () => {
     return (
         <Suspense
             fallback={
-                <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center px-4">
+                <div className="min-h-screen  flex items-center justify-center px-4">
                     <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
                 </div>
             }

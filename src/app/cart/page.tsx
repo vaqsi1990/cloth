@@ -23,7 +23,7 @@ const CartPage = () => {
     }
     // if (loading) {
     //     return (
-    //         <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center px-4">
+    //         <div className="min-h-screen  flex items-center justify-center px-4">
     //             <AnimatedDotsLoader />
     //         </div>
     //     )
@@ -119,9 +119,28 @@ const CartPage = () => {
                                                     </div>
                                                 )}
 
-                                                <p className="text-lg font-bold text-black">
-                                                    ₾{item.price.toFixed(2)}
-                                                </p>
+                                                {item.discount && item.discount > 0 ? (
+                                                    <div className="flex flex-col gap-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-lg font-bold text-black">
+                                                                ₾{(item.price - item.discount).toFixed(2)}
+                                                            </span>
+                                                            <span className="text-base font-bold text-black line-through decoration-black opacity-60" style={{ textDecorationThickness: '2px' }}>
+                                                                ₾{item.price.toFixed(2)}
+                                                            </span>
+                                                        </div>
+                                                        <div className="bg-[#228460] rounded-md text-[#FFFFFF] font-regular flex items-center px-2 py-1 w-fit">
+                                                            <span className="text-xs whitespace-nowrap">დანაზოგი: ₾{item.discount.toFixed(2)}</span>
+                                                            {item.discountDays && (
+                                                                <span className="bg-white text-black px-2 py-1 rounded ml-2 text-xs whitespace-nowrap">{item.discountDays} დღე</span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-lg font-bold text-black">
+                                                        ₾{item.price.toFixed(2)}
+                                                    </p>
+                                                )}
                                             </div>
 
                                             {/* Quantity Controls - Only show for non-rental items */}

@@ -968,22 +968,7 @@ const ProductPage = () => {
                                     priority={false}
                                 />
 
-                                <div className="absolute top-3 left-3 sm:top-4 sm:left-4 flex gap-2">
-                                    {product.discount && product.discount > 0 && (
-                                        <span className="bg-red-500 text-white 
-                             px-2 sm:px-3 py-1 
-                             rounded-full 
-                             text-sm sm:text-[16px] 
-                             font-semibold">
-                                            -₾{product.discount.toFixed(2)}
-                                            {product.discountDays && (
-                                                <span className="ml-1">
-                                                    ({product.discountDays} დღე)
-                                                </span>
-                                            )}
-                                        </span>
-                                    )}
-                                </div>
+                               
                             </div>
 
 
@@ -1088,8 +1073,29 @@ const ProductPage = () => {
                                             </p>
                                         </div>
                                         {showBuyOption ? (
-                                            <div className="text-3xl font-bold text-black">
-                                                ₾{selectedPrice.toFixed(2)}
+                                            <div className="flex flex-col items-end gap-2">
+                                                {product.discount && product.discount > 0 ? (
+                                                    <>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-3xl font-bold text-black">
+                                                                ₾{(selectedPrice - product.discount).toFixed(2)}
+                                                            </span>
+                                                            <span className="text-xl font-bold text-black line-through decoration-black opacity-60" style={{ textDecorationThickness: '2px' }}>
+                                                                ₾{selectedPrice.toFixed(2)}
+                                                            </span>
+                                                        </div>
+                                                        <div className="bg-[#228460] rounded-md text-[#FFFFFF] font-regular flex items-center px-2 py-1">
+                                                            <span className="text-sm whitespace-nowrap">დანაზოგი: ₾{product.discount.toFixed(2)}</span>
+                                                            {product.discountDays && (
+                                                                <span className="bg-white text-black px-2 py-1 rounded ml-2 text-sm whitespace-nowrap">{product.discountDays} დღე</span>
+                                                            )}
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <div className="text-3xl font-bold text-black">
+                                                        ₾{selectedPrice.toFixed(2)}
+                                                    </div>
+                                                )}
                                             </div>
                                         ) : (
                                             <div className="md:text-[18px] text-[16px] font-semibold text-black">

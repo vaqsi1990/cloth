@@ -15,6 +15,9 @@ interface CartItem {
   rentalStartDate?: string
   rentalEndDate?: string
   rentalDays?: number
+  discount?: number | null
+  discountDays?: number | null
+  discountStartDate?: string | null
 }
 
 interface Cart {

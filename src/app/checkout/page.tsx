@@ -305,7 +305,7 @@ const CheckoutPage = () => {
 
     // if (loading) {
     //     return (
-    //         <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center px-4">
+    //         <div className="min-h-screen  flex items-center justify-center px-4">
     //             <AnimatedDotsLoader />
     //         </div>
     //     )
@@ -313,7 +313,7 @@ const CheckoutPage = () => {
 
     if (initialized && !loading && cartItems.length === 0) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 py-16">
+            <div className="min-h-screen  py-16">
                 <div className="container mx-auto px-4">
                     <div className="max-w-2xl mx-auto text-center">
                         <div className="mb-8">
@@ -350,7 +350,7 @@ const CheckoutPage = () => {
     }).every(Boolean)
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 py-16">
+        <div className="min-h-screen  py-16">
             <div className="container mx-auto px-4">
                 <div className="max-w-6xl mx-auto">
                     {/* Header */}
@@ -565,9 +565,28 @@ const CheckoutPage = () => {
                                                     </div>
                                                 )}
                                                 
-                                                <p className="md:text-[18px] text-[16px]  text-black">
-                                                  ფასი:  ₾{(item.price * item.quantity).toFixed(2)}
-                                                </p>
+                                                {item.discount && item.discount > 0 ? (
+                                                    <div className="flex flex-col gap-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="md:text-[18px] text-[16px] font-bold text-black">
+                                                                ფასი: ₾{((item.price - item.discount) * item.quantity).toFixed(2)}
+                                                            </span>
+                                                            <span className="md:text-[16px] text-[14px] font-bold text-black line-through decoration-black opacity-60" style={{ textDecorationThickness: '2px' }}>
+                                                                ₾{(item.price * item.quantity).toFixed(2)}
+                                                            </span>
+                                                        </div>
+                                                        <div className="bg-[#228460] rounded-md text-[#FFFFFF] font-regular flex items-center px-2 py-1 w-fit">
+                                                            <span className="text-xs whitespace-nowrap">დანაზოგი: ₾{(item.discount * item.quantity).toFixed(2)}</span>
+                                                            {item.discountDays && (
+                                                                <span className="bg-white text-black px-2 py-1 rounded ml-2 text-xs whitespace-nowrap">{item.discountDays} დღე</span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <p className="md:text-[18px] text-[16px]  text-black">
+                                                      ფასი:  ₾{(item.price * item.quantity).toFixed(2)}
+                                                    </p>
+                                                )}
                                             </div>
                                         </div>
                                     ))}

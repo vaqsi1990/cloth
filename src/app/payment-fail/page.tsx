@@ -7,7 +7,7 @@ import { XCircle, ArrowLeft, Home, ShoppingBag, CreditCard } from 'lucide-react'
 const PaymentFailPage = () => {
     const router = useRouter()
     return (
-        <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 py-16">
+        <div className="min-h-screen  py-16">
             <div className="container mx-auto px-4">
                 <div className="max-w-2xl mx-auto">
                     {/* Error Header */}
