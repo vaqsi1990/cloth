@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { signIn, getSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
 
@@ -17,6 +17,52 @@ const SignInPage = () => {
   const [error, setError] = useState('')
   
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  // Check for OAuth errors in URL
+  useEffect(() => {
+    const errorParam = searchParams.get('error')
+    if (errorParam) {
+      let errorMessage = 'შეცდომა Google-ით შესვლისას'
+      
+      switch (errorParam) {
+        case 'OAuthSignin':
+          errorMessage = 'Google-ით შესვლა ვერ მოხერხდა. გთხოვთ, შეამოწმოთ რომ Google Cloud Console-ში დაყენებულია სწორი redirect URI: https://www.dressla.ge/api/auth/callback/google'
+          break
+        case 'OAuthCallback':
+          errorMessage = 'Google-ის callback-ში შეცდომა მოხდა'
+          break
+        case 'OAuthCreateAccount':
+          errorMessage = 'ანგარიშის შექმნა ვერ მოხერხდა'
+          break
+        case 'EmailCreateAccount':
+          errorMessage = 'ელფოსტით ანგარიშის შექმნა ვერ მოხერხდა'
+          break
+        case 'Callback':
+          errorMessage = 'Callback-ში შეცდომა მოხდა'
+          break
+        case 'OAuthAccountNotLinked':
+          errorMessage = 'ეს Google ანგარიში უკვე დაკავშირებულია სხვა ანგარიშთან'
+          break
+        case 'EmailSignin':
+          errorMessage = 'ელფოსტით შესვლა ვერ მოხერხდა'
+          break
+        case 'CredentialsSignin':
+          errorMessage = 'არასწორი ელფოსტა ან პაროლი'
+          break
+        case 'SessionRequired':
+          errorMessage = 'სესია საჭიროა'
+          break
+        default:
+          errorMessage = `შეცდომა: ${errorParam}`
+      }
+      
+      setError(errorMessage)
+      
+      // Clean up URL
+      router.replace('/auth/signin', { scroll: false })
+    }
+  }, [searchParams, router])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({

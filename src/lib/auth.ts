@@ -72,13 +72,6 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      authorization: {
-        params: {
-          prompt: "consent",
-          access_type: "offline",
-          response_type: "code"
-        }
-      }
     })
   ],
   session: {
@@ -89,19 +82,20 @@ export const authOptions: NextAuthOptions = {
       // Handle Google OAuth sign in
       if (account?.provider === "google") {
         try {
+          if (!user.email) {
+            console.error("Google OAuth: No email provided")
+            return false
+          }
+
           // Check if user is banned
           const existingUser = await prisma.user.findUnique({
-            where: { email: user.email! },
+            where: { email: user.email },
             select: { banned: true, banReason: true }
           })
 
           if (existingUser?.banned) {
-            throw new Error(
-              "BANNED:" +
-              (existingUser.banReason
-                ? ` თქვენი ანგარიში დაბლოკილია: ${existingUser.banReason}`
-                : " თქვენი ანგარიში დაბლოკილია")
-            )
+            console.log("BANNED USER BLOCKED")
+            return false
           }
 
           // Create or update user account
@@ -131,7 +125,15 @@ export const authOptions: NextAuthOptions = {
                   providerAccountId: account.providerAccountId,
                 },
               },
-              update: {},
+              update: {
+                refresh_token: account.refresh_token || undefined,
+                access_token: account.access_token || undefined,
+                expires_at: account.expires_at || undefined,
+                token_type: account.token_type || undefined,
+                scope: account.scope || undefined,
+                id_token: account.id_token || undefined,
+                session_state: account.session_state || undefined,
+              },
               create: {
                 userId: dbUser.id,
                 type: account.type,
@@ -151,7 +153,14 @@ export const authOptions: NextAuthOptions = {
           if (error.message?.startsWith("BANNED:")) {
             throw error
           }
-          console.error("Error in signIn callback:", error)
+          console.error("Error in signIn callback for Google OAuth:", error)
+          // Log more details for debugging
+          if (error.code) {
+            console.error("Error code:", error.code)
+          }
+          if (error.meta) {
+            console.error("Error meta:", error.meta)
+          }
           return false
         }
       }
