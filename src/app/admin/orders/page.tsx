@@ -228,9 +228,9 @@ const AdminOrdersPage = () => {
           <p className="text-black mb-6">You don&apos;t have permission to access this page.</p>
           <Link
             href="/"
-            className="px-6 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
+            className="px-6 py-2 bg-black text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
           >
-            Go Home
+           მთავარ გვერდზე დაბრუნება
           </Link>
         </div>
       </div>

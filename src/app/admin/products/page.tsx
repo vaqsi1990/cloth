@@ -324,9 +324,9 @@ const AdminProductsPage = () => {
           <p className="text-black mb-6">You don&apos;t have permission to access this page.</p>
           <Link
             href="/"
-            className="px-6 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
+            className="px-6 py-2 bg-black text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
           >
-            Go Home
+            მთავარ გვერდზე დაბრუნება
           </Link>
         </div>
       </div>
@@ -346,20 +346,20 @@ const AdminProductsPage = () => {
             <div className="flex flex-wrap items-center gap-2 sm:gap-3 md:gap-4">
               <Link
                 href="/admin/products/sku"
-                className="px-3 sm:px-4 py-2 bg-[#1B3729] text-xs sm:text-sm md:text-[20px] text-white rounded-lg font-bold uppercase tracking-wide transition-colors whitespace-nowrap"
+                className="px-3 sm:px-4 py-2 bg-black text-xs sm:text-sm md:text-[20px] text-white rounded-lg font-bold uppercase tracking-wide transition-colors whitespace-nowrap"
               >
                
                 <span>ძიება კოდის მიხედვით</span>
               </Link>
               <Link
                 href="/admin"
-                className="px-3 sm:px-4 py-2 bg-[#1B3729] text-xs sm:text-sm md:text-[20px] text-white rounded-lg font-bold uppercase tracking-wide transition-colors whitespace-nowrap"
+                className="px-3 sm:px-4 py-2 bg-black text-xs sm:text-sm md:text-[20px] text-white rounded-lg font-bold uppercase tracking-wide transition-colors whitespace-nowrap"
               >
                 ადმინ პანელი
               </Link>
               <Link
                 href="/admin/products/new"
-                className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-[#1B3729] text-white rounded-lg text-xs sm:text-sm md:text-[20px] font-bold uppercase tracking-wide transition-colors whitespace-nowrap"
+                className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-black text-white rounded-lg text-xs sm:text-sm md:text-[20px] font-bold uppercase tracking-wide transition-colors whitespace-nowrap"
               >
                 <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
                 <span>ახალი პროდუქტი</span>
@@ -439,7 +439,7 @@ const AdminProductsPage = () => {
               </p>
               <Link
                 href="/admin/products/new"
-                className="inline-block px-4 sm:px-6 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide text-xs sm:text-sm transition-colors"
+                className="inline-block px-4 sm:px-6 py-2 bg-black text-white rounded-lg font-bold uppercase tracking-wide text-xs sm:text-sm transition-colors"
               >
                 პირველი პროდუქტის დამატება
               </Link>

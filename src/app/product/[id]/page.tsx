@@ -1044,7 +1044,7 @@ const ProductPage = () => {
                                     {product.user && session?.user?.id !== product.user.id && (
                                         <button
                                             onClick={handleContactAuthor}
-                                            className="flex items-center space-x-2 px-4 py-2 bg-[#1B3729] text-white rounded-lg hover:opacity-90 transition-opacity md:text-[16px] text-[14px] font-medium"
+                                            className="flex items-center space-x-2 px-4 py-2 bg-black text-white rounded-lg hover:opacity-90 transition-opacity md:text-[16px] text-[14px] font-medium"
                                         >
                                             <MessageCircle className="w-4 h-4" />
                                             <span>დაეკონტაქტე</span>
@@ -1408,7 +1408,7 @@ const ProductPage = () => {
                                             {purchaseMode === "buy" && showBuyOption ? (
                                                 <button
                                                     onClick={handleAddToCart}
-                                                    className="w-full py-4 rounded-xl md:text-[18px] text-[16px] text-white font-bold transition bg-[#1B3729] hover:opacity-95"
+                                                    className="w-full py-4 rounded-xl md:text-[18px] text-[16px] text-white font-bold transition bg-black hover:opacity-95"
                                                 >
                                                     {isAdding ? "მუშავდება..." : "კალათაში დამატება"}
                                                 </button>
