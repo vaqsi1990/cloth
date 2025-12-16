@@ -1,7 +1,10 @@
 import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
+import GoogleProvider from "next-auth/providers/google"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
+
+// Validate required environment variables
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -65,13 +68,96 @@ export const authOptions: NextAuthOptions = {
           verificationStatus: user.verification?.status || null,
         }
       }
+    }),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          prompt: "consent",
+          access_type: "offline",
+          response_type: "code"
+        }
+      }
     })
   ],
   session: {
     strategy: "jwt"
   },
   callbacks: {
-    async jwt({ token, user, trigger, session }) {
+    async signIn({ user, account, profile }) {
+      // Handle Google OAuth sign in
+      if (account?.provider === "google") {
+        try {
+          // Check if user is banned
+          const existingUser = await prisma.user.findUnique({
+            where: { email: user.email! },
+            select: { banned: true, banReason: true }
+          })
+
+          if (existingUser?.banned) {
+            throw new Error(
+              "BANNED:" +
+              (existingUser.banReason
+                ? ` თქვენი ანგარიში დაბლოკილია: ${existingUser.banReason}`
+                : " თქვენი ანგარიში დაბლოკილია")
+            )
+          }
+
+          // Create or update user account
+          if (account && user.email) {
+            const dbUser = await prisma.user.upsert({
+              where: { email: user.email },
+              update: {
+                name: user.name || undefined,
+                image: user.image || undefined,
+                emailVerified: new Date(),
+              },
+              create: {
+                email: user.email,
+                name: user.name || undefined,
+                image: user.image || undefined,
+                emailVerified: new Date(),
+                code: Math.random().toString(36).substring(2, 8).toUpperCase(),
+                role: "USER",
+              },
+            })
+
+            // Link Google account if not already linked
+            await prisma.account.upsert({
+              where: {
+                provider_providerAccountId: {
+                  provider: account.provider,
+                  providerAccountId: account.providerAccountId,
+                },
+              },
+              update: {},
+              create: {
+                userId: dbUser.id,
+                type: account.type,
+                provider: account.provider,
+                providerAccountId: account.providerAccountId,
+                refresh_token: account.refresh_token,
+                access_token: account.access_token,
+                expires_at: account.expires_at,
+                token_type: account.token_type,
+                scope: account.scope,
+                id_token: account.id_token,
+                session_state: account.session_state,
+              },
+            })
+          }
+        } catch (error: any) {
+          if (error.message?.startsWith("BANNED:")) {
+            throw error
+          }
+          console.error("Error in signIn callback:", error)
+          return false
+        }
+      }
+      return true
+    },
+    async jwt({ token, user, trigger, session, account }) {
       type AuthorizedUser = {
         id: string
         email: string
@@ -96,16 +182,60 @@ export const authOptions: NextAuthOptions = {
         if (typeof u.verificationStatus === 'string' || u.verificationStatus === null) token.verificationStatus = u.verificationStatus
       }
 
-      // Refresh verification status from database on each request
-      if (token.sub) {
+      // For OAuth providers on first sign in, fetch user data from database
+      if (account?.provider === "google" && token.sub) {
         try {
-          const userVerification = await prisma.userVerification.findUnique({
-            where: { userId: token.sub },
-            select: { status: true }
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.sub },
+            include: {
+              verification: {
+                select: {
+                  status: true
+                }
+              }
+            }
           })
-          token.verificationStatus = userVerification?.status || null
+
+          if (dbUser) {
+            token.role = dbUser.role
+            token.image = dbUser.image
+            token.phone = dbUser.phone
+            token.location = dbUser.location
+            token.personalId = dbUser.personalId
+            token.iban = dbUser.iban
+            token.verificationStatus = dbUser.verification?.status || null
+          }
         } catch (error) {
-          console.error('Error fetching verification status:', error)
+          console.error('Error fetching user data in jwt callback:', error)
+        }
+      }
+
+      // Refresh user data from database on each request (for OAuth users or when user data might have changed)
+      if (token.sub && !account) {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.sub },
+            include: {
+              verification: {
+                select: {
+                  status: true
+                }
+              }
+            }
+          })
+
+          if (dbUser) {
+            // Only update if not already set or if data has changed
+            if (!token.role) token.role = dbUser.role
+            if (!token.image && dbUser.image) token.image = dbUser.image
+            if (!token.phone && dbUser.phone) token.phone = dbUser.phone
+            if (!token.location && dbUser.location) token.location = dbUser.location
+            if (!token.personalId && dbUser.personalId) token.personalId = dbUser.personalId
+            if (!token.iban && dbUser.iban) token.iban = dbUser.iban
+            token.verificationStatus = dbUser.verification?.status || null
+          }
+        } catch (error) {
+          console.error('Error refreshing user data in jwt callback:', error)
         }
       }
 
@@ -146,6 +276,12 @@ export const authOptions: NextAuthOptions = {
         ;(session.user as { verificationStatus?: string | null }).verificationStatus = (token.verificationStatus as string | null | undefined) ?? undefined
       }
       return session
+    },
+    async redirect({ url, baseUrl }) {
+      // Handle OAuth redirects - validate and allow same-origin redirects
+      if (url.startsWith("/")) return `${baseUrl}${url}`
+      if (new URL(url).origin === baseUrl) return url
+      return baseUrl
     }
   },
   pages: {
