@@ -8,6 +8,10 @@ import bcrypt from "bcryptjs"
 
 export const authOptions: NextAuthOptions = {
   providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
     CredentialsProvider({
       name: "credentials",
       credentials: {
@@ -35,15 +39,8 @@ export const authOptions: NextAuthOptions = {
         if (!user || !user.password) {
           return null
         }
-
         if (user.banned) {
-          // Use a parsable, easily-detected error prefix
-          throw new Error(
-            "BANNED:" +
-            (user.banReason
-              ? ` თქვენი ანგარიში დაბლოკილია: ${user.banReason}`
-              : " თქვენი ანგარიში დაბლოკილია")
-          )
+          return null
         }
 
         const isPasswordValid = await bcrypt.compare(
@@ -69,10 +66,7 @@ export const authOptions: NextAuthOptions = {
         }
       }
     }),
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    })
+
   ],
   session: {
     strategy: "jwt"
@@ -82,14 +76,17 @@ export const authOptions: NextAuthOptions = {
       // Handle Google OAuth sign in
       if (account?.provider === "google") {
         try {
-          if (!user.email) {
+          // Normalize email for consistent lookups
+          const email = user.email?.trim().toLowerCase()
+
+          if (!email) {
             console.error("Google OAuth: No email provided")
             return false
           }
 
           // Check if user is banned
           const existingUser = await prisma.user.findUnique({
-            where: { email: user.email },
+            where: { email },
             select: { banned: true, banReason: true }
           })
 
@@ -99,16 +96,16 @@ export const authOptions: NextAuthOptions = {
           }
 
           // Create or update user account
-          if (account && user.email) {
+          if (account && email) {
             const dbUser = await prisma.user.upsert({
-              where: { email: user.email },
+              where: { email },
               update: {
                 name: user.name || undefined,
                 image: user.image || undefined,
                 emailVerified: new Date(),
               },
               create: {
-                email: user.email,
+                email,
                 name: user.name || undefined,
                 image: user.image || undefined,
                 emailVerified: new Date(),
@@ -117,6 +114,33 @@ export const authOptions: NextAuthOptions = {
               },
             })
 
+            const existingAccount = await prisma.account.findFirst({
+              where: {
+                provider: "google",
+                user: { email },
+              },
+            })
+            
+            if (!existingAccount) {
+              await prisma.account.create({
+                data: {
+                  userId: dbUser.id,
+                  type: account.type,
+                  provider: account.provider,
+                  providerAccountId: account.providerAccountId,
+            
+                  // OAuth tokens
+                  access_token: account.access_token,
+                  refresh_token: account.refresh_token,
+                  expires_at: account.expires_at,
+                  token_type: account.token_type,
+                  scope: account.scope,
+                  id_token: account.id_token,
+                  session_state: account.session_state,
+                },
+              })
+            }
+            
             // Link Google account if not already linked
             await prisma.account.upsert({
               where: {
@@ -278,11 +302,11 @@ export const authOptions: NextAuthOptions = {
         session.user.image = (token.image as string | null) ?? session.user.image ?? null
         session.user.name = (token.name as string | null) ?? session.user.name ?? null
         session.user.email = (typeof token.email === 'string' ? token.email : session.user.email)
-        ;(session.user as { phone?: string | null }).phone = (token.phone as string | null | undefined) ?? undefined
-        ;(session.user as { location?: string | null }).location = (token.location as string | null | undefined) ?? undefined
-        ;(session.user as { personalId?: string | null }).personalId = (token.personalId as string | null | undefined) ?? undefined
-        ;(session.user as { iban?: string | null }).iban = (token.iban as string | null | undefined) ?? undefined
-        ;(session.user as { verificationStatus?: string | null }).verificationStatus = (token.verificationStatus as string | null | undefined) ?? undefined
+          ; (session.user as { phone?: string | null }).phone = (token.phone as string | null | undefined) ?? undefined
+          ; (session.user as { location?: string | null }).location = (token.location as string | null | undefined) ?? undefined
+          ; (session.user as { personalId?: string | null }).personalId = (token.personalId as string | null | undefined) ?? undefined
+          ; (session.user as { iban?: string | null }).iban = (token.iban as string | null | undefined) ?? undefined
+          ; (session.user as { verificationStatus?: string | null }).verificationStatus = (token.verificationStatus as string | null | undefined) ?? undefined
       }
       return session
     },
