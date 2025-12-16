@@ -317,7 +317,7 @@ const HeaderContent = () => {
                 )}
               </div>
             ) : (
-              <Link href="/auth/signin" className="text-sm md:text-[20px] text-[16px] text-black">
+              <Link href="/auth/signin" className="text-sm md:text-[20px] text-[16px] text-white">
                 შესვლა
               </Link>
             )}
