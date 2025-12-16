@@ -198,6 +198,9 @@ const HeaderContent = () => {
             <Link href="/shop" className="text-white font-bold transition-colors  text-[16px] md:text-[18px] font-regular">
               პროდუქტები
             </Link>
+            <Link href="/about" className="text-white font-bold transition-colors  text-[16px] md:text-[18px] font-regular">
+              ჩვენს შესახებ
+            </Link>
 
             {/* Icons */}
             <div className="flex items-center space-x-4 ml-2">
