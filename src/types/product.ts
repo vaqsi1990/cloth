@@ -71,7 +71,7 @@ export interface Product {
   isRentable?: boolean
   pricePerDay?: number
   maxRentalDays?: number
-  status?: 'AVAILABLE' | 'RENTED' | 'RESERVED' | 'MAINTENANCE'
+  status?: 'AVAILABLE' | 'RENTED' | 'RESERVED' | 'MAINTENANCE' | 'DAMAGED'
   approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED'
   rejectionReason?: string | null
   approvedAt?: string | null

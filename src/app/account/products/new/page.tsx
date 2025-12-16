@@ -69,7 +69,7 @@ const productSchema = z.object({
   isRentable: z.boolean().default(true),
   pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional(),
   maxRentalDays: z.number().optional(),
-  status: z.enum(['AVAILABLE', 'RENTED', 'RESERVED', 'MAINTENANCE']).default('AVAILABLE'),
+  status: z.enum(['AVAILABLE', 'RENTED', 'RESERVED', 'MAINTENANCE', 'DAMAGED']).default('AVAILABLE'),
   variants: z.array(
     z.object({
       size: z.preprocess(

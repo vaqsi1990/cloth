@@ -88,7 +88,8 @@ const UserProductBySKUPage = () => {
       'AVAILABLE': { label: 'თავისუფალია', color: 'text-green-700', bgColor: 'bg-green-100' },
       'RENTED': { label: 'გაქირავებულია', color: 'text-orange-700', bgColor: 'bg-orange-100' },
       'RESERVED': { label: 'დაჯავშნილია', color: 'text-blue-700', bgColor: 'bg-blue-100' },
-      'MAINTENANCE': { label: 'რესტავრაციაზე', color: 'text-red-700', bgColor: 'bg-red-100' }
+      'MAINTENANCE': { label: 'რესტავრაციაზე', color: 'text-red-700', bgColor: 'bg-red-100' },
+      'DAMAGED': { label: 'დაზიანებულია', color: 'text-red-700', bgColor: 'bg-red-100' }
     }
     return statusMap[status || ''] || statusMap['AVAILABLE']
   }
@@ -287,6 +288,16 @@ const UserProductBySKUPage = () => {
                     სტატუსი არ განახლდება &quot;თავისუფალია&quot;.
                   </p>
                 </div>
+              </div>
+            )}
+
+            
+            {/* Damaged Information */}
+            {productData.product.status === 'DAMAGED' && (
+              <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-6 shadow-sm">
+                <h3 className="md:text-[18px] text-[16px] font-bold text-red-900 mb-4 flex items-center">
+                  დაზიანებული პროდუქტის ინფორმაცია
+                </h3>
               </div>
             )}
 

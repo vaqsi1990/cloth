@@ -65,6 +65,7 @@ enum ProductStatus {
   RENTED         // გაქირავებულია 
   RESERVED       // დაჯავშნილია
   MAINTENANCE    // საგამშრალებლად ან რესტავრაციაზეა
+  DAMAGED        // დაზიანებულია
 }
 
 enum VerificationStatus {

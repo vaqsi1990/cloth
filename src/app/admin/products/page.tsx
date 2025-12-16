@@ -49,7 +49,7 @@ interface Product {
     price: number
   }>
   rentalStatus?: {[size: string]: RentalPeriod[]}
-  status?: 'AVAILABLE' | 'RENTED' | 'RESERVED' | 'MAINTENANCE'
+  status?: 'AVAILABLE' | 'RENTED' | 'RESERVED' | 'MAINTENANCE' | 'DAMAGED'
   isRentable?: boolean
   pricePerDay?: number
   maxRentalDays?: number
@@ -144,56 +144,26 @@ const AdminProductsPage = () => {
 
   const handleStatusChange = async (productId: number, newStatus: string) => {
     try {
-      const product = products.find(p => p.id === productId)
-      if (!product) return
-
-      // Include existing rental price tiers to preserve them
-      const existingTiers = (product.rentalPriceTiers || []).map((tier) => ({
-        minDays: tier.minDays,
-        pricePerDay: tier.pricePerDay
-      }))
-
-      const requestBody = {
-        name: product.name,
-        slug: product.slug,
-        description: product.description || '',
-        stock: 0,
-        gender: product.gender as 'MEN' | 'WOMEN' | 'CHILDREN' | 'UNISEX',
-        color: product.color || '',
-        location: product.location || '',
-        isNew: product.isNew,
-        discount: product.discount,
-        rating: product.rating || 0,
-        categoryId: product.category?.id,
-        isRentable: product.isRentable || false,
-        pricePerDay: product.pricePerDay || undefined,
-        maxRentalDays: product.maxRentalDays || undefined,
-        status: newStatus,
-        variants: (product.variants || []).map((v) => ({
-          size: v.size,
-          stock: v.stock,
-          price: v.price
-        })),
-        imageUrls: product.images.map(img => img.url),
-        rentalPriceTiers: existingTiers
-      }
-
+      console.log('Changing status to:', newStatus, 'for product:', productId)
       const response = await fetch(`/api/products/${productId}`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify({ status: newStatus })
       })
       
       const result = await response.json()
+      console.log('Response status:', response.status, 'Response data:', result)
       
       if (response.ok && result.success) {
         setProducts(products.map(p => 
-          p.id === productId ? { ...p, status: newStatus as 'AVAILABLE' | 'RENTED' | 'RESERVED' | 'MAINTENANCE' } : p
+          p.id === productId ? { ...p, status: newStatus as 'AVAILABLE' | 'RENTED' | 'RESERVED' | 'MAINTENANCE' | 'DAMAGED' } : p
         ))
+        showToast('სტატუსი წარმატებით განახლდა', 'success')
       } else {
-        showToast(result.message || 'შეცდომა სტატუსის შეცვლისას', 'error')
+        console.error('Status change failed:', result)
+        showToast(result.message || result.error || 'შეცდომა სტატუსის შეცვლისას', 'error')
       }
     } catch (error) {
       console.error('Error updating status:', error)
@@ -226,7 +196,8 @@ const AdminProductsPage = () => {
       'AVAILABLE': 'თავისუფალია',
       'RENTED': 'გაქირავებულია',
       'RESERVED': 'დაჯავშნილია',
-      'MAINTENANCE': 'რესტავრაციაზე'
+      'MAINTENANCE': 'რესტავრაციაზე',
+      'DAMAGED': 'დაზიანებულია'
     }
     return statusMap[status || ''] || 'თავისუფალია'
   }
@@ -533,6 +504,7 @@ const AdminProductsPage = () => {
                             <option value="RENTED">გაქირავებულია</option>
                             <option value="RESERVED">დაჯავშნილია</option>
                             <option value="MAINTENANCE">რესტავრაციაზე</option>
+                            <option value="DAMAGED">დაზიანებულია</option>
                           </select>
                          
                         </div>

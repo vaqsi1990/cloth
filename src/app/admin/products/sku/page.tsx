@@ -105,7 +105,8 @@ const AdminProductBySKUPage = () => {
       'AVAILABLE': { label: 'თავისუფალია', color: 'text-green-700', bgColor: 'bg-green-100' },
       'RENTED': { label: 'გაქირავებულია', color: 'text-orange-700', bgColor: 'bg-orange-100' },
       'RESERVED': { label: 'დაჯავშნილია', color: 'text-blue-700', bgColor: 'bg-blue-100' },
-      'MAINTENANCE': { label: 'რესტავრაციაზე', color: 'text-red-700', bgColor: 'bg-red-100' }
+      'MAINTENANCE': { label: 'რესტავრაციაზე', color: 'text-red-700', bgColor: 'bg-red-100' },
+      'DAMAGED': { label: 'დაზიანებულია', color: 'text-red-700', bgColor: 'bg-red-100' }
     }
     return statusMap[status || ''] || statusMap['AVAILABLE']
   }
@@ -285,23 +286,47 @@ const AdminProductBySKUPage = () => {
             </div>
 
             {/* Maintenance Information */}
-            {productData.product.status === 'MAINTENANCE' && (
+              {productData.product.status === 'MAINTENANCE' && (
+                <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-6 shadow-sm">
+                  <h3 className="text-xl font-bold text-red-900 mb-4 flex items-center">
+                  
+                    რესტავრაციის ინფორმაცია
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-white p-4 rounded-lg border border-red-200">
+                      <p className="text-sm text-black mb-1">რესტავრაციაზე გადასვლის თარიღი</p>
+                      <p className="font-semibold text-gray-900">{formatDate(productData.product.updatedAt)}</p>
+                    </div>
+                  
+                  </div>
+                  <div className="mt-4 bg-white p-4 rounded-lg border border-red-200">
+                    <p className="text-sm text-black mb-2">შენიშვნა:</p>
+                    <p className="text-gray-800">
+                      ეს პროდუქტი ამჟამად რესტავრაციაზეა . 
+                      პროდუქტი არ არის ხელმისაწვდომი გაქირავებისთვის ან გაყიდვისთვის სანამ 
+                      სტატუსი არ განახლდება &quot;თავისუფალია&quot;.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+            {/* Damaged Information */}
+            {productData.product.status === 'DAMAGED' && (
               <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-6 shadow-sm">
                 <h3 className="text-xl font-bold text-red-900 mb-4 flex items-center">
-                
-                  რესტავრაციის ინფორმაცია
+                  დაზიანებული პროდუქტის ინფორმაცია
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="bg-white p-4 rounded-lg border border-red-200">
-                    <p className="text-sm text-black mb-1">რესტავრაციაზე გადასვლის თარიღი</p>
+                    <p className="text-sm text-black mb-1">დაზიანებული პროდუქტის გადასვლის თარიღი</p>
                     <p className="font-semibold text-gray-900">{formatDate(productData.product.updatedAt)}</p>
                   </div>
-                 
+                
                 </div>
                 <div className="mt-4 bg-white p-4 rounded-lg border border-red-200">
                   <p className="text-sm text-black mb-2">შენიშვნა:</p>
                   <p className="text-gray-800">
-                    ეს პროდუქტი ამჟამად რესტავრაციაზეა . 
+                    ეს პროდუქტი ამჟამად დაზიანებულია. 
                     პროდუქტი არ არის ხელმისაწვდომი გაქირავებისთვის ან გაყიდვისთვის სანამ 
                     სტატუსი არ განახლდება &quot;თავისუფალია&quot;.
                   </p>

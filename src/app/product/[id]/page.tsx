@@ -572,8 +572,8 @@ const ProductPage = () => {
     const selectedStock = product?.stock ?? 0
 
     const handleSizeClick = (size: string) => {
-        // Allow size selection in both buy and rent modes, as long as product is not in maintenance
-        if (product?.status !== 'MAINTENANCE') {
+        // Allow size selection in both buy and rent modes, as long as product is not in maintenance or damaged
+        if (product?.status !== 'MAINTENANCE' && product?.status !== 'DAMAGED') {
             setSelectedSize(size)
         }
     }
@@ -673,6 +673,17 @@ const ProductPage = () => {
     const handleAddToCart = async () => {
         if (!product || !selectedSize) return
         if (isAdding) return
+        
+        if (product.status === 'DAMAGED') {
+            showToast("პროდუქტი დაზიანებულია და ამჟამად ხელმისაწვდომი არ არის", "warning")
+            return
+        }
+        
+        if (product.status === 'MAINTENANCE') {
+            showToast("პროდუქტი რესტავრაციაზეა და ამჟამად ხელმისაწვდომი არ არის", "warning")
+            return
+        }
+        
         setIsAdding(true)
 
         const ok = await addToCart({
@@ -826,9 +837,13 @@ const ProductPage = () => {
     const handleRental = async () => {
         if (!product || !selectedSize) return
 
-        // Only block if product is in maintenance or completely unavailable
+        // Only block if product is in maintenance, damaged, or completely unavailable
         if (product.status === 'MAINTENANCE') {
             showToast("პროდუქტი რესტავრაციაზეა და ამჟამად ხელმისაწვდომი არ არის", "warning")
+            return
+        }
+        if (product.status === 'DAMAGED') {
+            showToast("პროდუქტი დაზიანებულია და ამჟამად ხელმისაწვდომი არ არის", "warning")
             return
         }
 
@@ -1151,6 +1166,15 @@ const ProductPage = () => {
                                             ამჟამად ხელმისაწვდომი არ არის
                                         </div>
                                     </div>
+                                ) : product.status === 'DAMAGED' ? (
+                                    <div className="text-center p-6 bg-red-50 border-2 border-red-200 rounded-xl">
+                                        <div className="text-red-700 font-semibold text-lg mb-2">
+                                            პროდუქტი დაზიანებულია
+                                        </div>
+                                        <div className="text-red-600">
+                                            ამჟამად ხელმისაწვდომი არ არის
+                                        </div>
+                                    </div>
                                 ) : (
                                     <div className={`grid gap-3 ${(showBuyOption ? 1 : 0) + (showRentOption ? 1 : 0) > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
                                         {showBuyOption && (
@@ -1181,7 +1205,7 @@ const ProductPage = () => {
                                     </div>
                                 )}
 
-                                {purchaseMode === "rent" && canRent && product.status !== 'MAINTENANCE' && (
+                                {purchaseMode === "rent" && canRent && product.status !== 'MAINTENANCE' && product.status !== 'DAMAGED' && (
                                     <div className="space-y-3 p-4 bg-emerald-50 rounded-xl border border-emerald-200">
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
@@ -1336,6 +1360,7 @@ const ProductPage = () => {
                                             {product.status === 'RENTED' && 'ნივთი გაქირავებულია'}
                                             {product.status === 'RESERVED' && 'ნივთი დაჯავშნილია'}
                                             {product.status === 'MAINTENANCE' && 'ნივთი რესტავრაციაზეა'}
+                                            {product.status === 'DAMAGED' && 'პროდუქტი დაზიანებულია'}
                                         </p>
                                     )}
                                     {(purchaseMode === "rent" && canRent && (!rentalStartDate || !rentalEndDate)) && product.status === 'AVAILABLE' && (
@@ -1372,7 +1397,7 @@ const ProductPage = () => {
                                         ) : null
                                     })()}
 
-                                    {product.status !== 'MAINTENANCE' && (
+                                    {product.status !== 'MAINTENANCE' && product.status !== 'DAMAGED' && (
                                         <>
                                             {purchaseMode === "buy" && showBuyOption ? (
                                                 <button

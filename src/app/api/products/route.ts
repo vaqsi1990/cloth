@@ -37,7 +37,7 @@ const productSchema = z.object({
   isRentable: z.boolean().default(true),
   pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional(),
   maxRentalDays: z.number().optional(),
-  status: z.enum(['AVAILABLE', 'RENTED', 'RESERVED', 'MAINTENANCE']).default('AVAILABLE'),
+  status: z.enum(['AVAILABLE', 'RENTED', 'RESERVED', 'MAINTENANCE', 'DAMAGED']).default('AVAILABLE'),
   variants: z.array(z.object({
     size: z.preprocess(
       (val) => (val === '' || val === null ? undefined : val),
@@ -94,14 +94,14 @@ export async function GET(request: NextRequest) {
     
     // Show products based on status
     // All users see AVAILABLE, RENTED, and RESERVED products
-    // Only MAINTENANCE products are hidden from non-admin users
+    // MAINTENANCE and DAMAGED products are hidden from non-admin users
     const isAdmin = session?.user?.role === 'ADMIN'
     
     const products = await prisma.product.findMany({
       where: {
         ...(isAdmin ? {} : { 
           status: {
-            not: 'MAINTENANCE' // Non-admin users don't see maintenance products
+            notIn: ['MAINTENANCE', 'DAMAGED'] // Non-admin users don't see maintenance or damaged products
           },
           approvalStatus: 'APPROVED',
           user: {
@@ -169,7 +169,7 @@ export async function GET(request: NextRequest) {
         where: {
           ...(isAdmin ? {} : { 
             status: {
-              not: 'MAINTENANCE'
+              notIn: ['MAINTENANCE', 'DAMAGED']
             },
             approvalStatus: 'APPROVED',
             user: {
@@ -362,10 +362,13 @@ export async function POST(request: NextRequest) {
         }))
       },
       variants: {
-        create: validatedData.variants.map(variant => ({
-          size: variant.size,
-          price: variant.price
-        }))
+        create: validatedData.variants
+          .filter(variant => variant.size && variant.size.trim() !== '')
+          .map(variant => ({
+            size: variant.size,
+            price: variant.price,
+            sizeSystem: variant.sizeSystem
+          }))
       },
       rentalPriceTiers: validatedData.rentalPriceTiers ? {
         create: validatedData.rentalPriceTiers.map(tier => ({

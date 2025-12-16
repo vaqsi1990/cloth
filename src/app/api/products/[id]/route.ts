@@ -48,7 +48,7 @@ const productSchema = z.object({
   isRentable: z.boolean().default(true),
   pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional(),
   maxRentalDays: z.number().optional(),
-  status: z.enum(['AVAILABLE', 'RENTED', 'RESERVED', 'MAINTENANCE']).default('AVAILABLE'),
+  status: z.enum(['AVAILABLE', 'RENTED', 'RESERVED', 'MAINTENANCE', 'DAMAGED']).default('AVAILABLE'),
   variants: z.array(z.object({
     size: z.preprocess(
       (val) => (val === '' || val === null ? undefined : val),
@@ -338,12 +338,15 @@ export async function PUT(
           position: index
         }))
       },
-      // Create new variants
+      // Create new variants (only if size is provided)
       variants: {
-        create: validatedData.variants.map(variant => ({
-          size: variant.size,
-          price: variant.price
-        }))
+        create: validatedData.variants
+          .filter(variant => variant.size && variant.size.trim() !== '')
+          .map(variant => ({
+            size: variant.size,
+            price: variant.price,
+            sizeSystem: variant.sizeSystem || validatedData.sizeSystem
+          }))
       },
       // Update rental price tiers if provided
       rentalPriceTiers: validatedData.rentalPriceTiers ? {
@@ -464,14 +467,33 @@ export async function PATCH(
     // Update only the fields provided
     const updateData: Prisma.ProductUpdateInput = {}
     
-    if (body.status && ['AVAILABLE', 'RENTED', 'RESERVED', 'MAINTENANCE'].includes(body.status)) {
-      updateData.status = body.status as 'AVAILABLE' | 'RENTED' | 'RESERVED' | 'MAINTENANCE'
+    console.log('PATCH request body:', body)
+    console.log('Requested status:', body.status)
+    
+    if (body.status && ['AVAILABLE', 'RENTED', 'RESERVED', 'MAINTENANCE', 'DAMAGED'].includes(body.status)) {
+      updateData.status = body.status as 'AVAILABLE' | 'RENTED' | 'RESERVED' | 'MAINTENANCE' | 'DAMAGED'
+      console.log('Status update approved:', updateData.status)
+    } else {
+      console.log('Status validation failed. Status value:', body.status, 'Type:', typeof body.status)
+      return NextResponse.json({
+        success: false,
+        message: `Invalid status: ${body.status}. Allowed values: AVAILABLE, RENTED, RESERVED, MAINTENANCE, DAMAGED`
+      }, { status: 400 })
     }
 
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json({
+        success: false,
+        message: 'No valid fields to update'
+      }, { status: 400 })
+    }
+
+    console.log('Updating product with data:', updateData)
     const updatedProduct = await prisma.product.update({
       where: { id: productId },
       data: updateData
     })
+    console.log('Product updated successfully:', updatedProduct.status)
 
     return NextResponse.json({
       success: true,

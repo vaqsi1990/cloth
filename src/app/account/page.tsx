@@ -1475,6 +1475,7 @@ const AccountPageContent = () => {
                       <option className="md:text-[18px] text-[16px]" value="RENTED">გაქირავებულია</option>
                       <option className="md:text-[18px] text-[16px]" value="RESERVED">დაჯავშნილია</option>
                       <option className="md:text-[18px] text-[16px]" value="MAINTENANCE">რესტავრაციაზეა</option>
+                      <option className="md:text-[18px] text-[16px]" value="DAMAGED">დაზიანებულია</option>
                     </select>
                   </div>
 
