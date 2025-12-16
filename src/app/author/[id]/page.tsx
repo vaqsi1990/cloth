@@ -3,8 +3,9 @@ import React, { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowLeft, User, ChevronLeft, ChevronRight } from "lucide-react"
+import { ArrowLeft, User, ChevronLeft, ChevronRight, Plus } from "lucide-react"
 import { Product } from "@/types/product"
+import StarRating from "@/components/StarRating"
 
 const AuthorPage = () => {
     const params = useParams()
@@ -142,40 +143,89 @@ const AuthorPage = () => {
 
                 {/* Products Grid */}
                 {currentProducts.length > 0 ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
-                                {currentProducts.map((product) => (
+                            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 gap-y-16 mb-8">
+                                {currentProducts.map((product, index) => (
                                     <div
                                         key={product.id}
-
-                                        className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                                        className="group bg-white rounded-xl overflow-hidden transition-shadow"
                                     >
-                                        <div className="relative aspect-[3/4] bg-gray-100">
-                                            <Image
-                                                src={product.images?.[0]?.url || "/placeholder.jpg"}
-                                                alt={product.name}
-                                                fill
-                                                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                                                className="object-cover  transition-transform duration-300"
-                                            />
-                                            <div className="absolute top-4 left-4 flex gap-2">
-                                                {product.discount && product.discount > 0 && (
-                                                    <span className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
-                                                        -₾{product.discount.toFixed(2)}
+                                        <div className="rounded-xl overflow-hidden">
+                                            <div className="relative w-full h-[273px] bg-gray-100 overflow-hidden">
+                                                <Image
+                                                    src={product.images?.[0]?.url || "/placeholder.jpg"}
+                                                    alt={product.name}
+                                                    fill
+                                                    className="object-cover transition-transform duration-300"
+                                                    loading={index < 4 ? "eager" : "lazy"}
+                                                    priority={index < 4}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="mt-2 space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <h3 className="font-regular text-black md:text-[18px] text-[16px] leading-snug line-clamp-2">
+                                                    {product.name}
+                                                </h3>
+                                                <Link
+                                                    href={`/product/${product.id}`}
+                                                    className="w-9 h-9 rounded-xl bg-black text-white flex items-center justify-center hover:bg-gray-800 transition"
+                                                    aria-label="დეტალები"
+                                                >
+                                                    <Plus className="w-5 h-5" />
+                                                </Link>
+                                            </div>
+                                            <div className="flex items-center justify-between gap-2">
+                                                {product.discount && product.discount > 0 ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-regular text-black md:text-[18px] text-[16px]">
+                                                            ₾{(() => {
+                                                                const originalPrice = getDisplayPrice(product)
+                                                                const discountedPrice = originalPrice - (product.discount || 0)
+                                                                return Math.max(0, discountedPrice).toFixed(2)
+                                                            })()}
+                                                        </span>
+                                                        <span className="font-regular text-black md:text-[18px] text-[16px] line-through decoration-black" style={{ textDecorationThickness: '1px' }}>
+                                                            ₾{getDisplayPrice(product).toFixed(2)}
+                                                        </span>
+                                                    </div>
+                                                ) : (
+                                                    <span className="font-regular text-black md:text-[18px] text-[16px]">
+                                                        ₾{getDisplayPrice(product).toFixed(2)}
                                                     </span>
                                                 )}
                                             </div>
-                                        </div>
-                                        <div className="p-4">
-                                            <h3 className="font-semibold text-black md:text-[20px] text-[16px] mb-2 line-clamp-2">
-                                                {product.name}
-                                            </h3>
-                                            <div className="flex items-center justify-between">
-                                                <span className="font-bold text-black md:text-[18px] text-[16px]">
-                                                    ₾{getDisplayPrice(product).toFixed(2)}
-                                                </span>
 
+                                         
+                                            {product.discount && product.discount > 0 && (
+                                                <div className="bg-[#228460]  w-full md:w-[220px] rounded-md text-[#FFFFFF] font-regular flex items-center">
+
+                                                <div className='px-2 py-1 w-full md:w-[220px] text-[15px] flex flex-col md:flex-row items-center gap-2 flex-1'>
+                                                    <span className='whitespace-nowrap'>დანაზოგი: ₾{product.discount.toFixed(2)}</span>
+                                                    {product.discountDays && (
+                                                        <span className="bg-white text-black px-3 py-1 rounded whitespace-nowrap">{product.discountDays} დღე</span>
+                                                    )}
+                                                </div>
+                                                </div>
+                                            )}
+                                            {product.stock !== undefined && (
+                                                <p className='text-black text-[16px] font-regular'>
+                                                    მარაგში: {product.stock}
+                                                </p>
+                                            )}
+
+                                            <div className="flex items-center gap-2">
+                                                <StarRating
+                                                    rating={product.rating && product.rating > 0 ? Math.round(product.rating) : 0}
+                                                    readonly
+                                                    size="sm"
+                                                    color={product.rating && product.rating > 0 ? 'green' : 'silver'}
+                                                />
+                                                {product.rating && product.rating > 0 && (
+                                                    <span className="text-black text-[14px] font-regular">
+                                                        {product.rating.toFixed(1)}
+                                                    </span>
+                                                )}
                                             </div>
-                                            <Link href={`/product/${product.id}`} className="block w-full md:w-[200px]  mt-3 bg-[#1B3729] md:text-[18px] text-[16px] text-white text-center py-2 rounded-lg font-bold transition-colors duration-300">დეტალები</Link>
                                         </div>
                                     </div>
                                 ))}
