@@ -241,46 +241,48 @@ const AdminDeliveryCitiesPage = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+        <div className="container mx-auto px-4 py-4 sm:py-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center space-x-2 sm:space-x-4 w-full sm:w-auto">
               <button
                 type="button"
                 onClick={() => router.back()}
-                className="flex items-center space-x-2 text-black hover:text-gray-900 transition-colors"
+                className="flex items-center justify-center text-black hover:text-gray-900 transition-colors flex-shrink-0"
               >
-                <ArrowLeft className="w-7 h-7 font-bold" />
+                <ArrowLeft className="w-6 h-6 sm:w-7 sm:h-7 font-bold" />
               </button>
-              <div>
-                <h1 className="md:text-[24px] text-[20px] font-bold text-gray-900">
+              <div className="min-w-0 flex-1">
+                <h1 className="text-lg sm:text-[20px] md:text-[24px] font-bold text-gray-900 break-words">
                   მიტანის ქალაქების მართვა
                 </h1>
-                <p className="text-black mt-1">დაამატე, შეცვალე ან წაშალე მიტანის ქალაქები</p>
+                <p className="text-sm sm:text-base text-black mt-1 hidden sm:block">
+                  დაამატე, შეცვალე ან წაშალე მიტანის ქალაქები
+                </p>
               </div>
             </div>
             <button
               onClick={handleCreate}
-              className="flex items-center space-x-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+              className="flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors w-full sm:w-auto text-sm sm:text-base font-bold"
             >
-              <Plus className="w-5 h-5" />
-              <span className="md:text-[18px] text-[16px] font-bold">ახალი ქალაქი</span>
+              <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span>ახალი ქალაქი</span>
             </button>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-4 sm:py-6 md:py-8">
         {/* Filter */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
+        <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 mb-4 sm:mb-6">
           <div className="flex items-center justify-between">
             <label className="flex items-center space-x-2 cursor-pointer">
               <input
                 type="checkbox"
                 checked={showInactive}
                 onChange={(e) => setShowInactive(e.target.checked)}
-                className="w-5 h-5 text-black border-gray-300 rounded focus:ring-black"
+                className="w-4 h-4 sm:w-5 sm:h-5 text-black border-gray-300 rounded focus:ring-black"
               />
-              <span className="md:text-[18px] text-[16px] text-black">
+              <span className="text-sm sm:text-base md:text-[18px] text-black">
                 არააქტიური ქალაქების ჩვენება
               </span>
             </label>
@@ -289,22 +291,22 @@ const AdminDeliveryCitiesPage = () => {
 
         {/* Create/Edit Form */}
         {(isCreating || editingId) && (
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
+          <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 mb-4 sm:mb-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="md:text-[20px] text-[18px] font-bold text-black">
+              <h2 className="text-base sm:text-lg md:text-[20px] font-bold text-black">
                 {isCreating ? 'ახალი ქალაქის დამატება' : 'ქალაქის რედაქტირება'}
               </h2>
               <button
                 onClick={handleCancel}
-                className="text-gray-500 hover:text-black transition-colors"
+                className="text-gray-500 hover:text-black transition-colors flex-shrink-0"
               >
-                <X className="w-6 h-6" />
+                <X className="w-5 h-5 sm:w-6 sm:h-6" />
               </button>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-black md:text-[18px] text-[16px] font-medium mb-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="sm:col-span-2 lg:col-span-1">
+                <label className="block text-black text-sm sm:text-base md:text-[18px] font-medium mb-2">
                   ქალაქის სახელი *
                 </label>
                 <input
@@ -312,12 +314,12 @@ const AdminDeliveryCitiesPage = () => {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="მაგ: თბილისი"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent md:text-[18px] text-[16px]"
+                  className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base md:text-[18px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                 />
               </div>
               
-              <div>
-                <label className="block text-black md:text-[18px] text-[16px] font-medium mb-2">
+              <div className="sm:col-span-2 lg:col-span-1">
+                <label className="block text-black text-sm sm:text-base md:text-[18px] font-medium mb-2">
                   მიტანის ფასი (₾) *
                 </label>
                 <input
@@ -327,35 +329,35 @@ const AdminDeliveryCitiesPage = () => {
                   value={formData.price}
                   onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                   placeholder="0.00"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent md:text-[18px] text-[16px]"
+                  className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base md:text-[18px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                 />
               </div>
               
-              <div className="flex items-end">
-                <label className="flex items-center space-x-2 cursor-pointer">
+              <div className="sm:col-span-2 lg:col-span-1 flex items-end">
+                <label className="flex items-center space-x-2 cursor-pointer w-full sm:w-auto">
                   <input
                     type="checkbox"
                     checked={formData.isActive}
                     onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                    className="w-5 h-5 text-black border-gray-300 rounded focus:ring-black"
+                    className="w-4 h-4 sm:w-5 sm:h-5 text-black border-gray-300 rounded focus:ring-black"
                   />
-                  <span className="md:text-[18px] text-[16px] text-black">აქტიური</span>
+                  <span className="text-sm sm:text-base md:text-[18px] text-black">აქტიური</span>
                 </label>
               </div>
             </div>
             
-            <div className="flex justify-end space-x-4 mt-6">
+            <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4 mt-6">
               <button
                 onClick={handleCancel}
-                className="px-6 py-2 border border-gray-300 text-black rounded-lg hover:bg-gray-50 transition-colors md:text-[18px] text-[16px] font-bold"
+                className="w-full sm:w-auto px-4 sm:px-6 py-2 border border-gray-300 text-black rounded-lg hover:bg-gray-50 transition-colors text-sm sm:text-base md:text-[18px] font-bold"
               >
                 გაუქმება
               </button>
               <button
                 onClick={handleSave}
-                className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors md:text-[18px] text-[16px] font-bold"
+                className="w-full sm:w-auto px-4 sm:px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors text-sm sm:text-base md:text-[18px] font-bold flex items-center justify-center"
               >
-                <Save className="w-5 h-5 inline-block mr-2" />
+                <Save className="w-4 h-4 sm:w-5 sm:h-5 inline-block mr-2" />
                 შენახვა
               </button>
             </div>
@@ -363,97 +365,163 @@ const AdminDeliveryCitiesPage = () => {
         )}
 
         {/* Cities List */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           {filteredCities.length === 0 ? (
-            <div className="p-12 text-center">
-              <MapPin className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <p className="md:text-[18px] text-[16px] text-gray-600">
+            <div className="p-8 sm:p-12 text-center">
+              <MapPin className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-4" />
+              <p className="text-sm sm:text-base md:text-[18px] text-gray-600">
                 {showInactive ? 'ქალაქები არ მოიძებნა' : 'აქტიური ქალაქები არ მოიძებნა'}
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="px-6 py-4 text-left md:text-[18px] text-[16px] font-bold text-black">
-                      ქალაქი
-                    </th>
-                    <th className="px-6 py-4 text-left md:text-[18px] text-[16px] font-bold text-black">
-                      მიტანის ფასი
-                    </th>
-                    <th className="px-6 py-4 text-center md:text-[18px] text-[16px] font-bold text-black">
-                      სტატუსი
-                    </th>
-                    <th className="px-6 py-4 text-center md:text-[18px] text-[16px] font-bold text-black">
-                      მოქმედებები
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {filteredCities.map((city) => (
-                    <tr
-                      key={city.id}
-                      className={`hover:bg-gray-50 ${!city.isActive ? 'opacity-60' : ''}`}
-                    >
-                      <td className="px-6 py-4">
-                        <div className="flex items-center space-x-2">
-                          <MapPin className="w-5 h-5 text-gray-400" />
-                          <span className="md:text-[18px] text-[16px] text-black font-medium">
-                            {city.name}
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="px-4 lg:px-6 py-3 lg:py-4 text-left text-sm lg:text-[18px] font-bold text-black">
+                        ქალაქი
+                      </th>
+                      <th className="px-4 lg:px-6 py-3 lg:py-4 text-left text-sm lg:text-[18px] font-bold text-black">
+                        მიტანის ფასი
+                      </th>
+                      <th className="px-4 lg:px-6 py-3 lg:py-4 text-center text-sm lg:text-[18px] font-bold text-black">
+                        სტატუსი
+                      </th>
+                      <th className="px-4 lg:px-6 py-3 lg:py-4 text-center text-sm lg:text-[18px] font-bold text-black">
+                        მოქმედებები
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {filteredCities.map((city) => (
+                      <tr
+                        key={city.id}
+                        className={`hover:bg-gray-50 ${!city.isActive ? 'opacity-60' : ''}`}
+                      >
+                        <td className="px-4 lg:px-6 py-3 lg:py-4">
+                          <div className="flex items-center space-x-2">
+                            <MapPin className="w-4 h-4 lg:w-5 lg:h-5 text-gray-400 flex-shrink-0" />
+                            <span className="text-sm lg:text-[18px] text-black font-medium">
+                              {city.name}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 lg:px-6 py-3 lg:py-4">
+                          <span className="text-sm lg:text-[18px] text-black font-semibold">
+                            ₾{city.price.toFixed(2)}
                           </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="md:text-[18px] text-[16px] text-black font-semibold">
+                        </td>
+                        <td className="px-4 lg:px-6 py-3 lg:py-4 text-center">
+                          <button
+                            onClick={() => handleToggleActive(city)}
+                            className={`inline-flex items-center space-x-2 px-2 lg:px-3 py-1 rounded-full text-xs lg:text-sm ${
+                              city.isActive
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-gray-100 text-gray-800'
+                            }`}
+                          >
+                            {city.isActive ? (
+                              <>
+                                <Check className="w-3 h-3 lg:w-4 lg:h-4" />
+                                <span className="font-medium">აქტიური</span>
+                              </>
+                            ) : (
+                              <>
+                                <XCircle className="w-3 h-3 lg:w-4 lg:h-4" />
+                                <span className="font-medium">არააქტიური</span>
+                              </>
+                            )}
+                          </button>
+                        </td>
+                        <td className="px-4 lg:px-6 py-3 lg:py-4">
+                          <div className="flex items-center justify-center space-x-2">
+                            <button
+                              onClick={() => handleEdit(city)}
+                              className="p-1.5 lg:p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="რედაქტირება"
+                            >
+                              <Edit2 className="w-4 h-4 lg:w-5 lg:h-5" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(city.id, city.name)}
+                              className="p-1.5 lg:p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="წაშლა"
+                            >
+                              <Trash2 className="w-4 h-4 lg:w-5 lg:h-5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden divide-y divide-gray-200">
+                {filteredCities.map((city) => (
+                  <div
+                    key={city.id}
+                    className={`p-4 ${!city.isActive ? 'opacity-60' : ''}`}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center space-x-2 flex-1 min-w-0">
+                        <MapPin className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                        <span className="text-base text-black font-medium truncate">
+                          {city.name}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-2 ml-2">
+                        <button
+                          onClick={() => handleEdit(city)}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="რედაქტირება"
+                        >
+                          <Edit2 className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(city.id, city.name)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="წაშლა"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-sm text-gray-600">მიტანის ფასი:</span>
+                        <span className="text-base text-black font-semibold ml-2">
                           ₾{city.price.toFixed(2)}
                         </span>
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <button
-                          onClick={() => handleToggleActive(city)}
-                          className={`inline-flex items-center space-x-2 px-3 py-1 rounded-full ${
-                            city.isActive
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}
-                        >
-                          {city.isActive ? (
-                            <>
-                              <Check className="w-4 h-4" />
-                              <span className="md:text-[16px] text-[14px] font-medium">აქტიური</span>
-                            </>
-                          ) : (
-                            <>
-                              <XCircle className="w-4 h-4" />
-                              <span className="md:text-[16px] text-[14px] font-medium">არააქტიური</span>
-                            </>
-                          )}
-                        </button>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-center space-x-2">
-                          <button
-                            onClick={() => handleEdit(city)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            title="რედაქტირება"
-                          >
-                            <Edit2 className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(city.id, city.name)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="წაშლა"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      </div>
+                      <button
+                        onClick={() => handleToggleActive(city)}
+                        className={`inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs ${
+                          city.isActive
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}
+                      >
+                        {city.isActive ? (
+                          <>
+                            <Check className="w-3.5 h-3.5" />
+                            <span className="font-medium">აქტიური</span>
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="w-3.5 h-3.5" />
+                            <span className="font-medium">არააქტიური</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>
