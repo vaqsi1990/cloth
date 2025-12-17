@@ -16,6 +16,7 @@ const ShopPageClient = () => {
     const genderParam = searchParams.get('gender')
     const searchParam = searchParams.get('search')
     const purposeParam = searchParams.get('purpose')
+    const categoryParam = searchParams.get('category')
 
     const [products, setProducts] = useState<Product[]>([])
     const [loading, setLoading] = useState(true)
@@ -169,8 +170,27 @@ const ShopPageClient = () => {
     }
 
     useEffect(() => {
-        setSelectedPurposes(purposeParam ? [purposeParam] : [])
-    }, [purposeParam])
+        if (purposeParam) {
+            setSelectedPurposes([purposeParam])
+        } else {
+            // Only clear if we're not restoring from sessionStorage
+            if (hasRestoredState) {
+                setSelectedPurposes([])
+            }
+        }
+    }, [purposeParam, hasRestoredState])
+
+    // Set category from URL parameter
+    useEffect(() => {
+        if (categoryParam) {
+            setSelectedCategories([categoryParam])
+        } else {
+            // Only clear if we're not restoring from sessionStorage
+            if (hasRestoredState) {
+                setSelectedCategories([])
+            }
+        }
+    }, [categoryParam, hasRestoredState])
 
     // Helper functions for price calculation
     const getRentalPrice = (product: Product): number => {
@@ -688,15 +708,28 @@ const ShopPageClient = () => {
 
     // Clear all filters
     const clearFilters = () => {
+        // Clear sessionStorage first
+        if (typeof window !== 'undefined') {
+            sessionStorage.removeItem('shopPageState')
+        }
+        
+        // Clear all state filters immediately
         setSelectedCategories([])
         setSelectedPurposes([])
-        setPriceRange([0, maxPrice])
         setSelectedSizeSystems([])
         setSelectedColors([])
         setSelectedLocations([])
         setRentalStartDate(null)
         setRentalEndDate(null)
         setPurchaseType("all")
+        setCurrentPage(1)
+        
+        // Price range will be updated when products are fetched
+        // Set to 0 initially, will be updated by useEffect when products load
+        setPriceRange([0, 0])
+        
+        // Navigate to home page (remove all URL parameters including gender)
+        router.replace('/')
     }
 
     // Get main product image
@@ -1332,9 +1365,15 @@ const ShopPageClient = () => {
                                 <h3 className="text-xl font-semibold text-black md:text-[20px] text-[16px] mb-2">
                                     პროდუქტები ვერ მოიძებნა
                                 </h3>
-                                <p className="text-black">
+                                <p className="text-black mb-6">
                                     სცადეთ სხვა ფილტრები
                                 </p>
+                                <button
+                                    onClick={clearFilters}
+                                    className="px-6 py-3 bg-[#1B3729] text-white rounded-lg font-medium hover:bg-[#228460] transition-colors md:text-[18px] text-[16px]"
+                                >
+                                    ფილტრების წაშლა
+                                </button>
                             </div>
                         )}
 

@@ -112,17 +112,25 @@ export async function GET(request: NextRequest) {
           OR: [
             { name: { contains: search, mode: 'insensitive' } },
             { description: { contains: search, mode: 'insensitive' } },
-            { sku: { contains: search, mode: 'insensitive' } }
+            { sku: { contains: search, mode: 'insensitive' } },
+            { brand: { contains: search, mode: 'insensitive' } },
+            { color: { contains: search, mode: 'insensitive' } },
+            { location: { contains: search, mode: 'insensitive' } },
+            { category: { name: { contains: search, mode: 'insensitive' } } },
+            { purpose: { name: { contains: search, mode: 'insensitive' } } },
+            { purpose: { slug: { contains: search, mode: 'insensitive' } } },
+            { user: { name: { contains: search, mode: 'insensitive' } } }
           ]
         } : {}),
         ...(category && category !== 'ALL' ? { 
-          category: { 
-            slug: category === 'DRESSES' ? 'dresses' :
+          OR: [
+            { category: { slug: category === 'DRESSES' ? 'dresses' :
                   category === 'TOPS' ? 'tops' :
                   category === 'BOTTOMS' ? 'bottoms' :
                   category === 'OUTERWEAR' ? 'outerwear' :
-                  category === 'ACCESSORIES' ? 'accessories' : category
-          } 
+                  category === 'ACCESSORIES' ? 'accessories' : category } },
+            { category: { name: { contains: category, mode: 'insensitive' } } }
+          ]
         } : {}),
         ...(purpose ? {
           purpose: {
@@ -180,17 +188,25 @@ export async function GET(request: NextRequest) {
             OR: [
               { name: { contains: search, mode: 'insensitive' } },
               { description: { contains: search, mode: 'insensitive' } },
-              { sku: { contains: search, mode: 'insensitive' } }
+              { sku: { contains: search, mode: 'insensitive' } },
+              { brand: { contains: search, mode: 'insensitive' } },
+              { color: { contains: search, mode: 'insensitive' } },
+              { location: { contains: search, mode: 'insensitive' } },
+              { category: { name: { contains: search, mode: 'insensitive' } } },
+              { purpose: { name: { contains: search, mode: 'insensitive' } } },
+              { purpose: { slug: { contains: search, mode: 'insensitive' } } },
+              { user: { name: { contains: search, mode: 'insensitive' } } }
             ]
           } : {}),
           ...(category && category !== 'ALL' ? { 
-            category: { 
-              slug: category === 'DRESSES' ? 'dresses' :
+            OR: [
+              { category: { slug: category === 'DRESSES' ? 'dresses' :
                     category === 'TOPS' ? 'tops' :
                     category === 'BOTTOMS' ? 'bottoms' :
                     category === 'OUTERWEAR' ? 'outerwear' :
-                    category === 'ACCESSORIES' ? 'accessories' : category
-            } 
+                    category === 'ACCESSORIES' ? 'accessories' : category } },
+              { category: { name: { contains: category, mode: 'insensitive' } } }
+            ]
           } : {}),
           ...(purpose ? {
             purpose: {
