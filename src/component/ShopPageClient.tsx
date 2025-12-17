@@ -422,25 +422,38 @@ const ShopPageClient = () => {
         return getRentalPrice(product)
     }
 
-    // Check if product is rent-only (rentable but no sale price)
-    const isRentOnly = (product: Product): boolean => {
-        if (!product.isRentable) return false
-        // Check if product has any variants with price > 0
-        if (product.variants && product.variants.length > 0) {
-            const hasSalePrice = product.variants.some(v => v.price > 0)
-            return !hasSalePrice
-        }
-        return true // If no variants and is rentable, it's rent-only
+    // Check if product has rental parameters (is rentable)
+    const hasRentalParameters = (product: Product): boolean => {
+        // Must be explicitly rentable and have valid rental price tiers
+        if (product.isRentable !== true) return false
+        if (!product.rentalPriceTiers || product.rentalPriceTiers.length === 0) return false
+        // Check if there's at least one tier with valid price
+        return product.rentalPriceTiers.some(tier => tier && tier.pricePerDay > 0)
     }
 
-    // Check if product is sale-only (has sale price but not rentable)
-    const isSaleOnly = (product: Product): boolean => {
-        if (product.isRentable) return false
-        // Check if product has any variants with price > 0
+    // Check if product has sale parameters (can be bought)
+    const hasSaleParameters = (product: Product): boolean => {
+        // Check if product has variants with prices > 0
         if (product.variants && product.variants.length > 0) {
-            return product.variants.some(v => v.price > 0)
+            return product.variants.some(v => v && v.price > 0)
         }
         return false
+    }
+
+    // Check if product is rent-only (has rental parameters but no sale parameters)
+    const isRentOnly = (product: Product): boolean => {
+        // Must have rental parameters
+        if (!hasRentalParameters(product)) return false
+        // Must NOT have sale parameters
+        return !hasSaleParameters(product)
+    }
+
+    // Check if product is sale-only (has sale parameters but no rental parameters)
+    const isSaleOnly = (product: Product): boolean => {
+        // Must have sale parameters
+        if (!hasSaleParameters(product)) return false
+        // Must NOT have rental parameters
+        return !hasRentalParameters(product)
     }
 
     // Check if product is available during selected dates
@@ -475,6 +488,67 @@ const ShopPageClient = () => {
             return !hasConflict
         })
     }
+
+    // Helper function to filter products by all criteria except purchase type (for count calculations)
+    const getProductsFilteredByOtherCriteria = (productsToFilter: Product[]) => {
+        return productsToFilter.filter(product => {
+            // Category filter (multiple selection)
+            const categoryMatch = selectedCategories.length === 0 ||
+                selectedCategories.includes(product.category?.name || '')
+
+            // Purpose filter
+            const purposeMatch = selectedPurposes.length === 0 ||
+                selectedPurposes.includes(product.purpose?.slug || '') ||
+                selectedPurposes.includes(product.purpose?.name || '')
+
+            // Price filter
+            const minPrice = getMinPrice(product)
+            const maxPrice = getMaxPrice(product)
+            // If priceRange is not initialized (both are 0), show all products
+            const priceMatch = (priceRange[0] === 0 && priceRange[1] === 0) ||
+                (minPrice >= priceRange[0] && minPrice <= priceRange[1]) ||
+                (maxPrice >= priceRange[0] && maxPrice <= priceRange[1]) ||
+                (minPrice <= priceRange[0] && maxPrice >= priceRange[1])
+
+            // Size System filter
+            const sizeSystemMatch = selectedSizeSystems.length === 0 ||
+                (product.variants && product.variants.length > 0 && product.variants.some(variant => variant.sizeSystem && selectedSizeSystems.includes(variant.sizeSystem))) ||
+                (product.sizeSystem && selectedSizeSystems.includes(product.sizeSystem)) ||
+                (!product.variants || product.variants.length === 0) && !product.sizeSystem
+
+            // Color filter
+            const colorMatch = selectedColors.length === 0 ||
+                selectedColors.some(selectedColor => {
+                    const colorMapping: Record<string, string[]> = {
+                        'black': ['შავი', 'black'],
+                        'white': ['თეთრი', 'white'],
+                        'red': ['წითელი', 'red'],
+                        'blue': ['ლურჯი', 'blue'],
+                        'green': ['მწვანე', 'green'],
+                        'yellow': ['ყვითელი', 'yellow'],
+                        'pink': ['ვარდისფერი', 'pink'],
+                        'purple': ['იისფერი', 'purple']
+                    };
+
+                    const colorVariations = colorMapping[selectedColor] || [selectedColor];
+                    return colorVariations.some(color =>
+                        product.color?.toLowerCase().includes(color.toLowerCase())
+                    );
+                })
+
+            // Location filter
+            const locationMatch = selectedLocations.length === 0 ||
+                selectedLocations.includes(product.location || '')
+
+            // Rental availability filter
+            const rentalAvailabilityMatch = isProductAvailable(product)
+
+            return categoryMatch && purposeMatch && priceMatch && sizeSystemMatch && colorMatch && locationMatch && rentalAvailabilityMatch
+        })
+    }
+
+    // Get products filtered by all other criteria (excluding purchase type) for count calculations
+    const productsForTypeCounts = getProductsFilteredByOtherCriteria(products)
 
     // Filter products by all criteria (excluding gender since it's handled by API)
     const filteredProducts = products.filter(product => {
@@ -945,26 +1019,27 @@ const ShopPageClient = () => {
                                 <h4 className="font-medium text-black md:text-[18px] text-[16px] mb-3">ტიპი</h4>
                                 <div className="space-y-2 text-[15px] text-black">
                                     {[
-                                        { value: "all", label: "ყველა", count: products.length },
-                                        { value: "rent-only", label: "მხოლოდ გაქირავება", count: products.filter(p => isRentOnly(p)).length },
-                                        { value: "sale-only", label: "მხოლოდ ყიდვა", count: products.filter(p => isSaleOnly(p)).length },
+                                        { value: "all", label: "ყველა", count: productsForTypeCounts.length },
+                                        { value: "rent-only", label: "მხოლოდ გაქირავება", count: productsForTypeCounts.filter(p => isRentOnly(p)).length },
+                                        { value: "sale-only", label: "მხოლოდ ყიდვა", count: productsForTypeCounts.filter(p => isSaleOnly(p)).length },
                                     ].map(({ value, label, count }) => {
                                         const active = purchaseType === value
                                         return (
                                             <label
                                                 key={value}
-                                                className={`flex items-center justify-between gap-2 cursor-pointer rounded-md px-3 py-2 ${active ? ' text-black' : 'hover:bg-gray-100 text-black'}`}
+                                                className={`flex items-center justify-between gap-2 cursor-pointer rounded-md px-3 py-2 ${active ? 'bg-gray-100 text-black' : 'hover:bg-gray-100 text-black'}`}
                                             >
                                                 <span className="flex items-center gap-2">
                                                     <input
-                                                        type="checkbox"
+                                                        type="radio"
+                                                        name="purchaseType"
                                                         checked={active}
                                                         onChange={() => setPurchaseType(value as "all" | "rent-only" | "sale-only")}
                                                         className="w-4 h-4 accent-black"
                                                     />
                                                     {label}
                                                 </span>
-                                                <span className={`text-[16px] ${active ? 'text-black' : 'text-black'}`}>{count}</span>
+                                                <span className={`text-[16px] ${active ? 'text-black font-medium' : 'text-gray-600'}`}>{count}</span>
                                             </label>
                                         )
                                     })}
