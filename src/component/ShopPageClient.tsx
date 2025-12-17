@@ -870,7 +870,7 @@ const ShopPageClient = () => {
                             <button
                                 onClick={() => {
                                     setIsMobileFilterOverlayOpen(true)
-                                    setActiveMobileFilter('all')
+                                    setActiveMobileFilter('size')
                                 }}
                                 className="flex items-center gap-1 px-3 py-2 text-[16px] font-medium text-black whitespace-nowrap hover:bg-gray-50 rounded"
                             >
@@ -894,28 +894,10 @@ const ShopPageClient = () => {
                                 <X className="w-6 h-6 text-black" />
                             </button>
                         </div>
-                        <div className="flex flex-1 overflow-hidden">
+                        <div className="flex flex-1 overflow-hidden pb-20">
                             {/* Left Sidebar - Filter Categories */}
-                            <div className="w-32 bg-gray-50 border-r border-gray-200 mb-10 overflow-y-auto">
+                            <div className="w-32 bg-gray-50 border-r border-gray-200 overflow-y-auto">
                                 <div className="p-2">
-                                    <button
-                                        onClick={() => setActiveMobileFilter('all')}
-                                        className={`w-full text-left px-2 py-3 text-[16px] font-medium rounded mb-1 ${activeMobileFilter === 'all'
-                                            ? 'bg-[#1B3729] text-white'
-                                            : 'text-black hover:bg-gray-200'
-                                            }`}
-                                    >
-                                        ყველა
-                                    </button>
-                                    <button
-                                        onClick={() => setActiveMobileFilter('sort')}
-                                        className={`w-full text-left px-2 py-2 text-[16px] font-medium rounded mb-1 ${activeMobileFilter === 'sort'
-                                            ? 'bg-[#1B3729] text-white'
-                                            : 'text-black hover:bg-gray-200'
-                                            }`}
-                                    >
-                                        დალაგება
-                                    </button>
                                     <button
                                         onClick={() => setActiveMobileFilter('size')}
                                         className={`w-full text-left px-3 py-2 text-[16px] font-medium rounded mb-1 ${activeMobileFilter === 'size'
@@ -973,6 +955,189 @@ const ShopPageClient = () => {
                                 </div>
                             </div>
 
+                            {/* Right Content Area - Filter Options */}
+                            <div className="flex-1 overflow-y-auto p-4">
+                                {activeMobileFilter === 'size' && (
+                                    <div className="space-y-3">
+                                        <h3 className="text-lg font-semibold text-black mb-4">ზომის სისტემა</h3>
+                                        {sizeSystems.map((sizeSystem) => (
+                                            <label
+                                                key={sizeSystem.id}
+                                                className="flex items-center gap-3 p-3 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100"
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedSizeSystems.includes(sizeSystem.id)}
+                                                    onChange={() => toggleSizeSystem(sizeSystem.id)}
+                                                    className="w-4 h-4"
+                                                />
+                                                <span className="text-[16px] text-black">{sizeSystem.label}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {activeMobileFilter === 'color' && (
+                                    <div className="space-y-3">
+                                        <h3 className="text-lg font-semibold text-black mb-4">ფერი</h3>
+                                        <div className="flex flex-wrap gap-3">
+                                            {colors.map((color) => (
+                                                <button
+                                                    key={color.id}
+                                                    onClick={() => toggleColor(color.id)}
+                                                    className={`relative w-12 h-12 rounded-full border-2 transition-all ${selectedColors.includes(color.id)
+                                                        ? 'border-[#1B3729] ring-2 ring-[#1B3729] ring-offset-2'
+                                                        : 'border-gray-300'
+                                                        }`}
+                                                    style={{ backgroundColor: color.color }}
+                                                    title={color.label}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeMobileFilter === 'category' && (
+                                    <div className="space-y-3">
+                                        <h3 className="text-lg font-semibold text-black mb-4">კატეგორია</h3>
+                                        <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+                                            {categories.map((category) => {
+                                                const categoryCount = products.filter(product =>
+                                                    product.category?.name === category.label
+                                                ).length;
+                                                const isSelected = selectedCategories.includes(category.label);
+
+                                                return (
+                                                    <label
+                                                        key={category.id}
+                                                        className="flex items-center justify-between p-3 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100"
+                                                    >
+                                                        <span className="flex items-center gap-3">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={isSelected}
+                                                                onChange={() => toggleCategory(category.label)}
+                                                                className="w-4 h-4"
+                                                            />
+                                                            <span className="text-[16px] text-black">{category.label}</span>
+                                                        </span>
+                                                        <span className="text-sm text-gray-500">{categoryCount}</span>
+                                                    </label>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeMobileFilter === 'price' && (
+                                    <div className="space-y-4">
+                                        <h3 className="text-lg font-semibold text-black mb-4">ფასის დიაპაზონი</h3>
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    max={maxPrice}
+                                                    value={priceRange[0]}
+                                                    onChange={(e) => {
+                                                        const val = Number(e.target.value) || 0
+                                                        setPriceRange([Math.min(val, priceRange[1]), priceRange[1]])
+                                                    }}
+                                                    className="w-1/2 px-3 py-2 border border-gray-300 rounded text-[14px] text-black"
+                                                />
+                                                <input
+                                                    type="number"
+                                                    min={priceRange[0]}
+                                                    max={maxPrice}
+                                                    value={priceRange[1]}
+                                                    onChange={(e) => {
+                                                        const val = Number(e.target.value) || 0
+                                                        setPriceRange([priceRange[0], Math.max(val, priceRange[0])])
+                                                    }}
+                                                    className="w-1/2 px-3 py-2 border border-gray-300 rounded text-[14px] text-black"
+                                                />
+                                            </div>
+                                            {maxPrice > 0 && (
+                                                <input
+                                                    type="range"
+                                                    min="0"
+                                                    max={maxPrice}
+                                                    value={priceRange[1]}
+                                                    onChange={(e) => {
+                                                        const val = parseInt(e.target.value) || 0
+                                                        setPriceRange([priceRange[0], val])
+                                                    }}
+                                                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                                                />
+                                            )}
+                                            <div className="flex items-center justify-between md:text-[16px] text-[14px] text-black">
+                                                <span>₾{priceRange[0]}</span>
+                                                <span>₾{priceRange[1]}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeMobileFilter === 'location' && (
+                                    <div className="space-y-3">
+                                        <h3 className="text-lg font-semibold text-black mb-4">მდებარეობა</h3>
+                                        {locations.map((location) => {
+                                            const active = selectedLocations.includes(location.id);
+                                            return (
+                                                <label
+                                                    key={location.id}
+                                                    className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer ${active
+                                                        ? 'bg-[#1B3729] text-white'
+                                                        : 'bg-gray-50 text-black hover:bg-gray-100'
+                                                        }`}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={active}
+                                                        onChange={() => toggleLocation(location.id)}
+                                                        className="w-4 h-4"
+                                                    />
+                                                    <span className="text-[16px]">{location.label}</span>
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+
+                                {activeMobileFilter === 'type' && (
+                                    <div className="space-y-3">
+                                        <h3 className="text-lg font-semibold text-black mb-4">ტიპი</h3>
+                                        {[
+                                            { value: "all", label: "ყველა", count: productsForTypeCounts.length },
+                                            { value: "rent-only", label: "მხოლოდ გაქირავება", count: productsForTypeCounts.filter(p => isRentOnly(p)).length },
+                                            { value: "sale-only", label: "მხოლოდ ყიდვა", count: productsForTypeCounts.filter(p => isSaleOnly(p)).length },
+                                        ].map(({ value, label, count }) => {
+                                            const active = purchaseType === value;
+                                            return (
+                                                <label
+                                                    key={value}
+                                                    className={`flex items-center justify-between gap-3 p-3 rounded-lg cursor-pointer ${active
+                                                        ? 'bg-[#1B3729] text-white'
+                                                        : 'bg-gray-50 text-black hover:bg-gray-100'
+                                                        }`}
+                                                >
+                                                    <span className="flex items-center gap-3">
+                                                        <input
+                                                            type="radio"
+                                                            name="mobilePurchaseType"
+                                                            checked={active}
+                                                            onChange={() => setPurchaseType(value as "all" | "rent-only" | "sale-only")}
+                                                            className="w-4 h-4"
+                                                        />
+                                                        <span className="text-[16px]">{label}</span>
+                                                    </span>
+                                                    <span className={`text-[16px] ${active ? 'text-white' : 'text-gray-600'}`}>{count}</span>
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         {/* Bottom Action Buttons */}
