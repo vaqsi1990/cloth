@@ -191,6 +191,20 @@ model Purpose {
   products  Product[]
 }
 
+model DeliveryCity {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique // ქალაქის სახელი
+  price     Float     // მიტანის ფასი
+  isActive  Boolean   @default(true) // აქტიურია თუ არა
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  orders    Order[]
+  carts     Cart[]
+  
+  @@index([isActive])
+}
+
 model Product {
   id            Int              @id @default(autoincrement())
   name          String
@@ -297,6 +311,11 @@ model Cart {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
+  // Delivery city
+  deliveryCityId Int?
+  deliveryCity   DeliveryCity? @relation(fields: [deliveryCityId], references: [id])
+  deliveryPrice  Float? // მიტანის ფასი (denormalized for quick access)
+  
   items CartItem[]
   
   @@unique([userId])
@@ -344,6 +363,11 @@ model Order {
   postalCode    String?
   country       String? 
   note          String?
+
+  // Delivery city
+  deliveryCityId Int?
+  deliveryCity   DeliveryCity? @relation(fields: [deliveryCityId], references: [id])
+  deliveryPrice  Float? // მიტანის ფასი (denormalized for order history)
 
   // optional for payment
   paymentMethod String?

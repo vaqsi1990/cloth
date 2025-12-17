@@ -1,13 +1,20 @@
 "use client"
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { useCart } from '@/hooks/useCart'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, MapPin, Phone, Mail, User, ShoppingCart } from 'lucide-react'
+import { ArrowLeft, MapPin, Phone, Mail, User, ShoppingCart, Truck, Store } from 'lucide-react'
 import Link from 'next/link'
 import { formatDate } from '@/utils/dateUtils'
 import { showToast } from '@/utils/toast'
 import GooglePayButton from '@/component/GooglePayButton'
+
+interface DeliveryCity {
+    id: number
+    name: string
+    price: number
+    isActive: boolean
+}
 
 const CheckoutPage = () => {
     const { cartItems, getTotalPrice, loading, initialized } = useCart()
@@ -25,9 +32,47 @@ const CheckoutPage = () => {
     
     const [isProcessing, setIsProcessing] = useState(false)
     const [paymentMethod, setPaymentMethod] = useState<'card' | 'google_pay'>('card')
+    const [deliveryType, setDeliveryType] = useState<'pickup' | 'delivery'>('pickup')
+    const [deliveryCities, setDeliveryCities] = useState<DeliveryCity[]>([])
+    const [selectedDeliveryCityId, setSelectedDeliveryCityId] = useState<number | null>(null)
+    const [loadingCities, setLoadingCities] = useState(false)
 
     const georgianTextRegex = /^[\u10A0-\u10FF\s.,\-'():;!?/\\"]+$/
     const georgianAddressRegex = /^[\u10A0-\u10FF\s0-9№N.,\-'():;!?/\\"#]+$/
+
+    // Fixed pickup address
+    const pickupAddress = 'ლეო დავითაშვილის ქუჩა 120, 0190 თბილისი, საქართველო'
+
+    // Fetch delivery cities
+    useEffect(() => {
+        const fetchDeliveryCities = async () => {
+            try {
+                setLoadingCities(true)
+                const response = await fetch('/api/delivery-cities')
+                const data = await response.json()
+                
+                if (data.success) {
+                    setDeliveryCities(data.cities)
+                }
+            } catch (error) {
+                console.error('Error fetching delivery cities:', error)
+            } finally {
+                setLoadingCities(false)
+            }
+        }
+
+        fetchDeliveryCities()
+    }, [])
+
+    // Get selected delivery city
+    const selectedDeliveryCity = deliveryCities.find(city => city.id === selectedDeliveryCityId)
+    const deliveryPrice = selectedDeliveryCity ? selectedDeliveryCity.price : 0
+
+    // Calculate total with delivery
+    const getTotalWithDelivery = () => {
+        const baseTotal = getTotalPrice()
+        return deliveryType === 'delivery' && selectedDeliveryCity ? baseTotal + deliveryPrice : baseTotal
+    }
 
     const clearFieldError = (field: string) => {
         setFieldErrors(prev => {
@@ -83,14 +128,24 @@ const CheckoutPage = () => {
             errors.lastName = 'გვარი უნდა შეიცავდეს ქართულ სიმბოლოებს'
         }
 
-        if (!formData.city || !georgianTextRegex.test(formData.city.trim())) {
-            errors.city = 'ქალაქი უნდა შეიცავდეს ქართულ სიმბოლოებს'
+        // Validate delivery-specific fields
+        if (deliveryType === 'delivery') {
+            if (!selectedDeliveryCityId) {
+                errors.deliveryCity = 'გთხოვთ აირჩიოთ მიტანის ქალაქი'
+            }
         }
 
-        if (!formData.address || !georgianAddressRegex.test(formData.address.trim())) {
-            errors.address = 'მისამართი უნდა შეიცავდეს ქართულ სიმბოლოებს, ციფრებს და სასვენი ნიშნებს'
-        } else if (!/[0-9]/.test(formData.address)) {
-            errors.address = 'მისამართი უნდა შეიცავდეს ციფრებს'
+        // City and address validation only for delivery
+        if (deliveryType === 'delivery') {
+            if (!formData.city || !georgianTextRegex.test(formData.city.trim())) {
+                errors.city = 'ქალაქი უნდა შეიცავდეს ქართულ სიმბოლოებს'
+            }
+
+            if (!formData.address || !georgianAddressRegex.test(formData.address.trim())) {
+                errors.address = 'მისამართი უნდა შეიცავდეს ქართულ სიმბოლოებს, ციფრებს და სასვენი ნიშნებს'
+            } else if (!/[0-9]/.test(formData.address)) {
+                errors.address = 'მისამართი უნდა შეიცავდეს ციფრებს'
+            }
         }
 
         setFieldErrors(errors)
@@ -131,8 +186,13 @@ const CheckoutPage = () => {
             const token = await getToken()
 
             // Step 2: Prepare order data for BOG
-            const totalAmount = getTotalPrice()
+            const totalAmount = getTotalWithDelivery()
             const orderId = `order_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`
+
+            // Determine delivery address
+            const deliveryAddress = deliveryType === 'pickup' 
+                ? pickupAddress 
+                : `${formData.address}, ${formData.city}`
 
             const orderData: {
                 cart: {
@@ -147,6 +207,9 @@ const CheckoutPage = () => {
                 totalAmount: number
                 orderId: string
                 deliveryOption: string
+                deliveryType: 'pickup' | 'delivery'
+                deliveryCityId?: number | null
+                deliveryPrice?: number
                 address: {
                     firstName: string
                     lastName: string
@@ -166,7 +229,10 @@ const CheckoutPage = () => {
                 },
                 totalAmount: totalAmount,
                 orderId: orderId,
-                deliveryOption: `${formData.address}, ${formData.city}`,
+                deliveryOption: deliveryAddress,
+                deliveryType: deliveryType,
+                deliveryCityId: deliveryType === 'delivery' ? selectedDeliveryCityId : null,
+                deliveryPrice: deliveryType === 'delivery' ? deliveryPrice : 0,
                 address: {
                     firstName: formData.firstName,
                     lastName: formData.lastName,
@@ -181,8 +247,10 @@ const CheckoutPage = () => {
             }
 
             // Calculate split payment amounts (9% admin, 91% seller)
-            const adminAmount = totalAmount * 0.09
-            const sellerAmount = totalAmount * 0.91
+            // Note: Delivery fee goes 100% to admin
+            const baseAmount = getTotalPrice()
+            const adminAmount = (baseAmount * 0.09) + (deliveryType === 'delivery' ? deliveryPrice : 0)
+            const sellerAmount = baseAmount * 0.91
             
             console.log('💰 Split Payment Breakdown:')
             console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
@@ -340,14 +408,21 @@ const CheckoutPage = () => {
     }
 
     const hasErrors = Object.keys(fieldErrors).length > 0
-    const requiredFieldsFilled = Object.values({
-        firstName: formData.firstName.trim(),
-        lastName: formData.lastName.trim(),
-        email: formData.email.trim(),
-        phone: formData.phone.trim(),
-        address: formData.address.trim(),
-        city: formData.city.trim()
-    }).every(Boolean)
+    const requiredFieldsFilled = deliveryType === 'pickup' 
+        ? Object.values({
+            firstName: formData.firstName.trim(),
+            lastName: formData.lastName.trim(),
+            email: formData.email.trim(),
+            phone: formData.phone.trim()
+        }).every(Boolean)
+        : Object.values({
+            firstName: formData.firstName.trim(),
+            lastName: formData.lastName.trim(),
+            email: formData.email.trim(),
+            phone: formData.phone.trim(),
+            address: formData.address.trim(),
+            city: formData.city.trim()
+        }).every(Boolean) && selectedDeliveryCityId !== null
 
     return (
         <div className="min-h-screen  py-16">
@@ -441,39 +516,115 @@ const CheckoutPage = () => {
                                     />
                                 </div>
 
-                                {/* Address Information */}
-                                <div>
-                                    <label className="block md:text-[18px] text-[16px] text-black font-medium mb-2">
-                                        <MapPin className="w-4 h-4 inline mr-2" />
-                                        მისამართი
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="address"
-                                        value={formData.address}
-                                        onChange={handleInputChange}
-                                        required
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-[#1B3729]"
-                                    />
-                                    {fieldErrors.address && (
-                                        <p className="text-red-500 md:text-[18px] text-[16px] mt-1">{fieldErrors.address}</p>
-                                    )}
+                                {/* Delivery Type Selection */}
+                                <div className="mb-6">
+                                    <h3 className="md:text-[18px] text-[16px] font-semibold text-black mb-4">მიწოდების ტიპი</h3>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <label className={`flex items-center space-x-3 p-4 border-2 rounded-lg cursor-pointer transition-colors ${
+                                            deliveryType === 'pickup' 
+                                                ? 'border-[#1B3729] bg-[#1B3729]/5' 
+                                                : 'border-gray-200 hover:border-gray-300'
+                                        }`}>
+                                            <input
+                                                type="radio"
+                                                name="deliveryType"
+                                                value="pickup"
+                                                checked={deliveryType === 'pickup'}
+                                                onChange={(e) => {
+                                                    setDeliveryType(e.target.value as 'pickup' | 'delivery')
+                                                    setSelectedDeliveryCityId(null)
+                                                }}
+                                                className="w-5 h-5 text-[#1B3729] focus:ring-[#1B3729]"
+                                            />
+                                            <Store className="w-5 h-5 text-black" />
+                                            <span className="text-black font-medium">ადგილზე</span>
+                                        </label>
+                                        <label className={`flex items-center space-x-3 p-4 border-2 rounded-lg cursor-pointer transition-colors ${
+                                            deliveryType === 'delivery' 
+                                                ? 'border-[#1B3729] bg-[#1B3729]/5' 
+                                                : 'border-gray-200 hover:border-gray-300'
+                                        }`}>
+                                            <input
+                                                type="radio"
+                                                name="deliveryType"
+                                                value="delivery"
+                                                checked={deliveryType === 'delivery'}
+                                                onChange={(e) => setDeliveryType(e.target.value as 'pickup' | 'delivery')}
+                                                className="w-5 h-5 text-[#1B3729] focus:ring-[#1B3729]"
+                                            />
+                                            <Truck className="w-5 h-5 text-black" />
+                                            <span className="text-black font-medium">მიტანით</span>
+                                        </label>
+                                    </div>
                                 </div>
 
-                                <div>
-                                    <label className="block md:text-[18px] text-[16px] text-black font-medium mb-2">ქალაქი</label>
-                                    <input
-                                        type="text"
-                                        name="city"
-                                        value={formData.city}
-                                        onChange={handleInputChange}
-                                        required
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-[#1B3729]"
-                                    />
-                                    {fieldErrors.city && (
-                                        <p className="text-red-500 md:text-[18px] text-[16px] mt-1">{fieldErrors.city}</p>
-                                    )}
-                                </div>
+                                {/* Address Information */}
+                                {deliveryType === 'pickup' ? (
+                                    <div>
+                                        <label className="block md:text-[18px] text-[16px] text-black font-medium mb-2">
+                                            <MapPin className="w-4 h-4 inline mr-2" />
+                                            მისამართი
+                                        </label>
+                                        <div className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-black">
+                                            {pickupAddress}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div>
+                                            <label className="block md:text-[18px] text-[16px] text-black font-medium mb-2">
+                                                <MapPin className="w-4 h-4 inline mr-2" />
+                                                მიტანის ქალაქი *
+                                            </label>
+                                            <select
+                                                name="deliveryCity"
+                                                value={selectedDeliveryCityId || ''}
+                                                onChange={(e) => {
+                                                    const cityId = e.target.value ? parseInt(e.target.value, 10) : null
+                                                    setSelectedDeliveryCityId(cityId)
+                                                    if (cityId) {
+                                                        const city = deliveryCities.find(c => c.id === cityId)
+                                                        if (city) {
+                                                            setFormData(prev => ({ ...prev, city: city.name }))
+                                                        }
+                                                    }
+                                                    clearFieldError('deliveryCity')
+                                                }}
+                                                required
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-[#1B3729]"
+                                            >
+                                                <option value="">აირჩიეთ ქალაქი</option>
+                                                {deliveryCities.map(city => (
+                                                    <option key={city.id} value={city.id}>
+                                                        {city.name} - ₾{city.price.toFixed(2)}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            {fieldErrors.deliveryCity && (
+                                                <p className="text-red-500 md:text-[18px] text-[16px] mt-1">{fieldErrors.deliveryCity}</p>
+                                            )}
+                                        </div>
+
+                                        <div>
+                                            <label className="block md:text-[18px] text-[16px] text-black font-medium mb-2">
+                                                <MapPin className="w-4 h-4 inline mr-2" />
+                                                მისამართი *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="address"
+                                                value={formData.address}
+                                                onChange={handleInputChange}
+                                                required
+                                                placeholder="მაგ: ქუჩის სახელი, სახლის ნომერი"
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-[#1B3729]"
+                                            />
+                                            {fieldErrors.address && (
+                                                <p className="text-red-500 md:text-[18px] text-[16px] mt-1">{fieldErrors.address}</p>
+                                            )}
+                                        </div>
+                                    </>
+                                )}
 
                                 {/* Payment Method Selection */}
                                 <div className="mb-6">
@@ -507,7 +658,7 @@ const CheckoutPage = () => {
                                 {paymentMethod === 'card' ? (
                                     <button
                                         type="submit"
-                                        disabled={isProcessing || hasErrors || !requiredFieldsFilled}
+                                        disabled={isProcessing || hasErrors || !requiredFieldsFilled || (deliveryType === 'delivery' && !selectedDeliveryCityId)}
                                         className="flex cursor-pointer md:text-[18px] text-[16px] font-bold justify-center items-center w-full mx-auto mt-6 bg-[#1B3729] text-white px-8 py-4 rounded-lg font-bold uppercase tracking-wide transition-colors duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed hover:opacity-95"
                                     >
                                         {isProcessing ? 'მუშავდება...' : 'ბარათით ყიდვა'}
@@ -515,11 +666,11 @@ const CheckoutPage = () => {
                                 ) : (
                                     <div className="mt-6">
                                         <GooglePayButton
-                                            totalAmount={getTotalPrice()}
+                                            totalAmount={getTotalWithDelivery()}
                                             currency="GEL"
                                             onPaymentSuccess={handleGooglePaySuccess}
                                             onError={handleGooglePayError}
-                                            disabled={isProcessing || hasErrors || !requiredFieldsFilled}
+                                            disabled={isProcessing || hasErrors || !requiredFieldsFilled || (deliveryType === 'delivery' && !selectedDeliveryCityId)}
                                         />
                                     </div>
                                 )}
@@ -603,8 +754,18 @@ const CheckoutPage = () => {
                                         <span className="font-medium">{cartItems.filter(item => item.isRental).length}</span>
                                     </div>
                                     <div className="flex justify-between text-black md:text-[18px] text-[16px]">
-                                        <span>ჯამური ღირებულება:</span>
-                                        <span className="font-bold text-lg">₾{getTotalPrice().toFixed(2)}</span>
+                                        <span>ნივთების ჯამი:</span>
+                                        <span className="font-medium">₾{getTotalPrice().toFixed(2)}</span>
+                                    </div>
+                                    {deliveryType === 'delivery' && selectedDeliveryCity && (
+                                        <div className="flex justify-between text-black md:text-[18px] text-[16px]">
+                                            <span>მიტანის ფასი:</span>
+                                            <span className="font-medium">₾{deliveryPrice.toFixed(2)}</span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between text-black md:text-[18px] text-[16px] border-t border-gray-300 pt-4 mt-2">
+                                        <span className="font-bold">ჯამური ღირებულება:</span>
+                                        <span className="font-bold text-lg">₾{getTotalWithDelivery().toFixed(2)}</span>
                                     </div>
                                 </div>
 

@@ -92,6 +92,9 @@ const orderDataSchema = z.object({
     totalAmount: z.union([z.string(), z.number()]),
     orderId: z.string().min(1),
     deliveryOption: z.string().optional(),
+    deliveryType: z.enum(['pickup', 'delivery']).optional(),
+    deliveryCityId: z.union([z.string(), z.number()]).nullable().optional(),
+    deliveryPrice: z.union([z.string(), z.number()]).optional(),
     paymentMethod: z.enum(['google_pay', 'card', 'apple_pay']).optional(),
     googlePayToken: z.string().optional(),
     address: z.object({
@@ -283,6 +286,24 @@ export async function POST(req: NextRequest) {
       include: { items: true }
     })
 
+    // Parse delivery info
+    const deliveryCityId = orderData.deliveryCityId 
+      ? (typeof orderData.deliveryCityId === 'string' ? parseInt(orderData.deliveryCityId, 10) : orderData.deliveryCityId)
+      : null
+    const deliveryPrice = orderData.deliveryPrice 
+      ? (typeof orderData.deliveryPrice === 'string' ? parseFloat(orderData.deliveryPrice) : orderData.deliveryPrice)
+      : null
+
+    // Get delivery city name if delivery
+    let deliveryCityName: string | null = null
+    if (deliveryCityId) {
+      const deliveryCity = await prisma.deliveryCity.findUnique({
+        where: { id: deliveryCityId },
+        select: { name: true }
+      })
+      deliveryCityName = deliveryCity?.name || null
+    }
+
     const dbOrder = await prisma.order.create({
       data: {
         userId: session.user.id,
@@ -290,6 +311,9 @@ export async function POST(req: NextRequest) {
         phone: session.user.phone || "",
         email: session.user.email || "",
         address: orderData.deliveryOption || "",
+        city: orderData.deliveryType === 'pickup' ? 'თბილისი' : (deliveryCityName || null),
+        deliveryCityId: deliveryCityId,
+        deliveryPrice: deliveryPrice,
         paymentMethod: "BOG Card Payment",
         total,
         status: "PENDING",

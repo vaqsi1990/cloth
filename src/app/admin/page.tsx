@@ -12,6 +12,7 @@ import {
   BarChart3,
   User,
   MessageCircle,
+  MapPin,
 } from 'lucide-react'
 
 // ---------------------
@@ -184,6 +185,13 @@ const AdminDashboard = () => {
       href: '/admin/chat',
       icon: MessageCircle,
       color: 'bg-indigo-600',
+    },
+    {
+      title: 'მიტანის ქალაქები',
+      description: 'დაამატე და მართე მიტანის ქალაქები',
+      href: '/admin/delivery-cities',
+      icon: MapPin,
+      color: 'bg-teal-600',
     },
     {
       title: 'პარამეტრები',
