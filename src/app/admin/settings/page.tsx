@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Save, User, Mail, Lock, AlertTriangle, Eye, EyeOff, Camera } from 'lucide-react'
+import { ArrowLeft, Save, User, Mail, Lock, AlertTriangle, Eye, EyeOff, Camera, Phone, MapPin } from 'lucide-react'
 import ImageUpload from '@/component/CloudinaryUploader'
 import { showToast } from '@/utils/toast'
 import Image from 'next/image'
@@ -26,6 +26,11 @@ const AdminSettingsPage = () => {
   const [profileData, setProfileData] = useState({
     name: '',
     email: '',
+    phone: '',
+    location: '',
+    address: '',
+    postalIndex: '',
+    pickupAddress: '',
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
@@ -39,16 +44,63 @@ const AdminSettingsPage = () => {
   }, [status])
 
   useEffect(() => {
-    if (session?.user?.role === 'ADMIN' && session.user) {
-      setProfileData({
-        name: session.user.name || '',
-        email: session.user.email || '',
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      })
-      setProfileImage(session.user.image || null)
+    const fetchAdminProfile = async () => {
+      if (session?.user?.role === 'ADMIN' && session.user) {
+        try {
+          const response = await fetch('/api/user/profile')
+          const data = await response.json()
+          
+          if (data.success && data.user) {
+            setProfileData({
+              name: data.user.name || '',
+              email: data.user.email || '',
+              phone: data.user.phone || '',
+              location: data.user.location || '',
+              address: data.user.address || '',
+              postalIndex: data.user.postalIndex || '',
+              pickupAddress: data.user.pickupAddress || '',
+              currentPassword: '',
+              newPassword: '',
+              confirmPassword: ''
+            })
+            setProfileImage(data.user.image || session.user.image || null)
+          } else {
+            // Fallback to session data
+            setProfileData({
+              name: session.user.name || '',
+              email: session.user.email || '',
+              phone: '',
+              location: '',
+              address: '',
+              postalIndex: '',
+              pickupAddress: '',
+              currentPassword: '',
+              newPassword: '',
+              confirmPassword: ''
+            })
+            setProfileImage(session.user.image || null)
+          }
+        } catch (error) {
+          console.error('Error fetching admin profile:', error)
+          // Fallback to session data
+          setProfileData({
+            name: session.user.name || '',
+            email: session.user.email || '',
+            phone: '',
+            location: '',
+            address: '',
+            postalIndex: '',
+            pickupAddress: '',
+            currentPassword: '',
+            newPassword: '',
+            confirmPassword: ''
+          })
+          setProfileImage(session.user.image || null)
+        }
+      }
     }
+    
+    fetchAdminProfile()
   }, [session])
 
   const togglePasswordVisibility = (field: keyof typeof showPasswords) => {
@@ -80,7 +132,12 @@ const AdminSettingsPage = () => {
         body: JSON.stringify({
           name: profileData.name,
           email: profileData.email,
-          image: profileImage
+          image: profileImage,
+          phone: profileData.phone,
+          location: profileData.location,
+          address: profileData.address,
+          postalIndex: profileData.postalIndex,
+          pickupAddress: profileData.pickupAddress
         }),
       })
 
@@ -170,7 +227,12 @@ const AdminSettingsPage = () => {
         body: JSON.stringify({ 
           name: profileData.name,
           email: profileData.email,
-          image: urls[0] || null
+          image: urls[0] || null,
+          phone: profileData.phone,
+          location: profileData.location,
+          address: profileData.address,
+          postalIndex: profileData.postalIndex,
+          pickupAddress: profileData.pickupAddress
         }),
       })
 
@@ -361,6 +423,101 @@ const AdminSettingsPage = () => {
                       placeholder="შეიყვანეთ თქვენი ელფოსტა"
                     />
                   </div>
+                </div>
+
+                {/* Phone */}
+                <div>
+                  <label htmlFor="phone" className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
+                    ტელეფონი
+                  </label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="tel"
+                      id="phone"
+                      name="phone"
+                      value={profileData.phone}
+                      onChange={handleChange}
+                      className="w-full pl-10 pr-4 placeholder:text-gray-500 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                      placeholder="შეიყვანეთ ტელეფონის ნომერი"
+                    />
+                  </div>
+                </div>
+
+                {/* Location */}
+                <div>
+                  <label htmlFor="location" className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
+                    ადგილმდებარეობა
+                  </label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="text"
+                      id="location"
+                      name="location"
+                      value={profileData.location}
+                      onChange={handleChange}
+                      className="w-full pl-10 pr-4 placeholder:text-gray-500 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                      placeholder="შეიყვანეთ ადგილმდებარეობა"
+                    />
+                  </div>
+                </div>
+
+                {/* Address */}
+                <div>
+                  <label htmlFor="address" className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
+                    მისამართი
+                  </label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="text"
+                      id="address"
+                      name="address"
+                      value={profileData.address}
+                      onChange={handleChange}
+                      className="w-full pl-10 pr-4 placeholder:text-gray-500 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                      placeholder="შეიყვანეთ მისამართი"
+                    />
+                  </div>
+                </div>
+
+                {/* Postal Index */}
+                <div>
+                  <label htmlFor="postalIndex" className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
+                    საფოსტო ინდექსი
+                  </label>
+                  <input
+                    type="text"
+                    id="postalIndex"
+                    name="postalIndex"
+                    value={profileData.postalIndex}
+                    onChange={handleChange}
+                    className="w-full px-4 placeholder:text-gray-500 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                    placeholder="შეიყვანეთ საფოსტო ინდექსი"
+                  />
+                </div>
+
+                {/* Pickup Address */}
+                <div>
+                  <label htmlFor="pickupAddress" className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
+                    მისამართი ადგილზე მისვლისთვის
+                  </label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="text"
+                      id="pickupAddress"
+                      name="pickupAddress"
+                      value={profileData.pickupAddress}
+                      onChange={handleChange}
+                      className="w-full pl-10 pr-4 placeholder:text-gray-500 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                      placeholder="მაგ: ლეო დავითაშვილის ქუჩა 120, 0190 თბილისი, საქართველო"
+                    />
+                  </div>
+                  <p className="text-sm text-gray-600 mt-1">
+                    ეს მისამართი გამოყენებული იქნება checkout-ში, როცა აირჩევთ "ადგილზე" მიტანის ტიპს
+                  </p>
                 </div>
 
                 {/* Submit Button */}

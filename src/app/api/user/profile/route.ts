@@ -17,6 +17,7 @@ const profileSchema = z.object({
   lastName: z.string().min(2, 'გვარი არასწორია').optional(),
   address: z.string().min(2, 'მისამართი არასწორია').optional(),
   postalIndex: z.string().min(2, 'საფოსტო ინდექსი არასწორია').optional(),
+  pickupAddress: z.string().min(2, 'ადგილზე მისამართვის მისამართი არასწორია').optional(),
   gender: z.enum(["MALE", "FEMALE", "OTHER"], { message: "სქესი არასწორია" }).optional(),
   dateOfBirth: z.string().optional(),
   iban: z.preprocess(
@@ -42,7 +43,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, email, image, phone, location, lastName, address, postalIndex, gender, dateOfBirth, iban } = profileSchema.parse(body)
+    const { name, email, image, phone, location, lastName, address, postalIndex, pickupAddress, gender, dateOfBirth, iban } = profileSchema.parse(body)
 
     // Check if email is already taken by another user
     const existingUser = await prisma.user.findFirst({
@@ -91,6 +92,7 @@ export async function PUT(request: NextRequest) {
         lastName: lastName ?? undefined,
         address: address ?? undefined,
         postalIndex: postalIndex ?? undefined,
+        pickupAddress: pickupAddress ?? undefined,
         gender: gender ?? undefined,
         dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
         iban,
@@ -107,6 +109,7 @@ export async function PUT(request: NextRequest) {
         lastName: true,
         address: true,
         postalIndex: true,
+        pickupAddress: true,
         gender: true,
         dateOfBirth: true,
         iban: true,
@@ -163,6 +166,7 @@ export async function GET(request: NextRequest) {
         lastName: true,
         address: true,
         postalIndex: true,
+        pickupAddress: true,
         gender: true,
         dateOfBirth: true,
         iban: true,

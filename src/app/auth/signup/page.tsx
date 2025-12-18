@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Mail, Lock, User, Eye, EyeOff } from 'lucide-react'
+import { Mail, Lock, User, Eye, EyeOff, MapPin } from 'lucide-react'
 import { showToast } from '@/utils/toast'
 
 const SignUpPage = () => {
@@ -14,6 +14,7 @@ const SignUpPage = () => {
     location: '', // ადგილმდებარეობა
     address: '', // მისამართი
     postalIndex: '', // საფოსტო ინდექსი
+    pickupAddress: '', // მისამართი ადგილზე მიტანისთვის
     gender: '', // სქესი
     dateOfBirth: '', // დაბადების თარიღი
     personalId: '', // პირადობის ნომერი
@@ -110,6 +111,20 @@ const SignUpPage = () => {
           return newErrors
         })
       }
+    } else if (name === 'pickupAddress') {
+      // Pickup address validation (optional field, but if provided should be valid)
+      if (value && !/^[\u10A0-\u10FF\s0-9№N,.\-:;()\[\]{}/"]+$/.test(value)) {
+        setFieldErrors(prev => ({
+          ...prev,
+          [name]: 'მისამართი ადგილზე მიტანისთვის უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, ციფრებს, №, N და სასვენი ნიშნებს'
+        }))
+      } else {
+        setFieldErrors(prev => {
+          const newErrors = { ...prev }
+          delete newErrors[name]
+          return newErrors
+        })
+      }
     }
   }
 
@@ -126,6 +141,12 @@ const SignUpPage = () => {
     // Validate required fields before sending code
     if (!formData.name || !formData.lastName || !formData.phone || !formData.location || !formData.address || !formData.postalIndex || !formData.gender || !formData.dateOfBirth || !formData.personalId || !formData.email || !formData.password || !formData.confirmPassword) {
       showToast('გთხოვთ შეავსეთ ყველა ველი', 'error')
+      return
+    }
+    
+    // Validate pickupAddress if provided
+    if (formData.pickupAddress && !/^[\u10A0-\u10FF\s0-9№N,.\-:;()\[\]{}/"]+$/.test(formData.pickupAddress)) {
+      showToast('მისამართი ადგილზე მიტანისთვის უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, ციფრებს, №, N და სასვენი ნიშნებს', 'error')
       return
     }
     
@@ -268,6 +289,7 @@ const SignUpPage = () => {
           location: formData.location,
           address: formData.address,
           postalIndex: formData.postalIndex,
+          pickupAddress: formData.pickupAddress || undefined,
           gender: formData.gender,
           dateOfBirth: formData.dateOfBirth,
           personalId: formData.personalId,
@@ -430,6 +452,29 @@ const SignUpPage = () => {
                   placeholder="შეიყვანეთ საფოსტო ინდექსი"
                 />
               </div>
+            </div>
+
+            {/* Pickup Address */}
+            <div>
+              <label htmlFor="pickupAddress" className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
+                მისამართი ადგილზე მისვლისთვის <span className="text-gray-500 text-sm">(ოფციონალური)</span>
+              </label>
+              <div className="relative">
+                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  id="pickupAddress"
+                  name="pickupAddress"
+                  type="text"
+                  value={formData.pickupAddress}
+                  onChange={handleChange}
+                  className={`w-full pl-10 pr-4 py-3 text-black placeholder:text-gray-500 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300 ${fieldErrors.pickupAddress ? 'border-red-500' : 'border-black'}`}
+                  placeholder="მაგ: ლეო დავითაშვილის ქუჩა 120, 0190 თბილისი, საქართველო"
+                />
+              </div>
+              {fieldErrors.pickupAddress && <p className="text-red-500 md:text-[18px] text-[16px] mt-1">{fieldErrors.pickupAddress}</p>}
+              <p className="text-sm text-gray-600 mt-1">
+                ეს მისამართი გამოყენებული იქნება checkout-ში, როცა აირჩევთ "ადგილზე" მისვლის ტიპს
+              </p>
             </div>
 
             {/* Gender */}

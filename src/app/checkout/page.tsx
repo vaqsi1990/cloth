@@ -36,12 +36,16 @@ const CheckoutPage = () => {
     const [deliveryCities, setDeliveryCities] = useState<DeliveryCity[]>([])
     const [selectedDeliveryCityId, setSelectedDeliveryCityId] = useState<number | null>(null)
     const [loadingCities, setLoadingCities] = useState(false)
+    const [userPickupAddress, setUserPickupAddress] = useState<string | null>(null)
+    const [loadingUserAddress, setLoadingUserAddress] = useState(false)
 
     const georgianTextRegex = /^[\u10A0-\u10FF\s.,\-'():;!?/\\"]+$/
     const georgianAddressRegex = /^[\u10A0-\u10FF\s0-9№N.,\-'():;!?/\\"#]+$/
 
-    // Fixed pickup address
-    const pickupAddress = 'ლეო დავითაშვილის ქუჩა 120, 0190 თბილისი, საქართველო'
+    // Fixed pickup address (fallback)
+    const defaultPickupAddress = 'ლეო დავითაშვილის ქუჩა 120, 0190 თბილისი, საქართველო'
+    // Use user's pickup address if available, otherwise use default
+    const pickupAddress = userPickupAddress || defaultPickupAddress
 
     // Fetch delivery cities
     useEffect(() => {
@@ -62,6 +66,28 @@ const CheckoutPage = () => {
         }
 
         fetchDeliveryCities()
+    }, [])
+
+    // Fetch user's pickup address
+    useEffect(() => {
+        const fetchUserPickupAddress = async () => {
+            try {
+                setLoadingUserAddress(true)
+                const response = await fetch('/api/user/profile')
+                const data = await response.json()
+                
+                if (data.success && data.user?.pickupAddress) {
+                    setUserPickupAddress(data.user.pickupAddress)
+                }
+            } catch (error) {
+                // User might not be logged in, which is fine
+                console.log('User not logged in or error fetching pickup address:', error)
+            } finally {
+                setLoadingUserAddress(false)
+            }
+        }
+
+        fetchUserPickupAddress()
     }, [])
 
     // Get selected delivery city

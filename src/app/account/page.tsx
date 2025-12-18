@@ -1801,6 +1801,7 @@ function ProfileSettingsForm({ hasActiveRentals, checkingRentals }: { hasActiveR
     location: '',
     address: '',
     postalIndex: '',
+    pickupAddress: '',
     gender: '',
     dateOfBirth: '',
     personalId: '',
@@ -1826,6 +1827,7 @@ function ProfileSettingsForm({ hasActiveRentals, checkingRentals }: { hasActiveR
             location: data.user.location || '',
             address: data.user.address || '',
             postalIndex: data.user.postalIndex || '',
+            pickupAddress: data.user.pickupAddress || '',
             gender: data.user.gender || '',
             dateOfBirth: data.user.dateOfBirth ? new Date(data.user.dateOfBirth).toISOString().split('T')[0] : '',
             personalId: data.user.personalId || '',
@@ -1866,6 +1868,7 @@ function ProfileSettingsForm({ hasActiveRentals, checkingRentals }: { hasActiveR
           location: form.location,
           address: form.address,
           postalIndex: form.postalIndex,
+          pickupAddress: form.pickupAddress,
           gender: form.gender || undefined,
           dateOfBirth: form.dateOfBirth || undefined,
           iban: form.iban,
@@ -2006,6 +2009,22 @@ function ProfileSettingsForm({ hasActiveRentals, checkingRentals }: { hasActiveR
       <div>
         <label className="block md:text-[18px] text-[16px] font-medium text-black mb-2">საფოსტო ინდექსი</label>
         <input name="postalIndex" value={form.postalIndex} onChange={onChange} className="w-full px-4 py-3 border text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
+      </div>
+
+      <div>
+        <label className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
+          მისამართი ადგილზე მისვლისთვის
+        </label>
+        <input 
+          name="pickupAddress" 
+          value={form.pickupAddress} 
+          onChange={onChange} 
+          placeholder="მაგ: ლეო დავითაშვილის ქუჩა 120, 0190 თბილისი, საქართველო"
+          className="w-full px-4 py-3 border text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" 
+        />
+        <p className="md:text-[16px] text-[14px] text-gray-600 mt-1">
+          ეს მისამართი გამოყენებული იქნება checkout-ში, როცა აირჩევთ "ადგილზე" მიტანის ტიპს
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
