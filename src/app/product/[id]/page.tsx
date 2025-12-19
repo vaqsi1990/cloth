@@ -1484,8 +1484,7 @@ const ProductPage = () => {
                             <div className=" p-6  space-y-3">
                                 {[
                                     { icon: Shield, title: "უსაფრთხო გადახდა", desc: "SSL დაცული გადახდები" },
-                                    { icon: RotateCcw, title: "დაბრუნება", desc: "მოხერხებული პოლისი" },
-                                    { icon: CheckCircle, title: "შემოწმებული ნივთები", desc: "ხარისხის კონტროლი" },
+                                  
                                 ].map((i, idx) => (
                                     <div key={idx} className="flex items-center">
                                         <i.icon className="w-5 h-5 mr-3 text-black" />
