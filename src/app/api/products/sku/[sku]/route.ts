@@ -4,6 +4,34 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { checkAndClearExpiredDiscount, processExpiredDiscount } from '@/utils/discountUtils'
 
+// Helper function to build product include query
+const buildProductInclude = () => ({
+  category: true,
+  purpose: true,
+  user: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true
+    }
+  },
+  images: {
+    orderBy: { position: 'asc' as const }
+  },
+  variants: {
+    orderBy: { price: 'asc' as const } // Order variants by price
+  },
+  rentalPriceTiers: {
+    orderBy: { minDays: 'asc' as const }
+  }
+})
+
+// Helper function to calculate days between two dates
+const calculateDays = (startDate: Date, endDate: Date): number => {
+  return Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+}
+
 // GET - Fetch product by SKU with detailed rental information
 export async function GET(
   request: NextRequest,
@@ -24,26 +52,8 @@ export async function GET(
     
     // Find product by SKU
     const product = await prisma.product.findUnique({
-      where: { sku: sku },
-      include: {
-        category: true,
-        purpose: true,
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true
-          }
-        },
-        images: {
-          orderBy: { position: 'asc' }
-        },
-        variants: true,
-        rentalPriceTiers: {
-          orderBy: { minDays: 'asc' }
-        }
-      }
+      where: { sku },
+      include: buildProductInclude()
     })
 
     if (!product) {
@@ -56,28 +66,10 @@ export async function GET(
     // Check and clear expired discount if needed
     await checkAndClearExpiredDiscount(product.id)
     
-    // Re-fetch product to get updated data
+    // Re-fetch product to get updated discount data
     const updatedProduct = await prisma.product.findUnique({
-      where: { sku: sku },
-      include: {
-        category: true,
-        purpose: true,
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true
-          }
-        },
-        images: {
-          orderBy: { position: 'asc' }
-        },
-        variants: true,
-        rentalPriceTiers: {
-          orderBy: { minDays: 'asc' }
-        }
-      }
+      where: { sku },
+      include: buildProductInclude()
     })
 
     if (!updatedProduct) {
@@ -103,8 +95,7 @@ export async function GET(
         },
         variant: {
           select: {
-            id: true,
-            size: true
+            id: true
           }
         },
         transactions: {
@@ -141,15 +132,13 @@ export async function GET(
       orderBy: { order: { createdAt: 'desc' } }
     })
 
-    // Calculate rental duration for each rental
+    // Calculate rental duration and format dates for each rental
     const rentalsWithDuration = rentals.map(rental => {
-      const start = new Date(rental.startDate)
-      const end = new Date(rental.endDate)
-      const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+      const durationDays = calculateDays(rental.startDate, rental.endDate)
       
       return {
         ...rental,
-        durationDays: days,
+        durationDays,
         startDate: rental.startDate.toISOString(),
         endDate: rental.endDate.toISOString(),
         createdAt: rental.createdAt.toISOString(),
@@ -157,30 +146,28 @@ export async function GET(
       }
     })
 
-    // Process rental orders
-    const rentalOrdersWithDuration = rentalOrders.map(item => {
-      if (!item.rentalStartDate || !item.rentalEndDate) return null
-      
-      const start = new Date(item.rentalStartDate)
-      const end = new Date(item.rentalEndDate)
-      const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
-      
-      return {
-        id: item.id,
-        orderId: item.orderId,
-        orderStatus: item.order.status,
-        customerName: item.order.customerName,
-        customerPhone: item.order.phone,
-        customerEmail: item.order.email,
-        user: item.order.user,
-        size: item.size,
-        startDate: item.rentalStartDate.toISOString(),
-        endDate: item.rentalEndDate.toISOString(),
-        durationDays: days,
-        price: item.price,
-        orderCreatedAt: item.order.createdAt.toISOString()
-      }
-    }).filter(Boolean)
+    // Process rental orders from OrderItems
+    const rentalOrdersWithDuration = rentalOrders
+      .filter(item => item.rentalStartDate && item.rentalEndDate)
+      .map(item => {
+        const durationDays = calculateDays(item.rentalStartDate!, item.rentalEndDate!)
+        
+        return {
+          id: item.id,
+          orderId: item.orderId,
+          orderStatus: item.order.status,
+          customerName: item.order.customerName,
+          customerPhone: item.order.phone,
+          customerEmail: item.order.email,
+          user: item.order.user,
+          size: item.size, // Size is stored on OrderItem, not variant
+          startDate: item.rentalStartDate!.toISOString(),
+          endDate: item.rentalEndDate!.toISOString(),
+          durationDays,
+          price: item.price,
+          orderCreatedAt: item.order.createdAt.toISOString()
+        }
+      })
 
     // Get active rentals (status ACTIVE or RESERVED, and endDate in future)
     const now = new Date()

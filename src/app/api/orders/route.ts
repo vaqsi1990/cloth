@@ -61,114 +61,111 @@ export async function POST(request: NextRequest) {
     // Validate the request body
     const validatedData = orderSchema.parse(body)
     
-    console.log('Creating order with data:', validatedData)
-    console.log('Session user ID:', session?.user?.id)
-    
+    // Validate products exist and are approved
     const uniqueProductIds = Array.from(new Set(validatedData.items.map(item => item.productId)))
     const products = await prisma.product.findMany({
       where: { id: { in: uniqueProductIds } },
       select: {
         id: true,
-        approvalStatus: true
+        approvalStatus: true,
+        name: true
       }
     })
     const productMap = new Map(products.map(product => [product.id, product]))
 
+    // Validate all products exist and are approved (unless admin)
     for (const item of validatedData.items) {
       const product = productMap.get(item.productId)
       if (!product) {
         return NextResponse.json({
           success: false,
-          message: `პროდუქტი (${item.productName}) ვერ მოიძებნა`
+          message: `პროდუქტი "${item.productName}" ვერ მოიძებნა`
         }, { status: 404 })
       }
       if (!isAdmin && product.approvalStatus !== 'APPROVED') {
         return NextResponse.json({
           success: false,
-          message: `პროდუქტი (${item.productName}) ჯერ არ არის დამტკიცებული`
+          message: `პროდუქტი "${item.productName}" ჯერ არ არის დამტკიცებული`
         }, { status: 403 })
       }
     }
 
     // Validate rental dates don't conflict with existing rentals
+    // Helper function to check date conflicts with maintenance buffer (1 day)
+    const hasDateConflict = (start: Date, end: Date, existingStart: Date, existingEnd: Date): boolean => {
+      const existingLastBlockedDate = new Date(existingEnd.getTime() + 24 * 60 * 60 * 1000) // 1 day buffer
+      return start < existingLastBlockedDate && end >= existingStart
+    }
+
     for (const item of validatedData.items) {
       if (item.isRental && item.rentalStartDate && item.rentalEndDate) {
         const start = new Date(item.rentalStartDate)
         const end = new Date(item.rentalEndDate)
         
-        // Get variant by size
-        const variant = await prisma.productVariant.findFirst({
+        // Validate date range
+        if (start >= end) {
+          return NextResponse.json({
+            success: false,
+            message: `არასწორი თარიღების დიაპაზონი პროდუქტისთვის ${item.productName}`
+          }, { status: 400 })
+        }
+
+        // Check existing rentals from rental table (by product, not variant)
+        const existingRentals = await prisma.rental.findMany({
           where: {
             productId: item.productId,
-            size: item.size
+            status: {
+              in: ['RESERVED', 'ACTIVE']
+            }
           }
         })
         
-        if (variant) {
-          // Check existing rentals from rental table
-          const existingRentals = await prisma.rental.findMany({
-            where: {
-              variantId: variant.id,
-              status: {
-                in: ['RESERVED', 'ACTIVE']
-              }
-            }
-          })
-          
-          // Check existing order items with active rentals
-          const existingOrders = await prisma.order.findMany({
-            where: {
-              status: {
-                in: ['PENDING', 'PAID', 'SHIPPED']
-              },
-              items: {
-                some: {
-                  productId: item.productId,
-                  isRental: true,
-                  rentalEndDate: {
-                    gte: new Date()
-                  }
-                }
-              }
+        // Check existing order items with active rentals for this product
+        const existingOrders = await prisma.order.findMany({
+          where: {
+            status: {
+              in: ['PENDING', 'PAID', 'SHIPPED']
             },
-            include: {
-              items: {
-                where: {
-                  productId: item.productId,
-                  isRental: true
+            items: {
+              some: {
+                productId: item.productId,
+                isRental: true,
+                rentalEndDate: {
+                  gte: new Date()
                 }
               }
             }
-          })
-          
-          // Check for conflicts with maintenance buffer (1 day)
-          for (const rental of existingRentals) {
-            const rentalStart = new Date(rental.startDate)
-            const rentalEnd = new Date(rental.endDate)
-            const rentalLastBlockedDate = new Date(rentalEnd.getTime() + 24 * 60 * 60 * 1000)
-            
-            if (start < rentalLastBlockedDate && end >= rentalStart) {
-              return NextResponse.json({
-                success: false,
-                message: `პროდუქტი ${item.productName} (${item.size}) არ არის ხელმისაწვდომი არჩეულ თარიღებზე`
-              }, { status: 409 })
+          },
+          include: {
+            items: {
+              where: {
+                productId: item.productId,
+                isRental: true,
+                size: item.size // Match by size from order item (product size)
+              }
             }
           }
-          
-          // Check order items
-          for (const order of existingOrders) {
-            for (const orderItem of order.items) {
-              if (orderItem.isRental && orderItem.rentalStartDate && orderItem.rentalEndDate && orderItem.size === item.size) {
-                const itemStart = new Date(orderItem.rentalStartDate)
-                const itemEnd = new Date(orderItem.rentalEndDate)
-                const itemLastBlockedDate = new Date(itemEnd.getTime() + 24 * 60 * 60 * 1000)
-                
-                if (start < itemLastBlockedDate && end >= itemStart) {
-                  return NextResponse.json({
-                    success: false,
-                    message: `პროდუქტი ${item.productName} (${item.size}) არ არის ხელმისაწვდომი არჩეულ თარიღებზე`
-                  }, { status: 409 })
-                }
+        })
+        
+        // Check for conflicts with existing rentals
+        for (const rental of existingRentals) {
+          if (hasDateConflict(start, end, rental.startDate, rental.endDate)) {
+            return NextResponse.json({
+              success: false,
+              message: `პროდუქტი ${item.productName} (${item.size}) არ არის ხელმისაწვდომი არჩეულ თარიღებზე`
+            }, { status: 409 })
+          }
+        }
+        
+        // Check order items for conflicts
+        for (const order of existingOrders) {
+          for (const orderItem of order.items) {
+            if (orderItem.isRental && orderItem.rentalStartDate && orderItem.rentalEndDate) {
+              if (hasDateConflict(start, end, orderItem.rentalStartDate, orderItem.rentalEndDate)) {
+                return NextResponse.json({
+                  success: false,
+                  message: `პროდუქტი ${item.productName} (${item.size}) არ არის ხელმისაწვდომი არჩეულ თარიღებზე`
+                }, { status: 409 })
               }
             }
           }
@@ -216,34 +213,34 @@ export async function POST(request: NextRequest) {
       }
     })
     
-    console.log('Order created successfully:', newOrder)
     
-    // Update product status to RENTED if the order contains rental items
-    const hasRentalItems = newOrder.items.some(item => item.isRental)
-    if (hasRentalItems) {
-      const productIds = [...new Set(newOrder.items.filter(item => item.isRental && item.productId).map(item => item.productId))]
-      
-      console.log('Found rental items, updating product status:', productIds)
-      
-      for (const productId of productIds) {
-        if (productId) {
-          try {
-            await prisma.product.update({
-              where: { id: productId },
-              data: { status: 'RENTED' }
-            })
-            console.log(`Successfully updated product ${productId} status to RENTED`)
-          } catch (error) {
-            console.error(`Error updating product ${productId}:`, error)
-          }
-        }
-      }
-    }
-
+    // Update product status and handle sold products
+    const rentalProductIds = [...new Set(
+      newOrder.items
+        .filter(item => item.isRental && item.productId)
+        .map(item => item.productId as number)
+    )]
+    
     const soldProductIds = newOrder.items
       .filter(item => !item.isRental && typeof item.productId === 'number')
       .map(item => item.productId as number)
 
+    // Update product status to RENTED for rental items
+    if (rentalProductIds.length > 0) {
+      await Promise.all(
+        rentalProductIds.map(productId =>
+          prisma.product.update({
+            where: { id: productId },
+            data: { status: 'RENTED' }
+          }).catch(error => {
+            console.error(`Error updating product ${productId} status:`, error)
+            return null
+          })
+        )
+      )
+    }
+
+    // Remove sold products from inventory
     if (soldProductIds.length > 0) {
       await removePurchasedProducts(soldProductIds, { orderId: newOrder.id })
     }
@@ -272,9 +269,13 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
     
+    // Provide more detailed error information in development
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    
     return NextResponse.json({
       success: false,
-      message: 'შეცდომა შეკვეთის გაფორმებისას'
+      message: 'შეცდომა შეკვეთის გაფორმებისას',
+      ...(process.env.NODE_ENV === 'development' && { error: errorMessage })
     }, { status: 500 })
   }
 }
@@ -325,15 +326,12 @@ export async function GET() {
     })
 
     // Filter items to exclude those with AVAILABLE product status
+    // (Items with AVAILABLE status were likely re-added to inventory after being sold)
     const filteredOrders = orders.map(order => ({
       ...order,
-      items: order.items.filter(item => {
-        // If product relationship exists and product status is AVAILABLE, exclude the item
-        if (item.product && item.product.status === 'AVAILABLE') {
-          return false
-        }
-        return true
-      })
+      items: order.items.filter(item => 
+        !item.product || item.product.status !== 'AVAILABLE'
+      )
     }))
 
     return NextResponse.json({

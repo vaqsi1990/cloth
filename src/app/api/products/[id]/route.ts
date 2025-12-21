@@ -92,6 +92,29 @@ const buildPurposeRelation = (purposeId?: number, purposeSlug?: string) => {
   return undefined
 }
 
+// Helper function to build product include query
+const buildProductInclude = () => ({
+  category: true,
+  purpose: true,
+  user: {
+    select: {
+      id: true,
+      name: true,
+      image: true,
+      blocked: true
+    }
+  },
+  images: {
+    orderBy: { position: 'asc' as const }
+  },
+  variants: {
+    orderBy: { price: 'asc' as const } // Order variants by price
+  },
+  rentalPriceTiers: {
+    orderBy: { minDays: 'asc' as const }
+  }
+})
+
 // GET - Fetch single product by ID
 export async function GET(
   request: NextRequest,
@@ -111,31 +134,15 @@ export async function GET(
       }, { status: 400 })
     }
 
+    // Fetch product
     const product = await prisma.product.findUnique({
       where: { id: productId },
-      include: {
-        category: true,
-        purpose: true,
-        user: {
-          select: {
-            id: true,
-            name: true,
-            image: true,
-            blocked: true
-          }
-        },
-        images: {
-          orderBy: { position: 'asc' }
-        },
-        variants: true,
-        rentalPriceTiers: {
-          orderBy: { minDays: 'asc' }
-        }
-      }
+      include: buildProductInclude()
     })
 
     const isOwner = requesterId && product?.userId === requesterId
 
+    // Check access permissions
     if (
       !product ||
       (!isAdmin && product.user?.blocked) ||
@@ -150,28 +157,10 @@ export async function GET(
     // Check and clear expired discount if needed
     await checkAndClearExpiredDiscount(productId)
     
-    // Re-fetch product to get updated data
+    // Re-fetch product to get updated discount data
     const updatedProduct = await prisma.product.findUnique({
       where: { id: productId },
-      include: {
-        category: true,
-        purpose: true,
-        user: {
-          select: {
-            id: true,
-            name: true,
-            image: true,
-            blocked: true
-          }
-        },
-        images: {
-          orderBy: { position: 'asc' }
-        },
-        variants: true,
-        rentalPriceTiers: {
-          orderBy: { minDays: 'asc' }
-        }
-      }
+      include: buildProductInclude()
     })
 
     if (!updatedProduct) {
@@ -254,34 +243,21 @@ export async function PUT(
 
     const shouldResetApproval = !isAdmin
 
-    // First delete existing images, variants, and rental price tiers
-    await prisma.productImage.deleteMany({
-      where: { productId: productId }
-    })
-    
-    await prisma.productVariant.deleteMany({
-      where: { productId: productId }
-    })
+    // Delete existing related data before updating
+    // This ensures clean state for images, variants, and rental price tiers
+    const deletePromises = [
+      prisma.productImage.deleteMany({ where: { productId } }),
+      prisma.productVariant.deleteMany({ where: { productId } })
+    ]
 
     // Delete rental price tiers if we're updating them
     if (validatedData.rentalPriceTiers !== undefined) {
-      await prisma.rentalPriceTier.deleteMany({
-        where: { productId: productId }
-      })
+      deletePromises.push(prisma.rentalPriceTier.deleteMany({ where: { productId } }))
     }
 
-    // Update product with nested updates
-    console.log('=== UPDATING PRODUCT ===')
-    console.log('Product ID:', productId)
-    console.log('Validated data:', JSON.stringify(validatedData, null, 2))
-    console.log('Variants to create:', validatedData.variants)
-    console.log('Variants length:', validatedData.variants.length)
-    console.log('Each variant:', validatedData.variants.map(v => ({
-      size: v.size,
-      price: v.price,
-      sizeSystem: v.sizeSystem ?? validatedData.sizeSystem
-    })))
-    
+    await Promise.all(deletePromises)
+
+    // Ensure unique slug
     const uniqueSlug = await ensureUniqueProductSlug(validatedData.slug, {
       excludeProductId: productId
     })
@@ -383,19 +359,16 @@ export async function PUT(
         }
       }
     })
-    
-    console.log('=== PRODUCT UPDATED SUCCESSFULLY ===')
-    console.log('Updated product:', JSON.stringify(updatedProduct, null, 2))
 
-    // If product status is AVAILABLE, delete all order items for this product
-    if (validatedData.status === 'AVAILABLE' && updatedProduct.status !== 'AVAILABLE') {
-      const deletedCount = await prisma.orderItem.deleteMany({
+    // If product status changed to AVAILABLE, clean up rental order items
+    // (This handles the case where a product was rented and is now available again)
+    if (validatedData.status === 'AVAILABLE') {
+      await prisma.orderItem.deleteMany({
         where: {
           productId: productId,
           isRental: true
         }
       })
-      console.log(`Deleted ${deletedCount.count} order items for product ${productId}`)
     }
 
     return NextResponse.json({
@@ -486,17 +459,14 @@ export async function PATCH(
     // Update only the fields provided
     const updateData: Prisma.ProductUpdateInput = {}
     
-    console.log('PATCH request body:', body)
-    console.log('Requested status:', body.status)
-    
-    if (body.status && ['AVAILABLE', 'RENTED', 'RESERVED', 'MAINTENANCE', 'DAMAGED'].includes(body.status)) {
-      updateData.status = body.status as 'AVAILABLE' | 'RENTED' | 'RESERVED' | 'MAINTENANCE' | 'DAMAGED'
-      console.log('Status update approved:', updateData.status)
-    } else {
-      console.log('Status validation failed. Status value:', body.status, 'Type:', typeof body.status)
+    // Validate and set status if provided
+    const validStatuses = ['AVAILABLE', 'RENTED', 'RESERVED', 'MAINTENANCE', 'DAMAGED'] as const
+    if (body.status && validStatuses.includes(body.status)) {
+      updateData.status = body.status
+    } else if (body.status) {
       return NextResponse.json({
         success: false,
-        message: `Invalid status: ${body.status}. Allowed values: AVAILABLE, RENTED, RESERVED, MAINTENANCE, DAMAGED`
+        message: `Invalid status: ${body.status}. Allowed values: ${validStatuses.join(', ')}`
       }, { status: 400 })
     }
 
@@ -507,12 +477,10 @@ export async function PATCH(
       }, { status: 400 })
     }
 
-    console.log('Updating product with data:', updateData)
     const updatedProduct = await prisma.product.update({
       where: { id: productId },
       data: updateData
     })
-    console.log('Product updated successfully:', updatedProduct.status)
 
     return NextResponse.json({
       success: true,

@@ -240,10 +240,30 @@ const ProductPage = () => {
                 }
                 if (rJson?.success) {
                     const map: Record<string, RentalPeriod[]> = {}
+                    const allRentals: RentalPeriod[] = []
+                    
+                    // Map rental status by variant ID (API now returns variantId instead of size)
                     rJson.variants?.forEach(
-                        (v: { size: string; activeRentals?: RentalPeriod[] }) =>
-                            (map[v.size] = v.activeRentals || [])
+                        (v: { variantId: number; activeRentals?: RentalPeriod[] }) => {
+                            const variantKey = `variant_${v.variantId}`
+                            const rentals = v.activeRentals || []
+                            map[variantKey] = rentals
+                            allRentals.push(...rentals)
+                        }
                     )
+                    
+                    // Also add a product-level key for convenience (using product size or 'default')
+                    // This allows us to use selectedSize (product size) to get all rentals
+                    const productKey = pJson?.product?.size || 'default'
+                    if (allRentals.length > 0) {
+                        // Remove duplicates based on startDate and endDate
+                        const uniqueRentals = allRentals.filter((rental, index, self) =>
+                            index === self.findIndex(r => 
+                                r.startDate === rental.startDate && r.endDate === rental.endDate
+                            )
+                        )
+                        map[productKey] = uniqueRentals
+                    }
                     setRentalStatus(map)
                 }
             } catch (e) {
@@ -543,23 +563,32 @@ const ProductPage = () => {
     // Since variants no longer have size, use product size
     const getAvailableSizes = () => product?.size ? [product.size] : []
 
-    const hasActiveRentals = (variantId: number) => {
-      const variantKey = `variant_${variantId}`
-      return (rentalStatus[variantKey] || []).length > 0
+    // Helper to get rental periods by size (product-level) or variant ID
+    const getRentalPeriods = (key: string | number): RentalPeriod[] => {
+        if (typeof key === 'number') {
+            // If key is a variant ID
+            const variantKey = `variant_${key}`
+            return rentalStatus[variantKey] || []
+        }
+        // If key is a size string (product size)
+        return rentalStatus[key] || []
     }
 
-    const getRentalPeriods = (variantId: number) => {
-      const variantKey = `variant_${variantId}`
-      return rentalStatus[variantKey] || []
+    // Check if there are active rentals for a given key (size or variant ID)
+    const hasActiveRentals = (key: string | number): boolean => {
+        return getRentalPeriods(key).length > 0
     }
 
-    const firstAvailableVariant = () =>
-        product?.variants?.find(v => !hasActiveRentals(v.id)) || null
+    // Get first available variant (one without active rentals)
+    const firstAvailableVariant = () => {
+        if (!product?.variants) return null
+        return product.variants.find(v => !hasActiveRentals(v.id)) || product.variants[0] || null
+    }
 
     useEffect(() => {
         if (product && !selectedSize) {
-            // Use product size if available, otherwise use first variant's price
-            const sz = product.size || (product.variants?.[0] ? 'default' : '')
+            // Use product size if available
+            const sz = product.size || 'default'
             if (sz) {
                 setSelectedSize(sz)
             }
@@ -567,8 +596,9 @@ const ProductPage = () => {
     }, [product, rentalStatus, selectedSize])
 
     // Select variant by index (since variants are just different prices now)
-    const selectedVariantIndex = product?.variants?.length > 0 ? 0 : -1
-    const selectedVariant = product?.variants?.[selectedVariantIndex]
+    const hasVariants = product?.variants && Array.isArray(product.variants) && product.variants.length > 0
+    const selectedVariantIndex = hasVariants ? 0 : -1
+    const selectedVariant = hasVariants ? product.variants[0] : undefined
     const selectedPrice = selectedVariant?.price ?? 0
     const showBuyOption = Boolean(canBuyProduct && selectedSize && selectedPrice > 0)
     const rentStatusAllowed =

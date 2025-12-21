@@ -4,6 +4,43 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { checkAndClearExpiredDiscounts, processExpiredDiscount } from '@/utils/discountUtils'
 
+// Helper function to build product query
+const buildProductQuery = (userId: string, isAdmin: boolean) => {
+  const whereClause: any = { userId }
+  
+  if (!isAdmin) {
+    whereClause.user = { blocked: false }
+    whereClause.approvalStatus = 'APPROVED'
+  }
+  
+  return {
+    where: whereClause,
+    include: {
+      category: true,
+      purpose: true,
+      user: {
+        select: {
+          id: true,
+          name: true,
+          image: true
+        }
+      },
+      images: {
+        orderBy: { position: 'asc' as const }
+      },
+      variants: {
+        orderBy: { price: 'asc' as const } // Order by price since size was removed
+      },
+      rentalPriceTiers: {
+        orderBy: { minDays: 'asc' as const }
+      }
+    },
+    orderBy: {
+      createdAt: 'desc' as const
+    }
+  }
+}
+
 // GET - Fetch all products by author/user ID
 export async function GET(
   request: NextRequest,
@@ -21,7 +58,7 @@ export async function GET(
       }, { status: 400 })
     }
 
-    // First get user info
+    // Get user info
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -41,91 +78,31 @@ export async function GET(
       }, { status: 404 })
     }
 
-    // Show all products regardless of status
-    const products = await prisma.product.findMany({
-      where: { 
-        userId: userId,
-        ...(isAdmin ? {} : { 
-          user: { blocked: false },
-          approvalStatus: 'APPROVED'
-        })
-      },
-      include: {
-        category: true,
-        purpose: true,
-        user: {
-          select: {
-            id: true,
-            name: true,
-            image: true
-          }
-        },
-        images: {
-          orderBy: { position: 'asc' }
-        },
-        variants: {
-          orderBy: { size: 'asc' }
-        },
-        rentalPriceTiers: {
-          orderBy: { minDays: 'asc' }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    })
+    // Fetch products
+    const products = await prisma.product.findMany(
+      buildProductQuery(userId, isAdmin)
+    )
 
-    // Check and clear expired discounts
+    // Check and clear expired discounts if needed
     const productIds = products
       .filter(p => p.discount && p.discountDays && p.discountStartDate)
       .map(p => p.id)
     
+    let finalProducts = products
+
     if (productIds.length > 0) {
       await checkAndClearExpiredDiscounts(productIds)
-      // Re-fetch products to get updated data
-      const updatedProducts = await prisma.product.findMany({
-        where: { 
-          userId: userId,
-          ...(isAdmin ? {} : { 
-            user: { blocked: false },
-            approvalStatus: 'APPROVED'
-          })
-        },
-        include: {
-          category: true,
-          purpose: true,
-          user: {
-            select: {
-              id: true,
-              name: true,
-              image: true
-            }
-          },
-          images: {
-            orderBy: { position: 'asc' }
-          },
-          variants: {
-            orderBy: { size: 'asc' }
-          },
-          rentalPriceTiers: {
-            orderBy: { minDays: 'asc' }
-          }
-        },
-        orderBy: {
-          createdAt: 'desc'
-        }
-      })
-      return NextResponse.json({
-        success: true,
-        author: user,
-        products: updatedProducts.map(processExpiredDiscount)
-      })
+      // Re-fetch products to get updated discount data
+      finalProducts = await prisma.product.findMany(
+        buildProductQuery(userId, isAdmin)
+      )
     }
 
+    // Process expired discounts and return
     return NextResponse.json({
       success: true,
       author: user,
-      products: products.map(processExpiredDiscount)
+      products: finalProducts.map(processExpiredDiscount)
     })
     
   } catch (error) {
