@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
                 id: true,
                 name: true,
                 status: true,
+                userId: true, // Include userId to verify product has owner
                 images: {
                   select: {
                     url: true,
@@ -37,7 +38,10 @@ export async function GET(request: NextRequest) {
                   select: {
                     id: true,
                     name: true,
-                    pickupAddress: true
+                    email: true,
+                    phone: true,
+                    pickupAddress: true,
+                    address: true
                   }
                 }
               }
@@ -65,6 +69,26 @@ export async function GET(request: NextRequest) {
         createdAt: 'desc'
       }
     })
+
+    // Debug: Check for products without users
+    let productsWithoutUsers = 0
+    let productsWithUsers = 0
+    let itemsWithoutProducts = 0
+    
+    orders.forEach(order => {
+      order.items.forEach(item => {
+        if (!item.product) {
+          itemsWithoutProducts++
+        } else if (item.product.userId && !item.product.user) {
+          productsWithoutUsers++
+          console.log(`⚠️ Product ${item.product.id} has userId ${item.product.userId} but user relation is null`)
+        } else if (item.product.user) {
+          productsWithUsers++
+        }
+      })
+    })
+    
+    console.log(`📊 Order stats: ${productsWithUsers} products with users, ${productsWithoutUsers} products without users, ${itemsWithoutProducts} items without products`)
 
     return NextResponse.json({
       success: true,

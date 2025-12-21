@@ -15,6 +15,7 @@ interface DeliveryUser {
   phone: string
   userAddress: string
   objectAddress: string
+  pickupAddress: string // Seller's pickup address from User model
   date: string
   isRental: boolean
   isPurchase: boolean
@@ -60,7 +61,116 @@ const AdminInfoPage = () => {
           const response = await fetch('/api/admin/orders')
           const data = await response.json()
           
+          console.log('Debug - Raw API response:', data)
+          console.log('Debug - Orders count:', data.orders?.length)
+          
+          // Log first order structure to understand data shape
+          if (data.success && data.orders && data.orders.length > 0) {
+            console.log('=== FIRST ORDER STRUCTURE ===')
+            console.log('First order:', JSON.stringify(data.orders[0], null, 2))
+            if (data.orders[0].items && data.orders[0].items.length > 0) {
+              console.log('First item:', JSON.stringify(data.orders[0].items[0], null, 2))
+              if (data.orders[0].items[0].product) {
+                console.log('First product:', JSON.stringify(data.orders[0].items[0].product, null, 2))
+              }
+            }
+            console.log('===========================\n')
+          }
+          
           if (data.success && data.orders) {
+            // Extract seller information from ALL orders first
+            const sellersMap = new Map()
+            let totalItems = 0
+            let itemsWithProducts = 0
+            let productsWithUsers = 0
+            
+            console.log('=== DEBUGGING SELLER EXTRACTION ===')
+            console.log('Total orders:', data.orders.length)
+            
+            data.orders.forEach((order: any, orderIndex: number) => {
+              console.log(`\nOrder ${orderIndex + 1} (ID: ${order.id}):`)
+              console.log('  - Has items?', !!order.items)
+              console.log('  - Items count:', order.items?.length || 0)
+              
+              if (order.items && order.items.length > 0) {
+                order.items.forEach((item: any, itemIndex: number) => {
+                  totalItems++
+                  console.log(`  Item ${itemIndex + 1}:`)
+                  console.log('    - Has product?', !!item.product)
+                  console.log('    - Product ID:', item.product?.id)
+                  console.log('    - Product name:', item.product?.name)
+                  console.log('    - Has product.user?', !!item.product?.user)
+                  console.log('    - Seller:', item.product?.user)
+                  
+                  if (item.product) {
+                    itemsWithProducts++
+                    if (item.product.user) {
+                      productsWithUsers++
+                    }
+                  }
+                  
+                  const seller = item.product?.user
+                  console.log('    - Seller object:', seller)
+                  console.log('    - Seller type:', typeof seller)
+                  console.log('    - Seller is null?', seller === null)
+                  console.log('    - Seller is undefined?', seller === undefined)
+                  console.log('    - Seller.id exists?', !!seller?.id)
+                  
+                  if (seller && seller.id) {
+                    console.log(`    ✓ Found seller: ${seller.name} (ID: ${seller.id})`)
+                    if (!sellersMap.has(seller.id)) {
+                      sellersMap.set(seller.id, {
+                        id: seller.id,
+                        name: seller.name || 'უცნობი',
+                        email: seller.email || null,
+                        phone: seller.phone || null,
+                        pickupAddress: seller.pickupAddress || 'არ არის მითითებული',
+                        address: seller.address || null,
+                        orders: [order.id],
+                        products: [{
+                          productId: item.product?.id,
+                          productName: item.product?.name,
+                          orderId: order.id
+                        }]
+                      })
+                    } else {
+                      // Add order and product to existing seller
+                      const existingSeller = sellersMap.get(seller.id)
+                      if (!existingSeller.orders.includes(order.id)) {
+                        existingSeller.orders.push(order.id)
+                      }
+                      existingSeller.products.push({
+                        productId: item.product?.id,
+                        productName: item.product?.name,
+                        orderId: order.id
+                      })
+                    }
+                  } else {
+                    console.log('    ✗ No seller found for this item')
+                    if (!item.product) {
+                      console.log('      Reason: No product in item')
+                    } else if (!item.product.user) {
+                      console.log('      Reason: Product exists but has no user')
+                      console.log('      Product userId might be null in database')
+                    } else if (!seller?.id) {
+                      console.log('      Reason: Seller exists but has no id')
+                    }
+                  }
+                })
+              } else {
+                console.log('  - No items in this order')
+              }
+            })
+            
+            const sellers = Array.from(sellersMap.values())
+            console.log('\n=== SELLER EXTRACTION RESULTS ===')
+            console.log('Total items processed:', totalItems)
+            console.log('Items with products:', itemsWithProducts)
+            console.log('Products with users:', productsWithUsers)
+            console.log('Unique sellers found:', sellers.length)
+            console.log('Sellers Information:', sellers)
+            console.log('===================================\n')
+            
             // Filter orders that:
             // 1. Use delivery service (have deliveryCityId), OR
             // 2. Have purchase items (products that were bought, not rented)
@@ -76,10 +186,21 @@ const AdminInfoPage = () => {
               const hasRental = order.items.some((item: any) => item.isRental)
               const hasPurchase = order.items.some((item: any) => !item.isRental)
               
-              // Find seller's pickup address from order items (from User model pickupAddress field)
-              const sellerPickupAddress = order.items
+              // Find product author's (seller's) pickup address from order items
+              // Get pickupAddress from product.user (product author/seller) - from User model pickupAddress field
+              // Collect all unique seller pickup addresses
+              const sellerPickupAddresses = order.items
                 .map((item: any) => item.product?.user?.pickupAddress)
-                .find((address: string | undefined) => address) || ''
+                .filter((address: string | undefined): address is string => 
+                  address !== null && address !== undefined && address.trim() !== ''
+                )
+              
+              // Get the first valid pickup address (or combine if multiple sellers)
+              const sellerPickupAddress = sellerPickupAddresses.length > 0 
+                ? (sellerPickupAddresses.length === 1 
+                    ? sellerPickupAddresses[0] 
+                    : sellerPickupAddresses.join(', ')) // If multiple sellers, join addresses
+                : ''
               
               // Object address: prioritize pickupAddress if exists, otherwise use deliveryCity name
               const objectAddress = sellerPickupAddress 
@@ -96,6 +217,7 @@ const AdminInfoPage = () => {
                   phone: order.phone,
                   userAddress: order.address || '',
                   objectAddress: objectAddress,
+                  pickupAddress: sellerPickupAddress,
                   date: order.createdAt,
                   isRental: true,
                   isPurchase: false,
@@ -113,6 +235,7 @@ const AdminInfoPage = () => {
                   phone: order.phone,
                   userAddress: order.address || '',
                   objectAddress: objectAddress,
+                  pickupAddress: sellerPickupAddress,
                   date: order.createdAt,
                   isRental: false,
                   isPurchase: true,
@@ -154,7 +277,6 @@ const AdminInfoPage = () => {
       setSelectedIds(new Set(filtered.map(u => u.id)))
     }
   }
-
   const getFilteredUsers = () => {
     if (filter === 'RENTAL') {
       return deliveryUsers.filter(u => u.isRental)
@@ -338,7 +460,7 @@ const AdminInfoPage = () => {
                         <span className="text-sm text-black">{user.userAddress}</span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-sm text-black">{user.objectAddress}</span>
+                        <span className="text-sm text-black">{user.pickupAddress}</span>
                       </td>
                     </tr>
                   ))

@@ -18,6 +18,7 @@ interface CartItem {
   discount?: number | null
   discountDays?: number | null
   discountStartDate?: string | null
+  sellerPickupAddress?: string | null
 }
 
 interface Cart {

@@ -44,8 +44,12 @@ const CheckoutPage = () => {
 
     // Fixed pickup address (fallback)
     const defaultPickupAddress = 'ლეო დავითაშვილის ქუჩა 120, 0190 თბილისი, საქართველო'
-    // Use user's pickup address if available, otherwise use default
-    const pickupAddress = userPickupAddress || defaultPickupAddress
+    // Get seller's (product author's) pickup address from cart items
+    const sellerPickupAddress = cartItems
+      .map(item => (item as any).sellerPickupAddress)
+      .find((address: string | undefined) => address && address.trim() !== '') || null
+    // Use seller's pickup address if available, otherwise use user's, otherwise use default
+    const pickupAddress = sellerPickupAddress || userPickupAddress || defaultPickupAddress
 
     // Fetch delivery cities
     useEffect(() => {

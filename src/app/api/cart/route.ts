@@ -53,6 +53,12 @@ export async function GET(request: NextRequest) {
                 },
                 rentalPriceTiers: {
                   orderBy: { minDays: 'asc' }
+                },
+                user: {
+                  select: {
+                    id: true,
+                    pickupAddress: true
+                  }
                 }
               }
             }
@@ -84,6 +90,12 @@ export async function GET(request: NextRequest) {
                     select: {
                       url: true,
                       alt: true
+                    }
+                  },
+                  user: {
+                    select: {
+                      id: true,
+                      pickupAddress: true
                     }
                   }
                 }
@@ -117,7 +129,8 @@ export async function GET(request: NextRequest) {
         rentalDays: item.rentalDays,
         discount: discount,
         discountDays: product?.discountDays ?? null,
-        discountStartDate: product?.discountStartDate?.toISOString() ?? null
+        discountStartDate: product?.discountStartDate?.toISOString() ?? null,
+        sellerPickupAddress: item.product?.user?.pickupAddress || null
       }
     })
 
