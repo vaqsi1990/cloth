@@ -463,7 +463,7 @@ const AdminInfoPage = () => {
               onClick={() => setFilter('ALL')}
               className={`px-3 sm:px-6 py-1.5 sm:py-2 md:text-[18px] text-[16px] rounded-lg font-medium transition-colors ${
                 filter === 'ALL'
-                  ? 'bg-[#228460] text-white'
+                  ? 'bg-[#1B3729] text-white'
                   : 'bg-[#E4F0EC] text-green-700 hover:bg-green-200'
               }`}
             >
@@ -473,7 +473,7 @@ const AdminInfoPage = () => {
               onClick={() => setFilter('RENTAL')}
               className={`px-3 sm:px-6 py-1.5 sm:py-2 md:text-[18px] text-[16px] rounded-lg font-medium transition-colors ${
                 filter === 'RENTAL'
-                  ? 'bg-[#228460] text-white'
+                  ? 'bg-[#1B3729] text-white'
                   : 'bg-[#E4F0EC] text-green-700 hover:bg-green-200'
               }`}
             >
@@ -483,7 +483,7 @@ const AdminInfoPage = () => {
               onClick={() => setFilter('PURCHASE')}
               className={`px-3 sm:px-6 py-1.5 sm:py-2 md:text-[18px] text-[16px] rounded-lg font-medium transition-colors ${
                 filter === 'PURCHASE'
-                  ? 'bg-[#228460] text-white'
+                  ? 'bg-[#1B3729] text-white'
                   : 'bg-[#E4F0EC] text-green-700 hover:bg-green-200'
               }`}
             >

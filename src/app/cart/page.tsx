@@ -129,7 +129,7 @@ const CartPage = () => {
                                                                 ₾{item.price.toFixed(2)}
                                                             </span>
                                                         </div>
-                                                        <div className="bg-[#228460] rounded-md text-[#FFFFFF] font-regular flex items-center px-2 py-1 w-fit">
+                                                        <div className="bg-[#1B3729] rounded-md text-[#FFFFFF] font-regular flex items-center px-2 py-1 w-fit">
                                                             <span className="text-xs whitespace-nowrap">დანაზოგი: ₾{item.discount.toFixed(2)}</span>
                                                             {item.discountDays && (
                                                                 <span className="bg-white text-black px-2 py-1 rounded ml-2 text-xs whitespace-nowrap">{item.discountDays} დღე</span>

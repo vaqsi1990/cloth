@@ -1490,7 +1490,7 @@ const ShopPageClient = () => {
                                             </div>
 
                                             {product.discount && product.discount > 0 && (
-                                                <div className="bg-[#228460] rounded-md text-[#FFFFFF] font-regular flex items-center">
+                                                <div className="bg-[#1B3729] rounded-md text-[#FFFFFF] font-regular flex items-center">
 
                                                 <div className='px-2 py-1 text-[15px] flex flex-col md:flex-row items-center gap-2 flex-1'>
                                                     <span className='whitespace-nowrap'>დანაზოგი: ₾{product.discount.toFixed(2)}</span>
@@ -1533,7 +1533,7 @@ const ShopPageClient = () => {
                                 </p>
                                 <button
                                     onClick={clearFilters}
-                                    className="px-6 py-3 bg-[#1B3729] text-white rounded-lg font-medium hover:bg-[#228460] transition-colors md:text-[18px] text-[16px]"
+                                    className="px-6 py-3 bg-[#1B3729] text-white rounded-lg font-medium hover:bg-[#1B3729] transition-colors md:text-[18px] text-[16px]"
                                 >
                                     ფილტრების წაშლა
                                 </button>

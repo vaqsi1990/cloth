@@ -197,7 +197,7 @@ const AuthorPage = () => {
 
                                          
                                             {product.discount && product.discount > 0 && (
-                                                <div className="bg-[#228460]  w-full md:w-[220px] rounded-md text-[#FFFFFF] font-regular flex items-center">
+                                                <div className="bg-[#1B3729]  w-full md:w-[220px] rounded-md text-[#FFFFFF] font-regular flex items-center">
 
                                                 <div className='px-2 py-1 w-full md:w-[220px] text-[15px] flex flex-col md:flex-row items-center gap-2 flex-1'>
                                                     <span className='whitespace-nowrap'>დანაზოგი: ₾{product.discount.toFixed(2)}</span>

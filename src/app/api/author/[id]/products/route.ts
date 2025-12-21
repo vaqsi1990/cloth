@@ -6,13 +6,19 @@ import { checkAndClearExpiredDiscounts, processExpiredDiscount } from '@/utils/d
 
 // Helper function to build product query
 const buildProductQuery = (userId: string, isAdmin: boolean) => {
-  const whereClause: any = { userId }
+  const whereClause: any = { 
+    userId,
+    // RESERVED products are hidden from everyone, including admins
+    status: {
+      notIn: ['RESERVED'] // Hide sold products from all users
+    }
+  }
   
   if (!isAdmin) {
     whereClause.user = { blocked: false }
     whereClause.approvalStatus = 'APPROVED'
     whereClause.status = {
-      notIn: ['MAINTENANCE', 'DAMAGED', 'RESERVED'] // Hide sold products (RESERVED) from public listings
+      notIn: ['MAINTENANCE', 'DAMAGED', 'RESERVED'] // Non-admin users don't see maintenance or damaged products
     }
   }
   

@@ -1122,7 +1122,7 @@ const ProductPage = () => {
                                                                 ₾{selectedPrice.toFixed(2)}
                                                             </span>
                                                         </div>
-                                                        <div className="bg-[#228460] rounded-md text-[#FFFFFF] font-regular flex items-center px-2 py-1">
+                                                        <div className="bg-[#1B3729] rounded-md text-[#FFFFFF] font-regular flex items-center px-2 py-1">
                                                             <span className="text-sm whitespace-nowrap">დანაზოგი: ₾{product.discount.toFixed(2)}</span>
                                                             {product.discountDays && (
                                                                 <span className="bg-white text-black px-2 py-1 rounded ml-2 text-sm whitespace-nowrap">{product.discountDays} დღე</span>
@@ -1929,7 +1929,7 @@ const ProductPage = () => {
                                         >
                                             <div
                                                 className={`max-w-[75%] rounded-lg px-4 py-2 ${isFromAuthor
-                                                        ? 'bg-[#228460] text-white'
+                                                        ? 'bg-[#1B3729] text-white'
                                                         : 'bg-white text-black border border-gray-200'
                                                     }`}
                                             >

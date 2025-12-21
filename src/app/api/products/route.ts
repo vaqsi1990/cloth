@@ -88,17 +88,19 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search')?.trim()
     
     // Show products based on status
-    // All users see AVAILABLE and RENTED products
-    // RESERVED products are hidden (used for sold products)
+    // RESERVED products are hidden from everyone (used for sold products)
     // MAINTENANCE and DAMAGED products are hidden from non-admin users
     const isAdmin = session?.user?.role === 'ADMIN'
     
     const products = await prisma.product.findMany({
       where: {
+        // RESERVED products are hidden from everyone, including admins (sold products)
+        status: {
+          notIn: isAdmin 
+            ? ['RESERVED'] // Admins don't see RESERVED (sold) products
+            : ['MAINTENANCE', 'DAMAGED', 'RESERVED'] // Non-admin users don't see maintenance, damaged, or reserved (sold) products
+        },
         ...(isAdmin ? {} : { 
-          status: {
-            notIn: ['MAINTENANCE', 'DAMAGED', 'RESERVED'] // Non-admin users don't see maintenance, damaged, or reserved (sold) products
-          },
           approvalStatus: 'APPROVED',
           user: {
             blocked: false
@@ -171,15 +173,18 @@ export async function GET(request: NextRequest) {
       // Re-fetch products to get updated data
       const updatedProducts = await prisma.product.findMany({
         where: {
-        ...(isAdmin ? {} : { 
+          // RESERVED products are hidden from everyone, including admins (sold products)
           status: {
-            notIn: ['MAINTENANCE', 'DAMAGED', 'RESERVED'] // Non-admin users don't see maintenance, damaged, or reserved (sold) products
+            notIn: isAdmin 
+              ? ['RESERVED'] // Admins don't see RESERVED (sold) products
+              : ['MAINTENANCE', 'DAMAGED', 'RESERVED'] // Non-admin users don't see maintenance, damaged, or reserved (sold) products
           },
-          approvalStatus: 'APPROVED',
-          user: {
-            blocked: false
-          }
-        }),
+          ...(isAdmin ? {} : { 
+            approvalStatus: 'APPROVED',
+            user: {
+              blocked: false
+            }
+          }),
           ...(search ? {
             OR: [
               { name: { contains: search, mode: 'insensitive' } },

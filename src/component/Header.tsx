@@ -156,7 +156,7 @@ const HeaderContent = () => {
   }
 
   return (
-    <header className="bg-[#228460] text-gray-900 shadow-sm  top-0 z-50">
+    <header className=" bg-[#1B3729] text-gray-900 shadow-sm  top-0 z-50">
       <div className="container max-w-7xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between gap-4">
           {/* --- Logo --- */}
@@ -483,7 +483,7 @@ const HeaderContent = () => {
 
       {/* --- Category Navigation Bar --- */}
       {/* --- Category Navigation Bar (DESKTOP styled like image) --- */}
-      <div className="bg-[#228460] shadow-md hidden lg:block relative">
+      <div className=" bg-[#1B3729] shadow-md hidden lg:block relative">
         <div className="container mx-auto px-6">
           <nav className="flex  items-center justify-center gap-10">
             <div className="h-9 w-[2px] bg-white/50"></div>
