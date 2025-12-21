@@ -50,22 +50,22 @@ const productSchema = z.object({
   maxRentalDays: z.number().optional(),
   status: z.enum(['AVAILABLE', 'RENTED', 'RESERVED', 'MAINTENANCE', 'DAMAGED']).default('AVAILABLE'),
   variants: z.array(z.object({
-    size: z.preprocess(
-      (val) => (val === '' || val === null ? undefined : val),
-      z.string().optional()
-    ),
-    price: z.number().min(0, 'ფასი უნდა იყოს დადებითი'),
-    sizeSystem: z.enum(['EU', 'US', 'UK', 'CN']).optional()
+    price: z.number().min(0, 'ფასი უნდა იყოს დადებითი')
   })).default([]),
   imageUrls: z.array(z.string().min(1, 'URL აუცილებელია')).default([]),
   rentalPriceTiers: z.preprocess(
     (val) => {
-      // If it's an array with all pricePerDay = 0, convert to undefined
-      if (Array.isArray(val) && val.length > 0) {
+      // If it's an array with all pricePerDay = 0, convert to empty array (to clear tiers)
+      // Empty arrays are kept as-is (to clear all tiers)
+      // undefined means don't update tiers
+      if (Array.isArray(val)) {
+        if (val.length === 0) {
+          return [] // Empty array means clear all tiers
+        }
         const hasValidPrice = val.some((tier: any) => tier?.pricePerDay > 0)
-        return hasValidPrice ? val : undefined
+        return hasValidPrice ? val : [] // All prices are 0, so clear tiers
       }
-      return val
+      return val === null ? undefined : val // null becomes undefined (don't update)
     },
     z.array(z.object({
       minDays: z.number().int().min(1, 'მინიმალური დღეები უნდა იყოს დადებითი'),
@@ -254,7 +254,7 @@ export async function PUT(
 
     const shouldResetApproval = !isAdmin
 
-    // First delete existing images and variants
+    // First delete existing images, variants, and rental price tiers
     await prisma.productImage.deleteMany({
       where: { productId: productId }
     })
@@ -262,6 +262,13 @@ export async function PUT(
     await prisma.productVariant.deleteMany({
       where: { productId: productId }
     })
+
+    // Delete rental price tiers if we're updating them
+    if (validatedData.rentalPriceTiers !== undefined) {
+      await prisma.rentalPriceTier.deleteMany({
+        where: { productId: productId }
+      })
+    }
 
     // Update product with nested updates
     console.log('=== UPDATING PRODUCT ===')
@@ -338,19 +345,16 @@ export async function PUT(
           position: index
         }))
       },
-      // Create new variants (only if size is provided)
+      // Create new variants
       variants: {
-        create: validatedData.variants
-          .filter(variant => variant.size && variant.size.trim() !== '')
-          .map(variant => ({
-            size: variant.size,
-            price: variant.price,
-            sizeSystem: variant.sizeSystem || validatedData.sizeSystem
-          }))
+        create: validatedData.variants.map(variant => ({
+          price: variant.price
+        }))
       },
       // Update rental price tiers if provided
-      rentalPriceTiers: validatedData.rentalPriceTiers ? {
-        deleteMany: {}, // Delete existing tiers
+      // undefined = don't update, [] = clear all, [tiers] = replace with new tiers
+      // Note: We already deleted existing tiers above, so we just create new ones
+      rentalPriceTiers: validatedData.rentalPriceTiers !== undefined && validatedData.rentalPriceTiers.length > 0 ? {
         create: validatedData.rentalPriceTiers.map(tier => ({
           minDays: tier.minDays,
           pricePerDay: tier.pricePerDay
@@ -409,10 +413,25 @@ export async function PUT(
       }, { status: 400 })
     }
     
-    console.error('Error updating product:', error)
+    console.error('=== ERROR UPDATING PRODUCT ===')
+    console.error('Error type:', error?.constructor?.name)
+    console.error('Error message:', error instanceof Error ? error.message : String(error))
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+    console.error('Full error:', error)
+    
+    // Check for Prisma errors
+    if (error && typeof error === 'object' && 'code' in error) {
+      console.error('Prisma error code:', (error as any).code)
+      console.error('Prisma error meta:', (error as any).meta)
+    }
+    
     return NextResponse.json({
       success: false,
-      message: 'შეცდომა პროდუქტის განახლებისას'
+      message: 'შეცდომა პროდუქტის განახლებისას',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      ...(process.env.NODE_ENV === 'development' && {
+        details: error instanceof Error ? error.stack : String(error)
+      })
     }, { status: 500 })
   }
 }

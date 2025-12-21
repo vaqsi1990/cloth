@@ -282,8 +282,7 @@ const EditProductPage = () => {
             maxRentalDays: product.maxRentalDays || undefined,
             status: product.status || 'AVAILABLE',
             variants: (product.variants || []).map((variant: ProductVariant) => ({
-              ...variant,
-              sizeSystem: variant.sizeSystem ?? product.sizeSystem ?? undefined
+              price: variant.price
             })),
             imageUrls: imageUrls,
             rentalPriceTiers: product.rentalPriceTiers && product.rentalPriceTiers.length > 0 
@@ -389,7 +388,7 @@ const EditProductPage = () => {
       ...prev,
       variants: [
         ...prev.variants,
-        { size: undefined, price: 0, discount: undefined, sizeSystem: prev.sizeSystem }
+        { price: 0 }
       ]
     }))
   }

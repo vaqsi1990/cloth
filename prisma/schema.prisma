@@ -296,7 +296,6 @@ model ProductVariant {
   id        Int     @id @default(autoincrement())
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId Int
-  size      String?
   sku       String? 
   price     Float   // required price for this variant
   createdAt DateTime @default(now())

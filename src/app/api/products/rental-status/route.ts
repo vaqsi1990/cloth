@@ -102,15 +102,15 @@ export async function GET(request: NextRequest) {
       // Group rentals by variant/size for this product
       const rentalStatusBySize: { [size: string]: Array<{ startDate: string, endDate: string, status: string }> } = {}
 
-      // Add rentals for this product
+      // Add rentals for this product (grouped by variant ID)
       activeRentals
         .filter(rental => rental.productId === product.id)
         .forEach(rental => {
-          const size = rental.variant?.size || 'UNKNOWN'
-          if (!rentalStatusBySize[size]) {
-            rentalStatusBySize[size] = []
+          const variantKey = rental.variantId ? `variant_${rental.variantId}` : 'no_variant'
+          if (!rentalStatusBySize[variantKey]) {
+            rentalStatusBySize[variantKey] = []
           }
-          rentalStatusBySize[size].push({
+          rentalStatusBySize[variantKey].push({
             startDate: rental.startDate.toISOString(),
             endDate: rental.endDate.toISOString(),
             status: rental.status
@@ -123,11 +123,12 @@ export async function GET(request: NextRequest) {
           .filter(item => item.productId === product.id)
           .forEach(item => {
             if (item.isRental && item.rentalStartDate && item.rentalEndDate) {
-              const size = item.size || 'UNKNOWN'
-              if (!rentalStatusBySize[size]) {
-                rentalStatusBySize[size] = []
+              // Use product size from order item
+              const sizeKey = item.size || 'default'
+              if (!rentalStatusBySize[sizeKey]) {
+                rentalStatusBySize[sizeKey] = []
               }
-              rentalStatusBySize[size].push({
+              rentalStatusBySize[sizeKey].push({
                 startDate: item.rentalStartDate.toISOString(),
                 endDate: item.rentalEndDate.toISOString(),
                 status: order.status
@@ -136,13 +137,12 @@ export async function GET(request: NextRequest) {
           })
       })
 
-      // Create variant rental status for this product
+      // Create variant rental status for this product (using variant IDs)
       const variantRentalStatus = product.variants.map(variant => {
-        const variantSizeKey = variant.size || 'UNKNOWN'
-        const variantRentals = rentalStatusBySize[variantSizeKey] || []
+        const variantKey = `variant_${variant.id}`
+        const variantRentals = rentalStatusBySize[variantKey] || []
         return {
           variantId: variant.id,
-          size: variant.size,
           activeRentals: variantRentals,
           isAvailable: variantRentals.length === 0
         }

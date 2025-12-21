@@ -205,8 +205,8 @@ const ProductPage = () => {
                 setPurchaseMode('rent')
                 return
             }
-            if (selectedSize) {
-                const variant = product.variants?.find(v => v.size === selectedSize)
+            if (selectedSize && product.variants && product.variants.length > 0) {
+                const variant = product.variants[0] // Use first variant since they're just different prices
                 const price = variant?.price ?? 0
                 if (price === 0 && canRent) {
                     setPurchaseMode('rent')
@@ -540,27 +540,35 @@ const ProductPage = () => {
     const getMainImage = () =>
         product?.images?.[activeImage]?.url || product?.images?.[0]?.url || "/placeholder.jpg"
 
-    const getAvailableSizes = () => product?.variants?.map(v => v.size) || []
+    // Since variants no longer have size, use product size
+    const getAvailableSizes = () => product?.size ? [product.size] : []
 
-    const hasActiveRentals = (size: string) => (rentalStatus[size] || []).length > 0
+    const hasActiveRentals = (variantId: number) => {
+      const variantKey = `variant_${variantId}`
+      return (rentalStatus[variantKey] || []).length > 0
+    }
 
-    const getRentalPeriods = (size: string) => rentalStatus[size] || []
+    const getRentalPeriods = (variantId: number) => {
+      const variantKey = `variant_${variantId}`
+      return rentalStatus[variantKey] || []
+    }
 
-    const firstAvailableSize = () =>
-        product?.variants?.find(v => !hasActiveRentals(v.size))?.size || null
+    const firstAvailableVariant = () =>
+        product?.variants?.find(v => !hasActiveRentals(v.id)) || null
 
     useEffect(() => {
         if (product && !selectedSize) {
-            // First try to find a size without active rentals, otherwise just pick the first size
-            const sz = firstAvailableSize() || product.variants?.[0]?.size || product.size
+            // Use product size if available, otherwise use first variant's price
+            const sz = product.size || (product.variants?.[0] ? 'default' : '')
             if (sz) {
                 setSelectedSize(sz)
             }
         }
     }, [product, rentalStatus, selectedSize])
 
-
-    const selectedVariant = product?.variants?.find(v => v.size === selectedSize)
+    // Select variant by index (since variants are just different prices now)
+    const selectedVariantIndex = product?.variants?.length > 0 ? 0 : -1
+    const selectedVariant = product?.variants?.[selectedVariantIndex]
     const selectedPrice = selectedVariant?.price ?? 0
     const showBuyOption = Boolean(canBuyProduct && selectedSize && selectedPrice > 0)
     const rentStatusAllowed =

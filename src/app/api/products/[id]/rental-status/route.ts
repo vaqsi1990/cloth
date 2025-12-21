@@ -69,15 +69,15 @@ export async function GET(
       }
     })
 
-    // Group rentals by variant/size
-    const rentalStatusBySize: { [size: string]: Array<{ startDate: string, endDate: string, status: string }> } = {}
+    // Group rentals by variant ID
+    const rentalStatusByVariant: { [variantId: string]: Array<{ startDate: string, endDate: string, status: string }> } = {}
 
     activeRentals.forEach(rental => {
-      const size = rental.variant?.size || 'UNKNOWN'
-      if (!rentalStatusBySize[size]) {
-        rentalStatusBySize[size] = []
+      const variantId = rental.variantId ? `variant_${rental.variantId}` : 'no_variant'
+      if (!rentalStatusByVariant[variantId]) {
+        rentalStatusByVariant[variantId] = []
       }
-      rentalStatusBySize[size].push({
+      rentalStatusByVariant[variantId].push({
         startDate: rental.startDate.toISOString(),
         endDate: rental.endDate.toISOString(),
         status: rental.status
@@ -88,11 +88,12 @@ export async function GET(
     activeOrders.forEach(order => {
       order.items.forEach(item => {
         if (item.isRental && item.rentalStartDate && item.rentalEndDate) {
-          const size = item.size || 'UNKNOWN'
-          if (!rentalStatusBySize[size]) {
-            rentalStatusBySize[size] = []
+          // Use product size from order item or default
+          const sizeKey = item.size || 'default'
+          if (!rentalStatusByVariant[sizeKey]) {
+            rentalStatusByVariant[sizeKey] = []
           }
-          rentalStatusBySize[size].push({
+          rentalStatusByVariant[sizeKey].push({
             startDate: item.rentalStartDate.toISOString(),
             endDate: item.rentalEndDate.toISOString(),
             status: order.status
@@ -101,7 +102,7 @@ export async function GET(
       })
     })
 
-    // Get product variants to show all available sizes
+    // Get product variants
     const product = await prisma.product.findUnique({
       where: { id: productId },
       include: {
@@ -116,13 +117,12 @@ export async function GET(
       )
     }
 
-    // Create response with rental status for each variant
+    // Create response with rental status for each variant (using variant IDs)
     const variantRentalStatus = product.variants.map(variant => {
-      const variantSizeKey = variant.size || 'UNKNOWN'
-      const variantRentals = rentalStatusBySize[variantSizeKey] || []
+      const variantKey = `variant_${variant.id}`
+      const variantRentals = rentalStatusByVariant[variantKey] || []
       return {
         variantId: variant.id,
-        size: variant.size,
         activeRentals: variantRentals,
         isAvailable: variantRentals.length === 0
       }

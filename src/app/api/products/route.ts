@@ -39,12 +39,7 @@ const productSchema = z.object({
   maxRentalDays: z.number().optional(),
   status: z.enum(['AVAILABLE', 'RENTED', 'RESERVED', 'MAINTENANCE', 'DAMAGED']).default('AVAILABLE'),
   variants: z.array(z.object({
-    size: z.preprocess(
-      (val) => (val === '' || val === null ? undefined : val),
-      z.string().optional()
-    ),
-    price: z.number().min(0, 'ფასი უნდა იყოს დადებითი'),
-    sizeSystem: z.enum(['EU', 'US', 'UK', 'CN']).optional()
+    price: z.number().min(0, 'ფასი უნდა იყოს დადებითი')
   })).default([]),
   imageUrls: z.array(z.string().min(1, 'URL აუცილებელია')).default([]),
   rentalPriceTiers: z.preprocess(
@@ -378,13 +373,9 @@ export async function POST(request: NextRequest) {
         }))
       },
       variants: {
-        create: validatedData.variants
-          .filter(variant => variant.size && variant.size.trim() !== '')
-          .map(variant => ({
-            size: variant.size,
-            price: variant.price,
-            sizeSystem: variant.sizeSystem
-          }))
+        create: validatedData.variants.map(variant => ({
+          price: variant.price
+        }))
       },
       rentalPriceTiers: validatedData.rentalPriceTiers ? {
         create: validatedData.rentalPriceTiers.map(tier => ({

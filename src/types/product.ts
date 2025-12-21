@@ -7,10 +7,8 @@ export interface ProductImage {
 
 export interface ProductVariant {
   id: number
-  size: string
   price: number  // required price for this variant
   sku?: string
-  sizeSystem?: 'EU' | 'US' | 'UK' | 'CN'
   activeRentals?: RentalPeriod[]
   isAvailable?: boolean
 }

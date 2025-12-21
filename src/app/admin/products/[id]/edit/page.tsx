@@ -294,8 +294,7 @@ const EditProductPage = () => {
             maxRentalDays: product.maxRentalDays || undefined,
             status: product.status || 'AVAILABLE',
             variants: (product.variants || []).map((variant: ProductVariant) => ({
-              ...variant,
-              sizeSystem: variant.sizeSystem ?? product.sizeSystem ?? undefined
+              price: variant.price
             })),
             imageUrls: imageUrls,
             rentalPriceTiers: product.rentalPriceTiers && product.rentalPriceTiers.length > 0 
@@ -406,7 +405,7 @@ const EditProductPage = () => {
       ...prev,
       variants: [
         ...prev.variants,
-        { size: undefined, price: 0, sizeSystem: prev.sizeSystem }
+        { price: 0 }
       ]
     }))
   }
@@ -961,7 +960,7 @@ const EditProductPage = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                   />
                 </div>
-                <div className=" ">
+                <div className="hidden ">
                   <div>
                     <label className="block text-[20px] text-black font-medium mb-2">
                     ფასდაკლება (₾)
