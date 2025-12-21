@@ -254,11 +254,11 @@ const UserProductBySKUPage = () => {
 
                   {productData.product.variants && productData.product.variants.length > 0 && (
                     <div className="mt-4">
-                      <p className="md:text-[18px] text-[16px] font-semibold text-black mb-2">ზომები და ფასები:</p>
+                      <p className="md:text-[18px] text-[16px] font-semibold text-black mb-2">ფასები:</p>
                       <div className="flex flex-wrap gap-2">
                         {productData.product.variants.map((variant: ProductVariant) => (
                           <div key={variant.id} className="bg-gray-50 px-3 py-2 rounded border">
-                            <span className="font-semibold">{variant.size}</span> - ₾{variant.price}
+                            <span className="font-semibold">₾{variant.price}</span>
                           </div>
                         ))}
                       </div>
@@ -343,8 +343,8 @@ const UserProductBySKUPage = () => {
                                 {getRentalStatusLabel(rental.status).label}
                               </span>
                             </div>
-                            {rental.variant && (
-                              <span className="md:text-[18px] text-[16px] text-black">ზომა: {rental.variant.size}</span>
+                            {productData.product.size && (
+                              <span className="md:text-[18px] text-[16px] text-black">ზომა: {productData.product.size}</span>
                             )}
                           </div>
                           {rental.user && (

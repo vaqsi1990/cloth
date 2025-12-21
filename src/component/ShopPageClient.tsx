@@ -530,11 +530,10 @@ const ShopPageClient = () => {
                 (maxPrice >= priceRange[0] && maxPrice <= priceRange[1]) ||
                 (minPrice <= priceRange[0] && maxPrice >= priceRange[1])
 
-            // Size System filter
+            // Size System filter (variants no longer have sizeSystem, use product sizeSystem)
             const sizeSystemMatch = selectedSizeSystems.length === 0 ||
-                (product.variants && product.variants.length > 0 && product.variants.some(variant => variant.sizeSystem && selectedSizeSystems.includes(variant.sizeSystem))) ||
                 (product.sizeSystem && selectedSizeSystems.includes(product.sizeSystem)) ||
-                (!product.variants || product.variants.length === 0) && !product.sizeSystem
+                !product.sizeSystem
 
             // Color filter
             const colorMatch = selectedColors.length === 0 ||
@@ -590,11 +589,10 @@ const ShopPageClient = () => {
             (maxPrice >= priceRange[0] && maxPrice <= priceRange[1]) ||
             (minPrice <= priceRange[0] && maxPrice >= priceRange[1])
 
-        // Size System filter
+        // Size System filter (variants no longer have sizeSystem, use product sizeSystem)
         const sizeSystemMatch = selectedSizeSystems.length === 0 ||
-            (product.variants && product.variants.length > 0 && product.variants.some(variant => variant.sizeSystem && selectedSizeSystems.includes(variant.sizeSystem))) ||
             (product.sizeSystem && selectedSizeSystems.includes(product.sizeSystem)) ||
-            (!product.variants || product.variants.length === 0) && !product.sizeSystem
+            !product.sizeSystem
 
         // Color filter
         const colorMatch = selectedColors.length === 0 ||

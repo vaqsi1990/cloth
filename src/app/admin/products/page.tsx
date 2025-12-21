@@ -44,11 +44,9 @@ interface Product {
   }>
   variants?: Array<{
     id: number
-    size: string
-    stock: number
     price: number
   }>
-  rentalStatus?: {[size: string]: RentalPeriod[]}
+  rentalStatus?: {[key: string]: RentalPeriod[]}
   status?: 'AVAILABLE' | 'RENTED' | 'RESERVED' | 'MAINTENANCE' | 'DAMAGED'
   isRentable?: boolean
   pricePerDay?: number
@@ -93,9 +91,9 @@ const AdminProductsPage = () => {
               const rentalResponse = await fetch(`/api/products/${product.id}/rental-status`)
               const rentalData = await rentalResponse.json()
               if (rentalData.success) {
-                const statusMap: {[size: string]: RentalPeriod[]} = {}
-                rentalData.variants.forEach((variant: { size: string; activeRentals?: RentalPeriod[] }) => {
-                  statusMap[variant.size] = variant.activeRentals || []
+                const statusMap: {[key: string]: RentalPeriod[]} = {}
+                rentalData.variants.forEach((variant: { variantId: number; activeRentals?: RentalPeriod[] }) => {
+                  statusMap[`variant_${variant.variantId}`] = variant.activeRentals || []
                 })
                 return { ...product, rentalStatus: statusMap }
               }
