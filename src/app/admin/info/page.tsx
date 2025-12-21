@@ -443,11 +443,18 @@ const AdminInfoPage = () => {
             <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
               <Info className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
             </div>
-            <h2 className="text-sm sm:text-base md:text-[18px] lg:text-[20px] font-bold text-black">
-              <span className="hidden sm:inline">მიტანის სერვისით სარგებლობს </span>
-              <span className="sm:hidden">მიტანა: </span>
-              {filteredUsers.length} <span className="hidden sm:inline">მომხმარებელი</span>
-            </h2>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
+              <h2 className="text-sm sm:text-base md:text-[18px] lg:text-[20px] font-bold text-black">
+                <span className="hidden sm:inline">მიტანით სარგებლობს: </span>
+                <span className="sm:hidden">მიტანით: </span>
+                {filteredUsers.filter(u => u.isRental).length}
+              </h2>
+              <h2 className="text-sm sm:text-base md:text-[18px] lg:text-[20px] font-bold text-black">
+                <span className="hidden sm:inline">ყიდვით: </span>
+                <span className="sm:hidden">ყიდვით: </span>
+                {filteredUsers.filter(u => u.isPurchase).length}
+              </h2>
+            </div>
           </div>
 
           {/* Filter Buttons and Remove Button */}
