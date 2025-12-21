@@ -452,7 +452,7 @@ const AdminProductBySKUPage = () => {
                               <span className="text-gray-400">არ არის</span>
                             )}
                           </td>
-                          <td className="py-2 px-4">{rental.variant?.size || 'არ არის'}</td>
+                        
                           <td className="py-2 px-4">{formatDate(rental.startDate)}</td>
                           <td className="py-2 px-4">{formatDate(rental.endDate)}</td>
                           <td className="py-2 px-4">{rental.durationDays} დღე</td>
