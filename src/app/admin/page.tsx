@@ -13,6 +13,7 @@ import {
   User,
   MessageCircle,
   MapPin,
+  Info,
 } from 'lucide-react'
 
 // ---------------------
@@ -198,6 +199,13 @@ const AdminDashboard = () => {
       description: 'შეცვალე პროფილი და პაროლი',
       href: '/admin/settings',
       icon: User,
+      color: 'bg-gray-600',
+    },
+    {
+      title: 'შეკვეთების ინფორმაცია',
+      description: 'ნახე და მართე შეკვეთები',
+      href: '/admin/info',
+      icon: Info,
       color: 'bg-gray-600',
     },
   ]

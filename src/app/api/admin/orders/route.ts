@@ -32,6 +32,13 @@ export async function GET(request: NextRequest) {
                 },
                 rentalPriceTiers: {
                   orderBy: { minDays: 'asc' }
+                },
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    pickupAddress: true
+                  }
                 }
               }
             }
@@ -41,7 +48,16 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             name: true,
-            email: true
+            email: true,
+            image: true
+          }
+        },
+        deliveryCity: {
+          select: {
+            id: true,
+            name: true,
+            price: true,
+            isActive: true
           }
         }
       },

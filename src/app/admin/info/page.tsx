@@ -61,18 +61,33 @@ const AdminInfoPage = () => {
           const data = await response.json()
           
           if (data.success && data.orders) {
-            // Filter orders that use delivery service (have deliveryCityId)
-            const deliveryOrders = data.orders.filter((order: any) => order.deliveryCityId)
+            // Filter orders that:
+            // 1. Use delivery service (have deliveryCityId), OR
+            // 2. Have purchase items (products that were bought, not rented)
+            const relevantOrders = data.orders.filter((order: any) => {
+              const hasPurchase = order.items.some((item: any) => !item.isRental)
+              return order.deliveryCityId || hasPurchase
+            })
             
             // Transform orders into delivery users - show each order as a row
             const users: DeliveryUser[] = []
             
-            deliveryOrders.forEach((order: any) => {
+            relevantOrders.forEach((order: any) => {
               const hasRental = order.items.some((item: any) => item.isRental)
               const hasPurchase = order.items.some((item: any) => !item.isRental)
               
-              // Create entry for rental if order has rental items
-              if (hasRental) {
+              // Find seller's pickup address from order items (from User model pickupAddress field)
+              const sellerPickupAddress = order.items
+                .map((item: any) => item.product?.user?.pickupAddress)
+                .find((address: string | undefined) => address) || ''
+              
+              // Object address: prioritize pickupAddress if exists, otherwise use deliveryCity name
+              const objectAddress = sellerPickupAddress 
+                ? sellerPickupAddress
+                : (order.deliveryCity?.name || '')
+              
+              // Create entry for rental if order has rental items and uses delivery service
+              if (hasRental && order.deliveryCityId) {
                 users.push({
                   id: order.id * 10 + 1, // Unique ID for rental entries
                   orderId: order.id,
@@ -80,7 +95,7 @@ const AdminInfoPage = () => {
                   email: order.email || order.user?.email,
                   phone: order.phone,
                   userAddress: order.address || '',
-                  objectAddress: order.deliveryCity?.name || '',
+                  objectAddress: objectAddress,
                   date: order.createdAt,
                   isRental: true,
                   isPurchase: false,
@@ -97,7 +112,7 @@ const AdminInfoPage = () => {
                   email: order.email || order.user?.email,
                   phone: order.phone,
                   userAddress: order.address || '',
-                  objectAddress: order.deliveryCity?.name || '',
+                  objectAddress: objectAddress,
                   date: order.createdAt,
                   isRental: false,
                   isPurchase: true,
