@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
-import { removePurchasedProducts } from '@/utils/removePurchasedProducts'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
@@ -240,10 +239,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Remove sold products from inventory
-    if (soldProductIds.length > 0) {
-      await removePurchasedProducts(soldProductIds, { orderId: newOrder.id })
-    }
+    // Note: Products are no longer deleted after purchase - they remain in the system
+    // Update product status to indicate they are sold (if needed in the future)
+    // if (soldProductIds.length > 0) {
+    //   // Could update status here if SOLD status is added to ProductStatus enum
+    // }
     
     return NextResponse.json({
       success: true,
