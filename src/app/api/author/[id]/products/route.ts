@@ -11,6 +11,9 @@ const buildProductQuery = (userId: string, isAdmin: boolean) => {
   if (!isAdmin) {
     whereClause.user = { blocked: false }
     whereClause.approvalStatus = 'APPROVED'
+    whereClause.status = {
+      notIn: ['MAINTENANCE', 'DAMAGED', 'RESERVED'] // Hide sold products (RESERVED) from public listings
+    }
   }
   
   return {

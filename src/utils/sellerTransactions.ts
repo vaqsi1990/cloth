@@ -89,14 +89,24 @@ export async function recordSellerTransactions(orderId: number) {
     await checkAndBlockUser(entry.userId)
   }
 
-  // Note: Products are no longer deleted after purchase - they remain in the system
-  // const soldProductIds = order.items
-  //   .filter((item) => !item.isRental && typeof item.productId === 'number')
-  //   .map((item) => item.productId as number)
+  // Hide sold products by marking them as RESERVED (they remain in database but are hidden from listings)
+  const soldProductIds = order.items
+    .filter((item) => !item.isRental && typeof item.productId === 'number')
+    .map((item) => item.productId as number)
 
-  // if (soldProductIds.length) {
-  //   await removePurchasedProducts(soldProductIds, { orderId: order.id })
-  // }
+  if (soldProductIds.length > 0) {
+    await Promise.all(
+      soldProductIds.map(productId =>
+        prisma.product.update({
+          where: { id: productId },
+          data: { status: 'RESERVED' } // Mark as RESERVED to hide from public listings
+        }).catch(error => {
+          console.error(`Error updating product ${productId} status to RESERVED:`, error)
+          return null
+        })
+      )
+    )
+  }
 }
 
 

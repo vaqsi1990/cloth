@@ -88,7 +88,8 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search')?.trim()
     
     // Show products based on status
-    // All users see AVAILABLE, RENTED, and RESERVED products
+    // All users see AVAILABLE and RENTED products
+    // RESERVED products are hidden (used for sold products)
     // MAINTENANCE and DAMAGED products are hidden from non-admin users
     const isAdmin = session?.user?.role === 'ADMIN'
     
@@ -96,7 +97,7 @@ export async function GET(request: NextRequest) {
       where: {
         ...(isAdmin ? {} : { 
           status: {
-            notIn: ['MAINTENANCE', 'DAMAGED'] // Non-admin users don't see maintenance or damaged products
+            notIn: ['MAINTENANCE', 'DAMAGED', 'RESERVED'] // Non-admin users don't see maintenance, damaged, or reserved (sold) products
           },
           approvalStatus: 'APPROVED',
           user: {
@@ -170,15 +171,15 @@ export async function GET(request: NextRequest) {
       // Re-fetch products to get updated data
       const updatedProducts = await prisma.product.findMany({
         where: {
-          ...(isAdmin ? {} : { 
-            status: {
-              notIn: ['MAINTENANCE', 'DAMAGED']
-            },
-            approvalStatus: 'APPROVED',
-            user: {
-              blocked: false
-            }
-          }),
+        ...(isAdmin ? {} : { 
+          status: {
+            notIn: ['MAINTENANCE', 'DAMAGED', 'RESERVED'] // Non-admin users don't see maintenance, damaged, or reserved (sold) products
+          },
+          approvalStatus: 'APPROVED',
+          user: {
+            blocked: false
+          }
+        }),
           ...(search ? {
             OR: [
               { name: { contains: search, mode: 'insensitive' } },

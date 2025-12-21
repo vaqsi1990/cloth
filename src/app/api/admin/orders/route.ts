@@ -16,6 +16,9 @@ export async function GET(request: NextRequest) {
     }
 
     const orders = await prisma.order.findMany({
+      where: {
+        status: 'PAID' // Only show PAID orders
+      },
       include: {
         items: {
           include: {
@@ -53,7 +56,9 @@ export async function GET(request: NextRequest) {
             id: true,
             name: true,
             email: true,
-            image: true
+            image: true,
+            address: true,
+            location: true // ადგილმდებარეობა
           }
         },
         deliveryCity: {

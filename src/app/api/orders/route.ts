@@ -239,11 +239,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Note: Products are no longer deleted after purchase - they remain in the system
-    // Update product status to indicate they are sold (if needed in the future)
-    // if (soldProductIds.length > 0) {
-    //   // Could update status here if SOLD status is added to ProductStatus enum
-    // }
+    // Note: Products will be hidden (marked as RESERVED) when order is paid, not when order is created
+    // This happens in recordSellerTransactions() which is called from payment-callback route
     
     return NextResponse.json({
       success: true,

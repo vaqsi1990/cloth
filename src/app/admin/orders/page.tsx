@@ -224,7 +224,7 @@ const AdminOrdersPage = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
+          <h1 className="text-2xl font-bold text-black mb-4">Access Denied</h1>
           <p className="text-black mb-6">You don&apos;t have permission to access this page.</p>
           <Link
             href="/"
@@ -247,13 +247,13 @@ const AdminOrdersPage = () => {
               <button
                 type="button"
                 onClick={() => router.back()}
-                className="flex items-center space-x-2 text-black hover:text-gray-900 transition-colors"
+                className="flex items-center space-x-2 text-black hover:text-black transition-colors"
               >
                 <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                 <span className="text-sm sm:text-base">ადმინ პანელი</span>
               </button>
               <div>
-                <h1 className="text-lg sm:text-xl md:text-[24px] font-bold text-gray-900">შეკვეთების მართვა</h1>
+                <h1 className="text-lg sm:text-xl md:text-[24px] font-bold text-black">შეკვეთების მართვა</h1>
                 <p className="text-xs sm:text-sm text-black mt-1">მართე ყველა შეკვეთა</p>
               </div>
             </div>
@@ -299,7 +299,7 @@ const AdminOrdersPage = () => {
         {/* Orders List */}
         <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-4 sm:mb-6">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-900">
+            <h2 className="text-lg sm:text-xl font-bold text-black">
               შეკვეთები ({filteredOrders.length})
             </h2>
           </div>
@@ -307,7 +307,7 @@ const AdminOrdersPage = () => {
           {filteredOrders.length === 0 ? (
             <div className="text-center py-8 sm:py-12">
               <ShoppingCart className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-3 sm:mb-4" />
-              <p className="text-sm sm:text-base text-black mb-4">
+              <p className="md:text-[18px] text-[16px] text-black mb-4">
                 {searchTerm || filterStatus !== 'ALL'
                   ? 'ფილტრის შედეგები ვერ მოიძებნა'
                   : 'ჯერ არ არის შეკვეთები'
@@ -326,7 +326,7 @@ const AdminOrdersPage = () => {
                       </div>
                       <div className="min-w-0">
                         <h3 className="font-semibold text-sm sm:text-base text-gray-900">შეკვეთა #{order.id}</h3>
-                        <p className="text-xs sm:text-sm text-black">
+                        <p className="md:text-[18px] text-[16px] text-black">
                           {formatDate(order.createdAt)}
                         </p>
                       </div>
@@ -343,7 +343,7 @@ const AdminOrdersPage = () => {
                           ქირაობა
                         </span>
                       )}
-                      <span className="text-base sm:text-lg font-bold text-gray-900 whitespace-nowrap">₾{order.total}</span>
+                      <span className="text-base sm:text-lg font-bold text-black whitespace-nowrap">₾{order.total}</span>
                       <button
                         onClick={() => toggleOrderExpansion(order.id)}
                         className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
@@ -364,7 +364,7 @@ const AdminOrdersPage = () => {
                       {/* Customer Info */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-3 sm:mb-4">
                         <div className="space-y-2">
-                          <div className="flex items-start sm:items-center space-x-2 text-xs sm:text-sm text-black">
+                          <div className="flex items-start font-bold sm:items-center space-x-2 md:text-[18px] text-[16px] text-black">
                             <User className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0 mt-0.5 sm:mt-0" />
                             <span className="break-words">{order.customerName}</span>
                           </div>
@@ -394,7 +394,7 @@ const AdminOrdersPage = () => {
 
                       {/* Order Items */}
                       <div className="mb-3 sm:mb-4">
-                        <h2 className="font-medium text-sm sm:text-base text-gray-900 mb-2">შეკვეთის პროდუქტები:</h2>
+                        <h2 className="font-medium text-sm sm:text-base text-black mb-2">შეკვეთის პროდუქტები:</h2>
                         <div className="space-y-2">
                           {order.items.map((item) => (
                             <div key={item.id} className={`flex items-start sm:items-center gap-2 sm:gap-3 p-2 rounded-lg ${item.isRental ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50'}`}>
@@ -403,7 +403,7 @@ const AdminOrdersPage = () => {
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex flex-wrap items-center gap-2">
-                                  <p className="text-xs sm:text-sm font-medium text-gray-900 break-words">{item.product?.name || item.productName || 'პროდუქტი ვერ მოიძებნა'}</p>
+                                  <p className="text-xs sm:text-sm font-medium text-black break-words">{item.product?.name || item.productName || 'პროდუქტი ვერ მოიძებნა'}</p>
                                   {item.isRental && (
                                     <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full whitespace-nowrap">
                                       ქირაობა
@@ -419,7 +419,7 @@ const AdminOrdersPage = () => {
                                   </div>
                                 )}
                               </div>
-                              <span className="text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap flex-shrink-0">₾{item.price}</span>
+                              <span className="text-xs sm:text-sm font-medium text-black whitespace-nowrap flex-shrink-0">₾{item.price}</span>
                             </div>
                           ))}
                         </div>
@@ -427,7 +427,7 @@ const AdminOrdersPage = () => {
 
                       {/* Order Summary */}
                       <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-gray-50 rounded-lg">
-                        <h4 className="font-medium text-xs sm:text-sm text-gray-900 mb-2">შეკვეთის შეჯამება:</h4>
+                        <h4 className="font-medium text-xs sm:text-sm text-black mb-2">შეკვეთის შეჯამება:</h4>
                         <div className="space-y-1 text-xs sm:text-sm">
                           <div className="flex justify-between">
                             <span className="text-black">ყიდვის ნივთები:</span>
@@ -462,7 +462,7 @@ const AdminOrdersPage = () => {
                         </div>
                         
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs text-black">
                             განახლდა: {formatDate(order.updatedAt)}
                           </span>
                           <button
