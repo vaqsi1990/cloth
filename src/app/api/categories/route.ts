@@ -8,9 +8,19 @@ export async function GET(request: NextRequest) {
       orderBy: { name: 'asc' }
     })
 
+    // Remove duplicates by id (in case of any data inconsistencies)
+    const uniqueCategories = categories.filter((category, index, self) =>
+      index === self.findIndex((c) => c.id === category.id)
+    )
+
+    // Also remove duplicates by name (in case same name exists with different ids)
+    const deduplicatedCategories = uniqueCategories.filter((category, index, self) =>
+      index === self.findIndex((c) => c.name.toLowerCase().trim() === category.name.toLowerCase().trim())
+    )
+
     return NextResponse.json({
       success: true,
-      categories: categories
+      categories: deduplicatedCategories
     })
     
   } catch (error) {

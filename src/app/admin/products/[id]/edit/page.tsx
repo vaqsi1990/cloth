@@ -268,8 +268,16 @@ const EditProductPage = () => {
       const data = await response.json()
       console.log('Categories response:', data)
       if (data.success && data.categories && data.categories.length > 0) {
-        setCategories(data.categories)
-        console.log('Categories set successfully:', data.categories)
+        // Remove duplicates by id
+        const uniqueById = data.categories.filter((category: { id: number }, index: number, self: { id: number }[]) =>
+          index === self.findIndex((c) => c.id === category.id)
+        )
+        // Remove duplicates by name (case-insensitive)
+        const uniqueCategories = uniqueById.filter((category: { name: string }, index: number, self: { name: string }[]) =>
+          index === self.findIndex((c) => c.name.toLowerCase().trim() === category.name.toLowerCase().trim())
+        )
+        setCategories(uniqueCategories)
+        console.log('Categories set successfully:', uniqueCategories)
       } else {
         // Use default categories if API returns empty or fails
         setCategories(defaultCategories)

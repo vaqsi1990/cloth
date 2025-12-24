@@ -127,6 +127,7 @@ export async function GET(request: NextRequest) {
                   category === 'BOTTOMS' ? 'bottoms' :
                   category === 'OUTERWEAR' ? 'outerwear' :
                   category === 'ACCESSORIES' ? 'accessories' : category } },
+            { category: { name: { equals: category, mode: 'insensitive' } } },
             { category: { name: { contains: category, mode: 'insensitive' } } }
           ]
         } : {}),

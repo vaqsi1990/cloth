@@ -528,7 +528,7 @@ const HeaderContent = () => {
                               <Link href="/shop?gender=women&category=კაბები" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
                                 2. ქალების კაბები
                               </Link>
-                              <Link href="/shop?gender=women" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
+                              <Link href="/shop?gender=women&category=ქალების ორ ნაწილად შეკრული კომპლექტები" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
                                 3. ქალების ორ ნაწილად შეკრული კომპლექტები
                               </Link>
                               <Link href="/shop?gender=women&category=შარვლები" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
@@ -544,19 +544,28 @@ const HeaderContent = () => {
                                 7. ქალების საქორწინო & სადღესასწაულო ტანსაცმელი
                               </Link>
                               <Link href="/shop?gender=women&category=სათხილამურო ქურთუკი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                8. სათხილამურო ტანსაცმელი
+                                8. სათხილამურო ქურთუკი
+                              </Link>
+                              <Link href="/shop?gender=women&category=სათხილამურო ტანსაცმელი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
+                                9. სათხილამურო ტანსაცმელი
                               </Link>
                               <Link href="/shop?gender=women&category=სათვალე" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                9. სათხილამურო სათვალე
+                                10. სათვალე
+                              </Link>
+                              <Link href="/shop?gender=women&category=სათხილამურო სათვალე" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
+                                11. სათხილამურო სათვალე
                               </Link>
                               <Link href="/shop?gender=women&category=ჩაფხუტი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                10. ჩაფხუტი
+                                12. ჩაფხუტი
                               </Link>
                               <Link href="/shop?gender=women&category=ტრადიციული ტანსაცმელი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                11. ქალების ტრადიციული & კულტურული ტანსაცმელი
+                                13. ტრადიციული ტანსაცმელი
+                              </Link>
+                              <Link href="/shop?gender=women&category=ტრადიციული და კულტურული ტანსაცმელი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
+                                14. ტრადიციული და კულტურული ტანსაცმელი
                               </Link>
                               <Link href="/shop?gender=women&category=ქოსფლეის კოსტუმები" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                12. ქალების კოსფლეის კოსტიუმები
+                                15. ქოსფლეის კოსტუმები
                               </Link>
                             </>
                           )}
@@ -569,16 +578,25 @@ const HeaderContent = () => {
                                 2. პიჯაკი
                               </Link>
                               <Link href="/shop?gender=men&category=ტრადიციული ტანსაცმელი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                3. ტრადიციული და კულტურული ტანსაცმელი
+                                3. ტრადიციული ტანსაცმელი
+                              </Link>
+                              <Link href="/shop?gender=men&category=ტრადიციული და კულტურული ტანსაცმელი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
+                                4. ტრადიციული და კულტურული ტანსაცმელი
                               </Link>
                               <Link href="/shop?gender=men&category=სათხილამურო ქურთუკი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                4. სათხილამურო ტანსაცმელი
+                                5. სათხილამურო ქურთუკი
+                              </Link>
+                              <Link href="/shop?gender=men&category=სათხილამურო ტანსაცმელი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
+                                6. სათხილამურო ტანსაცმელი
                               </Link>
                               <Link href="/shop?gender=men&category=სათვალე" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                5. სათხილამურო სათვალე
+                                7. სათვალე
+                              </Link>
+                              <Link href="/shop?gender=men&category=სათხილამურო სათვალე" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
+                                8. სათხილამურო სათვალე
                               </Link>
                               <Link href="/shop?gender=men&category=ჩაფხუტი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                6. ჩაფხუტი
+                                9. ჩაფხუტი
                               </Link>
                             </>
                           )}
@@ -588,19 +606,22 @@ const HeaderContent = () => {
                                 1. კაბები
                               </Link>
                               <Link href="/shop?gender=children&category=ბავშვთა ტრადიციული ტანსაცმელი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                2. ტრადიციული და კულტურული ტანსაცმელი
+                                2. ბავშვთა ტრადიციული ტანსაცმელი
                               </Link>
                               <Link href="/shop?gender=children&category=ბავშვთა სათხილამურო ტანსაცმელი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
                                 3. სათხილამურო ტანსაცმელი
                               </Link>
                               <Link href="/shop?gender=children&category=თერმო ტანსაცმელი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                4. მეორე ფენა
+                                4. თერმო ტანსაცმელი
+                              </Link>
+                              <Link href="/shop?gender=children&category=მეორე ფენა" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
+                                5. მეორე ფენა
                               </Link>
                               <Link href="/shop?gender=children&category=სათვალე" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                5. სათხილამურო სათვალე
+                                6. სათხილამურო სათვალე
                               </Link>
                               <Link href="/shop?gender=children&category=ჩაფხუტი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                6. ჩაფხუტი
+                                7. ჩაფხუტი
                               </Link>
                             </>
                           )}
