@@ -21,26 +21,26 @@ const sizeOptions = {
 const FALLBACK_SIZE = 'STANDARD'
 const purposes = PURPOSE_OPTIONS
 const categories = [
-  { id: 1, name: 'კაბები', slug: 'dresses' },
-  { id: 2, name: 'ბლუზები', slug: 'tops' },
-  { id: 3, name: 'შარვლები', slug: 'pants' },
-  { id: 4, name: 'ქვედაბოლოები', slug: 'skirts' },
-  { id: 5, name: 'ზედა ტანსაცმელი', slug: 'outerwear' },
-  { id: 6, name: 'პალტოები და მოსასხამი', slug: 'coats' },
-  { id: 7, name: 'საქორწინო კაბები', slug: 'wedding-dresses' },
-  { id: 8, name: 'საღამოს ტანსაცმელი', slug: 'evening-wear' },
-  { id: 9, name: 'სათხილამურო ქურთუკი', slug: 'ski-jacket' },
-  { id: 10, name: 'თერმო ტანსაცმელი', slug: 'thermal-wear' },
-  { id: 11, name: 'სათვალე', slug: 'goggles' },
-  { id: 12, name: 'ჩაფხუტი', slug: 'helmet' },
-  { id: 13, name: 'ტრადიციული ტანსაცმელი', slug: 'traditional' },
-  { id: 14, name: 'ქოსფლეის კოსტუმები', slug: 'cosplay' },
-  { id: 15, name: 'შარვალ კოსტუმი', slug: 'suit' },
-  { id: 16, name: 'პიჯაკი', slug: 'blazer' },
-  { id: 17, name: 'აქსესუარები', slug: 'accessories' },
-  { id: 18, name: 'ბავშვთა კაბები', slug: 'kids-dresses' },
-  { id: 19, name: 'ბავშვთა ტრადიციული ტანსაცმელი', slug: 'kids-traditional' },
-  { id: 20, name: 'ბავშვთა სათხილამურო ტანსაცმელი', slug: 'kids-ski' },
+  // ქალების კატეგორიები
+  { id: 1, name: 'პალტოები და მოსასხამი', slug: 'paltoebi-da-mosaskhami' },
+  { id: 2, name: 'კაბები', slug: 'kabebi' },
+  { id: 3, name: 'შარვლები', slug: 'sharvlebi' },
+  { id: 4, name: 'ქვედაბოლოები', slug: 'kvedabolobebi' },
+  { id: 5, name: 'ქალების კოსტუმი', slug: 'kalta-kostumi' },
+  { id: 6, name: 'საქორწინო კაბები', slug: 'sakortsino-kabebi' },
+  { id: 7, name: 'სათხილამურო ქურთუკი', slug: 'sathilamuro-qurtuki' },
+  { id: 8, name: 'სათვალე', slug: 'satvale' },
+  { id: 9, name: 'ჩაფხუტი', slug: 'chapkhuti' },
+  { id: 10, name: 'ტრადიციული ტანსაცმელი', slug: 'traditsiuli-tansatsmeli' },
+  { id: 11, name: 'ქოსფლეის კოსტუმები', slug: 'qospleis-kostumebi' },
+  // მამაკაცების კატეგორიები
+  { id: 12, name: 'შარვალ კოსტუმი', slug: 'sharval-kostumi' },
+  { id: 13, name: 'პიჯაკი', slug: 'pijaki' },
+  // ბავშვების კატეგორიები
+  { id: 14, name: 'ბავშვთა კაბები', slug: 'bavshvta-kabebi' },
+  { id: 15, name: 'ბავშვთა ტრადიციული ტანსაცმელი', slug: 'bavshvta-traditsiuli-tansatsmeli' },
+  { id: 16, name: 'ბავშვთა სათხილამურო ტანსაცმელი', slug: 'bavshvta-sathilamuro-tansatsmeli' },
+  { id: 17, name: 'თერმო ტანსაცმელი', slug: 'termo-tansatsmeli' },
 ]
 
 const productSchema = z.object({
