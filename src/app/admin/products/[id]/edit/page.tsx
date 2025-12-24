@@ -75,6 +75,35 @@ const productSchema = z.object({
 
 const purposes = PURPOSE_OPTIONS
 
+// Default categories list (fallback if API fails)
+const defaultCategories = [
+  // ქალების კატეგორიები
+  { id: 1, name: 'პალტოები და მოსასხამი', slug: 'paltoebi-da-mosaskhami' },
+  { id: 2, name: 'კაბები', slug: 'kabebi' },
+  { id: 3, name: 'ქალების ორ ნაწილად შეკრული კომპლექტები', slug: 'kalta-or-natsilad-shekruli-kompleqtebi' },
+  { id: 4, name: 'შარვლები', slug: 'sharvlebi' },
+  { id: 5, name: 'ქვედაბოლოები', slug: 'kvedabolobebi' },
+  { id: 6, name: 'ქალების კოსტუმი', slug: 'kalta-kostumi' },
+  { id: 7, name: 'საქორწინო კაბები', slug: 'sakortsino-kabebi' },
+  { id: 8, name: 'სათხილამურო ქურთუკი', slug: 'sathilamuro-qurtuki' },
+  { id: 9, name: 'სათხილამურო ტანსაცმელი', slug: 'sathilamuro-tansatsmeli' },
+  { id: 10, name: 'სათვალე', slug: 'satvale' },
+  { id: 11, name: 'სათხილამურო სათვალე', slug: 'sathilamuro-satvale' },
+  { id: 12, name: 'ჩაფხუტი', slug: 'chapkhuti' },
+  { id: 13, name: 'ტრადიციული ტანსაცმელი', slug: 'traditsiuli-tansatsmeli' },
+  { id: 14, name: 'ტრადიციული და კულტურული ტანსაცმელი', slug: 'traditsiuli-da-kulturuli-tansatsmeli' },
+  { id: 15, name: 'ქოსფლეის კოსტუმები', slug: 'qospleis-kostumebi' },
+  // მამაკაცების კატეგორიები
+  { id: 16, name: 'შარვალ კოსტუმი', slug: 'sharval-kostumi' },
+  { id: 17, name: 'პიჯაკი', slug: 'pijaki' },
+  // ბავშვების კატეგორიები
+  { id: 18, name: 'ბავშვთა კაბები', slug: 'bavshvta-kabebi' },
+  { id: 19, name: 'ბავშვთა ტრადიციული ტანსაცმელი', slug: 'bavshvta-traditsiuli-tansatsmeli' },
+  { id: 20, name: 'ბავშვთა სათხილამურო ტანსაცმელი', slug: 'bavshvta-sathilamuro-tansatsmeli' },
+  { id: 21, name: 'თერმო ტანსაცმელი', slug: 'termo-tansatsmeli' },
+  { id: 22, name: 'მეორე ფენა', slug: 'meore-pena' },
+]
+
 type ProductFormData = z.infer<typeof productSchema>
 
 const EditProductPage = () => {
@@ -238,12 +267,18 @@ const EditProductPage = () => {
       const response = await fetch('/api/categories')
       const data = await response.json()
       console.log('Categories response:', data)
-      if (data.success) {
+      if (data.success && data.categories && data.categories.length > 0) {
         setCategories(data.categories)
         console.log('Categories set successfully:', data.categories)
+      } else {
+        // Use default categories if API returns empty or fails
+        setCategories(defaultCategories)
+        console.log('Using default categories')
       }
     } catch (error) {
       console.error('Error fetching categories:', error)
+      // Use default categories on error
+      setCategories(defaultCategories)
     }
   }
 
