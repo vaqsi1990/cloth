@@ -13,7 +13,7 @@ const Footer = () => {
 
             {/* Logo & Company Info */}
             <div className="space-y-6 flex flex-col items-center md:items-start max-w-sm">
-              <div className="group  mx-auto cursor-pointer">
+              <div className="group   cursor-pointer">
                 <Image
                   src="/logo.jpg"
                   className="w-16 h-16 md:w-20 md:h-20 rounded-full transition-transform duration-300 group-hover:scale-110 shadow-lg"
@@ -26,7 +26,7 @@ const Footer = () => {
               <p className='text-white text-center md:text-left text-base md:text-lg leading-relaxed max-w-xs md:max-w-sm'>
                 Dressla — პლატფორმა, სადაც სხვადასხვა ბრენდი ერთ სივრცეში აერთიანებს ხარისხიან და მრავალფეროვან სტილს. მარტივი, სწრაფი და კომფორტული შოპინგი ყველასთვის.
               </p>
-              <div className="flex mx-auto items-center justify-center md:justify-start gap-4 pt-2">
+              <div className="flex  items-center justify-center md:justify-start gap-4 pt-2">
                 <Link 
                   href="#" 
                   className="text-white hover:text-blue-400 transition-all duration-300 hover:scale-110"
@@ -59,9 +59,9 @@ const Footer = () => {
             </div>
 
             {/* Navigation */}
-            <div className="space-y-4 flex flex-col items-center">
+            <div className="space-y-4 flex flex-col items-start">
               <h2 className="text-white font-bold text-[18px] font-semibold text-white mb-4">ნავიგაცია</h2>
-              <ul className="space-y-2 text-center">
+              <ul className="space-y-2 text-start">
                 <li><Link href="/" className="text-white font-normal text-[18px] transition-colors text-sm">მთავარი</Link></li>
                 <li><Link href="/about" className="text-white font-normal text-[18px] transition-colors text-sm">ჩვენს შესახებ</Link></li>
                 <li><Link href="/shop?category=women" className="text-white font-normal text-[18px] transition-colors text-sm">ქალების კოლექცია</Link></li>
@@ -71,23 +71,23 @@ const Footer = () => {
             </div>
 
             {/* Contact Info */}
-            <div className="space-y-4 flex flex-col items-center">
+            <div className="space-y-4 flex flex-col items-start">
               <h4 className="text-white font-bold text-[18px] font-bold mb-4">კონტაქტი</h4>
-              <div className="space-y-3 text-center">
+              <div className="space-y-3 text-start">
                 <div className="flex items-center justify-center space-x-3">
-                  <MapPin className="w-4 h-4 text-white" />
+                 <Image src="/frame1.png" alt="location" width={60} height={60} />
                   <span className="text-white font-normal text-[18px]">
 
-                    ლეო დავითაშვილის ქუჩა 120, 0190 თბილისი, საქართველო
+                    ლეო დავითაშვილის ქუჩა 120, <br /> 0190 თბილისი, საქართველო
                   </span>
                 </div>
-                <div className="flex items-center justify-center space-x-3">
-                  <Phone className="w-4 h-4 text-white" />
+                <div className="flex items-center justify-start space-x-3">
+                  <Image src="/frame2.png" alt="phone" width={60} height={60} />
                   <span className="text-white font-normal text-[18px]">
                     (+995)599 55 53 95</span>
                 </div>
-                <div className="flex items-center justify-center space-x-3">
-                  <Mail className="w-4 h-4 text-white" />
+                <div className="flex items-center justify-start space-x-3">
+                  <Image src="/frame3.png" alt="email" width={60} height={60} />
                   <span className="text-white font-normal text-[18px]">dressla.online@gmail.com</span>
                 </div>
               </div>
