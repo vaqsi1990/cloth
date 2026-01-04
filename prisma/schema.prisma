@@ -135,6 +135,8 @@ model User {
   // Reviews
   reviews       Review[]
   reviewReplies ReviewReply[] @relation("ReviewReplies")
+  
+  @@index([blocked])
 }
 
 model Account {

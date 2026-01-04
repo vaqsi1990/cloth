@@ -236,7 +236,13 @@ export const authOptions: NextAuthOptions = {
         try {
           const dbUser = await prisma.user.findUnique({
             where: { id: token.sub },
-            include: {
+            select: {
+              role: true,
+              image: true,
+              phone: true,
+              location: true,
+              personalId: true,
+              iban: true,
               verification: {
                 select: {
                   status: true
@@ -264,7 +270,13 @@ export const authOptions: NextAuthOptions = {
         try {
           const dbUser = await prisma.user.findUnique({
             where: { id: token.sub },
-            include: {
+            select: {
+              role: true,
+              image: true,
+              phone: true,
+              location: true,
+              personalId: true,
+              iban: true,
               verification: {
                 select: {
                   status: true

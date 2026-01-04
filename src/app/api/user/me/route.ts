@@ -11,6 +11,11 @@ export async function GET() {
     }
 
     const user = await prisma.user.findUnique({
+      // @ts-ignore - cacheStrategy is available with Prisma Accelerate
+      cacheStrategy: {
+        swr: 60, // Stale-while-revalidating for 60 seconds
+        ttl: 60, // Cache results for 60 seconds
+      },
       where: { id: session.user.id },
       select: {
         id: true,
