@@ -249,6 +249,19 @@ model Product {
   cartItems     CartItem[]
   rentalPriceTiers RentalPriceTier[]
   reviews       Review[]
+
+  // Indexes for better query performance
+  @@index([status])
+  @@index([approvalStatus])
+  @@index([status, approvalStatus])
+  @@index([categoryId])
+  @@index([purposeId])
+  @@index([gender])
+  @@index([isNew])
+  @@index([createdAt])
+  @@index([createdAt, id]) // For cursor-based pagination
+  @@index([userId])
+  @@index([status, approvalStatus, userId])
 }
 
 model Review {
@@ -290,6 +303,9 @@ model ProductImage {
   url       String
   alt       String?
   position  Int     @default(0)
+
+  @@index([productId])
+  @@index([productId, position])
 }
 
 model ProductVariant {
@@ -302,6 +318,8 @@ model ProductVariant {
   updatedAt DateTime @updatedAt
 
   rentals   Rental[]
+
+  @@index([productId])
 }
 
 model Cart {

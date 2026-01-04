@@ -7,7 +7,7 @@ const globalForPrisma = global as unknown as { prisma: PrismaClient };
 const basePrisma =
   globalForPrisma.prisma ||
   new PrismaClient({
-    log: ["query"],
+    log: process.env.NODE_ENV === "development" ? ["query"] : [],
   });
 
 // Extend Prisma Client to auto-generate SKU for products

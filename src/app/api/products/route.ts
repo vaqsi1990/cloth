@@ -86,13 +86,23 @@ export async function GET(request: NextRequest) {
     const isNew = searchParams.get('isNew')
     const purpose = searchParams.get('purpose')
     const search = searchParams.get('search')?.trim()
+    const cursor = searchParams.get('cursor')
+    const cursorId = cursor ? parseInt(cursor, 10) : undefined
     
     // Show products based on status
     // RESERVED products are hidden from everyone (used for sold products)
     // MAINTENANCE and DAMAGED products are hidden from non-admin users
     const isAdmin = session?.user?.role === 'ADMIN'
     
+    if (process.env.NODE_ENV === 'development') {
+      console.time("db")
+    }
     const products = await prisma.product.findMany({
+      take: 21, // Take one extra to check if there's more
+      ...(cursorId ? {
+        cursor: { id: cursorId },
+        skip: 1
+      } : {}),
       where: {
         // RESERVED products are hidden from everyone, including admins (sold products)
         status: {
@@ -121,15 +131,13 @@ export async function GET(request: NextRequest) {
           ]
         } : {}),
         ...(category && category !== 'ALL' ? { 
-          OR: [
-            { category: { slug: category === 'DRESSES' ? 'dresses' :
+          category: {
+            slug: category === 'DRESSES' ? 'dresses' :
                   category === 'TOPS' ? 'tops' :
                   category === 'BOTTOMS' ? 'bottoms' :
                   category === 'OUTERWEAR' ? 'outerwear' :
-                  category === 'ACCESSORIES' ? 'accessories' : category } },
-            { category: { name: { equals: category, mode: 'insensitive' } } },
-            { category: { name: { contains: category, mode: 'insensitive' } } }
-          ]
+                  category === 'ACCESSORIES' ? 'accessories' : category.toLowerCase()
+          }
         } : {}),
         ...(purpose ? {
           purpose: {
@@ -143,14 +151,69 @@ export async function GET(request: NextRequest) {
         } : {}),
         ...(isNew === 'true' ? { isNew: true } : {})
       },
-      include: {
-        category: true,
-        purpose: true,
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        brand: true,
+        description: true,
+        sku: true,
+        stock: true,
+        gender: true,
+        color: true,
+        location: true,
+        sizeSystem: true,
+        size: true,
+        isNew: true,
+        discount: true,
+        discountDays: true,
+        discountStartDate: true,
+        rating: true,
+        categoryId: true,
+        purposeId: true,
+        userId: true,
+        isRentable: true,
+        pricePerDay: true,
+        maxRentalDays: true,
+        status: true,
+        approvalStatus: true,
+        createdAt: true,
+        updatedAt: true,
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true
+          }
+        },
+        purpose: {
+          select: {
+            id: true,
+            name: true,
+            slug: true
+          }
+        },
         images: {
+          select: {
+            id: true,
+            url: true,
+            alt: true,
+            position: true
+          },
           orderBy: { position: 'asc' }
         },
-        variants: true,
+        variants: {
+          select: {
+            id: true,
+            price: true
+          }
+        },
         rentalPriceTiers: {
+          select: {
+            id: true,
+            minDays: true,
+            pricePerDay: true
+          },
           orderBy: { minDays: 'asc' }
         },
         user: {
@@ -161,99 +224,76 @@ export async function GET(request: NextRequest) {
           }
         }
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: [
+        { createdAt: 'desc' },
+        { id: 'desc' }
+      ]
     })
+    if (process.env.NODE_ENV === 'development') {
+      console.timeEnd("db")
+      console.log("finish")
+    }
 
     // Check and clear expired discounts
-    const productIds = products
-      .filter(p => p.discount && p.discountDays && p.discountStartDate)
-      .map(p => p.id)
-    
-    if (productIds.length > 0) {
-      await checkAndClearExpiredDiscounts(productIds)
-      // Re-fetch products to get updated data
-      const updatedProducts = await prisma.product.findMany({
-        where: {
-          // RESERVED products are hidden from everyone, including admins (sold products)
-          status: {
-            notIn: isAdmin 
-              ? ['RESERVED'] // Admins don't see RESERVED (sold) products
-              : ['MAINTENANCE', 'DAMAGED', 'RESERVED'] // Non-admin users don't see maintenance, damaged, or reserved (sold) products
-          },
-          ...(isAdmin ? {} : { 
-            approvalStatus: 'APPROVED',
-            user: {
-              blocked: false
-            }
-          }),
-          ...(search ? {
-            OR: [
-              { name: { contains: search, mode: 'insensitive' } },
-              { description: { contains: search, mode: 'insensitive' } },
-              { sku: { contains: search, mode: 'insensitive' } },
-              { brand: { contains: search, mode: 'insensitive' } },
-              { color: { contains: search, mode: 'insensitive' } },
-              { location: { contains: search, mode: 'insensitive' } },
-              { category: { name: { contains: search, mode: 'insensitive' } } },
-              { purpose: { name: { contains: search, mode: 'insensitive' } } },
-              { purpose: { slug: { contains: search, mode: 'insensitive' } } },
-              { user: { name: { contains: search, mode: 'insensitive' } } }
-            ]
-          } : {}),
-          ...(category && category !== 'ALL' ? { 
-            OR: [
-              { category: { slug: category === 'DRESSES' ? 'dresses' :
-                    category === 'TOPS' ? 'tops' :
-                    category === 'BOTTOMS' ? 'bottoms' :
-                    category === 'OUTERWEAR' ? 'outerwear' :
-                    category === 'ACCESSORIES' ? 'accessories' : category } },
-              { category: { name: { contains: category, mode: 'insensitive' } } }
-            ]
-          } : {}),
-          ...(purpose ? {
-            purpose: {
-              slug: purpose
-            }
-          } : {}),
-          ...(gender && gender !== 'ALL' ? { 
-            gender: gender === 'women' ? 'WOMEN' as const :
-                    gender === 'men' ? 'MEN' as const :
-                    gender === 'children' ? 'CHILDREN' as const : undefined
-          } : {}),
-          ...(isNew === 'true' ? { isNew: true } : {})
-        },
-        include: {
-          category: true,
-          purpose: true,
-          images: {
-            orderBy: { position: 'asc' }
-          },
-          variants: true,
-          rentalPriceTiers: {
-            orderBy: { minDays: 'asc' }
-          },
-          user: {
-            select: {
-              id: true,
-              name: true,
-              image: true
-            }
-          }
-        },
-        orderBy: { createdAt: 'desc' }
+    // First, identify which products have expired discounts (in memory)
+    const productsWithExpiredDiscounts = products
+      .filter(p => {
+        if (!p.discount || !p.discountDays || !p.discountStartDate) {
+          return false
+        }
+        const expirationDate = new Date(p.discountStartDate)
+        expirationDate.setDate(expirationDate.getDate() + p.discountDays)
+        return new Date() > expirationDate
       })
-      return NextResponse.json({
-        success: true,
-        products: updatedProducts.map(processExpiredDiscount)
+    
+    // Clear expired discounts in DB (only for products that actually have expired discounts)
+    // Update products in memory first for immediate response
+    if (productsWithExpiredDiscounts.length > 0) {
+      const expiredProductIds = productsWithExpiredDiscounts.map(p => p.id)
+      
+      // Update products in memory immediately
+      products.forEach(product => {
+        if (expiredProductIds.includes(product.id)) {
+          product.discount = null
+          product.discountDays = null
+          product.discountStartDate = null
+        }
+      })
+      
+      // Update DB asynchronously (don't wait for it)
+      prisma.product.updateMany({
+        where: {
+          id: { in: expiredProductIds }
+        },
+        data: {
+          discount: null,
+          discountDays: null,
+          discountStartDate: null,
+        }
+      }).catch(err => {
+        console.error('Error clearing expired discounts:', err)
       })
     }
 
+    // Check if there's more data
+    const hasMore = products.length > 20
+    const productsToReturn = hasMore ? products.slice(0, 20) : products
+    
+    // Determine next cursor (last product's id if we got a full page)
+    const nextCursor = hasMore && productsToReturn.length > 0
+      ? productsToReturn[productsToReturn.length - 1].id.toString()
+      : null
+
     return NextResponse.json({
       success: true,
-      products: products.map(processExpiredDiscount)
+      products: productsToReturn.map(processExpiredDiscount),
+      nextCursor,
+      hasMore
     })
     
   } catch (error) {
+    console.timeEnd("db")
+    console.log("finish")
     console.error('Error fetching products:', error)
     return NextResponse.json({
       success: false,

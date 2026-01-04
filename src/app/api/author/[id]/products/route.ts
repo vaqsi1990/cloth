@@ -88,9 +88,12 @@ export async function GET(
     }
 
     // Fetch products
+    console.time("db")
     const products = await prisma.product.findMany(
       buildProductQuery(userId, isAdmin)
     )
+    console.timeEnd("db")
+    console.log("finish")
 
     // Check and clear expired discounts if needed
     const productIds = products
@@ -102,9 +105,12 @@ export async function GET(
     if (productIds.length > 0) {
       await checkAndClearExpiredDiscounts(productIds)
       // Re-fetch products to get updated discount data
+      console.time("db")
       finalProducts = await prisma.product.findMany(
         buildProductQuery(userId, isAdmin)
       )
+      console.timeEnd("db")
+      console.log("finish")
     }
 
     // Process expired discounts and return
@@ -115,6 +121,8 @@ export async function GET(
     })
     
   } catch (error) {
+    console.timeEnd("db")
+    console.log("finish")
     console.error('Error fetching author products:', error)
     return NextResponse.json({
       success: false,

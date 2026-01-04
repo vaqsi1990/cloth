@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    console.time("db")
     const products = await prisma.product.findMany({
       where: {
         userId: session.user.id
@@ -33,6 +34,8 @@ export async function GET(request: NextRequest) {
         createdAt: 'desc'
       }
     })
+    console.timeEnd("db")
+    console.log("finish")
 
     // Check and clear expired discounts
     const productIds = products
@@ -42,6 +45,7 @@ export async function GET(request: NextRequest) {
     if (productIds.length > 0) {
       await checkAndClearExpiredDiscounts(productIds)
       // Re-fetch products to get updated data
+      console.time("db")
       const updatedProducts = await prisma.product.findMany({
         where: {
           userId: session.user.id
@@ -59,6 +63,8 @@ export async function GET(request: NextRequest) {
           createdAt: 'desc'
         }
       })
+      console.timeEnd("db")
+      console.log("finish")
       return NextResponse.json({
         success: true,
         products: updatedProducts.map(processExpiredDiscount)
@@ -71,6 +77,8 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
+    console.timeEnd("db")
+    console.log("finish")
     console.error('Error fetching user products:', error)
     return NextResponse.json(
       { success: false, error: 'Error fetching products' },
