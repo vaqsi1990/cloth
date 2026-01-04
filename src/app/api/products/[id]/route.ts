@@ -102,7 +102,6 @@ const buildProductSelect = () => ({
   sku: true,
   stock: true,
   gender: true,
-  color: true,
   location: true,
   sizeSystem: true,
   size: true,

@@ -138,6 +138,21 @@ export async function PATCH(request: NextRequest) {
     const updated = await prisma.userVerification.update({
       where: { userId },
       data: updateData,
+      select: {
+        id: true,
+        userId: true,
+        idFrontUrl: true,
+        idBackUrl: true,
+        entrepreneurCertificateUrl: true,
+        identityStatus: true,
+        entrepreneurStatus: true,
+        identityComment: true,
+        entrepreneurComment: true,
+        status: true,
+        comment: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
 
     // Update user fields based on verification type

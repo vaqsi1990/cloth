@@ -19,20 +19,46 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     const product = await prisma.product.findUnique({
       where: { id: productId },
-      include: {
-        category: true,
-        purpose: true,
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        brand: true,
+        color: true,
+        isRentable: true,
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          }
+        },
+        purpose: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          }
+        },
         images: {
-          orderBy: { position: "asc" },
+          select: {
+            id: true,
+            url: true,
+            alt: true,
+            position: true,
+          },
+          orderBy: { position: "asc" as const },
           take: 1,
         },
         variants: {
           select: {
+            id: true,
             price: true,
           },
         },
         user: {
           select: {
+            id: true,
             name: true,
           },
         },

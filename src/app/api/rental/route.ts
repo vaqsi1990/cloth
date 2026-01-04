@@ -78,7 +78,18 @@ export async function POST(request: NextRequest) {
     // Check if product exists
     const product = await prisma.product.findUnique({
       where: { id: productId },
-      include: { variants: true }
+      select: {
+        id: true,
+        approvalStatus: true,
+        userId: true,
+        variants: {
+          select: {
+            id: true,
+            productId: true,
+            createdAt: true,
+          }
+        }
+      }
     })
 
     if (!product) {
@@ -206,15 +217,56 @@ export async function POST(request: NextRequest) {
         totalPrice,
         status: 'RESERVED'
       },
-      include: {
+      select: {
+        id: true,
+        productId: true,
+        variantId: true,
+        userId: true,
+        startDate: true,
+        endDate: true,
+        pricePerDay: true,
+        totalPrice: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
         product: {
-          include: {
-            images: true,
-            category: true,
-            purpose: true
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            images: {
+              select: {
+                id: true,
+                url: true,
+                alt: true,
+                position: true,
+              },
+              orderBy: { position: 'asc' as const }
+            },
+            category: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+              }
+            },
+            purpose: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+              }
+            }
           }
         },
-        variant: true,
+        variant: {
+          select: {
+            id: true,
+            productId: true,
+            price: true,
+            createdAt: true,
+          }
+        },
         user: {
           select: {
             id: true,
@@ -294,16 +346,65 @@ export async function GET(request: NextRequest) {
 
     const rentals = await prisma.rental.findMany({
       where: whereClause,
-      include: {
+      select: {
+        id: true,
+        productId: true,
+        variantId: true,
+        userId: true,
+        startDate: true,
+        endDate: true,
+        pricePerDay: true,
+        totalPrice: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
         product: {
-          include: {
-            images: true,
-            category: true,
-            purpose: true
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            images: {
+              select: {
+                id: true,
+                url: true,
+                alt: true,
+                position: true,
+              },
+              orderBy: { position: 'asc' as const }
+            },
+            category: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+              }
+            },
+            purpose: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+              }
+            }
           }
         },
-        variant: true,
-        transactions: true
+        variant: {
+          select: {
+            id: true,
+            productId: true,
+            price: true,
+            createdAt: true,
+          }
+        },
+        transactions: {
+          select: {
+            id: true,
+            type: true,
+            total: true,
+            createdAt: true,
+            updatedAt: true,
+          }
+        }
       },
       orderBy: {
         createdAt: 'desc'

@@ -48,6 +48,21 @@ export async function PATCH(
         identityComment: status === 'REJECTED' ? comment || null : null,
         status,
         comment: status === 'REJECTED' ? comment || null : null,
+      },
+      select: {
+        id: true,
+        userId: true,
+        idFrontUrl: true,
+        idBackUrl: true,
+        entrepreneurCertificateUrl: true,
+        identityStatus: true,
+        entrepreneurStatus: true,
+        identityComment: true,
+        entrepreneurComment: true,
+        status: true,
+        comment: true,
+        createdAt: true,
+        updatedAt: true,
       }
     })
 
