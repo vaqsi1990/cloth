@@ -27,7 +27,7 @@ model VerifiedEmail {
 model RegistrationCode {
   id        String   @id @default(cuid())
   email     String
-  code      String   @db.VarChar(6) // 6-character alphanumeric code
+  code      String // 6-character alphanumeric code
   expiresAt DateTime
   usedAt    DateTime?
   createdAt DateTime @default(now())
@@ -97,13 +97,13 @@ model User {
   address       String? // მისამართი
   postalIndex   String? // საფოსტო ინდექსი
   pickupAddress String? // მისამართი ადგილზე მისამართვისთვის
-  iban          String? @db.VarChar(34)
+  iban          String?
   gender        UserGender? // სქესი
   dateOfBirth   DateTime? // დაბადების თარიღი
   personalId    String? @unique // პირადობის ნომერი
   password      String? 
   role          UserRole  @default(USER)
-  code          String    @unique @db.VarChar(6)
+  code          String    @unique
   emailVerified DateTime?
   image         String?
   // Ban fields
@@ -251,14 +251,11 @@ model Product {
   reviews       Review[]
 
   // Indexes for better query performance
-  @@index([status])
   @@index([approvalStatus])
-  @@index([status, approvalStatus])
   @@index([categoryId])
   @@index([purposeId])
   @@index([gender])
   @@index([isNew])
-  @@index([createdAt])
   @@index([createdAt, id]) // For cursor-based pagination
   @@index([userId])
   @@index([status, approvalStatus, userId])
@@ -278,7 +275,6 @@ model Review {
   reply     ReviewReply? // Admin reply to this review
   
   @@unique([productId, userId]) // One review per user per product
-  @@index([productId])
   @@index([userId])
 }
 
@@ -292,7 +288,6 @@ model ReviewReply {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
-  @@index([reviewId])
   @@index([userId])
 }
 
@@ -304,7 +299,6 @@ model ProductImage {
   alt       String?
   position  Int     @default(0)
 
-  @@index([productId])
   @@index([productId, position])
 }
 
@@ -397,6 +391,8 @@ model Order {
 
   items         OrderItem[]
   transactions  Transaction[]
+  
+  @@index([status])
 }
 
 model OrderItem {
@@ -418,6 +414,12 @@ model OrderItem {
   rentalStartDate DateTime?
   rentalEndDate   DateTime?
   rentalDays      Int?
+  
+  @@index([isRental])
+  @@index([rentalEndDate])
+  // Composite index for common query pattern (productId + isRental + rentalEndDate)
+  // This index can also be used for queries filtering only on productId (leftmost column)
+  @@index([productId, isRental, rentalEndDate])
 }
 
 model Transaction {

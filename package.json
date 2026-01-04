@@ -18,6 +18,8 @@
     "@auth/prisma-adapter": "^2.11.0",
     "@prisma/adapter-neon": "^6.17.1",
     "@prisma/client": "^6.15.0",
+    "@prisma/extension-accelerate": "^3.0.1",
+    "@prisma/extension-optimize": "^2.0.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/react-datepicker": "^6.2.0",
     "@types/styled-components": "^5.1.35",

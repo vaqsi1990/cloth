@@ -27,7 +27,23 @@ export const authOptions: NextAuthOptions = {
           where: {
             email: credentials.email
           },
-          include: {
+          // @ts-ignore - cacheStrategy is available with Prisma Accelerate
+          cacheStrategy: {
+            swr: 60, // Stale-while-revalidating for 60 seconds
+            ttl: 60, // Cache results for 60 seconds
+          },
+          select: {
+            id: true,
+            email: true,
+            password: true,
+            name: true,
+            role: true,
+            image: true,
+            phone: true,
+            location: true,
+            personalId: true,
+            iban: true,
+            banned: true,
             verification: {
               select: {
                 status: true

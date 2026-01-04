@@ -68,7 +68,8 @@ export async function GET(request: NextRequest) {
           }
         }
       },
-      include: {
+      select: {
+        status: true,
         items: {
           where: {
             productId: {
@@ -78,9 +79,17 @@ export async function GET(request: NextRequest) {
             rentalEndDate: {
               gte: now
             }
+          },
+          select: {
+            productId: true,
+            isRental: true,
+            rentalStartDate: true,
+            rentalEndDate: true,
+            size: true
           }
         }
-      }
+      },
+      take: 100 // Limit results to prevent excessive data fetching
     })
 
     // Get all products with their variants
@@ -90,9 +99,15 @@ export async function GET(request: NextRequest) {
           in: productIds
         }
       },
-      include: {
-        variants: true
-      }
+      select: {
+        id: true,
+        variants: {
+          select: {
+            id: true
+          }
+        }
+      },
+      take: 100 // Limit results to prevent excessive data fetching
     })
 
     // Build response object grouped by product ID

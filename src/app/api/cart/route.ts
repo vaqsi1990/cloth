@@ -35,9 +35,26 @@ export async function GET(request: NextRequest) {
     // Find or create cart for user
     let cart = await prisma.cart.findUnique({
       where: { userId: session.user.id },
-      include: {
+      // @ts-ignore - cacheStrategy is available with Prisma Accelerate
+      cacheStrategy: {
+        swr: 60, // Stale-while-revalidating for 60 seconds
+        ttl: 60, // Cache results for 60 seconds
+      },
+      select: {
+        id: true,
         items: {
-          include: {
+          select: {
+            id: true,
+            productId: true,
+            productName: true,
+            image: true,
+            size: true,
+            price: true,
+            quantity: true,
+            isRental: true,
+            rentalStartDate: true,
+            rentalEndDate: true,
+            rentalDays: true,
             product: {
               select: {
                 id: true,
@@ -52,6 +69,12 @@ export async function GET(request: NextRequest) {
                   }
                 },
                 rentalPriceTiers: {
+                  select: {
+                    id: true,
+                    minDays: true,
+                    pricePerDay: true,
+                    productId: true
+                  },
                   orderBy: { minDays: 'asc' }
                 },
                 user: {
@@ -76,9 +99,21 @@ export async function GET(request: NextRequest) {
         data: {
           userId: session.user.id
         },
-        include: {
+        select: {
+          id: true,
           items: {
-            include: {
+            select: {
+              id: true,
+              productId: true,
+              productName: true,
+              image: true,
+              size: true,
+              price: true,
+              quantity: true,
+              isRental: true,
+              rentalStartDate: true,
+              rentalEndDate: true,
+              rentalDays: true,
               product: {
                 select: {
                   id: true,
