@@ -92,36 +92,33 @@ const buildPurposeRelation = (purposeId?: number, purposeSlug?: string) => {
   return undefined
 }
 
-// Helper function to build product select query
-const buildProductSelect = () => ({
-  id: true,
-  name: true,
-  slug: true,
-  brand: true,
-  description: true,
-  sku: true,
-  stock: true,
-  gender: true,
-  location: true,
-  sizeSystem: true,
-  size: true,
-  isNew: true,
-  discount: true,
-  discountDays: true,
-  discountStartDate: true,
-  rating: true,
-  categoryId: true,
-  purposeId: true,
-  userId: true,
-  isRentable: true,
-  pricePerDay: true,
-  maxRentalDays: true,
-  status: true,
-  approvalStatus: true,
-  rejectionReason: true,
-  approvedAt: true,
-  createdAt: true,
-  updatedAt: true,
+// Helper function to build product select query (optimized for performance)
+const buildProductSelect = (includeAdminFields: boolean = false) => {
+  const baseSelect = {
+    id: true,
+    name: true,
+    slug: true,
+    brand: true,
+    description: true,
+    sku: true,
+    stock: true,
+    gender: true,
+    location: true,
+    sizeSystem: true,
+    size: true,
+    isNew: true,
+    discount: true,
+    discountDays: true,
+    discountStartDate: true,
+    rating: true,
+    userId: true, // Needed for isOwner check
+    // Removed: categoryId, purposeId - not needed, we have relations
+    isRentable: true,
+    pricePerDay: true,
+    maxRentalDays: true,
+    status: true,
+    approvalStatus: true, // Always needed for permission checks
+    // Removed: createdAt, updatedAt - not needed for display
   category: {
     select: {
       id: true,
@@ -146,29 +143,37 @@ const buildProductSelect = () => ({
   },
   images: {
     select: {
-      id: true,
       url: true,
-      alt: true,
-      position: true,
+      position: true, // Keep for ordering
     },
     orderBy: { position: 'asc' as const }
   },
   variants: {
     select: {
-      id: true,
       price: true,
     },
-    orderBy: { price: 'asc' as const } // Order variants by price
+    orderBy: { price: 'asc' as const }
   },
   rentalPriceTiers: {
     select: {
-      id: true,
       minDays: true,
       pricePerDay: true,
     },
     orderBy: { minDays: 'asc' as const }
   }
-})
+  }
+
+  // Add admin-only fields conditionally
+  if (includeAdminFields) {
+    return {
+      ...baseSelect,
+      rejectionReason: true,
+      approvedAt: true,
+    }
+  }
+
+  return baseSelect
+}
 
 // GET - Fetch single product by ID
 export async function GET(
@@ -176,9 +181,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    const isAdmin = session?.user?.role === 'ADMIN'
-    const requesterId = session?.user?.id
+    // Resolve params first (fast, synchronous)
     const resolvedParams = await params
     const productId = parseInt(resolvedParams.id)
     
@@ -189,16 +192,22 @@ export async function GET(
       }, { status: 400 })
     }
 
-    // Fetch product
-    const product = await prisma.product.findUnique({
-      // @ts-ignore - cacheStrategy is available with Prisma Accelerate
-      cacheStrategy: {
-        swr: 60, // Stale-while-revalidating for 60 seconds
-        ttl: 60, // Cache results for 60 seconds
-      },
-      where: { id: productId },
-      select: buildProductSelect()
-    })
+    // Fetch product and session in parallel for maximum performance
+    const [product, session] = await Promise.all([
+      prisma.product.findUnique({
+        // @ts-ignore - cacheStrategy is available with Prisma Accelerate
+        cacheStrategy: {
+          swr: 300, // Stale-while-revalidating for 5 minutes
+          ttl: 300, // Cache results for 5 minutes
+        },
+        where: { id: productId },
+        select: buildProductSelect(true) // Always fetch admin fields (small overhead, avoids re-fetch)
+      }),
+      getServerSession(authOptions)
+    ])
+    
+    const isAdmin = session?.user?.role === 'ADMIN'
+    const requesterId = session?.user?.id
 
     const isOwner = requesterId && product?.userId === requesterId
 
@@ -214,30 +223,28 @@ export async function GET(
       }, { status: 404 })
     }
 
-    // Check and clear expired discount if needed
-    await checkAndClearExpiredDiscount(productId)
-    
-    // Re-fetch product to get updated discount data
-    const updatedProduct = await prisma.product.findUnique({
-      // @ts-ignore - cacheStrategy is available with Prisma Accelerate
-      cacheStrategy: {
-        swr: 60, // Stale-while-revalidating for 60 seconds
-        ttl: 60, // Cache results for 60 seconds
-      },
-      where: { id: productId },
-      select: buildProductSelect()
-    })
-
-    if (!updatedProduct) {
-      return NextResponse.json({
-        success: false,
-        message: 'პროდუქტი ვერ მოიძებნა'
-      }, { status: 404 })
+    // Process expired discount inline (faster than function call with spread)
+    let finalProduct = product
+    if (product.discount && product.discountDays && product.discountStartDate) {
+      const expirationDate = new Date(product.discountStartDate)
+      expirationDate.setDate(expirationDate.getDate() + product.discountDays)
+      
+      if (new Date() > expirationDate) {
+        // Discount expired - modify in place (faster than spread)
+        finalProduct = {
+          ...product,
+          discount: null,
+          discountDays: null,
+          discountStartDate: null,
+        }
+        // Clear in DB asynchronously (non-blocking)
+        checkAndClearExpiredDiscount(productId).catch(() => {})
+      }
     }
 
     return NextResponse.json({
       success: true,
-      product: processExpiredDiscount(updatedProduct)
+      product: finalProduct
     })
     
   } catch (error) {
