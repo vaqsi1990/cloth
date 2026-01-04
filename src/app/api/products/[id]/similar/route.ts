@@ -22,6 +22,11 @@ export async function GET(
 
     // First, get the current product to find its category
     const currentProduct = await prisma.product.findUnique({
+      // @ts-ignore - cacheStrategy is available with Prisma Accelerate
+      cacheStrategy: {
+        swr: 60, // Stale-while-revalidating for 60 seconds
+        ttl: 60, // Cache results for 60 seconds
+      },
       where: { id: productId },
       select: { 
         categoryId: true,
@@ -62,6 +67,11 @@ export async function GET(
 
     // Fetch similar products from the same category, excluding current product
     const similarProducts = await prisma.product.findMany({
+      // @ts-ignore - cacheStrategy is available with Prisma Accelerate
+      cacheStrategy: {
+        swr: 60, // Stale-while-revalidating for 60 seconds
+        ttl: 60, // Cache results for 60 seconds
+      },
       where: {
         categoryId: currentProduct.categoryId,
         id: { not: productId }, // Exclude current product
@@ -74,14 +84,51 @@ export async function GET(
           }
         })
       },
-      include: {
-        category: true,
-        purpose: true,
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        discount: true,
+        discountDays: true,
+        stock: true,
+        rating: true,
+        isRentable: true,
+        rentalPriceTiers: {
+          select: {
+            minDays: true,
+            pricePerDay: true
+          },
+          orderBy: { minDays: 'asc' }
+        },
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true
+          }
+        },
+        purpose: {
+          select: {
+            id: true,
+            name: true,
+            slug: true
+          }
+        },
         images: {
+          select: {
+            id: true,
+            url: true,
+            alt: true,
+            position: true
+          },
           orderBy: { position: 'asc' },
           take: 1 // Only get first image for thumbnails
         },
         variants: {
+          select: {
+            id: true,
+            price: true
+          },
           take: 1 // Only get first variant for price display
         },
         user: {

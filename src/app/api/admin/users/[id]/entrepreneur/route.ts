@@ -28,7 +28,10 @@ export async function PATCH(
     }
 
     const verification = await prisma.userVerification.findUnique({
-      where: { userId }
+      where: { userId },
+      select: {
+        userId: true,
+      }
     })
 
     if (!verification) {

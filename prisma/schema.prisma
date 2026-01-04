@@ -254,13 +254,13 @@ model Product {
 
   // Indexes for better query performance
   @@index([approvalStatus])
-  @@index([categoryId])
-  @@index([purposeId])
   @@index([gender])
   @@index([isNew])
   @@index([createdAt, id]) // For cursor-based pagination
   @@index([userId])
-  @@index([status, approvalStatus, userId])
+  @@index([status, approvalStatus, userId]) // Composite index covers status+approvalStatus queries
+  @@index([categoryId, status, approvalStatus]) // Composite index covers categoryId queries
+  @@index([purposeId, status, approvalStatus]) // Composite index covers purposeId queries
 }
 
 model Review {
@@ -462,6 +462,11 @@ model Rental {
   updatedAt      DateTime       @updatedAt
 
   transactions   Transaction[]
+  
+  @@index([userId])
+  @@index([status])
+  @@index([productId, userId, status]) // Composite index covers productId and productId+userId queries
+  @@index([productId, status, endDate]) // Composite index for queries filtering by product, status, and end date
 }
 
 enum ChatStatus {

@@ -92,10 +92,51 @@ const buildPurposeRelation = (purposeId?: number, purposeSlug?: string) => {
   return undefined
 }
 
-// Helper function to build product include query
-const buildProductInclude = () => ({
-  category: true,
-  purpose: true,
+// Helper function to build product select query
+const buildProductSelect = () => ({
+  id: true,
+  name: true,
+  slug: true,
+  brand: true,
+  description: true,
+  sku: true,
+  stock: true,
+  gender: true,
+  color: true,
+  location: true,
+  sizeSystem: true,
+  size: true,
+  isNew: true,
+  discount: true,
+  discountDays: true,
+  discountStartDate: true,
+  rating: true,
+  categoryId: true,
+  purposeId: true,
+  userId: true,
+  isRentable: true,
+  pricePerDay: true,
+  maxRentalDays: true,
+  status: true,
+  approvalStatus: true,
+  rejectionReason: true,
+  approvedAt: true,
+  createdAt: true,
+  updatedAt: true,
+  category: {
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+    }
+  },
+  purpose: {
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+    }
+  },
   user: {
     select: {
       id: true,
@@ -105,12 +146,27 @@ const buildProductInclude = () => ({
     }
   },
   images: {
+    select: {
+      id: true,
+      url: true,
+      alt: true,
+      position: true,
+    },
     orderBy: { position: 'asc' as const }
   },
   variants: {
+    select: {
+      id: true,
+      price: true,
+    },
     orderBy: { price: 'asc' as const } // Order variants by price
   },
   rentalPriceTiers: {
+    select: {
+      id: true,
+      minDays: true,
+      pricePerDay: true,
+    },
     orderBy: { minDays: 'asc' as const }
   }
 })
@@ -136,8 +192,13 @@ export async function GET(
 
     // Fetch product
     const product = await prisma.product.findUnique({
+      // @ts-ignore - cacheStrategy is available with Prisma Accelerate
+      cacheStrategy: {
+        swr: 60, // Stale-while-revalidating for 60 seconds
+        ttl: 60, // Cache results for 60 seconds
+      },
       where: { id: productId },
-      include: buildProductInclude()
+      select: buildProductSelect()
     })
 
     const isOwner = requesterId && product?.userId === requesterId
@@ -159,8 +220,13 @@ export async function GET(
     
     // Re-fetch product to get updated discount data
     const updatedProduct = await prisma.product.findUnique({
+      // @ts-ignore - cacheStrategy is available with Prisma Accelerate
+      cacheStrategy: {
+        swr: 60, // Stale-while-revalidating for 60 seconds
+        ttl: 60, // Cache results for 60 seconds
+      },
       where: { id: productId },
-      include: buildProductInclude()
+      select: buildProductSelect()
     })
 
     if (!updatedProduct) {

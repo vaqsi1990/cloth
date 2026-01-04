@@ -135,15 +135,24 @@ export async function POST(request: NextRequest) {
               }
             }
           },
-          include: {
+          select: {
+            id: true,
             items: {
               where: {
                 productId: item.productId,
                 isRental: true,
                 size: item.size // Match by size from order item (product size)
+              },
+              select: {
+                id: true,
+                isRental: true,
+                rentalStartDate: true,
+                rentalEndDate: true,
+                size: true,
               }
             }
-          }
+          },
+          take: 100 // Limit results to prevent excessive data fetching
         })
         
         // Check for conflicts with existing rentals

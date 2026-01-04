@@ -24,6 +24,21 @@ export async function GET() {
 
     const verification = await prisma.userVerification.findUnique({
       where: { userId: session.user.id },
+      select: {
+        id: true,
+        userId: true,
+        idFrontUrl: true,
+        idBackUrl: true,
+        entrepreneurCertificateUrl: true,
+        identityStatus: true,
+        entrepreneurStatus: true,
+        identityComment: true,
+        entrepreneurComment: true,
+        status: true,
+        comment: true,
+        createdAt: true,
+        updatedAt: true,
+      }
     })
 
     // Get user's IBAN to include in response for admin review

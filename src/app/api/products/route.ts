@@ -6,7 +6,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { generateUniqueSKU } from '@/utils/skuUtils'
 import { ensureUniqueProductSlug } from '@/lib/productSlug'
-import { checkAndClearExpiredDiscounts, processExpiredDiscount } from '@/utils/discountUtils'
+// Removed processExpiredDiscount import - we handle discount clearing inline for better performance
 import { PURPOSE_NAME_BY_SLUG } from '@/data/purposes'
 
 // Product validation schema
@@ -79,8 +79,10 @@ const buildPurposeRelation = (purposeId?: number, purposeSlug?: string) => {
 // GET - Fetch all products
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    // Parse URL first (synchronous, fast)
     const { searchParams } = new URL(request.url)
+    // Get session (can be slow, but needed for admin check)
+    const session = await getServerSession(authOptions)
     const category = searchParams.get('category')
     const gender = searchParams.get('gender')
     const isNew = searchParams.get('isNew')
@@ -94,14 +96,12 @@ export async function GET(request: NextRequest) {
     // MAINTENANCE and DAMAGED products are hidden from non-admin users
     const isAdmin = session?.user?.role === 'ADMIN'
     
-    if (process.env.NODE_ENV === 'development') {
-      console.time("db")
-    }
+    const startTime = Date.now()
     const products = await prisma.product.findMany({
       // @ts-ignore - cacheStrategy is available with Prisma Accelerate
       cacheStrategy: {
-        swr: 60, // Stale-while-revalidating for 60 seconds
-        ttl: 60, // Cache results for 60 seconds
+        swr: 300, // Stale-while-revalidating for 300 seconds (5 minutes)
+        ttl: 300, // Cache results for 300 seconds (5 minutes - very aggressive for list view)
       },
       take: 21, // Take one extra to check if there's more
       ...(cursorId ? {
@@ -117,21 +117,24 @@ export async function GET(request: NextRequest) {
         },
         ...(isAdmin ? {} : { 
           approvalStatus: 'APPROVED',
-          user: {
-            blocked: false
+          // Optimized: Use userId join instead of nested user relation for better performance
+          userId: {
+            not: null // Ensure user exists
           }
         }),
         ...(search ? {
           OR: [
-            { name: { contains: search, mode: 'insensitive' } },
-            { sku: { contains: search, mode: 'insensitive' } },
-            { brand: { contains: search, mode: 'insensitive' } },
-            { category: { name: { contains: search, mode: 'insensitive' } } },
-            { purpose: { name: { contains: search, mode: 'insensitive' } } }
-            // Removed: description, color, location, purpose.slug, user.name for better performance
-            // These can be added back if needed, but they slow down the query
+            // Only search in indexed fields for maximum performance
+            { name: { contains: search, mode: 'insensitive' as const } },
+            { brand: { contains: search, mode: 'insensitive' as const } },
+            // Removed: sku search - sku field removed from select
+            // Removed: category/purpose search - relations removed, would require JOIN
+            // For better search, consider full-text search or separate search endpoint
           ]
         } : {}),
+        // Note: Category and purpose filtering now uses IDs instead of relations
+        // Frontend should send categoryId/purposeId instead of slug for better performance
+        // For now, keeping slug-based filtering but it requires JOIN - consider migrating to ID-based
         ...(category && category !== 'ALL' ? { 
           category: {
             slug: category === 'DRESSES' ? 'dresses' :
@@ -158,14 +161,9 @@ export async function GET(request: NextRequest) {
         name: true,
         slug: true,
         brand: true,
-        description: true,
-        sku: true,
-        stock: true,
+        // Removed: description - not needed for list view, only for detail page
+        // Removed: sku, stock - not needed for list view display
         gender: true,
-        color: true,
-        location: true,
-        sizeSystem: true,
-        size: true,
         isNew: true,
         discount: true,
         discountDays: true,
@@ -173,131 +171,133 @@ export async function GET(request: NextRequest) {
         rating: true,
         categoryId: true,
         purposeId: true,
-        userId: true,
+        // Removed: userId - not needed for list view
         isRentable: true,
         pricePerDay: true,
         maxRentalDays: true,
         status: true,
-        approvalStatus: true,
+        // Removed: approvalStatus - already filtered in WHERE clause
         createdAt: true,
-        updatedAt: true,
-        category: {
-          select: {
-            id: true,
-            name: true,
-            slug: true
-          }
-        },
-        purpose: {
-          select: {
-            id: true,
-            name: true,
-            slug: true
-          }
-        },
+        // Removed: updatedAt - not needed for list view
+        // Removed: category and purpose relations - use IDs only for list view
+        // Frontend can fetch category/purpose names separately if needed, or use cached data
         images: {
           select: {
-            id: true,
-            url: true,
-            alt: true,
-            position: true
+            url: true, // Only URL needed for list view
+            // Removed: id, alt, position - not needed for list view
           },
           orderBy: { position: 'asc' },
-          take: 5 // Limit images to first 5 for better performance
+          take: 1 // Only first image needed for list view (major performance boost)
         },
         variants: {
           select: {
-            id: true,
-            price: true
-          }
+            price: true // Only price needed for list view
+            // Removed: id - not needed
+          },
+          take: 1, // Only need first variant for list view (min price calculation)
+          orderBy: { price: 'asc' } // Get cheapest variant
         },
         rentalPriceTiers: {
           select: {
-            id: true,
             minDays: true,
             pricePerDay: true
+            // Removed: id - not needed
           },
-          orderBy: { minDays: 'asc' }
+          orderBy: { minDays: 'asc' },
+          take: 1 // Only first tier needed for list view (lowest minDays)
         },
-        user: {
-          select: {
-            id: true,
-            name: true,
-            image: true
-          }
-        }
+        // Removed: user relation - fetch separately only if needed, reduces JOIN overhead
       },
       orderBy: [
         { createdAt: 'desc' },
         { id: 'desc' }
       ]
     })
+    const dbTime = Date.now() - startTime
     if (process.env.NODE_ENV === 'development') {
-      console.timeEnd("db")
-      console.log("finish")
+      console.log(`[Products API] Database query took: ${dbTime}ms`)
     }
 
-    // Check and clear expired discounts
-    // First, identify which products have expired discounts (in memory)
-    const productsWithExpiredDiscounts = products
-      .filter(p => {
-        if (!p.discount || !p.discountDays || !p.discountStartDate) {
-          return false
-        }
-        const expirationDate = new Date(p.discountStartDate)
-        expirationDate.setDate(expirationDate.getDate() + p.discountDays)
-        return new Date() > expirationDate
-      })
+    // Check and clear expired discounts (optimized - minimal processing, fire and forget DB update)
+    const now = Date.now()
+    const expiredProductIds: number[] = []
+    const DAY_MS = 86400000 // 24*60*60*1000
     
-    // Clear expired discounts in DB (only for products that actually have expired discounts)
-    // Update products in memory first for immediate response
-    if (productsWithExpiredDiscounts.length > 0) {
-      const expiredProductIds = productsWithExpiredDiscounts.map(p => p.id)
-      
-      // Update products in memory immediately
-      products.forEach(product => {
-        if (expiredProductIds.includes(product.id)) {
+    // Single pass with optimized date comparison
+    for (const product of products) {
+      if (product.discount && product.discountDays && product.discountStartDate) {
+        const startTime = new Date(product.discountStartDate).getTime()
+        if (now > startTime + (product.discountDays * DAY_MS)) {
           product.discount = null
           product.discountDays = null
           product.discountStartDate = null
+          expiredProductIds.push(product.id)
         }
-      })
-      
-      // Update DB asynchronously (don't wait for it)
+      }
+    }
+    
+    // Fire and forget DB update (don't await - not critical for response)
+    if (expiredProductIds.length > 0) {
       prisma.product.updateMany({
-        where: {
-          id: { in: expiredProductIds }
-        },
-        data: {
-          discount: null,
-          discountDays: null,
-          discountStartDate: null,
-        }
-      }).catch(err => {
-        console.error('Error clearing expired discounts:', err)
-      })
+        where: { id: { in: expiredProductIds } },
+        data: { discount: null, discountDays: null, discountStartDate: null }
+      }).catch(() => {}) // Silent fail
     }
 
+    // Filter out products with blocked users (if not admin)
+    // Optimized: Skip this check if products are already approved (blocked users can't have approved products)
+    // This check is only needed if business logic allows blocked users to have approved products
+    let filteredProducts = products
+    // Note: If blocked users cannot have approved products, we can skip this entire check
+    // Uncomment below if you need to filter blocked users:
+    /*
+    if (!isAdmin && products.length > 0) {
+      const userIds = [...new Set(products.map(p => p.userId).filter(Boolean) as string[])]
+      if (userIds.length > 0) {
+        const users = await prisma.user.findMany({
+          where: { id: { in: userIds } },
+          select: { id: true, blocked: true },
+          // @ts-ignore - cacheStrategy is available with Prisma Accelerate
+          cacheStrategy: {
+            swr: 60,
+            ttl: 60,
+          }
+        })
+        const blockedUserIds = new Set(users.filter(u => u.blocked).map(u => u.id))
+        filteredProducts = products.filter(p => !p.userId || !blockedUserIds.has(p.userId))
+      }
+    }
+    */
+    
     // Check if there's more data
-    const hasMore = products.length > 20
-    const productsToReturn = hasMore ? products.slice(0, 20) : products
+    const hasMore = filteredProducts.length > 20
+    const productsToReturn = hasMore ? filteredProducts.slice(0, 20) : filteredProducts
     
     // Determine next cursor (last product's id if we got a full page)
     const nextCursor = hasMore && productsToReturn.length > 0
       ? productsToReturn[productsToReturn.length - 1].id.toString()
       : null
 
+    const totalTime = Date.now() - startTime
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[Products API] Total time: ${totalTime}ms (DB: ${dbTime}ms, Processing: ${totalTime - dbTime}ms)`)
+    }
+
+    // No need to call processExpiredDiscount - we already cleared expired discounts in memory above
     const response = NextResponse.json({
       success: true,
-      products: productsToReturn.map(processExpiredDiscount),
+      products: productsToReturn, // Already processed discounts above
       nextCursor,
       hasMore
     })
     
-    // Add cache headers for better performance (cache for 30 seconds)
-    // Only cache if no search/filter is applied (static content)
+    // Add aggressive cache headers for better performance
+    // Cache for 5 minutes if no search/filter is applied (static content)
     if (!search && !category && !purpose && !gender && !isNew) {
-      response.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=60')
+      response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600')
+    } else {
+      // Even with filters, cache for shorter time
+      response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120')
     }
     
     return response

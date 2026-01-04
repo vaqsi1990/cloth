@@ -21,12 +21,69 @@ export async function GET(request: NextRequest) {
       where: {
         userId: session.user.id
       },
-      include: {
-        images: true,
-        category: true,
-        purpose: true,
-        variants: true,
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        brand: true,
+        description: true,
+        sku: true,
+        stock: true,
+        gender: true,
+        color: true,
+        location: true,
+        sizeSystem: true,
+        size: true,
+        isNew: true,
+        discount: true,
+        discountDays: true,
+        discountStartDate: true,
+        rating: true,
+        categoryId: true,
+        purposeId: true,
+        userId: true,
+        isRentable: true,
+        pricePerDay: true,
+        maxRentalDays: true,
+        status: true,
+        approvalStatus: true,
+        createdAt: true,
+        updatedAt: true,
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true
+          }
+        },
+        purpose: {
+          select: {
+            id: true,
+            name: true,
+            slug: true
+          }
+        },
+        images: {
+          select: {
+            id: true,
+            url: true,
+            alt: true,
+            position: true
+          },
+          orderBy: { position: 'asc' }
+        },
+        variants: {
+          select: {
+            id: true,
+            price: true
+          }
+        },
         rentalPriceTiers: {
+          select: {
+            id: true,
+            minDays: true,
+            pricePerDay: true
+          },
           orderBy: { minDays: 'asc' }
         }
       },
@@ -50,12 +107,69 @@ export async function GET(request: NextRequest) {
         where: {
           userId: session.user.id
         },
-        include: {
-          images: true,
-          category: true,
-          purpose: true,
-          variants: true,
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          brand: true,
+          description: true,
+          sku: true,
+          stock: true,
+          gender: true,
+          color: true,
+          location: true,
+          sizeSystem: true,
+          size: true,
+          isNew: true,
+          discount: true,
+          discountDays: true,
+          discountStartDate: true,
+          rating: true,
+          categoryId: true,
+          purposeId: true,
+          userId: true,
+          isRentable: true,
+          pricePerDay: true,
+          maxRentalDays: true,
+          status: true,
+          approvalStatus: true,
+          createdAt: true,
+          updatedAt: true,
+          category: {
+            select: {
+              id: true,
+              name: true,
+              slug: true
+            }
+          },
+          purpose: {
+            select: {
+              id: true,
+              name: true,
+              slug: true
+            }
+          },
+          images: {
+            select: {
+              id: true,
+              url: true,
+              alt: true,
+              position: true
+            },
+            orderBy: { position: 'asc' }
+          },
+          variants: {
+            select: {
+              id: true,
+              price: true
+            }
+          },
           rentalPriceTiers: {
+            select: {
+              id: true,
+              minDays: true,
+              pricePerDay: true
+            },
             orderBy: { minDays: 'asc' }
           }
         },

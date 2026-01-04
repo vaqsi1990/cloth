@@ -42,12 +42,18 @@ export async function GET(request: NextRequest) {
           gte: now // Rental hasn't ended yet
         }
       },
-      include: {
-        variant: true
+      select: {
+        id: true,
+        productId: true,
+        variantId: true,
+        startDate: true,
+        endDate: true,
+        status: true,
       },
       orderBy: {
         startDate: 'asc'
-      }
+      },
+      take: 200 // Limit results to prevent excessive data fetching (higher limit for multiple products)
     })
 
     // Get all active orders with rental items for these products

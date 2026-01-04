@@ -235,6 +235,11 @@ export const authOptions: NextAuthOptions = {
       if (account?.provider === "google" && token.sub) {
         try {
           const dbUser = await prisma.user.findUnique({
+            // @ts-ignore - cacheStrategy is available with Prisma Accelerate
+            cacheStrategy: {
+              swr: 60, // Stale-while-revalidating for 60 seconds
+              ttl: 60, // Cache results for 60 seconds
+            },
             where: { id: token.sub },
             select: {
               role: true,
@@ -269,6 +274,11 @@ export const authOptions: NextAuthOptions = {
       if (token.sub && !account) {
         try {
           const dbUser = await prisma.user.findUnique({
+            // @ts-ignore - cacheStrategy is available with Prisma Accelerate
+            cacheStrategy: {
+              swr: 60, // Stale-while-revalidating for 60 seconds
+              ttl: 60, // Cache results for 60 seconds
+            },
             where: { id: token.sub },
             select: {
               role: true,

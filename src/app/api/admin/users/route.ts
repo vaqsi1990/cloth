@@ -100,7 +100,15 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const verification = await prisma.userVerification.findUnique({ where: { userId } });
+    const verification = await prisma.userVerification.findUnique({ 
+      where: { userId },
+      select: {
+        userId: true,
+        identityStatus: true,
+        entrepreneurStatus: true,
+        status: true,
+      }
+    });
     if (!verification) {
       return NextResponse.json({ success: false, error: 'Verification not found' }, { status: 404 });
     }

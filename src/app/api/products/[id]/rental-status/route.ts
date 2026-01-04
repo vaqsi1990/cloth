@@ -31,12 +31,17 @@ export async function GET(
           gte: now // Rental hasn't ended yet
         }
       },
-      include: {
-        variant: true
+      select: {
+        id: true,
+        variantId: true,
+        startDate: true,
+        endDate: true,
+        status: true,
       },
       orderBy: {
         startDate: 'asc'
-      }
+      },
+      take: 100 // Limit results to prevent excessive data fetching
     })
 
     // Get all active orders with rental items for this product
@@ -56,7 +61,9 @@ export async function GET(
           }
         }
       },
-      include: {
+      select: {
+        id: true,
+        status: true,
         items: {
           where: {
             productId: productId,
@@ -64,9 +71,17 @@ export async function GET(
             rentalEndDate: {
               gte: now // Only include items with active rental periods
             }
+          },
+          select: {
+            id: true,
+            isRental: true,
+            rentalStartDate: true,
+            rentalEndDate: true,
+            size: true,
           }
         }
-      }
+      },
+      take: 100 // Limit results to prevent excessive data fetching
     })
 
     // Group rentals by variant ID

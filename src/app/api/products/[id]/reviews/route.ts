@@ -29,6 +29,11 @@ export async function GET(
     const isAdmin = session?.user?.role === 'ADMIN'
 
     const product = await prisma.product.findUnique({
+      // @ts-ignore - cacheStrategy is available with Prisma Accelerate
+      cacheStrategy: {
+        swr: 60, // Stale-while-revalidating for 60 seconds
+        ttl: 60, // Cache results for 60 seconds
+      },
       where: { id: productId },
       select: { status: true, userId: true, approvalStatus: true },
     })
@@ -54,12 +59,20 @@ export async function GET(
       } else {
         // Check Rental table - user must have rented (any status except CANCELED)
         const userRental = await prisma.rental.findFirst({
+          // @ts-ignore - cacheStrategy is available with Prisma Accelerate
+          cacheStrategy: {
+            swr: 60, // Stale-while-revalidating for 60 seconds
+            ttl: 60, // Cache results for 60 seconds
+          },
           where: {
             productId,
             userId: session.user.id,
             status: {
               not: 'CANCELED', // Exclude canceled rentals
             },
+          },
+          select: {
+            id: true,
           },
           orderBy: {
             createdAt: 'desc',
@@ -70,6 +83,11 @@ export async function GET(
         // Allow all order statuses except CANCELED and REFUNDED
         // Also check by email or phone if userId is null (for old orders)
         const userOrderRental = await prisma.orderItem.findFirst({
+          // @ts-ignore - cacheStrategy is available with Prisma Accelerate
+          cacheStrategy: {
+            swr: 60, // Stale-while-revalidating for 60 seconds
+            ttl: 60, // Cache results for 60 seconds
+          },
           where: {
             productId,
             isRental: true,
@@ -97,6 +115,9 @@ export async function GET(
               },
             ],
           },
+          select: {
+            id: true,
+          },
         })
 
         // If product status is RENTED, check if user has any orderItem for this product (rental or purchase)
@@ -108,6 +129,11 @@ export async function GET(
         if (product?.status === 'RENTED') {
           // First, try to find order items by userId/email/phone
           userOrderItem = await prisma.orderItem.findFirst({
+            // @ts-ignore - cacheStrategy is available with Prisma Accelerate
+            cacheStrategy: {
+              swr: 60, // Stale-while-revalidating for 60 seconds
+              ttl: 60, // Cache results for 60 seconds
+            },
             where: {
               productId,
               OR: [
@@ -133,6 +159,9 @@ export async function GET(
                   },
                 },
               ],
+            },
+            select: {
+              id: true,
             },
           })
           
@@ -174,12 +203,20 @@ export async function GET(
         // This covers cases where rental was created directly in Rental table
         const userRentalForRentedProduct = product?.status === 'RENTED' 
           ? await prisma.rental.findFirst({
+              // @ts-ignore - cacheStrategy is available with Prisma Accelerate
+              cacheStrategy: {
+                swr: 60, // Stale-while-revalidating for 60 seconds
+                ttl: 60, // Cache results for 60 seconds
+              },
               where: {
                 productId,
                 userId: session.user.id,
                 status: {
                   not: 'CANCELED',
                 },
+              },
+              select: {
+                id: true,
               },
             })
           : null
@@ -189,8 +226,18 @@ export async function GET(
     }
 
     const reviews = await prisma.review.findMany({
+      // @ts-ignore - cacheStrategy is available with Prisma Accelerate
+      cacheStrategy: {
+        swr: 60, // Stale-while-revalidating for 60 seconds
+        ttl: 60, // Cache results for 60 seconds
+      },
       where: { productId },
-      include: {
+      select: {
+        id: true,
+        rating: true,
+        comment: true,
+        createdAt: true,
+        userId: true,
         user: {
           select: {
             id: true,
@@ -199,7 +246,11 @@ export async function GET(
           },
         },
         reply: {
-          include: {
+          select: {
+            id: true,
+            comment: true,
+            createdAt: true,
+            userId: true,
             user: {
               select: {
                 id: true,
@@ -213,6 +264,7 @@ export async function GET(
       orderBy: {
         createdAt: 'desc',
       },
+      take: 100, // Limit to 100 most recent reviews to prevent excessive rows
     })
 
     // Calculate average rating
@@ -263,6 +315,11 @@ export async function POST(
 
     // Check if product exists
     const product = await prisma.product.findUnique({
+      // @ts-ignore - cacheStrategy is available with Prisma Accelerate
+      cacheStrategy: {
+        swr: 60, // Stale-while-revalidating for 60 seconds
+        ttl: 60, // Cache results for 60 seconds
+      },
       where: { id: productId },
       select: { status: true, userId: true },
     })
@@ -281,12 +338,20 @@ export async function POST(
       // Check if user has rented this product
       // Check Rental table - user must have rented (any status except CANCELED)
       const userRental = await prisma.rental.findFirst({
+        // @ts-ignore - cacheStrategy is available with Prisma Accelerate
+        cacheStrategy: {
+          swr: 60, // Stale-while-revalidating for 60 seconds
+          ttl: 60, // Cache results for 60 seconds
+        },
         where: {
           productId,
           userId: session.user.id,
           status: {
             not: 'CANCELED', // Exclude canceled rentals
           },
+        },
+        select: {
+          id: true,
         },
         orderBy: {
           createdAt: 'desc',
@@ -296,6 +361,11 @@ export async function POST(
       // Also check OrderItems for rentals - allow all order statuses except CANCELED and REFUNDED
       // Also check by email or phone if userId is null (for old orders)
       const userOrderRental = await prisma.orderItem.findFirst({
+        // @ts-ignore - cacheStrategy is available with Prisma Accelerate
+        cacheStrategy: {
+          swr: 60, // Stale-while-revalidating for 60 seconds
+          ttl: 60, // Cache results for 60 seconds
+        },
         where: {
           productId,
           isRental: true,
@@ -323,7 +393,8 @@ export async function POST(
             },
           ],
         },
-        include: {
+        select: {
+          id: true,
           order: { select: { status: true, id: true, email: true, userId: true, phone: true } },
         },
       })
@@ -336,6 +407,11 @@ export async function POST(
       if (product.status === 'RENTED') {
         // First, try to find order items by userId/email/phone
         userOrderItem = await prisma.orderItem.findFirst({
+          // @ts-ignore - cacheStrategy is available with Prisma Accelerate
+          cacheStrategy: {
+            swr: 60, // Stale-while-revalidating for 60 seconds
+            ttl: 60, // Cache results for 60 seconds
+          },
           where: {
             productId,
             OR: [
@@ -362,7 +438,8 @@ export async function POST(
               },
             ],
           },
-          include: {
+          select: {
+            id: true,
             order: { select: { status: true, id: true, email: true, userId: true, phone: true } },
           },
         })
@@ -404,12 +481,20 @@ export async function POST(
       // Also check if user has rental for this product in Rental table (even if product status is RENTED)
       const userRentalForRentedProduct = product.status === 'RENTED' 
         ? await prisma.rental.findFirst({
+            // @ts-ignore - cacheStrategy is available with Prisma Accelerate
+            cacheStrategy: {
+              swr: 60, // Stale-while-revalidating for 60 seconds
+              ttl: 60, // Cache results for 60 seconds
+            },
             where: {
               productId,
               userId: session.user.id,
               status: {
                 not: 'CANCELED',
               },
+            },
+            select: {
+              id: true,
             },
           })
         : null
@@ -448,7 +533,12 @@ export async function POST(
           rating,
           comment: comment || null,
         },
-        include: {
+        select: {
+          id: true,
+          rating: true,
+          comment: true,
+          createdAt: true,
+          userId: true,
           user: {
             select: {
               id: true,
@@ -467,7 +557,12 @@ export async function POST(
           rating,
           comment: comment || null,
         },
-        include: {
+        select: {
+          id: true,
+          rating: true,
+          comment: true,
+          createdAt: true,
+          userId: true,
           user: {
             select: {
               id: true,
@@ -589,7 +684,12 @@ export async function PUT(
         rating: validatedData.rating,
         comment: validatedData.comment || null,
       },
-      include: {
+      select: {
+        id: true,
+        rating: true,
+        comment: true,
+        createdAt: true,
+        userId: true,
         user: {
           select: {
             id: true,
