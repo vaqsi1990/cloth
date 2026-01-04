@@ -1221,7 +1221,7 @@ const ProductPage = () => {
                                     </div>
                                 ) : (
                                     <div className={`grid gap-3 ${(showBuyOption ? 1 : 0) + (showRentOption ? 1 : 0) > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                                        {showBuyOption && (
+                                        {/* {showBuyOption && (
                                             <button
                                                 onClick={() => setPurchaseMode("buy")}
                                                 disabled={product.status === 'RENTED'}
@@ -1233,8 +1233,8 @@ const ProductPage = () => {
                                                 <CreditCard className="w-5 h-5" />
                                                 ყიდვა
                                             </button>
-                                        )}
-                                        {showRentOption && (
+                                        )} */}
+                                        {/* {showRentOption && (
                                             <button
                                                 onClick={() => setPurchaseMode("rent")}
                                                 className={`p-4 rounded-xl border-2 flex md:text-[18px] text-[16px] items-center justify-center gap-2 transition ${purchaseMode === "rent"
@@ -1245,7 +1245,7 @@ const ProductPage = () => {
                                                 <CalendarDays className="w-5 h-5" />
                                                 ქირაობა
                                             </button>
-                                        )}
+                                        )} */}
                                     </div>
                                 )}
 
@@ -1441,7 +1441,7 @@ const ProductPage = () => {
                                         ) : null
                                     })()}
 
-                                    {product.status !== 'MAINTENANCE' && product.status !== 'DAMAGED' && (
+                                    {/* {product.status !== 'MAINTENANCE' && product.status !== 'DAMAGED' && (
                                         <>
                                             {purchaseMode === "buy" && showBuyOption ? (
                                                 <button
@@ -1460,7 +1460,7 @@ const ProductPage = () => {
                                                 </button>
                                             ) : null}
                                         </>
-                                    )}
+                                    )} */}
                                 </div>
                             ) : (
                                 <div className="space-y-2">
