@@ -119,15 +119,12 @@ export async function GET(request: NextRequest) {
         ...(search ? {
           OR: [
             { name: { contains: search, mode: 'insensitive' } },
-            { description: { contains: search, mode: 'insensitive' } },
             { sku: { contains: search, mode: 'insensitive' } },
             { brand: { contains: search, mode: 'insensitive' } },
-            { color: { contains: search, mode: 'insensitive' } },
-            { location: { contains: search, mode: 'insensitive' } },
             { category: { name: { contains: search, mode: 'insensitive' } } },
-            { purpose: { name: { contains: search, mode: 'insensitive' } } },
-            { purpose: { slug: { contains: search, mode: 'insensitive' } } },
-            { user: { name: { contains: search, mode: 'insensitive' } } }
+            { purpose: { name: { contains: search, mode: 'insensitive' } } }
+            // Removed: description, color, location, purpose.slug, user.name for better performance
+            // These can be added back if needed, but they slow down the query
           ]
         } : {}),
         ...(category && category !== 'ALL' ? { 
@@ -200,7 +197,8 @@ export async function GET(request: NextRequest) {
             alt: true,
             position: true
           },
-          orderBy: { position: 'asc' }
+          orderBy: { position: 'asc' },
+          take: 5 // Limit images to first 5 for better performance
         },
         variants: {
           select: {
@@ -284,12 +282,20 @@ export async function GET(request: NextRequest) {
       ? productsToReturn[productsToReturn.length - 1].id.toString()
       : null
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       products: productsToReturn.map(processExpiredDiscount),
       nextCursor,
       hasMore
     })
+    
+    // Add cache headers for better performance (cache for 30 seconds)
+    // Only cache if no search/filter is applied (static content)
+    if (!search && !category && !purpose && !gender && !isNew) {
+      response.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=60')
+    }
+    
+    return response
     
   } catch (error) {
     console.timeEnd("db")

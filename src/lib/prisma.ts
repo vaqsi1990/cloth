@@ -3,11 +3,16 @@ import { generateUniqueSKU } from "@/utils/skuUtils";
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
-// Create base Prisma client
+// Create base Prisma client with connection pooling optimization
 const basePrisma =
   globalForPrisma.prisma ||
   new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["query"] : [],
+    datasources: {
+      db: {
+        url: process.env.DATABASE_URL,
+      },
+    },
   });
 
 // Extend Prisma Client to auto-generate SKU for products
