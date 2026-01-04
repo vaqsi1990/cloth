@@ -81,8 +81,6 @@ export async function GET(request: NextRequest) {
   try {
     // Parse URL first (synchronous, fast)
     const { searchParams } = new URL(request.url)
-    // Get session (can be slow, but needed for admin check)
-    const session = await getServerSession(authOptions)
     const category = searchParams.get('category')
     const gender = searchParams.get('gender')
     const isNew = searchParams.get('isNew')
@@ -91,11 +89,37 @@ export async function GET(request: NextRequest) {
     const cursor = searchParams.get('cursor')
     const cursorId = cursor ? parseInt(cursor, 10) : undefined
     
-    // Show products based on status
-    // RESERVED products are hidden from everyone (used for sold products)
-    // MAINTENANCE and DAMAGED products are hidden from non-admin users
-    const isAdmin = session?.user?.role === 'ADMIN'
+    // Start session check and category/purpose lookups in parallel (non-blocking for query setup)
+    // Most users are non-admin, so we can start with default filters
+    const sessionPromise = getServerSession(authOptions)
+    const categoryIdPromise = category && category !== 'ALL' ? prisma.category.findUnique({
+      where: { 
+        slug: category === 'DRESSES' ? 'dresses' :
+              category === 'TOPS' ? 'tops' :
+              category === 'BOTTOMS' ? 'bottoms' :
+              category === 'OUTERWEAR' ? 'outerwear' :
+              category === 'ACCESSORIES' ? 'accessories' : category.toLowerCase()
+      },
+      select: { id: true },
+      // @ts-ignore - cacheStrategy is available with Prisma Accelerate
+      cacheStrategy: { swr: 300, ttl: 300 }
+    }).then(c => c?.id).catch(() => null) : Promise.resolve(null)
     
+    const purposeIdPromise = purpose ? prisma.purpose.findUnique({
+      where: { slug: purpose },
+      select: { id: true },
+      // @ts-ignore - cacheStrategy is available with Prisma Accelerate
+      cacheStrategy: { swr: 300, ttl: 300 }
+    }).then(p => p?.id).catch(() => null) : Promise.resolve(null)
+    
+    // Resolve all in parallel
+    const [session, categoryId, purposeId] = await Promise.all([
+      sessionPromise,
+      categoryIdPromise,
+      purposeIdPromise
+    ])
+    
+    const isAdmin = session?.user?.role === 'ADMIN'
     const startTime = Date.now()
     const products = await prisma.product.findMany({
       // @ts-ignore - cacheStrategy is available with Prisma Accelerate
@@ -132,23 +156,9 @@ export async function GET(request: NextRequest) {
             // For better search, consider full-text search or separate search endpoint
           ]
         } : {}),
-        // Note: Category and purpose filtering now uses IDs instead of relations
-        // Frontend should send categoryId/purposeId instead of slug for better performance
-        // For now, keeping slug-based filtering but it requires JOIN - consider migrating to ID-based
-        ...(category && category !== 'ALL' ? { 
-          category: {
-            slug: category === 'DRESSES' ? 'dresses' :
-                  category === 'TOPS' ? 'tops' :
-                  category === 'BOTTOMS' ? 'bottoms' :
-                  category === 'OUTERWEAR' ? 'outerwear' :
-                  category === 'ACCESSORIES' ? 'accessories' : category.toLowerCase()
-          }
-        } : {}),
-        ...(purpose ? {
-          purpose: {
-            slug: purpose
-          }
-        } : {}),
+        // Use pre-fetched IDs (faster than JOINs - direct index lookup)
+        ...(categoryId ? { categoryId } : {}),
+        ...(purposeId ? { purposeId } : {}),
         ...(gender && gender !== 'ALL' ? { 
           gender: gender === 'women' ? 'WOMEN' as const :
                   gender === 'men' ? 'MEN' as const :
@@ -209,8 +219,8 @@ export async function GET(request: NextRequest) {
         // Removed: user relation - fetch separately only if needed, reduces JOIN overhead
       },
       orderBy: [
-        { createdAt: 'desc' },
-        { id: 'desc' }
+        { createdAt: 'desc' }
+        // Removed: { id: 'desc' } - single orderBy is faster, createdAt is already unique enough
       ]
     })
     const dbTime = Date.now() - startTime
@@ -218,30 +228,30 @@ export async function GET(request: NextRequest) {
       console.log(`[Products API] Database query took: ${dbTime}ms`)
     }
 
-    // Check and clear expired discounts (optimized - minimal processing, fire and forget DB update)
-    const now = Date.now()
-    const expiredProductIds: number[] = []
-    const DAY_MS = 86400000 // 24*60*60*1000
-    
-    // Single pass with optimized date comparison
-    for (const product of products) {
-      if (product.discount && product.discountDays && product.discountStartDate) {
-        const startTime = new Date(product.discountStartDate).getTime()
-        if (now > startTime + (product.discountDays * DAY_MS)) {
-          product.discount = null
-          product.discountDays = null
-          product.discountStartDate = null
-          expiredProductIds.push(product.id)
-        }
+    // Check and clear expired discounts (ultra-optimized - skip if no discounts)
+    // Fast path: skip processing if no products have discounts
+    let hasAnyDiscount = false
+    for (let i = 0; i < products.length; i++) {
+      if (products[i].discount) {
+        hasAnyDiscount = true
+        break
       }
     }
     
-    // Fire and forget DB update (don't await - not critical for response)
-    if (expiredProductIds.length > 0) {
-      prisma.product.updateMany({
-        where: { id: { in: expiredProductIds } },
-        data: { discount: null, discountDays: null, discountStartDate: null }
-      }).catch(() => {}) // Silent fail
+    if (hasAnyDiscount) {
+      const now = Date.now()
+      const DAY_MS = 86400000
+      // Single pass - only process products with discounts
+      for (const product of products) {
+        if (product.discount && product.discountDays && product.discountStartDate) {
+          const startTime = new Date(product.discountStartDate).getTime()
+          if (now > startTime + (product.discountDays * DAY_MS)) {
+            product.discount = null
+            product.discountDays = null
+            product.discountStartDate = null
+          }
+        }
+      }
     }
 
     // Filter out products with blocked users (if not admin)
