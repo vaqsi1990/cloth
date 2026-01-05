@@ -378,28 +378,34 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
     <div className={`fixed bottom-[15px] right-4 z-50 bg-white shadow-2xl border border-gray-200 ${isMinimized ? 'w-80 h-16 rounded-xl' : 'w-96 h-[80%] rounded-xl overflow-hidden'
       } transition-all duration-300 flex flex-col`}>
       {/* Header */}
-      <div className={`bg-[#1B3729] text-white p-4 flex items-center justify-between ${isMinimized ? 'rounded-xl' : 'rounded-t-xl'
-        }`}>
-        <div className="flex items-center space-x-2">
-          <MessageCircle className="w-5 h-5" />
-          <span className="font-semibold">Live Chat</span>
+      <div className={`bg-[#1B3729] text-white ${isMinimized ? 'rounded-xl' : 'rounded-t-xl'}`}>
+        <div className={`p-4 flex items-center justify-between`}>
+          <div className="flex items-center space-x-2">
+            <MessageCircle className="w-5 h-5" />
+            <span className="font-semibold">Live Chat</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setIsMinimized(!isMinimized)}
+              className="text-white hover:text-gray-300 transition-colors p-1 rounded hover:bg-white/10"
+              aria-label={isMinimized ? 'გაფართოება' : 'შემცირება'}
+            >
+              {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
+            </button>
+            <button
+              onClick={onToggle}
+              className="text-white hover:text-gray-300 transition-colors p-1 rounded hover:bg-white/10"
+              aria-label="დახურვა"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => setIsMinimized(!isMinimized)}
-            className="text-white hover:text-gray-300 transition-colors p-1 rounded hover:bg-white/10"
-            aria-label={isMinimized ? 'გაფართოება' : 'შემცირება'}
-          >
-            {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
-          </button>
-          <button
-            onClick={onToggle}
-            className="text-white hover:text-gray-300 transition-colors p-1 rounded hover:bg-white/10"
-            aria-label="დახურვა"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+        {!isMinimized && (
+          <div className="px-4 pb-2">
+            <p className="text-xs text-white/80">სამუშაო საათები: 09:00 - 22:00</p>
+          </div>
+        )}
       </div>
 
       {!isMinimized && (
@@ -416,6 +422,10 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
                 <MessageCircle className="w-12 h-12 mx-auto mb-4 text-gray-400" />
                 <p className="font-medium text-black">დაიწყეთ საუბარი!</p>
                 <p className="text-[16px] text-gray-500 mt-2">ჩვენი გუნდი მზადაა დაგეხმაროთ</p>
+                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800 font-medium">სამუშაო საათები</p>
+                  <p className="text-xs text-blue-600 mt-1">09:00 - 22:00</p>
+                </div>
               </div>
             ) : (
               <div className="space-y-4">
