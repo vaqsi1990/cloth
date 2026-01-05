@@ -27,6 +27,8 @@ export async function GET(
 
     const session = await getServerSession(authOptions)
     const isAdmin = session?.user?.role === 'ADMIN'
+    const isSupport = session?.user?.role === 'SUPPORT'
+    const isAdminOrSupportRole = isAdmin || isSupport
 
     const product = await prisma.product.findUnique({
       // @ts-ignore - cacheStrategy is available with Prisma Accelerate
@@ -41,7 +43,7 @@ export async function GET(
     const requesterId = session?.user?.id
     const isOwner = requesterId && product?.userId === requesterId
 
-    if (!product || (!isAdmin && !isOwner && product.approvalStatus !== 'APPROVED')) {
+    if (!product || (!isAdminOrSupportRole && !isOwner && product.approvalStatus !== 'APPROVED')) {
       return NextResponse.json(
         { success: false, error: 'პროდუქტი ვერ მოიძებნა' },
         { status: 404 }
@@ -786,8 +788,9 @@ export async function DELETE(
       )
     }
 
-    // Allow admin to delete any review, or user to delete their own review
-    if (session.user.role !== 'ADMIN' && existingReview.userId !== session.user.id) {
+    // Allow admin/support to delete any review, or user to delete their own review
+    const isAdminOrSupportRole = session.user.role === 'ADMIN' || session.user.role === 'SUPPORT'
+    if (!isAdminOrSupportRole && existingReview.userId !== session.user.id) {
       return NextResponse.json(
         { success: false, error: 'Permission denied' },
         { status: 403 }

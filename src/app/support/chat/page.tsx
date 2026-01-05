@@ -29,7 +29,7 @@ interface ChatRoom {
   _count: { messages: number }
 }
 
-const AdminChatPage = () => {
+const SupportChatPage = () => {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([])
@@ -123,12 +123,7 @@ const AdminChatPage = () => {
       return
     }
 
-    if (!session || session.user.role !== 'ADMIN') {
-      // Redirect SUPPORT to their own page
-      if (session?.user?.role === 'SUPPORT') {
-        router.push('/support/chat')
-        return
-      }
+    if (!session || session.user.role !== 'SUPPORT') {
       router.push('/auth/signin')
       return
     }
@@ -330,8 +325,16 @@ const AdminChatPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <div className="flex-shrink-0 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 bg-white border-b border-gray-200">
-        <h1 className="text-base sm:text-lg md:text-[20px] font-bold text-black">Live Chat მართვა</h1>
-      
+        <div className="flex items-center space-x-2 sm:space-x-4">
+          <button
+            onClick={() => router.push('/support')}
+            className="p-1 hover:bg-gray-100 rounded transition-colors flex-shrink-0"
+            title="საფორთის პანელზე დაბრუნება"
+          >
+            <ArrowLeft className="w-5 h-5 text-black" />
+          </button>
+          <h1 className="text-base sm:text-lg md:text-[20px] font-bold text-black">Live Chat მართვა</h1>
+        </div>
       </div>
 
       <div className="flex-1 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 min-h-0">
@@ -499,7 +502,7 @@ const AdminChatPage = () => {
                                   message.isFromAdmin ? 'text-white' : 'text-black'
                                 }`}>
                                   {message.isFromAdmin 
-                                    ? (message.admin?.name || 'ადმინისტრატორი')
+                                    ? (message.admin?.name || 'საფორთი')
                                     : (message.user?.name || selectedChatRoom?.guestName || 'მომხმარებელი')
                                   }
                                 </p>
@@ -601,4 +604,5 @@ const AdminChatPage = () => {
   )
 }
 
-export default AdminChatPage
+export default SupportChatPage
+

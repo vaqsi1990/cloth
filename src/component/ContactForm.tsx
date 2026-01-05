@@ -130,7 +130,7 @@ const ContactForm = () => {
                                         value={formData.name}
                                         onChange={handleChange}
                                         required
-                                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                                        className="w-full text-black pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
                                         placeholder="შეიყვანეთ თქვენი სახელი"
                                     />
                                 </div>
@@ -150,7 +150,7 @@ const ContactForm = () => {
                                         value={formData.email}
                                         onChange={handleChange}
                                         required
-                                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                                        className="w-full text-black pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
                                         placeholder="შეიყვანეთ თქვენი ელფოსტა"
                                     />
                                 </div>
@@ -169,7 +169,7 @@ const ContactForm = () => {
                                         name="phone"
                                         value={formData.phone}
                                         onChange={handleChange}
-                                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                                        className="w-full text-black pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
                                         placeholder="+995 555 123 456"
                                     />
                                 </div>
@@ -187,7 +187,7 @@ const ContactForm = () => {
                                     value={formData.subject}
                                     onChange={handleChange}
                                     required
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                                    className="w-full text-black px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
                                     placeholder="შეიყვანეთ თემა"
                                 />
                             </div>

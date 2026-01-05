@@ -238,6 +238,14 @@ const HeaderContent = () => {
                         >
                           ადმინისტრატორი
                         </Link>
+                      ) : session.user.role === 'SUPPORT' ? (
+                        <Link
+                          href="/support"
+                          className="block md:text-[20px] text-[16px] px-4 py-2 hover:bg-gray-100"
+                          onClick={() => setIsDesktopUserDropdownOpen(false)}
+                        >
+                          საფორთი
+                        </Link>
                       ) : (
                         <Link
                           href="/account"
@@ -295,6 +303,14 @@ const HeaderContent = () => {
                           onClick={() => setIsMobileUserDropdownOpen(false)}
                         >
                           ადმინისტრატორი
+                        </Link>
+                      ) : session.user.role === 'SUPPORT' ? (
+                        <Link
+                          href="/support"
+                          className="block px-4 py-2 text-black hover:bg-gray-100"
+                          onClick={() => setIsMobileUserDropdownOpen(false)}
+                        >
+                          საფორთი
                         </Link>
                       ) : (
                         <Link

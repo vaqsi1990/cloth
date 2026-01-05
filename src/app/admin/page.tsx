@@ -81,6 +81,7 @@ const AdminDashboard = () => {
       hasFetchedRef.current = true
       fetchAdminStats()
     }
+    // SUPPORT doesn't need stats, only ADMIN does
   }, [status, session?.user?.role])
 
   // ---------------------
@@ -102,9 +103,14 @@ const AdminDashboard = () => {
   }
 
   // ---------------------
-  // Access denied
+  // Access denied - Only ADMIN
   // ---------------------
   if (!session || session.user.role !== 'ADMIN') {
+    // Redirect SUPPORT to their own page
+    if (session?.user?.role === 'SUPPORT') {
+      router.push('/support')
+      return null
+    }
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

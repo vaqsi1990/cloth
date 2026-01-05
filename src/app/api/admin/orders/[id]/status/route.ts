@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { isAdminOrSupport } from '@/lib/roles'
 
 const statusSchema = z.object({
   status: z.enum(['PENDING', 'PAID', 'SHIPPED', 'CANCELED', 'REFUNDED'])
@@ -14,11 +15,11 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Check authentication and admin role
+    // Check authentication and admin/support role
     const session = await getServerSession(authOptions)
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!session || !isAdminOrSupport(session.user.role)) {
       return NextResponse.json(
-        { success: false, error: 'Admin access required' },
+        { success: false, error: 'Admin or Support access required' },
         { status: 403 }
       )
     }

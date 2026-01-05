@@ -12,7 +12,7 @@ interface ChatMessage {
   createdAt: string
   isFromAdmin: boolean
   user?: { name: string; email: string }
-  admin?: { name: string; email: string }
+  admin?: { name: string; email: string; role?: string }
 }
 
 interface ChatWidgetProps {
@@ -144,13 +144,14 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
           user_email?: string
           admin_name?: string
           admin_email?: string
+          admin_role?: string
         }) => ({
           id: msg.id,
           content: msg.content,
           createdAt: typeof msg.createdAt === 'string' ? msg.createdAt : (msg.createdAt instanceof Date ? msg.createdAt.toISOString() : String(msg.createdAt)),
           isFromAdmin: msg.isFromAdmin,
           user: msg.user_name ? { name: msg.user_name, email: msg.user_email } : undefined,
-          admin: msg.admin_name ? { name: msg.admin_name, email: msg.admin_email } : undefined
+          admin: msg.admin_name ? { name: msg.admin_name, email: msg.admin_email, role: msg.admin_role } : undefined
         }))
 
         // Remove duplicates based on message ID and sort by creation time
@@ -287,7 +288,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
             createdAt: data.message.createdAt,
             isFromAdmin: data.message.isFromAdmin,
             user: data.message.user_name ? { name: data.message.user_name, email: data.message.user_email } : undefined,
-            admin: data.message.admin_name ? { name: data.message.admin_name, email: data.message.admin_email } : undefined
+            admin: data.message.admin_name ? { name: data.message.admin_name, email: data.message.admin_email, role: data.message.admin_role } : undefined
           }
 
           // Add message only if it doesn't already exist
@@ -434,7 +435,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
                         <p className={`text-[14px] font-semibold ${message.isFromAdmin ? 'text-blue-700' : 'text-gray-200'
                           }`}>
                           {message.isFromAdmin
-                            ? 'ადმინისტრატორი'
+                            ? (message.admin?.role === 'SUPPORT' ? 'საფორთი' : (message.admin?.name || 'ადმინისტრატორი'))
                             : (message.user?.name || guestName || 'მომხმარებელი')
                           }
                         </p>

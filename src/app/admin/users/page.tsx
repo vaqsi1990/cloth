@@ -190,6 +190,11 @@ const AdminUsersPage = () => {
   }
 
   if (!session || session.user.role !== 'ADMIN') {
+    // Redirect SUPPORT to their own page
+    if (session?.user?.role === 'SUPPORT') {
+      router.push('/support/users')
+      return null
+    }
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -219,7 +224,7 @@ const AdminUsersPage = () => {
                 className="flex items-center space-x-2 text-black hover:text-black transition-colors"
               >
                 <ArrowLeft className="w-5 h-5 sm:w-7 sm:h-7 font-bold" />
-                
+                <span className="text-sm sm:text-base">ადმინ პანელი</span>
               </button>
               <div>
                 <h1 className="text-base sm:text-lg md:text-[20px] font-bold text-black">მომხმარებლების მართვა</h1>

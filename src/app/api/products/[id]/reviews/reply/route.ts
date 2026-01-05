@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { isAdminOrSupport } from '@/lib/roles'
 
 const replySchema = z.object({
   reviewId: z.number(),
@@ -23,10 +24,10 @@ export async function POST(
       )
     }
 
-    // Check if user is admin
-    if (session.user.role !== 'ADMIN') {
+    // Check if user is admin or support
+    if (!isAdminOrSupport(session.user.role)) {
       return NextResponse.json(
-        { success: false, error: 'Permission denied. Admin access required.' },
+        { success: false, error: 'Permission denied. Admin or Support access required.' },
         { status: 403 }
       )
     }
@@ -141,10 +142,10 @@ export async function DELETE(
       )
     }
 
-    // Check if user is admin
-    if (session.user.role !== 'ADMIN') {
+    // Check if user is admin or support
+    if (!isAdminOrSupport(session.user.role)) {
       return NextResponse.json(
-        { success: false, error: 'Permission denied. Admin access required.' },
+        { success: false, error: 'Permission denied. Admin or Support access required.' },
         { status: 403 }
       )
     }

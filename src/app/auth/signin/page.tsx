@@ -95,6 +95,8 @@ const SignInContent = () => {
         const session = await getSession()
         if (session?.user?.role === 'ADMIN') {
           router.push('/admin')
+        } else if (session?.user?.role === 'SUPPORT') {
+          router.push('/support')
         } else {
           router.push('/')
         }

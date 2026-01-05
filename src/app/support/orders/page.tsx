@@ -56,7 +56,7 @@ interface Order {
   items: OrderItem[]
 }
 
-const AdminOrdersPage = () => {
+const SupportOrdersPage = () => {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [orders, setOrders] = useState<Order[]>([])
@@ -89,7 +89,7 @@ const AdminOrdersPage = () => {
   }, [])
 
   useEffect(() => {
-    if (status === 'authenticated' && session?.user?.role === 'ADMIN') {
+    if (status === 'authenticated' && session?.user?.role === 'SUPPORT') {
       fetchOrders()
     }
   }, [status, session?.user?.role, fetchOrders])
@@ -220,12 +220,7 @@ const AdminOrdersPage = () => {
     )
   }
 
-  if (!session || session.user.role !== 'ADMIN') {
-    // Redirect SUPPORT to their own page
-    if (session?.user?.role === 'SUPPORT') {
-      router.push('/support/orders')
-      return null
-    }
+  if (!session || session.user.role !== 'SUPPORT') {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -251,11 +246,11 @@ const AdminOrdersPage = () => {
             <div className="flex items-center space-x-2 sm:space-x-4">
               <button
                 type="button"
-                onClick={() => router.back()}
+                onClick={() => router.push('/support')}
                 className="flex items-center space-x-2 text-black hover:text-black transition-colors"
               >
                 <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span className="text-sm sm:text-base">ადმინ პანელი</span>
+                <span className="text-sm sm:text-base">საფორთის პანელი</span>
               </button>
               <div>
                 <h1 className="text-lg sm:text-xl md:text-[24px] font-bold text-black">შეკვეთების მართვა</h1>
@@ -492,4 +487,5 @@ const AdminOrdersPage = () => {
   )
 }
 
-export default AdminOrdersPage
+export default SupportOrdersPage
+

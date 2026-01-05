@@ -96,10 +96,11 @@ export async function GET(
       user_email?: string
       admin_name?: string
       admin_email?: string
+      admin_role?: string
     }>>`
       SELECT cm.id, cm.content, cm."createdAt", cm."isFromAdmin",
              u.name as user_name, u.email as user_email,
-             a.name as admin_name, a.email as admin_email
+             a.name as admin_name, a.email as admin_email, a.role as admin_role
       FROM "ChatMessage" cm
       LEFT JOIN "User" u ON cm."userId" = u.id
       LEFT JOIN "User" a ON cm."adminId" = a.id
@@ -227,9 +228,17 @@ export async function POST(
       }
     }
     
-    let newMessage
+    let newMessage: Array<{
+      id: number
+      content: string
+      createdAt: Date
+      isFromAdmin: boolean
+      admin_name?: string
+      admin_email?: string
+      admin_role?: string
+    }>
     if (isFromAdmin) {
-      newMessage = await prisma.$queryRaw<Array<{
+      const insertedMessage = await prisma.$queryRaw<Array<{
         id: number
         content: string
         createdAt: Date
@@ -239,6 +248,36 @@ export async function POST(
         VALUES (${validatedData.content}, ${chatRoomId}, ${adminId}, true, NOW())
         RETURNING id, content, "createdAt", "isFromAdmin"
       `
+      
+      // Fetch admin details including role
+      let adminName: string | undefined
+      let adminEmail: string | undefined
+      let adminRole: string | undefined
+      
+      if (adminId) {
+        const adminDetails = await prisma.$queryRaw<Array<{
+          name: string | null
+          email: string
+          role: string
+        }>>`
+          SELECT name, email, role
+          FROM "User"
+          WHERE id = ${adminId}
+          LIMIT 1
+        `
+        if (adminDetails.length > 0) {
+          adminName = adminDetails[0].name || undefined
+          adminEmail = adminDetails[0].email
+          adminRole = adminDetails[0].role
+        }
+      }
+      
+      newMessage = [{
+        ...insertedMessage[0],
+        admin_name: adminName,
+        admin_email: adminEmail,
+        admin_role: adminRole
+      }]
     } else {
       newMessage = await prisma.$queryRaw<Array<{
         id: number
@@ -260,10 +299,32 @@ export async function POST(
     `
 
     const message = newMessage[0]
+    
+    // Ensure message has admin details if it's from admin
+    const responseMessage: {
+      id: number
+      content: string
+      createdAt: string
+      isFromAdmin: boolean
+      admin_name?: string
+      admin_email?: string
+      admin_role?: string
+    } = {
+      id: message.id,
+      content: message.content,
+      createdAt: message.createdAt instanceof Date ? message.createdAt.toISOString() : String(message.createdAt),
+      isFromAdmin: message.isFromAdmin
+    }
+    
+    if (message.isFromAdmin && message.admin_name !== undefined) {
+      responseMessage.admin_name = message.admin_name
+      responseMessage.admin_email = message.admin_email
+      responseMessage.admin_role = message.admin_role
+    }
 
     return NextResponse.json({
       success: true,
-      message
+      message: responseMessage
     })
 
   } catch (error) {

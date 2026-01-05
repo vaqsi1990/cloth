@@ -675,9 +675,10 @@ const AccountPageContent = () => {
   const identityComment = verification?.identityComment ?? verification?.comment ?? null
   const identityApproved = identityStatus === 'APPROVED'
   const hasIban = Boolean(userIban)
-  const canCreateProducts = session.user.role === 'ADMIN' || (identityApproved && hasIban)
-  const shouldShowIdentityVerification = session.user.role !== 'ADMIN' && sellerNeedsVerification && !identityApproved
-  const shouldShowIbanVerification = session.user.role !== 'ADMIN' && sellerNeedsVerification && !userIban
+  const isAdminOrSupport = session.user.role === 'ADMIN' || session.user.role === 'SUPPORT'
+  const canCreateProducts = isAdminOrSupport || (identityApproved && hasIban)
+  const shouldShowIdentityVerification = !isAdminOrSupport && sellerNeedsVerification && !identityApproved
+  const shouldShowIbanVerification = !isAdminOrSupport && sellerNeedsVerification && !userIban
 
   const tabs = [
     { id: 'profile', label: 'პროფილი', icon: User },
@@ -685,7 +686,7 @@ const AccountPageContent = () => {
     { id: 'sales', label: 'გაყიდვები', icon: TrendingUp },
     { id: 'chats', label: 'ჩათები', icon: MessageCircle },
     { id: 'Contact', label: 'კონტაქტი', icon: MessageCircle },
-    { id: 'products', label: 'ჩემი პროდუქტები', icon: Package },
+    ...(session.user.role !== 'SUPPORT' ? [{ id: 'products', label: 'ჩემი პროდუქტები', icon: Package }] : []),
     { id: 'settings', label: 'პარამეტრები', icon: Settings },
   ]
 
@@ -863,14 +864,14 @@ const AccountPageContent = () => {
               <Mail className="w-5 h-5 text-black" />
               <div>
                 <p className="md:text-[18px] text-[16px] text-black">ელფოსტა</p>
-                <p className="font-medium">{session.user.email}</p>
+                <p className="font-medium text-black">{session.user.email}</p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
               <User className="w-5 h-5 text-black" />
               <div>
                 <p className="md:text-[18px] text-[16px] text-black">სახელი</p>
-                <p className="font-medium">{session.user.name}</p>
+                <p className="font-medium text-black">{session.user.name}</p>
               </div>
             </div>
           </div>
@@ -879,18 +880,36 @@ const AccountPageContent = () => {
               <Phone className="w-5 h-5 text-black" />
               <div>
                 <p className="md:text-[18px] text-[16px] text-black">ტელეფონი</p>
-                <p className="font-medium">{session.user.phone ?? '-'}</p>
+                <p className="font-medium text-black">{session.user.phone ?? '-'}</p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
               <MapPin className="w-5 h-5 text-black" />
               <div>
                 <p className="md:text-[18px] text-[16px] text-black">მისამართი</p>
-                <p className="font-medium">{(session.user as { location?: string })?.location ?? '-'}</p>
+                <p className="font-medium text-black">{(session.user as { location?: string })?.location ?? '-'}</p>
               </div>
-
             </div>
-
+            <div className="flex items-center space-x-3">
+              <User className="w-5 h-5 text-black" />
+              <div>
+                <p className="md:text-[18px] text-[16px] text-black">როლი</p>
+                <p className={`font-medium ${
+                  session.user.role === 'ADMIN' 
+                    ? 'text-red-800' 
+                    : session.user.role === 'SUPPORT'
+                    ? 'text-black'
+                    : 'text-green-500'
+                }`}>
+                  {(() => {
+                    const role = session.user.role
+                    if (role === 'ADMIN') return 'ადმინისტრატორი'
+                    if (role === 'SUPPORT') return 'საფორთი'
+                    return 'მომხმარებელი'
+                  })()}
+                </p>
+              </div>
+            </div>
           </div>
 
         </div>
@@ -908,7 +927,7 @@ const AccountPageContent = () => {
         {shouldShowIdentityVerification && (
           <div className="mt-8 p-6 border-2 border-black rounded-lg bg-gray-50">
             <div className="mb-4">
-              <h2 className="text-xl font-bold mb-2">პირადობის ვერიფიკაცია</h2>
+              <h2 className="text-xl font-bold mb-2 text-black">პირადობის ვერიფიკაცია</h2>
               {identityStatus !== 'REJECTED' && (
                 <p className="text-[18px] text-black">
                   პირადობის სურათებით მოხდება თქვენი ვერიფიცირება, თუ არ ატვირთავთ სურათებს ვერ შეძლებთ ახალი პროდუქტის დამატებას ან ყიდვას და ქირაობას
@@ -1027,10 +1046,10 @@ const AccountPageContent = () => {
 
 
         {/* ინდმეწარმის საბუთის სექცია - დამოუკიდებელი, მხოლოდ როცა blocked */}
-        {session.user.role !== 'ADMIN' && userBlocked && !userVerified && (
+        {!isAdminOrSupport && userBlocked && !userVerified && (
           <div className="mt-8 p-6 border-2 border-black rounded-lg bg-gray-50">
             <div className="mb-4">
-              <h4 className="text-xl font-bold mb-2">ინდმეწარმის საბუთის ატვირთვა</h4>
+              <h4 className="text-xl font-bold mb-2 text-black">ინდმეწარმის საბუთის ატვირთვა</h4>
               <p className="text-[18px] text-black font-medium mb-2">
                 გთხოვთ ატვირთოთ ინდმეწარმის დამადასტურებელი დოკუმენტი
               </p>
@@ -1089,7 +1108,7 @@ const AccountPageContent = () => {
         )}
 
       </div>
-      {session.user.role !== 'ADMIN' && identityApproved && (
+      {!isAdminOrSupport && identityApproved && (
         <h1 className="text-green-500 text-[20px] font-bold ">პირადობა დამტკიცებულია</h1>
       )}
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
@@ -1373,12 +1392,12 @@ const AccountPageContent = () => {
             )}
           </div>
         </div>
-        {session.user.role !== 'ADMIN' && !identityApproved && (
+        {!isAdminOrSupport && !identityApproved && (
           <div className="mb-4 p-3 border border-yellow-400 bg-yellow-50 text-yellow-800 rounded md:text-[18px] text-[16px]">
             გთხოვთ დაადასტუროთ პირადობა პროფილის გვერდზე, რომ შეძლოთ პროდუქტის დამატება.
           </div>
         )}
-        {session.user.role !== 'ADMIN' && identityApproved && !hasIban && (
+        {!isAdminOrSupport && identityApproved && !hasIban && (
           <div className="mb-4 p-3 border border-yellow-400 bg-yellow-50 text-yellow-800 rounded md:text-[18px] text-[16px]">
             გთხოვთ მიუთითოთ ბანკის IBAN პროფილში, რომ შეძლოთ ახალი პროდუქტის დამატება.
           </div>

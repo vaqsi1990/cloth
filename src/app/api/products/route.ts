@@ -88,6 +88,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search')?.trim()
     const cursor = searchParams.get('cursor')
     const cursorId = cursor ? parseInt(cursor, 10) : undefined
+    const includeUnapproved = searchParams.get('includeUnapproved') === 'true'
     
     // Start session check and category/purpose lookups in parallel (non-blocking for query setup)
     // Most users are non-admin, so we can start with default filters
@@ -120,7 +121,82 @@ export async function GET(request: NextRequest) {
     ])
     
     const isAdminOrSupportRole = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPPORT'
+    // If includeUnapproved is true and user is admin/support, show all products regardless of approval status
+    const shouldIncludeUnapproved = includeUnapproved && isAdminOrSupportRole
     const startTime = Date.now()
+    
+    // Build select object conditionally for admin/support vs regular users
+    const baseSelect = {
+      id: true,
+      name: true,
+      slug: true,
+      brand: true,
+      gender: true,
+      isNew: true,
+      discount: true,
+      discountDays: true,
+      discountStartDate: true,
+      rating: true,
+      categoryId: true,
+      purposeId: true,
+      isRentable: true,
+      pricePerDay: true,
+      maxRentalDays: true,
+      status: true,
+      createdAt: true,
+      images: {
+        select: {
+          url: true,
+        },
+        orderBy: { position: 'asc' as const },
+        take: 1
+      },
+      variants: {
+        select: {
+          price: true
+        },
+        take: 1,
+        orderBy: { price: 'asc' as const }
+      },
+      rentalPriceTiers: {
+        select: {
+          minDays: true,
+          pricePerDay: true
+        },
+        orderBy: { minDays: 'asc' as const },
+        take: 1
+      },
+    }
+    
+    // Add admin/support specific fields
+    if (isAdminOrSupportRole) {
+      Object.assign(baseSelect, {
+        sku: true,
+        userId: true,
+        approvalStatus: true,
+        rejectionReason: true,
+        category: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
+        purpose: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        }
+      })
+    }
+    
     const products = await prisma.product.findMany({
       // @ts-ignore - cacheStrategy is available with Prisma Accelerate
       cacheStrategy: {
@@ -139,7 +215,7 @@ export async function GET(request: NextRequest) {
             ? ['RESERVED'] // Admins/Support don't see RESERVED (sold) products
             : ['MAINTENANCE', 'DAMAGED', 'RESERVED'] // Non-admin users don't see maintenance, damaged, or reserved (sold) products
         },
-        ...(isAdminOrSupportRole ? {} : { 
+        ...(shouldIncludeUnapproved || isAdminOrSupportRole ? {} : { 
           approvalStatus: 'APPROVED',
           // Optimized: Use userId join instead of nested user relation for better performance
           userId: {
@@ -166,58 +242,7 @@ export async function GET(request: NextRequest) {
         } : {}),
         ...(isNew === 'true' ? { isNew: true } : {})
       },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        brand: true,
-        // Removed: description - not needed for list view, only for detail page
-        // Removed: sku, stock - not needed for list view display
-        gender: true,
-        isNew: true,
-        discount: true,
-        discountDays: true,
-        discountStartDate: true,
-        rating: true,
-        categoryId: true,
-        purposeId: true,
-        // Removed: userId - not needed for list view
-        isRentable: true,
-        pricePerDay: true,
-        maxRentalDays: true,
-        status: true,
-        // Removed: approvalStatus - already filtered in WHERE clause
-        createdAt: true,
-        // Removed: updatedAt - not needed for list view
-        // Removed: category and purpose relations - use IDs only for list view
-        // Frontend can fetch category/purpose names separately if needed, or use cached data
-        images: {
-          select: {
-            url: true, // Only URL needed for list view
-            // Removed: id, alt, position - not needed for list view
-          },
-          orderBy: { position: 'asc' },
-          take: 1 // Only first image needed for list view (major performance boost)
-        },
-        variants: {
-          select: {
-            price: true // Only price needed for list view
-            // Removed: id - not needed
-          },
-          take: 1, // Only need first variant for list view (min price calculation)
-          orderBy: { price: 'asc' } // Get cheapest variant
-        },
-        rentalPriceTiers: {
-          select: {
-            minDays: true,
-            pricePerDay: true
-            // Removed: id - not needed
-          },
-          orderBy: { minDays: 'asc' },
-          take: 1 // Only first tier needed for list view (lowest minDays)
-        },
-        // Removed: user relation - fetch separately only if needed, reduces JOIN overhead
-      },
+      select: baseSelect,
       orderBy: [
         { createdAt: 'desc' }
         // Removed: { id: 'desc' } - single orderBy is faster, createdAt is already unique enough

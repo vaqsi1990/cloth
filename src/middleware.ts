@@ -8,9 +8,13 @@ export default withAuth(
   {
     callbacks: {
       authorized: ({ token, req }) => {
-        // Check if user is trying to access admin routes
+        // Check if user is trying to access admin routes (only ADMIN)
         if (req.nextUrl.pathname.startsWith("/admin")) {
-          return isAdminOrSupport(token?.role as string)
+          return token?.role === "ADMIN"
+        }
+        // Check if user is trying to access support routes (only SUPPORT)
+        if (req.nextUrl.pathname.startsWith("/support")) {
+          return token?.role === "SUPPORT"
         }
         // Allow authenticated users to access account routes
         if (req.nextUrl.pathname.startsWith("/account")) {
@@ -23,5 +27,5 @@ export default withAuth(
 )
 
 export const config = {
-  matcher: ["/admin/:path*", "/account/:path*"]
+  matcher: ["/admin/:path*", "/support/:path*", "/account/:path*"]
 }

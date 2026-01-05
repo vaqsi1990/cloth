@@ -296,8 +296,8 @@ export const authOptions: NextAuthOptions = {
           })
 
           if (dbUser) {
-            // Only update if not already set or if data has changed
-            if (!token.role) token.role = dbUser.role
+            // Always update role from database to ensure it's current
+            token.role = dbUser.role
             if (!token.image && dbUser.image) token.image = dbUser.image
             if (!token.phone && dbUser.phone) token.phone = dbUser.phone
             if (!token.location && dbUser.location) token.location = dbUser.location
