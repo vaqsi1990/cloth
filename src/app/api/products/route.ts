@@ -119,7 +119,7 @@ export async function GET(request: NextRequest) {
       purposeIdPromise
     ])
     
-    const isAdmin = session?.user?.role === 'ADMIN'
+    const isAdminOrSupportRole = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPPORT'
     const startTime = Date.now()
     const products = await prisma.product.findMany({
       // @ts-ignore - cacheStrategy is available with Prisma Accelerate
@@ -133,13 +133,13 @@ export async function GET(request: NextRequest) {
         skip: 1
       } : {}),
       where: {
-        // RESERVED products are hidden from everyone, including admins (sold products)
+        // RESERVED products are hidden from everyone, including admins/support (sold products)
         status: {
-          notIn: isAdmin 
-            ? ['RESERVED'] // Admins don't see RESERVED (sold) products
+          notIn: isAdminOrSupportRole 
+            ? ['RESERVED'] // Admins/Support don't see RESERVED (sold) products
             : ['MAINTENANCE', 'DAMAGED', 'RESERVED'] // Non-admin users don't see maintenance, damaged, or reserved (sold) products
         },
-        ...(isAdmin ? {} : { 
+        ...(isAdminOrSupportRole ? {} : { 
           approvalStatus: 'APPROVED',
           // Optimized: Use userId join instead of nested user relation for better performance
           userId: {

@@ -1,4 +1,5 @@
 import { withAuth } from "next-auth/middleware"
+import { isAdminOrSupport } from "@/lib/roles"
 
 export default withAuth(
   function middleware(req) {
@@ -9,7 +10,7 @@ export default withAuth(
       authorized: ({ token, req }) => {
         // Check if user is trying to access admin routes
         if (req.nextUrl.pathname.startsWith("/admin")) {
-          return token?.role === "ADMIN"
+          return isAdminOrSupport(token?.role as string)
         }
         // Allow authenticated users to access account routes
         if (req.nextUrl.pathname.startsWith("/account")) {

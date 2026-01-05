@@ -1253,7 +1253,7 @@ const ProductPage = () => {
                                     <div className="space-y-3 p-4 bg-emerald-50 rounded-xl border border-emerald-200">
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
-                                                <label className="block md:text-[18px] text-[16px] font-medium mb-1">დაწყება</label>
+                                                <label className="block md:text-[18px] text-black text-[16px] font-medium mb-1">დაწყება</label>
                                                 <DatePicker
                                                     selected={rentalStartDate ? new Date(rentalStartDate) : null}
                                                     onChange={(date: Date | null) => {
@@ -1276,7 +1276,7 @@ const ProductPage = () => {
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block md:text-[18px] text-[16px] font-medium mb-1">დასრულება</label>
+                                                <label className="block md:text-[18px] text-black text-[16px] font-medium mb-1">დასრულება</label>
 
                                                 <DatePicker
                                                     selected={rentalEndDate ? new Date(rentalEndDate) : null}

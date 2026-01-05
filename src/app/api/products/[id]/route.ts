@@ -7,6 +7,7 @@ import { Prisma } from '@prisma/client'
 import { ensureUniqueProductSlug } from '@/lib/productSlug'
 import { checkAndClearExpiredDiscount, processExpiredDiscount } from '@/utils/discountUtils'
 import { PURPOSE_NAME_BY_SLUG } from '@/data/purposes'
+import { isAdminOrSupport } from '@/lib/roles'
 
 // Product validation schema
 const productSchema = z.object({
@@ -206,7 +207,7 @@ export async function GET(
       getServerSession(authOptions)
     ])
     
-    const isAdmin = session?.user?.role === 'ADMIN'
+    const isAdminOrSupportRole = isAdminOrSupport(session?.user?.role)
     const requesterId = session?.user?.id
 
     const isOwner = requesterId && product?.userId === requesterId
@@ -214,8 +215,8 @@ export async function GET(
     // Check access permissions
     if (
       !product ||
-      (!isAdmin && product.user?.blocked) ||
-      (!isAdmin && !isOwner && product.approvalStatus !== 'APPROVED')
+      (!isAdminOrSupportRole && product.user?.blocked) ||
+      (!isAdminOrSupportRole && !isOwner && product.approvalStatus !== 'APPROVED')
     ) {
       return NextResponse.json({
         success: false,
@@ -270,7 +271,7 @@ export async function PUT(
       )
     }
 
-    const isAdmin = session.user.role === 'ADMIN'
+    const isAdminOrSupportRole = isAdminOrSupport(session.user.role)
     const resolvedParams = await params
     const productId = parseInt(resolvedParams.id)
     
@@ -306,14 +307,14 @@ export async function PUT(
       }, { status: 404 })
     }
 
-    if (!isAdmin && existingProduct.userId !== session.user.id) {
+    if (!isAdminOrSupportRole && existingProduct.userId !== session.user.id) {
       return NextResponse.json(
         { success: false, error: 'Permission denied' },
         { status: 403 }
       )
     }
 
-    const shouldResetApproval = !isAdmin
+    const shouldResetApproval = !isAdminOrSupportRole
 
     // Delete existing related data before updating
     // This ensures clean state for images, variants, and rental price tiers
@@ -520,8 +521,9 @@ export async function PATCH(
       }, { status: 404 })
     }
 
-    // Check if user owns the product or is admin
-    if (session.user.role !== 'ADMIN' && existingProduct.userId !== session.user.id) {
+    // Check if user owns the product or is admin/support
+    const isAdminOrSupportRole = isAdminOrSupport(session.user.role)
+    if (!isAdminOrSupportRole && existingProduct.userId !== session.user.id) {
       return NextResponse.json(
         { success: false, error: 'Permission denied' },
         { status: 403 }
@@ -606,8 +608,9 @@ export async function DELETE(
       }, { status: 404 })
     }
 
-    // Check if user owns the product or is admin
-    if (session.user.role !== 'ADMIN' && existingProduct.userId !== session.user.id) {
+    // Check if user owns the product or is admin/support
+    const isAdminOrSupportRole = isAdminOrSupport(session.user.role)
+    if (!isAdminOrSupportRole && existingProduct.userId !== session.user.id) {
       return NextResponse.json(
         { success: false, error: 'Permission denied' },
         { status: 403 }

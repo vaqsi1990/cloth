@@ -121,10 +121,11 @@ const AdminUsersPage = () => {
 
 
 
-  const handleToggleRole = async (userId: string, currentRole: string) => {
-    const newRole = currentRole === 'USER' ? 'ADMIN' : 'USER'
+  const handleChangeRole = async (userId: string, newRole: string) => {
+    const user = users.find(u => u.id === userId)
+    if (!user) return
     
-    if (!confirm(`ნამდვილად გსურთ მომხმარებლის როლის შეცვლა ${currentRole}-დან ${newRole}-ზე?`)) {
+    if (!confirm(`ნამდვილად გსურთ მომხმარებლის როლის შეცვლა ${user.role === 'ADMIN' ? 'ადმინისტრატორიდან' : user.role === 'SUPPORT' ? 'საფორთიდან' : 'მომხმარებლიდან'} ${newRole === 'ADMIN' ? 'ადმინისტრატორად' : newRole === 'SUPPORT' ? 'საფორთად' : 'მომხმარებლად'}?`)) {
       return
     }
 
@@ -137,12 +138,15 @@ const AdminUsersPage = () => {
         body: JSON.stringify({ role: newRole }),
       })
       
+      const data = await response.json()
+      
       if (response.ok) {
         setUsers(users.map(u => 
           u.id === userId ? { ...u, role: newRole } : u
         ))
+        showToast('როლი წარმატებით შეიცვალა', 'success')
       } else {
-        showToast('შეცდომა როლის შეცვლისას', 'error')
+        showToast(data.error || 'შეცდომა როლის შეცვლისას', 'error')
       }
     } catch (error) {
       console.error('Error updating role:', error)
@@ -253,6 +257,7 @@ const AdminUsersPage = () => {
                 <option value="ALL">ყველა როლი</option>
                 <option value="USER">მომხმარებელი</option>
                 <option value="ADMIN">ადმინისტრატორი</option>
+                <option value="SUPPORT">საფორთი</option>
               </select>
             </div>
           </div>
@@ -386,9 +391,11 @@ const AdminUsersPage = () => {
                           <span className={`px-2 py-1 text-xs sm:text-sm md:text-[16px] font-bold rounded-full whitespace-nowrap ${
                             user.role === 'ADMIN' 
                               ? 'text-red-800' 
+                              : user.role === 'SUPPORT'
+                              ? 'text-blue-800'
                               : 'text-green-500'
                           }`}>
-                            {user.role === 'ADMIN' ? 'ადმინისტრატორი' : 'მომხმარებელი'}
+                            {user.role === 'ADMIN' ? 'ადმინისტრატორი' : user.role === 'SUPPORT' ? 'საფორთი' : 'მომხმარებელი'}
                           </span>
                           {(!user.name || !user.email) && (
                             <span className="px-2 py-1 text-xs rounded-full bg-gray-200 text-black whitespace-nowrap">
@@ -443,7 +450,21 @@ const AdminUsersPage = () => {
 
                     {/* Actions - Only show for non-deleted users */}
                     {user.name && user.email && (
-                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2 flex-shrink-0">
+                      <div className="flex flex-col text-black sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2 flex-shrink-0">
+                        {/* Role Change Dropdown */}
+                        {session.user.id !== user.id && (
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={user.role}
+                              onChange={(e) => handleChangeRole(user.id, e.target.value)}
+                              className="px-3 py-2 border border-gray-300 rounded text-xs sm:text-sm md:text-[16px] bg-white focus:ring-2 focus:ring-black focus:border-transparent"
+                            >
+                              <option value="USER">მომხმარებელი</option>
+                              <option value="ADMIN">ადმინისტრატორი</option>
+                              <option value="SUPPORT">საფორთი</option>
+                            </select>
+                          </div>
+                        )}
                         {/* Ban status badge */}
                         {user.banned && (
                           <span className="px-2 py-1 bg-red-600 text-white rounded text-xs sm:text-sm md:text-[18px] text-center whitespace-nowrap">დაბლოკილი</span>

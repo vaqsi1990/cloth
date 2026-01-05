@@ -3,9 +3,10 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { UserRole } from '@prisma/client'
 
 const roleSchema = z.object({
-  role: z.enum(['USER', 'ADMIN'])
+  role: z.enum(['USER', 'ADMIN', 'SUPPORT'])
 })
 
 // PUT - Update user role
@@ -51,7 +52,7 @@ export async function PUT(
     // Update user role
     const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: { role },
+      data: { role: role as UserRole },
       select: {
         id: true,
         name: true,

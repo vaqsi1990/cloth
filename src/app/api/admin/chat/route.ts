@@ -2,16 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { isAdminOrSupport } from '@/lib/roles'
 
 // GET - Get all chat rooms for admin
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     
-    if (!session?.user?.id || session.user.role !== 'ADMIN') {
+    if (!session?.user?.id || !isAdminOrSupport(session.user.role)) {
       return NextResponse.json({
         success: false,
-        message: 'Admin access required'
+        message: 'Admin or Support access required'
       }, { status: 401 })
     }
 
@@ -161,10 +162,10 @@ export async function PATCH(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     
-    if (!session?.user?.id || session.user.role !== 'ADMIN') {
+    if (!session?.user?.id || !isAdminOrSupport(session.user.role)) {
       return NextResponse.json({
         success: false,
-        message: 'Admin access required'
+        message: 'Admin or Support access required'
       }, { status: 401 })
     }
 
@@ -244,10 +245,10 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     
-    if (!session?.user?.id || session.user.role !== 'ADMIN') {
+    if (!session?.user?.id || !isAdminOrSupport(session.user.role)) {
       return NextResponse.json({
         success: false,
-        message: 'Admin access required'
+        message: 'Admin or Support access required'
       }, { status: 401 })
     }
 

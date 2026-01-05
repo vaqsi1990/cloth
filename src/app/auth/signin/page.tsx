@@ -127,7 +127,7 @@ const SignInContent = () => {
     <div className="min-h-screen  flex  justify-center py-12 px-4 ">
       <div className="max-w-md w-full space-y-8">
         <div>
-          <h2 className="text-[16px] text-center md:text-[20px] font-semibold uppercase tracking-widesttext-black">
+          <h2 className="text-[16px] text-black text-center md:text-[20px] font-semibold uppercase tracking-widesttext-black">
             შესვლა
           </h2>
           <p className="mt-2 text-center text-lg text-black ">
@@ -163,7 +163,7 @@ const SignInContent = () => {
                   required
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-3 text-black placeholder:text-gray-500 border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                  className="w-full pl-10  pr-4 py-3 text-black placeholder:text-gray-500 border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
                   placeholder="შეიყვანეთ ელფოსტა"
                 />
               </div>

@@ -320,7 +320,7 @@ const SignUpPage = () => {
     <div className="min-h-screen  flex  justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
-          <h2 className="text-[16px] text-center md:text-[20px] font-semibold uppercase tracking-widesttext-black">
+          <h2 className="text-[16px] text-black text-center md:text-[20px] font-semibold uppercase tracking-widesttext-black">
             რეგისტრაცია
           </h2>
           <p className="mt-2 text-center text-lg text-black">
@@ -350,7 +350,7 @@ const SignUpPage = () => {
                   required
                   value={formData.name}
                   onChange={handleChange}
-                  className={`w-full pl-10 pr-4 py-3 placeholder:text-gray-500 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300 ${fieldErrors.name ? 'border-red-500' : 'border-black'}`}
+                  className={`w-full pl-10 pr-4 text-black py-3 placeholder:text-gray-500 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300 ${fieldErrors.name ? 'border-red-500' : 'border-black'}`}
                   placeholder="შეიყვანეთ სახელი"
                 />
               </div>
@@ -371,7 +371,7 @@ const SignUpPage = () => {
                   required
                   value={formData.lastName}
                   onChange={handleChange}
-                  className={`w-full pl-10 pr-4 py-3 placeholder:text-gray-500 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300 ${fieldErrors.lastName ? 'border-red-500' : 'border-black'}`}
+                  className={`w-full pl-10 pr-4 text-black py-3 placeholder:text-gray-500 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300 ${fieldErrors.lastName ? 'border-red-500' : 'border-black'}`}
                   placeholder="შეიყვანეთ გვარი"
                 />
               </div>
@@ -390,7 +390,7 @@ const SignUpPage = () => {
                   required
                   value={formData.phone}
                   onChange={handleChange}
-                  className="w-full pl-4 pr-4 py-3 text-black placeholder:text-gray-500 border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
+                  className="w-full pl-4 pr-4 text-black py-3 placeholder:text-gray-500 border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
                   placeholder="შეიყვანეთ ტელეფონის ნომერი"
                 />
               </div>
@@ -408,7 +408,7 @@ const SignUpPage = () => {
                   required
                   value={formData.location}
                   onChange={handleChange}
-                  className={`w-full pl-4 pr-4 py-3 text-black placeholder:text-gray-500 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300 ${fieldErrors.location ? 'border-red-500' : 'border-black'}`}
+                  className={`w-full pl-4 pr-4 text-black py-3 placeholder:text-gray-500 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300 ${fieldErrors.location ? 'border-red-500' : 'border-black'}`}
                   placeholder="შეიყვანეთ ადგილმდებარეობა"
                 />
               </div>

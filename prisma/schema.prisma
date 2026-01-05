@@ -45,6 +45,7 @@ enum Gender {
 enum UserRole {
   USER
   ADMIN
+  SUPPORT
 }
 
 enum TransactionType {

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { isAdminOrSupport } from '@/lib/roles'
 
 // Validation schema
 const sendMessageSchema = z.object({
@@ -32,11 +33,11 @@ export async function GET(
     const session = await getServerSession(authOptions)
     
     // Check if user has access to this chat room
-    // Admin users can access any chat room
+    // Admin/Support users can access any chat room
     // Regular users can access chat rooms where they are userId (buyer) or adminId (seller/product author)
     let chatRoom
-    if (session?.user?.role === 'ADMIN') {
-      // Admin can access any chat room
+    if (isAdminOrSupport(session?.user?.role)) {
+      // Admin/Support can access any chat room
       chatRoom = await prisma.$queryRaw<Array<{ id: number }>>`
         SELECT id FROM "ChatRoom" 
         WHERE id = ${chatRoomId}
@@ -159,11 +160,11 @@ export async function POST(
     const validatedData = sendMessageSchema.parse(body)
 
     // Check if chat room exists and user has access
-    // Admin users can access any chat room
+    // Admin/Support users can access any chat room
     // Regular users can access chat rooms where they are userId (buyer) or adminId (seller/product author)
     let chatRoom
-    if (session?.user?.role === 'ADMIN') {
-      // Admin can access any chat room
+    if (isAdminOrSupport(session?.user?.role)) {
+      // Admin/Support can access any chat room
       chatRoom = await prisma.$queryRaw<Array<{ id: number }>>`
         SELECT id FROM "ChatRoom" 
         WHERE id = ${chatRoomId}
@@ -208,10 +209,10 @@ export async function POST(
     `
     
     const isUserSeller = chatRoomInfo.length > 0 && chatRoomInfo[0].adminId === session?.user?.id
-    const isUserAdmin = session?.user?.role === 'ADMIN'
+    const isUserAdminOrSupport = isAdminOrSupport(session?.user?.role)
     
-    // Determine if message is from admin/seller
-    const isFromAdmin = isUserAdmin || isUserSeller
+    // Determine if message is from admin/support/seller
+    const isFromAdmin = isUserAdminOrSupport || isUserSeller
     let adminId: string | null = null
     if (isFromAdmin && session?.user?.id) {
       const adminUser = await prisma.user.findUnique({
@@ -318,8 +319,8 @@ export async function DELETE(
     
     // Check if user has access to this chat room
     let chatRoom
-    if (session?.user?.role === 'ADMIN') {
-      // Admin can delete any chat room
+    if (isAdminOrSupport(session?.user?.role)) {
+      // Admin/Support can delete any chat room
       chatRoom = await prisma.$queryRaw<Array<{ id: number }>>`
         SELECT id FROM "ChatRoom" 
         WHERE id = ${chatRoomId}

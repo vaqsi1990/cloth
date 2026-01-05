@@ -16,9 +16,7 @@ export async function GET(request: NextRequest) {
     }
 
     const users = await prisma.user.findMany({
-      where: {
-        role: 'USER',
-      },
+      // Fetch all users (USER, ADMIN, SUPPORT) so admin can manage all roles
       select: {
         id: true,
         name: true,

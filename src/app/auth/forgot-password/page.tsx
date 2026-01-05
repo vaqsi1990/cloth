@@ -55,7 +55,7 @@ export default function ResetPasswordPage() {
     <div className="mt-10  flex flex-col justify-center py-9 sm:px-6 ">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
      
-        <h2 className="text-[16px] text-center md:text-[20px] font-semibold uppercase tracking-widesttext-black">
+        <h2 className="text-[16px] text-black text-center md:text-[20px] font-semibold uppercase tracking-widesttext-black">
           პაროლის აღდგენა
         </h2>
         <p className="mt-4 text-center block text-black md:text-[18px] text-[16px]">
@@ -134,7 +134,7 @@ export default function ResetPasswordPage() {
             <div className="mt-6 text-center">
               <Link
                 href="/auth/signin"
-                className="mt-6  md:text-[18px] text-[16px] text-center"
+                className="mt-6  md:text-[18px] text-[16px] text-center text-black"
               >
                 დაბრუნება შესვლის გვერდზე
               </Link>
