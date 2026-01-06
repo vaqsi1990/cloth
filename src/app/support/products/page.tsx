@@ -101,6 +101,7 @@ const SupportProductsPage = () => {
   const [submittingReply, setSubmittingReply] = useState(false)
   const [deletingReviewId, setDeletingReviewId] = useState<number | null>(null)
   const [deletingReplyId, setDeletingReplyId] = useState<number | null>(null)
+  const [approvalUpdatingId, setApprovalUpdatingId] = useState<number | null>(null)
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -242,6 +243,61 @@ const SupportProductsPage = () => {
       REJECTED: 'უარყოფილია'
     } as const
     return map[status || 'PENDING']
+  }
+
+  const handleApprovalAction = async (
+    productId: number,
+    status: 'APPROVED' | 'REJECTED'
+  ) => {
+    let reason: string | undefined
+
+    if (status === 'REJECTED') {
+      const rejectionInput = prompt('გთხოვთ მიუთითოთ უარყოფის მიზეზი:')?.trim()
+      if (!rejectionInput) {
+        showToast('უარყოფის მიზეზი სავალდებულოა', 'warning')
+        return
+      }
+      reason = rejectionInput
+    }
+
+    try {
+      setApprovalUpdatingId(productId)
+      const response = await fetch(`/api/admin/products/${productId}/approval`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status, reason })
+      })
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        setProducts(prev =>
+          prev.map(product =>
+            product.id === productId
+              ? {
+                  ...product,
+                  approvalStatus: data.product.approvalStatus,
+                  rejectionReason: data.product.rejectionReason
+                }
+              : product
+          )
+        )
+        showToast(
+          status === 'APPROVED'
+            ? 'პროდუქტი წარმატებით დამტკიცდა'
+            : 'პროდუქტი უარყოფილია',
+          'success'
+        )
+      } else {
+        showToast(data.error || 'სტატუსის განახლება ვერ მოხერხდა', 'error')
+      }
+    } catch (error) {
+      console.error('Error updating approval status:', error)
+      showToast('სტატუსის განახლება ვერ მოხერხდა', 'error')
+    } finally {
+      setApprovalUpdatingId(null)
+    }
   }
 
   // Helper to get rental price from tier[0] (first tier with minimum days)
@@ -695,6 +751,26 @@ const SupportProductsPage = () => {
 
                        {/* Actions */}
                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2 sm:ml-4">
+                        <div className="flex flex-row sm:flex-col sm:space-y-2 gap-2 sm:mr-4">
+                          {product.approvalStatus !== 'APPROVED' && (
+                            <>
+                              <button
+                                onClick={() => handleApprovalAction(product.id, 'APPROVED')}
+                                disabled={approvalUpdatingId === product.id}
+                                className="px-3 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-xs sm:text-sm md:text-[18px] disabled:opacity-50 whitespace-nowrap"
+                              >
+                                {approvalUpdatingId === product.id ? 'დამტკიცება...' : 'დამტკიცება'}
+                              </button>
+                              <button
+                                onClick={() => handleApprovalAction(product.id, 'REJECTED')}
+                                disabled={approvalUpdatingId === product.id}
+                                className="px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-xs sm:text-sm md:text-[18px] disabled:opacity-50 whitespace-nowrap"
+                              >
+                                {approvalUpdatingId === product.id ? 'უარყოფა...' : 'უარყოფა'}
+                              </button>
+                            </>
+                          )}
+                        </div>
                          <div className="flex flex-row sm:flex-col gap-2 sm:gap-2">
                            <Link
                              href={`/product/${product.id}`}

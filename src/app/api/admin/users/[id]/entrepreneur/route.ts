@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { isAdminOrSupport } from '@/lib/roles'
 
 export async function PATCH(
   request: NextRequest,
@@ -9,9 +10,9 @@ export async function PATCH(
 ) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!session || !isAdminOrSupport(session.user.role)) {
       return NextResponse.json(
-        { success: false, error: 'Admin access required' },
+        { success: false, error: 'Admin or Support access required' },
         { status: 403 }
       )
     }

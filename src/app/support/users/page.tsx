@@ -395,37 +395,363 @@ const SupportUsersPage = () => {
                     )}
                   </div>
 
+                  {/* პირადობის დოკუმენტების გადამოწმების სექცია - დამოუკიდებელი */}
+                  {user.verification && (user.verification.idFrontUrl || user.verification.idBackUrl) && 
+                   (user.verification.identityStatus === 'PENDING' || user.verification.identityStatus === 'REJECTED' || 
+                    (!user.verification.identityStatus && (user.verification.status === 'PENDING' || user.verification.status === 'REJECTED'))) && (
+                    <div className="px-3 sm:px-4 pb-3 sm:pb-4 border-t border-gray-50">
+                      <div className="mb-3 sm:mb-4 pt-3 sm:pt-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-2">
+                          <div>
+                            <h2 className="text-base sm:text-[18px] font-bold text-blue-800">
+                              პირადობის დოკუმენტების გადამოწმება
+                            </h2>
+                            <p className="text-xs sm:text-sm text-blue-700">
+                              გთხოვთ გადაამოწმოთ მომხმარებლის პირადობის დოკუმენტები
+                            </p>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-3 sm:mb-4">
+                          {user.verification.idFrontUrl && (
+                            <div className="flex flex-col items-center">
+                              <span className="text-sm sm:text-[18px] font-semibold mb-2 text-black">დოკუმენტის წინა მხარე</span>
+                              <div className="w-full max-w-[500px] h-[250px] sm:h-[300px] md:h-[400px] relative border-2 border-blue-300 rounded-lg overflow-hidden shadow-lg">
+                                <Image
+                                  src={user.verification.idFrontUrl}
+                                  alt="ID Front"
+                                  fill
+                                  sizes="(max-width: 768px) 100vw, 500px"
+                                  className="object-contain"
+                                />
+                              </div>
+                            </div>
+                          )}
+                          {user.verification.idBackUrl && (
+                            <div className="flex flex-col items-center">
+                              <span className="text-sm sm:text-[18px] font-semibold mb-2 text-black">დოკუმენტის უკანა მხარე</span>
+                              <div className="w-full max-w-[500px] h-[250px] sm:h-[300px] md:h-[400px] relative border-2 border-blue-300 rounded-lg overflow-hidden shadow-lg">
+                                <Image
+                                  src={user.verification.idBackUrl}
+                                  alt="ID Back"
+                                  fill
+                                  sizes="(max-width: 768px) 100vw, 500px"
+                                  className="object-contain"
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        {/* IBAN Display */}
+                        {user.iban && (
+                          <div className="mb-3 sm:mb-4 p-3 sm:p-4 border border-blue-200 rounded-lg">
+                            <h5 className="text-sm sm:text-[18px] font-semibold text-black mb-2">პირადობის ნომერი:</h5>
+                            <p className="text-base sm:text-[20px] font-mono text-blue-800 break-all">{user.iban}</p>
+                          </div>
+                        )}
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3">
+                          <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm md:text-[16px] font-semibold text-white whitespace-nowrap ${
+                            (user.verification.identityStatus === 'REJECTED' || (!user.verification.identityStatus && user.verification.status === 'REJECTED')) ? 'bg-red-600' : 'bg-yellow-500'
+                          }`}>
+                            {(user.verification.identityStatus === 'PENDING' || (!user.verification.identityStatus && user.verification.status === 'PENDING')) && 'მიმდინარეობს გადამოწმება'}
+                            {(user.verification.identityStatus === 'REJECTED' || (!user.verification.identityStatus && user.verification.status === 'REJECTED')) && 'უარყოფილია'}
+                          </span>
+                          {user.verification.updatedAt && (
+                            <span className="text-xs sm:text-sm md:text-[16px] text-black">განახლებულია: {new Date(user.verification.updatedAt).toLocaleDateString('ka-GE')}</span>
+                          )}
+                        </div>
+                        {(user.verification.identityComment || (!user.verification.identityComment && user.verification.comment)) && (
+                          <div className="bg-red-50 text-red-800 p-2 sm:p-3 rounded mb-3 text-xs sm:text-sm md:text-[16px] border border-red-200">
+                            <strong>კომენტარი:</strong> {user.verification.identityComment || user.verification.comment}
+                          </div>
+                        )}
+                        {/* SUPPORT CONTROLS for identity verification */}
+                        {session.user.role === 'SUPPORT' && user.verification && 
+                         (user.verification.identityStatus === 'PENDING' || user.verification.identityStatus === 'REJECTED' || 
+                          (!user.verification.identityStatus && (user.verification.status === 'PENDING' || user.verification.status === 'REJECTED'))) && (
+                          <div className="flex flex-col sm:flex-row items-stretch gap-2 sm:gap-3">
+                            <button
+                              className="px-4 sm:px-6 py-2 sm:py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm sm:text-base md:text-[18px] font-semibold shadow-md transition-colors"
+                              onClick={async () => {
+                                const res = await fetch(`/api/admin/users/${user.id}/identity`, {
+                                  method: 'PATCH',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ status: 'APPROVED' })
+                                });
+                                if (res.ok) {
+                                  const data = await res.json();
+                                  setUsers((users: User[]) => users.map((u: User) => u.id === user.id ? { ...u, verification: data.verification, verified: true } : u));
+                                  showToast('პირადობის დოკუმენტები დამტკიცებულია', 'success');
+                                }
+                              }}
+                            >
+                              ✓ პირადობის დამტკიცება
+                            </button>
+                            <RejectVerificationButton user={user} setUsers={setUsers} verificationType="identity" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ინდმეწარმის საბუთის გადამოწმების სექცია - დამოუკიდებელი, მხოლოდ როცა blocked */}
+                  {user.blocked && !user.verified && user._count.products > 0 && user.verification?.entrepreneurCertificateUrl && (
+                    <div className="px-3 sm:px-4 pb-3 sm:pb-4 border-t border-gray-200 bg-orange-50">
+                      <div className="mb-3 sm:mb-4 pt-3 sm:pt-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-2">
+                          <div>
+                            <h2 className="text-base sm:text-[18px] font-bold text-orange-800">
+                              ინდმეწარმის საბუთის გადამოწმება
+                            </h2>
+                            <p className="text-xs sm:text-sm text-orange-700">
+                              გამყიდველი დაბლოკილია, რადგან მისი შემოსავალი 100₾-ს აღემატება
+                            </p>
+                          </div>
+                          <div className="text-left sm:text-right">
+                            {user.role === 'ADMIN' ? (
+                              <span className="inline-block px-2 sm:px-3 py-1 bg-blue-600 text-white rounded text-xs sm:text-sm md:text-[16px] font-semibold whitespace-nowrap">
+                                ადმინი – ბლოკი არ მოქმედებს
+                              </span>
+                            ) : (
+                              <span className="inline-block px-2 sm:px-3 py-1 bg-orange-600 text-white rounded text-xs sm:text-sm md:text-[16px] font-semibold whitespace-nowrap">
+                                შემოსავალი ≥ 100₾
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {user.role === 'ADMIN' ? (
+                          <p className="text-xs sm:text-sm md:text-[16px] text-orange-700 mb-3 sm:mb-4">
+                            ეს არის ადმინისტრატორული ანგარიში – ბლოკი მხოლოდ სიგნალის სახით გვაჩვენებს,
+                            რომ გადამოწმდეს გამყიდველის ინდმეწარმის საბუთი.
+                          </p>
+                        ) : (
+                          <p className="text-xs sm:text-sm md:text-[16px] text-orange-700 mb-3 sm:mb-4">
+                            გამყიდველი დაბლოკილია, რადგან მისი შემოსავალი 100₾-ს აღემატება. გთხოვთ გადაამოწმოთ ინდმეწარმის საბუთი და დაამტკიცოთ.
+                          </p>
+                        )}
+                        <div className="grid grid-cols-1 gap-3 sm:gap-4 mb-3 sm:mb-4">
+                          {user.verification.entrepreneurCertificateUrl && (
+                            <div className="flex flex-col items-center">
+                              <span className="text-xs sm:text-sm md:text-[16px] font-semibold mb-2 text-black">ინდმეწარმის საბუთი</span>
+                              <div className="w-full max-w-[500px] h-[250px] sm:h-[300px] md:h-[400px] relative border-2 border-orange-300 rounded-lg overflow-hidden shadow-lg">
+                                <Image
+                                  src={user.verification.entrepreneurCertificateUrl}
+                                  alt="Entrepreneur Certificate"
+                                  fill
+                                  sizes="(max-width: 768px) 100vw, 500px"
+                                  className="object-contain"
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3">
+                          <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm md:text-[16px] font-semibold text-white whitespace-nowrap ${
+                            (user.verification.entrepreneurStatus === 'REJECTED' || (!user.verification.entrepreneurStatus && user.verification.status === 'REJECTED')) ? 'bg-red-600' : 'bg-yellow-500'
+                          }`}>
+                            {(user.verification.entrepreneurStatus === 'PENDING' || (!user.verification.entrepreneurStatus && user.verification.status === 'PENDING')) && 'მიმდინარეობს გადამოწმება'}
+                            {(user.verification.entrepreneurStatus === 'REJECTED' || (!user.verification.entrepreneurStatus && user.verification.status === 'REJECTED')) && 'უარყოფილია'}
+                          </span>
+                          {user.verification.updatedAt && (
+                            <span className="text-xs sm:text-sm md:text-[16px] text-black">განახლებულია: {new Date(user.verification.updatedAt).toLocaleDateString('ka-GE')}</span>
+                          )}
+                        </div>
+                        {(user.verification.entrepreneurComment || (!user.verification.entrepreneurComment && user.verification.comment)) && (
+                          <div className="bg-red-50 text-red-800 p-2 sm:p-3 rounded mb-3 text-xs sm:text-sm md:text-[16px] border border-red-200">
+                            <strong>კომენტარი:</strong> {user.verification.entrepreneurComment || user.verification.comment}
+                          </div>
+                        )}
+                        {/* SUPPORT CONTROLS for entrepreneur certificate */}
+                        {session.user.role === 'SUPPORT' && user.verification && 
+                         (user.verification.entrepreneurStatus === 'PENDING' || user.verification.entrepreneurStatus === 'REJECTED' || 
+                          (!user.verification.entrepreneurStatus && (user.verification.status === 'PENDING' || user.verification.status === 'REJECTED'))) && (
+                          <div className="flex flex-col sm:flex-row items-stretch gap-2 sm:gap-3">
+                            <button
+                              className="px-4 sm:px-6 py-2 sm:py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm sm:text-base md:text-[18px] font-semibold shadow-md transition-colors"
+                              onClick={async () => {
+                                const res = await fetch(`/api/admin/users/${user.id}/entrepreneur`, {
+                                  method: 'PATCH',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ status: 'APPROVED' })
+                                });
+                                if (res.ok) {
+                                  const data = await res.json();
+                                  setUsers((users: User[]) => users.map((u: User) => u.id === user.id ? { ...u, verification: data.verification, blocked: false } : u));
+                                  showToast('ინდმეწარმის საბუთი დამტკიცებულია და მომხმარებელი განბლოკილია', 'success');
+                                }
+                              }}
+                            >
+                              ✓ ინდმეწარმის საბუთის დამტკიცება და განბლოკვა
+                            </button>
+                            <RejectVerificationButton user={user} setUsers={setUsers} verificationType="entrepreneur" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* User Expansion Section */}
                   {expandedUser === user.id && (
                     <div className="px-3 sm:px-4 pb-3 sm:pb-4 border-t border-gray-200">
-                      {/* User Products */}
-                      {user.products && user.products.length > 0 && (
-                        <div className="mt-4">
-                          <h4 className="text-sm sm:text-base md:text-[18px] font-semibold text-black mb-3">პროდუქტები:</h4>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                            {user.products.map((product) => (
-                              <div key={product.id} className="border border-gray-200 rounded-lg p-3">
-                                <div className="relative w-full h-32 sm:h-40 mb-2">
-                                  {product.images && product.images.length > 0 ? (
-                                    <Image
-                                      src={product.images[0].url}
-                                      alt={product.images[0].alt || product.name}
-                                      fill
-                                      className="object-cover rounded"
-                                    />
-                                  ) : (
-                                    <div className="w-full h-full bg-gray-200 rounded flex items-center justify-center">
-                                      <Package className="w-8 h-8 text-gray-400" />
-                                    </div>
-                                  )}
+                      {/* User Verification Section */}
+                      {user.verification && !(user.blocked && !user.verified) && (
+                        <div className="mb-4 sm:mb-6">
+                          <h4 className="text-sm sm:text-base md:text-[18px] font-semibold text-black mt-3 sm:mt-4 mb-2">ვერიფიკაცია (პირადობის სურათები)</h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 mb-2">
+                            {user.verification.idFrontUrl && (
+                              <div className="flex flex-col items-center">
+                                <span className="text-xs sm:text-sm md:text-[18px] mb-1">წინა მხარე</span>
+                                <div className="w-full max-w-[400px] h-[250px] sm:h-[300px] md:h-[400px] relative border rounded overflow-hidden">
+                                  <Image
+                                    src={user.verification.idFrontUrl}
+                                    alt="ID Front"
+                                    fill
+                                    sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 400px"
+                                    className="object-cover"
+                                  />
                                 </div>
-                                <h5 className="font-semibold text-black text-sm sm:text-base mb-1">{product.name}</h5>
-                                <p className="text-xs sm:text-sm text-black">₾{product.currentPrice}</p>
                               </div>
-                            ))}
+                            )}
+                            {user.verification.idBackUrl && (
+                              <div className="flex flex-col items-center">
+                                <span className="text-xs sm:text-sm md:text-[18px] mb-1">უკანა მხარე</span>
+                                <div className="w-full max-w-[400px] h-[250px] sm:h-[300px] md:h-[400px] relative border rounded overflow-hidden">
+                                  <Image
+                                    src={user.verification.idBackUrl}
+                                    alt="ID Back"
+                                    fill
+                                    sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 400px"
+                                    className="object-cover"
+                                  />
+                                </div>
+                              </div>
+                            )}
+                            {user.verification.entrepreneurCertificateUrl && (
+                              <div className="flex flex-col items-center">
+                                <span className="text-xs sm:text-sm md:text-[18px] mb-1">ინდმეწარმის საბუთი</span>
+                                <div className="w-full max-w-[400px] h-[250px] sm:h-[300px] md:h-[400px] relative border rounded overflow-hidden">
+                                  <Image
+                                    src={user.verification.entrepreneurCertificateUrl}
+                                    alt="Entrepreneur Certificate"
+                                    fill
+                                    sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 400px"
+                                    className="object-cover"
+                                  />
+                                </div>
+                              </div>
+                            )}
                           </div>
+                          {/* IBAN Display */}
+                          {user.iban && (
+                            <div className="mb-3 sm:mb-4 p-3 sm:p-4 border rounded-lg">
+                              <h5 className="text-sm sm:text-base md:text-[18px] font-semibold text-black mb-2">პირადობის ნომერი:</h5>
+                              <p className="text-base sm:text-lg md:text-[20px] font-mono text-blue-800 break-all">{user.iban}</p>
+                            </div>
+                          )}
+                          <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+                            {/* Identity Status */}
+                            {user.verification.idFrontUrl && user.verification.idBackUrl && (
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-xs sm:text-sm md:text-[18px] font-semibold text-black">პირადობის ნომერი:</span>
+                                <span className={`px-2 py-1 rounded-full text-xs sm:text-sm md:text-[18px] font-semibold text-white whitespace-nowrap ${
+                                  (user.verification.identityStatus === 'APPROVED' || (!user.verification.identityStatus && user.verification.status === 'APPROVED')) ? 'bg-green-600' : 
+                                  (user.verification.identityStatus === 'REJECTED' || (!user.verification.identityStatus && user.verification.status === 'REJECTED')) ? 'bg-red-600' : 'bg-yellow-500'
+                                }`}>
+                                  {(user.verification.identityStatus === 'PENDING' || (!user.verification.identityStatus && user.verification.status === 'PENDING')) && 'მიმდინარეობს გადამოწმება'}
+                                  {(user.verification.identityStatus === 'APPROVED' || (!user.verification.identityStatus && user.verification.status === 'APPROVED')) && 'დამოწმებულია'}
+                                  {(user.verification.identityStatus === 'REJECTED' || (!user.verification.identityStatus && user.verification.status === 'REJECTED')) && 'უარყოფილია'}
+                                </span>
+                              </div>
+                            )}
+                            {/* Entrepreneur Status */}
+                            {user.verification.entrepreneurCertificateUrl && (
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-xs sm:text-sm md:text-[16px] font-semibold text-black">ინდმეწარმი:</span>
+                                <span className={`px-2 py-1 rounded-full text-xs sm:text-sm md:text-[18px] font-semibold text-white whitespace-nowrap ${
+                                  (user.verification.entrepreneurStatus === 'APPROVED' || (!user.verification.entrepreneurStatus && user.verification.status === 'APPROVED')) ? 'bg-green-600' : 
+                                  (user.verification.entrepreneurStatus === 'REJECTED' || (!user.verification.entrepreneurStatus && user.verification.status === 'REJECTED')) ? 'bg-red-600' : 'bg-yellow-500'
+                                }`}>
+                                  {(user.verification.entrepreneurStatus === 'PENDING' || (!user.verification.entrepreneurStatus && user.verification.status === 'PENDING')) && 'მიმდინარეობს გადამოწმება'}
+                                  {(user.verification.entrepreneurStatus === 'APPROVED' || (!user.verification.entrepreneurStatus && user.verification.status === 'APPROVED')) && 'დამოწმებულია'}
+                                  {(user.verification.entrepreneurStatus === 'REJECTED' || (!user.verification.entrepreneurStatus && user.verification.status === 'REJECTED')) && 'უარყოფილია'}
+                                </span>
+                              </div>
+                            )}
+                            {user.verification.updatedAt && (
+                              <span className="text-xs sm:text-sm md:text-[18px] text-black">{new Date(user.verification.updatedAt).toLocaleDateString('ka-GE')}</span>
+                            )}
+                          </div>
+                          {user.verification.identityComment && (
+                            <div className="bg-red-50 text-red-800 p-2 rounded mb-2 text-xs sm:text-sm md:text-[18px]">
+                              <strong>პირადობის კომენტარი:</strong> {user.verification.identityComment}
+                            </div>
+                          )}
+                          {user.verification.entrepreneurComment && (
+                            <div className="bg-red-50 text-red-800 p-2 rounded mb-2 text-xs sm:text-sm md:text-[18px]">
+                              <strong>ინდმეწარმის კომენტარი:</strong> {user.verification.entrepreneurComment}
+                            </div>
+                          )}
+                          {!user.verification.identityComment && !user.verification.entrepreneurComment && user.verification.comment && (
+                            <div className="bg-red-50 text-red-800 p-2 rounded mb-2 text-xs sm:text-sm md:text-[18px]">
+                              {user.verification.comment}
+                            </div>
+                          )}
+                          {/* SUPPORT CONTROLS for verification */}
+                          {session.user.role === 'SUPPORT' && user.verification && (
+                            <div className="flex flex-col sm:flex-row items-stretch gap-2 mb-2">
+                              {/* Determine verification type: if identity docs exist and not verified, it's identity; otherwise check if blocked */}
+                              {user.verification.idFrontUrl && user.verification.idBackUrl && 
+                               (user.verification.identityStatus === 'PENDING' || user.verification.identityStatus === 'REJECTED' || 
+                                (!user.verification.identityStatus && !user.verified)) && (
+                                <>
+                                  <button
+                                    className="px-3 sm:px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-xs sm:text-sm md:text-[18px]"
+                                    onClick={async () => {
+                                      const res = await fetch(`/api/admin/users/${user.id}/identity`, {
+                                        method: 'PATCH',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ status: 'APPROVED' })
+                                      });
+                                      if (res.ok) {
+                                        const data = await res.json();
+                                        setUsers((users: User[]) => users.map((u: User) => u.id === user.id ? { ...u, verification: data.verification, verified: true } : u));
+                                        showToast('პირადობის დოკუმენტები დამტკიცებულია', 'success');
+                                      }
+                                    }}
+                                    disabled={user.verified}
+                                  >პირადობის დამტკიცება</button>
+                                  <RejectVerificationButton user={user} setUsers={setUsers} verificationType="identity" />
+                                </>
+                              )}
+                              {user.verification.entrepreneurCertificateUrl && 
+                               (user.verification.entrepreneurStatus === 'PENDING' || user.verification.entrepreneurStatus === 'REJECTED' || 
+                                (!user.verification.entrepreneurStatus && user.blocked)) && (
+                                <>
+                                  <button
+                                    className="px-3 sm:px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-xs sm:text-sm md:text-[18px]"
+                                    onClick={async () => {
+                                      const res = await fetch(`/api/admin/users/${user.id}/entrepreneur`, {
+                                        method: 'PATCH',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ status: 'APPROVED' })
+                                      });
+                                      if (res.ok) {
+                                        const data = await res.json();
+                                        setUsers((users: User[]) => users.map((u: User) => u.id === user.id ? { ...u, verification: data.verification, blocked: false } : u));
+                                        showToast('ინდმეწარმის საბუთი დამტკიცებულია და მომხმარებელი განბლოკილია', 'success');
+                                      }
+                                    }}
+                                    disabled={!user.blocked}
+                                  >ინდმეწარმის საბუთის დამტკიცება</button>
+                                  <RejectVerificationButton user={user} setUsers={setUsers} verificationType="entrepreneur" />
+                                </>
+                              )}
+                            </div>
+                          )}
                         </div>
                       )}
+                      
+                      {/* User Products */}
+                  
                     </div>
                   )}
                 </div>
@@ -439,6 +765,61 @@ const SupportUsersPage = () => {
 }
 
 export default SupportUsersPage
+
+function RejectVerificationButton({ user, setUsers, verificationType }: { user: User; setUsers: React.Dispatch<React.SetStateAction<User[]>>; verificationType?: 'identity' | 'entrepreneur' }) {
+  const [comment, setComment] = useState('');
+  const [showInput, setShowInput] = useState(false);
+  const [loading, setLoading] = useState(false);
+  return (
+    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+      <button
+        className="px-3 sm:px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-xs sm:text-sm md:text-[18px] whitespace-nowrap"
+        disabled={user.verification?.status === 'REJECTED'}
+        onClick={() => setShowInput(v => !v)}
+        >უარყოფა</button>
+      {showInput && (
+        <form
+          onSubmit={async (e: React.FormEvent<HTMLFormElement>) => {
+            e.preventDefault();
+            setLoading(true);
+            const endpoint = verificationType === 'entrepreneur' 
+              ? `/api/admin/users/${user.id}/entrepreneur`
+              : `/api/admin/users/${user.id}/identity`;
+            const res = await fetch(endpoint, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ status: 'REJECTED', comment })
+            });
+            setLoading(false);
+            if (res.ok) {
+              const data = await res.json();
+              setUsers((users: User[]) => users.map((u: User) => u.id === user.id ? { ...u, verification: data.verification } : u));
+              setShowInput(false);
+              setComment('');
+              showToast('ვერიფიკაცია უარყოფილია', 'success');
+            }
+          }}
+          className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1"
+        >
+          <input
+            type="text"
+            value={comment}
+            disabled={loading}
+            onChange={e => setComment(e.target.value)}
+            placeholder="მიუთითეთ უარყოფის მიზეზი"
+            className="border px-2 py-1 text-xs sm:text-sm md:text-[18px] rounded flex-1"
+            required
+          />
+          <button
+            type="submit"
+            className="px-3 py-1 bg-red-700 text-white font-bold rounded text-xs sm:text-sm md:text-[18px] whitespace-nowrap"
+            disabled={loading || !comment.trim()}
+          >დადასტურება</button>
+        </form>
+      )}
+    </div>
+  );
+}
 
 function BanUserInline({ user, setUsers }: { user: User; setUsers: React.Dispatch<React.SetStateAction<User[]>> }) {
   const [open, setOpen] = useState(false)
