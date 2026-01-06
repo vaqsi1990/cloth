@@ -62,11 +62,11 @@ const Footer = () => {
             <div className="space-y-4 flex flex-col items-start">
               <h2 className="text-white font-bold text-[18px] font-semibold text-white mb-4">ნავიგაცია</h2>
               <ul className="space-y-2 text-start">
-                <li><Link href="/" className="text-white font-normal text-[18px] transition-colors text-sm">მთავარი</Link></li>
-                <li><Link href="/about" className="text-white font-normal text-[18px] transition-colors text-sm">ჩვენს შესახებ</Link></li>
-                <li><Link href="/shop?category=women" className="text-white font-normal text-[18px] transition-colors text-sm">ქალების კოლექცია</Link></li>
-                <li><Link href="/shop?category=men" className="text-white font-normal text-[18px] transition-colors text-sm">კაცების კოლექცია</Link></li>
-                <li><Link href="/shop?category=children" className="text-white font-normal text-[18px] transition-colors text-sm">ბავშვების კოლექცია</Link></li>
+                <li><Link href="/" className="text-white font-normal text-[16px] md:text-[18px] transition-colors text-sm">მთავარი</Link></li>
+                <li><Link href="/about" className="text-white font-normal text-[16px] md:text-[18px] transition-colors text-sm">ჩვენს შესახებ</Link></li>
+                <li><Link href="/shop?category=women" className="text-white font-normal text-[16px] md:text-[18px] transition-colors text-sm">ქალების კოლექცია</Link></li>
+                <li><Link href="/shop?category=men" className="text-white font-normal text-[16px] md:text-[18px] transition-colors text-sm">კაცების კოლექცია</Link></li>
+                <li><Link href="/shop?category=children" className="text-white font-normal text-[16px] md:text-[18px] transition-colors text-sm">ბავშვების კოლექცია</Link></li>
               </ul>
             </div>
 
@@ -76,19 +76,19 @@ const Footer = () => {
               <div className="space-y-3 text-start">
                 <div className="flex items-center justify-center space-x-3">
                  <Image src="/Frame1.png" alt="location" width={60} height={60} />
-                  <span className="text-white font-normal text-[18px]">
+                  <span className="text-white font-normal text-[16px] md:text-[18px]">
 
                     ლეო დავითაშვილის ქუჩა 120, <br /> 0190 თბილისი, საქართველო
                   </span>
                 </div>
                 <div className="flex items-center justify-start space-x-3">
                   <Image src="/Frame2.png" alt="phone" width={60} height={60} />
-                  <span className="text-white font-normal text-[18px]">
+                  <span className="text-white font-normal text-[16px] md:text-[18px]">
                     (+995)599 55 53 95</span>
                 </div>
                 <div className="flex items-center justify-start space-x-3">
                   <Image src="/Frame3.png" alt="email" width={60} height={60} />
-                  <span className="text-white font-normal text-[18px]">dressla.online@gmail.com</span>
+                  <span className="text-white font-normal text-[16px] md:text-[18px]">dressla.online@gmail.com</span>
                 </div>
               </div>
             </div>
