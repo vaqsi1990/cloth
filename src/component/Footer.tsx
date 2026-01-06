@@ -75,19 +75,19 @@ const Footer = () => {
               <h4 className="text-white font-bold text-[18px] font-bold mb-4">კონტაქტი</h4>
               <div className="space-y-3 text-start">
                 <div className="flex items-center justify-center space-x-3">
-                 <Image src="/frame1.png" alt="location" width={60} height={60} />
+                 <Image src="/Frame1.png" alt="location" width={60} height={60} />
                   <span className="text-white font-normal text-[18px]">
 
                     ლეო დავითაშვილის ქუჩა 120, <br /> 0190 თბილისი, საქართველო
                   </span>
                 </div>
                 <div className="flex items-center justify-start space-x-3">
-                  <Image src="/frame2.png" alt="phone" width={60} height={60} />
+                  <Image src="/Frame2.png" alt="phone" width={60} height={60} />
                   <span className="text-white font-normal text-[18px]">
                     (+995)599 55 53 95</span>
                 </div>
                 <div className="flex items-center justify-start space-x-3">
-                  <Image src="/frame3.png" alt="email" width={60} height={60} />
+                  <Image src="/Frame3.png" alt="email" width={60} height={60} />
                   <span className="text-white font-normal text-[18px]">dressla.online@gmail.com</span>
                 </div>
               </div>
