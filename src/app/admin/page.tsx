@@ -39,6 +39,7 @@ const AdminDashboard = () => {
     totalRevenue: 0,
   })
   const [statsLoading, setStatsLoading] = useState(false)
+  const [unreadChatCount, setUnreadChatCount] = useState(0)
   const hasFetchedRef = useRef(false)
 
   // Redirect unauthenticated users
@@ -83,6 +84,37 @@ const AdminDashboard = () => {
     }
     // SUPPORT doesn't need stats, only ADMIN does
   }, [status, session?.user?.role])
+
+  // Fetch unread chat count
+  useEffect(() => {
+    const fetchUnreadChatCount = async () => {
+      if (session?.user?.role === 'ADMIN') {
+        try {
+          const response = await fetch('/api/admin/chat/unread-count', {
+            cache: 'no-store',
+            headers: {
+              'Cache-Control': 'no-cache'
+            }
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            if (data.success) {
+              setUnreadChatCount(data.unreadCount || 0)
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching unread chat count:', error)
+        }
+      }
+    }
+
+    fetchUnreadChatCount()
+    
+    // Poll for updates every 30 seconds
+    const interval = setInterval(fetchUnreadChatCount, 30000)
+    return () => clearInterval(interval)
+  }, [session])
 
   // ---------------------
   // Loading states
@@ -277,13 +309,20 @@ const AdminDashboard = () => {
               <Link
                 key={index}
                 href={action.href}
-                className="group block p-6 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all duration-300 hover:shadow-md"
+                className="group block p-6 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all duration-300 hover:shadow-md relative"
               >
                 <div className="flex items-center space-x-4">
-                  <div
-                    className={`w-12 h-12 ${action.color} rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}
-                  >
-                    <action.icon className="w-6 h-6 text-white" />
+                  <div className="relative">
+                    <div
+                      className={`w-12 h-12 ${action.color} rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}
+                    >
+                      <action.icon className="w-6 h-6 text-white" />
+                    </div>
+                    {action.title === 'Live Chat' && unreadChatCount > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center animate-pulse">
+                        {unreadChatCount > 99 ? '99+' : unreadChatCount}
+                      </span>
+                    )}
                   </div>
                   <div>
                     <h3 className="font-semibold text-black md:text-[20px] text-[18px] group-hover:text-black transition-colors">

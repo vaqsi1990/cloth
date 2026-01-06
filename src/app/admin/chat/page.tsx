@@ -374,7 +374,7 @@ const AdminChatPage = () => {
                       }}
                       className={`p-3 sm:p-3 lg:p-3 rounded-lg cursor-pointer transition-all duration-200 ${
                         selectedChatRoom?.id === room.id
-                          ? 'bg-[#1B3729]  shadow-md'
+                          ? 'bg-[#1B3729] text-white shadow-md'
                           : 'bg-white text-black hover:shadow-sm'
                       }`}
                     >
@@ -462,7 +462,7 @@ const AdminChatPage = () => {
                       {selectedChatRoom.status === 'CLOSED' && (
                         <button
                           onClick={() => updateChatRoomStatus(selectedChatRoom.id, 'reopen')}
-                          className="px-2 sm:px-3 py-1 bg-green-500 text-white rounded-md text-xs sm:text-sm md:text-[18px] hover:bg-green-600 transition-colors whitespace-nowrap"
+                          className="px-2 sm:px-3 py-1 bg-[#1B3729] text-white rounded-md text-xs sm:text-sm md:text-[18px] hover:bg-[#2a4d3a] transition-colors whitespace-nowrap"
                         >
                           გახსნა
                         </button>

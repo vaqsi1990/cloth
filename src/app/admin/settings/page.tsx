@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Save, User, Mail, Lock, AlertTriangle, Eye, EyeOff, Camera, Phone, MapPin } from 'lucide-react'
+import { ArrowLeft, Save, User, Mail, Lock, AlertTriangle, Eye, EyeOff, Camera, Phone, MapPin, MessageCircle } from 'lucide-react'
 import ImageUpload from '@/component/CloudinaryUploader'
 import { showToast } from '@/utils/toast'
 import Image from 'next/image'
@@ -17,6 +17,7 @@ const AdminSettingsPage = () => {
   const [isEditingProfile, setIsEditingProfile] = useState(false)
   const [profileImage, setProfileImage] = useState<string | null>(null)
   const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const [unreadChatCount, setUnreadChatCount] = useState(0)
   const [showPasswords, setShowPasswords] = useState({
     currentPassword: false,
     newPassword: false,
@@ -101,6 +102,37 @@ const AdminSettingsPage = () => {
     }
     
     fetchAdminProfile()
+  }, [session])
+
+  // Fetch unread chat count
+  useEffect(() => {
+    const fetchUnreadChatCount = async () => {
+      if (session?.user?.role === 'ADMIN') {
+        try {
+          const response = await fetch('/api/admin/chat/unread-count', {
+            cache: 'no-store',
+            headers: {
+              'Cache-Control': 'no-cache'
+            }
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            if (data.success) {
+              setUnreadChatCount(data.unreadCount || 0)
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching unread chat count:', error)
+        }
+      }
+    }
+
+    fetchUnreadChatCount()
+    
+    // Poll for updates every 30 seconds
+    const interval = setInterval(fetchUnreadChatCount, 30000)
+    return () => clearInterval(interval)
   }, [session])
 
   const togglePasswordVisibility = (field: keyof typeof showPasswords) => {
@@ -304,6 +336,20 @@ const AdminSettingsPage = () => {
                
               </button>
               
+            </div>
+            <div className="flex items-center space-x-4">
+              <Link
+                href="/admin/chat"
+                className="relative flex items-center space-x-2 px-4 py-2 bg-[#1B3729] text-white rounded-lg hover:bg-[#2a4d3a] transition-colors"
+              >
+                <MessageCircle className="w-5 h-5" />
+                <span className="md:text-[18px] text-[16px] font-bold">Live Chat</span>
+                {unreadChatCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center animate-pulse">
+                    {unreadChatCount > 99 ? '99+' : unreadChatCount}
+                  </span>
+                )}
+              </Link>
             </div>
           </div>
         </div>
