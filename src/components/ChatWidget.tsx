@@ -375,10 +375,10 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
   if (!isOpen) return null
 
   return (
-    <div className={`fixed bottom-[15px] right-4 z-50 bg-white shadow-2xl border border-gray-200 ${isMinimized ? 'w-80 h-16 rounded-xl' : 'w-96 h-[80%] rounded-xl overflow-hidden'
+    <div className={`fixed bottom-[15px] right-4 z-50 bg-white shadow-2xl border border-gray-200 ${isMinimized ? 'w-80 h-16 rounded-xl' : 'w-96 h-[85vh] max-h-[85vh] rounded-xl overflow-hidden'
       } transition-all duration-300 flex flex-col`}>
       {/* Header */}
-      <div className={`bg-[#1B3729] text-white ${isMinimized ? 'rounded-xl' : 'rounded-t-xl'}`}>
+      <div className={`bg-[#1B3729] text-white flex-shrink-0 ${isMinimized ? 'rounded-xl' : 'rounded-t-xl'}`}>
         <div className={`p-4 flex items-center justify-between`}>
           <div className="flex items-center space-x-2">
             <MessageCircle className="w-5 h-5" />
@@ -409,9 +409,9 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
       </div>
 
       {!isMinimized && (
-        <div className="flex flex-col flex-1 ">
+        <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
           {/* Messages */}
-          <div className="flex-1 p-4 overflow-y-auto bg-gray-50 ">
+          <div className="flex-1 p-4 overflow-y-auto bg-gray-50 min-h-0">
             {isFetchingMessages && messages.length === 0 ? (
               <div className="text-center md:text-[18px] text-[16px] py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B3729] mx-auto mb-4"></div>
@@ -465,7 +465,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
 
           {/* Guest Form */}
           {showGuestForm && !chatRoomId && !session && (
-            <div className="p-4 border-t border-gray-200 bg-white">
+            <div className="flex-shrink-0 p-4 border-t border-gray-200 bg-white">
               <div className="space-y-3">
                 <div>
                   <label className="block text-[16px] text-black font-medium  mb-1">
@@ -496,7 +496,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
           )}
 
           {/* Input */}
-          <div className="p-4 border-t border-gray-200 bg-white rounded-b-xl">
+          <div className="flex-shrink-0 p-4 border-t border-gray-200 bg-white rounded-b-xl">
             <div className="flex space-x-2">
               <textarea
                 value={newMessage}
@@ -517,26 +517,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
               </button>
             </div>
 
-            <div className="mt-2 flex gap-2">
-              {!chatRoomId && !showGuestForm && !session && (
-                <button
-                  onClick={startNewChat}
-                  className="text-[16px] text-black hover:text-[#2a4d3a] transition-colors"
-                >
-                  ახალი საუბრის დაწყება
-                </button>
-              )}
-
-              {chatRoomId && !session && (
-                <button
-                  onClick={endChat}
-                  disabled={isEndingChat}
-                  className="text-[14px] text-red-600 hover:text-red-800 transition-colors disabled:opacity-50"
-                >
-                  {isEndingChat ? 'დასრულდება...' : 'ლაპარაკის დასრულება'}
-                </button>
-              )}
-            </div>
+         
           </div>
         </div>
       )}

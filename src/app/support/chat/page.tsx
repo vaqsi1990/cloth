@@ -377,7 +377,7 @@ const SupportChatPage = () => {
                       }}
                       className={`p-3 sm:p-3 lg:p-3 rounded-lg cursor-pointer transition-all duration-200 ${
                         selectedChatRoom?.id === room.id
-                          ? 'bg-[#1B3729]  shadow-md'
+                          ? 'bg-[#1B3729] text-white shadow-md'
                           : 'bg-white text-black hover:shadow-sm'
                       }`}
                     >

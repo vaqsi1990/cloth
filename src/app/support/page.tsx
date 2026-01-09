@@ -14,6 +14,7 @@ import {
 const SupportDashboard = () => {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const [unreadChatCount, setUnreadChatCount] = useState<number>(0)
 
   // Redirect unauthenticated users
   useEffect(() => {
@@ -22,6 +23,36 @@ const SupportDashboard = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status])
+
+  // Fetch unread chat count
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.role === 'SUPPORT') {
+      const fetchUnreadCount = async () => {
+        try {
+          const response = await fetch('/api/admin/chat/unread-count', {
+            cache: 'no-store',
+            headers: {
+              'Cache-Control': 'no-cache'
+            }
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            if (data.success) {
+              setUnreadChatCount(data.unreadCount || 0)
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching unread chat count:', error)
+        }
+      }
+
+      fetchUnreadCount()
+      // Refresh every 30 seconds
+      const interval = setInterval(fetchUnreadCount, 30000)
+      return () => clearInterval(interval)
+    }
+  }, [status, session?.user?.role])
 
   // ---------------------
   // Loading states
@@ -128,13 +159,18 @@ const SupportDashboard = () => {
               <Link
                 key={index}
                 href={action.href}
-                className="group block p-6 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all duration-300 hover:shadow-md"
+                className="group block p-6 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all duration-300 hover:shadow-md relative"
               >
                 <div className="flex items-center space-x-4">
                   <div
-                    className={`w-12 h-12 ${action.color} rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}
+                    className={`w-12 h-12 ${action.color} rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300 relative`}
                   >
                     <action.icon className="w-6 h-6 text-white" />
+                    {action.href === '/support/chat' && unreadChatCount > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center min-w-[24px]">
+                        {unreadChatCount > 99 ? '99+' : unreadChatCount}
+                      </span>
+                    )}
                   </div>
                   <div>
                     <h3 className="font-semibold text-black md:text-[20px] text-[18px] group-hover:text-black transition-colors">
