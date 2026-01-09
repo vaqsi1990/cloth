@@ -549,13 +549,16 @@ const NewProductPage = () => {
 
               <div>
                 <label className="block md:text-[18px] text-[16px] text-black font-medium mb-2">
-                  საწყობი *
+                  საწყობში რაოდენობა *
                 </label>
                 <input
                   type="number"
-                  value={formData.stock}
-                  onChange={(e) => handleInputChange('stock', parseInt(e.target.value) || 0)}
-                  className={`w-full text-black px-4 py-3 border rounded-lg md:text-[18px] text-[16px] focus:outline-none focus:ring-2 focus:ring-black ${errors.stock ? 'border-red-500' : 'border-gray-300'
+                  value={formData.stock === undefined || formData.stock === 0 ? '' : formData.stock}
+                  onChange={(e) => {
+                    const val = e.target.value === '' ? undefined : (parseInt(e.target.value) || 0)
+                    handleInputChange('stock', val)
+                  }}
+                  className={`w-full text-black px-4 py-3 border rounded-lg md:text-[18px] text-[16px] focus:outline-none focus:ring-2 focus:ring-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${errors.stock ? 'border-red-500' : 'border-gray-300'
                     }`}
                 />
                 {errors.stock && <p className="text-red-500 md:text-[16px] text-[14px] mt-1">{errors.stock}</p>}
@@ -749,9 +752,12 @@ const NewProductPage = () => {
                       <input
                         type="number"
                         min="1"
-                        value={tier.minDays}
-                        onChange={(e) => updateRentalPriceTier(index, 'minDays', parseInt(e.target.value) || 1)}
-                        className="w-full text-black px-3 py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={tier.minDays === 1 ? '' : tier.minDays}
+                        onChange={(e) => {
+                          const val = e.target.value === '' ? undefined : (parseInt(e.target.value) || 1)
+                          updateRentalPriceTier(index, 'minDays', val === undefined ? 1 : val)
+                        }}
+                        className="w-full text-black px-3 py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
                     </div>
 
@@ -766,7 +772,7 @@ const NewProductPage = () => {
                           const val = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0
                           updateRentalPriceTier(index, 'pricePerDay', val)
                         }}
-                        className="w-full text-black px-3 py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full text-black px-3 py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
                     </div>
 
@@ -795,7 +801,7 @@ const NewProductPage = () => {
                     type="number"
                     value={formData.maxRentalDays || ''}
                     onChange={(e) => handleInputChange('maxRentalDays', e.target.value ? parseInt(e.target.value) : undefined)}
-                    className="w-full text-black px-4 py-3 border border-gray-300 rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                    className="w-full text-black px-4 py-3 border border-gray-300 rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
               </div>
@@ -838,7 +844,7 @@ const NewProductPage = () => {
                       const val = e.target.value === '' ? undefined : (e.target.value ? parseFloat(e.target.value) : undefined)
                       updateVariant(index, 'price', val)
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
 
@@ -849,7 +855,7 @@ const NewProductPage = () => {
                     step="0.01"
                     value={variant.discount ?? ''}
                     onChange={(e) => updateVariant(index, 'discount', e.target.value ? parseFloat(e.target.value) : undefined)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
 
