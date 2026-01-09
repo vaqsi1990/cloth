@@ -27,6 +27,7 @@ const ShopPageClient = () => {
     const [priceRange, setPriceRange] = useState([0, 0])
     const [maxPrice, setMaxPrice] = useState(0)
     const [selectedSizeSystems, setSelectedSizeSystems] = useState<string[]>([])
+    const [selectedSizes, setSelectedSizes] = useState<string[]>([])
     const [selectedColors, setSelectedColors] = useState<string[]>([])
     const [selectedLocations, setSelectedLocations] = useState<string[]>([])
 
@@ -68,6 +69,7 @@ const ShopPageClient = () => {
             selectedPurposes,
             priceRange,
             selectedSizeSystems,
+            selectedSizes,
             selectedColors,
             selectedLocations,
             rentalStartDate: rentalStartDate ? rentalStartDate.toISOString() : null,
@@ -83,6 +85,7 @@ const ShopPageClient = () => {
         selectedPurposes,
         priceRange,
         selectedSizeSystems,
+        selectedSizes,
         selectedColors,
         selectedLocations,
         rentalStartDate,
@@ -103,6 +106,7 @@ const ShopPageClient = () => {
                 setSelectedPurposes(parsed.selectedPurposes || [])
                 setPriceRange(parsed.priceRange || [0, 0])
                 setSelectedSizeSystems(parsed.selectedSizeSystems || [])
+                setSelectedSizes(parsed.selectedSizes || [])
                 setSelectedColors(parsed.selectedColors || [])
                 setSelectedLocations(parsed.selectedLocations || [])
                 setRentalStartDate(parsed.rentalStartDate ? new Date(parsed.rentalStartDate) : null)
@@ -126,6 +130,7 @@ const ShopPageClient = () => {
         selectedPurposes,
         priceRange,
         selectedSizeSystems,
+        selectedSizes,
         selectedColors,
         selectedLocations,
         rentalStartDate,
@@ -267,6 +272,17 @@ const ShopPageClient = () => {
         { id: "UK", label: "UK" },
         { id: "CN", label: "CN" }
     ]
+
+    // Get all unique sizes from products
+    const availableSizes = React.useMemo(() => {
+        const sizes = new Set<string>()
+        products.forEach(product => {
+            if (product.size) {
+                sizes.add(product.size)
+            }
+        })
+        return Array.from(sizes).sort()
+    }, [products])
 
     const colors = [
         { id: "black", label: "შავი", color: "#000000" },
@@ -537,8 +553,11 @@ const ShopPageClient = () => {
 
             // Size System filter (variants no longer have sizeSystem, use product sizeSystem)
             const sizeSystemMatch = selectedSizeSystems.length === 0 ||
-                (product.sizeSystem && selectedSizeSystems.includes(product.sizeSystem)) ||
-                !product.sizeSystem
+                (product.sizeSystem && selectedSizeSystems.includes(product.sizeSystem))
+
+            // Size filter (product.size)
+            const sizeMatch = selectedSizes.length === 0 ||
+                (product.size && selectedSizes.includes(product.size))
 
             // Color filter
             const colorMatch = selectedColors.length === 0 ||
@@ -567,7 +586,7 @@ const ShopPageClient = () => {
             // Rental availability filter
             const rentalAvailabilityMatch = isProductAvailable(product)
 
-            return categoryMatch && purposeMatch && priceMatch && sizeSystemMatch && colorMatch && locationMatch && rentalAvailabilityMatch
+            return categoryMatch && purposeMatch && priceMatch && sizeSystemMatch && sizeMatch && colorMatch && locationMatch && rentalAvailabilityMatch
         })
     }
 
@@ -596,8 +615,11 @@ const ShopPageClient = () => {
 
         // Size System filter (variants no longer have sizeSystem, use product sizeSystem)
         const sizeSystemMatch = selectedSizeSystems.length === 0 ||
-            (product.sizeSystem && selectedSizeSystems.includes(product.sizeSystem)) ||
-            !product.sizeSystem
+            (product.sizeSystem && selectedSizeSystems.includes(product.sizeSystem))
+
+        // Size filter (product.size)
+        const sizeMatch = selectedSizes.length === 0 ||
+            (product.size && selectedSizes.includes(product.size))
 
         // Color filter
         const colorMatch = selectedColors.length === 0 ||
@@ -631,7 +653,7 @@ const ShopPageClient = () => {
             (purchaseType === "rent-only" && isRentOnly(product)) ||
             (purchaseType === "sale-only" && isSaleOnly(product))
 
-        return categoryMatch && purposeMatch && priceMatch && sizeSystemMatch && colorMatch && locationMatch && rentalAvailabilityMatch && purchaseTypeMatch
+        return categoryMatch && purposeMatch && priceMatch && sizeSystemMatch && sizeMatch && colorMatch && locationMatch && rentalAvailabilityMatch && purchaseTypeMatch
     })
 
 
@@ -660,7 +682,7 @@ const ShopPageClient = () => {
     // Reset to page 1 when filters change
     useEffect(() => {
         setCurrentPage(1)
-    }, [selectedCategories, selectedPurposes, priceRange, selectedSizeSystems, selectedColors, selectedLocations, rentalStartDate, rentalEndDate, sortBy, purchaseType, purposeParam])
+    }, [selectedCategories, selectedPurposes, priceRange, selectedSizeSystems, selectedSizes, selectedColors, selectedLocations, rentalStartDate, rentalEndDate, sortBy, purchaseType, purposeParam])
 
     // Handle category selection
     const toggleCategory = (categoryName: string) => {
@@ -688,6 +710,14 @@ const ShopPageClient = () => {
         )
     }
 
+    // Handle size selection
+    const toggleSize = (size: string) => {
+        setSelectedSizes(prev =>
+            prev.includes(size)
+                ? prev.filter(s => s !== size)
+                : [...prev, size]
+        )
+    }
 
     // Handle color selection
     const toggleColor = (color: string) => {
@@ -720,6 +750,7 @@ const ShopPageClient = () => {
         setSelectedCategories([])
         setSelectedPurposes([])
         setSelectedSizeSystems([])
+        setSelectedSizes([])
         setSelectedColors([])
         setSelectedLocations([])
         setRentalStartDate(null)
@@ -946,22 +977,51 @@ const ShopPageClient = () => {
                             {/* Right Content Area - Filter Options */}
                             <div className="flex-1 overflow-y-auto p-4">
                                 {activeMobileFilter === 'size' && (
-                                    <div className="space-y-3">
-                                        <h3 className="text-lg font-semibold text-black mb-4">ზომის სისტემა</h3>
-                                        {sizeSystems.map((sizeSystem) => (
-                                            <label
-                                                key={sizeSystem.id}
-                                                className="flex items-center gap-3 p-3 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100"
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedSizeSystems.includes(sizeSystem.id)}
-                                                    onChange={() => toggleSizeSystem(sizeSystem.id)}
-                                                    className="w-4 h-4"
-                                                />
-                                                <span className="text-[16px] text-black">{sizeSystem.label}</span>
-                                            </label>
-                                        ))}
+                                    <div className="space-y-6">
+                                        <div className="space-y-3">
+                                            <h3 className="text-lg font-semibold text-black mb-4">ზომის სისტემა</h3>
+                                            {sizeSystems.map((sizeSystem) => (
+                                                <label
+                                                    key={sizeSystem.id}
+                                                    className="flex items-center gap-3 p-3 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100"
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedSizeSystems.includes(sizeSystem.id)}
+                                                        onChange={() => toggleSizeSystem(sizeSystem.id)}
+                                                        className="w-4 h-4"
+                                                    />
+                                                    <span className="text-[16px] text-black">{sizeSystem.label}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                        {availableSizes.length > 0 && (
+                                            <div className="space-y-3">
+                                                <h3 className="text-lg font-semibold text-black mb-4">ზომა</h3>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {availableSizes.map((size) => {
+                                                        const sizeCount = products.filter(product =>
+                                                            product.size === size
+                                                        ).length
+                                                        return (
+                                                            <label
+                                                                key={size}
+                                                                className="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 border border-gray-300"
+                                                            >
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={selectedSizes.includes(size)}
+                                                                    onChange={() => toggleSize(size)}
+                                                                    className="w-4 h-4"
+                                                                />
+                                                                <span className="text-[16px] text-black">{size}</span>
+                                                                <span className="text-xs text-gray-500">({sizeCount})</span>
+                                                            </label>
+                                                        )
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
@@ -1327,6 +1387,35 @@ const ShopPageClient = () => {
                                 </div>
                             </div>
 
+                            {/* Size Filter */}
+                            {availableSizes.length > 0 && (
+                                <div className="border-b border-gray-200 pb-6">
+                                    <h2 className="font-medium text-black md:text-[18px] text-[16px] mb-3">ზომა</h2>
+                                    <div className="flex flex-wrap gap-2">
+                                        {availableSizes.map((size) => {
+                                            const sizeCount = products.filter(product =>
+                                                product.size === size
+                                            ).length
+                                            return (
+                                                <label
+                                                    key={size}
+                                                    className="flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer bg-gray-50 hover:bg-gray-100 border border-gray-300 text-[15px] text-black"
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedSizes.includes(size)}
+                                                        onChange={() => toggleSize(size)}
+                                                        className="w-4 h-4"
+                                                    />
+                                                    <span>{size}</span>
+                                                    <span className="text-xs text-gray-500">({sizeCount})</span>
+                                                </label>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Location Filter (styled like type) */}
                             <div className="mb-6  pb-6">
                                 <h2 className="font-medium text-black md:text-[18px] text-[16px] mb-3">მდებარეობა</h2>
@@ -1440,7 +1529,7 @@ const ShopPageClient = () => {
 
                                                 />
                                                 </Link>
-                                        
+
                                             </div>
                                         </div>
                                         <div className="mt-2 space-y-2">

@@ -170,6 +170,8 @@ export async function GET(request: NextRequest) {
       rating: true,
       categoryId: true,
       purposeId: true,
+      sizeSystem: true, // Include sizeSystem for client-side filtering
+      size: true, // Include size for client-side filtering
       isRentable: true,
       pricePerDay: true,
       maxRentalDays: true,
