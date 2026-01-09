@@ -173,11 +173,11 @@ const ShopPageClient = () => {
         if (purposeParam) {
             setSelectedPurposes([purposeParam])
         } else {
-            // Only clear if we're not restoring from sessionStorage
-            if (hasRestoredState) {
+            // Only clear if we're not restoring from sessionStorage and no purpose in URL
+            if (hasRestoredState && !purposeParam) {
                 setSelectedPurposes([])
             }
-        }
+        } 
     }, [purposeParam, hasRestoredState])
 
     // Set category from URL parameter
@@ -305,9 +305,14 @@ const ShopPageClient = () => {
                     params.append('purpose', purposeParam)
                 }
 
-                const response = await fetch(`/api/products?${params.toString()}`)
+                const queryString = params.toString()
+                const response = await fetch(`/api/products${queryString ? `?${queryString}` : ''}`)
                 const data = await response.json()
                 if (data.success) {
+                    // Log for debugging
+                    if (process.env.NODE_ENV === 'development' && purposeParam) {
+                        console.log(`[ShopPageClient] Fetched ${data.products.length} products for purpose: ${purposeParam}`)
+                    }
                     setProducts(data.products)
 
                     // Calculate maximum price from products (including rental prices)
@@ -655,7 +660,7 @@ const ShopPageClient = () => {
     // Reset to page 1 when filters change
     useEffect(() => {
         setCurrentPage(1)
-    }, [selectedCategories, selectedPurposes, priceRange, selectedSizeSystems, selectedColors, selectedLocations, rentalStartDate, rentalEndDate, sortBy, purchaseType])
+    }, [selectedCategories, selectedPurposes, priceRange, selectedSizeSystems, selectedColors, selectedLocations, rentalStartDate, rentalEndDate, sortBy, purchaseType, purposeParam])
 
     // Handle category selection
     const toggleCategory = (categoryName: string) => {
@@ -745,117 +750,102 @@ const ShopPageClient = () => {
 
             {/* Category Section moved from Header */}
             <div className="bg-[#FAFAFA]">
-                <div className="container  max-w-6xl mx-auto px-4 py-8 space-y-6 ">
-                    <div className="flex items-center justify-between mb-8">
+                <div className="container max-w-6xl mx-auto px-4 py-8 space-y-6">
+                    <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
                         <h2 className="md:text-[24px] text-[20px] font-bold text-gray-900 text-start">
                             მოძებნეთ დანიშნულების მიხედვით
                         </h2>
-                        {(searchParam || purposeParam) && (
+                        <div className="flex items-center gap-4">
+                            {(searchParam || purposeParam) && (
+                                <button
+                                    onClick={searchParam ? clearSearch : clearPurpose}
+                                    className="flex items-center gap-2 text-gray-700 hover:text-gray-900 text-[15px] md:text-base"
+                                    aria-label={searchParam ? "ძიების გასუფთავება" : "დანიშნულების გასუფთავება"}
+                                >
+                                    <X className="w-5 h-5 md:w-7 md:h-7" />
+                                    <span className="hidden sm:inline">{searchParam ? 'ძიების გასუფთავება' : 'დანიშნულების გასუფთავება'}</span>
+                                </button>
+                            )}
+                            {/* Toggle button - only visible on mobile */}
                             <button
-                                onClick={searchParam ? clearSearch : clearPurpose}
-                                className="flex items-center gap-2 text-gray-700 hover:text-gray-900 text-[15px] md:text-base"
-                                aria-label={searchParam ? "ძიების გასუფთავება" : "დანიშნულების გასუფთავება"}
+                                onClick={() => setIsCategorySectionOpen(!isCategorySectionOpen)}
+                                className="md:hidden flex items-center gap-2 text-gray-700 hover:text-gray-900"
+                                aria-label="კატეგორიების გახსნა/დახურვა"
                             >
-                                <X className="w-7 h-7" />
-                                <span>{searchParam ? 'ძიების გასუფთავება' : 'დანიშნულების გასუფთავება'}</span>
+                                <span className="text-[16px] font-medium">
+                                    {isCategorySectionOpen ? 'დახურვა' : 'გახსნა'}
+                                </span>
+                                <ChevronDown
+                                    className={`w-5 h-5 transition-transform duration-200 ${isCategorySectionOpen ? 'rotate-180' : ''}`}
+                                />
                             </button>
-                        )}
-                        {/* Toggle button - only visible on mobile */}
-                        <button
-                            onClick={() => setIsCategorySectionOpen(!isCategorySectionOpen)}
-                            className="md:hidden flex items-center gap-2 text-gray-700 hover:text-gray-900"
-                            aria-label="კატეგორიების გახსნა/დახურვა"
-                        >
-                            <span className="text-[16px] font-medium">
-                                {isCategorySectionOpen ? '' : ''}
-                            </span>
-                            <ChevronDown
-                                className={`w-5 h-5 transition-transform ${isCategorySectionOpen ? 'rotate-180' : ''}`}
-                            />
-                        </button>
+                        </div>
                     </div>
                     {/* Category grid - hidden on mobile by default, always visible on desktop */}
-                    <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 ${isCategorySectionOpen ? 'block' : 'hidden md:grid'}`}>
+                    <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 ${isCategorySectionOpen ? 'grid' : 'hidden md:grid'}`}>
                         {/* Category Box 1 */}
                         <Link
-                            href="/shop?purpose=everyday"
-                            className=" bg-white
-    border border-gray-300
-    w-[265px]
-    h-[42px]
-    rounded-full
-    flex items-center justify-center
-    hover:border-gray-400
-    transition-colors
-    cursor-pointer
-  "
+                            href={`/shop?purpose=everyday${genderParam ? `&gender=${genderParam}` : ''}`}
+                            className={`border rounded-full flex items-center justify-center px-4 py-2.5 min-h-[42px] transition-all duration-200 cursor-pointer ${
+                                purposeParam === 'everyday'
+                                    ? 'border-[#1B3729] bg-[#1B3729]'
+                                    : 'bg-white border-gray-300 hover:border-gray-400'
+                            }`}
                         >
-                            <p className="text-black text-[16px] font-normal">
+                            <p className={`text-[14px] md:text-[16px] font-normal text-center whitespace-nowrap ${
+                                purposeParam === 'everyday' ? 'text-white' : 'text-black'
+                            }`}>
                                 ყოველდღიური ტანსაცმელი
                             </p>
                         </Link>
 
-
                         {/* Category Box 2 */}
                         <Link
-                            href="/shop?purpose=wedding"
-                            className="
-    bg-white
-    border border-gray-300
-    w-[265px]
-    h-[42px]
-    rounded-full
-    flex items-center justify-center
-
-    transition-colors
-    cursor-pointer
-  "
+                            href={`/shop?purpose=wedding${genderParam ? `&gender=${genderParam}` : ''}`}
+                            className={`border rounded-full flex items-center justify-center px-4 py-2.5 min-h-[42px] transition-all duration-200 cursor-pointer ${
+                                purposeParam === 'wedding'
+                                    ? 'border-[#1B3729] bg-[#1B3729]'
+                                    : 'bg-white border-gray-300 hover:border-gray-400'
+                            }`}
                         >
-                            <p className="text-black text-[16px]">
+                            <p className={`text-[14px] md:text-[16px] font-normal text-center whitespace-nowrap ${
+                                purposeParam === 'wedding' ? 'text-white' : 'text-black'
+                            }`}>
                                 საქორწილო და სადღესასწაულო
                             </p>
                         </Link>
 
                         {/* Category Box 3 */}
                         <Link
-                            href="/shop?purpose=sports"
-                            className="
-    bg-white
-    border border-gray-300
-    w-[265px]
-    h-[42px]
-    rounded-full
-    flex items-center justify-center
-   
-    transition-colors
-    cursor-pointer
-  "
+                            href={`/shop?purpose=sports${genderParam ? `&gender=${genderParam}` : ''}`}
+                            className={`border rounded-full flex items-center justify-center px-4 py-2.5 min-h-[42px] transition-all duration-200 cursor-pointer ${
+                                purposeParam === 'sports'
+                                    ? 'border-[#1B3729] bg-[#1B3729]'
+                                    : 'bg-white border-gray-300 hover:border-gray-400'
+                            }`}
                         >
-                            <p className="text-black text-[16px]">
+                            <p className={`text-[14px] md:text-[16px] font-normal text-center whitespace-nowrap ${
+                                purposeParam === 'sports' ? 'text-white' : 'text-black'
+                            }`}>
                                 სათხილამურო და სპორტული
                             </p>
                         </Link>
 
                         {/* Category Box 4 */}
                         <Link
-                            href="/shop?purpose=cultural"
-                            className="
-    bg-white
-    border border-gray-300
-    w-[265px]
-    h-[42px]
-    rounded-full
-    flex items-center justify-center
-   
-    transition-colors
-    cursor-pointer
-  "
+                            href={`/shop?purpose=cultural${genderParam ? `&gender=${genderParam}` : ''}`}
+                            className={`border rounded-full flex items-center justify-center px-4 py-2.5 min-h-[42px] transition-all duration-200 cursor-pointer ${
+                                purposeParam === 'cultural'
+                                    ? 'border-[#1B3729] bg-[#1B3729]'
+                                    : 'bg-white border-gray-300 hover:border-gray-400'
+                            }`}
                         >
-                            <p className="text-black text-[16px]">
+                            <p className={`text-[14px] md:text-[16px] font-normal text-center whitespace-nowrap ${
+                                purposeParam === 'cultural' ? 'text-white' : 'text-black'
+                            }`}>
                                 კულტურული და თემატური
                             </p>
                         </Link>
-
                     </div>
                 </div>
             </div>
@@ -1438,6 +1428,7 @@ const ShopPageClient = () => {
                                     >
                                         <div className="rounded-xl overflow-hidden">
                                             <div className="relative  w-full  h-[273px] bg-gray-100  overflow-hidden">
+                                                <Link href={`/product/${product.id}`}>
                                                 <Image
                                                     src={product.images?.[0]?.url || "/placeholder.jpg"}
                                                     alt={product.name}
@@ -1448,8 +1439,8 @@ const ShopPageClient = () => {
                                                     priority={index < 4}
 
                                                 />
-
-
+                                                </Link>
+                                        
                                             </div>
                                         </div>
                                         <div className="mt-2 space-y-2">

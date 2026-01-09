@@ -111,7 +111,38 @@ export async function GET(request: NextRequest) {
       select: { id: true },
       // @ts-ignore - cacheStrategy is available with Prisma Accelerate
       cacheStrategy: { swr: 300, ttl: 300 }
-    }).then(p => p?.id).catch(() => null) : Promise.resolve(null)
+    }).then(async (p) => {
+      if (!p) {
+        // Try to create the purpose if it doesn't exist (using PURPOSE_NAME_BY_SLUG)
+        const purposeName = PURPOSE_NAME_BY_SLUG[purpose] || purpose
+        try {
+          const created = await prisma.purpose.upsert({
+            where: { slug: purpose },
+            update: {},
+            create: {
+              slug: purpose,
+              name: purposeName
+            },
+            select: { id: true }
+          })
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`[Products API] Created purpose with slug "${purpose}"`)
+          }
+          return created.id
+        } catch (error) {
+          if (process.env.NODE_ENV === 'development') {
+            console.error(`[Products API] Error creating purpose with slug "${purpose}":`, error)
+          }
+          return null
+        }
+      }
+      return p.id
+    }).catch((error) => {
+      if (process.env.NODE_ENV === 'development') {
+        console.error(`[Products API] Error finding purpose with slug "${purpose}":`, error)
+      }
+      return null
+    }) : Promise.resolve(null)
     
     // Resolve all in parallel
     const [session, categoryId, purposeId] = await Promise.all([
@@ -144,6 +175,22 @@ export async function GET(request: NextRequest) {
       maxRentalDays: true,
       status: true,
       createdAt: true,
+      // Include purpose relation for all users (needed for client-side filtering)
+      purpose: {
+        select: {
+          id: true,
+          name: true,
+          slug: true
+        }
+      },
+      // Include category relation for all users (needed for client-side filtering)
+      category: {
+        select: {
+          id: true,
+          name: true,
+          slug: true
+        }
+      },
       images: {
         select: {
           url: true,
@@ -175,18 +222,6 @@ export async function GET(request: NextRequest) {
         userId: true,
         approvalStatus: true,
         rejectionReason: true,
-        category: {
-          select: {
-            id: true,
-            name: true
-          }
-        },
-        purpose: {
-          select: {
-            id: true,
-            name: true
-          }
-        },
         user: {
           select: {
             id: true,
