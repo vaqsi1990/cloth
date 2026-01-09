@@ -42,6 +42,7 @@ const ShopPageClient = () => {
         isAvailable: boolean;
     }[]>>({})
     const [isCategoryOpen, setIsCategoryOpen] = useState(false)
+    const [isSizeOpen, setIsSizeOpen] = useState(false)
 
     const [currentPage, setCurrentPage] = useState(1)
     const [itemsPerPage] = useState(20)
@@ -273,15 +274,35 @@ const ShopPageClient = () => {
         { id: "CN", label: "CN" }
     ]
 
+    // Predefined letter sizes that should always be available
+    const predefinedLetterSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL']
+    
     // Get all unique sizes from products
     const availableSizes = React.useMemo(() => {
         const sizes = new Set<string>()
+        // Add predefined letter sizes
+        predefinedLetterSizes.forEach(size => sizes.add(size))
+        // Add sizes from products
         products.forEach(product => {
             if (product.size) {
-                sizes.add(product.size)
+                // Normalize size to uppercase for letter sizes
+                const normalizedSize = product.size.toUpperCase()
+                if (predefinedLetterSizes.includes(normalizedSize)) {
+                    sizes.add(normalizedSize)
+                } else {
+                    sizes.add(product.size)
+                }
             }
         })
-        return Array.from(sizes).sort()
+        // Sort sizes: letter sizes first (in order), then others
+        return Array.from(sizes).sort((a, b) => {
+            const aIndex = predefinedLetterSizes.indexOf(a.toUpperCase())
+            const bIndex = predefinedLetterSizes.indexOf(b.toUpperCase())
+            if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex
+            if (aIndex !== -1) return -1
+            if (bIndex !== -1) return 1
+            return a.localeCompare(b)
+        })
     }, [products])
 
     const colors = [
@@ -555,9 +576,15 @@ const ShopPageClient = () => {
             const sizeSystemMatch = selectedSizeSystems.length === 0 ||
                 (product.sizeSystem && selectedSizeSystems.includes(product.sizeSystem))
 
-            // Size filter (product.size)
+            // Size filter (product.size) - case-insensitive for letter sizes
             const sizeMatch = selectedSizes.length === 0 ||
-                (product.size && selectedSizes.includes(product.size))
+                (product.size && selectedSizes.some(selectedSize => {
+                    if (!product.size) return false
+                    const productSizeUpper = product.size.toUpperCase()
+                    const selectedSizeUpper = selectedSize.toUpperCase()
+                    // Match exact or case-insensitive for letter sizes
+                    return product.size === selectedSize || productSizeUpper === selectedSizeUpper
+                }))
 
             // Color filter
             const colorMatch = selectedColors.length === 0 ||
@@ -617,9 +644,15 @@ const ShopPageClient = () => {
         const sizeSystemMatch = selectedSizeSystems.length === 0 ||
             (product.sizeSystem && selectedSizeSystems.includes(product.sizeSystem))
 
-        // Size filter (product.size)
+        // Size filter (product.size) - case-insensitive for letter sizes
         const sizeMatch = selectedSizes.length === 0 ||
-            (product.size && selectedSizes.includes(product.size))
+            (product.size && selectedSizes.some(selectedSize => {
+                if (!product.size) return false
+                const productSizeUpper = product.size.toUpperCase()
+                const selectedSizeUpper = selectedSize.toUpperCase()
+                // Match exact or case-insensitive for letter sizes
+                return product.size === selectedSize || productSizeUpper === selectedSizeUpper
+            }))
 
         // Color filter
         const colorMatch = selectedColors.length === 0 ||
@@ -710,13 +743,19 @@ const ShopPageClient = () => {
         )
     }
 
-    // Handle size selection
+    // Handle size selection (case-insensitive)
     const toggleSize = (size: string) => {
-        setSelectedSizes(prev =>
-            prev.includes(size)
-                ? prev.filter(s => s !== size)
-                : [...prev, size]
-        )
+        setSelectedSizes(prev => {
+            // Check if size already exists (case-insensitive)
+            const existingIndex = prev.findIndex(s => s.toUpperCase() === size.toUpperCase())
+            if (existingIndex !== -1) {
+                // Remove existing size
+                return prev.filter((_, index) => index !== existingIndex)
+            } else {
+                // Add new size
+                return [...prev, size]
+            }
+        })
     }
 
     // Handle color selection
@@ -998,24 +1037,34 @@ const ShopPageClient = () => {
                                         {availableSizes.length > 0 && (
                                             <div className="space-y-3">
                                                 <h3 className="text-lg font-semibold text-black mb-4">ზომა</h3>
-                                                <div className="flex flex-wrap gap-2">
+                                                <div className="space-y-2">
                                                     {availableSizes.map((size) => {
-                                                        const sizeCount = products.filter(product =>
-                                                            product.size === size
-                                                        ).length
+                                                        const sizeCount = products.filter(product => {
+                                                            if (!product.size) return false
+                                                            const productSizeUpper = product.size.toUpperCase()
+                                                            const sizeUpper = size.toUpperCase()
+                                                            return product.size === size || productSizeUpper === sizeUpper
+                                                        }).length
+                                                        const isSelected = selectedSizes.some(selectedSize => {
+                                                            const selectedSizeUpper = selectedSize.toUpperCase()
+                                                            const sizeUpper = size.toUpperCase()
+                                                            return selectedSize === size || selectedSizeUpper === sizeUpper
+                                                        })
                                                         return (
                                                             <label
                                                                 key={size}
-                                                                className="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 border border-gray-300"
+                                                                className="flex items-center justify-between text-[16px] text-black cursor-pointer py-1"
                                                             >
-                                                                <input
-                                                                    type="checkbox"
-                                                                    checked={selectedSizes.includes(size)}
-                                                                    onChange={() => toggleSize(size)}
-                                                                    className="w-4 h-4"
-                                                                />
-                                                                <span className="text-[16px] text-black">{size}</span>
-                                                                <span className="text-xs text-gray-500">({sizeCount})</span>
+                                                                <span className="flex items-center gap-3">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={isSelected}
+                                                                        onChange={() => toggleSize(size)}
+                                                                        className="w-4 h-4"
+                                                                    />
+                                                                    <span>{size}</span>
+                                                                </span>
+                                                                <span className="text-xs text-gray-500">{sizeCount}</span>
                                                             </label>
                                                         )
                                                     })}
@@ -1390,29 +1439,48 @@ const ShopPageClient = () => {
                             {/* Size Filter */}
                             {availableSizes.length > 0 && (
                                 <div className="border-b border-gray-200 pb-6">
-                                    <h2 className="font-medium text-black md:text-[18px] text-[16px] mb-3">ზომა</h2>
-                                    <div className="flex flex-wrap gap-2">
-                                        {availableSizes.map((size) => {
-                                            const sizeCount = products.filter(product =>
-                                                product.size === size
-                                            ).length
-                                            return (
-                                                <label
-                                                    key={size}
-                                                    className="flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer bg-gray-50 hover:bg-gray-100 border border-gray-300 text-[15px] text-black"
-                                                >
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={selectedSizes.includes(size)}
-                                                        onChange={() => toggleSize(size)}
-                                                        className="w-4 h-4"
-                                                    />
-                                                    <span>{size}</span>
-                                                    <span className="text-xs text-gray-500">({sizeCount})</span>
-                                                </label>
-                                            )
-                                        })}
-                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsSizeOpen(!isSizeOpen)}
+                                        className="w-full flex items-center justify-between mb-3"
+                                    >
+                                        <h4 className="font-medium text-black md:text-[18px] text-[16px]">ზომა</h4>
+                                        <ChevronDown className={`w-5 h-5 text-black transition-transform ${isSizeOpen ? "rotate-180" : "rotate-0"}`} />
+                                    </button>
+                                    {isSizeOpen && (
+                                        <div className="space-y-2 overflow-hidden">
+                                            {availableSizes.map((size) => {
+                                                const sizeCount = products.filter(product => {
+                                                    if (!product.size) return false
+                                                    const productSizeUpper = product.size.toUpperCase()
+                                                    const sizeUpper = size.toUpperCase()
+                                                    return product.size === size || productSizeUpper === sizeUpper
+                                                }).length
+                                                const isSelected = selectedSizes.some(selectedSize => {
+                                                    const selectedSizeUpper = selectedSize.toUpperCase()
+                                                    const sizeUpper = size.toUpperCase()
+                                                    return selectedSize === size || selectedSizeUpper === sizeUpper
+                                                })
+                                                return (
+                                                    <label
+                                                        key={size}
+                                                        className="flex items-center justify-between text-[15px] text-black cursor-pointer py-1"
+                                                    >
+                                                        <span className="flex items-center gap-2">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={isSelected}
+                                                                onChange={() => toggleSize(size)}
+                                                                className="w-4 h-4"
+                                                            />
+                                                            {size}
+                                                        </span>
+                                                        <span className="text-xs text-gray-500">{sizeCount}</span>
+                                                    </label>
+                                                )
+                                            })}
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
