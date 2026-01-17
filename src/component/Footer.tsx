@@ -64,6 +64,7 @@ const Footer = () => {
               <ul className="space-y-2 text-start">
                 <li><Link href="/" className="text-white font-normal text-[16px] md:text-[18px] transition-colors text-sm">მთავარი</Link></li>
                 <li><Link href="/about" className="text-white font-normal text-[16px] md:text-[18px] transition-colors text-sm">ჩვენს შესახებ</Link></li>
+                <li><Link href="/rules" className="text-white font-normal text-[16px] md:text-[18px] transition-colors text-sm">წესები</Link></li>
                 <li><Link href="/shop?category=women" className="text-white font-normal text-[16px] md:text-[18px] transition-colors text-sm">ქალების კოლექცია</Link></li>
                 <li><Link href="/shop?category=men" className="text-white font-normal text-[16px] md:text-[18px] transition-colors text-sm">კაცების კოლექცია</Link></li>
                 <li><Link href="/shop?category=children" className="text-white font-normal text-[16px] md:text-[18px] transition-colors text-sm">ბავშვების კოლექცია</Link></li>

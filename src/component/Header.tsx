@@ -201,6 +201,9 @@ const HeaderContent = () => {
             <Link href="/about" className="text-white font-bold transition-colors  text-[16px] md:text-[18px] font-regular">
               ჩვენს შესახებ
             </Link>
+            <Link href="/rules" className="text-white font-bold transition-colors  text-[16px] md:text-[18px] font-regular">
+              წესები
+            </Link>
 
             {/* Icons */}
             <div className="flex items-center space-x-4 ml-2">
@@ -488,6 +491,9 @@ const HeaderContent = () => {
               {/* Other Links */}
               <Link href="/about" onClick={closeMobileMenu} className="block px-4 py-3 text-black hover:bg-gray-100 rounded-lg text-[18px]">
                 ჩვენს შესახებ
+              </Link>
+              <Link href="/rules" onClick={closeMobileMenu} className="block px-4 py-3 text-black hover:bg-gray-100 rounded-lg text-[18px]">
+                წესები
               </Link>
               <Link href="/politics" onClick={closeMobileMenu} className="block px-4 py-3 text-black hover:bg-gray-100 rounded-lg text-[18px]">
                 საიტის პოლიტიკა
