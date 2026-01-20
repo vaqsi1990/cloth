@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import type { Metadata } from 'next'
-import { Shield, FileText, RotateCcw } from 'lucide-react'
+import { Shield, FileText, RotateCcw, Cookie } from 'lucide-react'
 
 const RulesPage = () => {
     const [activeTab, setActiveTab] = useState('privacy')
@@ -23,6 +23,11 @@ const RulesPage = () => {
             label: 'დაბრუნების პოლიტიკა', 
             icon: RotateCcw 
         },
+        { 
+            id: 'coockies', 
+            label: 'Cookie Policy', 
+            icon: Cookie 
+        },
     ]
 
     return (
@@ -39,7 +44,7 @@ const RulesPage = () => {
                             className={`flex items-center gap-2 px-6 py-3 rounded-t-lg transition-colors text-[16px] md:text-[18px] font-medium ${
                                 activeTab === tab.id
                                     ? 'bg-[#1B3729] text-white border-b-2 border-[#1B3729]'
-                                    : 'text-gray-700 hover:text-[#1B3729] hover:bg-gray-50'
+                                    : 'text-black hover:text-[#1B3729] hover:bg-gray-50'
                             }`}
                         >
                             <tab.icon className="w-5 h-5" />
@@ -733,6 +738,367 @@ const RulesPage = () => {
                                     <li>ფაქტის დაფიქსირების და გამქირავებლის ბრალეულობის დადასტურების შემთხვევაში თანხა განიბლოკება და დაუბრუნდება დამქირავებელს.</li>
                                     <li>იმ შემთხვევაში თუ დამქირავებელი 2 დღის განმავლობაში არ დააფიქსირებს ნივთის ჩაუბარებლობის შესახებ ინფორმაციას, ნივთი ჩაითვლება ჩაბარებულად.</li>
                                 </ol>
+                            </section>
+                        </div>
+                    )}
+
+                    {activeTab === 'coockies' && (
+                        <div className="space-y-6">
+                            <h2 className="text-2xl font-bold mb-6">Cookie Policy</h2>
+                            
+                            <section className="space-y-4">
+                                <p className="md:text-[18px] text-[16px] leading-relaxed">
+                                    <span className="font-bold">Dressla LLC</span> uses cookies to improve your experience. By using our website, you agree to this Cookie Policy. We comply with the Georgian law on Personal Data Protection and the General Data Protection Regulation (GDPR).
+                                </p>
+                                <p className="md:text-[18px] text-[16px] leading-relaxed">
+                                    This policy explains what cookies are, how we use them, and how you can manage your preferences.
+                                </p>
+                            </section>
+
+                            <section className="space-y-4">
+                                <h3 className="text-xl font-semibold">What Are Cookies?</h3>
+                                <p className="md:text-[18px] text-[16px] leading-relaxed">
+                                    Cookies are small text files that are stored on your device (computer, tablet, mobile phone) when you use a website. Cookies allow the website to recognize your device and remember information such as language preferences, login details, or your navigation history.
+                                </p>
+                            </section>
+
+                            <section className="space-y-4">
+                                <h3 className="text-xl font-semibold">The active period of the cookies</h3>
+                                <p className="md:text-[18px] text-[16px] leading-relaxed">
+                                    <span className="font-bold">Session cookies:</span> Active during the current navigation session, have a short expiry period (from 1-2 minutes to 1-2 days).
+                                </p>
+                                <p className="md:text-[18px] text-[16px] leading-relaxed mt-4">
+                                    <span className="font-bold">Persistent cookies:</span> Active for a longer period (up to 1 year), the expiry period is determined by the website operator.
+                                </p>
+                            </section>
+
+                            <section className="space-y-4">
+                                <h3 className="text-xl font-semibold">Types of Cookies we use and reasons for such using</h3>
+                                <div className="space-y-4">
+                                    <div>
+                                        <p className="md:text-[18px] text-[16px] leading-relaxed font-semibold mb-2">1. Essential Cookies:</p>
+                                        <p className="md:text-[18px] text-[16px] leading-relaxed">
+                                            Necessary for the website to function (navigation between pages, secure login, restricted areas). The service cannot be provided without them.
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="md:text-[18px] text-[16px] leading-relaxed font-semibold mb-2">2. Performance Cookies:</p>
+                                        <p className="md:text-[18px] text-[16px] leading-relaxed">
+                                            Collect information about website usage (pages viewed, errors) to improve performance and user experience.
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="md:text-[18px] text-[16px] leading-relaxed font-semibold mb-2">3. Functional Cookies:</p>
+                                        <p className="md:text-[18px] text-[16px] leading-relaxed">
+                                            Remember user preferences and settings (e.g., language, region) for future visits.
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="md:text-[18px] text-[16px] leading-relaxed font-semibold mb-2">4. Targeting Cookies:</p>
+                                        <p className="md:text-[18px] text-[16px] leading-relaxed">
+                                            Track browsing habits across different websites for personalized advertisements.
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="md:text-[18px] text-[16px] leading-relaxed font-semibold mb-2">5. Analytics Cookies:</p>
+                                        <p className="md:text-[18px] text-[16px] leading-relaxed">
+                                            Track website visits and traffic sources to measure and improve site performance. They provide information about popular pages and user movement. Data is aggregated for statistics. These cookies are enabled by default but can be turned off, although disabling them prevents performance monitoring.
+                                        </p>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section className="space-y-4">
+                                <h3 className="text-xl font-semibold">The party placing the cookie</h3>
+                                <div className="space-y-3">
+                                    <p className="md:text-[18px] text-[16px] leading-relaxed">
+                                        <span className="font-bold">First-party cookies:</span> Placed directly by the visited website; only the website operator can read and access the information.
+                                    </p>
+                                    <p className="md:text-[18px] text-[16px] leading-relaxed">
+                                        <span className="font-bold">Third-party cookies:</span> Placed by third parties (e.g., cookie manager, advertiser, analytics service provider, such as Facebook, Google) when a website incorporates elements from other websites. These third parties can receive information about user navigation. The website acts as an intermediary.
+                                    </p>
+                                </div>
+                            </section>
+
+                            <section className="space-y-4">
+                                <h3 className="text-xl font-semibold">To whom and for which purposes do we transfer personal data?</h3>
+                                <p className="md:text-[18px] text-[16px] leading-relaxed">
+                                    Personal data may be transferred to law enforcement agencies if there is a legal basis.
+                                </p>
+                                <p className="md:text-[18px] text-[16px] leading-relaxed mt-4">
+                                    Data may be transferred to companies with which a contract has been concluded for the technical sending of messages/information, limited only to phone number or email address.
+                                </p>
+                            </section>
+
+                            <section className="space-y-4">
+                                <h3 className="text-xl font-semibold">How We Use Cookies</h3>
+                                <ul className="list-disc list-inside space-y-2 md:text-[18px] text-[16px] ml-4">
+                                    <li>To improve user experience (personalization of content according to preferences)</li>
+                                    <li>For website traffic analysis (collected information to improve functionality and design)</li>
+                                    <li>For marketing purposes (displaying personalized advertisements/offers)</li>
+                                    <li>To remember preferences (storing language/region preferences)</li>
+                                </ul>
+                            </section>
+
+                            <section className="space-y-4">
+                                <h3 className="text-xl font-semibold">Legal basis for placing the cookies</h3>
+                                <div className="space-y-3 md:text-[18px] text-[16px] leading-relaxed">
+                                    <p><span className="font-bold">1. User consent in accordance with Article 5.1.a of the Georgian law on Personal Data Protection:</span> For personalized advertising cookies, which require user consent that can be withdrawn at any time.</p>
+                                    <p><span className="font-bold">2. Legitimate interest of the website operator in accordance with Article 5.1.i of the Georgian law on Personal Data Protection:</span> For functional and performance cookies, which are based on the commercial and economic interest of the website operator. The user can disable them.</p>
+                                    <p><span className="font-bold">3. Provision of an information society service explicitly requested by the subscriber or user in accordance with Article 5.1.j of the Georgian law on Personal Data Protection:</span> For strictly necessary cookies, which are essential for the website's operation and service delivery. They cannot be disabled.</p>
+                                </div>
+                            </section>
+
+                            <section className="space-y-4">
+                                <h3 className="text-xl font-semibold">Managing Your Cookie Preferences</h3>
+                                <p className="md:text-[18px] text-[16px] leading-relaxed">
+                                    You can manage cookies through your browser settings or the Cookies Notice page.
+                                </p>
+                                <p className="md:text-[18px] text-[16px] leading-relaxed mt-4">
+                                    Disabling cookies may affect the website's functionality.
+                                </p>
+                                <p className="md:text-[18px] text-[16px] leading-relaxed mt-4">
+                                    Instructions for managing cookies and enabling "Do Not Track":
+                                </p>
+                                <ul className="list-disc list-inside space-y-2 md:text-[18px] text-[16px] ml-4">
+                                    <li>Google Chrome: <a href="https://support.google.com/chrome/answer/95647" target="_blank" rel="noopener noreferrer" className="text-[#1B3729] underline">https://support.google.com/chrome/answer/95647</a></li>
+                                    <li>Mozilla Firefox: <a href="https://support.mozilla.org/en-US/kb/enable-and-disable-cookies-website-preferences" target="_blank" rel="noopener noreferrer" className="text-[#1B3729] underline">https://support.mozilla.org/en-US/kb/enable-and-disable-cookies-website-preferences</a></li>
+                                    <li>Safari: <a href="https://support.apple.com/guide/safari/manage-cookies-and-website-data-sfri11471/mac" target="_blank" rel="noopener noreferrer" className="text-[#1B3729] underline">https://support.apple.com/guide/safari/manage-cookies-and-website-data-sfri11471/mac</a></li>
+                                    <li>Microsoft Edge: <a href="https://support.microsoft.com/en-us/microsoft-edge/delete-cookies-in-microsoft-edge-63947406-40ac-c3b8-57b9-2a946a29ae09" target="_blank" rel="noopener noreferrer" className="text-[#1B3729] underline">https://support.microsoft.com/en-us/microsoft-edge/delete-cookies-in-microsoft-edge-63947406-40ac-c3b8-57b9-2a946a29ae09</a></li>
+                                </ul>
+                            </section>
+
+                            <section className="space-y-4">
+                                <h3 className="text-xl font-semibold">Purpose of cookies used on this website</h3>
+                                <p className="md:text-[18px] text-[16px] leading-relaxed mb-4">
+                                    Below are tables summarizing the cookies used:
+                                </p>
+                                
+                                <div className="space-y-6">
+                                    <div>
+                                        <h4 className="text-lg font-semibold mb-3">Strictly necessary cookies - first party</h4>
+                                        <div className="overflow-x-auto">
+                                            <table className="min-w-full border border-gray-300 md:text-[16px] text-[14px]">
+                                                <thead>
+                                                    <tr className="bg-gray-100">
+                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Cookie name</th>
+                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Purpose of the cookie and data processed</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
+                                                    <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
+                                                    <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
+                                                    <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <h4 className="text-lg font-semibold mb-3">Strictly necessary cookies - third party</h4>
+                                        <div className="overflow-x-auto">
+                                            <table className="min-w-full border border-gray-300 md:text-[16px] text-[14px]">
+                                                <thead>
+                                                    <tr className="bg-gray-100">
+                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Cookie name</th>
+                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Purpose of the cookie and data processed</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
+                                                    <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
+                                                    <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
+                                                    <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <h4 className="text-lg font-semibold mb-3">Performance cookies - first party</h4>
+                                        <div className="overflow-x-auto">
+                                            <table className="min-w-full border border-gray-300 md:text-[16px] text-[14px]">
+                                                <thead>
+                                                    <tr className="bg-gray-100">
+                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Cookie name</th>
+                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Purpose of the cookie and data processed</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
+                                                    <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
+                                                    <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
+                                                    <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <h4 className="text-lg font-semibold mb-3">Performance cookies- third party</h4>
+                                        <div className="overflow-x-auto">
+                                            <table className="min-w-full border border-gray-300 md:text-[16px] text-[14px]">
+                                                <thead>
+                                                    <tr className="bg-gray-100">
+                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Cookie name</th>
+                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Purpose of the cookie and data processed</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <h4 className="text-lg font-semibold mb-3">Functional cookies - first party</h4>
+                                        <div className="overflow-x-auto">
+                                            <table className="min-w-full border border-gray-300 md:text-[16px] text-[14px]">
+                                                <thead>
+                                                    <tr className="bg-gray-100">
+                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Cookie name</th>
+                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Purpose of the cookie and data processed</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
+                                                    <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
+                                                    <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
+                                                    <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <h4 className="text-lg font-semibold mb-3">Functional cookies - third party</h4>
+                                        <div className="overflow-x-auto">
+                                            <table className="min-w-full border border-gray-300 md:text-[16px] text-[14px]">
+                                                <thead>
+                                                    <tr className="bg-gray-100">
+                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Cookie name</th>
+                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Purpose of the cookie and data processed</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <h4 className="text-lg font-semibold mb-3">Targeting cookies - first party</h4>
+                                        <div className="overflow-x-auto">
+                                            <table className="min-w-full border border-gray-300 md:text-[16px] text-[14px]">
+                                                <thead>
+                                                    <tr className="bg-gray-100">
+                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Cookie name</th>
+                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Purpose of the cookie and data processed</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
+                                                    <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
+                                                    <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <h4 className="text-lg font-semibold mb-3">Targeting cookies - third party</h4>
+                                        <div className="overflow-x-auto">
+                                            <table className="min-w-full border border-gray-300 md:text-[16px] text-[14px]">
+                                                <thead>
+                                                    <tr className="bg-gray-100">
+                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Cookie name</th>
+                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Purpose of the cookie and data processed</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
+                                                    <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
+                                                    <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <h4 className="text-lg font-semibold mb-3">Analytics cookies - first party</h4>
+                                        <div className="overflow-x-auto">
+                                            <table className="min-w-full border border-gray-300 md:text-[16px] text-[14px]">
+                                                <thead>
+                                                    <tr className="bg-gray-100">
+                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Cookie name</th>
+                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Purpose of the cookie and data processed</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
+                                                    <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
+                                                    <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section className="space-y-4">
+                                <h3 className="text-xl font-semibold">Data protection rights and legal remedy</h3>
+                                <p className="md:text-[18px] text-[16px] leading-relaxed">
+                                    User data protection rights and legal remedy, as well as their limitations, are detailed in the Georgian law on Personal Data Protection. The user:
+                                </p>
+                                <ul className="list-disc list-inside space-y-2 md:text-[18px] text-[16px] ml-4">
+                                    <li>Can enable and disable cookie placement using cookie settings;</li>
+                                    <li>Can request information about what types of personal data are processed when using cookies;</li>
+                                    <li>Can request correction of their personal data that is processed when using cookies;</li>
+                                    <li>Can request deletion of their personal data that is processed when using cookies or restriction of their processing;</li>
+                                    <li>Can object to processing based on "legitimate interest" and for direct marketing purposes, and in conditions where data may or may not be processed in such cases;</li>
+                                    <li>Can request compensation for damage that arose as a result of unlawful processing of personal data.</li>
+                                </ul>
+                                <p className="md:text-[18px] text-[16px] leading-relaxed mt-4">
+                                    Without other administrative or judicial remedy, the user has the right to file a complaint with the data protection officer if the processing of personal data when using cookies violates the provisions of the Georgian law on Personal Data Protection.
+                                </p>
+                            </section>
+
+                            <section className="space-y-4">
+                                <h3 className="text-xl font-semibold">Cookie Policy Changes</h3>
+                                <p className="md:text-[18px] text-[16px] leading-relaxed">
+                                    We may update our Cookie Policy from time to time. Any changes will be posted on this page, and the updated date will be updated at the top of the policy. We recommend that you review this policy regularly to stay informed about how we use cookies.
+                                </p>
+                            </section>
+
+                            <section className="space-y-4">
+                                <h3 className="text-xl font-semibold">Exercising rights and contact information</h3>
+                                <p className="md:text-[18px] text-[16px] leading-relaxed">
+                                    To easily exercise the rights listed above and send relevant requests, you can contact us using the contact information provided below. We will respond as soon as possible, depending on the nature of your request, and no later than 30 days. As a rule, responses to data subject requests are provided free of charge; however, we reserve the right to charge a fee in accordance with the tariff determined by the Personal Data Protection Board if the request requires additional costs.
+                                </p>
+                            </section>
+
+                            <section className="space-y-4">
+                                <h3 className="text-xl font-semibold">Data processor and contact information</h3>
+                                <p className="md:text-[18px] text-[16px] leading-relaxed">
+                                    <span className="font-semibold">Email:</span> <a href="mailto:dressla.online@gmail.com" className="text-[#1B3729] underline">dressla.online@gmail.com</a>
+                                    <br />
+                                    <span className="font-semibold">Phone:</span> +995 599 55 63 95
+                                    <br />
+                                    <span className="font-semibold">Address:</span> Georgia, Tbilisi, Airport Settlement, 120th Building, Apartment N 13
+                                </p>
+                            </section>
+
+                            <section className="space-y-4">
+                                <h3 className="text-xl font-semibold">Other languages</h3>
+                                <p className="md:text-[18px] text-[16px] leading-relaxed">
+                                    You can examine translations of this page in other languages.
+                                </p>
+                                <p className="md:text-[18px] text-[16px] leading-relaxed">
+                                    Georgian.
+                                </p>
                             </section>
                         </div>
                     )}
