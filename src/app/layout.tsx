@@ -8,6 +8,7 @@ import AuthProvider from "@/components/AuthProvider";
 import ChatProvider from "@/components/ChatProvider";
 import ToastProvider from "@/components/ToastProvider";
 import ScrollRestorer from "@/components/ScrollRestorer";
+import CookieConsent from "@/components/CookieConsent";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -120,6 +121,7 @@ export default function RootLayout({
             </Suspense>
             {children}
             <Footer />
+            <CookieConsent />
           </ChatProvider>
         </AuthProvider>
       </body>

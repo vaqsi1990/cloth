@@ -114,6 +114,13 @@ model User {
   // Verification fields
   verified      Boolean   @default(false)
   blocked       Boolean   @default(false)
+  // Cookie consent fields
+  cookieConsentEssential   Boolean   @default(false)
+  cookieConsentPerformance Boolean  @default(false)
+  cookieConsentFunctional  Boolean  @default(false)
+  cookieConsentTargeting   Boolean  @default(false)
+  cookieConsentAnalytics   Boolean  @default(false)
+  cookieConsentTimestamp   DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
  

@@ -1,3 +1,5 @@
+'use client'
+
 import React from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -68,6 +70,7 @@ const Footer = () => {
                 <li><Link href="/shop?category=women" className="text-white font-normal text-[16px] md:text-[18px] transition-colors text-sm">ქალების კოლექცია</Link></li>
                 <li><Link href="/shop?category=men" className="text-white font-normal text-[16px] md:text-[18px] transition-colors text-sm">კაცების კოლექცია</Link></li>
                 <li><Link href="/shop?category=children" className="text-white font-normal text-[16px] md:text-[18px] transition-colors text-sm">ბავშვების კოლექცია</Link></li>
+                <li><Link href="/rules#coockies" className="text-white font-normal text-[16px] md:text-[18px] transition-colors text-sm">Cookie პოლიტიკა</Link></li>
               </ul>
             </div>
 
