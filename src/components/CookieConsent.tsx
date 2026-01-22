@@ -80,8 +80,7 @@ export default function CookieConsent() {
                     ჩვენ ვიყენებთ Cookies-ს
                   </h3>
                   <p className="text-sm md:text-base text-gray-700 leading-relaxed">
-                    ჩვენი ვებგვერდი იყენებს cookies-ს თქვენი გამოცდილების გასაუმჯობესებლად. 
-                    ჩვენ ვიცავთ საქართველოს პერსონალური მონაცემთა დაცვის კანონს და GDPR-ს.{' '}
+                  ჩვენ ვიყენებთ Cookie ( მზა ჩანაწერები) ფაილებს  მომხმარებლისთვის ვებსაიტის ფუნქციონირების უზრუნველსაყოფად, მარკეტინგული მიზნებისთვის და მომხმარებლის გამოცდილების პერსონალიზებისთვის.{' '}
                     <Link 
                       href="/rules#coockies" 
                       className="text-[#1B3729] underline hover:text-[#2d5a47] font-medium"

@@ -744,122 +744,120 @@ const RulesPage = () => {
 
                     {activeTab === 'coockies' && (
                         <div className="space-y-6">
-                            <h2 className="text-2xl font-bold mb-6">Cookie Policy</h2>
+                            <h2 className="text-2xl font-bold mb-6">Cookie პოლიტიკა</h2>
                             
                             <section className="space-y-4">
                                 <p className="md:text-[18px] text-[16px] leading-relaxed">
-                                    <span className="font-bold">Dressla LLC</span> uses cookies to improve your experience. By using our website, you agree to this Cookie Policy. We comply with the Georgian law on Personal Data Protection and the General Data Protection Regulation (GDPR).
-                                </p>
-                                <p className="md:text-[18px] text-[16px] leading-relaxed">
-                                    This policy explains what cookies are, how we use them, and how you can manage your preferences.
+                                    <span className="font-bold">შპს „Dressla“-ში</span>ვიყენებთ Cookie - ს თქვენი გამოცდილების გასაუმჯობესებლად ჩვენი ვებსაიტის დათვალიერებისას. ჩვენი ვებსაიტის გამოყენებით თქვენ ეთანხმებით cookie - ს გამოყენებას ამ Cookie Policy - ის შესაბამისად. Cookie - ს  გვეხმარება ვიზიტისას უკეთესი გამოცდილების შექმნაში ჩვენს ონლაინ არხზე. ასეთი ტექნოლოგიის გამოყენება შეესაბამება საქართველოს პერსონალურ მონაცემთა დაცვის კანონსა და ევროკავშირის მონაცემთა დაცვის ზოგად რეგულაციას (GDPR). წინამდებარე პოლიტიკა განმარტავს რა არის ქ Cookie,როგორ ვიყენებთ მათ და როგორ შეგიძლიათ მართოთ თქვენი Cookie პრეფერენციები.
                                 </p>
                             </section>
 
                             <section className="space-y-4">
-                                <h3 className="text-xl font-semibold">What Are Cookies?</h3>
+                                <h3 className="text-xl font-semibold">რა არის Cookie ?</h3>
                                 <p className="md:text-[18px] text-[16px] leading-relaxed">
-                                    Cookies are small text files that are stored on your device (computer, tablet, mobile phone) when you use a website. Cookies allow the website to recognize your device and remember information such as language preferences, login details, or your navigation history.
+                                Cookie არის მცირე ტექსტური ფაილები, რომლებიც ინახება თქვენს მოწყობილობაზე ვებსაიტის მონახულებისას. ისინი საშუალებას აძლევს ვებსაიტს ამოიცნოს თქვენი მოწყობილობა და დაიმახსოვროს გარკვეული ინფორმაცია თქვენი ვიზიტის შესახებ, როგორიცაა ენის პრეფერენციები, შესვლის დეტალები ან დათვალიერების ისტორია.
                                 </p>
                             </section>
 
                             <section className="space-y-4">
-                                <h3 className="text-xl font-semibold">The active period of the cookies</h3>
+                                <h3 className="text-xl font-semibold">Cookie-ს მოქმედების ვადა</h3>
                                 <p className="md:text-[18px] text-[16px] leading-relaxed">
-                                    <span className="font-bold">Session cookies:</span> Active during the current navigation session, have a short expiry period (from 1-2 minutes to 1-2 days).
+                                    <span className="font-bold">სესიური Cookie:</span> სესიური Cookie აქტიურია მიმდინარე დათვალიერების სესიის განმავლობაში და ჩვეულებრივ აქვს მოკლე ვადა (1–2 წუთიდან 1–2 დღემდე).
                                 </p>
                                 <p className="md:text-[18px] text-[16px] leading-relaxed mt-4">
-                                    <span className="font-bold">Persistent cookies:</span> Active for a longer period (up to 1 year), the expiry period is determined by the website operator.
+                                    <span className="font-bold">მუდმივი Cookie:</span> მუდმივი Cookie აქტიურია უფრო ხანგრძლივი პერიოდის განმავლობაში (1 წელიც კი), ვიდრე სესიური Cookie; ვადა განსხვავდება თითოეული Cookie - სთვის და განისაზღვრება ვებსაიტის ოპერატორის მიერ.
                                 </p>
                             </section>
 
                             <section className="space-y-4">
-                                <h3 className="text-xl font-semibold">Types of Cookies we use and reasons for such using</h3>
+                                <h3 className="text-xl font-semibold">ჩვენ მიერ გამოყენებული Cookie ტიპები და მათი გამოყენების მიზნები</h3>
                                 <div className="space-y-4">
                                     <div>
-                                        <p className="md:text-[18px] text-[16px] leading-relaxed font-semibold mb-2">1. Essential Cookies:</p>
+                                        <p className="md:text-[18px] text-[16px] leading-relaxed font-semibold mb-2">1. აუცილებელი Cookie:</p>
                                         <p className="md:text-[18px] text-[16px] leading-relaxed">
-                                            Necessary for the website to function (navigation between pages, secure login, restricted areas). The service cannot be provided without them.
+                                        ეს Cookie აუცილებელია ჩვენი ვებსაიტის ფუნქციონირებისთვის. ისინი უზრუნველყოფენ ძირითად ფუნქციებს, როგორიცაა გვერდებზე ნავიგაცია, უსაფრთხო ავტორიზაცია და შეზღუდულ არეალებზე წვდომა. ამ Cookie - სგარეშე ჩვენი ვებსაიტის ზოგიერთი სერვისი ვერ იმუშავებს.
                                         </p>
                                     </div>
                                     <div>
-                                        <p className="md:text-[18px] text-[16px] leading-relaxed font-semibold mb-2">2. Performance Cookies:</p>
+                                        <p className="md:text-[18px] text-[16px] leading-relaxed font-semibold mb-2">2. შესრულების Cookie:</p>
                                         <p className="md:text-[18px] text-[16px] leading-relaxed">
-                                            Collect information about website usage (pages viewed, errors) to improve performance and user experience.
+                                        :შესრულების Cookie აგროვებენ ინფორმაციას იმის შესახებ, თუ როგორ იყენებთ ჩვენს ვებსაიტს, მაგალითად რომელ გვერდებს სტუმრობთ ყველაზე ხშირად ან შეხვდით თუ არა შეცდომებს. ეს Cookie გვეხმარება ვებსაიტის მუშაობის გაუმჯობესებასა და მომხმარებლის გამოცდილების დახვეწაში.
                                         </p>
                                     </div>
                                     <div>
-                                        <p className="md:text-[18px] text-[16px] leading-relaxed font-semibold mb-2">3. Functional Cookies:</p>
+                                        <p className="md:text-[18px] text-[16px] leading-relaxed font-semibold mb-2">3. ფუნქციური Cookie:</p>
                                         <p className="md:text-[18px] text-[16px] leading-relaxed">
-                                            Remember user preferences and settings (e.g., language, region) for future visits.
+                                            იმახსოვრებს მომხმარებლის პრეფერენციებსა და პარამეტრებს (მაგ., ენა, რეგიონი) მომავალი ვიზიტებისთვის.
                                         </p>
                                     </div>
                                     <div>
-                                        <p className="md:text-[18px] text-[16px] leading-relaxed font-semibold mb-2">4. Targeting Cookies:</p>
+                                        <p className="md:text-[18px] text-[16px] leading-relaxed font-semibold mb-2">4. სამიზნე Cookie:</p>
                                         <p className="md:text-[18px] text-[16px] leading-relaxed">
-                                            Track browsing habits across different websites for personalized advertisements.
+                                        ეს Cookie საშუალებას აძლევს ჩვენს ვებსაიტს დაიმახსოვროს თქვენი პრეფერენციები და პარამეტრები. მაგალითად, თუ აირჩიეთ სასურველი ენა ან რეგიონი, ფუნქციური Cookie უზრუნველყოფენ, რომ თქვენი არჩევანი შენარჩუნდეს მომავალ ვიზიტებზეც.
                                         </p>
                                     </div>
                                     <div>
-                                        <p className="md:text-[18px] text-[16px] leading-relaxed font-semibold mb-2">5. Analytics Cookies:</p>
+                                        <p className="md:text-[18px] text-[16px] leading-relaxed font-semibold mb-2">5. ანალიტიკური Cookie:</p>
                                         <p className="md:text-[18px] text-[16px] leading-relaxed">
-                                            Track website visits and traffic sources to measure and improve site performance. They provide information about popular pages and user movement. Data is aggregated for statistics. These cookies are enabled by default but can be turned off, although disabling them prevents performance monitoring.
+                                        ეს Cookie გვაძლევს საშუალებას დავაკვირდეთ ვებსაიტის ვიზიტებსა და ტრაფიკის წყაროებს, რაც გვაძლევს შესაძლებლობას გავზომოთ და გავაუმჯობესოთ ჩვენი საიტის მუშაობა. ისინი გვაწვდიან ინფორმაციას ყველაზე და ყველაზე ნაკლებად პოპულარული გვერდებისა და მომხმარებელთა გადაადგილების შესახებ საიტზე. ამ Cookie შეგროვებული ყველა მონაცემი არის აგრეგირებული. კომპანია ამ ინფორმაციას იყენებს სტატისტიკის შესადგენად, მაგალითად, რომელი იყო ყველაზე პოპულარული გვერდი, რა მოეწონათ მომხმარებლებს და სხვ. ეს Cookie ნაგულისხმევად ჩართულია ვებსაიტის გახსნისას, თუმცა მომხმარებელს შეუძლია მათი გამორთვა. ამ Cookie გამორთვა ართულებს კომპანიისთვის ვებსაიტის მუშაობის სათანადოდ მონიტორინგს, რაც ხელს უშლის რეალური მომხმარებლის საჭიროებებზე მორგებული გაუმჯობესებების განხორციელებას.
                                         </p>
                                     </div>
                                 </div>
                             </section>
 
                             <section className="space-y-4">
-                                <h3 className="text-xl font-semibold">The party placing the cookie</h3>
+                                <h3 className="text-xl font-semibold">Cookie დამდგმელი მხარე</h3>
                                 <div className="space-y-3">
                                     <p className="md:text-[18px] text-[16px] leading-relaxed">
-                                        <span className="font-bold">First-party cookies:</span> Placed directly by the visited website; only the website operator can read and access the information.
+                                        <span className="font-bold">პირველი მხარის Cookie:</span> ეს Cookie განთავსებულია უშუალოდ იმ ვებსაიტის მიერ, რომელსაც სტუმრობთ. მხოლოდ ვებსაიტის ოპერატორს შეუძლია მათი წაკითხვა და Cookie - ში შენახულ ინფორმაციაზე წვდომა.
                                     </p>
                                     <p className="md:text-[18px] text-[16px] leading-relaxed">
-                                        <span className="font-bold">Third-party cookies:</span> Placed by third parties (e.g., cookie manager, advertiser, analytics service provider, such as Facebook, Google) when a website incorporates elements from other websites. These third parties can receive information about user navigation. The website acts as an intermediary.
+                                        <span className="font-bold">მესამე მხარის Cookie:</span>ეს Cookie განთავსებულია ვებსაიტზე მესამე მხარის მიერ, რომელიც არ არის ვებსაიტის ოპერატორი. თუ ვებსაიტის ოპერატორი გადაწყვეტს სხვა ვებსაიტების ელემენტების ჩაშენებას საკუთარ ვებსაიტში, მაშინ ვებსაიტის გახსნისას ეს მესამე მხარის Cookie არ განთავსდება მომხმარებლის მოწყობილობაზე იმ ვებსაიტის მიერ, რომელსაც სტუმრობთ, არამედ მესამე მხარის (Cookie მენეჯერის) მიერ, როგორიცაა რეკლამის განმთავსებელი ან ანალიტიკის მომსახურების მიმწოდებელი (მაგ., Facebook, Google). ამ მესამე მხარეებმა შესაძლოა მიიღონ ინფორმაცია მომხმარებლის მიერ მონახულებული ვებსაიტის დათვალიერების შესახებ. როდესაც მესამე მხარის Cookie იდგმება, ვებსაიტი, რომელიც Cookie ადგენს, მოქმედებს როგორც შუამავალი და მხოლოდ ის მესამე მხარე, რომელიც მართავს Cookie ,აქვს წვდომა Cookie შენახულ და გადაცემულ ინფორმაციაზე.
                                     </p>
                                 </div>
                             </section>
 
                             <section className="space-y-4">
-                                <h3 className="text-xl font-semibold">To whom and for which purposes do we transfer personal data?</h3>
+                                <h3 className="text-xl font-semibold">ვის და რა მიზნით ვაწვდით პერსონალურ მონაცემებს?</h3>
                                 <p className="md:text-[18px] text-[16px] leading-relaxed">
-                                    Personal data may be transferred to law enforcement agencies if there is a legal basis.
+                                ჩვენ შეიძლება გადავცეთ თქვენი პერსონალური მონაცემები შესაბამისი შეტყობინების საფუძველზე სამართალდამცავ ორგანოებს იმ შემთხვევებში, როდესაც არსებობს სამართლებრივი საფუძველი.
                                 </p>
                                 <p className="md:text-[18px] text-[16px] leading-relaxed mt-4">
-                                    Data may be transferred to companies with which a contract has been concluded for the technical sending of messages/information, limited only to phone number or email address.
+                                ჩვენ შეიძლება გადავცეთ თქვენი პერსონალური მონაცემები შესაბამისი შეტყობინების საფუძველზე სამართალდამცავ ორგანოებს იმ შემთხვევებში, როდესაც არსებობს სამართლებრივი საფუძველი.
+                                </p>
+
+                                <p className="md:text-[18px] text-[16px] leading-relaxed mt-4">
+                                იმ კომპანიას/ფიზიკური პირის რომლებიც თქვენი მოთხოვნის შემთხვევაში უზრუნველყოფენ ნივთის მიწოდებას.
                                 </p>
                             </section>
 
                             <section className="space-y-4">
-                                <h3 className="text-xl font-semibold">How We Use Cookies</h3>
+                                <h3 className="text-xl font-semibold">როგორ ვიყენებთ Cookie-ს?</h3>
                                 <ul className="list-disc list-inside space-y-2 md:text-[18px] text-[16px] ml-4">
-                                    <li>To improve user experience (personalization of content according to preferences)</li>
-                                    <li>For website traffic analysis (collected information to improve functionality and design)</li>
-                                    <li>For marketing purposes (displaying personalized advertisements/offers)</li>
-                                    <li>To remember preferences (storing language/region preferences)</li>
+                                    <li>მომხმარებლის გამოცდილების გასაუმჯობესებლად: Cookie გვაძლევს საშუალებას მოვარგოთ ვებსაიტის შინაარსი თქვენს პრეფერენციებსა და დათვალიერების ჩვევებს.</li>
+                                    <li>ვებსაიტის ტრაფიკის გასაანალიზებლად: ვიყენებთ Cookie იმის გასაგებად, თუ როგორ ურთიერთობენ ვიზიტორები ჩვენს ვებსაიტთან, რაც გვეხმარება ფუნქციონალისა და დიზაინის გაუმჯობესებაში.</li>
+                                    <li>მარკეტინგული მიზნებისთვის: Cookie გვეხმარება თქვენთვის პერსონალიზებული რეკლამების ან აქციების ჩვენებაში ჩვენს სერვისებთან დაკავშირებით.</li>
+                                    <li>თქვენი პრეფერენციების დასამახსოვრებლად: ვინახავთ ინფორმაციას, როგორიცაა ენა და რეგიონი, რათა მოგაწოდოთ მორგებული დათვალიერების შესაძლებლობა.</li>
                                 </ul>
                             </section>
 
                             <section className="space-y-4">
-                                <h3 className="text-xl font-semibold">Legal basis for placing the cookies</h3>
+                                <h3 className="text-xl font-semibold">Cookie განთავსების სამართლებრივი საფუძველი</h3>
                                 <div className="space-y-3 md:text-[18px] text-[16px] leading-relaxed">
-                                    <p><span className="font-bold">1. User consent in accordance with Article 5.1.a of the Georgian law on Personal Data Protection:</span> For personalized advertising cookies, which require user consent that can be withdrawn at any time.</p>
-                                    <p><span className="font-bold">2. Legitimate interest of the website operator in accordance with Article 5.1.i of the Georgian law on Personal Data Protection:</span> For functional and performance cookies, which are based on the commercial and economic interest of the website operator. The user can disable them.</p>
-                                    <p><span className="font-bold">3. Provision of an information society service explicitly requested by the subscriber or user in accordance with Article 5.1.j of the Georgian law on Personal Data Protection:</span> For strictly necessary cookies, which are essential for the website's operation and service delivery. They cannot be disabled.</p>
+                                    <p>1. მომხმარებლის თანხმობა   კანონის 5.1.ა მუხლის შესაბამისად, მონცემთა დამუშავება შესაძლებელია თუ მონაცემთა სუბიექტმა განაცხადა თანხმობა მის შესახებ მონაცემთა ერთი ან რამდენიმე კონკრეტული მიზნით დამუშავებაზე.</p>
+                                    <p>2.ვებსაიტის ოპერატორის ლეგიტიმური ინტერესი საქართველოს პერსონალურ მონაცემთა დაცვის კანონის 5.1.ი მუხლის შესაბამისად: მონაცემთა დამუშავება აუცილებელია დამუშავებისთვის პასუხისმგებელი პირის ან მესამე პირის მნიშვნელოვანი ლეგიტიმური  ინტერესების დასაცავად, გარდა იმ შემთხვევიდა, თუ არსებობს მონაცემთა სუბიექტის (მათ შორის, არასრულწლოვანის) უფლებების დაცვის აღმატებული ინტერესი.</p>
+                                    <p>3. ლეგიტიმური ინტერესი: ვებსაიტის ფუნქციონირების კომერციული და ეკონომიკური ინტერესი. ლეგიტიმური ინტერესის საფუძველზე დამუშავებული ფუნქციური და შესრულების Cookie მომხმარებელს შეუძლია გამორთოს ვებსაიტის გახსნისას და ნებისმიერ დროს შემდგომში.</p>
                                 </div>
                             </section>
 
                             <section className="space-y-4">
-                                <h3 className="text-xl font-semibold">Managing Your Cookie Preferences</h3>
+                                <h3 className="text-xl font-semibold">თქვენი Cookie პრეფერენციების მართვა</h3>
                                 <p className="md:text-[18px] text-[16px] leading-relaxed">
-                                    You can manage cookies through your browser settings or the Cookies Notice page.
+                                თქვენ გაქვთ შესაძლებლობა ნებისმიერ დროს მართოთ და აკონტროლოთ Cookie თქვენი ბრაუზერის პარამეტრების მეშვეობით Cookie შეტყობინების გვერდის გახსნით. გთხოვთ გაითვალისწინოთ, რომ ზოგიერთი Cookie გამორთვამ ან უარყოფამ შეიძლება გავლენა იქონიოს ჩვენი ვებსაიტის ფუნქციონირებაზე.
+Cookie მართვისა და „Do Not Track“-ის ჩართვის ინსტრუქცია თქვენი ბრაუზერისთვის:
+
                                 </p>
-                                <p className="md:text-[18px] text-[16px] leading-relaxed mt-4">
-                                    Disabling cookies may affect the website's functionality.
-                                </p>
-                                <p className="md:text-[18px] text-[16px] leading-relaxed mt-4">
-                                    Instructions for managing cookies and enabling "Do Not Track":
-                                </p>
+                               
                                 <ul className="list-disc list-inside space-y-2 md:text-[18px] text-[16px] ml-4">
                                     <li>Google Chrome: <a href="https://support.google.com/chrome/answer/95647" target="_blank" rel="noopener noreferrer" className="text-[#1B3729] underline">https://support.google.com/chrome/answer/95647</a></li>
                                     <li>Mozilla Firefox: <a href="https://support.mozilla.org/en-US/kb/enable-and-disable-cookies-website-preferences" target="_blank" rel="noopener noreferrer" className="text-[#1B3729] underline">https://support.mozilla.org/en-US/kb/enable-and-disable-cookies-website-preferences</a></li>
@@ -869,20 +867,18 @@ const RulesPage = () => {
                             </section>
 
                             <section className="space-y-4">
-                                <h3 className="text-xl font-semibold">Purpose of cookies used on this website</h3>
-                                <p className="md:text-[18px] text-[16px] leading-relaxed mb-4">
-                                    Below are tables summarizing the cookies used:
-                                </p>
-                                
+                                <h3 className="text-xl font-semibold">ამ ვებსაიტზე გამოყენებული Cookie მიზანი</h3>
+                                <h3 className="text-xl font-semibold">ამ ვებსაიტზე გამოყენებული Cookie მიზნები მოცემულია ქვემოთ არსებულ შემაჯამებელ ცხრილში.</h3>
+                              
                                 <div className="space-y-6">
                                     <div>
-                                        <h4 className="text-lg font-semibold mb-3">Strictly necessary cookies - first party</h4>
+                                        <h4 className="text-lg font-semibold mb-3">მკაცრად აუცილებელი Cookie - პირველი მხარე</h4>
                                         <div className="overflow-x-auto">
                                             <table className="min-w-full border border-gray-300 md:text-[16px] text-[14px]">
                                                 <thead>
                                                     <tr className="bg-gray-100">
-                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Cookie name</th>
-                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Purpose of the cookie and data processed</th>
+                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Cookie სახელი</th>
+                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Cookie დანიშნულება და დამუშავებული მონაცემები</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -896,14 +892,14 @@ const RulesPage = () => {
                                     </div>
 
                                     <div>
-                                        <h4 className="text-lg font-semibold mb-3">Strictly necessary cookies - third party</h4>
+                                        <h4 className="text-lg font-semibold mb-3">მკაცრად აუცილებელი Cookie - მესამე მხარე</h4>
                                         <div className="overflow-x-auto">
                                             <table className="min-w-full border border-gray-300 md:text-[16px] text-[14px]">
                                                 <thead>
-                                                    <tr className="bg-gray-100">
-                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Cookie name</th>
-                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Purpose of the cookie and data processed</th>
-                                                    </tr>
+                                                    {/* <tr className="bg-gray-100">
+                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold"></th>
+                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold"></th>
+                                                    </tr> */}
                                                 </thead>
                                                 <tbody>
                                                     <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
@@ -916,14 +912,14 @@ const RulesPage = () => {
                                     </div>
 
                                     <div>
-                                        <h4 className="text-lg font-semibold mb-3">Performance cookies - first party</h4>
+                                        <h4 className="text-lg font-semibold mb-3">შესრულების Cookie - პირველი მხარე</h4>
                                         <div className="overflow-x-auto">
                                             <table className="min-w-full border border-gray-300 md:text-[16px] text-[14px]">
                                                 <thead>
-                                                    <tr className="bg-gray-100">
-                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Cookie name</th>
-                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Purpose of the cookie and data processed</th>
-                                                    </tr>
+                                                    {/* <tr className="bg-gray-100">
+                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold"></th>
+                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold"></th>
+                                                    </tr> */}
                                                 </thead>
                                                 <tbody>
                                                     <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
@@ -936,14 +932,14 @@ const RulesPage = () => {
                                     </div>
 
                                     <div>
-                                        <h4 className="text-lg font-semibold mb-3">Performance cookies- third party</h4>
+                                        <h4 className="text-lg font-semibold mb-3">შესრულების Cookie - მესამე მხარე</h4>
                                         <div className="overflow-x-auto">
                                             <table className="min-w-full border border-gray-300 md:text-[16px] text-[14px]">
                                                 <thead>
-                                                    <tr className="bg-gray-100">
-                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Cookie name</th>
-                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Purpose of the cookie and data processed</th>
-                                                    </tr>
+                                                    {/* <tr className="bg-gray-100">
+                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold"></th>
+                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold"></th>
+                                                    </tr> */}
                                                 </thead>
                                                 <tbody>
                                                     <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
@@ -953,14 +949,14 @@ const RulesPage = () => {
                                     </div>
 
                                     <div>
-                                        <h4 className="text-lg font-semibold mb-3">Functional cookies - first party</h4>
+                                        <h4 className="text-lg font-semibold mb-3">ფუნქციური Cookie - პირველი მხარე</h4>
                                         <div className="overflow-x-auto">
                                             <table className="min-w-full border border-gray-300 md:text-[16px] text-[14px]">
                                                 <thead>
-                                                    <tr className="bg-gray-100">
-                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Cookie name</th>
-                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Purpose of the cookie and data processed</th>
-                                                    </tr>
+                                                    {/* <tr className="bg-gray-100">
+                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold"></th>
+                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold"></th>
+                                                    </tr> */}
                                                 </thead>
                                                 <tbody>
                                                     <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
@@ -973,14 +969,14 @@ const RulesPage = () => {
                                     </div>
 
                                     <div>
-                                        <h4 className="text-lg font-semibold mb-3">Functional cookies - third party</h4>
+                                        <h4 className="text-lg font-semibold mb-3">ფუნქციური Cookie - მესამე მხარე</h4>
                                         <div className="overflow-x-auto">
                                             <table className="min-w-full border border-gray-300 md:text-[16px] text-[14px]">
                                                 <thead>
-                                                    <tr className="bg-gray-100">
-                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Cookie name</th>
-                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Purpose of the cookie and data processed</th>
-                                                    </tr>
+                                                    {/* <tr className="bg-gray-100">
+                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold"></th>
+                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold"></th>
+                                                    </tr> */}
                                                 </thead>
                                                 <tbody>
                                                     <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
@@ -990,33 +986,14 @@ const RulesPage = () => {
                                     </div>
 
                                     <div>
-                                        <h4 className="text-lg font-semibold mb-3">Targeting cookies - first party</h4>
+                                        <h4 className="text-lg font-semibold mb-3">სამიზნე Cookie - პირველი მხარე</h4>
                                         <div className="overflow-x-auto">
                                             <table className="min-w-full border border-gray-300 md:text-[16px] text-[14px]">
                                                 <thead>
-                                                    <tr className="bg-gray-100">
-                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Cookie name</th>
-                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Purpose of the cookie and data processed</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
-                                                    <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
-                                                    <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <h4 className="text-lg font-semibold mb-3">Targeting cookies - third party</h4>
-                                        <div className="overflow-x-auto">
-                                            <table className="min-w-full border border-gray-300 md:text-[16px] text-[14px]">
-                                                <thead>
-                                                    <tr className="bg-gray-100">
-                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Cookie name</th>
-                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Purpose of the cookie and data processed</th>
-                                                    </tr>
+                                                    {/* <tr className="bg-gray-100">
+                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold"></th>
+                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold"></th>
+                                                    </tr> */}
                                                 </thead>
                                                 <tbody>
                                                     <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
@@ -1028,14 +1005,33 @@ const RulesPage = () => {
                                     </div>
 
                                     <div>
-                                        <h4 className="text-lg font-semibold mb-3">Analytics cookies - first party</h4>
+                                        <h4 className="text-lg font-semibold mb-3">სამიზნე Cookie - მესამე მხარე</h4>
                                         <div className="overflow-x-auto">
                                             <table className="min-w-full border border-gray-300 md:text-[16px] text-[14px]">
                                                 <thead>
-                                                    <tr className="bg-gray-100">
-                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Cookie name</th>
-                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Purpose of the cookie and data processed</th>
-                                                    </tr>
+                                                    {/* <tr className="bg-gray-100">
+                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold"></th>
+                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold"></th>
+                                                    </tr> */}
+                                                </thead>
+                                                <tbody>
+                                                    <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
+                                                    <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
+                                                    <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <h4 className="text-lg font-semibold mb-3">ანალიტიკური Cookie - პირველი მხარე</h4>
+                                        <div className="overflow-x-auto">
+                                            <table className="min-w-full border border-gray-300 md:text-[16px] text-[14px]">
+                                                <thead>
+                                                    {/* <tr className="bg-gray-100">
+                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold"></th>
+                                                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold"></th>
+                                                    </tr> */}
                                                 </thead>
                                                 <tbody>
                                                     <tr><td className="border border-gray-300 px-4 py-2">-</td><td className="border border-gray-300 px-4 py-2">-</td></tr>
@@ -1049,57 +1045,50 @@ const RulesPage = () => {
                             </section>
 
                             <section className="space-y-4">
-                                <h3 className="text-xl font-semibold">Data protection rights and legal remedy</h3>
+                                <h3 className="text-xl font-semibold">მონაცემთა დაცვის უფლებები და სამართლებრივი საშუალებები</h3>
                                 <p className="md:text-[18px] text-[16px] leading-relaxed">
-                                    User data protection rights and legal remedy, as well as their limitations, are detailed in the Georgian law on Personal Data Protection. The user:
+                                მომხმარებლის მონაცემთა დაცვის უფლებები და სამართლებრივი საშუალებები და მათი შეზღუდვები დეტალურად არის აღწერილი საქართველოს პერსონალურ მონაცემთა დაცვის კანონში.
                                 </p>
+                                <p className="md:text-[18px] text-[16px] font-semibold leading-relaxed"> მომხმარებელს შეუძლია:</p>
                                 <ul className="list-disc list-inside space-y-2 md:text-[18px] text-[16px] ml-4">
-                                    <li>Can enable and disable cookie placement using cookie settings;</li>
-                                    <li>Can request information about what types of personal data are processed when using cookies;</li>
-                                    <li>Can request correction of their personal data that is processed when using cookies;</li>
-                                    <li>Can request deletion of their personal data that is processed when using cookies or restriction of their processing;</li>
-                                    <li>Can object to processing based on "legitimate interest" and for direct marketing purposes, and in conditions where data may or may not be processed in such cases;</li>
-                                    <li>Can request compensation for damage that arose as a result of unlawful processing of personal data.</li>
+                                    <li>Cookie განთავსების ჩართვა ან გამორთვა Cookie პარამეტრების გამოყენებით;</li>
+                                    <li>მოითხოვოს ინფორმაცია იმის შესახებ, თუ რა სახის პერსონალური მონაცემები მუშავდება Cookie გამოყენებისას;</li>
+                                    <li>მოითხოვოს მისი პერსონალური მონაცემების გასწორება, რომლებიც მუშავდება Cookie გამოყენებისას;</li>
+                                    <li>მოითხოვოს მისი პერსონალური მონაცემების წაშლა ან მათი დამუშავების შეზღუდვა Cookie გამოყენებისას;</li>
+                                    <li>საკუთარი მდგომარეობიდან გამომდინარე ნებისმიერ დროს გააპროტესტოს მისი პერსონალური მონაცემების დამუშავება „ლეგიტიმური ინტერესის“ საფუძველზე Cookie გამოყენებისას. ამ შემთხვევაში პერსონალური მონაცემები აღარ დამუშავდება, თუ მონაცემთა კონტროლიორი არ დაამტკიცებს, რომ მონაცემთა დამუშავება გამართლებულია სავალდებულო ლეგიტიმური მიზეზებით, რომლებიც უპირატესობას ანიჭებენ მომხმარებლის ინტერესებს, უფლებებსა და თავისუფლებებს, ან დაკავშირებულია სამართლებრივი მოთხოვნების წარდგენასთან, აღსრულებასთან ან დაცვასთან. თუ მომხმარებელი გააპროტესტებს პერსონალური მონაცემების დამუშავებას პირდაპირი მარკეტინგის მიზნებისთვის, მაშინ პერსონალური მონაცემები აღარ დამუშავდება ამ მიზნით;</li>
+                                    <li>მოითხოვოს ზიანის ანაზღაურება იმ ზარალისთვის, რომელიც მიადგა პერსონალური მონაცემების უკანონო დამუშავების შედეგად.</li>
                                 </ul>
                                 <p className="md:text-[18px] text-[16px] leading-relaxed mt-4">
-                                    Without other administrative or judicial remedy, the user has the right to file a complaint with the data protection officer if the processing of personal data when using cookies violates the provisions of the Georgian law on Personal Data Protection.
+                                სხვა ადმინისტრაციული ან სამართლებრივი საშუალებების შეუზღუდავად, მომხმარებელს აქვს უფლება შეიტანოს საჩივარი მონაცემთა დაცვის ოფიცერთან, თუ Cookie გამოყენებისას პერსონალური მონაცემების დამუშავება არღვევს საქართველოს პერსონალურ მონაცემთა დაცვის კანონის მოთხოვნებს.
                                 </p>
                             </section>
 
                             <section className="space-y-4">
-                                <h3 className="text-xl font-semibold">Cookie Policy Changes</h3>
+                                <h3 className="text-xl font-semibold">Cookie პოლიტიკის ცვლილებები</h3>
                                 <p className="md:text-[18px] text-[16px] leading-relaxed">
-                                    We may update our Cookie Policy from time to time. Any changes will be posted on this page, and the updated date will be updated at the top of the policy. We recommend that you review this policy regularly to stay informed about how we use cookies.
+                                ჩვენ პერიოდულად შეიძლება განვაახლოთ Cookie პოლიტიკა (განახლებული და იურიდიულად დახვეწილი ვერსია). ნებისმიერი ცვლილება გამოქვეყნდება ამ გვერდზე და განახლების თარიღი აისახება პოლიტიკის ზედა ნაწილში. გირჩევთ რეგულარულად გადაამოწმოთ ეს პოლიტიკა, რათა იყოთ ინფორმირებული იმის შესახებ, თუ როგორ ვიყენებთ Cookie.
+                                </p>
+                                
+                            </section>
+
+                            <section className="space-y-4">
+                                <h3 className="text-xl font-semibold">უფლებების განხორციელება და საკონტაქტო ინფორმაცია</h3>
+                                <p className="md:text-[18px] text-[16px] leading-relaxed">
+                                იმისათვის, რომ მარტივად გამოიყენოთ ზემოთ ჩამოთვლილი უფლებები და გამოგვიგზავნოთ შესაბამისი მოთხოვნები, შეგიძლიათ დაგვიკავშირდეთ ქვემოთ მითითებული საკონტაქტო ინფორმაციის მეშვეობით. ჩვენ გიპასუხებთ უმოკლეს ვადაში თქვენი მოთხოვნის ბუნებიდან გამომდინარე და არაუგვიანეს 30 დღის განმავლობაში. როგორც ზოგადი წესი, მონაცემთა სუბიექტის მოთხოვნებზე პასუხი გაიცემა უფასოდ; თუმცა, ჩვენ ვიტოვებთ უფლებას დავაწესოთ გადასახადი პერსონალურ მონაცემთა დაცვის საბჭოს მიერ განსაზღვრული ტარიფის შესაბამისად იმ შემთხვევაში, თუ მოთხოვნა მოითხოვს დამატებით ხარჯებს.
                                 </p>
                             </section>
 
                             <section className="space-y-4">
-                                <h3 className="text-xl font-semibold">Exercising rights and contact information</h3>
+                                <h3 className="text-xl font-semibold"> საკონტაქტო ინფორმაცია</h3>
                                 <p className="md:text-[18px] text-[16px] leading-relaxed">
-                                    To easily exercise the rights listed above and send relevant requests, you can contact us using the contact information provided below. We will respond as soon as possible, depending on the nature of your request, and no later than 30 days. As a rule, responses to data subject requests are provided free of charge; however, we reserve the right to charge a fee in accordance with the tariff determined by the Personal Data Protection Board if the request requires additional costs.
-                                </p>
-                            </section>
-
-                            <section className="space-y-4">
-                                <h3 className="text-xl font-semibold">Data processor and contact information</h3>
-                                <p className="md:text-[18px] text-[16px] leading-relaxed">
-                                    <span className="font-semibold">Email:</span> <a href="mailto:dressla.online@gmail.com" className="text-[#1B3729] underline">dressla.online@gmail.com</a>
+                                    <span className="font-semibold">ელ.ფოსტა:</span> <a href="mailto:dressla.online@gmail.com" className="text-[#1B3729] underline">dressla.online@gmail.com</a>
                                     <br />
-                                    <span className="font-semibold">Phone:</span> +995 599 55 63 95
+                                    <span className="font-semibold">ტელეფონი:</span> +995 599 55 63 95
                                     <br />
-                                    <span className="font-semibold">Address:</span> Georgia, Tbilisi, Airport Settlement, 120th Building, Apartment N 13
+                                    <span className="font-semibold">მისამართი:</span> საქართველო, თბილისი, აეროპორტის დასახლება, კორპუსი 120, ბინა 13
                                 </p>
                             </section>
 
-                            <section className="space-y-4">
-                                <h3 className="text-xl font-semibold">Other languages</h3>
-                                <p className="md:text-[18px] text-[16px] leading-relaxed">
-                                    You can examine translations of this page in other languages.
-                                </p>
-                                <p className="md:text-[18px] text-[16px] leading-relaxed">
-                                    Georgian.
-                                </p>
-                            </section>
                         </div>
                     )}
                 </div>
