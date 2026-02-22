@@ -5,12 +5,14 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowLeft, Search, Filter, Users, Mail, Calendar, Package, ShoppingCart, Trash2, UserCheck, UserX, Phone, User } from 'lucide-react'
+import { ArrowLeft, Search, Filter, Users, Mail, Calendar, Package, ShoppingCart, Trash2, UserCheck, UserX, Phone, User, Pencil } from 'lucide-react'
 import { showToast } from '@/utils/toast'
 
 interface User {
   personalId: string | null
   phone: string | null
+  location?: string | null
+  address?: string | null
   iban: string | null
   id: string
   name: string | null
@@ -62,6 +64,9 @@ const AdminUsersPage = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterRole, setFilterRole] = useState('ALL')
   const [expandedUser, setExpandedUser] = useState<string | null>(null)
+  const [editContactUser, setEditContactUser] = useState<User | null>(null)
+  const [contactForm, setContactForm] = useState({ email: '', phone: '', location: '', address: '' })
+  const [savingContact, setSavingContact] = useState(false)
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -116,6 +121,49 @@ const AdminUsersPage = () => {
       if (user && !user.products) {
         fetchUserProducts(userId)
       }
+    }
+  }
+
+  const openEditContact = (user: User) => {
+    setEditContactUser(user)
+    setContactForm({
+      email: user.email || '',
+      phone: user.phone || '',
+      location: user.location || '',
+      address: user.address || '',
+    })
+  }
+
+  const saveContact = async () => {
+    if (!editContactUser) return
+    setSavingContact(true)
+    try {
+      const res = await fetch(`/api/admin/users/${editContactUser.id}/contact`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: contactForm.email || undefined,
+          phone: contactForm.phone || null,
+          location: contactForm.location || null,
+          address: contactForm.address || null,
+        }),
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        setUsers(prev => prev.map(u =>
+          u.id === editContactUser.id
+            ? { ...u, email: data.user.email, phone: data.user.phone, location: data.user.location, address: data.user.address }
+            : u
+        ))
+        setEditContactUser(null)
+        showToast('კონტაქტის ინფორმაცია განახლდა', 'success')
+      } else {
+        showToast(data.error || 'შეცდომა', 'error')
+      }
+    } catch {
+      showToast('ქსელის შეცდომა', 'error')
+    } finally {
+      setSavingContact(false)
     }
   }
 
@@ -470,6 +518,14 @@ const AdminUsersPage = () => {
                             </select>
                           </div>
                         )}
+                        <button
+                          type="button"
+                          onClick={() => openEditContact(user)}
+                          className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded text-xs sm:text-sm md:text-[16px] bg-white hover:bg-gray-50 text-black whitespace-nowrap"
+                        >
+                          <Pencil className="w-3 h-3 sm:w-4 sm:h-4" />
+                          კონტაქტის რედაქტირება
+                        </button>
                         {/* Ban status badge */}
                         {user.banned && (
                           <span className="px-2 py-1 bg-red-600 text-white rounded text-xs sm:text-sm md:text-[18px] text-center whitespace-nowrap">დაბლოკილი</span>
@@ -867,6 +923,71 @@ const AdminUsersPage = () => {
           )}
         </div>
       </div>
+
+      {/* კონტაქტის რედაქტირების მოდალი */}
+      {editContactUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => !savingContact && setEditContactUser(null)}>
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-4 sm:p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-black mb-4">კონტაქტის რედაქტირება — {editContactUser.name || editContactUser.email || 'მომხმარებელი'}</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-black mb-1">ელფოსტა</label>
+                <input
+                  type="email"
+                  value={contactForm.email}
+                  onChange={e => setContactForm(f => ({ ...f, email: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded text-black"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-black mb-1">ტელეფონი</label>
+                <input
+                  type="text"
+                  value={contactForm.phone}
+                  onChange={e => setContactForm(f => ({ ...f, phone: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded text-black"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-black mb-1">ადგილმდებარეობა</label>
+                <input
+                  type="text"
+                  value={contactForm.location}
+                  onChange={e => setContactForm(f => ({ ...f, location: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded text-black"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-black mb-1">მისამართი</label>
+                <input
+                  type="text"
+                  value={contactForm.address}
+                  onChange={e => setContactForm(f => ({ ...f, address: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded text-black"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <button
+                type="button"
+                onClick={() => setEditContactUser(null)}
+                disabled={savingContact}
+                className="px-4 py-2 border border-gray-300 rounded text-black hover:bg-gray-50"
+              >
+                გაუქმება
+              </button>
+              <button
+                type="button"
+                onClick={saveContact}
+                disabled={savingContact}
+                className="px-4 py-2 bg-black text-white rounded hover:bg-gray-800 disabled:opacity-50"
+              >
+                {savingContact ? 'იგზავნება...' : 'შენახვა'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -31,6 +31,8 @@ export async function GET(request: NextRequest) {
         verified: true,
         personalId: true,
         phone: true,
+        location: true,
+        address: true,
         iban: true,
         _count: {
           select: {

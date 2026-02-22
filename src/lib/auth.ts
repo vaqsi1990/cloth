@@ -41,6 +41,7 @@ export const authOptions: NextAuthOptions = {
             image: true,
             phone: true,
             location: true,
+            address: true,
             personalId: true,
             iban: true,
             banned: true,
@@ -76,6 +77,7 @@ export const authOptions: NextAuthOptions = {
           image: user.image,
           phone: user.phone,
           location: user.location,
+          address: user.address,
           personalId: user.personalId,
           iban: user.iban,
           verificationStatus: user.verification?.status || null,
@@ -215,6 +217,7 @@ export const authOptions: NextAuthOptions = {
         role?: string
         phone?: string | null
         location?: string | null
+        address?: string | null
         personalId?: string | null
         iban?: string | null
         verificationStatus?: string | null
@@ -226,6 +229,7 @@ export const authOptions: NextAuthOptions = {
         if (typeof u.image === 'string' || u.image === null) token.image = u.image
         if (typeof u.phone === 'string' || u.phone === null) token.phone = u.phone
         if (typeof u.location === 'string' || u.location === null) token.location = u.location
+        if (typeof u.address === 'string' || u.address === null) token.address = u.address
         if (typeof u.personalId === 'string' || u.personalId === null) token.personalId = u.personalId
         if (typeof u.iban === 'string' || u.iban === null) token.iban = u.iban
         if (typeof u.verificationStatus === 'string' || u.verificationStatus === null) token.verificationStatus = u.verificationStatus
@@ -246,6 +250,7 @@ export const authOptions: NextAuthOptions = {
               image: true,
               phone: true,
               location: true,
+              address: true,
               personalId: true,
               iban: true,
               verification: {
@@ -261,6 +266,7 @@ export const authOptions: NextAuthOptions = {
             token.image = dbUser.image
             token.phone = dbUser.phone
             token.location = dbUser.location
+            token.address = dbUser.address
             token.personalId = dbUser.personalId
             token.iban = dbUser.iban
             token.verificationStatus = dbUser.verification?.status || null
@@ -285,6 +291,7 @@ export const authOptions: NextAuthOptions = {
               image: true,
               phone: true,
               location: true,
+              address: true,
               personalId: true,
               iban: true,
               verification: {
@@ -301,6 +308,7 @@ export const authOptions: NextAuthOptions = {
             if (!token.image && dbUser.image) token.image = dbUser.image
             if (!token.phone && dbUser.phone) token.phone = dbUser.phone
             if (!token.location && dbUser.location) token.location = dbUser.location
+            token.address = dbUser.address ?? token.address
             if (!token.personalId && dbUser.personalId) token.personalId = dbUser.personalId
             if (!token.iban && dbUser.iban) token.iban = dbUser.iban
             token.verificationStatus = dbUser.verification?.status || null
@@ -318,6 +326,7 @@ export const authOptions: NextAuthOptions = {
           email: string
           phone: string | null
           location: string | null
+          address: string | null
           personalId: string | null
           iban: string | null
         }>
@@ -327,6 +336,7 @@ export const authOptions: NextAuthOptions = {
         token.email = s.email ?? token.email
         token.phone = s.phone ?? token.phone
         token.location = s.location ?? token.location
+        token.address = s.address ?? token.address
         token.personalId = s.personalId ?? token.personalId
         token.iban = s.iban ?? token.iban
       }
@@ -342,6 +352,7 @@ export const authOptions: NextAuthOptions = {
         session.user.email = (typeof token.email === 'string' ? token.email : session.user.email)
           ; (session.user as { phone?: string | null }).phone = (token.phone as string | null | undefined) ?? undefined
           ; (session.user as { location?: string | null }).location = (token.location as string | null | undefined) ?? undefined
+          ; (session.user as { address?: string | null }).address = (token.address as string | null | undefined) ?? undefined
           ; (session.user as { personalId?: string | null }).personalId = (token.personalId as string | null | undefined) ?? undefined
           ; (session.user as { iban?: string | null }).iban = (token.iban as string | null | undefined) ?? undefined
           ; (session.user as { verificationStatus?: string | null }).verificationStatus = (token.verificationStatus as string | null | undefined) ?? undefined

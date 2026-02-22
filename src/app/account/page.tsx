@@ -887,7 +887,7 @@ const AccountPageContent = () => {
               <MapPin className="w-5 h-5 text-black" />
               <div>
                 <p className="md:text-[18px] text-[16px] text-black">მისამართი</p>
-                <p className="font-medium text-black">{(session.user as { location?: string })?.location ?? '-'}</p>
+                <p className="font-medium text-black">{(session.user as { address?: string })?.address ?? (session.user as { location?: string })?.location ?? '-'}</p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
@@ -1903,6 +1903,7 @@ function ProfileSettingsForm({ hasActiveRentals, checkingRentals }: { hasActiveR
         image: data.user.image,
         phone: data.user.phone,
         location: data.user.location,
+        address: data.user.address,
         iban: data.user.iban,
       })
       setSuccess('პროფილი განახლდა')
