@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Search, Menu, User, LogOut, ShoppingCart, ChevronRight,  } from 'lucide-react'
+import { Search, Menu, User, LogOut, ShoppingCart, ChevronRight, Plus } from 'lucide-react'
 import Image from 'next/image'
 import { useSession, signOut } from 'next-auth/react'
 
@@ -146,6 +146,9 @@ const HeaderContent = () => {
     setMobileDropdownOpen(null)
   }
 
+  const newProductHref =
+    session?.user?.role === 'ADMIN' ? '/admin/products/new' : '/account/products/new'
+
   const handleSearchSubmit = (event?: React.FormEvent) => {
     event?.preventDefault()
     const query = searchValue.trim()
@@ -173,9 +176,9 @@ const HeaderContent = () => {
          
           </Link>
 
-          {/* --- Desktop Search Bar (Centered) --- */}
-          <div className="hidden lg:flex flex-1 max-w-2xl mx-8">
-            <form onSubmit={handleSearchSubmit} className="relative w-full">
+          {/* --- Desktop Search + Add Product (logged in only) --- */}
+          <div className="hidden lg:flex flex-1 items-center gap-3 max-w-2xl mx-8 min-w-0">
+            <form onSubmit={handleSearchSubmit} className="relative flex-1 min-w-0">
               <input
                 type="text"
                 placeholder="მოძებნე სასურველი პროდუქტი"
@@ -183,10 +186,19 @@ const HeaderContent = () => {
                 onChange={(e) => setSearchValue(e.target.value)}
                 className="w-full bg-white pl-10 pr-4 py-3 text-black border placeholder:text-gray-500 border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
               />
-              <button type="submit" className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500  ">
+              <button type="submit" className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
                 <Search className="w-5 h-5" />
               </button>
             </form>
+            {session && (
+              <Link
+                href={newProductHref}
+                className="flex-shrink-0 inline-flex items-center gap-2 bg-white text-[#1B3729] font-bold text-[16px] px-4 py-3 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors whitespace-nowrap"
+              >
+                <Plus className="w-5 h-5" />
+                <span>ახალი პროდუქტი</span>
+              </Link>
+            )}
           </div>
 
           {/* --- Desktop Navigation Links and Icons --- */}
@@ -281,6 +293,16 @@ const HeaderContent = () => {
 
           {/* --- Mobile/Tablet: Search Icon and Menu --- */}
           <div className="flex lg:hidden items-center space-x-4">
+            {session && (
+              <Link
+                href={newProductHref}
+                className="inline-flex items-center gap-1.5 bg-white text-[#1B3729] font-bold text-sm px-3 py-2 rounded-lg"
+                aria-label="ახალი პროდუქტი"
+              >
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">ახალი</span>
+              </Link>
+            )}
             <button onClick={toggleSearch} className="group cursor-pointer p-2 text-white">
               <Search className="w-5 h-5 group-hover:scale-110 transition-transform" />
             </button>
