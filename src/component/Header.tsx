@@ -146,8 +146,11 @@ const HeaderContent = () => {
     setMobileDropdownOpen(null)
   }
 
-  const newProductHref =
-    session?.user?.role === 'ADMIN' ? '/admin/products/new' : '/account/products/new'
+  const newProductHref = !session
+    ? '/auth/signup'
+    : session.user.role === 'ADMIN'
+      ? '/admin/products/new'
+      : '/account/products/new'
 
   const handleSearchSubmit = (event?: React.FormEvent) => {
     event?.preventDefault()
@@ -190,15 +193,13 @@ const HeaderContent = () => {
                 <Search className="w-5 h-5" />
               </button>
             </form>
-            {session && (
-              <Link
-                href={newProductHref}
-                className="flex-shrink-0 inline-flex items-center gap-2 bg-white text-[#1B3729] font-bold text-[16px] px-4 py-3 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors whitespace-nowrap"
-              >
-                <Plus className="w-5 h-5" />
-                <span>ახალი პროდუქტი</span>
-              </Link>
-            )}
+            <Link
+              href={newProductHref}
+              className="flex-shrink-0 inline-flex items-center gap-2 bg-white text-[#1B3729] font-bold text-[16px] px-4 py-3 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors whitespace-nowrap"
+            >
+              <Plus className="w-5 h-5" />
+              <span>ახალი პროდუქტი</span>
+            </Link>
           </div>
 
           {/* --- Desktop Navigation Links and Icons --- */}
@@ -293,16 +294,14 @@ const HeaderContent = () => {
 
           {/* --- Mobile/Tablet: Search Icon and Menu --- */}
           <div className="flex lg:hidden items-center space-x-4">
-            {session && (
-              <Link
-                href={newProductHref}
-                className="inline-flex items-center gap-1.5 bg-white text-[#1B3729] font-bold text-sm px-3 py-2 rounded-lg"
-                aria-label="ახალი პროდუქტი"
-              >
-                <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">ახალი</span>
-              </Link>
-            )}
+            <Link
+              href={newProductHref}
+              className="inline-flex items-center gap-1.5 bg-white text-[#1B3729] font-bold text-sm px-3 py-2 rounded-lg"
+              aria-label="ახალი პროდუქტი"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">ახალი</span>
+            </Link>
             <button onClick={toggleSearch} className="group cursor-pointer p-2 text-white">
               <Search className="w-5 h-5 group-hover:scale-110 transition-transform" />
             </button>
