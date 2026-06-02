@@ -5,6 +5,14 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Mail, Lock, User, Eye, EyeOff, MapPin } from 'lucide-react'
 import { showToast } from '@/utils/toast'
+import {
+  getPersonFieldLabel,
+  isValidPersonAddress,
+  isValidPersonName,
+  PERSON_ADDRESS_DIGIT_ERROR,
+  PERSON_ADDRESS_FIELD_ERROR,
+  PERSON_NAME_FIELD_ERROR,
+} from '@/lib/personal-text'
 
 const SignUpPage = () => {
   const [formData, setFormData] = useState({
@@ -32,8 +40,11 @@ const SignUpPage = () => {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
-  
+  const [step, setStep] = useState<1 | 2>(1)
+
   const router = useRouter()
+
+  const step1Fields = ['name', 'lastName', 'phone', 'location', 'address', 'postalIndex'] as const
 
   // Function to calculate age from date of birth
   const calculateAge = (dateOfBirth: string): number => {
@@ -74,15 +85,11 @@ const SignUpPage = () => {
       }
     }
 
-    // Validate Georgian characters for name, lastName, location, address in real-time
     if (['name', 'lastName', 'location'].includes(name)) {
-      if (value && !/^[\u10A0-\u10FF\s]+$/.test(value)) {
-        const fieldName = name === 'name' ? 'სახელი' :
-                         name === 'lastName' ? 'გვარი' :
-                         'ადგილმდებარეობა'
+      if (value && !isValidPersonName(value)) {
         setFieldErrors(prev => ({
           ...prev,
-          [name]: `${fieldName} უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს`
+          [name]: `${getPersonFieldLabel(name as 'name' | 'lastName' | 'location')} ${PERSON_NAME_FIELD_ERROR}`,
         }))
       } else {
         setFieldErrors(prev => {
@@ -92,17 +99,15 @@ const SignUpPage = () => {
         })
       }
     } else if (name === 'address') {
-      // Address allows Georgian characters, numbers, № (optional), N, and punctuation marks
-      // Must contain at least one digit
-      if (value && !/^[\u10A0-\u10FF\s0-9№N,.\-:;()\[\]{}/"]+$/.test(value)) {
+      if (value && !isValidPersonAddress(value)) {
         setFieldErrors(prev => ({
           ...prev,
-          [name]: 'მისამართი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, ციფრებს, №, N და სასვენი ნიშნებს'
+          [name]: `მისამართი ${PERSON_ADDRESS_FIELD_ERROR}`,
         }))
       } else if (value && !/[0-9]/.test(value)) {
         setFieldErrors(prev => ({
           ...prev,
-          [name]: 'მისამართი უნდა შეიცავდეს ციფრებს'
+          [name]: PERSON_ADDRESS_DIGIT_ERROR,
         }))
       } else {
         setFieldErrors(prev => {
@@ -112,11 +117,10 @@ const SignUpPage = () => {
         })
       }
     } else if (name === 'pickupAddress') {
-      // Pickup address validation (optional field, but if provided should be valid)
-      if (value && !/^[\u10A0-\u10FF\s0-9№N,.\-:;()\[\]{}/"]+$/.test(value)) {
+      if (value && !isValidPersonAddress(value)) {
         setFieldErrors(prev => ({
           ...prev,
-          [name]: 'მისამართი ადგილზე მიტანისთვის უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, ციფრებს, №, N და სასვენი ნიშნებს'
+          [name]: `მისამართი ადგილზე მიტანისთვის ${PERSON_ADDRESS_FIELD_ERROR}`,
         }))
       } else {
         setFieldErrors(prev => {
@@ -128,50 +132,71 @@ const SignUpPage = () => {
     }
   }
 
+  const validateStep1 = (): boolean => {
+    const step1Errors = step1Fields.filter((field) => !formData[field]?.trim())
+    if (step1Errors.length > 0) {
+      showToast('გთხოვთ შეავსეთ პირველი ნაწილის ყველა ველი', 'error')
+      return false
+    }
+    if (step1Fields.some((field) => fieldErrors[field])) {
+      showToast('გთხოვთ გაასწოროთ შეცდომები', 'error')
+      return false
+    }
+    if (!isValidPersonName(formData.name)) {
+      showToast(`სახელი ${PERSON_NAME_FIELD_ERROR}`, 'error')
+      return false
+    }
+    if (!isValidPersonName(formData.lastName)) {
+      showToast(`გვარი ${PERSON_NAME_FIELD_ERROR}`, 'error')
+      return false
+    }
+    if (!isValidPersonName(formData.location)) {
+      showToast(`ადგილმდებარეობა ${PERSON_NAME_FIELD_ERROR}`, 'error')
+      return false
+    }
+    if (!isValidPersonAddress(formData.address)) {
+      showToast(`მისამართი ${PERSON_ADDRESS_FIELD_ERROR}`, 'error')
+      return false
+    }
+    if (!/[0-9]/.test(formData.address)) {
+      showToast(PERSON_ADDRESS_DIGIT_ERROR, 'error')
+      return false
+    }
+    return true
+  }
+
+  const validateStep2 = (): boolean => {
+    const requiredStep2 = ['gender', 'dateOfBirth', 'personalId', 'email', 'password', 'confirmPassword'] as const
+    if (requiredStep2.some((field) => !formData[field]?.trim())) {
+      showToast('გთხოვთ შეავსეთ მეორე ნაწილის ყველა ველი', 'error')
+      return false
+    }
+    if (['gender', 'dateOfBirth', 'personalId', 'email', 'password', 'confirmPassword', 'pickupAddress'].some(
+      (field) => fieldErrors[field],
+    )) {
+      showToast('გთხოვთ გაასწოროთ შეცდომები', 'error')
+      return false
+    }
+    return true
+  }
+
+  const handleNextStep = () => {
+    if (!validateStep1()) return
+    setStep(2)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   const handleSendCode = async () => {
     setError('')
     setSuccess('')
+
+    if (!validateStep1() || !validateStep2()) return
     
-    // Check for field validation errors
-    if (Object.keys(fieldErrors).length > 0) {
-      showToast('გთხოვთ გაასწოროთ შეცდომები', 'error')
+    if (formData.pickupAddress && !isValidPersonAddress(formData.pickupAddress)) {
+      showToast(`მისამართი ადგილზე მიტანისთვის ${PERSON_ADDRESS_FIELD_ERROR}`, 'error')
       return
     }
-    
-    // Validate required fields before sending code
-    if (!formData.name || !formData.lastName || !formData.phone || !formData.location || !formData.address || !formData.postalIndex || !formData.gender || !formData.dateOfBirth || !formData.personalId || !formData.email || !formData.password || !formData.confirmPassword) {
-      showToast('გთხოვთ შეავსეთ ყველა ველი', 'error')
-      return
-    }
-    
-    // Validate pickupAddress if provided
-    if (formData.pickupAddress && !/^[\u10A0-\u10FF\s0-9№N,.\-:;()\[\]{}/"]+$/.test(formData.pickupAddress)) {
-      showToast('მისამართი ადგილზე მიტანისთვის უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, ციფრებს, №, N და სასვენი ნიშნებს', 'error')
-      return
-    }
-    
-    // Validate Georgian characters
-    if (!/^[\u10A0-\u10FF\s]+$/.test(formData.name)) {
-      showToast('სახელი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს', 'error')
-      return
-    }
-    if (!/^[\u10A0-\u10FF\s]+$/.test(formData.lastName)) {
-      showToast('გვარი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს', 'error')
-      return
-    }
-    if (!/^[\u10A0-\u10FF\s]+$/.test(formData.location)) {
-      showToast('ადგილმდებარეობა უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს', 'error')
-      return
-    }
-    if (!/^[\u10A0-\u10FF\s0-9№N,.\-:;()\[\]{}/"]+$/.test(formData.address)) {
-      showToast('მისამართი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, ციფრებს, №, N და სასვენი ნიშნებს', 'error')
-      return
-    }
-    if (!/[0-9]/.test(formData.address)) {
-      showToast('მისამართი უნდა შეიცავდეს ციფრებს', 'error')
-      return
-    }
-    
+
     // Validate age (must be at least 18 years old)
     if (formData.dateOfBirth) {
       const age = calculateAge(formData.dateOfBirth)
@@ -219,36 +244,14 @@ const SignUpPage = () => {
     setError('')
     setSuccess('')
 
-    // Check for field validation errors
-    if (Object.keys(fieldErrors).length > 0) {
-      showToast('გთხოვთ გაასწოროთ შეცდომები', 'error')
+    if (!validateStep1() || !validateStep2()) {
       setIsLoading(false)
       return
     }
 
-    // Validate Georgian characters
-    if (!/^[\u10A0-\u10FF\s]+$/.test(formData.name)) {
-      showToast('სახელი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს', 'error')
-      setIsLoading(false)
-      return
-    }
-    if (!/^[\u10A0-\u10FF\s]+$/.test(formData.lastName)) {
-      showToast('გვარი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს', 'error')
-      setIsLoading(false)
-      return
-    }
-    if (!/^[\u10A0-\u10FF\s]+$/.test(formData.location)) {
-      showToast('ადგილმდებარეობა უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს', 'error')
-      setIsLoading(false)
-      return
-    }
-    if (!/^[\u10A0-\u10FF\s0-9№N,.\-:;()\[\]{}/"]+$/.test(formData.address)) {
-      showToast('მისამართი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, ციფრებს, №, N და სასვენი ნიშნებს', 'error')
-      setIsLoading(false)
-      return
-    }
-    if (!/[0-9]/.test(formData.address)) {
-      showToast('მისამართი უნდა შეიცავდეს ციფრებს', 'error')
+    // Check for field validation errors
+    if (Object.keys(fieldErrors).length > 0) {
+      showToast('გთხოვთ გაასწოროთ შეცდომები', 'error')
       setIsLoading(false)
       return
     }
@@ -320,9 +323,16 @@ const SignUpPage = () => {
     <div className="min-h-screen  flex  justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
-          <h2 className="text-[16px] text-black text-center md:text-[20px] font-semibold uppercase tracking-widesttext-black">
+          <h2 className="text-[16px] text-black text-center md:text-[20px] font-semibold uppercase tracking-widest">
             რეგისტრაცია
           </h2>
+          <p className="mt-3 text-center text-sm md:text-base text-gray-600">
+            ნაწილი {step} / 2
+          </p>
+          <div className="mt-3 flex gap-2">
+            <div className={`h-1.5 flex-1 rounded-full ${step >= 1 ? 'bg-[#1B3729]' : 'bg-gray-200'}`} />
+            <div className={`h-1.5 flex-1 rounded-full ${step >= 2 ? 'bg-[#1B3729]' : 'bg-gray-200'}`} />
+          </div>
           <p className="mt-2 text-center text-lg text-black">
             ან{' '}
             <Link
@@ -336,6 +346,8 @@ const SignUpPage = () => {
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
+            {step === 1 && (
+              <>
             {/* Name */}
             <div>
               <label htmlFor="name" className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
@@ -453,7 +465,11 @@ const SignUpPage = () => {
                 />
               </div>
             </div>
+              </>
+            )}
 
+            {step === 2 && (
+              <>
             {/* Pickup Address */}
             <div>
               <label htmlFor="pickupAddress" className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
@@ -610,8 +626,11 @@ const SignUpPage = () => {
               </div>
             </div>
 
+              </>
+            )}
+
             {/* Verification Code - only show after code is sent */}
-            {showCodeInput && (
+            {step === 2 && showCodeInput && (
               <div>
                 <label htmlFor="code" className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
                   ვერიფიკაციის კოდი
@@ -635,22 +654,42 @@ const SignUpPage = () => {
           </div>
 
           <div className="space-y-3">
-            {!showCodeInput ? (
+            {step === 1 ? (
               <button
                 type="button"
-                onClick={handleSendCode}
-                disabled={isSendingCode}
-                className="w-full md:text-[18px] font-bold text-[16px] bg-[#1B3729] cursor-pointer text-white py-3 px-6 rounded-lg hover:bg-gray-800 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                onClick={handleNextStep}
+                className="w-full md:text-[18px] font-bold text-[16px] bg-[#1B3729] cursor-pointer text-white py-3 px-6 rounded-lg hover:bg-gray-800 transition-colors duration-300"
               >
-                {isSendingCode ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>იგზავნება...</span>
-                  </>
-                ) : (
-                  <span>რეგისტრაცია</span>
-                )}
+                შემდეგი
               </button>
+            ) : !showCodeInput ? (
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep(1)
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }}
+                  className="w-full sm:w-auto sm:min-w-[120px] md:text-[18px] font-bold text-[16px] border border-black text-black py-3 px-6 rounded-lg hover:bg-gray-50 transition-colors duration-300"
+                >
+                  უკან
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSendCode}
+                  disabled={isSendingCode}
+                  className="w-full flex-1 md:text-[18px] font-bold text-[16px] bg-[#1B3729] cursor-pointer text-white py-3 px-6 rounded-lg hover:bg-gray-800 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                >
+                  {isSendingCode ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>იგზავნება...</span>
+                    </>
+                  ) : (
+                    <span>რეგისტრაცია</span>
+                  )}
+                </button>
+              </div>
             ) : (
               <button
                 type="submit"

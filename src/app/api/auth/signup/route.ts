@@ -3,21 +3,22 @@ import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 import { Prisma } from "@prisma/client"
+import { PERSON_ADDRESS_REGEX, PERSON_NAME_REGEX } from "@/lib/personal-text"
 
 const signupSchema = z.object({
   name: z.string()
     .min(2, "სახელი უნდა იყოს მინიმუმ 2 სიმბოლო")
-    .regex(/^[\u10A0-\u10FF\s]+$/, "სახელი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს"),
+    .regex(PERSON_NAME_REGEX, "სახელი უნდა შეიცავდეს ქართულ ან ინგლისურ ასოებს"),
   lastName: z.string()
     .min(2, "გვარი უნდა იყოს მინიმუმ 2 სიმბოლო")
-    .regex(/^[\u10A0-\u10FF\s]+$/, "გვარი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს"),
+    .regex(PERSON_NAME_REGEX, "გვარი უნდა შეიცავდეს ქართულ ან ინგლისურ ასოებს"),
   phone: z.string().min(6, "ტელეფონის ნომერი საჭიროა"),
   location: z.string()
     .min(2, "ადგილმდებარეობა აუცილებელია")
-    .regex(/^[\u10A0-\u10FF\s]+$/, "ადგილმდებარეობა უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს"),
+    .regex(PERSON_NAME_REGEX, "ადგილმდებარეობა უნდა შეიცავდეს ქართულ ან ინგლისურ ასოებს"),
   address: z.string()
     .min(2, "მისამართი აუცილებელია")
-    .regex(/^[\u10A0-\u10FF\s0-9№N]+$/, "მისამართი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, ციფრებს, № (ოფციონალური) და N")
+    .regex(PERSON_ADDRESS_REGEX, "მისამართი უნდა შეიცავდეს ქართულ ან ინგლისურ ასოებს, ციფრებს, №, N და სასვენი ნიშნებს")
     .refine((val) => /[0-9]/.test(val), "მისამართი უნდა შეიცავდეს ციფრებს"),
   postalIndex: z.string().min(2, "საფოსტო ინდექსი აუცილებელია"),
   pickupAddress: z.string().optional(),
