@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { sortProductCategories } from '@/lib/product-categories'
 
 // GET - Fetch all categories
 export async function GET(request: NextRequest) {
   try {
-    const categories = await prisma.category.findMany({
-      orderBy: { name: 'asc' }
-    })
+    const categories = await prisma.category.findMany()
 
     // Remove duplicates by id (in case of any data inconsistencies)
     const uniqueCategories = categories.filter((category, index, self) =>
@@ -20,7 +19,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      categories: deduplicatedCategories
+      categories: sortProductCategories(deduplicatedCategories),
     })
     
   } catch (error) {

@@ -8,18 +8,24 @@ import { ensureUniqueProductSlug } from '@/lib/productSlug'
 import { checkAndClearExpiredDiscount, processExpiredDiscount } from '@/utils/discountUtils'
 import { PURPOSE_NAME_BY_SLUG } from '@/data/purposes'
 import { isAdminOrSupport } from '@/lib/roles'
+import {
+  isValidProductText,
+  PRODUCT_DESCRIPTION_ERROR_MESSAGE,
+  PRODUCT_NAME_ERROR_MESSAGE,
+  PRODUCT_TEXT_REGEX,
+} from '@/lib/product-text'
 
 // Product validation schema
 const productSchema = z.object({
   name: z.string()
     .min(1, 'სახელი აუცილებელია')
-    .regex(/^[\u10A0-\u10FF\s.,:;!?\-()""''0-9]+$/, 'სახელი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, პუნქტუაციას და ციფრებს'),
+    .regex(PRODUCT_TEXT_REGEX, PRODUCT_NAME_ERROR_MESSAGE),
   slug: z.string().min(1, 'Slug აუცილებელია').regex(/^[a-z0-9-]+$/, 'Slug უნდა შეიცავდეს მხოლოდ პატარა ასოებს, ციფრებს და ტირეებს'),
   brand: z.string().optional(),
   description: z.string()
     .optional()
-    .refine((val) => !val || /^[\u10A0-\u10FF\s.,:;!?\-()""''0-9]+$/.test(val), {
-      message: 'აღწერა უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, პუნქტუაციას და ციფრებს'
+    .refine((val) => !val || isValidProductText(val), {
+      message: PRODUCT_DESCRIPTION_ERROR_MESSAGE,
     }),
   stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი').default(0),
   gender: z.enum(['MEN', 'WOMEN', 'CHILDREN', 'UNISEX']).default('UNISEX'),

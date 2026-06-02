@@ -6,19 +6,32 @@ import { ArrowLeft, Save, X, Plus } from 'lucide-react'
 import { z } from 'zod'
 import { Product, ProductVariant } from '@/types/product'
 import ImageUploadForProduct from '@/component/productimage'
+import ProductCategorySelect from '@/component/ProductCategorySelect'
 import { showToast } from '@/utils/toast'
 import { PURPOSE_OPTIONS } from '@/data/purposes'
 import { PRODUCT_FORM_COLORS } from '@/lib/product-colors'
+import {
+  isValidProductText,
+  PRODUCT_DESCRIPTION_ERROR_MESSAGE,
+  PRODUCT_NAME_ERROR_MESSAGE,
+  PRODUCT_TEXT_REGEX,
+} from '@/lib/product-text'
+import {
+  DEFAULT_PRODUCT_CATEGORIES,
+  isAccessoryCategoryId,
+  PRODUCT_GENDER_OPTIONS,
+  sortProductCategories,
+} from '@/lib/product-categories'
 const productSchema = z.object({
   name: z.string()
     .min(1, 'სახელი აუცილებელია')
-    .regex(/^[\u10A0-\u10FF\s.,:;!?\-()""''0-9]+$/, 'სახელი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, პუნქტუაციას და ციფრებს'),
+    .regex(PRODUCT_TEXT_REGEX, PRODUCT_NAME_ERROR_MESSAGE),
   slug: z.string().min(1, 'Slug აუცილებელია').regex(/^[a-z0-9-]+$/, 'Slug უნდა შეიცავდეს მხოლოდ პატარა ასოებს, ციფრებს და ტირეებს'),
   brand: z.string().optional(),
   description: z.string()
     .optional()
-    .refine((val) => !val || /^[\u10A0-\u10FF\s.,:;!?\-()""''0-9]+$/.test(val), {
-      message: 'აღწერა უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, პუნქტუაციას და ციფრებს'
+    .refine((val) => !val || isValidProductText(val), {
+      message: PRODUCT_DESCRIPTION_ERROR_MESSAGE,
     }),
   stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი').default(0),
   gender: z.enum(['MEN', 'WOMEN', 'CHILDREN', 'UNISEX']).default('UNISEX'),
@@ -75,35 +88,6 @@ const productSchema = z.object({
 })
 
 const purposes = PURPOSE_OPTIONS
-
-// Default categories list (fallback if API fails)
-const defaultCategories = [
-  // ქალების კატეგორიები
-  { id: 1, name: 'პალტოები და მოსასხამი', slug: 'paltoebi-da-mosaskhami' },
-  { id: 2, name: 'კაბები', slug: 'kabebi' },
-  { id: 3, name: 'ქალების ორ ნაწილად შეკრული კომპლექტები', slug: 'kalta-or-natsilad-shekruli-kompleqtebi' },
-  { id: 4, name: 'შარვლები', slug: 'sharvlebi' },
-  { id: 5, name: 'ქვედაბოლოები', slug: 'kvedabolobebi' },
-  { id: 6, name: 'ქალების კოსტუმი', slug: 'kalta-kostumi' },
-  { id: 7, name: 'საქორწინო კაბები', slug: 'sakortsino-kabebi' },
-  { id: 8, name: 'სათხილამურო ქურთუკი', slug: 'sathilamuro-qurtuki' },
-  { id: 9, name: 'სათხილამურო ტანსაცმელი', slug: 'sathilamuro-tansatsmeli' },
-  { id: 10, name: 'სათვალე', slug: 'satvale' },
-  { id: 11, name: 'სათხილამურო სათვალე', slug: 'sathilamuro-satvale' },
-  { id: 12, name: 'ჩაფხუტი', slug: 'chapkhuti' },
-  { id: 13, name: 'ტრადიციული ტანსაცმელი', slug: 'traditsiuli-tansatsmeli' },
-  { id: 14, name: 'ტრადიციული და კულტურული ტანსაცმელი', slug: 'traditsiuli-da-kulturuli-tansatsmeli' },
-  { id: 15, name: 'ქოსფლეის კოსტუმები', slug: 'qospleis-kostumebi' },
-  // მამაკაცების კატეგორიები
-  { id: 16, name: 'შარვალ კოსტუმი', slug: 'sharval-kostumi' },
-  { id: 17, name: 'პიჯაკი', slug: 'pijaki' },
-  // ბავშვების კატეგორიები
-  { id: 18, name: 'ბავშვთა კაბები', slug: 'bavshvta-kabebi' },
-  { id: 19, name: 'ბავშვთა ტრადიციული ტანსაცმელი', slug: 'bavshvta-traditsiuli-tansatsmeli' },
-  { id: 20, name: 'ბავშვთა სათხილამურო ტანსაცმელი', slug: 'bavshvta-sathilamuro-tansatsmeli' },
-  { id: 21, name: 'თერმო ტანსაცმელი', slug: 'termo-tansatsmeli' },
-  { id: 22, name: 'მეორე ფენა', slug: 'meore-pena' },
-]
 
 type ProductFormData = z.infer<typeof productSchema>
 
@@ -249,6 +233,11 @@ const EditProductPage = () => {
 
   const colors = PRODUCT_FORM_COLORS
 
+  const isAccessory = useMemo(
+    () => isAccessoryCategoryId(formData.categoryId, categories),
+    [formData.categoryId, categories],
+  )
+
   // Fetch categories
   const fetchCategories = async () => {
     try {
@@ -265,17 +254,17 @@ const EditProductPage = () => {
         const uniqueCategories = uniqueById.filter((category: { name: string }, index: number, self: { name: string }[]) =>
           index === self.findIndex((c) => c.name.toLowerCase().trim() === category.name.toLowerCase().trim())
         )
-        setCategories(uniqueCategories)
+        setCategories(sortProductCategories(uniqueCategories))
         console.log('Categories set successfully:', uniqueCategories)
       } else {
         // Use default categories if API returns empty or fails
-        setCategories(defaultCategories)
+        setCategories(DEFAULT_PRODUCT_CATEGORIES)
         console.log('Using default categories')
       }
     } catch (error) {
       console.error('Error fetching categories:', error)
       // Use default categories on error
-      setCategories(defaultCategories)
+      setCategories(DEFAULT_PRODUCT_CATEGORIES)
     }
   }
 
@@ -381,10 +370,10 @@ const EditProductPage = () => {
     }))
     
     // Validate Georgian characters in real-time
-    if (name && !/^[\u10A0-\u10FF\s.,:;!?\-()""''0-9]+$/.test(name)) {
+    if (name && !isValidProductText(name)) {
       setErrors(prev => ({
         ...prev,
-        name: 'სახელი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, პუნქტუაციას და ციფრებს'
+        name: PRODUCT_NAME_ERROR_MESSAGE,
       }))
     } else {
       // Clear errors when valid
@@ -413,10 +402,10 @@ const EditProductPage = () => {
     
     // Validate Georgian characters for description in real-time
     if (field === 'description' && typeof value === 'string') {
-      if (value && !/^[\u10A0-\u10FF\s.,:;!?\-()""''0-9]+$/.test(value)) {
+      if (value && !isValidProductText(value)) {
         setErrors(prev => ({
           ...prev,
-          description: 'აღწერა უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, პუნქტუაციას და ციფრებს'
+          description: PRODUCT_DESCRIPTION_ERROR_MESSAGE,
         }))
       } else {
         // Clear errors when valid
@@ -429,6 +418,20 @@ const EditProductPage = () => {
       if (errors[field]) {
         setErrors(prev => ({ ...prev, [field]: '' }))
       }
+    }
+  }
+
+  const clearSizeFields = () => {
+    setSelectedSizeSystem('')
+    setSelectedSizeValue('')
+    handleInputChange('sizeSystem', undefined)
+    handleInputChange('size', undefined)
+  }
+
+  const handleCategoryChange = (categoryId: number | undefined) => {
+    handleInputChange('categoryId', categoryId)
+    if (isAccessoryCategoryId(categoryId, categories)) {
+      clearSizeFields()
     }
   }
 
@@ -539,8 +542,18 @@ const EditProductPage = () => {
           : undefined,
         pricePerDay: formData.pricePerDay || undefined,
         maxRentalDays: formData.maxRentalDays || undefined,
-        // If no rental price is set, remove rentalPriceTiers
-        rentalPriceTiers: hasRentalPrice ? (formData.rentalPriceTiers || []) : []
+        rentalPriceTiers: hasRentalPrice ? (formData.rentalPriceTiers || []) : [],
+        ...(isAccessory
+          ? {
+              size: undefined,
+              sizeSystem: undefined,
+              variants: formData.variants.map((variant) => ({
+                ...variant,
+                size: undefined,
+                sizeSystem: undefined,
+              })),
+            }
+          : {}),
       }
       
       console.log('Data to validate:', JSON.stringify(dataToValidate, null, 2))
@@ -713,20 +726,12 @@ const EditProductPage = () => {
                 <label className="block text-[20px] text-black font-medium mb-2">
                   კატეგორია
                 </label>
-                <select
+                <ProductCategorySelect
+                  categories={categories}
                   value={formData.categoryId || ''}
-                  onChange={(e) => handleInputChange('categoryId', e.target.value ? parseInt(e.target.value) : undefined)}
+                  onChange={handleCategoryChange}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                >
-                  <option value="">
-                    აირჩიეთ კატეგორია
-                  </option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
 
               <div>
@@ -756,10 +761,11 @@ const EditProductPage = () => {
                   onChange={(e) => handleInputChange('gender', e.target.value as 'MEN' | 'WOMEN' | 'CHILDREN' | 'UNISEX')}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                 >
-                  <option value="UNISEX">უნივერსალური</option>
-                  <option value="MEN">კაცისთვის</option>
-                  <option value="WOMEN">ქალისთვის</option>
-                  <option value="CHILDREN">ბავშვისთვის</option>
+                  {PRODUCT_GENDER_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -806,27 +812,29 @@ const EditProductPage = () => {
                 )}
               </div>
 
-              <div>
-                <label className="block text-[20px] text-black font-medium mb-2">
-                  ზომა (არასავალდებულო)
-                </label>
-                <select
-                  value={
-                    selectedSizeSystem && selectedSizeValue
-                      ? `${selectedSizeSystem}:${selectedSizeValue}`
-                      : ''
-                  }
-                  onChange={(e) => handleCombinedSizeSelect(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                >
-                  <option value="">აირჩიეთ ზომა</option>
-                {combinedSizeOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              </div>
+              {!isAccessory && (
+                <div>
+                  <label className="block text-[20px] text-black font-medium mb-2">
+                    ზომა (არასავალდებულო)
+                  </label>
+                  <select
+                    value={
+                      selectedSizeSystem && selectedSizeValue
+                        ? `${selectedSizeSystem}:${selectedSizeValue}`
+                        : ''
+                    }
+                    onChange={(e) => handleCombinedSizeSelect(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  >
+                    <option value="">აირჩიეთ ზომა</option>
+                    {combinedSizeOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             
             </div>
 

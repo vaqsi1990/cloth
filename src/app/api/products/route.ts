@@ -8,18 +8,24 @@ import { generateUniqueSKU } from '@/utils/skuUtils'
 import { ensureUniqueProductSlug } from '@/lib/productSlug'
 // Removed processExpiredDiscount import - we handle discount clearing inline for better performance
 import { PURPOSE_NAME_BY_SLUG } from '@/data/purposes'
+import {
+  isValidProductText,
+  PRODUCT_DESCRIPTION_ERROR_MESSAGE,
+  PRODUCT_NAME_ERROR_MESSAGE,
+  PRODUCT_TEXT_REGEX,
+} from '@/lib/product-text'
 
 // Product validation schema
 const productSchema = z.object({
   name: z.string()
     .min(1, 'სახელი აუცილებელია')
-    .regex(/^[\u10A0-\u10FF\s.,:;!?\-()""''0-9]+$/, 'სახელი უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, პუნქტუაციას და ციფრებს'),
+    .regex(PRODUCT_TEXT_REGEX, PRODUCT_NAME_ERROR_MESSAGE),
   slug: z.string().min(1, 'Slug აუცილებელია'),
   brand: z.string().optional(),
   description: z.string()
     .optional()
-    .refine((val) => !val || /^[\u10A0-\u10FF\s.,:;!?\-()""''0-9]+$/.test(val), {
-      message: 'აღწერა უნდა შეიცავდეს მხოლოდ ქართულ სიმბოლოებს, პუნქტუაციას და ციფრებს'
+    .refine((val) => !val || isValidProductText(val), {
+      message: PRODUCT_DESCRIPTION_ERROR_MESSAGE,
     }),
   stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი').default(0),
   gender: z.enum(['MEN', 'WOMEN', 'CHILDREN', 'UNISEX']).default('UNISEX'),
