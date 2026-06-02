@@ -8,6 +8,7 @@ import { Product } from '@/types/product'
 import DatePicker from "react-datepicker"
 import StarRating from "@/components/StarRating"
 import { PURPOSE_OPTIONS } from '@/data/purposes'
+import { PRODUCT_COLORS, PRODUCT_COLOR_FILTER_MAPPING } from '@/lib/product-colors'
 
 
 const ShopPageClient = () => {
@@ -305,18 +306,7 @@ const ShopPageClient = () => {
         })
     }, [products])
 
-    const colors = [
-        { id: "black", label: "შავი", color: "#000000" },
-        { id: "white", label: "თეთრი", color: "#FFFFFF" },
-        { id: "red", label: "წითელი", color: "#FF0000" },
-        { id: "blue", label: "ლურჯი", color: "#0000FF" },
-        { id: "green", label: "მწვანე", color: "#008000" },
-        { id: "yellow", label: "ყვითელი", color: "#FFFF00" },
-        { id: "pink", label: "ვარდისფერი", color: "#FFC0CB" },
-        { id: "purple", label: "იისფერი", color: "#800080" },
-        { id: "gray", label: "ნაცრისფერი", color: "#A52A2A" },
-        { id: "beige", label: "ბეჟი", color: "#8B4513" }
-    ]
+    const colors = PRODUCT_COLORS
 
     const locations = [
         { id: "თბილისი", label: "თბილისი" },
@@ -589,18 +579,7 @@ const ShopPageClient = () => {
             // Color filter
             const colorMatch = selectedColors.length === 0 ||
                 selectedColors.some(selectedColor => {
-                    const colorMapping: Record<string, string[]> = {
-                        'black': ['შავი', 'black'],
-                        'white': ['თეთრი', 'white'],
-                        'red': ['წითელი', 'red'],
-                        'blue': ['ლურჯი', 'blue'],
-                        'green': ['მწვანე', 'green'],
-                        'yellow': ['ყვითელი', 'yellow'],
-                        'pink': ['ვარდისფერი', 'pink'],
-                        'purple': ['იისფერი', 'purple']
-                    };
-
-                    const colorVariations = colorMapping[selectedColor] || [selectedColor];
+                    const colorVariations = PRODUCT_COLOR_FILTER_MAPPING[selectedColor] || [selectedColor];
                     return colorVariations.some(color =>
                         product.color?.toLowerCase().includes(color.toLowerCase())
                     );
@@ -657,18 +636,7 @@ const ShopPageClient = () => {
         // Color filter
         const colorMatch = selectedColors.length === 0 ||
             selectedColors.some(selectedColor => {
-                const colorMapping: Record<string, string[]> = {
-                    'black': ['შავი', 'black'],
-                    'white': ['თეთრი', 'white'],
-                    'red': ['წითელი', 'red'],
-                    'blue': ['ლურჯი', 'blue'],
-                    'green': ['მწვანე', 'green'],
-                    'yellow': ['ყვითელი', 'yellow'],
-                    'pink': ['ვარდისფერი', 'pink'],
-                    'purple': ['იისფერი', 'purple']
-                };
-
-                const colorVariations = colorMapping[selectedColor] || [selectedColor];
+                const colorVariations = PRODUCT_COLOR_FILTER_MAPPING[selectedColor] || [selectedColor];
                 return colorVariations.some(color =>
                     product.color?.toLowerCase().includes(color.toLowerCase())
                 );

@@ -7,6 +7,7 @@ import { z } from 'zod'
 import ImageUploadForProduct from '@/component/productimage'
 import { showToast } from '@/utils/toast'
 import { PURPOSE_OPTIONS } from '@/data/purposes'
+import { PRODUCT_FORM_COLORS } from '@/lib/product-colors'
 
 const sizeOptions = {
   XS: { UK: [4, 6], EU: [32, 34], US: [0, 2] },
@@ -188,19 +189,7 @@ const NewProductPage = () => {
     return options
   }, [])
 
-  const colors = [
-    { id: "black", label: "შავი", color: "#000000" },
-    { id: "white", label: "თეთრი", color: "#FFFFFF" },
-    { id: "red", label: "წითელი", color: "#FF0000" },
-    { id: "blue", label: "ლურჯი", color: "#0000FF" },
-    { id: "green", label: "მწვანე", color: "#008000" },
-    { id: "yellow", label: "ყვითელი", color: "#FFFF00" },
-    { id: "pink", label: "ვარდისფერი", color: "#FFC0CB" },
-    { id: "purple", label: "იისფერი", color: "#800080" },
-    { id: "gray", label: "ნაცრისფერი", color: "#A52A2A" },
-    { id: "beige", label: "ბეჟი", color: "#8B4513" },
-    { id: "other", label: "სხვა ფერი", color: "#CCCCCC" }
-  ]
+  const colors = PRODUCT_FORM_COLORS
 
   const handleCombinedSizeSelect = (value: string) => {
     if (!value) {

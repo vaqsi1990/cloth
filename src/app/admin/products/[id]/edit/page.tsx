@@ -8,6 +8,7 @@ import { Product, ProductVariant } from '@/types/product'
 import ImageUploadForProduct from '@/component/productimage'
 import { showToast } from '@/utils/toast'
 import { PURPOSE_OPTIONS } from '@/data/purposes'
+import { PRODUCT_FORM_COLORS } from '@/lib/product-colors'
 const productSchema = z.object({
   name: z.string()
     .min(1, 'სახელი აუცილებელია')
@@ -246,19 +247,7 @@ const EditProductPage = () => {
     }))
   }
 
-  const colors = [
-    { id: "black", label: "შავი", color: "#000000" },
-    { id: "white", label: "თეთრი", color: "#FFFFFF" },
-    { id: "red", label: "წითელი", color: "#FF0000" },
-    { id: "blue", label: "ლურჯი", color: "#0000FF" },
-    { id: "green", label: "მწვანე", color: "#008000" },
-    { id: "yellow", label: "ყვითელი", color: "#FFFF00" },
-    { id: "pink", label: "ვარდისფერი", color: "#FFC0CB" },
-    { id: "purple", label: "იისფერი", color: "#800080" },
-    { id: "gray", label: "ნაცრისფერი", color: "#A52A2A" },
-    { id: "beige", label: "ბეჟი", color: "#8B4513" },
-    { id: "other", label: "სხვა ფერი", color: "#CCCCCC" }
-  ]
+  const colors = PRODUCT_FORM_COLORS
 
   // Fetch categories
   const fetchCategories = async () => {
