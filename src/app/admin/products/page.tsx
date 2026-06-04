@@ -65,6 +65,9 @@ const AdminProductsPage = () => {
   const router = useRouter()
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [nextCursor, setNextCursor] = useState<string | null>(null)
+  const [hasMore, setHasMore] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterGender, setFilterGender] = useState('ALL')
   const [filterCategory, setFilterCategory] = useState('ALL')
@@ -77,41 +80,66 @@ const AdminProductsPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status])
 
-  const fetchProducts = useCallback(async () => {
+  const enrichWithRentalStatus = useCallback(async (productList: Product[]) => {
+    return Promise.all(
+      productList.map(async (product: Product) => {
+        try {
+          const rentalResponse = await fetch(`/api/products/${product.id}/rental-status`)
+          const rentalData = await rentalResponse.json()
+          if (rentalData.success) {
+            const statusMap: { [key: string]: RentalPeriod[] } = {}
+            rentalData.variants.forEach((variant: { variantId: number; activeRentals?: RentalPeriod[] }) => {
+              statusMap[`variant_${variant.variantId}`] = variant.activeRentals || []
+            })
+            return { ...product, rentalStatus: statusMap }
+          }
+          return product
+        } catch (error) {
+          console.error(`Error fetching rental status for product ${product.id}:`, error)
+          return product
+        }
+      })
+    )
+  }, [])
+
+  const fetchProducts = useCallback(async (cursor?: string | null, append = false) => {
     try {
-      setLoading(true)
-      const response = await fetch('/api/products')
+      if (append) {
+        setLoadingMore(true)
+      } else {
+        setLoading(true)
+      }
+
+      const params = new URLSearchParams({ includeUnapproved: 'true' })
+      if (cursor) {
+        params.set('cursor', cursor)
+      }
+
+      const response = await fetch(`/api/products?${params}`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' },
+      })
       const data = await response.json()
-      
+
       if (data.success) {
-        // Fetch rental status for each product
-        const productsWithRentalStatus = await Promise.all(
-          data.products.map(async (product: Product) => {
-            try {
-              const rentalResponse = await fetch(`/api/products/${product.id}/rental-status`)
-              const rentalData = await rentalResponse.json()
-              if (rentalData.success) {
-                const statusMap: {[key: string]: RentalPeriod[]} = {}
-                rentalData.variants.forEach((variant: { variantId: number; activeRentals?: RentalPeriod[] }) => {
-                  statusMap[`variant_${variant.variantId}`] = variant.activeRentals || []
-                })
-                return { ...product, rentalStatus: statusMap }
-              }
-              return product
-            } catch (error) {
-              console.error(`Error fetching rental status for product ${product.id}:`, error)
-              return product
-            }
-          })
-        )
-        setProducts(productsWithRentalStatus)
+        const productsWithRentalStatus = await enrichWithRentalStatus(data.products)
+        setProducts((prev) => (append ? [...prev, ...productsWithRentalStatus] : productsWithRentalStatus))
+        setNextCursor(data.nextCursor ?? null)
+        setHasMore(Boolean(data.hasMore))
       }
     } catch (error) {
       console.error('Error fetching products:', error)
     } finally {
       setLoading(false)
+      setLoadingMore(false)
     }
-  }, [])
+  }, [enrichWithRentalStatus])
+
+  const loadMoreProducts = () => {
+    if (hasMore && nextCursor && !loadingMore) {
+      fetchProducts(nextCursor, true)
+    }
+  }
 
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.role === 'ADMIN') {
@@ -634,6 +662,22 @@ const AdminProductsPage = () => {
                ))}
              </div>
            )}
+
+          {hasMore && (
+            <div className="flex flex-col items-center gap-2 mt-6 pt-4 border-t border-gray-100">
+              <p className="text-xs sm:text-sm text-gray-600">
+                ჩატვირთულია {products.length} პროდუქტი — დააჭირეთ მეტის ჩასატვირთად
+              </p>
+              <button
+                type="button"
+                onClick={loadMoreProducts}
+                disabled={loadingMore}
+                className="px-6 py-3 bg-black text-white rounded-lg font-bold uppercase tracking-wide text-xs sm:text-sm md:text-[18px] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loadingMore ? 'იტვირთება...' : 'მეტის ჩატვირთვა'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

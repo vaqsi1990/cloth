@@ -46,7 +46,9 @@ const ShopPageClient = () => {
     const [isSizeOpen, setIsSizeOpen] = useState(false)
 
     const [currentPage, setCurrentPage] = useState(1)
-    const [itemsPerPage] = useState(20)
+    const [itemsPerPage] = useState(16)
+    const [serverTotalPages, setServerTotalPages] = useState(1)
+    const [serverTotalCount, setServerTotalCount] = useState(0)
     const [activeMobileFilter, setActiveMobileFilter] = useState<string | null>(null)
     const [isMobileFilterOverlayOpen, setIsMobileFilterOverlayOpen] = useState(false)
     const [isCategorySectionOpen, setIsCategorySectionOpen] = useState(false)
@@ -315,13 +317,19 @@ const ShopPageClient = () => {
         { id: "ბათუმი", label: "ბათუმი" }
     ]
 
-    // Fetch products from API
+    const goToPage = (page: number) => {
+        setCurrentPage(page)
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+
+    // Fetch products from API (server-side pagination: 16 per page)
     useEffect(() => {
         const fetchProducts = async () => {
             setLoading(true)
             try {
-                // Build query parameters
                 const params = new URLSearchParams()
+                params.set('page', String(currentPage))
+                params.set('limit', String(itemsPerPage))
                 if (genderParam) {
                     params.append('gender', genderParam)
                 }
@@ -330,19 +338,30 @@ const ShopPageClient = () => {
                 }
                 if (purposeParam) {
                     params.append('purpose', purposeParam)
+                } else if (selectedPurposes.length === 1) {
+                    params.append('purpose', selectedPurposes[0])
+                }
+                if (categoryParam) {
+                    params.append('category', categoryParam)
+                } else if (selectedCategories.length === 1) {
+                    const cat = categories.find(
+                        (c) => c.label === selectedCategories[0] || c.id === selectedCategories[0]
+                    )
+                    if (cat?.slug) {
+                        params.append('category', cat.slug)
+                    }
                 }
 
-                const queryString = params.toString()
-                const response = await fetch(`/api/products${queryString ? `?${queryString}` : ''}`)
+                const response = await fetch(`/api/products?${params}`)
                 const data = await response.json()
                 if (data.success) {
-                    // Log for debugging
                     if (process.env.NODE_ENV === 'development' && purposeParam) {
                         console.log(`[ShopPageClient] Fetched ${data.products.length} products for purpose: ${purposeParam}`)
                     }
                     setProducts(data.products)
+                    setServerTotalPages(data.totalPages ?? 1)
+                    setServerTotalCount(data.totalCount ?? data.products.length)
 
-                    // Calculate maximum price from products (including rental prices)
                     const allPrices = data.products.flatMap((product: Product) => {
                         const prices: number[] = []
                         // Add buy prices
@@ -373,7 +392,16 @@ const ShopPageClient = () => {
         }
 
         fetchProducts()
-    }, [genderParam, searchParam, purposeParam])
+    }, [
+        genderParam,
+        searchParam,
+        purposeParam,
+        categoryParam,
+        currentPage,
+        itemsPerPage,
+        selectedCategories,
+        selectedPurposes,
+    ])
 
     // Fetch rental status for rentable products (batched)
     useEffect(() => {
@@ -674,16 +702,29 @@ const ShopPageClient = () => {
         }
     })
 
-    // Pagination calculations
-    const totalPages = Math.ceil(sortedProducts.length / itemsPerPage)
-    const startIndex = (currentPage - 1) * itemsPerPage
-    const endIndex = startIndex + itemsPerPage
-    const currentProducts = sortedProducts.slice(startIndex, endIndex)
+    const totalPages = serverTotalPages
+    const currentProducts = sortedProducts
 
     // Reset to page 1 when filters change
     useEffect(() => {
         setCurrentPage(1)
-    }, [selectedCategories, selectedPurposes, priceRange, selectedSizeSystems, selectedSizes, selectedColors, selectedLocations, rentalStartDate, rentalEndDate, sortBy, purchaseType, purposeParam])
+    }, [
+        selectedCategories,
+        selectedPurposes,
+        priceRange,
+        selectedSizeSystems,
+        selectedSizes,
+        selectedColors,
+        selectedLocations,
+        rentalStartDate,
+        rentalEndDate,
+        sortBy,
+        purchaseType,
+        purposeParam,
+        categoryParam,
+        genderParam,
+        searchParam,
+    ])
 
     // Handle category selection
     const toggleCategory = (categoryName: string) => {
@@ -1220,7 +1261,7 @@ const ShopPageClient = () => {
                                 onClick={() => setIsMobileFilterOverlayOpen(false)}
                                 className="flex-1 px-4 py-3 bg-[#1B3729] text-white rounded-lg font-medium hover:bg-[#1B3729]"
                             >
-                                ჩვენება {filteredProducts.length}+ შედეგი
+                                ჩვენება {serverTotalCount} შედეგი
                             </button>
                         </div>
                     </div>
@@ -1661,7 +1702,7 @@ const ShopPageClient = () => {
                             <div className="flex flex-col items-center justify-center gap-4 mt-8">
                                 <div className="flex items-center gap-2">
                                     <button
-                                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                        onClick={() => goToPage(Math.max(1, currentPage - 1))}
                                         disabled={currentPage === 1}
                                         className={`px-4 py-2 rounded-lg border transition-colors md:text-[18px] text-[16px] flex items-center gap-2 ${currentPage === 1
                                             ? 'bg-gray-100 text-black cursor-not-allowed border-gray-300'
@@ -1683,7 +1724,7 @@ const ShopPageClient = () => {
                                                 return (
                                                     <button
                                                         key={page}
-                                                        onClick={() => setCurrentPage(page)}
+                                                        onClick={() => goToPage(page)}
                                                         className={`px-4 py-2 rounded-lg border transition-colors md:text-[18px] text-[16px] ${currentPage === page
                                                             ? 'bg-black text-white border-black'
                                                             : 'bg-white text-black border-gray-300 hover:bg-gray-50 hover:border-black'
@@ -1707,7 +1748,7 @@ const ShopPageClient = () => {
                                     </div>
 
                                     <button
-                                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                        onClick={() => goToPage(Math.min(totalPages, currentPage + 1))}
                                         disabled={currentPage === totalPages}
                                         className={`px-4 py-2 rounded-lg border transition-colors md:text-[18px] text-[16px] flex items-center gap-2 ${currentPage === totalPages
                                             ? 'bg-gray-100 text-black cursor-not-allowed border-gray-300'

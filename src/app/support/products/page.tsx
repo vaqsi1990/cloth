@@ -114,7 +114,10 @@ const SupportProductsPage = () => {
     try {
       setLoading(true)
       // Fetch all products, including unapproved ones, for SUPPORT role
-      const response = await fetch('/api/products?includeUnapproved=true')
+      const response = await fetch('/api/products?includeUnapproved=true', {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' },
+      })
       const data = await response.json()
       
       if (data.success) {

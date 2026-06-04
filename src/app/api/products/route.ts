@@ -93,7 +93,15 @@ export async function GET(request: NextRequest) {
     const purpose = searchParams.get('purpose')
     const search = searchParams.get('search')?.trim()
     const cursor = searchParams.get('cursor')
-    const cursorId = cursor ? parseInt(cursor, 10) : undefined
+    const pageParam = searchParams.get('page')
+    const limitParam = searchParams.get('limit')
+    const useOffsetPagination = pageParam !== null || limitParam !== null
+    const page = Math.max(1, parseInt(pageParam || '1', 10) || 1)
+    const pageLimit = useOffsetPagination
+      ? Math.min(Math.max(parseInt(limitParam || '16', 10) || 16, 1), 50)
+      : 20
+    const cursorId =
+      !useOffsetPagination && cursor ? parseInt(cursor, 10) : undefined
     const includeUnapproved = searchParams.get('includeUnapproved') === 'true'
     
     // Start session check and category/purpose lookups in parallel (non-blocking for query setup)
@@ -160,6 +168,8 @@ export async function GET(request: NextRequest) {
     const isAdminOrSupportRole = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPPORT'
     // If includeUnapproved is true and user is admin/support, show all products regardless of approval status
     const shouldIncludeUnapproved = includeUnapproved && isAdminOrSupportRole
+    // Admin/support approval lists must bypass cache so status changes are visible immediately
+    const needsFreshData = isAdminOrSupportRole || shouldIncludeUnapproved
     const startTime = Date.now()
     
     // Build select object conditionally for admin/support vs regular users
@@ -240,57 +250,86 @@ export async function GET(request: NextRequest) {
       })
     }
     
-    const products = await prisma.product.findMany({
-      // @ts-ignore - cacheStrategy is available with Prisma Accelerate
-      cacheStrategy: {
-        swr: 300, // Stale-while-revalidating for 300 seconds (5 minutes)
-        ttl: 300, // Cache results for 300 seconds (5 minutes - very aggressive for list view)
+    const productWhere: Prisma.ProductWhereInput = {
+      status: {
+        notIn: isAdminOrSupportRole
+          ? ['RESERVED']
+          : ['MAINTENANCE', 'DAMAGED', 'RESERVED'],
       },
-      take: 21, // Take one extra to check if there's more
-      ...(cursorId ? {
-        cursor: { id: cursorId },
-        skip: 1
-      } : {}),
-      where: {
-        // RESERVED products are hidden from everyone, including admins/support (sold products)
-        status: {
-          notIn: isAdminOrSupportRole 
-            ? ['RESERVED'] // Admins/Support don't see RESERVED (sold) products
-            : ['MAINTENANCE', 'DAMAGED', 'RESERVED'] // Non-admin users don't see maintenance, damaged, or reserved (sold) products
-        },
-        ...(shouldIncludeUnapproved || isAdminOrSupportRole ? {} : { 
-          approvalStatus: 'APPROVED',
-          // Optimized: Use userId join instead of nested user relation for better performance
-          userId: {
-            not: null // Ensure user exists
+      ...(shouldIncludeUnapproved || isAdminOrSupportRole
+        ? {}
+        : {
+            approvalStatus: 'APPROVED',
+            userId: {
+              not: null,
+            },
+          }),
+      ...(search
+        ? {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' as const } },
+              { brand: { contains: search, mode: 'insensitive' as const } },
+            ],
           }
-        }),
-        ...(search ? {
-          OR: [
-            // Only search in indexed fields for maximum performance
-            { name: { contains: search, mode: 'insensitive' as const } },
-            { brand: { contains: search, mode: 'insensitive' as const } },
-            // Removed: sku search - sku field removed from select
-            // Removed: category/purpose search - relations removed, would require JOIN
-            // For better search, consider full-text search or separate search endpoint
-          ]
-        } : {}),
-        // Use pre-fetched IDs (faster than JOINs - direct index lookup)
-        ...(categoryId ? { categoryId } : {}),
-        ...(purposeId ? { purposeId } : {}),
-        ...(gender && gender !== 'ALL' ? { 
-          gender: gender === 'women' ? 'WOMEN' as const :
-                  gender === 'men' ? 'MEN' as const :
-                  gender === 'children' ? 'CHILDREN' as const : undefined
-        } : {}),
-        ...(isNew === 'true' ? { isNew: true } : {})
-      },
-      select: baseSelect,
-      orderBy: [
-        { createdAt: 'desc' }
-        // Removed: { id: 'desc' } - single orderBy is faster, createdAt is already unique enough
-      ]
-    })
+        : {}),
+      ...(categoryId ? { categoryId } : {}),
+      ...(purposeId ? { purposeId } : {}),
+      ...(gender && gender !== 'ALL'
+        ? {
+            gender:
+              gender === 'women'
+                ? ('WOMEN' as const)
+                : gender === 'men'
+                  ? ('MEN' as const)
+                  : gender === 'children'
+                    ? ('CHILDREN' as const)
+                    : undefined,
+          }
+        : {}),
+      ...(isNew === 'true' ? { isNew: true } : {}),
+    }
+
+    const listTake = useOffsetPagination ? pageLimit + 1 : 21
+
+    const [products, totalCount] = await Promise.all([
+      prisma.product.findMany({
+        ...(needsFreshData
+          ? {}
+          : {
+              // @ts-ignore - cacheStrategy is available with Prisma Accelerate
+              cacheStrategy: {
+                swr: 300,
+                ttl: 300,
+              },
+            }),
+        take: listTake,
+        ...(useOffsetPagination
+          ? { skip: (page - 1) * pageLimit }
+          : cursorId
+            ? {
+                cursor: { id: cursorId },
+                skip: 1,
+              }
+            : {}),
+        where: productWhere,
+        select: baseSelect,
+        orderBy: [{ createdAt: 'desc' }],
+      }),
+      useOffsetPagination
+        ? prisma.product.count({
+            where: productWhere,
+            ...(needsFreshData
+              ? {}
+              : {
+                  // @ts-ignore - cacheStrategy is available with Prisma Accelerate
+                  cacheStrategy: {
+                    swr: 300,
+                    ttl: 300,
+                  },
+                }),
+          })
+        : Promise.resolve(null),
+    ])
     const dbTime = Date.now() - startTime
     if (process.env.NODE_ENV === 'development') {
       console.log(`[Products API] Database query took: ${dbTime}ms`)
@@ -347,14 +386,21 @@ export async function GET(request: NextRequest) {
     }
     */
     
-    // Check if there's more data
-    const hasMore = filteredProducts.length > 20
-    const productsToReturn = hasMore ? filteredProducts.slice(0, 20) : filteredProducts
-    
-    // Determine next cursor (last product's id if we got a full page)
-    const nextCursor = hasMore && productsToReturn.length > 0
-      ? productsToReturn[productsToReturn.length - 1].id.toString()
-      : null
+    const pageSize = useOffsetPagination ? pageLimit : 20
+    const hasMore = filteredProducts.length > pageSize
+    const productsToReturn = hasMore
+      ? filteredProducts.slice(0, pageSize)
+      : filteredProducts
+
+    const nextCursor =
+      !useOffsetPagination && hasMore && productsToReturn.length > 0
+        ? productsToReturn[productsToReturn.length - 1].id.toString()
+        : null
+
+    const totalPages =
+      useOffsetPagination && totalCount !== null
+        ? Math.max(1, Math.ceil(totalCount / pageLimit))
+        : undefined
 
     const totalTime = Date.now() - startTime
     if (process.env.NODE_ENV === 'development') {
@@ -364,17 +410,27 @@ export async function GET(request: NextRequest) {
     // No need to call processExpiredDiscount - we already cleared expired discounts in memory above
     const response = NextResponse.json({
       success: true,
-      products: productsToReturn, // Already processed discounts above
+      products: productsToReturn,
       nextCursor,
-      hasMore
+      hasMore: useOffsetPagination
+        ? page < (totalPages ?? 1)
+        : hasMore,
+      ...(useOffsetPagination
+        ? {
+            page,
+            limit: pageLimit,
+            totalCount: totalCount ?? 0,
+            totalPages: totalPages ?? 1,
+          }
+        : {}),
     })
     
-    // Add aggressive cache headers for better performance
-    // Cache for 5 minutes if no search/filter is applied (static content)
-    if (!search && !category && !purpose && !gender && !isNew) {
+    // Admin/support approval views must not be cached (stale PENDING after approve)
+    if (needsFreshData) {
+      response.headers.set('Cache-Control', 'private, no-store, must-revalidate')
+    } else if (!search && !category && !purpose && !gender && !isNew) {
       response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600')
     } else {
-      // Even with filters, cache for shorter time
       response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120')
     }
     
