@@ -27,6 +27,7 @@ import { showToast } from "@/utils/toast"
 import ChatTypingIndicator from "@/components/ChatTypingIndicator"
 import { useChatTyping } from "@/hooks/useChatTyping"
 import StructuredData from "@/components/StructuredData"
+import { PRODUCT_IMAGE_QUALITY } from "@/lib/image-config"
 
 type Tier = { minDays: number; pricePerDay: number }
 
@@ -1008,11 +1009,12 @@ const ProductPage = () => {
                                     src={getMainImage()}
                                     alt={product.name}
                                     fill
-                                    sizes="(max-width: 640px) 20vw,
+                                    quality={PRODUCT_IMAGE_QUALITY}
+                                    sizes="(max-width: 640px) 100vw,
                (max-width: 1024px) 50vw,
-               40vw"
+               600px"
                                     className="object-cover"
-                                    priority={false}
+                                    priority
                                 />
 
                                
@@ -1035,7 +1037,7 @@ const ProductPage = () => {
                                             height={164}
                                             src={img.url}
                                             alt={`${product.name}-${i}`}
-
+                                            quality={PRODUCT_IMAGE_QUALITY}
                                             sizes="80px"
                                             className="object-cover"
                                         />

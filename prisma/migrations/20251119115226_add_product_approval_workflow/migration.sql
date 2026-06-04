@@ -5,7 +5,7 @@ CREATE TYPE "public"."OrderStatus" AS ENUM ('PENDING', 'PAID', 'SHIPPED', 'CANCE
 CREATE TYPE "public"."Gender" AS ENUM ('MEN', 'WOMEN', 'CHILDREN', 'UNISEX');
 
 -- CreateEnum
-CREATE TYPE "public"."UserRole" AS ENUM ('USER', 'ADMIN');
+CREATE TYPE "public"."UserRole" AS ENUM ('USER', 'ADMIN', 'SUPPORT');
 
 -- CreateEnum
 CREATE TYPE "public"."TransactionType" AS ENUM ('SALE', 'RENT');

@@ -492,14 +492,20 @@ const HeaderContent = () => {
                             <Link href="/shop?gender=children&category=ბავშვთა სათხილამურო ტანსაცმელი" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
                               3. სათხილამურო ტანსაცმელი
                             </Link>
+                            <Link href="/shop?gender=children&category=ბავშვების კალიასკა" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
+                              4. კალიასკა
+                            </Link>
+                            <Link href="/shop?gender=children&category=ბავშვების სათამაშოები" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
+                              5. სათამაშოები
+                            </Link>
                             <Link href="/shop?gender=children&category=თერმო ტანსაცმელი" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
-                              4. მეორე ფენა
+                              6. მეორე ფენა
                             </Link>
                             <Link href="/shop?gender=children&category=სათვალე" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
-                              5. სათხილამურო სათვალე
+                              7. სათხილამურო სათვალე
                             </Link>
                             <Link href="/shop?gender=children&category=ჩაფხუტი" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
-                              6. ჩაფხუტი
+                              8. ჩაფხუტი
                             </Link>
                           </>
                         )}
@@ -654,17 +660,23 @@ const HeaderContent = () => {
                               <Link href="/shop?gender=children&category=ბავშვთა სათხილამურო ტანსაცმელი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
                                 3. სათხილამურო ტანსაცმელი
                               </Link>
+                              <Link href="/shop?gender=children&category=ბავშვების კალიასკა" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
+                                4. კალიასკა
+                              </Link>
+                              <Link href="/shop?gender=children&category=ბავშვების სათამაშოები" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
+                                5. სათამაშოები
+                              </Link>
                               <Link href="/shop?gender=children&category=თერმო ტანსაცმელი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                4. თერმო ტანსაცმელი
+                                6. თერმო ტანსაცმელი
                               </Link>
                               <Link href="/shop?gender=children&category=მეორე ფენა" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                5. მეორე ფენა
+                                7. მეორე ფენა
                               </Link>
                               <Link href="/shop?gender=children&category=სათვალე" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                6. სათხილამურო სათვალე
+                                8. სათხილამურო სათვალე
                               </Link>
                               <Link href="/shop?gender=children&category=ჩაფხუტი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                7. ჩაფხუტი
+                                9. ჩაფხუტი
                               </Link>
                             </>
                           )}

@@ -26,6 +26,8 @@ export const DEFAULT_PRODUCT_CATEGORIES: ProductCategory[] = [
   { id: 18, name: 'ბავშვთა კაბები', slug: 'bavshvta-kabebi' },
   { id: 19, name: 'ბავშვთა ტრადიციული ტანსაცმელი', slug: 'bavshvta-traditsiuli-tansatsmeli' },
   { id: 20, name: 'ბავშვთა სათხილამურო ტანსაცმელი', slug: 'bavshvta-sathilamuro-tansatsmeli' },
+  { id: 24, name: 'ბავშვების კალიასკა', slug: 'bavshvebis-kaliaska' },
+  { id: 25, name: 'ბავშვების სათამაშოები', slug: 'bavshvebis-satamashoebi' },
   { id: 21, name: 'თერმო ტანსაცმელი', slug: 'termo-tansatsmeli' },
   { id: 22, name: 'მეორე ფენა', slug: 'meore-pena' },
   { id: 23, name: 'აქსესუარები', slug: 'aksesuarebi' },
@@ -33,13 +35,19 @@ export const DEFAULT_PRODUCT_CATEGORIES: ProductCategory[] = [
 
 const WOMEN_CATEGORY_IDS = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 13, 14, 15])
 const MEN_CATEGORY_IDS = new Set([16, 17])
-const CHILDREN_CATEGORY_IDS = new Set([18, 19, 20])
+const CHILDREN_CATEGORY_IDS = new Set([18, 19, 20, 24, 25])
 const ACCESSORY_CATEGORY_IDS = new Set([10, 11, 12, 23])
 const ACCESSORY_CATEGORY_SLUGS = new Set([
   'aksesuarebi',
   'satvale',
   'sathilamuro-satvale',
   'chapkhuti',
+])
+const SIZE_OPTIONAL_CATEGORY_IDS = new Set([...ACCESSORY_CATEGORY_IDS, 24, 25])
+const SIZE_OPTIONAL_CATEGORY_SLUGS = new Set([
+  ...ACCESSORY_CATEGORY_SLUGS,
+  'bavshvebis-kaliaska',
+  'bavshvebis-satamashoebi',
 ])
 
 export function isAccessoryCategory(category: ProductCategory | undefined | null): boolean {
@@ -55,6 +63,23 @@ export function isAccessoryCategoryId(
 ): boolean {
   if (!categoryId) return false
   return isAccessoryCategory(categories.find((c) => c.id === categoryId))
+}
+
+export function isSizeOptionalCategory(category: ProductCategory | undefined | null): boolean {
+  if (!category) return false
+  if (isAccessoryCategory(category)) return true
+  if (SIZE_OPTIONAL_CATEGORY_IDS.has(category.id)) return true
+  if (SIZE_OPTIONAL_CATEGORY_SLUGS.has(category.slug)) return true
+  const name = category.name.toLowerCase()
+  return name.includes('კალიასკ') || name.includes('სათამაშო')
+}
+
+export function isSizeOptionalCategoryId(
+  categoryId: number | undefined,
+  categories: ProductCategory[],
+): boolean {
+  if (!categoryId) return false
+  return isSizeOptionalCategory(categories.find((c) => c.id === categoryId))
 }
 
 function getCategoryGroup(category: ProductCategory): number {

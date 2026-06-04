@@ -17,7 +17,7 @@ import {
 } from '@/lib/product-text'
 import {
   DEFAULT_PRODUCT_CATEGORIES,
-  isAccessoryCategoryId,
+  isSizeOptionalCategoryId,
   PRODUCT_GENDER_OPTIONS,
   sortProductCategories,
 } from '@/lib/product-categories'
@@ -124,6 +124,7 @@ const EditProductPage = () => {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [customColor, setCustomColor] = useState('')
+  const [useCustomColor, setUseCustomColor] = useState(false)
 
   const sizeOptions = {
     XS: { UK: [4, 6], EU: [32, 34], US: [0, 2] },
@@ -230,8 +231,8 @@ const EditProductPage = () => {
 
   const colors = PRODUCT_FORM_COLORS
 
-  const isAccessory = useMemo(
-    () => isAccessoryCategoryId(formData.categoryId, categories),
+  const isSizeOptional = useMemo(
+    () => isSizeOptionalCategoryId(formData.categoryId, categories),
     [formData.categoryId, categories],
   )
 
@@ -270,8 +271,10 @@ const EditProductPage = () => {
           const isPredefinedColor = colors.some(c => c.label === productColor)
           if (productColor && !isPredefinedColor) {
             setCustomColor(productColor)
+            setUseCustomColor(true)
           } else {
             setCustomColor('')
+            setUseCustomColor(false)
           }
           setFormData({
             name: product.name,
@@ -404,7 +407,7 @@ const EditProductPage = () => {
 
   const handleCategoryChange = (categoryId: number | undefined) => {
     handleInputChange('categoryId', categoryId)
-    if (isAccessoryCategoryId(categoryId, categories)) {
+    if (isSizeOptionalCategoryId(categoryId, categories)) {
       clearSizeFields()
     }
   }
@@ -505,8 +508,14 @@ const EditProductPage = () => {
           : undefined,
         pricePerDay: formData.pricePerDay || undefined,
         maxRentalDays: formData.maxRentalDays || undefined,
-        rentalPriceTiers: hasRentalPrice ? (formData.rentalPriceTiers || []) : [],
-        ...(isAccessory
+        rentalPriceTiers: hasRentalPrice
+          ? (formData.rentalPriceTiers || []).map((tier) => ({
+              ...tier,
+              minDays: tier.minDays < 1 ? 1 : tier.minDays,
+            }))
+          : [],
+        color: useCustomColor ? customColor.trim() : formData.color,
+        ...(isSizeOptional
           ? {
               size: undefined,
               sizeSystem: undefined,
@@ -689,18 +698,14 @@ const EditProductPage = () => {
                   ფერი
                 </label>
                 <select
-                  value={
-                    formData.color && colors.some(c => c.label === formData.color)
-                      ? formData.color
-                      : formData.color && !colors.some(c => c.label === formData.color)
-                        ? 'სხვა ფერი'
-                        : formData.color || ''
-                  }
+                  value={useCustomColor ? 'სხვა ფერი' : (formData.color || '')}
                   onChange={(e) => {
                     const selectedValue = e.target.value
                     if (selectedValue === 'სხვა ფერი') {
-                      handleInputChange('color', customColor || 'სხვა ფერი')
+                      setUseCustomColor(true)
+                      handleInputChange('color', customColor)
                     } else {
+                      setUseCustomColor(false)
                       handleInputChange('color', selectedValue)
                       setCustomColor('')
                     }
@@ -714,14 +719,14 @@ const EditProductPage = () => {
                     </option>
                   ))}
                 </select>
-                {(formData.color === 'სხვა ფერი' || (formData.color && !colors.some(c => c.label === formData.color))) && (
+                {useCustomColor && (
                   <input
                     type="text"
-                    value={customColor || (formData.color && !colors.some(c => c.label === formData.color) ? formData.color : '')}
+                    value={customColor}
                     onChange={(e) => {
                       const value = e.target.value
                       setCustomColor(value)
-                      handleInputChange('color', value || 'სხვა ფერი')
+                      handleInputChange('color', value)
                     }}
                     placeholder="შეიყვანეთ ფერი"
                     className="w-full mt-2 px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
@@ -729,7 +734,7 @@ const EditProductPage = () => {
                 )}
               </div>
 
-              {!isAccessory && (
+              {!isSizeOptional && (
                 <div>
                   <label className="block text-[20px] text-black font-medium mb-2">
                     ზომა (არასავალდებულო)
@@ -884,8 +889,18 @@ const EditProductPage = () => {
                       <input
                         type="number"
                         min="1"
-                        value={tier.minDays}
-                        onChange={(e) => updateRentalPriceTier(index, 'minDays', parseInt(e.target.value) || 1)}
+                        value={tier.minDays < 1 ? '' : tier.minDays}
+                        onChange={(e) => {
+                          const raw = e.target.value
+                          if (raw === '') {
+                            updateRentalPriceTier(index, 'minDays', 0)
+                            return
+                          }
+                          const parsed = parseInt(raw, 10)
+                          if (!isNaN(parsed)) {
+                            updateRentalPriceTier(index, 'minDays', parsed)
+                          }
+                        }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
                     </div>

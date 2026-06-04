@@ -9,6 +9,7 @@ import DatePicker from "react-datepicker"
 import StarRating from "@/components/StarRating"
 import { PURPOSE_OPTIONS } from '@/data/purposes'
 import { PRODUCT_COLORS, PRODUCT_COLOR_FILTER_MAPPING } from '@/lib/product-colors'
+import { PRODUCT_IMAGE_QUALITY } from '@/lib/image-config'
 
 
 const ShopPageClient = () => {
@@ -268,6 +269,8 @@ const ShopPageClient = () => {
         { id: "ბავშვთა კაბები", label: "ბავშვთა კაბები", slug: "kids-dresses" },
         { id: "ბავშვთა ტრადიციული ტანსაცმელი", label: "ბავშვთა ტრადიციული ტანსაცმელი", slug: "kids-traditional" },
         { id: "ბავშვთა სათხილამურო ტანსაცმელი", label: "ბავშვთა სათხილამურო ტანსაცმელი", slug: "kids-ski" },
+        { id: "ბავშვების კალიასკა", label: "ბავშვების კალიასკა", slug: "bavshvebis-kaliaska" },
+        { id: "ბავშვების სათამაშოები", label: "ბავშვების სათამაშოები", slug: "bavshvebis-satamashoebi" },
     ]
 
     const sizeSystems = [
@@ -1599,11 +1602,11 @@ const ShopPageClient = () => {
                                                     src={product.images?.[0]?.url || "/placeholder.jpg"}
                                                     alt={product.name}
                                                     fill
-
+                                                    quality={PRODUCT_IMAGE_QUALITY}
+                                                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 300px"
                                                     className="object-cover transition-transform duration-300 "
                                                     loading={index < 4 ? "eager" : "lazy"}
                                                     priority={index < 4}
-
                                                 />
                                                 </Link>
 

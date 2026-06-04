@@ -18,7 +18,7 @@ import {
 } from '@/lib/product-text'
 import {
   DEFAULT_PRODUCT_CATEGORIES,
-  isAccessoryCategoryId,
+  isSizeOptionalCategoryId,
   PRODUCT_GENDER_OPTIONS,
 } from '@/lib/product-categories'
 const sizeOptions = {
@@ -31,7 +31,6 @@ const sizeOptions = {
   XXXL: { UK: [20], EU: [48], US: [16],  },
 
 }
-const FALLBACK_SIZE = 'STANDARD'
 const purposes = PURPOSE_OPTIONS
 const categories = DEFAULT_PRODUCT_CATEGORIES
 type Category = {
@@ -132,6 +131,7 @@ const NewProductPage = () => {
   const [sizeSystem, setSizeSystem] = useState(formData.sizeSystem ?? '')
   const [selectedSize, setSelectedSize] = useState('')
   const [customColor, setCustomColor] = useState('')
+  const [useCustomColor, setUseCustomColor] = useState(false)
 
   type SizeSystem = NonNullable<ProductFormData['sizeSystem']>
   type MeasurementSystem = Exclude<SizeSystem, 'CN'>
@@ -215,8 +215,8 @@ const NewProductPage = () => {
 
   const colors = PRODUCT_FORM_COLORS
 
-  const isAccessory = useMemo(
-    () => isAccessoryCategoryId(formData.categoryId, categories),
+  const isSizeOptional = useMemo(
+    () => isSizeOptionalCategoryId(formData.categoryId, categories),
     [formData.categoryId, categories],
   )
 
@@ -229,7 +229,7 @@ const NewProductPage = () => {
 
   const handleCategoryChange = (categoryId: number | undefined) => {
     handleInputChange('categoryId', categoryId)
-    if (isAccessoryCategoryId(categoryId, categories)) {
+    if (isSizeOptionalCategoryId(categoryId, categories)) {
       clearSizeFields()
     }
   }
@@ -316,11 +316,11 @@ const NewProductPage = () => {
       (sizeSystem && selectedSize && `${sizeSystem}:${selectedSize}`) ||
       combinedSizeOptions[0]?.value
 
-    const defaultSize = isAccessory
+    const defaultSize = isSizeOptional
       ? undefined
       : (defaultSizeOption ? defaultSizeOption.split(':')[1] : undefined) ||
         selectedSize ||
-        FALLBACK_SIZE
+        undefined
 
     setFormData(prev => ({
       ...prev,
@@ -330,7 +330,7 @@ const NewProductPage = () => {
           size: defaultSize,
           price: 0,
           discount: undefined,
-          sizeSystem: isAccessory ? undefined : prev.sizeSystem,
+          sizeSystem: isSizeOptional ? undefined : prev.sizeSystem,
         },
       ],
     }))
@@ -400,8 +400,14 @@ const NewProductPage = () => {
       // Prepare data for validation
       const dataToValidate: any = {
         ...formData,
-        rentalPriceTiers: hasRentalPrice ? formData.rentalPriceTiers : undefined,
-        ...(isAccessory
+        rentalPriceTiers: hasRentalPrice
+          ? (formData.rentalPriceTiers || []).map((tier) => ({
+              ...tier,
+              minDays: tier.minDays < 1 ? 1 : tier.minDays,
+            }))
+          : undefined,
+        color: useCustomColor ? customColor.trim() : formData.color,
+        ...(isSizeOptional
           ? {
               size: undefined,
               sizeSystem: undefined,
@@ -634,12 +640,14 @@ const NewProductPage = () => {
               <div>
                 <label className="block text-[20px] text-black font-medium mb-2">ფერი</label>
                 <select
-                  value={formData.color || ''}
+                  value={useCustomColor ? 'სხვა ფერი' : (formData.color || '')}
                   onChange={(e) => {
                     const selectedValue = e.target.value
                     if (selectedValue === 'სხვა ფერი') {
-                      handleInputChange('color', customColor || 'სხვა ფერი')
+                      setUseCustomColor(true)
+                      handleInputChange('color', customColor)
                     } else {
+                      setUseCustomColor(false)
                       handleInputChange('color', selectedValue)
                       setCustomColor('')
                     }
@@ -653,14 +661,14 @@ const NewProductPage = () => {
                     </option>
                   ))}
                 </select>
-                {formData.color === 'სხვა ფერი' && (
+                {useCustomColor && (
                   <input
                     type="text"
                     value={customColor}
                     onChange={(e) => {
                       const value = e.target.value
                       setCustomColor(value)
-                      handleInputChange('color', value || 'სხვა ფერი')
+                      handleInputChange('color', value)
                     }}
                     placeholder="შეიყვანეთ ფერი"
                     className="w-full mt-2 pl-10 pr-4 py-3 placeholder:text-gray-500 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
@@ -668,7 +676,7 @@ const NewProductPage = () => {
                 )}
               </div>
 
-              {!isAccessory && (
+              {!isSizeOptional && (
                 <div>
                   <label className="block text-[20px] text-black font-medium mb-2">
                     ზომა (არასავალდებულო)
@@ -738,10 +746,17 @@ const NewProductPage = () => {
                       <input
                         type="number"
                         min="1"
-                        value={tier.minDays === 1 ? '' : tier.minDays}
+                        value={tier.minDays < 1 ? '' : tier.minDays}
                         onChange={(e) => {
-                          const val = e.target.value === '' ? undefined : (parseInt(e.target.value) || 1)
-                          updateRentalPriceTier(index, 'minDays', val === undefined ? 1 : val)
+                          const raw = e.target.value
+                          if (raw === '') {
+                            updateRentalPriceTier(index, 'minDays', 0)
+                            return
+                          }
+                          const parsed = parseInt(raw, 10)
+                          if (!isNaN(parsed)) {
+                            updateRentalPriceTier(index, 'minDays', parsed)
+                          }
                         }}
                         className="w-full pl-10 pr-4 py-3 placeholder:text-gray-500 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />

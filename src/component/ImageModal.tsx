@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
+import { PRODUCT_IMAGE_QUALITY, UPLOAD_PREVIEW_QUALITY } from '@/lib/image-config'
 interface ImageModalProps {
   src: string
   alt: string
@@ -18,10 +19,11 @@ export default function ImageModal({ src, alt, className = '' }: ImageModalProps
     <>
       {/* Clickable Image */}
       <Image
-        width={580}
-        height={580}
+        width={1200}
+        height={1200}
         src={src}
         alt={alt}
+        quality={UPLOAD_PREVIEW_QUALITY}
         className={`cursor-pointer transition-transform hover:scale-105 ${className}`}
         onClick={openModal}
       />
@@ -43,10 +45,11 @@ export default function ImageModal({ src, alt, className = '' }: ImageModalProps
 
             {/* Image */}
             <Image
-              width={580}
-              height={580}
+              width={1600}
+              height={1600}
               src={src}
               alt={alt}
+              quality={PRODUCT_IMAGE_QUALITY}
               className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             />
