@@ -226,6 +226,13 @@ const AdminDashboard = () => {
       color: 'bg-indigo-600',
     },
     {
+      title: 'ქირავების მოთხოვნები',
+      description: 'მოთხოვნები დაჯავშნამდე',
+      href: '/admin/inquiries',
+      icon: MessageCircle,
+      color: 'bg-emerald-700',
+    },
+    {
       title: 'მიტანის ქალაქები',
       description: 'დაამატე და მართე მიტანის ქალაქები',
       href: '/admin/delivery-cities',

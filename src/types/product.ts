@@ -67,6 +67,7 @@ export interface Product {
   userId?: string
   user?: User
   isRentable?: boolean
+  requiresInquiryBeforeRent?: boolean
   pricePerDay?: number
   maxRentalDays?: number
   status?: 'AVAILABLE' | 'RENTED' | 'RESERVED' | 'MAINTENANCE' | 'DAMAGED'

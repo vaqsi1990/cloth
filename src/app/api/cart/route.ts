@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { processExpiredDiscount } from '@/utils/discountUtils'
+import { assertRentalInquiryApproved, markInquiryBooked } from '@/lib/rental-inquiry-guard'
 
 // Cart item validation schema
 const cartItemSchema = z.object({
@@ -213,6 +214,28 @@ export async function POST(request: NextRequest) {
       }, { status: 401 })
     }
 
+    let approvedInquiryId = 0
+    if (
+      validatedData.isRental &&
+      validatedData.rentalStartDate &&
+      validatedData.rentalEndDate
+    ) {
+      const inquiryCheck = await assertRentalInquiryApproved({
+        productId: validatedData.productId,
+        buyerId: session.user.id,
+        startDate: validatedData.rentalStartDate,
+        endDate: validatedData.rentalEndDate,
+        size: validatedData.size,
+      })
+      if (!inquiryCheck.ok) {
+        return NextResponse.json({
+          success: false,
+          message: inquiryCheck.message,
+        }, { status: 403 })
+      }
+      approvedInquiryId = inquiryCheck.inquiryId
+    }
+
     // Find or create cart for user
     let cart = await prisma.cart.findUnique({
       where: { userId: session.user.id }
@@ -281,6 +304,10 @@ export async function POST(request: NextRequest) {
           rentalDays: validatedData.rentalDays
         }
       })
+
+      if (approvedInquiryId) {
+        await markInquiryBooked(approvedInquiryId)
+      }
     }
 
     return NextResponse.json({

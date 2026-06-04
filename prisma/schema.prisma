@@ -129,6 +129,8 @@ model User {
   products      Product[]
   orders        Order[]
   rentals       Rental[]
+  rentalInquiriesAsBuyer  RentalInquiry[] @relation("RentalInquiryBuyer")
+  rentalInquiriesAsSeller RentalInquiry[] @relation("RentalInquirySeller")
   transactions  Transaction[]
   
   // Chat relations
@@ -235,6 +237,7 @@ model Product {
   discountStartDate DateTime?    // When discount was set
   rating        Float?           @default(0)
   isRentable    Boolean          @default(false)
+  requiresInquiryBeforeRent Boolean @default(true)
   pricePerDay   Float?
   maxRentalDays Int?
   status        ProductStatus    @default(AVAILABLE)
@@ -258,6 +261,8 @@ model Product {
   rentals       Rental[]
   cartItems     CartItem[]
   rentalPriceTiers RentalPriceTier[]
+  rentalInquiries RentalInquiry[]
+  chatRooms     ChatRoom[]
   reviews       Review[]
 
   // Indexes for better query performance
@@ -483,6 +488,15 @@ enum ChatStatus {
   PENDING
 }
 
+enum RentalInquiryStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+  BOOKED
+  CANCELLED
+}
+
 model ChatRoom {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
@@ -501,14 +515,49 @@ model ChatRoom {
   adminId   String?
   admin     User?    @relation("AdminChats", fields: [adminId], references: [id])
 
+  productId Int?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
   userTypingAt  DateTime?
   adminTypingAt DateTime?
   
   messages  ChatMessage[]
+  rentalInquiries RentalInquiry[]
   
   @@index([status])
   @@index([userId])
   @@index([adminId])
+  @@index([productId])
+}
+
+model RentalInquiry {
+  id              Int                  @id @default(autoincrement())
+  productId       Int
+  product         Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
+  buyerId         String
+  buyer           User                 @relation("RentalInquiryBuyer", fields: [buyerId], references: [id], onDelete: Cascade)
+  sellerId        String
+  seller          User                 @relation("RentalInquirySeller", fields: [sellerId], references: [id], onDelete: Cascade)
+  startDate       DateTime
+  endDate         DateTime
+  size            String?
+  estimatedTotal  Float
+  status          RentalInquiryStatus  @default(PENDING)
+  onSiteAvailable Boolean?
+  buyerMessage    String?
+  sellerNote      String?
+  chatRoomId      Int?
+  chatRoom        ChatRoom?            @relation(fields: [chatRoomId], references: [id], onDelete: SetNull)
+  expiresAt       DateTime
+  approvedAt      DateTime?
+  rejectedAt      DateTime?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  @@index([buyerId, status])
+  @@index([sellerId, status])
+  @@index([productId, status])
+  @@index([expiresAt])
 }
 
 model ChatMessage {

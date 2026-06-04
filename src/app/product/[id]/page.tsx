@@ -112,10 +112,48 @@ const ProductPage = () => {
     const [buyerInfo, setBuyerInfo] = useState<{ name?: string | null; email?: string | null; image?: string | null } | null>(null)
     const [chatRoomInfo, setChatRoomInfo] = useState<{ userId?: string | null; adminId?: string | null } | null>(null)
     const [otherPartyTyping, setOtherPartyTyping] = useState(false)
+
+    type InquirySnapshot = {
+        id: number
+        status: string
+        onSiteAvailable: boolean | null
+        chatRoomId: number | null
+    } | null
+    const [rentalInquiry, setRentalInquiry] = useState<InquirySnapshot>(null)
+    const [requiresInquiry, setRequiresInquiry] = useState(true)
+    const [canBookFromInquiry, setCanBookFromInquiry] = useState(false)
+    const [submittingInquiry, setSubmittingInquiry] = useState(false)
+
     const { notifyTyping, stopTyping } = useChatTyping({
         chatRoomId,
         enabled: isChatOpen && !!chatRoomId,
     })
+
+    useEffect(() => {
+        const loadInquiryStatus = async () => {
+            if (!session?.user?.id || !productId) return
+            const params = new URLSearchParams()
+            if (rentalStartDate) params.set('startDate', rentalStartDate)
+            if (rentalEndDate) params.set('endDate', rentalEndDate)
+            try {
+                const res = await fetch(
+                    `/api/products/${productId}/rental-inquiry?${params.toString()}`,
+                )
+                const data = await res.json()
+                if (data.success) {
+                    setRequiresInquiry(Boolean(data.requiresInquiry))
+                    setRentalInquiry(data.inquiry || null)
+                    setCanBookFromInquiry(Boolean(data.canBook))
+                    if (data.inquiry?.chatRoomId) {
+                        setChatRoomId(data.inquiry.chatRoomId)
+                    }
+                }
+            } catch (e) {
+                console.error('Inquiry status:', e)
+            }
+        }
+        loadInquiryStatus()
+    }, [session?.user?.id, productId, rentalStartDate, rentalEndDate])
 
     // Check if user has an active chat for this product
     useEffect(() => {
@@ -241,6 +279,10 @@ const ProductPage = () => {
 
                 if (pJson?.success) {
                     setProduct(pJson.product)
+                    const p = pJson.product
+                    setRequiresInquiry(
+                        Boolean(p?.isRentable && p?.requiresInquiryBeforeRent !== false),
+                    )
                     setError(null)
                 } else {
                     setError(pJson?.message || 'პროდუქტი ვერ მოიძებნა')
@@ -882,8 +924,83 @@ const ProductPage = () => {
         }
     }
 
+    const handleSubmitInquiry = async () => {
+        if (!product || !session?.user?.id) {
+            showToast('გთხოვთ შეხვიდეთ ანგარიშში', 'warning')
+            return
+        }
+
+        if (!rentalStartDate || !rentalEndDate) {
+            showToast('აირჩიეთ ქირავების თარიღები', 'warning')
+            return
+        }
+
+        const days = calcDays()
+        if (days > MAX_RENTAL_DAYS) {
+            showToast(`ქირაობა მაქსიმუმ ${MAX_RENTAL_DAYS} დღით შეიძლება`, 'warning')
+            return
+        }
+
+        const start = new Date(rentalStartDate)
+        const end = new Date(rentalEndDate)
+        const conflicts = getRentalPeriods(selectedSize).filter(period => {
+            const periodStart = new Date(period.startDate)
+            const periodEnd = new Date(period.endDate)
+            const periodLastBlockedDate = new Date(periodEnd.getTime() + 24 * 60 * 60 * 1000)
+            return start < periodLastBlockedDate && end >= periodStart
+        })
+
+        if (conflicts.length > 0) {
+            showToast('ამ თარიღებზე პროდუქტი დაკავებულია', 'warning')
+            return
+        }
+
+        setSubmittingInquiry(true)
+        try {
+            const res = await fetch('/api/rental-inquiries', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    productId: product.id,
+                    startDate: rentalStartDate,
+                    endDate: rentalEndDate,
+                    size: selectedSize || product.size || undefined,
+                }),
+            })
+            const data = await res.json()
+            if (data.success) {
+                showToast(data.message || 'მოთხოვნა გაგზავნილია', 'success')
+                setRentalInquiry({
+                    id: data.inquiry.id,
+                    status: 'PENDING',
+                    onSiteAvailable: null,
+                    chatRoomId: data.chatRoomId,
+                })
+                setCanBookFromInquiry(false)
+                if (data.chatRoomId) {
+                    setChatRoomId(data.chatRoomId)
+                    setIsChatOpen(true)
+                    fetchChatMessages(data.chatRoomId)
+                }
+            } else {
+                showToast(data.message || 'შეცდომა', 'error')
+            }
+        } catch {
+            showToast('შეცდომა მოთხოვნის გაგზავნისას', 'error')
+        } finally {
+            setSubmittingInquiry(false)
+        }
+    }
+
     const handleRental = async () => {
-        if (!product || !selectedSize) return
+        if (!product) return
+
+        const sizeForCart = selectedSize || product.size || 'default'
+
+        if (requiresInquiry && !canBookFromInquiry) {
+            showToast('ჯერ გაგზავნეთ მოთხოვნა და დაელოდეთ ავტორის დადასტურებას', 'warning')
+            return
+        }
 
         // Only block if product is in maintenance, damaged, or completely unavailable
         if (product.status === 'MAINTENANCE') {
@@ -933,7 +1050,7 @@ const ProductPage = () => {
             productId: product.id,
             productName: product.name,
             image: getMainImage(),
-            size: selectedSize,
+            size: sizeForCart,
             quantity: 1,
             isRental: true,
             rentalStartDate,
@@ -942,7 +1059,12 @@ const ProductPage = () => {
             price: total,
         })
 
-        if (!ok) showToast("შეცდომა ქირაობის დამატებისას", "error")
+        if (ok) {
+            showToast("დაემატა კალათაში", "success")
+            setRentalInquiry((prev) => (prev ? { ...prev, status: 'BOOKED' } : prev))
+        } else {
+            showToast("შეცდომა ქირაობის დამატებისას", "error")
+        }
         setIsAdding(false)
     }
 
@@ -1452,8 +1574,26 @@ const ProductPage = () => {
                                         ) : null
                                     })()}
 
-                                    {/* {product.status !== 'MAINTENANCE' && product.status !== 'DAMAGED' && (
-                                        <>
+                                    {purchaseMode === "rent" && canRent && rentalInquiry && (
+                                        <div className={`p-3 rounded-lg text-sm text-center font-medium ${
+                                            rentalInquiry.status === 'PENDING'
+                                                ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                                                : rentalInquiry.status === 'APPROVED'
+                                                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                                                    : rentalInquiry.status === 'REJECTED'
+                                                        ? 'bg-red-50 text-red-700 border border-red-200'
+                                                        : 'bg-gray-50 text-gray-700 border border-gray-200'
+                                        }`}>
+                                            {rentalInquiry.status === 'PENDING' && 'ავტორი ამოწმებს, ადგილზე ხელმისაწვდომია თუ არა'}
+                                            {rentalInquiry.status === 'APPROVED' && 'დადასტურებულია — შეგიძლიათ დაჯავშნოთ'}
+                                            {rentalInquiry.status === 'REJECTED' && 'ამ თარიღებზე პროდუქტი ადგილზე არ არის'}
+                                            {rentalInquiry.status === 'EXPIRED' && 'მოთხოვნის ვადა ამოიწურა — გაგზავნეთ ახალი'}
+                                            {rentalInquiry.status === 'BOOKED' && 'უკვე დაჯავშნილია'}
+                                        </div>
+                                    )}
+
+                                    {product.status !== 'MAINTENANCE' && product.status !== 'DAMAGED' && (
+                                        <div className="space-y-2">
                                             {purchaseMode === "buy" && showBuyOption ? (
                                                 <button
                                                     onClick={handleAddToCart}
@@ -1461,17 +1601,45 @@ const ProductPage = () => {
                                                 >
                                                     {isAdding ? "მუშავდება..." : "კალათაში დამატება"}
                                                 </button>
-                                            ) : purchaseMode === "rent" && selectedSize && canRent ? (
-                                                <button
-                                                    onClick={handleRental}
-                                                    disabled={Boolean(!rentalStartDate || !rentalEndDate || (rentalStartDate && rentalEndDate && calcDays() > MAX_RENTAL_DAYS))}
-                                                    className="w-full py-4 rounded-xl md:text-[18px] text-[16px] text-white font-bold transition bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                >
-                                                    {isAdding ? "მუშავდება..." : "ქირაობა"}
-                                                </button>
+                                            ) : purchaseMode === "rent" && canRent ? (
+                                                <>
+                                                    {requiresInquiry && !canBookFromInquiry ? (
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleSubmitInquiry}
+                                                            disabled={Boolean(
+                                                                submittingInquiry ||
+                                                                !rentalStartDate ||
+                                                                !rentalEndDate ||
+                                                                (rentalStartDate && rentalEndDate && calcDays() > MAX_RENTAL_DAYS) ||
+                                                                rentalInquiry?.status === 'PENDING'
+                                                            )}
+                                                            className="w-full py-4 rounded-xl md:text-[18px] text-[16px] text-white font-bold transition bg-[#1B3729] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        >
+                                                            {submittingInquiry
+                                                                ? 'იგზავნება...'
+                                                                : rentalInquiry?.status === 'PENDING'
+                                                                    ? 'მოთხოვნა გაგზავნილია'
+                                                                    : 'მოთხოვნის გაგზავნა ავტორთან'}
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            onClick={handleRental}
+                                                            disabled={Boolean(
+                                                                isAdding ||
+                                                                !rentalStartDate ||
+                                                                !rentalEndDate ||
+                                                                (rentalStartDate && rentalEndDate && calcDays() > MAX_RENTAL_DAYS)
+                                                            )}
+                                                            className="w-full py-4 rounded-xl md:text-[18px] text-[16px] text-white font-bold transition bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        >
+                                                            {isAdding ? "მუშავდება..." : "დაჯავშნა / კალათაში"}
+                                                        </button>
+                                                    )}
+                                                </>
                                             ) : null}
-                                        </>
-                                    )} */}
+                                        </div>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="space-y-2">

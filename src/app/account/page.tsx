@@ -5,7 +5,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { User, Package, ShoppingCart, Settings, MapPin, Phone, Mail, Camera, MessageCircle, Search, Trash2, TrendingUp } from 'lucide-react'
+import { User, Package, ShoppingCart, Settings, MapPin, Phone, Mail, Camera, MessageCircle, Search, Trash2, TrendingUp, ClipboardList } from 'lucide-react'
 import ImageUpload from '@/component/CloudinaryUploader'
 import ContactForm from '@/component/ContactForm'
 import { showToast } from '@/utils/toast'
@@ -694,6 +694,7 @@ const AccountPageContent = () => {
     { id: 'orders', label: 'შეკვეთები', icon: ShoppingCart },
     { id: 'sales', label: 'გაყიდვები', icon: TrendingUp },
     { id: 'chats', label: 'ჩათები', icon: MessageCircle },
+    { id: 'inquiries', label: 'მოთხოვნები', icon: ClipboardList },
     { id: 'Contact', label: 'კონტაქტი', icon: MessageCircle },
     ...(session.user.role !== 'SUPPORT' ? [{ id: 'products', label: 'ჩემი პროდუქტები', icon: Package }] : []),
     { id: 'settings', label: 'პარამეტრები', icon: Settings },
@@ -1762,6 +1763,20 @@ const AccountPageContent = () => {
         )
       case 'chats':
         return renderChatsTab()
+      case 'inquiries':
+        return (
+          <div className="bg-white rounded-2xl p-6 shadow-sm border">
+            <p className="text-black mb-4">
+              ქირავების მოთხოვნების სრული სია და დადასტურება.
+            </p>
+            <Link
+              href="/account/inquiries"
+              className="inline-block px-6 py-3 bg-[#1B3729] text-white rounded-lg font-medium"
+            >
+              მოთხოვნების ნახვა
+            </Link>
+          </div>
+        )
       case 'products':
         return renderProductsTab()
       case 'settings':

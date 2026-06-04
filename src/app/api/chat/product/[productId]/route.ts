@@ -72,49 +72,60 @@ export async function POST(
 
     // Check if chat room already exists between buyer and seller for this product
     // We'll use adminId field to store sellerId (since it's a User relation)
-    const existingChatRoom = await prisma.$queryRaw<Array<{
-      id: number
-      userId: string
-      adminId: string
-    }>>`
-      SELECT id, "userId", "adminId"
-      FROM "ChatRoom"
-      WHERE "userId" = ${buyerId}
-      AND "adminId" = ${sellerId}
-      AND status IN ('PENDING', 'ACTIVE')
-      ORDER BY "createdAt" DESC
-      LIMIT 1
-    `
+    const body = await request.json().catch(() => ({}))
+    const customMessage =
+      typeof body?.message === 'string' && body.message.trim()
+        ? body.message.trim()
+        : `გამარჯობა! მაინტერესებს პროდუქტი: ${product.name}`
 
-    if (existingChatRoom.length > 0) {
-      // Return existing chat room
+    const existingChatRoom = await prisma.chatRoom.findFirst({
+      where: {
+        userId: buyerId,
+        adminId: sellerId,
+        productId: productIdNum,
+        status: { in: ['PENDING', 'ACTIVE'] },
+      },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true },
+    })
+
+    if (existingChatRoom) {
+      await prisma.chatMessage.create({
+        data: {
+          content: customMessage,
+          chatRoomId: existingChatRoom.id,
+          userId: buyerId,
+          isFromAdmin: false,
+        },
+      })
       return NextResponse.json({
         success: true,
-        chatRoomId: existingChatRoom[0].id,
-        message: 'Chat room already exists'
+        chatRoomId: existingChatRoom.id,
+        message: 'Chat room already exists',
       })
     }
 
-    // Create new chat room
-    // Using adminId to store sellerId (product author)
-    const newRoom = await prisma.$queryRaw<Array<{ id: number }>>`
-      INSERT INTO "ChatRoom" ("userId", "adminId", status, "createdAt", "updatedAt")
-      VALUES (${buyerId}, ${sellerId}, 'ACTIVE', NOW(), NOW())
-      RETURNING id
-    `
-
-    const roomId = newRoom[0].id
-
-    // Create initial message
-    await prisma.$executeRaw`
-      INSERT INTO "ChatMessage" ("content", "chatRoomId", "userId", "isFromAdmin", "createdAt")
-      VALUES (${`გამარჯობა! მაინტერესებს პროდუქტი: ${product.name}`}, ${roomId}, ${buyerId}, false, NOW())
-    `
+    const room = await prisma.chatRoom.create({
+      data: {
+        userId: buyerId,
+        adminId: sellerId,
+        productId: productIdNum,
+        status: 'ACTIVE',
+        messages: {
+          create: {
+            content: customMessage,
+            userId: buyerId,
+            isFromAdmin: false,
+          },
+        },
+      },
+      select: { id: true },
+    })
 
     return NextResponse.json({
       success: true,
-      chatRoomId: roomId,
-      message: 'Chat room created successfully'
+      chatRoomId: room.id,
+      message: 'Chat room created successfully',
     })
 
   } catch (error) {

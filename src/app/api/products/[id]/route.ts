@@ -121,6 +121,7 @@ const buildProductSelect = (includeAdminFields: boolean = false) => {
     userId: true, // Needed for isOwner check
     // Removed: categoryId, purposeId - not needed, we have relations
     isRentable: true,
+    requiresInquiryBeforeRent: true,
     pricePerDay: true,
     maxRentalDays: true,
     status: true,
