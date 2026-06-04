@@ -500,6 +500,9 @@ model ChatRoom {
   // Admin who is handling the chat
   adminId   String?
   admin     User?    @relation("AdminChats", fields: [adminId], references: [id])
+
+  userTypingAt  DateTime?
+  adminTypingAt DateTime?
   
   messages  ChatMessage[]
   

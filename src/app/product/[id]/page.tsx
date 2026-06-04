@@ -24,6 +24,8 @@ import { formatDate } from "@/utils/dateUtils"
 import SimilarProducts from "@/components/SimilarProducts"
 import StarRating from "@/components/StarRating"
 import { showToast } from "@/utils/toast"
+import ChatTypingIndicator from "@/components/ChatTypingIndicator"
+import { useChatTyping } from "@/hooks/useChatTyping"
 import StructuredData from "@/components/StructuredData"
 
 type Tier = { minDays: number; pricePerDay: number }
@@ -108,6 +110,11 @@ const ProductPage = () => {
     const [loadingChatMessages, setLoadingChatMessages] = useState(false)
     const [buyerInfo, setBuyerInfo] = useState<{ name?: string | null; email?: string | null; image?: string | null } | null>(null)
     const [chatRoomInfo, setChatRoomInfo] = useState<{ userId?: string | null; adminId?: string | null } | null>(null)
+    const [otherPartyTyping, setOtherPartyTyping] = useState(false)
+    const { notifyTyping, stopTyping } = useChatTyping({
+        chatRoomId,
+        enabled: isChatOpen && !!chatRoomId,
+    })
 
     // Check if user has an active chat for this product
     useEffect(() => {
@@ -749,6 +756,7 @@ const ProductPage = () => {
             const data = await response.json()
             if (data.success) {
                 setChatMessages(data.messages || [])
+                setOtherPartyTyping(Boolean(data.otherPartyTyping))
 
                 // Store chat room info from API response
                 if (data.chatRoom) {
@@ -795,6 +803,7 @@ const ProductPage = () => {
         setSendingChatMessage(true)
         const messageToSend = newChatMessage.trim()
         setNewChatMessage('')
+        stopTyping()
 
         try {
             const response = await fetch(`/api/chat/${chatRoomId}`, {
@@ -1946,6 +1955,7 @@ const ProductPage = () => {
                                     )
                                 })
                             )}
+                            <ChatTypingIndicator show={otherPartyTyping} align="start" />
                         </div>
 
                         {/* Message Input */}
@@ -1954,7 +1964,11 @@ const ProductPage = () => {
                                 <input
                                     type="text"
                                     value={newChatMessage}
-                                    onChange={(e) => setNewChatMessage(e.target.value)}
+                                    onChange={(e) => {
+                                        setNewChatMessage(e.target.value)
+                                        notifyTyping(e.target.value)
+                                    }}
+                                    onBlur={stopTyping}
                                     onKeyPress={(e) => {
                                         if (e.key === 'Enter' && !e.shiftKey) {
                                             e.preventDefault()

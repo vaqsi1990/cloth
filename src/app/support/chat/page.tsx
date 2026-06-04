@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 import { MessageCircle, Send, Clock, XCircle, Play, Trash2, Menu, X, ArrowLeft } from 'lucide-react'
 import { formatDateTime } from '@/utils/dateUtils'
 import { showToast } from '@/utils/toast'
+import ChatTypingIndicator from '@/components/ChatTypingIndicator'
+import { useChatTyping } from '@/hooks/useChatTyping'
 
 interface ChatMessage {
   id: number
@@ -42,7 +44,12 @@ const SupportChatPage = () => {
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [chatRoomToDelete, setChatRoomToDelete] = useState<ChatRoom | null>(null)
   const [showChatList, setShowChatList] = useState(true)
+  const [otherPartyTyping, setOtherPartyTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const { notifyTyping, stopTyping } = useChatTyping({
+    chatRoomId: selectedChatRoom?.id,
+    enabled: !!selectedChatRoom,
+  })
 
  
   const fetchChatRooms = useCallback(async () => {
@@ -112,6 +119,7 @@ const SupportChatPage = () => {
         )
         
         setMessages(uniqueMessages)
+        setOtherPartyTyping(Boolean(data.otherPartyTyping))
       }
     } catch (error) {
       console.error('Error fetching messages:', error)
@@ -166,7 +174,8 @@ const SupportChatPage = () => {
 
     setIsLoading(true)
     const messageToSend = newMessage.trim()
-    setNewMessage('') // Clear input immediately
+    setNewMessage('')
+    stopTyping()
     
     try {
       const response = await fetch(`/api/chat/${selectedChatRoom.id}`, {
@@ -516,6 +525,7 @@ const SupportChatPage = () => {
                             </div>
                           </div>
                         ))}
+                        <ChatTypingIndicator show={otherPartyTyping} align="start" />
                         <div ref={messagesEndRef} />
                       </div>
                     )}
@@ -527,7 +537,11 @@ const SupportChatPage = () => {
                   <div className="flex gap-2 lg:gap-3">
                     <textarea
                       value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
+                      onChange={(e) => {
+                        setNewMessage(e.target.value)
+                        notifyTyping(e.target.value)
+                      }}
+                      onBlur={stopTyping}
                       onKeyPress={handleKeyPress}
                       placeholder="შეიყვანეთ თქვენი პასუხი..."
                       className="flex-1 p-3 sm:p-3.5 lg:p-4 text-sm sm:text-base text-black border placeholder:text-gray-500 border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-[#1B3729] focus:border-transparent"

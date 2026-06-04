@@ -290,45 +290,51 @@ export async function GET(request: NextRequest) {
     }
 
     const listTake = useOffsetPagination ? pageLimit + 1 : 21
+    const listOrderBy = [{ createdAt: 'desc' as const }]
 
-    const [products, totalCount] = await Promise.all([
-      prisma.product.findMany({
-        ...(needsFreshData
-          ? {}
-          : {
-              // @ts-ignore - cacheStrategy is available with Prisma Accelerate
+    const productsPromise = useOffsetPagination
+      ? prisma.product.findMany({
+          take: listTake,
+          skip: (page - 1) * pageLimit,
+          where: productWhere,
+          select: baseSelect,
+          orderBy: listOrderBy,
+        })
+      : cursorId
+        ? prisma.product.findMany({
+            take: listTake,
+            cursor: { id: cursorId },
+            skip: 1,
+            where: productWhere,
+            select: baseSelect,
+            orderBy: listOrderBy,
+          })
+        : needsFreshData
+          ? prisma.product.findMany({
+              take: listTake,
+              where: productWhere,
+              select: baseSelect,
+              orderBy: listOrderBy,
+            })
+          : prisma.product.findMany({
+              take: listTake,
+              where: productWhere,
+              select: baseSelect,
+              orderBy: listOrderBy,
+              // @ts-ignore - Prisma Accelerate cacheStrategy
               cacheStrategy: {
                 swr: 300,
                 ttl: 300,
               },
-            }),
-        take: listTake,
-        ...(useOffsetPagination
-          ? { skip: (page - 1) * pageLimit }
-          : cursorId
-            ? {
-                cursor: { id: cursorId },
-                skip: 1,
-              }
-            : {}),
-        where: productWhere,
-        select: baseSelect,
-        orderBy: [{ createdAt: 'desc' }],
-      }),
-      useOffsetPagination
-        ? prisma.product.count({
-            where: productWhere,
-            ...(needsFreshData
-              ? {}
-              : {
-                  // @ts-ignore - cacheStrategy is available with Prisma Accelerate
-                  cacheStrategy: {
-                    swr: 300,
-                    ttl: 300,
-                  },
-                }),
-          })
-        : Promise.resolve(null),
+            })
+
+    const countPromise = useOffsetPagination
+      ? prisma.product.count({ where: productWhere })
+      : Promise.resolve(null)
+
+    const [products, totalCount] = await Promise.all([
+      productsPromise,
+      countPromise,
     ])
     const dbTime = Date.now() - startTime
     if (process.env.NODE_ENV === 'development') {

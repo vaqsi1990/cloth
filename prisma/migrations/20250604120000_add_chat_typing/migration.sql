@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "ChatRoom" ADD COLUMN IF NOT EXISTS "userTypingAt" TIMESTAMP(3);
+ALTER TABLE "ChatRoom" ADD COLUMN IF NOT EXISTS "adminTypingAt" TIMESTAMP(3);

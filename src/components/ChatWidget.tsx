@@ -5,6 +5,8 @@ import { MessageCircle, Send, X, Minimize2, Maximize2 } from 'lucide-react'
 import { formatDateTime } from '@/utils/dateUtils'
 import { useSession } from 'next-auth/react'
 import { showToast } from '@/utils/toast'
+import ChatTypingIndicator from '@/components/ChatTypingIndicator'
+import { useChatTyping } from '@/hooks/useChatTyping'
 
 interface ChatMessage {
   id: number
@@ -39,7 +41,12 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
   const [guestEmail, setGuestEmail] = useState('')
   const [showGuestForm, setShowGuestForm] = useState(true)
   const [isEndingChat, setIsEndingChat] = useState(false)
+  const [otherPartyTyping, setOtherPartyTyping] = useState(false)
   const { data: session } = useSession()
+  const { notifyTyping, stopTyping } = useChatTyping({
+    chatRoomId,
+    enabled: isOpen && !!chatRoomId,
+  })
 
   // Load guest info from localStorage on component mount
   useEffect(() => {
@@ -162,9 +169,11 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
           .sort((a: ChatMessage, b: ChatMessage) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
 
         setMessages(uniqueMessages)
+        setOtherPartyTyping(Boolean(data.otherPartyTyping))
       } else if (data.success && !data.messages) {
         // Chat room exists but has no messages yet
         setMessages([])
+        setOtherPartyTyping(Boolean(data.otherPartyTyping))
       }
     } catch (error) {
       console.error('Error fetching messages:', error)
@@ -223,7 +232,8 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
 
     setIsLoading(true)
     const messageToSend = newMessage.trim()
-    setNewMessage('') // Clear input immediately for better UX
+    setNewMessage('')
+    stopTyping()
 
     try {
       if (!chatRoomId) {
@@ -458,6 +468,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
                     </div>
                   </div>
                 ))}
+                <ChatTypingIndicator show={otherPartyTyping} align="start" />
                 <div ref={messagesEndRef} />
               </div>
             )}
@@ -500,7 +511,11 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
             <div className="flex space-x-2">
               <textarea
                 value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
+                onChange={(e) => {
+                  setNewMessage(e.target.value)
+                  notifyTyping(e.target.value)
+                }}
+                onBlur={stopTyping}
                 onKeyPress={handleKeyPress}
                 placeholder="შეიყვანეთ თქვენი შეტყობინება..."
                 className="flex-1 text-black p-2 border placeholder:text-gray-500 border-black rounded-md resize-none focus:ring-2 focus:ring-[#1B3729] focus:border-transparent text-[14px]"

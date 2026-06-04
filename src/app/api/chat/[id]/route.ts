@@ -4,6 +4,12 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { isAdminOrSupport } from '@/lib/roles'
+import { isAdminSide } from '@/lib/chat-access'
+import {
+  getOtherPartyTyping,
+  getTypingLabel,
+  setChatTyping,
+} from '@/lib/chat-typing'
 
 // Validation schema
 const sendMessageSchema = z.object({
@@ -76,16 +82,27 @@ export async function GET(
       )
     }
 
-    // Get chat room info
-    const chatRoomData = await prisma.$queryRaw<Array<{
-      userId: string | null
-      adminId: string | null
-    }>>`
-      SELECT "userId", "adminId"
+    const chatRoomRows = await prisma.$queryRaw<
+      Array<{
+        userId: string | null
+        adminId: string | null
+        userTypingAt: Date | null
+        adminTypingAt: Date | null
+      }>
+    >`
+      SELECT "userId", "adminId", "userTypingAt", "adminTypingAt"
       FROM "ChatRoom"
       WHERE id = ${chatRoomId}
       LIMIT 1
     `
+    const chatRoomMeta = chatRoomRows[0] ?? null
+
+    const viewerIsAdminSide = chatRoomMeta
+      ? isAdminSide(session, chatRoomMeta)
+      : false
+    const otherPartyTyping = chatRoomMeta
+      ? getOtherPartyTyping(chatRoomMeta, viewerIsAdminSide)
+      : false
 
     const messages = await prisma.$queryRaw<Array<{
       id: number
@@ -117,10 +134,14 @@ export async function GET(
     return NextResponse.json({
       success: true,
       messages: serializedMessages,
-      chatRoom: chatRoomData.length > 0 ? {
-        userId: chatRoomData[0].userId,
-        adminId: chatRoomData[0].adminId
-      } : null
+      chatRoom: chatRoomMeta
+        ? {
+            userId: chatRoomMeta.userId,
+            adminId: chatRoomMeta.adminId,
+          }
+        : null,
+      otherPartyTyping,
+      typingLabel: otherPartyTyping ? getTypingLabel(viewerIsAdminSide) : null,
     })
 
   } catch (error) {
@@ -291,12 +312,15 @@ export async function POST(
       `
     }
 
-    // Update chat room timestamp
-    await prisma.$executeRaw`
-      UPDATE "ChatRoom" 
-      SET "updatedAt" = NOW()
-      WHERE id = ${chatRoomId}
-    `
+    const senderSide = isFromAdmin ? 'admin' : 'user'
+    await Promise.all([
+      prisma.$executeRaw`
+        UPDATE "ChatRoom" 
+        SET "updatedAt" = NOW()
+        WHERE id = ${chatRoomId}
+      `,
+      setChatTyping(chatRoomId, senderSide, false),
+    ])
 
     const message = newMessage[0]
     

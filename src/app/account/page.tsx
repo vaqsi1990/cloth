@@ -9,6 +9,8 @@ import { User, Package, ShoppingCart, Settings, MapPin, Phone, Mail, Camera, Mes
 import ImageUpload from '@/component/CloudinaryUploader'
 import ContactForm from '@/component/ContactForm'
 import { showToast } from '@/utils/toast'
+import ChatTypingIndicator from '@/components/ChatTypingIndicator'
+import { useChatTyping } from '@/hooks/useChatTyping'
 
 interface Order {
   id: number
@@ -104,6 +106,11 @@ const AccountPageContent = () => {
   const [chatMessages, setChatMessages] = useState<any[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [sendingMessage, setSendingMessage] = useState(false)
+  const [otherPartyTyping, setOtherPartyTyping] = useState(false)
+  const { notifyTyping, stopTyping } = useChatTyping({
+    chatRoomId: selectedChatRoom?.id,
+    enabled: !!selectedChatRoom,
+  })
   const isSeller = userStats.productsCount > 0
   // Show verification for all non-admin users who haven't been approved yet
   const sellerNeedsVerification = true // Always show for non-admin users
@@ -369,6 +376,7 @@ const AccountPageContent = () => {
       const data = await response.json()
       if (data.success) {
         setChatMessages(data.messages || [])
+        setOtherPartyTyping(Boolean(data.otherPartyTyping))
       }
     } catch (error) {
       console.error('Error fetching messages:', error)
@@ -381,6 +389,7 @@ const AccountPageContent = () => {
     setSendingMessage(true)
     const messageToSend = newMessage.trim()
     setNewMessage('')
+    stopTyping()
 
     try {
       const response = await fetch(`/api/chat/${selectedChatRoom.id}`, {
@@ -1691,13 +1700,18 @@ const AccountPageContent = () => {
                       </div>
                     )
                   })}
+                  <ChatTypingIndicator show={otherPartyTyping} align="start" />
                 </div>
                 <div className="p-4 border-t border-gray-200">
                   <div className="flex space-x-2">
                     <input
                       type="text"
                       value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
+                      onChange={(e) => {
+                        setNewMessage(e.target.value)
+                        notifyTyping(e.target.value)
+                      }}
+                      onBlur={stopTyping}
                       onKeyPress={(e) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
                           e.preventDefault()
