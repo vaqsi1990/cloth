@@ -11,6 +11,7 @@ import { PURPOSE_OPTIONS } from '@/data/purposes'
 import { PRODUCT_COLORS, PRODUCT_COLOR_FILTER_MAPPING } from '@/lib/product-colors'
 import { PRODUCT_IMAGE_QUALITY } from '@/lib/image-config'
 
+type PurchaseType = 'all' | 'rent-only' | 'sale-only' | 'rent-and-sale'
 
 const ShopPageClient = () => {
     const searchParams = useSearchParams()
@@ -21,6 +22,7 @@ const ShopPageClient = () => {
     const categoryParam = searchParams.get('category')
 
     const [products, setProducts] = useState<Product[]>([])
+    const [allProductsForCounts, setAllProductsForCounts] = useState<Product[]>([])
     const [loading, setLoading] = useState(true)
     const [selectedCategories, setSelectedCategories] = useState<string[]>([])
     const [selectedPurposes, setSelectedPurposes] = useState<string[]>([])
@@ -35,7 +37,7 @@ const ShopPageClient = () => {
 
     const [rentalStartDate, setRentalStartDate] = useState<Date | null>(null)
     const [rentalEndDate, setRentalEndDate] = useState<Date | null>(null)
-    const [purchaseType, setPurchaseType] = useState<"all" | "rent-only" | "sale-only">("all")
+    const [purchaseType, setPurchaseType] = useState<PurchaseType>("all")
     const [productRentalStatus, setProductRentalStatus] = useState<Record<number, {
         variantId: number;
         size: string;
@@ -61,6 +63,7 @@ const ShopPageClient = () => {
     // Persist state across navigation
     const scrollYRef = useRef(0)
     const productsFetchIdRef = useRef(0)
+    const productsForCountsFetchIdRef = useRef(0)
     const rentalFetchIdRef = useRef(0)
     const shopInitializedRef = useRef(false)
     const prevPurposeParamRef = useRef(purposeParam)
@@ -124,7 +127,7 @@ const ShopPageClient = () => {
         let restoredRentalStart: Date | null = null
         let restoredRentalEnd: Date | null = null
         let restoredSortBy = 'newest'
-        let restoredPurchaseType: 'all' | 'rent-only' | 'sale-only' = 'all'
+        let restoredPurchaseType: PurchaseType = 'all'
         let restoredPage = 1
         let restoredScrollY: number | null = null
 
@@ -492,6 +495,87 @@ const ShopPageClient = () => {
         selectedPurposes,
     ])
 
+    // Fetch all products (cursor pagination) for filter count calculations
+    useEffect(() => {
+        if (!hasRestoredState) return
+
+        const fetchId = ++productsForCountsFetchIdRef.current
+        const controller = new AbortController()
+        const isStale = () => fetchId !== productsForCountsFetchIdRef.current
+
+        const fetchAllProductsForCounts = async () => {
+            try {
+                const baseParams = new URLSearchParams()
+                if (genderParam) {
+                    baseParams.append('gender', genderParam)
+                }
+                if (searchParam) {
+                    baseParams.append('search', searchParam)
+                }
+                if (purposeParam) {
+                    baseParams.append('purpose', purposeParam)
+                } else if (selectedPurposes.length === 1) {
+                    baseParams.append('purpose', selectedPurposes[0])
+                }
+                if (categoryParam) {
+                    baseParams.append('category', categoryParam)
+                } else if (selectedCategories.length === 1) {
+                    const cat = categories.find(
+                        (c) => c.label === selectedCategories[0] || c.id === selectedCategories[0]
+                    )
+                    if (cat?.slug) {
+                        baseParams.append('category', cat.slug)
+                    }
+                }
+
+                const allProducts: Product[] = []
+                let cursor: string | null = null
+
+                do {
+                    const params = new URLSearchParams(baseParams)
+                    if (cursor) {
+                        params.set('cursor', cursor)
+                    }
+
+                    const response = await fetch(`/api/products?${params}`, { signal: controller.signal })
+                    if (isStale()) return
+
+                    const data = await response.json()
+                    if (isStale()) return
+                    if (!data.success) break
+
+                    allProducts.push(...data.products)
+                    cursor = data.nextCursor ?? null
+                    if (!data.hasMore || !cursor) break
+                } while (true)
+
+                if (!isStale()) {
+                    setAllProductsForCounts(allProducts)
+                }
+            } catch (error: unknown) {
+                if (
+                    isStale() ||
+                    controller.signal.aborted ||
+                    (error instanceof DOMException && error.name === 'AbortError')
+                ) {
+                    return
+                }
+                console.error('Error fetching products for filter counts:', error)
+            }
+        }
+
+        void fetchAllProductsForCounts()
+        return () => controller.abort('cleanup')
+    }, [
+        hasRestoredState,
+        genderParam,
+        searchParam,
+        purposeParam,
+        categoryParam,
+        selectedCategories,
+        selectedPurposes,
+    ])
+
     // Fetch rental status for rentable products (batched)
     useEffect(() => {
         const rentableIds = products.filter((p) => p.isRentable).map((p) => p.id)
@@ -579,11 +663,7 @@ const ShopPageClient = () => {
 
     // Check if product has rental parameters (is rentable)
     const hasRentalParameters = (product: Product): boolean => {
-        // Must be explicitly rentable and have valid rental price tiers
-        if (product.isRentable !== true) return false
-        if (!product.rentalPriceTiers || product.rentalPriceTiers.length === 0) return false
-        // Check if there's at least one tier with valid price
-        return product.rentalPriceTiers.some(tier => tier && tier.pricePerDay > 0)
+        return product.isRentable === true
     }
 
     // Check if product has sale parameters (can be bought)
@@ -609,6 +689,11 @@ const ShopPageClient = () => {
         if (!hasSaleParameters(product)) return false
         // Must NOT have rental parameters
         return !hasRentalParameters(product)
+    }
+
+    // Check if product supports both rental and sale
+    const isRentAndSale = (product: Product): boolean => {
+        return hasRentalParameters(product) && hasSaleParameters(product)
     }
 
     // Check if product is available during selected dates
@@ -700,7 +785,7 @@ const ShopPageClient = () => {
     }
 
     // Get products filtered by all other criteria (excluding purchase type) for count calculations
-    const productsForTypeCounts = getProductsFilteredByOtherCriteria(products)
+    const productsForTypeCounts = getProductsFilteredByOtherCriteria(allProductsForCounts)
 
     // Filter products by all criteria (excluding gender since it's handled by API)
     const filteredProducts = products.filter(product => {
@@ -752,10 +837,11 @@ const ShopPageClient = () => {
         // Rental availability filter
         const rentalAvailabilityMatch = isProductAvailable(product)
 
-        // Purchase type filter (rent-only, sale-only, or all)
+        // Purchase type filter
         const purchaseTypeMatch = purchaseType === "all" ||
             (purchaseType === "rent-only" && isRentOnly(product)) ||
-            (purchaseType === "sale-only" && isSaleOnly(product))
+            (purchaseType === "sale-only" && isSaleOnly(product)) ||
+            (purchaseType === "rent-and-sale" && isRentAndSale(product))
 
         return categoryMatch && purposeMatch && priceMatch && sizeSystemMatch && sizeMatch && colorMatch && locationMatch && rentalAvailabilityMatch && purchaseTypeMatch
     })
@@ -1321,6 +1407,7 @@ const ShopPageClient = () => {
                                             { value: "all", label: "ყველა", count: productsForTypeCounts.length },
                                             { value: "rent-only", label: "მხოლოდ გაქირავება", count: productsForTypeCounts.filter(p => isRentOnly(p)).length },
                                             { value: "sale-only", label: "მხოლოდ ყიდვა", count: productsForTypeCounts.filter(p => isSaleOnly(p)).length },
+                                            { value: "rent-and-sale", label: "გაქირავება და ყიდვა", count: productsForTypeCounts.filter(p => isRentAndSale(p)).length },
                                         ].map(({ value, label, count }) => {
                                             const active = purchaseType === value;
                                             return (
@@ -1336,7 +1423,7 @@ const ShopPageClient = () => {
                                                             type="radio"
                                                             name="mobilePurchaseType"
                                                             checked={active}
-                                                            onChange={() => setPurchaseType(value as "all" | "rent-only" | "sale-only")}
+                                                            onChange={() => setPurchaseType(value as PurchaseType)}
                                                             className="w-4 h-4"
                                                         />
                                                         <span className="text-[16px]">{label}</span>
@@ -1430,6 +1517,7 @@ const ShopPageClient = () => {
                                         { value: "all", label: "ყველა", count: productsForTypeCounts.length },
                                         { value: "rent-only", label: "მხოლოდ გაქირავება", count: productsForTypeCounts.filter(p => isRentOnly(p)).length },
                                         { value: "sale-only", label: "მხოლოდ ყიდვა", count: productsForTypeCounts.filter(p => isSaleOnly(p)).length },
+                                        { value: "rent-and-sale", label: "გაქირავება და ყიდვა", count: productsForTypeCounts.filter(p => isRentAndSale(p)).length },
                                     ].map(({ value, label, count }) => {
                                         const active = purchaseType === value
                                         return (
@@ -1442,7 +1530,7 @@ const ShopPageClient = () => {
                                                         type="radio"
                                                         name="purchaseType"
                                                         checked={active}
-                                                        onChange={() => setPurchaseType(value as "all" | "rent-only" | "sale-only")}
+                                                        onChange={() => setPurchaseType(value as PurchaseType)}
                                                         className="w-4 h-4 accent-black"
                                                     />
                                                     {label}
