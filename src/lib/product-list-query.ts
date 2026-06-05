@@ -1,5 +1,9 @@
 import { Prisma } from '@prisma/client'
+import { unstable_cache } from 'next/cache'
+import { revalidateTag } from 'next/cache'
 import { prisma } from '@/lib/prisma'
+
+export const PRODUCT_LIST_CACHE_TAG = 'product-list'
 
 export type PublicListFilters = {
   categoryId?: number | null
@@ -243,12 +247,14 @@ export function applyExpiredDiscounts<T extends {
   }
 }
 
-type CachedListPayload = {
+export type CachedListPayload = {
   products: ReturnType<typeof mapCombinedRowsToProducts>
   hasMore: boolean
 }
 
-const PUBLIC_LIST_CACHE_TTL_MS = 30_000
+export type ProductListCacheSource = 'memory' | 'next-cache' | 'database'
+
+const MEMORY_CACHE_MAX_ENTRIES = 100
 const publicListCache = new Map<string, { at: number; data: CachedListPayload }>()
 
 export function getPublicListCacheKey(filters: PublicListFilters): string {
@@ -263,19 +269,128 @@ export function getPublicListCacheKey(filters: PublicListFilters): string {
   })
 }
 
-export function readPublicListCache(key: string): CachedListPayload | null {
+function hasActiveFilters(filters: PublicListFilters): boolean {
+  return Boolean(
+    filters.search ||
+      filters.categoryId ||
+      filters.purposeId ||
+      filters.gender ||
+      filters.isNew,
+  )
+}
+
+/** Tiered L1 TTL: default shop page cached longest; search cached briefly. */
+export function getMemoryCacheTtlMs(filters: PublicListFilters): number {
+  if (filters.search) return 30_000
+  if (hasActiveFilters(filters)) return 60_000
+  return 120_000
+}
+
+export function getHttpCacheControl(filters: PublicListFilters): string {
+  if (filters.search) {
+    return 'public, s-maxage=30, stale-while-revalidate=60'
+  }
+  if (hasActiveFilters(filters)) {
+    return 'public, s-maxage=60, stale-while-revalidate=180'
+  }
+  return 'public, s-maxage=120, stale-while-revalidate=300'
+}
+
+function readMemoryCache(
+  key: string,
+  filters: PublicListFilters,
+): CachedListPayload | null {
   const hit = publicListCache.get(key)
-  if (!hit || Date.now() - hit.at > PUBLIC_LIST_CACHE_TTL_MS) {
+  const ttlMs = getMemoryCacheTtlMs(filters)
+  if (!hit || Date.now() - hit.at > ttlMs) {
     if (hit) publicListCache.delete(key)
     return null
   }
   return hit.data
 }
 
-export function writePublicListCache(key: string, data: CachedListPayload): void {
+function writeMemoryCache(key: string, data: CachedListPayload): void {
   publicListCache.set(key, { at: Date.now(), data })
-  if (publicListCache.size > 50) {
+  if (publicListCache.size > MEMORY_CACHE_MAX_ENTRIES) {
     const oldest = publicListCache.keys().next().value
     if (oldest) publicListCache.delete(oldest)
   }
+}
+
+export function clearPublicListMemoryCache(): void {
+  publicListCache.clear()
+}
+
+export function revalidateProductListCache(): void {
+  clearPublicListMemoryCache()
+  revalidateTag(PRODUCT_LIST_CACHE_TAG, 'max')
+}
+
+/** Always run on response — discounts can expire while cached payload is still warm. */
+export function finalizeProductListResponse(payload: CachedListPayload): CachedListPayload {
+  const products = JSON.parse(
+    JSON.stringify(payload.products),
+  ) as CachedListPayload['products']
+  applyExpiredDiscounts(products)
+  return { products, hasMore: payload.hasMore }
+}
+
+async function buildListPayload(filters: PublicListFilters): Promise<CachedListPayload> {
+  const rows = await fetchPublicProductListCombined(filters)
+  const mapped = mapCombinedRowsToProducts(rows)
+  const pageSize = filters.take - 1
+  const hasMore = mapped.length > pageSize
+  const products = hasMore ? mapped.slice(0, pageSize) : mapped
+  return { products, hasMore }
+}
+
+const getCachedProductList = unstable_cache(
+  async (filtersKey: string): Promise<CachedListPayload> => {
+    const filters = JSON.parse(filtersKey) as PublicListFilters
+    return buildListPayload(filters)
+  },
+  ['public-product-list-v2'],
+  {
+    revalidate: 120,
+    tags: [PRODUCT_LIST_CACHE_TAG],
+  },
+)
+
+/**
+ * L1 memory → L2 Next.js data cache → database.
+ * Search skips L2 (results change often).
+ */
+export async function loadPublicProductList(
+  filters: PublicListFilters,
+): Promise<{
+  payload: CachedListPayload
+  cacheSource: ProductListCacheSource
+  listMs: number
+}> {
+  const cacheKey = getPublicListCacheKey(filters)
+
+  const memoryHit = readMemoryCache(cacheKey, filters)
+  if (memoryHit) {
+    return {
+      payload: memoryHit,
+      cacheSource: 'memory',
+      listMs: 0,
+    }
+  }
+
+  const queryStart = Date.now()
+  const payload = filters.search
+    ? await buildListPayload(filters)
+    : await getCachedProductList(cacheKey)
+  const listMs = Date.now() - queryStart
+
+  writeMemoryCache(cacheKey, payload)
+
+  const cacheSource: ProductListCacheSource = filters.search
+    ? 'database'
+    : listMs < 100
+      ? 'next-cache'
+      : 'database'
+
+  return { payload, cacheSource, listMs }
 }

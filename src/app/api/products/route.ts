@@ -18,12 +18,10 @@ import {
 } from '@/lib/product-text'
 import { enrichProductListRows } from '@/lib/product-list-enrichment'
 import {
-  applyExpiredDiscounts,
-  fetchPublicProductListCombined,
-  getPublicListCacheKey,
-  mapCombinedRowsToProducts,
-  readPublicListCache,
-  writePublicListCache,
+  finalizeProductListResponse,
+  getHttpCacheControl,
+  loadPublicProductList,
+  revalidateProductListCache,
 } from '@/lib/product-list-query'
 
 // Product validation schema
@@ -204,30 +202,11 @@ export async function GET(request: NextRequest) {
         skip: (page - 1) * pageLimit,
         take: listTake,
       }
-      const cacheKey = getPublicListCacheKey(combinedFilters)
-      const cached = readPublicListCache(cacheKey)
-
-      let productsToReturn: ReturnType<typeof mapCombinedRowsToProducts>
-      let hasMore: boolean
-      let listMs = 0
-      let enrichMs = 0
-
-      if (cached) {
-        productsToReturn = cached.products
-        hasMore = cached.hasMore
-      } else {
-        const queryStart = Date.now()
-        const rows = await fetchPublicProductListCombined(combinedFilters)
-        listMs = Date.now() - queryStart
-
-        const mapped = mapCombinedRowsToProducts(rows)
-        applyExpiredDiscounts(mapped)
-
-        hasMore = mapped.length > pageSize
-        productsToReturn = hasMore ? mapped.slice(0, pageSize) : mapped
-
-        writePublicListCache(cacheKey, { products: productsToReturn, hasMore })
-      }
+      const enrichMs = 0
+      const { payload, cacheSource, listMs } = await loadPublicProductList(combinedFilters)
+      const finalized = finalizeProductListResponse(payload)
+      const productsToReturn = finalized.products
+      const hasMore = finalized.hasMore
 
       const processMs = 0
       const dbTime = listMs + enrichMs
@@ -262,7 +241,7 @@ export async function GET(request: NextRequest) {
           processMs,
           handlerMs,
           combined: true,
-          cached: Boolean(cached),
+          cacheSource,
         }
       }
 
@@ -272,11 +251,7 @@ export async function GET(request: NextRequest) {
         `app;dur=${reqTotalMs}, prep;dur=${prepMs}, list;dur=${listMs}, enrich;dur=${enrichMs}, process;dur=${processMs}`,
       )
 
-      if (!search && !category && !purpose && !gender && !isNew) {
-        response.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=60')
-      } else {
-        response.headers.set('Cache-Control', 'public, s-maxage=15, stale-while-revalidate=30')
-      }
+      response.headers.set('Cache-Control', getHttpCacheControl(combinedFilters))
 
       return response
     }
@@ -680,6 +655,8 @@ export async function POST(request: NextRequest) {
       : createdProduct
     
     console.log('Product created successfully:', newProduct)
+
+    revalidateProductListCache()
     
     return NextResponse.json({
       success: true,

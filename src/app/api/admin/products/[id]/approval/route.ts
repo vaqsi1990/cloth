@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { isAdminOrSupport } from '@/lib/roles'
+import { revalidateProductListCache } from '@/lib/product-list-query'
 
 export async function PUT(
   request: NextRequest,
@@ -69,6 +70,8 @@ export async function PUT(
         variants: true
       }
     })
+
+    revalidateProductListCache()
 
     return NextResponse.json({
       success: true,
