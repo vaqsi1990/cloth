@@ -14,6 +14,7 @@ import {
   MessageCircle,
   MapPin,
   Info,
+  Ticket,
 } from 'lucide-react'
 
 // ---------------------
@@ -238,6 +239,13 @@ const AdminDashboard = () => {
       href: '/admin/delivery-cities',
       icon: MapPin,
       color: 'bg-teal-600',
+    },
+    {
+      title: 'ვაუჩერები',
+      description: 'შექმენი ფასდაკლების კოდები ლარში',
+      href: '/admin/vouchers',
+      icon: Ticket,
+      color: 'bg-amber-600',
     },
     {
       title: 'პარამეტრები',

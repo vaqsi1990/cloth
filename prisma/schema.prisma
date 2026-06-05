@@ -131,6 +131,7 @@ model User {
   rentals       Rental[]
   rentalInquiriesAsBuyer  RentalInquiry[] @relation("RentalInquiryBuyer")
   rentalInquiriesAsSeller RentalInquiry[] @relation("RentalInquirySeller")
+  voucherRedemptions      VoucherRedemption[]
   transactions  Transaction[]
   
   // Chat relations
@@ -400,12 +401,19 @@ model Order {
   paymentMethod String?
   paymentId     String?
 
+  // Voucher
+  voucherCode     String?
+  voucherDiscount Float?
+  voucherId       Int?
+  voucher         Voucher? @relation(fields: [voucherId], references: [id], onDelete: SetNull)
+
   // User relation (optional for guest orders)
   userId        String?
   user          User?       @relation(fields: [userId], references: [id])
 
   items         OrderItem[]
   transactions  Transaction[]
+  voucherRedemptions VoucherRedemption[]
   
   @@index([status])
 }
@@ -620,4 +628,41 @@ model PasswordResetToken {
   createdAt DateTime @default(now())
 
   @@map("password_reset_tokens")
+}
+
+model Voucher {
+  id             Int      @id @default(autoincrement())
+  code           String   @unique
+  discountAmount Float
+  minOrderAmount Float?
+  usageLimit     Int?
+  usedCount      Int      @default(0)
+  perUserLimit   Int      @default(1)
+  startsAt       DateTime?
+  expiresAt      DateTime?
+  isActive       Boolean  @default(true)
+  note           String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  orders       Order[]
+  redemptions  VoucherRedemption[]
+
+  @@index([isActive])
+  @@index([expiresAt])
+}
+
+model VoucherRedemption {
+  id             Int      @id @default(autoincrement())
+  voucherId      Int
+  voucher        Voucher  @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderId        Int?
+  order          Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  discountAmount Float
+  createdAt      DateTime @default(now())
+
+  @@index([voucherId, userId])
+  @@index([orderId])
 }

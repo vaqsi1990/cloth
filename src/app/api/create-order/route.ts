@@ -5,6 +5,8 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { reevaluateUserBlocking } from '@/utils/revenue'
 import { bogTokenManager } from '@/lib/bog-token'
+import { computeUserCartSubtotal } from '@/lib/cart-totals'
+import { validateVoucher } from '@/lib/voucher'
 import { z } from 'zod'
 
 interface CartItemInput {
@@ -97,6 +99,7 @@ const orderDataSchema = z.object({
     deliveryPrice: z.union([z.string(), z.number()]).optional(),
     paymentMethod: z.enum(['google_pay', 'card', 'apple_pay']).optional(),
     googlePayToken: z.string().optional(),
+    voucherCode: z.string().optional(),
     address: z.object({
       firstName: z.string(),
       lastName: z.string(),
@@ -250,6 +253,25 @@ function transformCartItemsToBasket(items: CartItemInput[]): BOGBasketItem[] {
   }))
 }
 
+function applyDiscountToBasket(
+  basket: BOGBasketItem[],
+  discount: number,
+): BOGBasketItem[] {
+  if (discount <= 0) return basket
+
+  const basketTotal = basket.reduce(
+    (sum, item) => sum + item.quantity * item.unit_price,
+    0,
+  )
+  if (basketTotal <= 0) return basket
+
+  const ratio = (basketTotal - discount) / basketTotal
+  return basket.map((item) => ({
+    ...item,
+    unit_price: Math.round(item.unit_price * ratio * 100) / 100,
+  }))
+}
+
 function extractRedirectUrl(responseData: BOGResponseData): string | undefined {
   const links = responseData.links || responseData._links || {}
   return links.redirect?.href || links.approve?.href
@@ -278,13 +300,40 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ missingIban: true, error: "Missing IBAN" }, { status: 403 })
     }
 
-    const basket = transformCartItemsToBasket(orderData.cart.items)
-    const total = Number(orderData.totalAmount)
-
     const cart = await prisma.cart.findFirst({
       where: { userId: session.user.id },
       include: { items: true }
     })
+
+    if (!cart || cart.items.length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'კალათა ცარიელია' },
+        { status: 400 },
+      )
+    }
+
+    const cartSubtotal = await computeUserCartSubtotal(session.user.id)
+
+    let voucherDiscount = 0
+    let voucherId: number | null = null
+    let voucherCode: string | null = null
+
+    if (orderData.voucherCode) {
+      const voucherResult = await validateVoucher(
+        orderData.voucherCode,
+        session.user.id,
+        cartSubtotal,
+      )
+      if (!voucherResult.valid) {
+        return NextResponse.json(
+          { success: false, error: voucherResult.message },
+          { status: 400 },
+        )
+      }
+      voucherDiscount = voucherResult.discountAmount
+      voucherId = voucherResult.voucherId
+      voucherCode = voucherResult.code
+    }
 
     // Parse delivery info
     const deliveryCityId = orderData.deliveryCityId 
@@ -293,6 +342,16 @@ export async function POST(req: NextRequest) {
     const deliveryPrice = orderData.deliveryPrice 
       ? (typeof orderData.deliveryPrice === 'string' ? parseFloat(orderData.deliveryPrice) : orderData.deliveryPrice)
       : null
+
+    const deliveryFee =
+      orderData.deliveryType === 'delivery' && deliveryPrice ? deliveryPrice : 0
+    const total =
+      Math.round((cartSubtotal - voucherDiscount + deliveryFee) * 100) / 100
+
+    let basket = transformCartItemsToBasket(orderData.cart.items)
+    if (voucherDiscount > 0) {
+      basket = applyDiscountToBasket(basket, voucherDiscount)
+    }
 
     // Get delivery city name if delivery
     let deliveryCityName: string | null = null
@@ -316,9 +375,12 @@ export async function POST(req: NextRequest) {
         deliveryPrice: deliveryPrice,
         paymentMethod: "BOG Card Payment",
         total,
+        voucherCode,
+        voucherDiscount: voucherDiscount > 0 ? voucherDiscount : null,
+        voucherId,
         status: "PENDING",
         items: {
-          create: cart!.items.map((i) => ({
+          create: cart.items.map((i) => ({
             productId: i.productId,
             productName: i.productName,
             price: i.price,
@@ -328,7 +390,7 @@ export async function POST(req: NextRequest) {
       }
     })
 
-    const productIds = cart!.items.map(i => i.productId).filter((id): id is number => id !== null)
+    const productIds = cart.items.map(i => i.productId).filter((id): id is number => id !== null)
     const splitConfig = await buildSplitPaymentConfig(orderData.paymentMethod || 'card', productIds)
 
     const requestData: BOGRequestData = {

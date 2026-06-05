@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { useCart } from '@/hooks/useCart'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, MapPin, Phone, Mail, User, ShoppingCart, Truck, Store } from 'lucide-react'
+import { ArrowLeft, MapPin, Phone, Mail, User, ShoppingCart, Truck, Store, Ticket, X } from 'lucide-react'
 import Link from 'next/link'
 import { formatDate } from '@/utils/dateUtils'
 import { showToast } from '@/utils/toast'
@@ -38,6 +38,12 @@ const CheckoutPage = () => {
     const [loadingCities, setLoadingCities] = useState(false)
     const [userPickupAddress, setUserPickupAddress] = useState<string | null>(null)
     const [loadingUserAddress, setLoadingUserAddress] = useState(false)
+    const [voucherInput, setVoucherInput] = useState('')
+    const [appliedVoucher, setAppliedVoucher] = useState<{
+        code: string
+        discountAmount: number
+    } | null>(null)
+    const [voucherLoading, setVoucherLoading] = useState(false)
 
     const georgianTextRegex = /^[\u10A0-\u10FF\s.,\-'():;!?/\\"]+$/
     const georgianAddressRegex = /^[\u10A0-\u10FF\s0-9№N.,\-'():;!?/\\"#]+$/
@@ -98,10 +104,94 @@ const CheckoutPage = () => {
     const selectedDeliveryCity = deliveryCities.find(city => city.id === selectedDeliveryCityId)
     const deliveryPrice = selectedDeliveryCity ? selectedDeliveryCity.price : 0
 
-    // Calculate total with delivery
+    const getVoucherDiscount = () => appliedVoucher?.discountAmount || 0
+
+    const normalizedVoucherInput = voucherInput.trim().toUpperCase().replace(/\s+/g, '')
+    const hasUnappliedVoucher = Boolean(
+        normalizedVoucherInput &&
+        (!appliedVoucher || appliedVoucher.code !== normalizedVoucherInput),
+    )
+
+    // Calculate total with delivery and voucher
     const getTotalWithDelivery = () => {
-        const baseTotal = getTotalPrice()
+        const baseTotal = Math.max(0, getTotalPrice() - getVoucherDiscount())
         return deliveryType === 'delivery' && selectedDeliveryCity ? baseTotal + deliveryPrice : baseTotal
+    }
+
+    const validateVoucherCode = async (
+        code: string,
+    ): Promise<{ code: string; discountAmount: number } | null> => {
+        const response = await fetch('/api/vouchers/validate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: code.trim() }),
+        })
+        const data = await response.json()
+
+        if (data.success && data.voucher) {
+            return {
+                code: data.voucher.code,
+                discountAmount: data.voucher.discountAmount,
+            }
+        }
+
+        showToast(data.message || 'ვაუჩერი არასწორია', 'error')
+        return null
+    }
+
+    const applyVoucher = async () => {
+        if (!voucherInput.trim()) {
+            showToast('შეიყვანეთ ვაუჩერის კოდი', 'error')
+            return
+        }
+
+        setVoucherLoading(true)
+        try {
+            const voucher = await validateVoucherCode(voucherInput)
+            if (voucher) {
+                setAppliedVoucher(voucher)
+                showToast(
+                    `ვაუჩერი გამოყენებულია: -₾${voucher.discountAmount.toFixed(2)}`,
+                    'success',
+                )
+            } else {
+                setAppliedVoucher(null)
+            }
+        } catch {
+            showToast('შეცდომა ვაუჩერის შემოწმებისას', 'error')
+        } finally {
+            setVoucherLoading(false)
+        }
+    }
+
+    const ensureVoucherForPayment = async (): Promise<boolean> => {
+        const code = appliedVoucher?.code || voucherInput.trim()
+        if (!code) {
+            setAppliedVoucher(null)
+            return true
+        }
+
+        setVoucherLoading(true)
+        try {
+            const voucher = await validateVoucherCode(code)
+            if (voucher) {
+                setAppliedVoucher(voucher)
+                setVoucherInput(voucher.code)
+                return true
+            }
+            setAppliedVoucher(null)
+            return false
+        } catch {
+            showToast('შეცდომა ვაუჩერის შემოწმებისას', 'error')
+            return false
+        } finally {
+            setVoucherLoading(false)
+        }
+    }
+
+    const removeVoucher = () => {
+        setAppliedVoucher(null)
+        setVoucherInput('')
     }
 
     const clearFieldError = (field: string) => {
@@ -210,6 +300,12 @@ const CheckoutPage = () => {
             setIsProcessing(false)
             return
         }
+
+        const voucherReady = await ensureVoucherForPayment()
+        if (!voucherReady) {
+            setIsProcessing(false)
+            return
+        }
         
         try {
             // Step 1: Get BOG token
@@ -247,6 +343,7 @@ const CheckoutPage = () => {
                 }
                 paymentMethod?: 'google_pay' | 'card'
                 googlePayToken?: string
+                voucherCode?: string
             } = {
                 cart: {
                     items: cartItems.map(item => ({
@@ -274,6 +371,10 @@ const CheckoutPage = () => {
             if (paymentMethod === 'google_pay' && googlePayToken) {
                 orderData.paymentMethod = 'google_pay'
                 orderData.googlePayToken = googlePayToken
+            }
+
+            if (appliedVoucher) {
+                orderData.voucherCode = appliedVoucher.code
             }
 
             // Calculate split payment amounts (9% admin, 91% seller)
@@ -656,6 +757,63 @@ const CheckoutPage = () => {
                                     </>
                                 )}
 
+                                {/* Voucher — გადახდის სექცია */}
+                                <div className="mb-6">
+                                    <h3 className="md:text-[18px] text-[16px] font-semibold text-black mb-4 flex items-center gap-2">
+                                        <Ticket className="w-5 h-5" />
+                                        ვაუჩერის კოდი
+                                    </h3>
+                                    {appliedVoucher ? (
+                                        <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-4 py-3">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <span className="font-mono font-bold text-green-800">
+                                                    {appliedVoucher.code}
+                                                </span>
+                                                <span className="text-green-700 text-sm md:text-base">
+                                                    ფასდაკლება: -₾{appliedVoucher.discountAmount.toFixed(2)}
+                                                </span>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={removeVoucher}
+                                                className="p-1 hover:bg-green-100 rounded"
+                                            >
+                                                <X className="w-4 h-4 text-green-700" />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={voucherInput}
+                                                onChange={(e) =>
+                                                    setVoucherInput(e.target.value.toUpperCase())
+                                                }
+                                                placeholder="შეიყვანეთ ვაუჩერის კოდი"
+                                                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg uppercase font-mono text-black focus:outline-none focus:ring-2 focus:ring-[#1B3729]"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={applyVoucher}
+                                                disabled={voucherLoading}
+                                                className="px-5 py-3 bg-[#1B3729] text-white rounded-lg font-medium hover:opacity-95 disabled:opacity-50 whitespace-nowrap"
+                                            >
+                                                {voucherLoading ? '...' : 'გამოყენება'}
+                                            </button>
+                                        </div>
+                                    )}
+                                    {hasUnappliedVoucher && (
+                                        <p className="text-sm text-amber-700 mt-2">
+                                            დააჭირეთ „გამოყენება“ ვაუჩერის გადახდაში ჩასართავად
+                                        </p>
+                                    )}
+                                    {appliedVoucher && (
+                                        <p className="text-sm text-green-700 mt-2">
+                                            გადახდის თანხა ვაუჩერით შემცირდება
+                                        </p>
+                                    )}
+                                </div>
+
                                 {/* Payment Method Selection */}
                                 <div className="mb-6">
                                     <h3 className="md:text-[18px] text-[16px] font-semibold text-black mb-4">გადახდის მეთოდი</h3>
@@ -685,13 +843,30 @@ const CheckoutPage = () => {
                                     </div>
                                 </div>
 
+                                <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                    <div className="flex justify-between text-black md:text-[18px] text-[16px]">
+                                        <span className="font-semibold">გადასახდელი თანხა:</span>
+                                        <span className="font-bold text-lg">
+                                            ₾{getTotalWithDelivery().toFixed(2)}
+                                        </span>
+                                    </div>
+                                    {appliedVoucher && (
+                                        <p className="text-sm text-green-700 mt-1">
+                                            ვაუჩერი {appliedVoucher.code}: -₾
+                                            {appliedVoucher.discountAmount.toFixed(2)}
+                                        </p>
+                                    )}
+                                </div>
+
                                 {paymentMethod === 'card' ? (
                                     <button
                                         type="submit"
-                                        disabled={isProcessing || hasErrors || !requiredFieldsFilled || (deliveryType === 'delivery' && !selectedDeliveryCityId)}
+                                        disabled={isProcessing || voucherLoading || hasUnappliedVoucher || hasErrors || !requiredFieldsFilled || (deliveryType === 'delivery' && !selectedDeliveryCityId)}
                                         className="flex cursor-pointer md:text-[18px] text-[16px] font-bold justify-center items-center w-full mx-auto mt-6 bg-[#1B3729] text-white px-8 py-4 rounded-lg font-bold uppercase tracking-wide transition-colors duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed hover:opacity-95"
                                     >
-                                        {isProcessing ? 'მუშავდება...' : 'ბარათით ყიდვა'}
+                                        {isProcessing
+                                            ? 'მუშავდება...'
+                                            : `ბარათით გადახდა — ₾${getTotalWithDelivery().toFixed(2)}`}
                                     </button>
                                 ) : (
                                     <div className="mt-6">
@@ -700,7 +875,7 @@ const CheckoutPage = () => {
                                             currency="GEL"
                                             onPaymentSuccess={handleGooglePaySuccess}
                                             onError={handleGooglePayError}
-                                            disabled={isProcessing || hasErrors || !requiredFieldsFilled || (deliveryType === 'delivery' && !selectedDeliveryCityId)}
+                                            disabled={isProcessing || voucherLoading || hasUnappliedVoucher || hasErrors || !requiredFieldsFilled || (deliveryType === 'delivery' && !selectedDeliveryCityId)}
                                         />
                                     </div>
                                 )}
@@ -787,6 +962,12 @@ const CheckoutPage = () => {
                                         <span>ნივთების ჯამი:</span>
                                         <span className="font-medium">₾{getTotalPrice().toFixed(2)}</span>
                                     </div>
+                                    {appliedVoucher && (
+                                        <div className="flex justify-between text-green-700 md:text-[18px] text-[16px]">
+                                            <span>ვაუჩერი ({appliedVoucher.code}):</span>
+                                            <span className="font-medium">-₾{appliedVoucher.discountAmount.toFixed(2)}</span>
+                                        </div>
+                                    )}
                                     {deliveryType === 'delivery' && selectedDeliveryCity && (
                                         <div className="flex justify-between text-black md:text-[18px] text-[16px]">
                                             <span>მიტანის ფასი:</span>

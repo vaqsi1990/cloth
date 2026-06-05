@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { recordSellerTransactions } from '@/utils/sellerTransactions'
+import { redeemVoucher } from '@/lib/voucher'
 import crypto from 'crypto'
 
 const BOG_PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
@@ -46,6 +47,20 @@ async function updateOrderStatus(paymentId: string, status: string) {
 
   if (final === "PAID") {
     await recordSellerTransactions(order.id)
+
+    if (order.voucherId && order.userId && order.voucherDiscount) {
+      const existing = await prisma.voucherRedemption.findFirst({
+        where: { orderId: order.id },
+      })
+      if (!existing) {
+        await redeemVoucher(
+          order.voucherId,
+          order.userId,
+          order.id,
+          order.voucherDiscount,
+        )
+      }
+    }
   }
 
   return true
