@@ -50,6 +50,10 @@ const ShopPageClient = () => {
     const [itemsPerPage] = useState(16)
     const [serverTotalPages, setServerTotalPages] = useState(1)
     const [serverTotalCount, setServerTotalCount] = useState(0)
+    // For offset pagination we intentionally skip `count()` on the server (performance).
+    // In that case we only know whether there is more (`hasMore`), not exact total pages.
+    const [serverHasMore, setServerHasMore] = useState(false)
+    const [isTotalPagesKnown, setIsTotalPagesKnown] = useState(false)
     const [activeMobileFilter, setActiveMobileFilter] = useState<string | null>(null)
     const [isMobileFilterOverlayOpen, setIsMobileFilterOverlayOpen] = useState(false)
     const [isCategorySectionOpen, setIsCategorySectionOpen] = useState(false)
@@ -327,6 +331,8 @@ const ShopPageClient = () => {
 
     // Fetch products from API (server-side pagination: 16 per page)
     useEffect(() => {
+        const controller = new AbortController()
+
         const fetchProducts = async () => {
             setLoading(true)
             try {
@@ -357,7 +363,7 @@ const ShopPageClient = () => {
 
                 const url = `/api/products?${params}`
                 const t0 = performance.now()
-                const response = await fetch(url)
+                const response = await fetch(url, { signal: controller.signal })
                 const tHeaders = performance.now()
                 const data = await response.json()
                 const tDone = performance.now()
@@ -390,6 +396,8 @@ const ShopPageClient = () => {
                     setProducts(data.products)
                     setServerTotalPages(data.totalPages ?? 1)
                     setServerTotalCount(data.totalCount ?? data.products.length)
+                    setServerHasMore(Boolean(data.hasMore))
+                    setIsTotalPagesKnown(data.totalPages !== null && data.totalPages !== undefined)
 
                     const allPrices = data.products.flatMap((product: Product) => {
                         const prices: number[] = []
@@ -413,7 +421,9 @@ const ShopPageClient = () => {
                         setPriceRange([0, calculatedMaxPrice])
                     }
                 }
-            } catch (error) {
+            } catch (error: any) {
+                // In dev/StrictMode effect may re-run; we abort the previous request intentionally.
+                if (error?.name === 'AbortError') return
                 console.error('Error fetching products:', error)
             } finally {
                 setLoading(false)
@@ -421,6 +431,7 @@ const ShopPageClient = () => {
         }
 
         fetchProducts()
+        return () => controller.abort()
     }, [
         genderParam,
         searchParam,
@@ -1730,7 +1741,7 @@ const ShopPageClient = () => {
                         )}
 
                         {/* Pagination */}
-                        {totalPages > 1 && (
+                        {(isTotalPagesKnown ? totalPages > 1 : (serverHasMore || currentPage > 1)) && (
                             <div className="flex flex-col items-center justify-center gap-4 mt-8">
                                 <div className="flex items-center gap-2">
                                     <button
@@ -1745,44 +1756,51 @@ const ShopPageClient = () => {
                                         წინა
                                     </button>
 
-                                    <div className="flex items-center gap-1">
-                                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                                            // Show first page, last page, current page, and pages around current
-                                            if (
-                                                page === 1 ||
-                                                page === totalPages ||
-                                                (page >= currentPage - 1 && page <= currentPage + 1)
-                                            ) {
-                                                return (
-                                                    <button
-                                                        key={page}
-                                                        onClick={() => goToPage(page)}
-                                                        className={`px-4 py-2 rounded-lg border transition-colors md:text-[18px] text-[16px] ${currentPage === page
-                                                            ? 'bg-black text-white border-black'
-                                                            : 'bg-white text-black border-gray-300 hover:bg-gray-50 hover:border-black'
-                                                            }`}
-                                                    >
-                                                        {page}
-                                                    </button>
-                                                )
-                                            } else if (
-                                                page === currentPage - 2 ||
-                                                page === currentPage + 2
-                                            ) {
-                                                return (
-                                                    <span key={page} className="px-2 text-black">
-                                                        ...
-                                                    </span>
-                                                )
-                                            }
-                                            return null
-                                        })}
-                                    </div>
+                                    {isTotalPagesKnown ? (
+                                        <div className="flex items-center gap-1">
+                                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                                                // Show first page, last page, current page, and pages around current
+                                                if (
+                                                    page === 1 ||
+                                                    page === totalPages ||
+                                                    (page >= currentPage - 1 && page <= currentPage + 1)
+                                                ) {
+                                                    return (
+                                                        <button
+                                                            key={page}
+                                                            onClick={() => goToPage(page)}
+                                                            className={`px-4 py-2 rounded-lg border transition-colors md:text-[18px] text-[16px] ${currentPage === page
+                                                                ? 'bg-black text-white border-black'
+                                                                : 'bg-white text-black border-gray-300 hover:bg-gray-50 hover:border-black'
+                                                                }`}
+                                                        >
+                                                            {page}
+                                                        </button>
+                                                    )
+                                                } else if (
+                                                    page === currentPage - 2 ||
+                                                    page === currentPage + 2
+                                                ) {
+                                                    return (
+                                                        <span key={page} className="px-2 text-black">
+                                                            ...
+                                                        </span>
+                                                    )
+                                                }
+                                                return null
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <div className="px-2 text-black md:text-[16px] text-[14px]">
+                                            {/* Offset mode: we only know "next exists", not exact page count */}
+                                            {currentPage}
+                                        </div>
+                                    )}
 
                                     <button
-                                        onClick={() => goToPage(Math.min(totalPages, currentPage + 1))}
-                                        disabled={currentPage === totalPages}
-                                        className={`px-4 py-2 rounded-lg border transition-colors md:text-[18px] text-[16px] flex items-center gap-2 ${currentPage === totalPages
+                                        onClick={() => goToPage(isTotalPagesKnown ? Math.min(totalPages, currentPage + 1) : currentPage + 1)}
+                                        disabled={isTotalPagesKnown ? currentPage === totalPages : !serverHasMore}
+                                        className={`px-4 py-2 rounded-lg border transition-colors md:text-[18px] text-[16px] flex items-center gap-2 ${((isTotalPagesKnown ? currentPage === totalPages : !serverHasMore))
                                             ? 'bg-gray-100 text-black cursor-not-allowed border-gray-300'
                                             : 'bg-white text-black border-gray-300 hover:bg-gray-50 hover:border-black'
                                             }`}
@@ -1793,7 +1811,7 @@ const ShopPageClient = () => {
                                 </div>
 
                                 <p className="text-black md:text-[16px] text-[14px]">
-                                    გვერდი {currentPage} {totalPages}-დან
+                                    {isTotalPagesKnown ? `გვერდი ${currentPage} ${totalPages}-დან` : `გვერდი ${currentPage}`}
                                 </p>
                             </div>
                         )}

@@ -302,14 +302,8 @@ export async function GET(request: NextRequest) {
               },
             })
 
-    const countPromise = useOffsetPagination
-      ? prisma.product.count({ where: productWhere })
-      : Promise.resolve(null)
-
-    const [products, totalCount] = await Promise.all([
-      productsPromise,
-      countPromise,
-    ])
+  
+    const products = await productsPromise
     const dbTime = Date.now() - dbStart
     const processStart = Date.now()
     if (process.env.NODE_ENV === 'development') {
@@ -381,9 +375,7 @@ export async function GET(request: NextRequest) {
         : null
 
     const totalPages =
-      useOffsetPagination && totalCount !== null
-        ? Math.max(1, Math.ceil(totalCount / pageLimit))
-        : undefined
+      useOffsetPagination ? null : undefined
 
     const processMs = Date.now() - processStart
     const handlerMs = prepMs + dbTime + processMs
@@ -396,15 +388,13 @@ export async function GET(request: NextRequest) {
       success: true,
       products: productsToReturn,
       nextCursor,
-      hasMore: useOffsetPagination
-        ? page < (totalPages ?? 1)
-        : hasMore,
+      hasMore: hasMore,
       ...(useOffsetPagination
         ? {
             page,
             limit: pageLimit,
-            totalCount: totalCount ?? 0,
-            totalPages: totalPages ?? 1,
+            totalCount: null,
+            totalPages,
           }
         : {}),
     }
