@@ -16,89 +16,80 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const orders = await prisma.order.findMany({
-      where: {
-        status: 'PAID' // Only show PAID orders
-      },
-      include: {
-        items: {
-          include: {
-            product: {
-              select: {
-                id: true,
-                name: true,
-                status: true,
-                userId: true, // Include userId to verify product has owner
-                images: {
-                  select: {
-                    url: true,
-                    alt: true
-                  }
-                },
-                rentalPriceTiers: {
-                  orderBy: { minDays: 'asc' }
-                },
-                user: {
-                  select: {
-                    id: true,
-                    name: true,
-                    email: true,
-                    phone: true,
-                    pickupAddress: true,
-                    address: true
-                  }
-                }
-              }
-            }
-          }
-        },
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
-            address: true,
-            location: true // ადგილმდებარეობა
-          }
-        },
-        deliveryCity: {
-          select: {
-            id: true,
-            name: true,
-            price: true,
-            isActive: true
-          }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    })
+    const { searchParams } = new URL(request.url)
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1)
+    const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '50', 10) || 50, 1), 200)
+    const skip = (page - 1) * limit
 
-    // Debug: Check for products without users
-    let productsWithoutUsers = 0
-    let productsWithUsers = 0
-    let itemsWithoutProducts = 0
-    
-    orders.forEach(order => {
-      order.items.forEach(item => {
-        if (!item.product) {
-          itemsWithoutProducts++
-        } else if (item.product.userId && !item.product.user) {
-          productsWithoutUsers++
-          console.log(`⚠️ Product ${item.product.id} has userId ${item.product.userId} but user relation is null`)
-        } else if (item.product.user) {
-          productsWithUsers++
-        }
-      })
-    })
-    
-    console.log(`📊 Order stats: ${productsWithUsers} products with users, ${productsWithoutUsers} products without users, ${itemsWithoutProducts} items without products`)
+    const where = { status: 'PAID' as const }
+
+    const [orders, totalCount] = await Promise.all([
+      prisma.order.findMany({
+        where,
+        include: {
+          items: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  status: true,
+                  userId: true,
+                  images: {
+                    select: { url: true, alt: true },
+                    take: 1,
+                  },
+                  rentalPriceTiers: {
+                    orderBy: { minDays: 'asc' },
+                    take: 5,
+                  },
+                  user: {
+                    select: {
+                      id: true,
+                      name: true,
+                      email: true,
+                      phone: true,
+                      pickupAddress: true,
+                      address: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+              address: true,
+              location: true,
+            },
+          },
+          deliveryCity: {
+            select: {
+              id: true,
+              name: true,
+              price: true,
+              isActive: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.order.count({ where }),
+    ])
 
     return NextResponse.json({
       success: true,
-      orders: orders
+      orders,
+      page,
+      limit,
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit),
     })
 
   } catch (error) {

@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { findRentalDateConflict } from '@/lib/rental-date-conflicts'
 
 // Order validation schema
 const orderSchema = z.object({
@@ -89,96 +90,23 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Validate rental dates don't conflict with existing rentals
-    // Helper function to check date conflicts with maintenance buffer (1 day)
-    const hasDateConflict = (start: Date, end: Date, existingStart: Date, existingEnd: Date): boolean => {
-      const existingLastBlockedDate = new Date(existingEnd.getTime() + 24 * 60 * 60 * 1000) // 1 day buffer
-      return start < existingLastBlockedDate && end >= existingStart
-    }
+    // Validate rental dates don't conflict with existing rentals (batched)
+    const rentalItems = validatedData.items
+      .filter((item) => item.isRental && item.rentalStartDate && item.rentalEndDate)
+      .map((item) => ({
+        productId: item.productId,
+        productName: item.productName,
+        size: item.size,
+        rentalStartDate: item.rentalStartDate!,
+        rentalEndDate: item.rentalEndDate!,
+      }))
 
-    for (const item of validatedData.items) {
-      if (item.isRental && item.rentalStartDate && item.rentalEndDate) {
-        const start = new Date(item.rentalStartDate)
-        const end = new Date(item.rentalEndDate)
-        
-        // Validate date range
-        if (start >= end) {
-          return NextResponse.json({
-            success: false,
-            message: `არასწორი თარიღების დიაპაზონი პროდუქტისთვის ${item.productName}`
-          }, { status: 400 })
-        }
-
-        // Check existing rentals from rental table (by product, not variant)
-        const existingRentals = await prisma.rental.findMany({
-          where: {
-            productId: item.productId,
-            status: {
-              in: ['RESERVED', 'ACTIVE']
-            }
-          }
-        })
-        
-        // Check existing order items with active rentals for this product
-        const existingOrders = await prisma.order.findMany({
-          where: {
-            status: {
-              in: ['PENDING', 'PAID', 'SHIPPED']
-            },
-            items: {
-              some: {
-                productId: item.productId,
-                isRental: true,
-                rentalEndDate: {
-                  gte: new Date()
-                }
-              }
-            }
-          },
-          select: {
-            id: true,
-            items: {
-              where: {
-                productId: item.productId,
-                isRental: true,
-                size: item.size // Match by size from order item (product size)
-              },
-              select: {
-                id: true,
-                isRental: true,
-                rentalStartDate: true,
-                rentalEndDate: true,
-                size: true,
-              }
-            }
-          },
-          take: 100 // Limit results to prevent excessive data fetching
-        })
-        
-        // Check for conflicts with existing rentals
-        for (const rental of existingRentals) {
-          if (hasDateConflict(start, end, rental.startDate, rental.endDate)) {
-            return NextResponse.json({
-              success: false,
-              message: `პროდუქტი ${item.productName} (${item.size}) არ არის ხელმისაწვდომი არჩეულ თარიღებზე`
-            }, { status: 409 })
-          }
-        }
-        
-        // Check order items for conflicts
-        for (const order of existingOrders) {
-          for (const orderItem of order.items) {
-            if (orderItem.isRental && orderItem.rentalStartDate && orderItem.rentalEndDate) {
-              if (hasDateConflict(start, end, orderItem.rentalStartDate, orderItem.rentalEndDate)) {
-                return NextResponse.json({
-                  success: false,
-                  message: `პროდუქტი ${item.productName} (${item.size}) არ არის ხელმისაწვდომი არჩეულ თარიღებზე`
-                }, { status: 409 })
-              }
-            }
-          }
-        }
-      }
+    const rentalConflict = await findRentalDateConflict(rentalItems)
+    if (rentalConflict) {
+      return NextResponse.json(
+        { success: false, message: rentalConflict },
+        { status: rentalConflict.includes('არასწორი') ? 400 : 409 },
+      )
     }
     
     // Calculate total
@@ -287,7 +215,7 @@ export async function POST(request: NextRequest) {
 }
 
 // GET - Fetch orders (for authenticated users)
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     
@@ -298,38 +226,42 @@ export async function GET() {
       )
     }
 
-    // Fetch orders by userId OR by email/phone if userId is null (for old orders)
-    const orders = await prisma.order.findMany({
-      where: {
-        OR: [
-          {
-            userId: session.user.id
+    const { searchParams } = new URL(request.url)
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1)
+    const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '50', 10) || 50, 1), 100)
+    const skip = (page - 1) * limit
+
+    const where = {
+      OR: [
+        { userId: session.user.id },
+        {
+          userId: null,
+          OR: [
+            { email: session.user.email || undefined },
+            { phone: session.user.phone || undefined },
+          ],
+        },
+      ],
+    }
+
+    const [orders, totalCount] = await Promise.all([
+      prisma.order.findMany({
+        where,
+        include: {
+          items: {
+            include: {
+              product: {
+                select: { status: true },
+              },
+            },
           },
-          // Fallback: check by email or phone if userId is null
-          {
-            userId: null,
-            OR: [
-              { email: session.user.email || undefined },
-              { phone: session.user.phone || undefined },
-            ],
-          },
-        ],
-      },
-      include: {
-        items: {
-          include: {
-            product: {
-              select: {
-                status: true
-              }
-            }
-          }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    })
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.order.count({ where }),
+    ])
 
     // Filter items to exclude those with AVAILABLE product status
     // (Items with AVAILABLE status were likely re-added to inventory after being sold)
@@ -342,7 +274,11 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      orders: filteredOrders
+      orders: filteredOrders,
+      page,
+      limit,
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit),
     })
     
   } catch (error) {

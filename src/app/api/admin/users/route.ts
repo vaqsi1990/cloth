@@ -16,55 +16,66 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const users = await prisma.user.findMany({
-      // Fetch all users (USER, ADMIN, SUPPORT) so admin can manage all roles
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        createdAt: true,
-        banned: true,
-        banReason: true,
-        bannedAt: true,
-        blocked: true,
-        verified: true,
-        personalId: true,
-        phone: true,
-        location: true,
-        address: true,
-        iban: true,
-        _count: {
-          select: {
-            products: true,
-            orders: true,
+    const { searchParams } = new URL(request.url)
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1)
+    const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '50', 10) || 50, 1), 200)
+    const skip = (page - 1) * limit
+
+    const [users, totalCount] = await Promise.all([
+      prisma.user.findMany({
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          createdAt: true,
+          banned: true,
+          banReason: true,
+          bannedAt: true,
+          blocked: true,
+          verified: true,
+          personalId: true,
+          phone: true,
+          location: true,
+          address: true,
+          iban: true,
+          _count: {
+            select: {
+              products: true,
+              orders: true,
+            },
+          },
+          verification: {
+            select: {
+              status: true,
+              identityStatus: true,
+              entrepreneurStatus: true,
+              idFrontUrl: true,
+              idBackUrl: true,
+              entrepreneurCertificateUrl: true,
+              comment: true,
+              identityComment: true,
+              entrepreneurComment: true,
+              createdAt: true,
+              updatedAt: true,
+            },
           },
         },
-        verification: {
-          select: {
-            status: true, // Legacy field
-            identityStatus: true, // May not exist in old databases
-            entrepreneurStatus: true, // May not exist in old databases
-            idFrontUrl: true,
-            idBackUrl: true,
-            entrepreneurCertificateUrl: true,
-            comment: true, // Legacy field
-            identityComment: true, // May not exist in old databases
-            entrepreneurComment: true, // May not exist in old databases
-            createdAt: true,
-            updatedAt: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.user.count(),
+    ])
 
     return NextResponse.json({
       success: true,
       users,
-    });
+      page,
+      limit,
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+    })
 
   } catch (error) {
     console.error('Error fetching users:', error)

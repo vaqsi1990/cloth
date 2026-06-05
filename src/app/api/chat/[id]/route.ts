@@ -37,40 +37,43 @@ export async function GET(
     }
 
     const session = await getServerSession(authOptions)
-    
-    // Check if user has access to this chat room
-    // Admin/Support users can access any chat room
-    // Regular users can access chat rooms where they are userId (buyer) or adminId (seller/product author)
-    let chatRoom
+
+    type ChatRoomMeta = {
+      userId: string | null
+      adminId: string | null
+      userTypingAt: Date | null
+      adminTypingAt: Date | null
+    }
+
+    let chatRoomRows: ChatRoomMeta[]
+
     if (isAdminOrSupport(session?.user?.role)) {
-      // Admin/Support can access any chat room
-      chatRoom = await prisma.$queryRaw<Array<{ id: number }>>`
-        SELECT id FROM "ChatRoom" 
+      chatRoomRows = await prisma.$queryRaw<ChatRoomMeta[]>`
+        SELECT "userId", "adminId", "userTypingAt", "adminTypingAt"
+        FROM "ChatRoom"
         WHERE id = ${chatRoomId}
         LIMIT 1
       `
+    } else if (session?.user?.id) {
+      chatRoomRows = await prisma.$queryRaw<ChatRoomMeta[]>`
+        SELECT "userId", "adminId", "userTypingAt", "adminTypingAt"
+        FROM "ChatRoom"
+        WHERE id = ${chatRoomId}
+        AND ("userId" = ${session.user.id} OR "adminId" = ${session.user.id})
+        LIMIT 1
+      `
     } else {
-      // Regular users can access their own chat rooms (as buyer) or chat rooms where they are seller (adminId)
-      // For guest users, we need to check if they have access via session or if it's a guest chat
-      if (session?.user?.id) {
-        // Authenticated user - can be buyer (userId) or seller (adminId)
-        chatRoom = await prisma.$queryRaw<Array<{ id: number }>>`
-          SELECT id FROM "ChatRoom" 
-          WHERE id = ${chatRoomId}
-          AND ("userId" = ${session.user.id} OR "adminId" = ${session.user.id})
-          LIMIT 1
-        `
-      } else {
-        // Guest user - allow access to any chat room (they'll be identified by guestEmail in messages)
-        chatRoom = await prisma.$queryRaw<Array<{ id: number }>>`
-          SELECT id FROM "ChatRoom" 
-          WHERE id = ${chatRoomId}
-          LIMIT 1
-        `
-      }
+      chatRoomRows = await prisma.$queryRaw<ChatRoomMeta[]>`
+        SELECT "userId", "adminId", "userTypingAt", "adminTypingAt"
+        FROM "ChatRoom"
+        WHERE id = ${chatRoomId}
+        LIMIT 1
+      `
     }
 
-    if (chatRoom.length === 0) {
+    const chatRoomMeta = chatRoomRows[0] ?? null
+
+    if (!chatRoomMeta) {
       console.log(`Chat room ${chatRoomId} not found or access denied for user ${session?.user?.id || 'guest'}`)
       return NextResponse.json(
         { 
@@ -82,27 +85,8 @@ export async function GET(
       )
     }
 
-    const chatRoomRows = await prisma.$queryRaw<
-      Array<{
-        userId: string | null
-        adminId: string | null
-        userTypingAt: Date | null
-        adminTypingAt: Date | null
-      }>
-    >`
-      SELECT "userId", "adminId", "userTypingAt", "adminTypingAt"
-      FROM "ChatRoom"
-      WHERE id = ${chatRoomId}
-      LIMIT 1
-    `
-    const chatRoomMeta = chatRoomRows[0] ?? null
-
-    const viewerIsAdminSide = chatRoomMeta
-      ? isAdminSide(session, chatRoomMeta)
-      : false
-    const otherPartyTyping = chatRoomMeta
-      ? getOtherPartyTyping(chatRoomMeta, viewerIsAdminSide)
-      : false
+    const viewerIsAdminSide = isAdminSide(session, chatRoomMeta)
+    const otherPartyTyping = getOtherPartyTyping(chatRoomMeta, viewerIsAdminSide)
 
     const messages = await prisma.$queryRaw<Array<{
       id: number

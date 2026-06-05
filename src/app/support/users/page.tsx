@@ -73,7 +73,7 @@ const SupportUsersPage = () => {
   const fetchUsers = useCallback(async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/admin/users')
+      const response = await fetch('/api/admin/users?limit=200')
       const data = await response.json()
       
       if (data.success) {

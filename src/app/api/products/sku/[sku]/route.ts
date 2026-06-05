@@ -162,14 +162,15 @@ export async function GET(
           }
         }
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      take: 100,
     })
 
     // Get rental orders (from OrderItem)
     const rentalOrders = await prisma.orderItem.findMany({
       where: {
         productId: product.id,
-        isRental: true
+        isRental: true,
       },
       include: {
         order: {
@@ -179,13 +180,14 @@ export async function GET(
                 id: true,
                 name: true,
                 email: true,
-                phone: true
-              }
-            }
-          }
-        }
+                phone: true,
+              },
+            },
+          },
+        },
       },
-      orderBy: { order: { createdAt: 'desc' } }
+      orderBy: { order: { createdAt: 'desc' } },
+      take: 100,
     })
 
     // Calculate rental duration and format dates for each rental

@@ -7,6 +7,7 @@ import Link from 'next/link'
 import Image from '@/component/AppImage'
 import { ArrowLeft, Plus, Edit, Trash2, Eye, Search, Filter, Package, Calendar, Clock, Barcode, MessageSquare, ChevronDown, ChevronUp, Star, X } from 'lucide-react'
 import { showToast } from '@/utils/toast'
+import { attachBatchRentalStatus } from '@/utils/rentalStatusBatch'
 import { isSupport } from '@/lib/roles'
 
 interface RentalPeriod {
@@ -121,27 +122,8 @@ const SupportProductsPage = () => {
       const data = await response.json()
       
       if (data.success) {
-        // Fetch rental status for each product
-        const productsWithRentalStatus = await Promise.all(
-          data.products.map(async (product: Product) => {
-            try {
-              const rentalResponse = await fetch(`/api/products/${product.id}/rental-status`)
-              const rentalData = await rentalResponse.json()
-              if (rentalData.success) {
-                const statusMap: {[key: string]: RentalPeriod[]} = {}
-                rentalData.variants.forEach((variant: { variantId: number; activeRentals?: RentalPeriod[] }) => {
-                  statusMap[`variant_${variant.variantId}`] = variant.activeRentals || []
-                })
-                return { ...product, rentalStatus: statusMap }
-              }
-              return product
-            } catch (error) {
-              console.error(`Error fetching rental status for product ${product.id}:`, error)
-              return product
-            }
-          })
-        )
-        setProducts(productsWithRentalStatus)
+        const productsWithRentalStatus = await attachBatchRentalStatus(data.products)
+        setProducts(productsWithRentalStatus as Product[])
       }
     } catch (error) {
       console.error('Error fetching products:', error)

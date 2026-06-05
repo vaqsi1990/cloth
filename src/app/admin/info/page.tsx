@@ -59,7 +59,7 @@ const AdminInfoPage = () => {
       if (status === 'authenticated' && session?.user?.role === 'ADMIN') {
         try {
           setLoading(true)
-          const response = await fetch('/api/admin/orders')
+          const response = await fetch('/api/admin/orders?limit=200')
           const data = await response.json()
           
           console.log('Debug - Raw API response:', data)
@@ -375,7 +375,7 @@ const AdminInfoPage = () => {
       setSelectedIds(new Set())
       
       // Refresh data from server to ensure consistency
-      const response = await fetch('/api/admin/orders')
+      const response = await fetch('/api/admin/orders?limit=200')
       const data = await response.json()
       
       if (data.success && data.orders) {

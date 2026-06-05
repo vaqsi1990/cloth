@@ -3,184 +3,115 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { checkAndClearExpiredDiscounts, processExpiredDiscount } from '@/utils/discountUtils'
+import { ownerProductListSelect, parseListPagination } from '@/lib/product-owner-query'
+import { Prisma } from '@prisma/client'
 
-// Helper function to build product query
-const buildProductQuery = (userId: string, isAdmin: boolean) => {
-  const whereClause: any = { 
+function buildAuthorProductWhere(userId: string, isAdmin: boolean): Prisma.ProductWhereInput {
+  const where: Prisma.ProductWhereInput = {
     userId,
-    // RESERVED products are hidden from everyone, including admins
-    status: {
-      notIn: ['RESERVED'] // Hide sold products from all users
-    }
+    status: { notIn: ['RESERVED'] },
   }
-  
+
   if (!isAdmin) {
-    whereClause.user = { blocked: false }
-    whereClause.approvalStatus = 'APPROVED'
-    whereClause.status = {
-      notIn: ['MAINTENANCE', 'DAMAGED', 'RESERVED'] // Non-admin users don't see maintenance or damaged products
-    }
+    where.user = { blocked: false }
+    where.approvalStatus = 'APPROVED'
+    where.status = { notIn: ['MAINTENANCE', 'DAMAGED', 'RESERVED'] }
   }
-  
-  return {
-    where: whereClause,
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      brand: true,
-      description: true,
-      sku: true,
-      stock: true,
-      gender: true,
-      color: true,
-      location: true,
-      sizeSystem: true,
-      size: true,
-      isNew: true,
-      discount: true,
-      discountDays: true,
-      discountStartDate: true,
-      rating: true,
-      categoryId: true,
-      purposeId: true,
-      userId: true,
-      isRentable: true,
-      pricePerDay: true,
-      maxRentalDays: true,
-      status: true,
-      approvalStatus: true,
-      createdAt: true,
-      updatedAt: true,
-      category: {
-        select: {
-          id: true,
-          name: true,
-          slug: true
-        }
-      },
-      purpose: {
-        select: {
-          id: true,
-          name: true,
-          slug: true
-        }
-      },
-      user: {
-        select: {
-          id: true,
-          name: true,
-          image: true
-        }
-      },
-      images: {
-        select: {
-          id: true,
-          url: true,
-          alt: true,
-          position: true
-        },
-        orderBy: { position: 'asc' as const }
-      },
-      variants: {
-        select: {
-          id: true,
-          price: true
-        },
-        orderBy: { price: 'asc' as const } // Order by price since size was removed
-      },
-      rentalPriceTiers: {
-        select: {
-          id: true,
-          minDays: true,
-          pricePerDay: true
-        },
-        orderBy: { minDays: 'asc' as const }
-      }
-    },
-    orderBy: {
-      createdAt: 'desc' as const
-    }
-  }
+
+  return where
 }
 
-// GET - Fetch all products by author/user ID
+// GET - Fetch products by author/user ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await getServerSession(authOptions)
     const resolvedParams = await params
     const userId = resolvedParams.id
-    
+
     if (!userId) {
-      return NextResponse.json({
-        success: false,
-        message: 'ავტორის ID აუცილებელია'
-      }, { status: 400 })
+      return NextResponse.json(
+        { success: false, message: 'ავტორის ID აუცილებელია' },
+        { status: 400 },
+      )
     }
 
-    // Get user info
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        name: true,
-        image: true,
-        blocked: true
-      }
-    })
+    const { searchParams } = new URL(request.url)
+    const usePagination = searchParams.has('page') || searchParams.has('limit')
+    const { page, limit, skip } = parseListPagination(searchParams)
 
-    const isAdmin = session?.user?.role === 'ADMIN'
+    const [user, isAdmin] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          name: true,
+          image: true,
+          blocked: true,
+        },
+      }),
+      Promise.resolve(session?.user?.role === 'ADMIN'),
+    ])
 
     if (!user || (!isAdmin && user.blocked)) {
-      return NextResponse.json({
-        success: false,
-        message: 'ავტორი ვერ მოიძებნა'
-      }, { status: 404 })
+      return NextResponse.json(
+        { success: false, message: 'ავტორი ვერ მოიძებნა' },
+        { status: 404 },
+      )
     }
 
-    // Fetch products
-    console.time("db")
-    const products = await prisma.product.findMany(
-      buildProductQuery(userId, isAdmin)
-    )
-    console.timeEnd("db")
-    console.log("finish")
+    const where = buildAuthorProductWhere(userId, isAdmin)
 
-    // Check and clear expired discounts if needed
+    const listArgs = {
+      where,
+      select: {
+        ...ownerProductListSelect,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' as const },
+      ...(usePagination ? { skip, take: limit } : {}),
+    }
+
+    const products = await prisma.product.findMany(listArgs)
+
+    const totalCount = usePagination
+      ? await prisma.product.count({ where })
+      : products.length
+
     const productIds = products
-      .filter(p => p.discount && p.discountDays && p.discountStartDate)
-      .map(p => p.id)
-    
-    let finalProducts = products
+      .filter((p) => p.discount && p.discountDays && p.discountStartDate)
+      .map((p) => p.id)
 
     if (productIds.length > 0) {
-      await checkAndClearExpiredDiscounts(productIds)
-      // Re-fetch products to get updated discount data
-      console.time("db")
-      finalProducts = await prisma.product.findMany(
-        buildProductQuery(userId, isAdmin)
-      )
-      console.timeEnd("db")
-      console.log("finish")
+      void checkAndClearExpiredDiscounts(productIds).catch(() => {})
     }
 
-    // Process expired discounts and return
     return NextResponse.json({
       success: true,
       author: user,
-      products: finalProducts.map(processExpiredDiscount)
+      products: products.map(processExpiredDiscount),
+      ...(usePagination
+        ? {
+            page,
+            limit,
+            totalCount,
+            totalPages: Math.ceil(totalCount / limit),
+          }
+        : {}),
     })
-    
   } catch (error) {
-    console.timeEnd("db")
-    console.log("finish")
     console.error('Error fetching author products:', error)
-    return NextResponse.json({
-      success: false,
-      message: 'შეცდომა ავტორის პროდუქტების მიღებისას'
-    }, { status: 500 })
+    return NextResponse.json(
+      { success: false, message: 'შეცდომა ავტორის პროდუქტების მიღებისას' },
+      { status: 500 },
+    )
   }
 }

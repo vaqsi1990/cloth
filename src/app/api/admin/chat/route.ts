@@ -61,10 +61,15 @@ export async function GET(request: NextRequest) {
           u.email as user_email,
           a.name as admin_name,
           a.email as admin_email,
-          (SELECT COUNT(*) FROM "ChatMessage" WHERE "chatRoomId" = cr.id)::int as message_count
+          COALESCE(mc.cnt, 0)::int as message_count
         FROM "ChatRoom" cr
         LEFT JOIN "User" u ON cr."userId" = u.id
         LEFT JOIN "User" a ON cr."adminId" = a.id
+        LEFT JOIN (
+          SELECT "chatRoomId", COUNT(*)::int AS cnt
+          FROM "ChatMessage"
+          GROUP BY "chatRoomId"
+        ) mc ON mc."chatRoomId" = cr.id
         WHERE (cr."adminId" IS NULL OR a.role = 'ADMIN')
           AND cr.status = ${validStatus}
         ORDER BY cr."updatedAt" DESC
@@ -93,10 +98,15 @@ export async function GET(request: NextRequest) {
           u.email as user_email,
           a.name as admin_name,
           a.email as admin_email,
-          (SELECT COUNT(*) FROM "ChatMessage" WHERE "chatRoomId" = cr.id)::int as message_count
+          COALESCE(mc.cnt, 0)::int as message_count
         FROM "ChatRoom" cr
         LEFT JOIN "User" u ON cr."userId" = u.id
         LEFT JOIN "User" a ON cr."adminId" = a.id
+        LEFT JOIN (
+          SELECT "chatRoomId", COUNT(*)::int AS cnt
+          FROM "ChatMessage"
+          GROUP BY "chatRoomId"
+        ) mc ON mc."chatRoomId" = cr.id
         WHERE (cr."adminId" IS NULL OR a.role = 'ADMIN')
         ORDER BY cr."updatedAt" DESC
         LIMIT ${limit} OFFSET ${skip}

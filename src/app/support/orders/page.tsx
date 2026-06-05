@@ -75,7 +75,7 @@ const SupportOrdersPage = () => {
   const fetchOrders = useCallback(async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/admin/orders')
+      const response = await fetch('/api/admin/orders?limit=200')
       const data = await response.json()
       
       if (data.success) {

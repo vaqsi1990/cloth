@@ -7,6 +7,7 @@ import Link from 'next/link'
 import Image from '@/component/AppImage'
 import { Plus, Edit, Trash2, Eye, Search, Filter, Package, Calendar, Clock, Barcode } from 'lucide-react'
 import { showToast } from '@/utils/toast'
+import { attachBatchRentalStatus } from '@/utils/rentalStatusBatch'
 
 interface RentalPeriod {
   startDate: string
@@ -81,25 +82,7 @@ const AdminProductsPage = () => {
   }, [status])
 
   const enrichWithRentalStatus = useCallback(async (productList: Product[]) => {
-    return Promise.all(
-      productList.map(async (product: Product) => {
-        try {
-          const rentalResponse = await fetch(`/api/products/${product.id}/rental-status`)
-          const rentalData = await rentalResponse.json()
-          if (rentalData.success) {
-            const statusMap: { [key: string]: RentalPeriod[] } = {}
-            rentalData.variants.forEach((variant: { variantId: number; activeRentals?: RentalPeriod[] }) => {
-              statusMap[`variant_${variant.variantId}`] = variant.activeRentals || []
-            })
-            return { ...product, rentalStatus: statusMap }
-          }
-          return product
-        } catch (error) {
-          console.error(`Error fetching rental status for product ${product.id}:`, error)
-          return product
-        }
-      })
-    )
+    return attachBatchRentalStatus(productList)
   }, [])
 
   const fetchProducts = useCallback(async (cursor?: string | null, append = false) => {

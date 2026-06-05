@@ -1,17 +1,30 @@
 import { prisma } from '@/lib/prisma'
 
+type DiscountFields = {
+  discount: number | null
+  discountDays: number | null
+  discountStartDate: Date | null
+}
+
+function discountIsExpired(product: DiscountFields): boolean {
+  if (!product.discount || !product.discountDays || !product.discountStartDate) {
+    return false
+  }
+  const expiration = new Date(product.discountStartDate)
+  expiration.setDate(expiration.getDate() + product.discountDays)
+  return Date.now() > expiration.getTime()
+}
+
 /**
  * Checks if a product's discount has expired and clears it if necessary
- * @param product Product with discount, discountDays, and discountStartDate
- * @returns true if discount was expired and cleared, false otherwise
  */
 export async function checkAndClearExpiredDiscount(productId: number): Promise<boolean> {
   try {
     const product = await prisma.product.findUnique({
       // @ts-ignore - cacheStrategy is available with Prisma Accelerate
       cacheStrategy: {
-        swr: 60, // Stale-while-revalidating for 60 seconds
-        ttl: 60, // Cache results for 60 seconds
+        swr: 60,
+        ttl: 60,
       },
       where: { id: productId },
       select: {
@@ -22,30 +35,19 @@ export async function checkAndClearExpiredDiscount(productId: number): Promise<b
       },
     })
 
-    if (!product || !product.discount || !product.discountDays || !product.discountStartDate) {
+    if (!product || !discountIsExpired(product)) {
       return false
     }
 
-    // Calculate expiration date
-    const expirationDate = new Date(product.discountStartDate)
-    expirationDate.setDate(expirationDate.getDate() + product.discountDays)
-
-    // Check if discount has expired
-    const now = new Date()
-    if (now > expirationDate) {
-      // Clear expired discount
-      await prisma.product.update({
-        where: { id: productId },
-        data: {
-          discount: null,
-          discountDays: null,
-          discountStartDate: null,
-        },
-      })
-      return true
-    }
-
-    return false
+    await prisma.product.update({
+      where: { id: productId },
+      data: {
+        discount: null,
+        discountDays: null,
+        discountStartDate: null,
+      },
+    })
+    return true
   } catch (error) {
     console.error('Error checking expired discount:', error)
     return false
@@ -53,47 +55,52 @@ export async function checkAndClearExpiredDiscount(productId: number): Promise<b
 }
 
 /**
- * Checks and clears expired discounts for multiple products
- * @param productIds Array of product IDs to check
- * @returns Number of discounts cleared
+ * Batch clear expired discounts — one read + one updateMany instead of N+1.
  */
 export async function checkAndClearExpiredDiscounts(productIds: number[]): Promise<number> {
-  let clearedCount = 0
-  for (const productId of productIds) {
-    if (await checkAndClearExpiredDiscount(productId)) {
-      clearedCount++
-    }
-  }
-  return clearedCount
+  if (productIds.length === 0) return 0
+
+  const uniqueIds = [...new Set(productIds)]
+  const products = await prisma.product.findMany({
+    where: {
+      id: { in: uniqueIds },
+      discount: { not: null },
+    },
+    select: {
+      id: true,
+      discount: true,
+      discountDays: true,
+      discountStartDate: true,
+    },
+  })
+
+  const expiredIds = products.filter(discountIsExpired).map((p) => p.id)
+  if (expiredIds.length === 0) return 0
+
+  await prisma.product.updateMany({
+    where: { id: { in: expiredIds } },
+    data: {
+      discount: null,
+      discountDays: null,
+      discountStartDate: null,
+    },
+  })
+
+  return expiredIds.length
 }
 
 /**
  * Processes a product to check if discount has expired (without database update)
- * This is useful for checking before returning data to client
- * @param product Product object
- * @returns Product with discount cleared if expired, or original product
  */
-export function processExpiredDiscount(product: any): any {
-  if (!product.discount || !product.discountDays || !product.discountStartDate) {
+export function processExpiredDiscount<T extends DiscountFields>(product: T): T {
+  if (!discountIsExpired(product)) {
     return product
   }
 
-  // Calculate expiration date
-  const discountStartDate = new Date(product.discountStartDate)
-  const expirationDate = new Date(discountStartDate)
-  expirationDate.setDate(expirationDate.getDate() + product.discountDays)
-
-  // Check if discount has expired
-  const now = new Date()
-  if (now > expirationDate) {
-    // Return product with discount cleared (but don't update DB yet)
-    return {
-      ...product,
-      discount: null,
-      discountDays: null,
-      discountStartDate: null,
-    }
+  return {
+    ...product,
+    discount: null,
+    discountDays: null,
+    discountStartDate: null,
   }
-
-  return product
 }
