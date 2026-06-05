@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Info, Check, Trash2 } from 'lucide-react'
-import Image from 'next/image'
+import Image from '@/component/AppImage'
 
 interface DeliveryUser {
   id: number // Unique ID for React keys and selection

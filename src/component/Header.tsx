@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Search, Menu, User, LogOut, ShoppingCart, ChevronRight, Plus } from 'lucide-react'
-import Image from 'next/image'
+import Image from '@/component/AppImage'
 import { useSession, signOut } from 'next-auth/react'
 
 const HeaderContent = () => {

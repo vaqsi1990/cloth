@@ -1,7 +1,7 @@
 "use client"
 import React, { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
-import Image from "next/image"
+import Image from "@/component/AppImage"
 import Link from "next/link"
 import { ArrowLeft, User, ChevronLeft, ChevronRight, Plus } from "lucide-react"
 import { Product } from "@/types/product"

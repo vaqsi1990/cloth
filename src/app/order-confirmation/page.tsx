@@ -1,7 +1,7 @@
 "use client"
 import React, { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import Image from 'next/image'
+import Image from '@/component/AppImage'
 import Link from 'next/link'
 import { CheckCircle, Package, ArrowLeft, Home, ShoppingBag } from 'lucide-react'
 import { formatDate } from '@/utils/dateUtils'

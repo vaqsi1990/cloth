@@ -1,5 +1,5 @@
-/** Next.js Image optimization quality (1–100). Default in Next is 75. */
-export const PRODUCT_IMAGE_QUALITY = 90
+/** Next.js Image optimization quality (1–100). */
+export const IMAGE_QUALITY = 100
 
-/** Admin upload preview — show sharper thumbnails */
-export const UPLOAD_PREVIEW_QUALITY = 92
+export const PRODUCT_IMAGE_QUALITY = IMAGE_QUALITY
+export const UPLOAD_PREVIEW_QUALITY = IMAGE_QUALITY

@@ -1,6 +1,6 @@
 "use client"
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import Image from 'next/image'
+import Image from '@/component/AppImage'
 import Link from 'next/link'
 import { Filter, X, ChevronDown, Calendar, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'

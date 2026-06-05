@@ -3,7 +3,7 @@
 
 import { UploadButton } from "@/utils/uploadthing";
 import { useState } from "react";
-import Image from "next/image";
+import Image from "@/component/AppImage";
 import { showToast } from "@/utils/toast";
 
 type ImageUploadProps = {

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
+import Image from '@/component/AppImage'
 import { Plus, Edit, Trash2, Eye, Search, Filter, Package, Calendar, Clock, Barcode } from 'lucide-react'
 import { showToast } from '@/utils/toast'
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import Image from 'next/image'
+import Image from '@/component/AppImage'
 import { PRODUCT_IMAGE_QUALITY, UPLOAD_PREVIEW_QUALITY } from '@/lib/image-config'
 interface ImageModalProps {
   src: string

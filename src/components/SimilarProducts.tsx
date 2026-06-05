@@ -1,6 +1,6 @@
 "use client"
 import React, { useEffect, useState } from "react"
-import Image from "next/image"
+import Image from "@/component/AppImage"
 import Link from "next/link"
 import { Plus } from "lucide-react"
 import { Product } from "@/types/product"

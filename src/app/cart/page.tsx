@@ -1,6 +1,6 @@
 "use client"
 import React from 'react'
-import Image from 'next/image'
+import Image from '@/component/AppImage'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ShoppingCart, Plus, Minus, Trash2, ArrowLeft } from 'lucide-react'

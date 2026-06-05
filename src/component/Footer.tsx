@@ -2,7 +2,7 @@
 
 import React from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
+import Image from '@/component/AppImage'
 import { Facebook, Instagram, Mail, Phone, MapPin } from 'lucide-react'
 
 const Footer = () => {

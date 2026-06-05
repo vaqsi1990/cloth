@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { ArrowLeft, Save, User, Mail, Lock, AlertTriangle, Eye, EyeOff, Camera, Phone, MapPin, MessageCircle } from 'lucide-react'
 import ImageUpload from '@/component/CloudinaryUploader'
 import { showToast } from '@/utils/toast'
-import Image from 'next/image'
+import Image from '@/component/AppImage'
 const AdminSettingsPage = () => {
   const { data: session, status, update } = useSession()
   const router = useRouter()

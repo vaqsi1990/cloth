@@ -1,6 +1,6 @@
 "use client"
 import React, { useState, useEffect } from 'react'
-import Image from 'next/image'
+import Image from '@/component/AppImage'
 import { useCart } from '@/hooks/useCart'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, MapPin, Phone, Mail, User, ShoppingCart, Truck, Store, Ticket, X } from 'lucide-react'
