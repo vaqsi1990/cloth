@@ -17,6 +17,14 @@ import {
   PRODUCT_TEXT_REGEX,
 } from '@/lib/product-text'
 import { enrichProductListRows } from '@/lib/product-list-enrichment'
+import {
+  applyExpiredDiscounts,
+  fetchPublicProductListCombined,
+  getPublicListCacheKey,
+  mapCombinedRowsToProducts,
+  readPublicListCache,
+  writePublicListCache,
+} from '@/lib/product-list-query'
 
 // Product validation schema
 const productSchema = z.object({
@@ -156,7 +164,6 @@ export async function GET(request: NextRequest) {
       sessionPromise,
       categoryIdPromise,
       purposeIdPromise,
-      warmPurposeCache(),
     ])
 
     const prepMs = Date.now() - prepStart
@@ -169,6 +176,111 @@ export async function GET(request: NextRequest) {
       search || category || purpose || gender || isNew
         ? FILTERED_LIST_CACHE
         : PUBLIC_LIST_CACHE
+
+    const listTake = useOffsetPagination ? pageLimit + 1 : 21
+    const pageSize = useOffsetPagination ? pageLimit : 20
+    const genderEnum =
+      gender && gender !== 'ALL'
+        ? gender === 'women'
+          ? ('WOMEN' as const)
+          : gender === 'men'
+            ? ('MEN' as const)
+            : gender === 'children'
+              ? ('CHILDREN' as const)
+              : undefined
+        : undefined
+
+    // Fast path: one SQL round-trip for public shop (offset pagination)
+    const useCombinedPublicQuery =
+      !includeUnapproved && useOffsetPagination && !needsFreshData
+
+    if (useCombinedPublicQuery) {
+      const combinedFilters = {
+        categoryId,
+        purposeId,
+        gender: genderEnum,
+        isNew: isNew === 'true',
+        search: search || undefined,
+        skip: (page - 1) * pageLimit,
+        take: listTake,
+      }
+      const cacheKey = getPublicListCacheKey(combinedFilters)
+      const cached = readPublicListCache(cacheKey)
+
+      let productsToReturn: ReturnType<typeof mapCombinedRowsToProducts>
+      let hasMore: boolean
+      let listMs = 0
+      let enrichMs = 0
+
+      if (cached) {
+        productsToReturn = cached.products
+        hasMore = cached.hasMore
+      } else {
+        const queryStart = Date.now()
+        const rows = await fetchPublicProductListCombined(combinedFilters)
+        listMs = Date.now() - queryStart
+
+        const mapped = mapCombinedRowsToProducts(rows)
+        applyExpiredDiscounts(mapped)
+
+        hasMore = mapped.length > pageSize
+        productsToReturn = hasMore ? mapped.slice(0, pageSize) : mapped
+
+        writePublicListCache(cacheKey, { products: productsToReturn, hasMore })
+      }
+
+      const processMs = 0
+      const dbTime = listMs + enrichMs
+      const handlerMs = prepMs + dbTime + processMs
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log(
+          `[Products API] prep=${prepMs}ms list=${listMs}ms enrich=${enrichMs}ms combined=1 (products=${productsToReturn.length})`,
+        )
+        console.log(`[Products API] process=${processMs}ms handler=${handlerMs}ms`)
+      }
+
+      const reqTotalMs = Date.now() - reqStart
+      const responseBody: Record<string, unknown> = {
+        success: true,
+        products: productsToReturn,
+        nextCursor: null,
+        hasMore,
+        page,
+        limit: pageLimit,
+        totalCount: null,
+        totalPages: null,
+      }
+
+      if (process.env.NODE_ENV === 'development') {
+        responseBody.timings = {
+          requestMs: reqTotalMs,
+          prepMs,
+          listMs,
+          enrichMs,
+          dbMs: dbTime,
+          processMs,
+          handlerMs,
+          combined: true,
+          cached: Boolean(cached),
+        }
+      }
+
+      const response = NextResponse.json(responseBody)
+      response.headers.set(
+        'Server-Timing',
+        `app;dur=${reqTotalMs}, prep;dur=${prepMs}, list;dur=${listMs}, enrich;dur=${enrichMs}, process;dur=${processMs}`,
+      )
+
+      if (!search && !category && !purpose && !gender && !isNew) {
+        response.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=60')
+      } else {
+        response.headers.set('Cache-Control', 'public, s-maxage=15, stale-while-revalidate=30')
+      }
+
+      return response
+    }
+
     const dbStart = Date.now()
     
     // Scalar-only select — relations loaded in one batched enrich pass (no per-product joins)
@@ -228,22 +340,10 @@ export async function GET(request: NextRequest) {
         : {}),
       ...(categoryId ? { categoryId } : {}),
       ...(purposeId ? { purposeId } : {}),
-      ...(gender && gender !== 'ALL'
-        ? {
-            gender:
-              gender === 'women'
-                ? ('WOMEN' as const)
-                : gender === 'men'
-                  ? ('MEN' as const)
-                  : gender === 'children'
-                    ? ('CHILDREN' as const)
-                    : undefined,
-          }
-        : {}),
+      ...(genderEnum ? { gender: genderEnum } : {}),
       ...(isNew === 'true' ? { isNew: true } : {}),
     }
 
-    const listTake = useOffsetPagination ? pageLimit + 1 : 21
     const listOrderBy = [
       { createdAt: 'desc' as const },
       { id: 'desc' as const },
@@ -333,13 +433,14 @@ export async function GET(request: NextRequest) {
     }
     */
     
-    const pageSize = useOffsetPagination ? pageLimit : 20
     const hasMore = filteredProducts.length > pageSize
     const flatPage = hasMore
       ? filteredProducts.slice(0, pageSize)
       : filteredProducts
 
     const processMs = Date.now() - processStart
+
+    await warmPurposeCache()
 
     const enrichStart = Date.now()
     const productsToReturn = await enrichProductListRows(flatPage, {
