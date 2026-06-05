@@ -18,7 +18,8 @@ const HeaderContent = () => {
   const [searchValue, setSearchValue] = useState('')
   const [activeCategory, setActiveCategory] = useState<string>('ქალი')
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null)
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
+  const isAuthenticated = status === 'authenticated' && !!session
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -146,7 +147,7 @@ const HeaderContent = () => {
     setMobileDropdownOpen(null)
   }
 
-  const newProductHref = !session
+  const newProductHref = !isAuthenticated
     ? '/auth/signup'
     : session.user.role === 'ADMIN'
       ? '/admin/products/new'
@@ -233,7 +234,7 @@ const HeaderContent = () => {
               </Link>
 
               {/* User Icon */}
-              {session ? (
+              {isAuthenticated ? (
                 <div className="relative group desktop-user-dropdown">
                   <button
                     onClick={() => setIsDesktopUserDropdownOpen(!isDesktopUserDropdownOpen)}
@@ -307,7 +308,7 @@ const HeaderContent = () => {
             </button>
 
             {/* Account Section */}
-            {session ? (
+            {isAuthenticated ? (
               <div className="relative mobile-user-dropdown">
                 <button
                   onClick={() => setIsMobileUserDropdownOpen(!isMobileUserDropdownOpen)}

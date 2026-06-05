@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Suspense } from "react";
+import { getServerSession } from "next-auth";
 import "./globals.css";
 import Header from "@/component/Header";
 import Footer from "@/component/Footer";
 import AuthProvider from "@/components/AuthProvider";
+import { authOptions } from "@/lib/auth";
 import ChatProvider from "@/components/ChatProvider";
 import ToastProvider from "@/components/ToastProvider";
 import ScrollRestorer from "@/components/ScrollRestorer";
@@ -100,17 +102,19 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await getServerSession(authOptions);
+
   return (
     <html lang="ka" data-scroll-behavior="smooth">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <AuthProvider>
+        <AuthProvider session={session}>
           <ChatProvider>
             <ToastProvider />
             <Suspense fallback={null}>

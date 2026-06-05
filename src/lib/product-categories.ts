@@ -143,8 +143,24 @@ const categoryIdBySlug = new Map(
   DEFAULT_PRODUCT_CATEGORIES.map((c) => [c.slug, c.id]),
 )
 
+const categoryMetaById = new Map(
+  DEFAULT_PRODUCT_CATEGORIES.map((c) => [c.id, { id: c.id, name: c.name, slug: c.slug }]),
+)
+
 /** Resolve category query param → id without a DB round-trip (known slugs only). */
 export function getCategoryIdBySlugParam(category: string): number | null {
   const slug = CATEGORY_SLUG_ALIASES[category] ?? category.toLowerCase()
   return categoryIdBySlug.get(slug) ?? null
+}
+
+/** Resolve category ids from static in-memory map (sync, no DB). */
+export function getCategoryMetaByIdsSync(
+  ids: number[],
+): Map<number, { id: number; name: string; slug: string }> {
+  const result = new Map<number, { id: number; name: string; slug: string }>()
+  for (const id of ids) {
+    const meta = categoryMetaById.get(id)
+    if (meta) result.set(id, meta)
+  }
+  return result
 }

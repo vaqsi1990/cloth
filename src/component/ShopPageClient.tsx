@@ -60,6 +60,12 @@ const ShopPageClient = () => {
 
     // Persist state across navigation
     const scrollYRef = useRef(0)
+    const productsFetchIdRef = useRef(0)
+    const rentalFetchIdRef = useRef(0)
+    const shopInitializedRef = useRef(false)
+    const prevPurposeParamRef = useRef(purposeParam)
+    const prevCategoryParamRef = useRef(categoryParam)
+    const filtersSnapshotRef = useRef<string | null>(null)
     const [savedScrollY, setSavedScrollY] = useState<number | null>(null)
     const [hasRestoredState, setHasRestoredState] = useState(false)
 
@@ -104,35 +110,84 @@ const ShopPageClient = () => {
         currentPage
     ])
 
-    // Restore saved state on mount
+    // Restore saved state once on mount; URL params override session values
     useEffect(() => {
         if (typeof window === 'undefined') return
+
+        let restoredCategories: string[] = []
+        let restoredPurposes: string[] = []
+        let restoredPriceRange: [number, number] = [0, 0]
+        let restoredSizeSystems: string[] = []
+        let restoredSizes: string[] = []
+        let restoredColors: string[] = []
+        let restoredLocations: string[] = []
+        let restoredRentalStart: Date | null = null
+        let restoredRentalEnd: Date | null = null
+        let restoredSortBy = 'newest'
+        let restoredPurchaseType: 'all' | 'rent-only' | 'sale-only' = 'all'
+        let restoredPage = 1
+        let restoredScrollY: number | null = null
+
         const saved = sessionStorage.getItem('shopPageState')
         if (saved) {
             try {
                 const parsed = JSON.parse(saved)
-                setSelectedCategories(parsed.selectedCategories || [])
-                setSelectedPurposes(parsed.selectedPurposes || [])
-                setPriceRange(parsed.priceRange || [0, 0])
-                setSelectedSizeSystems(parsed.selectedSizeSystems || [])
-                setSelectedSizes(parsed.selectedSizes || [])
-                setSelectedColors(parsed.selectedColors || [])
-                setSelectedLocations(parsed.selectedLocations || [])
-                setRentalStartDate(parsed.rentalStartDate ? new Date(parsed.rentalStartDate) : null)
-                setRentalEndDate(parsed.rentalEndDate ? new Date(parsed.rentalEndDate) : null)
-                setSortBy(parsed.sortBy || 'newest')
-                setPurchaseType(parsed.purchaseType || 'all')
-                setCurrentPage(parsed.currentPage || 1)
-                setSavedScrollY(typeof parsed.scrollY === 'number' ? parsed.scrollY : null)
+                restoredCategories = parsed.selectedCategories || []
+                restoredPurposes = parsed.selectedPurposes || []
+                restoredPriceRange = parsed.priceRange || [0, 0]
+                restoredSizeSystems = parsed.selectedSizeSystems || []
+                restoredSizes = parsed.selectedSizes || []
+                restoredColors = parsed.selectedColors || []
+                restoredLocations = parsed.selectedLocations || []
+                restoredRentalStart = parsed.rentalStartDate ? new Date(parsed.rentalStartDate) : null
+                restoredRentalEnd = parsed.rentalEndDate ? new Date(parsed.rentalEndDate) : null
+                restoredSortBy = parsed.sortBy || 'newest'
+                restoredPurchaseType = parsed.purchaseType || 'all'
+                restoredPage = parsed.currentPage || 1
+                restoredScrollY = typeof parsed.scrollY === 'number' ? parsed.scrollY : null
             } catch (e) {
                 console.warn('Failed to restore shop state', e)
             }
         }
+
+        setSelectedCategories(categoryParam ? [categoryParam] : restoredCategories)
+        setSelectedPurposes(purposeParam ? [purposeParam] : restoredPurposes)
+        setPriceRange(restoredPriceRange)
+        setSelectedSizeSystems(restoredSizeSystems)
+        setSelectedSizes(restoredSizes)
+        setSelectedColors(restoredColors)
+        setSelectedLocations(restoredLocations)
+        setRentalStartDate(restoredRentalStart)
+        setRentalEndDate(restoredRentalEnd)
+        setSortBy(restoredSortBy)
+        setPurchaseType(restoredPurchaseType)
+        setCurrentPage(restoredPage)
+        setSavedScrollY(restoredScrollY)
+
+        shopInitializedRef.current = true
+        prevPurposeParamRef.current = purposeParam
+        prevCategoryParamRef.current = categoryParam
         setHasRestoredState(true)
     }, [])
 
-    // Save when key filters/page change
+    // Sync URL purpose/category changes after initial restore (client navigation)
     useEffect(() => {
+        if (!shopInitializedRef.current) return
+        if (prevPurposeParamRef.current === purposeParam) return
+        prevPurposeParamRef.current = purposeParam
+        setSelectedPurposes(purposeParam ? [purposeParam] : [])
+    }, [purposeParam])
+
+    useEffect(() => {
+        if (!shopInitializedRef.current) return
+        if (prevCategoryParamRef.current === categoryParam) return
+        prevCategoryParamRef.current = categoryParam
+        setSelectedCategories(categoryParam ? [categoryParam] : [])
+    }, [categoryParam])
+
+    // Save when key filters/page change (skip until restore completes)
+    useEffect(() => {
+        if (!hasRestoredState) return
         saveState()
     }, [
         selectedCategories,
@@ -182,29 +237,6 @@ const ShopPageClient = () => {
         const query = params.toString()
         router.push(query ? `/shop?${query}` : '/shop')
     }
-
-    useEffect(() => {
-        if (purposeParam) {
-            setSelectedPurposes([purposeParam])
-        } else {
-            // Only clear if we're not restoring from sessionStorage and no purpose in URL
-            if (hasRestoredState && !purposeParam) {
-                setSelectedPurposes([])
-            }
-        } 
-    }, [purposeParam, hasRestoredState])
-
-    // Set category from URL parameter
-    useEffect(() => {
-        if (categoryParam) {
-            setSelectedCategories([categoryParam])
-        } else {
-            // Only clear if we're not restoring from sessionStorage
-            if (hasRestoredState) {
-                setSelectedCategories([])
-            }
-        }
-    }, [categoryParam, hasRestoredState])
 
     // Helper functions for price calculation
     const getRentalPrice = (product: Product): number => {
@@ -331,7 +363,11 @@ const ShopPageClient = () => {
 
     // Fetch products from API (server-side pagination: 16 per page)
     useEffect(() => {
+        if (!hasRestoredState) return
+
+        const fetchId = ++productsFetchIdRef.current
         const controller = new AbortController()
+        const isStale = () => fetchId !== productsFetchIdRef.current
 
         const fetchProducts = async () => {
             setLoading(true)
@@ -364,8 +400,12 @@ const ShopPageClient = () => {
                 const url = `/api/products?${params}`
                 const t0 = performance.now()
                 const response = await fetch(url, { signal: controller.signal })
+                if (isStale()) return
+
                 const tHeaders = performance.now()
                 const data = await response.json()
+                if (isStale()) return
+
                 const tDone = performance.now()
                 if (process.env.NODE_ENV === 'development') {
                     const st = response.headers.get('server-timing')
@@ -421,18 +461,27 @@ const ShopPageClient = () => {
                         setPriceRange([0, calculatedMaxPrice])
                     }
                 }
-            } catch (error: any) {
-                // In dev/StrictMode effect may re-run; we abort the previous request intentionally.
-                if (error?.name === 'AbortError') return
+            } catch (error: unknown) {
+                // Effect cleanup / StrictMode re-run aborts the previous in-flight request.
+                if (
+                    isStale() ||
+                    controller.signal.aborted ||
+                    (error instanceof DOMException && error.name === 'AbortError')
+                ) {
+                    return
+                }
                 console.error('Error fetching products:', error)
             } finally {
-                setLoading(false)
+                if (!isStale()) {
+                    setLoading(false)
+                }
             }
         }
 
-        fetchProducts()
-        return () => controller.abort()
+        void fetchProducts()
+        return () => controller.abort('cleanup')
     }, [
+        hasRestoredState,
         genderParam,
         searchParam,
         purposeParam,
@@ -445,59 +494,45 @@ const ShopPageClient = () => {
 
     // Fetch rental status for rentable products (batched)
     useEffect(() => {
+        const rentableIds = products.filter((p) => p.isRentable).map((p) => p.id)
+        if (rentableIds.length === 0) {
+            setProductRentalStatus({})
+            return
+        }
+
+        const fetchId = ++rentalFetchIdRef.current
+        const controller = new AbortController()
+        const isStale = () => fetchId !== rentalFetchIdRef.current
+
         const fetchRentalStatus = async () => {
-            const rentableProducts = products.filter(p => p.isRentable)
-
-            if (rentableProducts.length === 0) return
-
-            // Batch fetch rental status for all products at once
             try {
-                const productIds = rentableProducts.map(p => p.id).join(',')
-                const response = await fetch(`/api/products/rental-status?ids=${productIds}`)
+                const productIds = rentableIds.join(',')
+                const response = await fetch(
+                    `/api/products/rental-status?ids=${productIds}`,
+                    { signal: controller.signal },
+                )
+                if (isStale()) return
+
                 const data = await response.json()
+                if (isStale()) return
 
                 if (data.success && data.statuses) {
                     setProductRentalStatus(data.statuses)
-                } else {
-                    // Fallback to individual requests if batch endpoint doesn't exist
-                    for (const product of rentableProducts) {
-                        try {
-                            const response = await fetch(`/api/products/${product.id}/rental-status`)
-                            const data = await response.json()
-                            if (data.success) {
-                                setProductRentalStatus(prev => ({
-                                    ...prev,
-                                    [product.id]: data.variants
-                                }))
-                            }
-                        } catch (error) {
-                            console.error(`Error fetching rental status for product ${product.id}:`, error)
-                        }
-                    }
                 }
-            } catch (error) {
+            } catch (error: unknown) {
+                if (
+                    isStale() ||
+                    controller.signal.aborted ||
+                    (error instanceof DOMException && error.name === 'AbortError')
+                ) {
+                    return
+                }
                 console.error('Error fetching batch rental status:', error)
-                // Fallback to individual requests
-                for (const product of rentableProducts) {
-                    try {
-                        const response = await fetch(`/api/products/${product.id}/rental-status`)
-                        const data = await response.json()
-                        if (data.success) {
-                            setProductRentalStatus(prev => ({
-                                ...prev,
-                                [product.id]: data.variants
-                            }))
-                        }
-                    } catch (err) {
-                        console.error(`Error fetching rental status for product ${product.id}:`, err)
-                    }
-                }
             }
         }
 
-        if (products.length > 0) {
-            fetchRentalStatus()
-        }
+        void fetchRentalStatus()
+        return () => controller.abort('cleanup')
     }, [products])
 
     // Get minimum price from variants, or rental price if buy price is 0
@@ -745,10 +780,39 @@ const ShopPageClient = () => {
     const totalPages = serverTotalPages
     const currentProducts = sortedProducts
 
-    // Reset to page 1 when filters change
+    // Reset to page 1 when filters change (skip initial restore snapshot)
     useEffect(() => {
-        setCurrentPage(1)
+        if (!hasRestoredState) return
+
+        const snapshot = JSON.stringify({
+            selectedCategories,
+            selectedPurposes,
+            priceRange,
+            selectedSizeSystems,
+            selectedSizes,
+            selectedColors,
+            selectedLocations,
+            rentalStartDate: rentalStartDate?.toISOString() ?? null,
+            rentalEndDate: rentalEndDate?.toISOString() ?? null,
+            sortBy,
+            purchaseType,
+            purposeParam,
+            categoryParam,
+            genderParam,
+            searchParam,
+        })
+
+        if (filtersSnapshotRef.current === null) {
+            filtersSnapshotRef.current = snapshot
+            return
+        }
+
+        if (filtersSnapshotRef.current !== snapshot) {
+            filtersSnapshotRef.current = snapshot
+            setCurrentPage(1)
+        }
     }, [
+        hasRestoredState,
         selectedCategories,
         selectedPurposes,
         priceRange,

@@ -8,7 +8,7 @@ import { generateUniqueSKU } from '@/utils/skuUtils'
 import { ensureUniqueProductSlug } from '@/lib/productSlug'
 // Removed processExpiredDiscount import - we handle discount clearing inline for better performance
 import { PURPOSE_NAME_BY_SLUG } from '@/data/purposes'
-import { getPurposeIdBySlug } from '@/lib/purpose-ids'
+import { getPurposeIdBySlug, warmPurposeCache } from '@/lib/purpose-ids'
 import { getCategoryIdBySlugParam } from '@/lib/product-categories'
 import {
   isValidProductText,
@@ -16,6 +16,7 @@ import {
   PRODUCT_NAME_ERROR_MESSAGE,
   PRODUCT_TEXT_REGEX,
 } from '@/lib/product-text'
+import { enrichProductListRows } from '@/lib/product-list-enrichment'
 
 // Product validation schema
 const productSchema = z.object({
@@ -65,6 +66,24 @@ const productSchema = z.object({
     })).optional()
   )
 })
+
+const PUBLIC_LIST_CACHE = { swr: 300, ttl: 300 }
+const FILTERED_LIST_CACHE = { swr: 60, ttl: 60 }
+
+const listProducts = (
+  args: Parameters<typeof prisma.product.findMany>[0],
+  useCache: boolean,
+  cacheStrategy = PUBLIC_LIST_CACHE,
+) => {
+  if (!useCache) {
+    return prisma.product.findMany(args)
+  }
+  return prisma.product.findMany({
+    ...args,
+    // @ts-ignore - Prisma Accelerate cacheStrategy
+    cacheStrategy,
+  })
+}
 
 const buildPurposeRelation = (purposeId?: number, purposeSlug?: string) => {
   if (purposeId) {
@@ -137,6 +156,7 @@ export async function GET(request: NextRequest) {
       sessionPromise,
       categoryIdPromise,
       purposeIdPromise,
+      warmPurposeCache(),
     ])
 
     const prepMs = Date.now() - prepStart
@@ -144,15 +164,22 @@ export async function GET(request: NextRequest) {
       session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPPORT'
     const shouldIncludeUnapproved = includeUnapproved && isAdminOrSupportRole
     const needsFreshData = isAdminOrSupportRole || shouldIncludeUnapproved
+    const useAccelerateCache = !needsFreshData
+    const listCacheStrategy =
+      search || category || purpose || gender || isNew
+        ? FILTERED_LIST_CACHE
+        : PUBLIC_LIST_CACHE
     const dbStart = Date.now()
     
-    // Build select object conditionally for admin/support vs regular users
+    // Scalar-only select — relations loaded in one batched enrich pass (no per-product joins)
     const baseSelect = {
       id: true,
       name: true,
       slug: true,
       brand: true,
       gender: true,
+      color: true,
+      location: true,
       isNew: true,
       discount: true,
       discountDays: true,
@@ -160,68 +187,21 @@ export async function GET(request: NextRequest) {
       rating: true,
       categoryId: true,
       purposeId: true,
-      sizeSystem: true, // Include sizeSystem for client-side filtering
-      size: true, // Include size for client-side filtering
+      sizeSystem: true,
+      size: true,
       isRentable: true,
-      pricePerDay: true,
-      maxRentalDays: true,
-      status: true,
-      createdAt: true,
-      // Include purpose relation for all users (needed for client-side filtering)
-      purpose: {
-        select: {
-          id: true,
-          name: true,
-          slug: true
-        }
-      },
-      // Include category relation for all users (needed for client-side filtering)
-      category: {
-        select: {
-          id: true,
-          name: true,
-          slug: true
-        }
-      },
-      images: {
-        select: {
-          url: true,
-        },
-        orderBy: { position: 'asc' as const },
-        take: 1
-      },
-      variants: {
-        select: {
-          price: true
-        },
-        take: 1,
-        orderBy: { price: 'asc' as const }
-      },
-      rentalPriceTiers: {
-        select: {
-          minDays: true,
-          pricePerDay: true
-        },
-        orderBy: { minDays: 'asc' as const },
-        take: 1
-      },
-    }
-    
-    // Add admin/support specific fields
-    if (isAdminOrSupportRole) {
-      Object.assign(baseSelect, {
-        sku: true,
-        userId: true,
-        approvalStatus: true,
-        rejectionReason: true,
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true
+      ...(isAdminOrSupportRole
+        ? {
+            pricePerDay: true,
+            maxRentalDays: true,
+            status: true,
+            createdAt: true,
+            sku: true,
+            userId: true,
+            approvalStatus: true,
+            rejectionReason: true,
           }
-        }
-      })
+        : {}),
     }
     
     const productWhere: Prisma.ProductWhereInput = {
@@ -264,59 +244,49 @@ export async function GET(request: NextRequest) {
     }
 
     const listTake = useOffsetPagination ? pageLimit + 1 : 21
-    const listOrderBy = [{ createdAt: 'desc' as const }]
+    const listOrderBy = [
+      { createdAt: 'desc' as const },
+      { id: 'desc' as const },
+    ]
+
+    const listQueryBase = {
+      take: listTake,
+      where: productWhere,
+      select: baseSelect,
+      orderBy: listOrderBy,
+    }
 
     const productsPromise = useOffsetPagination
-      ? prisma.product.findMany({
-          take: listTake,
-          skip: (page - 1) * pageLimit,
-          where: productWhere,
-          select: baseSelect,
-          orderBy: listOrderBy,
-        })
+      ? listProducts(
+          {
+            ...listQueryBase,
+            skip: (page - 1) * pageLimit,
+          },
+          useAccelerateCache,
+          listCacheStrategy,
+        )
       : cursorId
-        ? prisma.product.findMany({
-            take: listTake,
-            cursor: { id: cursorId },
-            skip: 1,
-            where: productWhere,
-            select: baseSelect,
-            orderBy: listOrderBy,
-          })
-        : needsFreshData
-          ? prisma.product.findMany({
-              take: listTake,
-              where: productWhere,
-              select: baseSelect,
-              orderBy: listOrderBy,
-            })
-          : prisma.product.findMany({
-              take: listTake,
-              where: productWhere,
-              select: baseSelect,
-              orderBy: listOrderBy,
-              // @ts-ignore - Prisma Accelerate cacheStrategy
-              cacheStrategy: {
-                swr: 300,
-                ttl: 300,
-              },
-            })
+        ? listProducts(
+            {
+              ...listQueryBase,
+              cursor: { id: cursorId },
+              skip: 1,
+            },
+            useAccelerateCache,
+            listCacheStrategy,
+          )
+        : listProducts(listQueryBase, useAccelerateCache, listCacheStrategy)
 
   
-    const products = await productsPromise
-    const dbTime = Date.now() - dbStart
+    const flatProducts = await productsPromise
+    const listMs = Date.now() - dbStart
     const processStart = Date.now()
-    if (process.env.NODE_ENV === 'development') {
-      console.log(
-        `[Products API] prep=${prepMs}ms db=${dbTime}ms (products=${products.length})`,
-      )
-    }
 
     // Check and clear expired discounts (ultra-optimized - skip if no discounts)
     // Fast path: skip processing if no products have discounts
     let hasAnyDiscount = false
-    for (let i = 0; i < products.length; i++) {
-      if (products[i].discount) {
+    for (let i = 0; i < flatProducts.length; i++) {
+      if (flatProducts[i].discount) {
         hasAnyDiscount = true
         break
       }
@@ -326,7 +296,7 @@ export async function GET(request: NextRequest) {
       const now = Date.now()
       const DAY_MS = 86400000
       // Single pass - only process products with discounts
-      for (const product of products) {
+      for (const product of flatProducts) {
         if (product.discount && product.discountDays && product.discountStartDate) {
           const startTime = new Date(product.discountStartDate).getTime()
           if (now > startTime + (product.discountDays * DAY_MS)) {
@@ -341,7 +311,7 @@ export async function GET(request: NextRequest) {
     // Filter out products with blocked users (if not admin)
     // Optimized: Skip this check if products are already approved (blocked users can't have approved products)
     // This check is only needed if business logic allows blocked users to have approved products
-    let filteredProducts = products
+    let filteredProducts = flatProducts
     // Note: If blocked users cannot have approved products, we can skip this entire check
     // Uncomment below if you need to filter blocked users:
     /*
@@ -365,9 +335,24 @@ export async function GET(request: NextRequest) {
     
     const pageSize = useOffsetPagination ? pageLimit : 20
     const hasMore = filteredProducts.length > pageSize
-    const productsToReturn = hasMore
+    const flatPage = hasMore
       ? filteredProducts.slice(0, pageSize)
       : filteredProducts
+
+    const processMs = Date.now() - processStart
+
+    const enrichStart = Date.now()
+    const productsToReturn = await enrichProductListRows(flatPage, {
+      includeUser: isAdminOrSupportRole,
+    })
+    const enrichMs = Date.now() - enrichStart
+    const dbTime = listMs + enrichMs
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log(
+        `[Products API] prep=${prepMs}ms list=${listMs}ms enrich=${enrichMs}ms (products=${productsToReturn.length})`,
+      )
+    }
 
     const nextCursor =
       !useOffsetPagination && hasMore && productsToReturn.length > 0
@@ -377,7 +362,6 @@ export async function GET(request: NextRequest) {
     const totalPages =
       useOffsetPagination ? null : undefined
 
-    const processMs = Date.now() - processStart
     const handlerMs = prepMs + dbTime + processMs
     if (process.env.NODE_ENV === 'development') {
       console.log(`[Products API] process=${processMs}ms handler=${handlerMs}ms`)
@@ -401,11 +385,13 @@ export async function GET(request: NextRequest) {
 
     // Expose timings for debugging (and server-timing header for DevTools)
     const reqTotalMs = Date.now() - reqStart
-    const serverTiming = `app;dur=${reqTotalMs}, prep;dur=${prepMs}, db;dur=${dbTime}, process;dur=${processMs}`
+    const serverTiming = `app;dur=${reqTotalMs}, prep;dur=${prepMs}, list;dur=${listMs}, enrich;dur=${enrichMs}, process;dur=${processMs}`
     if (process.env.NODE_ENV === 'development') {
       responseBody.timings = {
         requestMs: reqTotalMs,
         prepMs,
+        listMs,
+        enrichMs,
         dbMs: dbTime,
         processMs,
         handlerMs,
