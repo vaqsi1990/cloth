@@ -8,6 +8,8 @@ import {
     ArrowLeft,
     CalendarDays,
     CheckCircle,
+    ChevronLeft,
+    ChevronRight,
     CreditCard,
     RotateCcw,
     Shield,
@@ -52,6 +54,7 @@ const ProductPage = () => {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [activeImage, setActiveImage] = useState(0)
+    const [isGalleryOpen, setIsGalleryOpen] = useState(false)
 
     const [selectedSize, setSelectedSize] = useState<string>("")
     const [quantity, setQuantity] = useState(1)
@@ -613,6 +616,32 @@ const ProductPage = () => {
     const getMainImage = () =>
         product?.images?.[activeImage]?.url || product?.images?.[0]?.url || "/placeholder.jpg"
 
+    const imageCount = product?.images?.length ?? 0
+
+    const showPrevImage = () => {
+        if (imageCount <= 1) return
+        setActiveImage((i) => (i - 1 + imageCount) % imageCount)
+    }
+
+    const showNextImage = () => {
+        if (imageCount <= 1) return
+        setActiveImage((i) => (i + 1) % imageCount)
+    }
+
+    useEffect(() => {
+        if (!isGalleryOpen) return
+
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Escape") setIsGalleryOpen(false)
+            if (imageCount <= 1) return
+            if (e.key === "ArrowLeft") setActiveImage((i) => (i - 1 + imageCount) % imageCount)
+            if (e.key === "ArrowRight") setActiveImage((i) => (i + 1) % imageCount)
+        }
+
+        document.addEventListener("keydown", onKeyDown)
+        return () => document.removeEventListener("keydown", onKeyDown)
+    }, [isGalleryOpen, imageCount])
+
     // Since variants no longer have size, use product size
     const getAvailableSizes = () => product?.size ? [product.size] : []
 
@@ -1125,11 +1154,15 @@ const ProductPage = () => {
                     <section>
                         <div className="flex flex-col lg:flex-row gap-4">
                             {/* Main image - First on mobile, second on desktop */}
-                            <div className="relative w-full lg:flex-1 
+                            <button
+                                type="button"
+                                onClick={() => setIsGalleryOpen(true)}
+                                aria-label="სურათის გადიდება"
+                                className="relative w-full lg:flex-1 
                 aspect-[3/4] sm:w-[100px] lg:aspect-[3/4]
                 bg-white rounded-2xl overflow-hidden shadow border
-                order-1 lg:order-2">
-
+                order-1 lg:order-2 cursor-pointer group"
+                            >
                                 <Image
                                     src={getMainImage()}
                                     alt={product.name}
@@ -1138,12 +1171,10 @@ const ProductPage = () => {
                                     sizes="(max-width: 640px) 100vw,
                (max-width: 1024px) 50vw,
                600px"
-                                    className="object-cover"
+                                    className="object-cover transition-transform duration-300 ease-out group-hover:scale-105"
                                     priority
                                 />
-
-                               
-                            </div>
+                            </button>
 
 
                             {/* Small images - Below on mobile, left on desktop */}
@@ -1152,7 +1183,7 @@ const ProductPage = () => {
                                     <button
                                         key={i}
                                         onClick={() => setActiveImage(i)}
-                                        className={`relative w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden border-2 transition ${activeImage === i
+                                        className={`relative w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden border-2 transition group ${activeImage === i
                                             ? "border-black"
                                             : "border-gray-200 hover:border-black"
                                             }`}
@@ -1164,12 +1195,69 @@ const ProductPage = () => {
                                             alt={`${product.name}-${i}`}
                                             quality={PRODUCT_IMAGE_QUALITY}
                                             sizes="80px"
-                                            className="object-cover"
+                                            className="object-cover transition-transform duration-300 ease-out group-hover:scale-110"
                                         />
                                     </button>
                                 ))}
                             </div>
                         </div>
+
+                        {isGalleryOpen && (
+                            <div
+                                className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+                                onClick={() => setIsGalleryOpen(false)}
+                            >
+                                <button
+                                    type="button"
+                                    onClick={() => setIsGalleryOpen(false)}
+                                    className="absolute top-4 right-4 text-white hover:text-gray-300 text-3xl font-bold z-10 bg-black/50 rounded-full w-10 h-10 flex items-center justify-center cursor-pointer"
+                                    aria-label="დახურვა"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+
+                                {imageCount > 1 && (
+                                    <>
+                                        <button
+                                            type="button"
+                                            onClick={(e) => { e.stopPropagation(); showPrevImage() }}
+                                            className="absolute left-4 top-1/2 -translate-y-1/2 text-white bg-black/50 hover:bg-black/70 rounded-full w-10 h-10 flex items-center justify-center z-10 cursor-pointer"
+                                            aria-label="წინა სურათი"
+                                        >
+                                            <ChevronLeft className="w-6 h-6" />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={(e) => { e.stopPropagation(); showNextImage() }}
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-black/50 hover:bg-black/70 rounded-full w-10 h-10 flex items-center justify-center z-10 cursor-pointer"
+                                            aria-label="შემდეგი სურათი"
+                                        >
+                                            <ChevronRight className="w-6 h-6" />
+                                        </button>
+                                    </>
+                                )}
+
+                                <div
+                                    className="relative max-w-[90vw] max-h-[90vh] flex items-center justify-center"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <Image
+                                        width={1600}
+                                        height={1600}
+                                        src={getMainImage()}
+                                        alt={product.name}
+                                        quality={PRODUCT_IMAGE_QUALITY}
+                                        className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+                                    />
+                                </div>
+
+                                {imageCount > 1 && (
+                                    <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/80 text-sm">
+                                        {activeImage + 1} / {imageCount}
+                                    </p>
+                                )}
+                            </div>
+                        )}
                     </section>
 
                     {/* RIGHT — Details */}
