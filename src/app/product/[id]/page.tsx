@@ -306,12 +306,15 @@ const ProductPage = () => {
                     // This allows us to use selectedSize (product size) to get all rentals
                     const productKey = pJson?.product?.size || 'default'
                     if (allRentals.length > 0) {
-                        // Remove duplicates based on startDate and endDate
-                        const uniqueRentals = allRentals.filter((rental, index, self) =>
-                            index === self.findIndex(r => 
-                                r.startDate === rental.startDate && r.endDate === rental.endDate
-                            )
-                        )
+                        // Remove duplicates based on startDate/endDate (O(n) instead of O(n^2))
+                        const seen = new Set<string>()
+                        const uniqueRentals: RentalPeriod[] = []
+                        for (const rental of allRentals) {
+                            const key = `${rental.startDate}|${rental.endDate}`
+                            if (seen.has(key)) continue
+                            seen.add(key)
+                            uniqueRentals.push(rental)
+                        }
                         map[productKey] = uniqueRentals
                     }
                     setRentalStatus(map)

@@ -116,61 +116,57 @@ export async function GET(request: NextRequest) {
       take: 100 // Limit results to prevent excessive data fetching
     })
 
+    type RentalPeriod = { startDate: string; endDate: string; status: string }
+
+    // Pre-group rentals/orders once to avoid expensive per-product filtering.
+    // rentalStatusByProduct[productId][key] => periods[]
+    const rentalStatusByProduct: Record<number, Record<string, RentalPeriod[]>> = {}
+
+    for (const rental of activeRentals) {
+      const pid = rental.productId
+      const variantKey = rental.variantId ? `variant_${rental.variantId}` : 'no_variant'
+      if (!rentalStatusByProduct[pid]) rentalStatusByProduct[pid] = {}
+      if (!rentalStatusByProduct[pid][variantKey]) rentalStatusByProduct[pid][variantKey] = []
+      rentalStatusByProduct[pid][variantKey].push({
+        startDate: rental.startDate.toISOString(),
+        endDate: rental.endDate.toISOString(),
+        status: rental.status,
+      })
+    }
+
+    for (const order of activeOrders) {
+      for (const item of order.items) {
+        if (!item.isRental || !item.rentalStartDate || !item.rentalEndDate) continue
+        const pid = item.productId as number
+        const sizeKey = item.size || 'default'
+        if (!rentalStatusByProduct[pid]) rentalStatusByProduct[pid] = {}
+        if (!rentalStatusByProduct[pid][sizeKey]) rentalStatusByProduct[pid][sizeKey] = []
+        rentalStatusByProduct[pid][sizeKey].push({
+          startDate: item.rentalStartDate.toISOString(),
+          endDate: item.rentalEndDate.toISOString(),
+          status: order.status,
+        })
+      }
+    }
+
     // Build response object grouped by product ID
     const statuses: { [productId: number]: any[] } = {}
 
-    products.forEach(product => {
-      // Group rentals by variant/size for this product
-      const rentalStatusBySize: { [size: string]: Array<{ startDate: string, endDate: string, status: string }> } = {}
+    for (const product of products) {
+      const rentalStatusBySize = rentalStatusByProduct[product.id] || {}
 
-      // Add rentals for this product (grouped by variant ID)
-      activeRentals
-        .filter(rental => rental.productId === product.id)
-        .forEach(rental => {
-          const variantKey = rental.variantId ? `variant_${rental.variantId}` : 'no_variant'
-          if (!rentalStatusBySize[variantKey]) {
-            rentalStatusBySize[variantKey] = []
-          }
-          rentalStatusBySize[variantKey].push({
-            startDate: rental.startDate.toISOString(),
-            endDate: rental.endDate.toISOString(),
-            status: rental.status
-          })
-        })
-
-      // Add order items for this product
-      activeOrders.forEach(order => {
-        order.items
-          .filter(item => item.productId === product.id)
-          .forEach(item => {
-            if (item.isRental && item.rentalStartDate && item.rentalEndDate) {
-              // Use product size from order item
-              const sizeKey = item.size || 'default'
-              if (!rentalStatusBySize[sizeKey]) {
-                rentalStatusBySize[sizeKey] = []
-              }
-              rentalStatusBySize[sizeKey].push({
-                startDate: item.rentalStartDate.toISOString(),
-                endDate: item.rentalEndDate.toISOString(),
-                status: order.status
-              })
-            }
-          })
-      })
-
-      // Create variant rental status for this product (using variant IDs)
       const variantRentalStatus = product.variants.map(variant => {
         const variantKey = `variant_${variant.id}`
         const variantRentals = rentalStatusBySize[variantKey] || []
         return {
           variantId: variant.id,
           activeRentals: variantRentals,
-          isAvailable: variantRentals.length === 0
+          isAvailable: variantRentals.length === 0,
         }
       })
 
       statuses[product.id] = variantRentalStatus
-    })
+    }
 
     return NextResponse.json({
       success: true,

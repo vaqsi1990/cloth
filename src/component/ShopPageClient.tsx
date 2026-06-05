@@ -355,8 +355,34 @@ const ShopPageClient = () => {
                     }
                 }
 
-                const response = await fetch(`/api/products?${params}`)
+                const url = `/api/products?${params}`
+                const t0 = performance.now()
+                const response = await fetch(url)
+                const tHeaders = performance.now()
                 const data = await response.json()
+                const tDone = performance.now()
+                if (process.env.NODE_ENV === 'development') {
+                    const st = response.headers.get('server-timing')
+                    const resourceUrl = new URL(url, window.location.origin).href
+                    const entries = performance.getEntriesByName(
+                        resourceUrl,
+                        'resource',
+                    ) as PerformanceResourceTiming[]
+                    const rt = entries[entries.length - 1]
+                    const ttfbMs = rt ? rt.responseStart - rt.requestStart : null
+                    const downloadMs = rt ? rt.responseEnd - rt.responseStart : null
+                    const gapMs =
+                        ttfbMs !== null ? Math.max(0, tHeaders - t0 - ttfbMs) : null
+                    console.log('[ShopPageClient] /api/products', {
+                        totalMs: Math.round(tDone - t0),
+                        ttfbMs: ttfbMs !== null ? Math.round(ttfbMs) : null,
+                        downloadMs: downloadMs !== null ? Math.round(downloadMs) : null,
+                        jsonParseMs: Math.round(tDone - tHeaders),
+                        compileOrQueueMs: gapMs !== null ? Math.round(gapMs) : null,
+                        serverTiming: st ?? null,
+                        timings: data.timings ?? null,
+                    })
+                }
                 if (data.success) {
                     if (process.env.NODE_ENV === 'development' && purposeParam) {
                         console.log(`[ShopPageClient] Fetched ${data.products.length} products for purpose: ${purposeParam}`)
@@ -1596,8 +1622,11 @@ const ShopPageClient = () => {
                                         className="group bg-white rounded-xl  overflow-hidden  transition-shadow"
                                     >
                                         <div className="rounded-xl overflow-hidden">
-                                            <div className="relative  w-full  h-[273px] bg-gray-100  overflow-hidden">
-                                                <Link href={`/product/${product.id}`}>
+                                            <div className="relative w-full h-[273px] bg-gray-100 overflow-hidden">
+                                                <Link
+                                                    href={`/product/${product.id}`}
+                                                    className="relative block w-full h-full"
+                                                >
                                                 <Image
                                                     src={product.images?.[0]?.url || "/placeholder.jpg"}
                                                     alt={product.name}

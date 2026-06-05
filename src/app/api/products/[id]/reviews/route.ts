@@ -170,34 +170,24 @@ export async function GET(
           // If still not found, check ALL orders for this product (more lenient check)
           // This handles cases where email/phone don't match exactly
           if (!userOrderItem) {
-            const allOrderItemsForProduct = await prisma.orderItem.findMany({
-              where: {
-                productId,
-                order: {
-                  status: {
-                    notIn: ['CANCELED', 'REFUNDED'],
-                  },
+          // Performance: we only need existence, not full rows.
+          // Keeping the same "lenient" behavior (any non-canceled/refunded order item enables review)
+          userOrderItem = await prisma.orderItem.findFirst({
+            // @ts-ignore - cacheStrategy is available with Prisma Accelerate
+            cacheStrategy: {
+              swr: 60,
+              ttl: 60,
+            },
+            where: {
+              productId,
+              order: {
+                status: {
+                  notIn: ['CANCELED', 'REFUNDED'],
                 },
               },
-              include: {
-                order: {
-                  select: {
-                    id: true,
-                    userId: true,
-                    email: true,
-                    phone: true,
-                    status: true,
-                  },
-                },
-              },
-            })
-            
-            // If there's at least one order item for this product, allow review
-            // This is a fallback for cases where user info doesn't match exactly
-            if (allOrderItemsForProduct.length > 0) {
-              // Set userOrderItem to the first one found (we just need to know it exists)
-              userOrderItem = allOrderItemsForProduct[0]
-            }
+            },
+            select: { id: true },
+          })
           }
         }
 

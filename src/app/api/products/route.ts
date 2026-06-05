@@ -8,6 +8,8 @@ import { generateUniqueSKU } from '@/utils/skuUtils'
 import { ensureUniqueProductSlug } from '@/lib/productSlug'
 // Removed processExpiredDiscount import - we handle discount clearing inline for better performance
 import { PURPOSE_NAME_BY_SLUG } from '@/data/purposes'
+import { getPurposeIdBySlug } from '@/lib/purpose-ids'
+import { getCategoryIdBySlugParam } from '@/lib/product-categories'
 import {
   isValidProductText,
   PRODUCT_DESCRIPTION_ERROR_MESSAGE,
@@ -85,6 +87,7 @@ const buildPurposeRelation = (purposeId?: number, purposeSlug?: string) => {
 // GET - Fetch all products
 export async function GET(request: NextRequest) {
   try {
+    const reqStart = Date.now()
     // Parse URL first (synchronous, fast)
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category')
@@ -103,74 +106,45 @@ export async function GET(request: NextRequest) {
     const cursorId =
       !useOffsetPagination && cursor ? parseInt(cursor, 10) : undefined
     const includeUnapproved = searchParams.get('includeUnapproved') === 'true'
-    
-    // Start session check and category/purpose lookups in parallel (non-blocking for query setup)
-    // Most users are non-admin, so we can start with default filters
-    const sessionPromise = getServerSession(authOptions)
-    const categoryIdPromise = category && category !== 'ALL' ? prisma.category.findUnique({
-      where: { 
-        slug: category === 'DRESSES' ? 'dresses' :
-              category === 'TOPS' ? 'tops' :
-              category === 'BOTTOMS' ? 'bottoms' :
-              category === 'OUTERWEAR' ? 'outerwear' :
-              category === 'ACCESSORIES' ? 'accessories' : category.toLowerCase()
-      },
-      select: { id: true },
-      // @ts-ignore - cacheStrategy is available with Prisma Accelerate
-      cacheStrategy: { swr: 300, ttl: 300 }
-    }).then(c => c?.id).catch(() => null) : Promise.resolve(null)
-    
-    const purposeIdPromise = purpose ? prisma.purpose.findUnique({
-      where: { slug: purpose },
-      select: { id: true },
-      // @ts-ignore - cacheStrategy is available with Prisma Accelerate
-      cacheStrategy: { swr: 300, ttl: 300 }
-    }).then(async (p) => {
-      if (!p) {
-        // Try to create the purpose if it doesn't exist (using PURPOSE_NAME_BY_SLUG)
-        const purposeName = PURPOSE_NAME_BY_SLUG[purpose] || purpose
-        try {
-          const created = await prisma.purpose.upsert({
-            where: { slug: purpose },
-            update: {},
-            create: {
-              slug: purpose,
-              name: purposeName
-            },
-            select: { id: true }
-          })
-          if (process.env.NODE_ENV === 'development') {
-            console.log(`[Products API] Created purpose with slug "${purpose}"`)
-          }
-          return created.id
-        } catch (error) {
-          if (process.env.NODE_ENV === 'development') {
-            console.error(`[Products API] Error creating purpose with slug "${purpose}":`, error)
-          }
-          return null
-        }
-      }
-      return p.id
-    }).catch((error) => {
-      if (process.env.NODE_ENV === 'development') {
-        console.error(`[Products API] Error finding purpose with slug "${purpose}":`, error)
-      }
-      return null
-    }) : Promise.resolve(null)
-    
-    // Resolve all in parallel
+
+    const prepStart = Date.now()
+    const sessionPromise = includeUnapproved
+      ? getServerSession(authOptions)
+      : Promise.resolve(null)
+
+    const categoryIdFromMemory =
+      category && category !== 'ALL' ? getCategoryIdBySlugParam(category) : null
+    const categoryIdPromise =
+      categoryIdFromMemory !== null
+        ? Promise.resolve(categoryIdFromMemory)
+        : category && category !== 'ALL'
+          ? prisma.category
+              .findUnique({
+                where: { slug: category.toLowerCase() },
+                select: { id: true },
+                // @ts-ignore - cacheStrategy is available with Prisma Accelerate
+                cacheStrategy: { swr: 300, ttl: 300 },
+              })
+              .then((c) => c?.id ?? null)
+              .catch(() => null)
+          : Promise.resolve(null)
+
+    const purposeIdPromise = purpose
+      ? getPurposeIdBySlug(purpose).catch(() => null)
+      : Promise.resolve(null)
+
     const [session, categoryId, purposeId] = await Promise.all([
       sessionPromise,
       categoryIdPromise,
-      purposeIdPromise
+      purposeIdPromise,
     ])
-    
-    const isAdminOrSupportRole = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPPORT'
-    // If includeUnapproved is true and user is admin/support, show all products regardless of approval status
+
+    const prepMs = Date.now() - prepStart
+    const isAdminOrSupportRole =
+      session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPPORT'
     const shouldIncludeUnapproved = includeUnapproved && isAdminOrSupportRole
-    // Admin/support approval lists must bypass cache so status changes are visible immediately
     const needsFreshData = isAdminOrSupportRole || shouldIncludeUnapproved
-    const startTime = Date.now()
+    const dbStart = Date.now()
     
     // Build select object conditionally for admin/support vs regular users
     const baseSelect = {
@@ -336,9 +310,12 @@ export async function GET(request: NextRequest) {
       productsPromise,
       countPromise,
     ])
-    const dbTime = Date.now() - startTime
+    const dbTime = Date.now() - dbStart
+    const processStart = Date.now()
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[Products API] Database query took: ${dbTime}ms`)
+      console.log(
+        `[Products API] prep=${prepMs}ms db=${dbTime}ms (products=${products.length})`,
+      )
     }
 
     // Check and clear expired discounts (ultra-optimized - skip if no discounts)
@@ -408,13 +385,14 @@ export async function GET(request: NextRequest) {
         ? Math.max(1, Math.ceil(totalCount / pageLimit))
         : undefined
 
-    const totalTime = Date.now() - startTime
+    const processMs = Date.now() - processStart
+    const handlerMs = prepMs + dbTime + processMs
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[Products API] Total time: ${totalTime}ms (DB: ${dbTime}ms, Processing: ${totalTime - dbTime}ms)`)
+      console.log(`[Products API] process=${processMs}ms handler=${handlerMs}ms`)
     }
 
     // No need to call processExpiredDiscount - we already cleared expired discounts in memory above
-    const response = NextResponse.json({
+    const responseBody: any = {
       success: true,
       products: productsToReturn,
       nextCursor,
@@ -429,7 +407,23 @@ export async function GET(request: NextRequest) {
             totalPages: totalPages ?? 1,
           }
         : {}),
-    })
+    }
+
+    // Expose timings for debugging (and server-timing header for DevTools)
+    const reqTotalMs = Date.now() - reqStart
+    const serverTiming = `app;dur=${reqTotalMs}, prep;dur=${prepMs}, db;dur=${dbTime}, process;dur=${processMs}`
+    if (process.env.NODE_ENV === 'development') {
+      responseBody.timings = {
+        requestMs: reqTotalMs,
+        prepMs,
+        dbMs: dbTime,
+        processMs,
+        handlerMs,
+      }
+    }
+
+    const response = NextResponse.json(responseBody)
+    response.headers.set('Server-Timing', serverTiming)
     
     // Admin/support approval views must not be cached (stale PENDING after approve)
     if (needsFreshData) {
@@ -443,8 +437,6 @@ export async function GET(request: NextRequest) {
     return response
     
   } catch (error) {
-    console.timeEnd("db")
-    console.log("finish")
     console.error('Error fetching products:', error)
     return NextResponse.json({
       success: false,

@@ -9,7 +9,8 @@ const globalForPrisma = global as unknown as { prisma: PrismaClient };
 const basePrisma =
   globalForPrisma.prisma ||
   new PrismaClient({
-    log: process.env.NODE_ENV === "development" ? ["query"] : [],
+    // Query logging adds noticeable overhead in dev; enable only when debugging.
+    log: process.env.PRISMA_LOG_QUERIES === "true" ? ["query"] : [],
     datasources: {
       db: {
         url: process.env.DATABASE_URL,
@@ -17,13 +18,22 @@ const basePrisma =
     },
   });
 
-// Extend Prisma Client with Optimize and Accelerate extensions, and custom SKU generation
-export const prisma = basePrisma
-  .$extends(
-    withOptimize({ 
-      apiKey: process.env.OPTIMIZE_API_KEY || '' 
-    })
-  )
+const useOptimize =
+  process.env.NODE_ENV === "production" &&
+  Boolean(process.env.OPTIMIZE_API_KEY?.trim());
+
+// Prisma Optimize is sunset (HTTP 410) — only attach when explicitly enabled in production.
+let client = basePrisma;
+if (useOptimize) {
+  client = client.$extends(
+    withOptimize({
+      apiKey: process.env.OPTIMIZE_API_KEY || "",
+    }),
+  ) as typeof basePrisma;
+}
+
+// Extend Prisma Client with Accelerate and custom SKU generation
+export const prisma = client
   .$extends(
     withAccelerate()
   )

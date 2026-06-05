@@ -130,3 +130,21 @@ export const PRODUCT_GENDER_OPTIONS = [
   { value: 'CHILDREN' as const, label: 'ბავშვისთვის' },
   { value: 'UNISEX' as const, label: 'უნივერსალური' },
 ]
+
+const CATEGORY_SLUG_ALIASES: Record<string, string> = {
+  DRESSES: 'dresses',
+  TOPS: 'tops',
+  BOTTOMS: 'bottoms',
+  OUTERWEAR: 'outerwear',
+  ACCESSORIES: 'accessories',
+}
+
+const categoryIdBySlug = new Map(
+  DEFAULT_PRODUCT_CATEGORIES.map((c) => [c.slug, c.id]),
+)
+
+/** Resolve category query param → id without a DB round-trip (known slugs only). */
+export function getCategoryIdBySlugParam(category: string): number | null {
+  const slug = CATEGORY_SLUG_ALIASES[category] ?? category.toLowerCase()
+  return categoryIdBySlug.get(slug) ?? null
+}
