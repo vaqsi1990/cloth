@@ -132,6 +132,7 @@ model User {
   rentalInquiriesAsBuyer  RentalInquiry[] @relation("RentalInquiryBuyer")
   rentalInquiriesAsSeller RentalInquiry[] @relation("RentalInquirySeller")
   voucherRedemptions      VoucherRedemption[]
+  userVouchers            UserVoucher[]
   transactions  Transaction[]
   
   // Chat relations
@@ -647,9 +648,24 @@ model Voucher {
 
   orders       Order[]
   redemptions  VoucherRedemption[]
+  userVouchers UserVoucher[]
 
   @@index([isActive])
   @@index([expiresAt])
+}
+
+model UserVoucher {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  voucherId Int
+  voucher   Voucher  @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  message   String?
+  isUsed    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, voucherId])
+  @@index([userId, isUsed])
 }
 
 model VoucherRedemption {

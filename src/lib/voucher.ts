@@ -62,6 +62,26 @@ export async function validateVoucher(
     }
   }
 
+  const assignmentCount = await prisma.userVoucher.count({
+    where: { voucherId: voucher.id },
+  })
+
+  if (assignmentCount > 0) {
+    const assignment = await prisma.userVoucher.findUnique({
+      where: {
+        userId_voucherId: { userId, voucherId: voucher.id },
+      },
+    })
+
+    if (!assignment) {
+      return { valid: false, message: 'თქვენ არ გაქვთ ეს ვაუჩერი' }
+    }
+
+    if (assignment.isUsed) {
+      return { valid: false, message: 'თქვენ უკვე გამოიყენეთ ეს ვაუჩერი' }
+    }
+  }
+
   const userUsageCount = await prisma.order.count({
     where: {
       voucherId: voucher.id,
@@ -95,6 +115,12 @@ export async function redeemVoucher(
   orderId: number,
   discountAmount: number,
 ) {
+  const assignment = await prisma.userVoucher.findUnique({
+    where: {
+      userId_voucherId: { userId, voucherId },
+    },
+  })
+
   await prisma.$transaction([
     prisma.voucher.update({
       where: { id: voucherId },
@@ -108,5 +134,13 @@ export async function redeemVoucher(
         discountAmount,
       },
     }),
+    ...(assignment
+      ? [
+          prisma.userVoucher.update({
+            where: { id: assignment.id },
+            data: { isUsed: true },
+          }),
+        ]
+      : []),
   ])
 }

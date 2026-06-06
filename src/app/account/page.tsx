@@ -5,7 +5,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from '@/component/AppImage'
-import { User, Package, ShoppingCart, Settings, MapPin, Phone, Mail, Camera, MessageCircle, Search, Trash2, TrendingUp, ClipboardList } from 'lucide-react'
+import { User, Package, ShoppingCart, Settings, MapPin, Phone, Mail, Camera, MessageCircle, Search, Trash2, TrendingUp, ClipboardList, Ticket, Copy } from 'lucide-react'
 import ImageUpload from '@/component/CloudinaryUploader'
 import ContactForm from '@/component/ContactForm'
 import { showToast } from '@/utils/toast'
@@ -57,6 +57,20 @@ interface ProductItem {
   rejectionReason?: string | null
 }
 
+interface UserVoucherItem {
+  id: number
+  code: string
+  discountAmount: number
+  minOrderAmount: number | null
+  expiresAt: string | null
+  message: string | null
+  isUsed: boolean
+  isActive: boolean
+  isExpired: boolean
+  isAvailable: boolean
+  receivedAt: string
+}
+
 type VerificationState = 'PENDING' | 'APPROVED' | 'REJECTED' | null
 
 const AccountPageContent = () => {
@@ -80,6 +94,8 @@ const AccountPageContent = () => {
   const [loadingOrders, setLoadingOrders] = useState(false)
   const [loadingSales, setLoadingSales] = useState(false)
   const [loadingProducts, setLoadingProducts] = useState(false)
+  const [vouchers, setVouchers] = useState<UserVoucherItem[]>([])
+  const [loadingVouchers, setLoadingVouchers] = useState(false)
   const [verification, setVerification] = useState<{
     id?: number;
     idFrontUrl?: string | null;
@@ -183,6 +199,13 @@ const AccountPageContent = () => {
   useEffect(() => {
     if (activeTab === 'profile' && session?.user?.id) {
       fetchVerification()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab])
+
+  useEffect(() => {
+    if (activeTab === 'vouchers' && session?.user?.id) {
+      fetchVouchers()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab])
@@ -691,6 +714,7 @@ const AccountPageContent = () => {
 
   const tabs = [
     { id: 'profile', label: 'პროფილი', icon: User },
+    { id: 'vouchers', label: 'ვაუჩერები', icon: Ticket },
     { id: 'orders', label: 'შეკვეთები', icon: ShoppingCart },
     { id: 'sales', label: 'გაყიდვები', icon: TrendingUp },
     { id: 'chats', label: 'ჩათები', icon: MessageCircle },
@@ -728,6 +752,26 @@ const AccountPageContent = () => {
     } finally {
       setLoadingSales(false)
     }
+  }
+
+  const fetchVouchers = async () => {
+    try {
+      setLoadingVouchers(true)
+      const response = await fetch('/api/user/vouchers')
+      const data = await response.json()
+      if (data.success) {
+        setVouchers(data.vouchers || [])
+      }
+    } catch (error) {
+      console.error('Error fetching vouchers:', error)
+    } finally {
+      setLoadingVouchers(false)
+    }
+  }
+
+  const copyVoucherCode = (code: string) => {
+    navigator.clipboard.writeText(code)
+    showToast('კოდი დაკოპირდა', 'success')
   }
 
   const fetchProducts = async () => {
@@ -1150,6 +1194,99 @@ const AccountPageContent = () => {
               <div className="text-2xl font-bold text-black">{userStats.soldProductsCount}</div>
               <div className="md:text-[18px] text-[16px] text-black">გაყიდული პროდუქტი</div>
             </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+
+  const renderVouchersTab = () => (
+    <div className="space-y-6">
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+        <h3 className="md:text-[20px] text-[18px] font-bold text-black mb-6">
+          ჩემი ვაუჩერები
+        </h3>
+
+        {loadingVouchers ? (
+          <div className="text-center py-12">
+            <div className="w-12 h-12 border-4 border-gray-300 border-t-[#1B3729] rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-[18px] text-black">იტვირთება...</p>
+          </div>
+        ) : vouchers.length === 0 ? (
+          <div className="text-center py-8">
+            <Ticket className="w-12 h-12 text-black mx-auto mb-4" />
+            <p className="text-[18px] text-black">ჯერ არ გაქვთ ვაუჩერები</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {vouchers.map((voucher) => (
+              <div
+                key={voucher.id}
+                className={`border rounded-lg p-4 transition-shadow ${
+                  voucher.isAvailable
+                    ? 'border-green-300 bg-green-50 hover:shadow-md'
+                    : 'border-gray-200 bg-gray-50 opacity-75'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-xl text-black">
+                        {voucher.code}
+                      </span>
+                      {voucher.isAvailable && (
+                        <button
+                          onClick={() => copyVoucherCode(voucher.code)}
+                          className="p-1.5 hover:bg-green-100 rounded-lg text-green-700"
+                          title="კოდის კოპირება"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-lg font-bold text-green-700 mt-1">
+                      -₾{voucher.discountAmount.toFixed(2)} ფასდაკლება
+                    </p>
+                    {voucher.minOrderAmount && (
+                      <p className="text-sm text-gray-600">
+                        მინ. ჯამი: ₾{voucher.minOrderAmount.toFixed(2)}
+                      </p>
+                    )}
+                    {voucher.message && (
+                      <p className="text-sm text-gray-700 mt-2 italic">
+                        {voucher.message}
+                      </p>
+                    )}
+                    <p className="text-[15px] text-black mt-2">
+                      მიღებული:{' '}
+                      {new Date(voucher.receivedAt).toLocaleDateString('ka-GE')}
+                      {voucher.expiresAt &&
+                        ` · ვადა: ${new Date(voucher.expiresAt).toLocaleDateString('ka-GE')}`}
+                    </p>
+                  </div>
+                  <span
+                    className={`px-3 py-1 rounded-full text-sm font-semibold whitespace-nowrap ${
+                      voucher.isAvailable
+                        ? 'bg-green-200 text-green-800'
+                        : voucher.isUsed
+                          ? 'bg-gray-200 text-gray-600'
+                          : voucher.isExpired
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-yellow-100 text-yellow-800'
+                    }`}
+                  >
+                    {voucher.isAvailable
+                      ? 'აქტიური'
+                      : voucher.isUsed
+                        ? 'გამოყენებული'
+                        : voucher.isExpired
+                          ? 'ვადაგასული'
+                          : 'არააქტიური'}
+                  </span>
+                </div>
+              
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -1750,6 +1887,8 @@ const AccountPageContent = () => {
     switch (activeTab) {
       case 'profile':
         return renderProfileTab()
+      case 'vouchers':
+        return renderVouchersTab()
       case 'orders':
         return renderOrdersTab()
       case 'sales':
