@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { sortProductCategories } from '@/lib/product-categories'
+import {
+  dedupeProductCategories,
+  sortProductCategories,
+} from '@/lib/product-categories'
 
 // GET - Fetch all categories
 export async function GET(request: NextRequest) {
@@ -19,7 +22,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      categories: sortProductCategories(deduplicatedCategories),
+      categories: sortProductCategories(
+        dedupeProductCategories(deduplicatedCategories),
+      ),
     })
     
   } catch (error) {

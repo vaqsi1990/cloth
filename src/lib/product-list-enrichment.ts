@@ -116,8 +116,25 @@ export async function enrichProductListRows<T extends ProductListScalar>(
     ? [...new Set(products.map((p) => p.userId).filter((id): id is string => !!id))]
     : []
 
-  const categoryById = getCategoryMetaByIdsSync(categoryIds)
-  const purposeById = getPurposeMetaByIdsSync(purposeIds)
+  const [dbCategories, purposeById] = await Promise.all([
+    categoryIds.length > 0
+      ? prisma.category.findMany({
+          where: { id: { in: categoryIds } },
+          select: { id: true, name: true, slug: true },
+        })
+      : Promise.resolve([]),
+    Promise.resolve(getPurposeMetaByIdsSync(purposeIds)),
+  ])
+
+  const categoryById = new Map(
+    dbCategories.map((c) => [c.id, { id: c.id, name: c.name, slug: c.slug }]),
+  )
+  for (const id of categoryIds) {
+    if (!categoryById.has(id)) {
+      const fallback = getCategoryMetaByIdsSync([id]).get(id)
+      if (fallback) categoryById.set(id, fallback)
+    }
+  }
 
   const extras = await fetchProductListExtras(ids)
 

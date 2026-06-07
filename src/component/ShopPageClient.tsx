@@ -10,6 +10,15 @@ import StarRating from "@/components/StarRating"
 import { PURPOSE_OPTIONS } from '@/data/purposes'
 import { PRODUCT_COLORS, PRODUCT_COLOR_FILTER_MAPPING } from '@/lib/product-colors'
 import { PRODUCT_IMAGE_QUALITY } from '@/lib/image-config'
+import {
+  DEFAULT_PRODUCT_CATEGORIES,
+  dedupeProductCategories,
+  findCategoryByParam,
+  productMatchesCategoryFilter,
+  resolveCategorySlugParam,
+  sortProductCategories,
+  type ProductCategory,
+} from '@/lib/product-categories'
 
 type PurchaseType = 'all' | 'rent-only' | 'sale-only' | 'rent-and-sale'
 
@@ -23,6 +32,9 @@ const ShopPageClient = () => {
 
     const [products, setProducts] = useState<Product[]>([])
     const [allProductsForCounts, setAllProductsForCounts] = useState<Product[]>([])
+    const [shopCategories, setShopCategories] = useState<ProductCategory[]>(
+        DEFAULT_PRODUCT_CATEGORIES,
+    )
     const [loading, setLoading] = useState(true)
     const [selectedCategories, setSelectedCategories] = useState<string[]>([])
     const [selectedPurposes, setSelectedPurposes] = useState<string[]>([])
@@ -153,7 +165,13 @@ const ShopPageClient = () => {
             }
         }
 
-        setSelectedCategories(categoryParam ? [categoryParam] : restoredCategories)
+        const initialCategory = categoryParam
+            ? findCategoryByParam(categoryParam, DEFAULT_PRODUCT_CATEGORIES)?.name ??
+              categoryParam
+            : restoredCategories
+        setSelectedCategories(
+            Array.isArray(initialCategory) ? initialCategory : [initialCategory].filter(Boolean),
+        )
         setSelectedPurposes(purposeParam ? [purposeParam] : restoredPurposes)
         setPriceRange(restoredPriceRange)
         setSelectedSizeSystems(restoredSizeSystems)
@@ -185,8 +203,11 @@ const ShopPageClient = () => {
         if (!shopInitializedRef.current) return
         if (prevCategoryParamRef.current === categoryParam) return
         prevCategoryParamRef.current = categoryParam
-        setSelectedCategories(categoryParam ? [categoryParam] : [])
-    }, [categoryParam])
+        const resolved = categoryParam
+            ? findCategoryByParam(categoryParam, shopCategories)?.name ?? categoryParam
+            : null
+        setSelectedCategories(resolved ? [resolved] : [])
+    }, [categoryParam, shopCategories])
 
     // Save when key filters/page change (skip until restore completes)
     useEffect(() => {
@@ -274,43 +295,36 @@ const ShopPageClient = () => {
 
     const purposes = PURPOSE_OPTIONS
 
-    const categories = [
-        // ძირითადი
-        { id: "კაბები", label: "კაბები", slug: "dresses" },
-        { id: "ბლუზები", label: "ბლუზები", slug: "tops" },
-        { id: "შარვლები", label: "შარვლები", slug: "pants" },
-        { id: "ქვედაბოლოები", label: "ქვედაბოლოები", slug: "skirts" },
-        { id: "ზედა ტანსაცმელი", label: "ზედა ტანსაცმელი", slug: "outerwear" },
-        { id: "პალტოები და მოსასხამი", label: "პალტოები და მოსასხამი", slug: "coats" },
+    const resolveCategoryApiSlug = useCallback(
+        (param: string | null, selected: string[]) => {
+            if (param) return resolveCategorySlugParam(param)
+            if (selected.length === 1) {
+                const cat =
+                    shopCategories.find((c) => c.name === selected[0]) ||
+                    findCategoryByParam(selected[0], shopCategories)
+                return cat?.slug ?? resolveCategorySlugParam(selected[0])
+            }
+            return null
+        },
+        [shopCategories],
+    )
 
-        // საქორწინო და სადღესასწაულო
-        { id: "საქორწინო კაბები", label: "საქორწინო კაბები", slug: "wedding-dresses" },
-        { id: "საღამოს ტანსაცმელი", label: "საღამოს ტანსაცმელი", slug: "evening-wear" },
-
-        // სპორტული და სათხილამურო
-        { id: "სათხილამურო ქურთუკი", label: "სათხილამურო ქურთუკი", slug: "ski-jacket" },
-        { id: "თერმო ტანსაცმელი", label: "თერმო ტანსაცმელი", slug: "thermal-wear" },
-        { id: "სათვალე", label: "სათვალე", slug: "goggles" },
-        { id: "ჩაფხუტი", label: "ჩაფხუტი", slug: "helmet" },
-
-        // კულტურული და თემატური
-        { id: "ტრადიციული ტანსაცმელი", label: "ტრადიციული ტანსაცმელი", slug: "traditional" },
-        { id: "ქოსფლეის კოსტუმები", label: "ქოსფლეის კოსტუმები", slug: "cosplay" },
-
-        // მამაკაცების
-        { id: "შარვალ კოსტუმი", label: "შარვალ კოსტუმი", slug: "suit" },
-        { id: "პიჯაკი", label: "პიჯაკი", slug: "blazer" },
-
-        // აქსესუარები
-        { id: "აქსესუარები", label: "აქსესუარები", slug: "accessories" },
-
-        // ბავშვები
-        { id: "ბავშვთა კაბები", label: "ბავშვთა კაბები", slug: "kids-dresses" },
-        { id: "ბავშვთა ტრადიციული ტანსაცმელი", label: "ბავშვთა ტრადიციული ტანსაცმელი", slug: "kids-traditional" },
-        { id: "ბავშვთა სათხილამურო ტანსაცმელი", label: "ბავშვთა სათხილამურო ტანსაცმელი", slug: "kids-ski" },
-        { id: "ბავშვების კალიასკა", label: "ბავშვების კალიასკა", slug: "bavshvebis-kaliaska" },
-        { id: "ბავშვების სათამაშოები", label: "ბავშვების სათამაშოები", slug: "bavshvebis-satamashoebi" },
-    ]
+    useEffect(() => {
+        const loadCategories = async () => {
+            try {
+                const response = await fetch('/api/categories')
+                const data = await response.json()
+                if (data.success && data.categories?.length > 0) {
+                    setShopCategories(
+                        sortProductCategories(dedupeProductCategories(data.categories)),
+                    )
+                }
+            } catch {
+                // keep defaults
+            }
+        }
+        void loadCategories()
+    }, [])
 
     const sizeSystems = [
         { id: "EU", label: "EU" },
@@ -389,15 +403,12 @@ const ShopPageClient = () => {
                 } else if (selectedPurposes.length === 1) {
                     params.append('purpose', selectedPurposes[0])
                 }
-                if (categoryParam) {
-                    params.append('category', categoryParam)
-                } else if (selectedCategories.length === 1) {
-                    const cat = categories.find(
-                        (c) => c.label === selectedCategories[0] || c.id === selectedCategories[0]
-                    )
-                    if (cat?.slug) {
-                        params.append('category', cat.slug)
-                    }
+                const categorySlug = resolveCategoryApiSlug(
+                    categoryParam,
+                    selectedCategories,
+                )
+                if (categorySlug) {
+                    params.append('category', categorySlug)
                 }
 
                 const url = `/api/products?${params}`
@@ -493,6 +504,7 @@ const ShopPageClient = () => {
         itemsPerPage,
         selectedCategories,
         selectedPurposes,
+        resolveCategoryApiSlug,
     ])
 
     // Fetch all products (cursor pagination) for filter count calculations
@@ -517,15 +529,12 @@ const ShopPageClient = () => {
                 } else if (selectedPurposes.length === 1) {
                     baseParams.append('purpose', selectedPurposes[0])
                 }
-                if (categoryParam) {
-                    baseParams.append('category', categoryParam)
-                } else if (selectedCategories.length === 1) {
-                    const cat = categories.find(
-                        (c) => c.label === selectedCategories[0] || c.id === selectedCategories[0]
-                    )
-                    if (cat?.slug) {
-                        baseParams.append('category', cat.slug)
-                    }
+                const categorySlug = resolveCategoryApiSlug(
+                    categoryParam,
+                    selectedCategories,
+                )
+                if (categorySlug) {
+                    baseParams.append('category', categorySlug)
                 }
 
                 const allProducts: Product[] = []
@@ -574,6 +583,7 @@ const ShopPageClient = () => {
         categoryParam,
         selectedCategories,
         selectedPurposes,
+        resolveCategoryApiSlug,
     ])
 
     // Fetch rental status for rentable products (batched)
@@ -733,8 +743,11 @@ const ShopPageClient = () => {
     const getProductsFilteredByOtherCriteria = (productsToFilter: Product[]) => {
         return productsToFilter.filter(product => {
             // Category filter (multiple selection)
-            const categoryMatch = selectedCategories.length === 0 ||
-                selectedCategories.includes(product.category?.name || '')
+            const categoryMatch = productMatchesCategoryFilter(
+                product,
+                selectedCategories,
+                shopCategories,
+            )
 
             // Purpose filter
             const purposeMatch = selectedPurposes.length === 0 ||
@@ -790,8 +803,11 @@ const ShopPageClient = () => {
     // Filter products by all criteria (excluding gender since it's handled by API)
     const filteredProducts = products.filter(product => {
         // Category filter (multiple selection)
-        const categoryMatch = selectedCategories.length === 0 ||
-            selectedCategories.includes(product.category?.name || '')
+        const categoryMatch = productMatchesCategoryFilter(
+            product,
+            selectedCategories,
+            shopCategories,
+        )
 
         // Purpose filter
         const purposeMatch = selectedPurposes.length === 0 ||
@@ -1197,11 +1213,11 @@ const ShopPageClient = () => {
                                     <div className="space-y-3">
                                         <h3 className="text-lg font-semibold text-black mb-4">კატეგორია</h3>
                                         <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-                                            {categories.map((category) => {
-                                                const categoryCount = products.filter(product =>
-                                                    product.category?.name === category.label
+                                            {shopCategories.map((category) => {
+                                                const categoryCount = allProductsForCounts.filter(product =>
+                                                    productMatchesCategoryFilter(product, [category.name], shopCategories)
                                                 ).length;
-                                                const isSelected = selectedCategories.includes(category.label);
+                                                const isSelected = selectedCategories.includes(category.name);
 
                                                 return (
                                                     <label
@@ -1212,10 +1228,10 @@ const ShopPageClient = () => {
                                                             <input
                                                                 type="checkbox"
                                                                 checked={isSelected}
-                                                                onChange={() => toggleCategory(category.label)}
+                                                                onChange={() => toggleCategory(category.name)}
                                                                 className="w-4 h-4"
                                                             />
-                                                            <span className="text-[16px] text-black">{category.label}</span>
+                                                            <span className="text-[16px] text-black">{category.name}</span>
                                                         </span>
                                                         <span className="text-sm text-gray-500">{categoryCount}</span>
                                                     </label>
@@ -1485,11 +1501,11 @@ const ShopPageClient = () => {
                                 </button>
                                 {isCategoryOpen && (
                                     <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-                                        {categories.map((category) => {
-                                            const categoryCount = products.filter(product =>
-                                                product.category?.name === category.label
+                                        {shopCategories.map((category) => {
+                                            const categoryCount = allProductsForCounts.filter(product =>
+                                                productMatchesCategoryFilter(product, [category.name], shopCategories)
                                             ).length;
-                                            const isSelected = selectedCategories.includes(category.label);
+                                            const isSelected = selectedCategories.includes(category.name);
 
                                             return (
                                                 <label
@@ -1500,10 +1516,10 @@ const ShopPageClient = () => {
                                                         <input
                                                             type="checkbox"
                                                             checked={isSelected}
-                                                            onChange={() => toggleCategory(category.label)}
+                                                            onChange={() => toggleCategory(category.name)}
                                                             className="w-4 h-4"
                                                         />
-                                                        {category.label}
+                                                        {category.name}
                                                     </span>
                                                     <span className="text-xs text-gray-500">{categoryCount}</span>
                                                 </label>

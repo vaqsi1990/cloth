@@ -1,5 +1,5 @@
 "use client"
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Plus, X } from 'lucide-react'
 import Link from 'next/link'
@@ -17,8 +17,10 @@ import {
 } from '@/lib/product-text'
 import {
   DEFAULT_PRODUCT_CATEGORIES,
+  dedupeProductCategories,
   isSizeOptionalCategoryId,
   PRODUCT_GENDER_OPTIONS,
+  sortProductCategories,
 } from '@/lib/product-categories'
 
 const sizeOptions = {
@@ -32,7 +34,6 @@ const sizeOptions = {
  
 }
 const purposes = PURPOSE_OPTIONS
-const categories = DEFAULT_PRODUCT_CATEGORIES
 
 const productSchema = z.object({
   name: z.string()
@@ -93,6 +94,7 @@ type ProductFormData = z.infer<typeof productSchema>
 
 const NewProductPage = () => {
   const router = useRouter()
+  const [categories, setCategories] = useState(DEFAULT_PRODUCT_CATEGORIES)
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
     slug: '',
@@ -176,6 +178,23 @@ const NewProductPage = () => {
   }, [])
 
   const colors = PRODUCT_FORM_COLORS
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('/api/categories')
+        const data = await response.json()
+        if (data.success && data.categories?.length > 0) {
+          setCategories(
+            sortProductCategories(dedupeProductCategories(data.categories)),
+          )
+        }
+      } catch {
+        // keep defaults
+      }
+    }
+    void fetchCategories()
+  }, [])
 
   const isSizeOptional = useMemo(
     () => isSizeOptionalCategoryId(formData.categoryId, categories),

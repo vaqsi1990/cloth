@@ -9,7 +9,10 @@ import { ensureUniqueProductSlug } from '@/lib/productSlug'
 // Removed processExpiredDiscount import - we handle discount clearing inline for better performance
 import { PURPOSE_NAME_BY_SLUG } from '@/data/purposes'
 import { getPurposeIdBySlug, warmPurposeCache } from '@/lib/purpose-ids'
-import { getCategoryIdBySlugParam } from '@/lib/product-categories'
+import {
+  getCategoryIdBySlugParam,
+  resolveCategorySlugParam,
+} from '@/lib/product-categories'
 import {
   isValidProductText,
   PRODUCT_DESCRIPTION_ERROR_MESSAGE,
@@ -137,22 +140,20 @@ export async function GET(request: NextRequest) {
       ? getServerSession(authOptions)
       : Promise.resolve(null)
 
-    const categoryIdFromMemory =
-      category && category !== 'ALL' ? getCategoryIdBySlugParam(category) : null
+    const resolvedCategorySlug =
+      category && category !== 'ALL' ? resolveCategorySlugParam(category) : null
     const categoryIdPromise =
-      categoryIdFromMemory !== null
-        ? Promise.resolve(categoryIdFromMemory)
-        : category && category !== 'ALL'
-          ? prisma.category
-              .findUnique({
-                where: { slug: category.toLowerCase() },
-                select: { id: true },
-                // @ts-ignore - cacheStrategy is available with Prisma Accelerate
-                cacheStrategy: { swr: 300, ttl: 300 },
-              })
-              .then((c) => c?.id ?? null)
-              .catch(() => null)
-          : Promise.resolve(null)
+      resolvedCategorySlug
+        ? prisma.category
+            .findUnique({
+              where: { slug: resolvedCategorySlug },
+              select: { id: true },
+              // @ts-ignore - cacheStrategy is available with Prisma Accelerate
+              cacheStrategy: { swr: 300, ttl: 300 },
+            })
+            .then((c) => c?.id ?? getCategoryIdBySlugParam(category!))
+            .catch(() => getCategoryIdBySlugParam(category!))
+        : Promise.resolve(null)
 
     const purposeIdPromise = purpose
       ? getPurposeIdBySlug(purpose).catch(() => null)
