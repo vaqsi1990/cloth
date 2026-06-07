@@ -31,6 +31,7 @@ export async function GET() {
 
       return {
         id: uv.id,
+        voucherId: v.id,
         code: v.code,
         discountAmount: v.discountAmount,
         minOrderAmount: v.minOrderAmount,

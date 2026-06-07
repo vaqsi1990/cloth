@@ -16,6 +16,7 @@ import {
   XCircle,
   Send,
   Search,
+  Copy,
 } from 'lucide-react'
 import { showToast } from '@/utils/toast'
 
@@ -34,11 +35,28 @@ interface Voucher {
   createdAt: string
 }
 
+interface ReceivedVoucher {
+  id: number
+  voucherId: number
+  code: string
+  discountAmount: number
+  minOrderAmount: number | null
+  expiresAt: string | null
+  message: string | null
+  isUsed: boolean
+  isExpired: boolean
+  isAvailable: boolean
+  receivedAt: string
+}
+
 interface SendUser {
   id: string
   name: string | null
   email: string
+  role: string
 }
+
+type SendUserFilter = 'all' | 'admin' | 'user'
 
 const emptyForm = {
   code: '',
@@ -67,6 +85,9 @@ const AdminVouchersPage = () => {
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set())
   const [sendMessage, setSendMessage] = useState('')
   const [sending, setSending] = useState(false)
+  const [receivedVouchers, setReceivedVouchers] = useState<ReceivedVoucher[]>([])
+  const [loadingReceived, setLoadingReceived] = useState(true)
+  const [sendUserFilter, setSendUserFilter] = useState<SendUserFilter>('all')
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -94,11 +115,27 @@ const AdminVouchersPage = () => {
     }
   }, [showInactive])
 
+  const fetchReceivedVouchers = useCallback(async () => {
+    try {
+      setLoadingReceived(true)
+      const response = await fetch('/api/user/vouchers')
+      const data = await response.json()
+      if (data.success) {
+        setReceivedVouchers(data.vouchers || [])
+      }
+    } catch {
+      showToast('მიღებული ვაუჩერების ჩატვირთვა ვერ მოხერხდა', 'error')
+    } finally {
+      setLoadingReceived(false)
+    }
+  }, [])
+
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.role === 'ADMIN') {
       fetchVouchers()
+      fetchReceivedVouchers()
     }
-  }, [status, session?.user?.role, fetchVouchers])
+  }, [status, session?.user?.role, fetchVouchers, fetchReceivedVouchers])
 
   const handleCreate = () => {
     setIsCreating(true)
@@ -200,11 +237,15 @@ const AdminVouchersPage = () => {
     }
   }
 
-  const openSendModal = async (voucher: Voucher) => {
+  const openSendModal = async (
+    voucher: Voucher,
+    options?: { filter?: SendUserFilter; message?: string },
+  ) => {
     setSendVoucher(voucher)
     setSendSearch('')
     setSelectedUserIds(new Set())
-    setSendMessage('')
+    setSendMessage(options?.message || '')
+    setSendUserFilter(options?.filter || 'all')
     setSendUsersLoading(true)
 
     try {
@@ -212,18 +253,46 @@ const AdminVouchersPage = () => {
       const data = await response.json()
       if (data.success) {
         setSendUsers(
-          data.users.map((u: SendUser) => ({
-            id: u.id,
-            name: u.name,
-            email: u.email,
-          })),
+          data.users
+            .filter((u: SendUser) => u.id !== session?.user?.id)
+            .map((u: SendUser) => ({
+              id: u.id,
+              name: u.name,
+              email: u.email,
+              role: u.role,
+            })),
         )
       }
     } catch {
-      showToast('მომხმარებლების ჩატვირთვა ვერ მოხერხდა', 'error')
+      showToast('მიმღებების ჩატვირთვა ვერ მოხერხდა', 'error')
     } finally {
       setSendUsersLoading(false)
     }
+  }
+
+  const openSendModalFromReceived = (rv: ReceivedVoucher) => {
+    openSendModal(
+      {
+        id: rv.voucherId,
+        code: rv.code,
+        discountAmount: rv.discountAmount,
+        minOrderAmount: rv.minOrderAmount,
+        usageLimit: null,
+        usedCount: 0,
+        perUserLimit: 1,
+        startsAt: null,
+        expiresAt: rv.expiresAt,
+        isActive: true,
+        note: null,
+        createdAt: rv.receivedAt,
+      },
+      { filter: 'admin' },
+    )
+  }
+
+  const copyVoucherCode = (code: string) => {
+    navigator.clipboard.writeText(code)
+    showToast('კოდი დაკოპირდა', 'success')
   }
 
   const closeSendModal = () => {
@@ -232,6 +301,7 @@ const AdminVouchersPage = () => {
     setSelectedUserIds(new Set())
     setSendMessage('')
     setSendUsers([])
+    setSendUserFilter('all')
   }
 
   const toggleUserSelection = (userId: string) => {
@@ -270,6 +340,7 @@ const AdminVouchersPage = () => {
       if (data.success) {
         showToast(data.message || 'ვაუჩერი გაიგზავნა', 'success')
         closeSendModal()
+        fetchReceivedVouchers()
       } else {
         showToast(data.error || 'შეცდომა', 'error')
       }
@@ -281,6 +352,12 @@ const AdminVouchersPage = () => {
   }
 
   const filteredSendUsers = sendUsers.filter((user) => {
+    if (sendUserFilter === 'admin' && user.role !== 'ADMIN' && user.role !== 'SUPPORT') {
+      return false
+    }
+    if (sendUserFilter === 'user' && user.role !== 'USER') {
+      return false
+    }
     if (!sendSearch.trim()) return true
     const q = sendSearch.toLowerCase()
     return (
@@ -288,6 +365,12 @@ const AdminVouchersPage = () => {
       user.email.toLowerCase().includes(q)
     )
   })
+
+  const roleLabel = (role: string) => {
+    if (role === 'ADMIN') return 'ადმინი'
+    if (role === 'SUPPORT') return 'საპორტი'
+    return 'მომხმარებელი'
+  }
 
   const toggleActive = async (voucher: Voucher) => {
     try {
@@ -340,7 +423,7 @@ const AdminVouchersPage = () => {
                   ვაუჩერების მართვა
                 </h1>
                 <p className="text-gray-600 text-sm mt-1">
-                  შექმენით და გაუგზავნეთ ვაუჩერები მომხმარებლების დეშბორდზე
+                  შექმენით, გაუგზავნეთ და გადააგზავნეთ ვაუჩერები მომხმარებლებსა და ადმინებზე
                 </p>
               </div>
             </div>
@@ -500,6 +583,95 @@ const AdminVouchersPage = () => {
           </div>
         )}
 
+        <div className="bg-white rounded-xl shadow-sm border p-6 mb-8">
+          <h2 className="text-lg font-bold text-gray-900 mb-4">ჩემი ვაუჩერები</h2>
+          <p className="text-sm text-gray-600 mb-4">
+            თქვენთან მიღებული ვაუჩერები — შეგიძლიათ გადააგზავნოთ სხვა ადმინზე ან მომხმარებელზე
+          </p>
+
+          {loadingReceived ? (
+            <div className="text-center py-8 text-gray-500 text-sm">იტვირთება...</div>
+          ) : receivedVouchers.length === 0 ? (
+            <div className="text-center py-8 border border-dashed border-gray-200 rounded-lg">
+              <Ticket className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+              <p className="text-gray-500 text-sm">ჯერ არ გაქვთ მიღებული ვაუჩერები</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {receivedVouchers.map((voucher) => (
+                <div
+                  key={voucher.id}
+                  className={`border rounded-lg p-4 flex items-start justify-between gap-4 flex-wrap ${
+                    voucher.isAvailable
+                      ? 'border-green-300 bg-green-50'
+                      : 'border-gray-200 bg-gray-50 opacity-80'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-lg">{voucher.code}</span>
+                      {voucher.isAvailable && (
+                        <button
+                          onClick={() => copyVoucherCode(voucher.code)}
+                          className="p-1.5 hover:bg-green-100 rounded-lg text-green-700"
+                          title="კოდის კოპირება"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-green-700 font-semibold mt-0.5">
+                      -₾{voucher.discountAmount.toFixed(2)}
+                    </p>
+                    {voucher.message && (
+                      <p className="text-sm text-gray-600 mt-1 italic">{voucher.message}</p>
+                    )}
+                    <p className="text-xs text-gray-500 mt-1">
+                      მიღებული:{' '}
+                      {new Date(voucher.receivedAt).toLocaleDateString('ka-GE')}
+                      {voucher.expiresAt &&
+                        ` · ვადა: ${new Date(voucher.expiresAt).toLocaleDateString('ka-GE')}`}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                        voucher.isAvailable
+                          ? 'bg-green-200 text-green-800'
+                          : voucher.isUsed
+                            ? 'bg-gray-200 text-gray-600'
+                            : voucher.isExpired
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-yellow-100 text-yellow-800'
+                      }`}
+                    >
+                      {voucher.isAvailable
+                        ? 'აქტიური'
+                        : voucher.isUsed
+                          ? 'გამოყენებული'
+                          : voucher.isExpired
+                            ? 'ვადაგასული'
+                            : 'არააქტიური'}
+                    </span>
+                    {voucher.isAvailable && (
+                      <button
+                        onClick={() => openSendModalFromReceived(voucher)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
+                        title="გადაგზავნა"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        გადაგზავნა
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <h2 className="text-lg font-bold text-gray-900 mb-4">ვაუჩერების მართვა</h2>
+
         <div className="flex items-center gap-2 mb-4">
           <input
             type="checkbox"
@@ -598,7 +770,7 @@ const AdminVouchersPage = () => {
                           <button
                             onClick={() => openSendModal(voucher)}
                             className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg"
-                            title="მომხმარებლებთან გაგზავნა"
+                            title="გაგზავნა"
                           >
                             <Send className="w-4 h-4" />
                           </button>
@@ -665,8 +837,30 @@ const AdminVouchersPage = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  მომხმარებლების არჩევა
+                  მიმღების არჩევა
                 </label>
+                <div className="flex gap-2 mb-2">
+                  {(
+                    [
+                      ['all', 'ყველა'],
+                      ['admin', 'ადმინები'],
+                      ['user', 'მომხმარებლები'],
+                    ] as const
+                  ).map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setSendUserFilter(value)}
+                      className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
+                        sendUserFilter === value
+                          ? 'bg-black text-white border-black'
+                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
                 <div className="relative mb-2">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
@@ -684,7 +878,7 @@ const AdminVouchersPage = () => {
                   </div>
                 ) : filteredSendUsers.length === 0 ? (
                   <div className="text-center py-6 text-gray-500 text-sm">
-                    მომხმარებელი ვერ მოიძებნა
+                    მიმღები ვერ მოიძებნა
                   </div>
                 ) : (
                   <div className="border border-gray-200 rounded-lg max-h-60 overflow-y-auto divide-y">
@@ -699,10 +893,17 @@ const AdminVouchersPage = () => {
                           onChange={() => toggleUserSelection(user.id)}
                           className="w-4 h-4 shrink-0"
                         />
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium truncate">
-                            {user.name || 'უცნობი'}
-                          </p>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium truncate">
+                              {user.name || 'უცნობი'}
+                            </p>
+                            {user.role !== 'USER' && (
+                              <span className="shrink-0 px-1.5 py-0.5 text-[10px] font-semibold uppercase rounded bg-purple-100 text-purple-700">
+                                {roleLabel(user.role)}
+                              </span>
+                            )}
+                          </div>
                           <p className="text-xs text-gray-500 truncate">
                             {user.email}
                           </p>
@@ -714,7 +915,7 @@ const AdminVouchersPage = () => {
 
                 {selectedUserIds.size > 0 && (
                   <p className="text-[15px] text-black mt-2">
-                    არჩეული: {selectedUserIds.size} მომხმარებელი
+                    არჩეული: {selectedUserIds.size} მიმღები
                   </p>
                 )}
               </div>
