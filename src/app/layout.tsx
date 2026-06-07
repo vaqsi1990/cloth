@@ -11,6 +11,7 @@ import ChatProvider from "@/components/ChatProvider";
 import ToastProvider from "@/components/ToastProvider";
 import ScrollRestorer from "@/components/ScrollRestorer";
 import CookieConsent from "@/components/CookieConsent";
+import VoucherGiftPopup from "@/components/VoucherGiftPopup";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -117,6 +118,7 @@ export default async function RootLayout({
         <AuthProvider session={session}>
           <ChatProvider>
             <ToastProvider />
+            <VoucherGiftPopup />
             <Suspense fallback={null}>
               <Header />
             </Suspense>

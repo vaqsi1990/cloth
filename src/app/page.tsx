@@ -5,8 +5,6 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import ShopPageClient from "../component/ShopPageClient";
 import StructuredData from "@/components/StructuredData";
-import VoucherGiftPopup from "@/components/VoucherGiftPopup";
-
 export const metadata: Metadata = {
   title: "Dressla.ge - ტანსაცმლის ქირაობა და შეძენა საქართველოში",
   description:
@@ -25,7 +23,6 @@ export default function Home() {
       <StructuredData type="Organization" />
       <StructuredData type="WebSite" />
       <main className=" mx-auto px-4  ">
-        <VoucherGiftPopup />
         <Suspense
           fallback={
             <div className="min-h-screen flex items-center justify-center">
