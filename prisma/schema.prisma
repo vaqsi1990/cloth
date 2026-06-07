@@ -655,17 +655,19 @@ model Voucher {
 }
 
 model UserVoucher {
-  id        Int      @id @default(autoincrement())
+  id        Int       @id @default(autoincrement())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   voucherId Int
-  voucher   Voucher  @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  voucher   Voucher   @relation(fields: [voucherId], references: [id], onDelete: Cascade)
   message   String?
-  isUsed    Boolean  @default(false)
-  createdAt DateTime @default(now())
+  isUsed    Boolean   @default(false)
+  seenAt    DateTime?
+  createdAt DateTime  @default(now())
 
   @@unique([userId, voucherId])
   @@index([userId, isUsed])
+  @@index([userId, seenAt])
 }
 
 model VoucherRedemption {
