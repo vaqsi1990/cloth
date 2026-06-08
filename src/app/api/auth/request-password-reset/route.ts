@@ -1,20 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { sendPasswordResetEmail } from '@/lib/email'
+import { isEmailConfigured, sendPasswordResetEmail } from '@/lib/email'
 import crypto from 'crypto'
 
 export async function POST(request: NextRequest) {
   try {
     console.log('Password reset request received')
     
-    // Check environment variables
-    console.log('Environment check:', {
-      EMAIL_USER: process.env.EMAIL_USER,
-      EMAIL_PASSWORD: process.env.EMAIL_PASSWORD ? 'SET' : 'NOT SET'
-    })
-    
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-      console.error('Missing email configuration')
+    if (!isEmailConfigured()) {
+      console.error('Missing Resend email configuration')
       return NextResponse.json(
         { error: 'ელ-ფოსტის კონფიგურაცია არ არის დაყენებული' },
         { status: 500 }

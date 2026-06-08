@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { sendVerificationEmail } from '@/lib/email'
+import { isEmailConfigured, sendVerificationEmail } from '@/lib/email'
 
 const schema = z.object({
   email: z.string().email('გთხოვთ შეიყვანოთ სწორი ელ-ფოსტა'),
@@ -18,6 +18,13 @@ function generateCode(): string {
 
 export async function POST(request: NextRequest) {
   try {
+    if (!isEmailConfigured()) {
+      return NextResponse.json(
+        { error: 'ელ-ფოსტის კონფიგურაცია არ არის დაყენებული' },
+        { status: 500 }
+      )
+    }
+
     const body = await request.json()
     const { email } = schema.parse(body)
 

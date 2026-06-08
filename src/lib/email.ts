@@ -1,18 +1,37 @@
-import nodemailer from 'nodemailer'
+import { Resend } from 'resend'
 
-// Email configuration
-const transporter = nodemailer.createTransport({
-  service: 'gmail', // You can change this to your preferred email service
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD, // Use an app password for Gmail
-  },
-})
+let resendClient: Resend | null = null
+
+function getResendClient(): Resend {
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) {
+    throw new Error('RESEND_API_KEY is not configured')
+  }
+
+  if (!resendClient) {
+    resendClient = new Resend(apiKey)
+  }
+
+  return resendClient
+}
+
+function getFromAddress(): string {
+  const from = process.env.RESEND_FROM_EMAIL
+  if (!from) {
+    throw new Error('RESEND_FROM_EMAIL is not configured')
+  }
+
+  return from
+}
+
+export function isEmailConfigured(): boolean {
+  return Boolean(process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL)
+}
 
 export async function sendVerificationEmail(email: string, token: string) {
   try {
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
+    const { error } = await getResendClient().emails.send({
+      from: getFromAddress(),
       to: email,
       subject: 'ელ-ფოსტის ვერიფიკაცია ',
       html: `
@@ -31,10 +50,14 @@ export async function sendVerificationEmail(email: string, token: string) {
             ეს არის ავტომატური შეტყობინება . გთხოვთ არ უპასუხოთ ამ ელ-ფოსტას.
           </p>
         </div>
-      `
+      `,
+    })
+
+    if (error) {
+      console.error('Error sending verification email:', error)
+      return { success: false, error }
     }
 
-    await transporter.sendMail(mailOptions)
     return { success: true }
   } catch (error) {
     console.error('Error sending verification email:', error)
@@ -44,10 +67,10 @@ export async function sendVerificationEmail(email: string, token: string) {
 
 export async function sendPasswordResetEmail(email: string, token: string) {
   try {
-   
-    const resetUrl = `${process.env.NEXTAUTH_URL}/auth/forgot-password/confirm?token=${token}&email=${email}`;
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
+    const resetUrl = `${process.env.NEXTAUTH_URL}/auth/forgot-password/confirm?token=${token}&email=${encodeURIComponent(email)}`
+
+    const { error } = await getResendClient().emails.send({
+      from: getFromAddress(),
       to: email,
       subject: 'პაროლის აღდგენა',
       html: `
@@ -61,10 +84,14 @@ export async function sendPasswordResetEmail(email: string, token: string) {
           <p>თუ თქვენ არ მოითხოვეთ პაროლის აღდგენა, გთხოვთ უგულებელყოთ ეს ელ-ფოსტა.</p>
           <p>თქვენი პაროლი არ შეიცვლება, სანამ არ დააჭირებთ ზემოთ მოყვანილ ლინკს.</p>
         </div>
-      `
+      `,
+    })
+
+    if (error) {
+      console.error('Error sending password reset email:', error)
+      return { success: false, error }
     }
 
-    await transporter.sendMail(mailOptions)
     return { success: true }
   } catch (error) {
     console.error('Error sending password reset email:', error)

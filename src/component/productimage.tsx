@@ -64,7 +64,7 @@ const ImageUploadForProduct = ({ onChange, value }: ImageUploadProps): React.JSX
       {validImageUrls.length > 0 ? (
         <div className="mt-4 space-y-2">
           <h2 className="text-sm font-semibold text-black">ატვირთული სურათები ({validImageUrls.length})</h2>
-          <div className="grid md:grid-cols-3 grid-cols-2 gap-3">
+          <div className="grid md:grid-cols-3 grid-cols-1 gap-3">
             {validImageUrls.map((url, displayIndex) => {
               const originalIndex = urlToIndexMap.get(url) ?? displayIndex;
               return (
@@ -76,7 +76,7 @@ const ImageUploadForProduct = ({ onChange, value }: ImageUploadProps): React.JSX
                   />
                   <button
                     onClick={() => handleDeleteImage(originalIndex)}
-                    className="absolute cursor-pointer top-2 right-2 bg-black hover:bg-black text-white rounded-full w-8 h-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-10"
+                    className="absolute cursor-pointer top-2 right-2 bg-black hover:bg-black text-white rounded-full w-8 h-8 flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shadow-lg z-10"
                     type="button"
                     aria-label="სურათის წაშლა"
                   >

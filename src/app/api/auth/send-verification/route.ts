@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { sendVerificationEmail } from '@/lib/email';
+import { isEmailConfigured, sendVerificationEmail } from '@/lib/email';
 import { z } from 'zod';
 
 const sendVerificationSchema = z.object({
@@ -13,8 +13,8 @@ export async function POST(request: NextRequest) {
     
   
     
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-      console.error('Missing email configuration')
+    if (!isEmailConfigured()) {
+      console.error('Missing Resend email configuration')
       return NextResponse.json(
         { error: 'ელ-ფოსტის კონფიგურაცია არ არის დაყენებული' },
         { status: 500 }
