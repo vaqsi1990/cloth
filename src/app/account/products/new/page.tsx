@@ -1,6 +1,7 @@
 "use client"
 import React, { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { ArrowLeft, Plus, X } from 'lucide-react'
 import Link from 'next/link'
 import { z } from 'zod'
@@ -22,6 +23,7 @@ import {
   PRODUCT_GENDER_OPTIONS,
   sortProductCategories,
 } from '@/lib/product-categories'
+import { canUserCreateProducts } from '@/lib/seller-eligibility'
 
 const sizeOptions = {
   XS: { UK: [4, 6], EU: [32, 34], US: [0, 2] },
@@ -94,6 +96,8 @@ type ProductFormData = z.infer<typeof productSchema>
 
 const NewProductPage = () => {
   const router = useRouter()
+  const { data: session, status } = useSession()
+  const [eligibilityChecked, setEligibilityChecked] = useState(false)
   const [categories, setCategories] = useState(DEFAULT_PRODUCT_CATEGORIES)
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
@@ -180,6 +184,52 @@ const NewProductPage = () => {
   const colors = PRODUCT_FORM_COLORS
 
   useEffect(() => {
+    if (status === 'loading') {
+      return
+    }
+
+    if (!session) {
+      router.push('/auth/signin')
+      return
+    }
+
+    const checkEligibility = async () => {
+      try {
+        const [verificationRes, profileRes] = await Promise.all([
+          fetch('/api/user/verification'),
+          fetch('/api/user/profile'),
+        ])
+        const verificationData = await verificationRes.json()
+        const profileData = await profileRes.json()
+
+        const allowed = canUserCreateProducts({
+          role: session.user.role,
+          iban: profileData?.user?.iban,
+          verification: verificationData?.verification,
+          sessionVerificationStatus: session.user.verificationStatus,
+        })
+
+        if (!allowed) {
+          showToast('პროდუქტის დამატება შესაძლებელია მხოლოდ ვერიფიცირებული და IBAN-ს მქონე ანგარიშებისთვის', 'error')
+          router.push('/account?tab=products')
+          return
+        }
+
+        setEligibilityChecked(true)
+      } catch {
+        showToast('ვერ მოხერხდა უფლებების შემოწმება', 'error')
+        router.push('/account?tab=products')
+      }
+    }
+
+    void checkEligibility()
+  }, [session, status, router])
+
+  useEffect(() => {
+    if (!eligibilityChecked) {
+      return
+    }
+
     const fetchCategories = async () => {
       try {
         const response = await fetch('/api/categories')
@@ -194,7 +244,7 @@ const NewProductPage = () => {
       }
     }
     void fetchCategories()
-  }, [])
+  }, [eligibilityChecked])
 
   const isSizeOptional = useMemo(
     () => isSizeOptionalCategoryId(formData.categoryId, categories),
@@ -536,6 +586,10 @@ const NewProductPage = () => {
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  if (status === 'loading' || !eligibilityChecked) {
+    return <div className="min-h-screen flex items-center justify-center">იტვირთება...</div>
   }
 
   return (

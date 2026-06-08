@@ -20,6 +20,7 @@ import {
   PRODUCT_TEXT_REGEX,
 } from '@/lib/product-text'
 import { enrichProductListRows } from '@/lib/product-list-enrichment'
+import { canUserCreateProducts } from '@/lib/seller-eligibility'
 import {
   finalizeProductListResponse,
   getHttpCacheControl,
@@ -518,38 +519,59 @@ export async function POST(request: NextRequest) {
     const isAdmin = session.user.role === 'ADMIN'
     console.log('Is Admin:', isAdmin)
 
-    // Check if user is blocked and has IBAN (admins are exempt)
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { 
         blocked: true,
-        iban: true
+        iban: true,
+        verification: {
+          select: {
+            identityStatus: true,
+            status: true,
+          },
+        },
       }
     })
     console.log('User data:', { blocked: user?.blocked, hasIban: !!user?.iban })
 
-    // Admins can create products even if blocked
-    if (user?.blocked && !isAdmin) {
-      console.log('ERROR: User is blocked and not admin')
+    if (!canUserCreateProducts({
+      role: session.user.role,
+      iban: user?.iban,
+      verification: user?.verification,
+      sessionVerificationStatus: session.user.verificationStatus,
+    })) {
+      if (user?.blocked) {
+        console.log('ERROR: User is blocked')
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: 'Your account requires identity verification. Please upload a document.',
+            blocked: true
+          },
+          { status: 403 }
+        )
+      }
+
+      if (!user?.iban) {
+        console.log('ERROR: User missing IBAN')
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: 'გთხოვთ შეიყვანოთ ბანკის IBAN პროფილში. IBAN აუცილებელია პროდუქტის დასამატებლად.',
+            missingIban: true
+          },
+          { status: 403 }
+        )
+      }
+
+      console.log('ERROR: User identity not approved')
       return NextResponse.json(
         { 
           success: false, 
-          error: 'Your account requires identity verification. Please upload a document.',
-          blocked: true
+          error: 'გთხოვთ დაადასტუროთ პირადობა პროფილის გვერდზე, რომ შეძლოთ პროდუქტის დამატება.',
+          requiresVerification: true
         },
         { status: 403 }
-      )
-    }
-
-    // Check if user has IBAN (required for sellers, but not for admins)
-    if (!user?.iban && !isAdmin) {
-      console.log('ERROR: User missing IBAN and not admin')
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'გთხოვთ შეიყვანოთ ბანკის IBAN პროფილში. IBAN აუცილებელია პროდუქტის დასამატებლად.',
-          missingIban: true
-        },
       )
     }
 
