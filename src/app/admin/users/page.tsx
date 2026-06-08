@@ -34,6 +34,7 @@ interface User {
     currentPrice: number
     gender: string
     isNew: boolean
+    isSecondHand: boolean
     discount?: number
     createdAt: string
     images: Array<{

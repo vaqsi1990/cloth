@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Filter, X, ChevronDown, Calendar, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Product } from '@/types/product'
+import ProductConditionBadge from '@/component/ProductConditionBadge'
 import DatePicker from "react-datepicker"
 import StarRating from "@/components/StarRating"
 import { PURPOSE_OPTIONS } from '@/data/purposes'
@@ -21,6 +22,7 @@ import {
 } from '@/lib/product-categories'
 
 type PurchaseType = 'all' | 'rent-only' | 'sale-only' | 'rent-and-sale'
+type ConditionFilter = 'all' | 'new' | 'second-hand'
 
 const ShopPageClient = () => {
     const searchParams = useSearchParams()
@@ -50,6 +52,7 @@ const ShopPageClient = () => {
     const [rentalStartDate, setRentalStartDate] = useState<Date | null>(null)
     const [rentalEndDate, setRentalEndDate] = useState<Date | null>(null)
     const [purchaseType, setPurchaseType] = useState<PurchaseType>("all")
+    const [conditionFilter, setConditionFilter] = useState<ConditionFilter>('all')
     const [productRentalStatus, setProductRentalStatus] = useState<Record<number, {
         variantId: number;
         size: string;
@@ -106,6 +109,7 @@ const ShopPageClient = () => {
             rentalEndDate: rentalEndDate ? rentalEndDate.toISOString() : null,
             sortBy,
             purchaseType,
+            conditionFilter,
             currentPage,
             scrollY: scrollYRef.current,
         }
@@ -122,6 +126,7 @@ const ShopPageClient = () => {
         rentalEndDate,
         sortBy,
         purchaseType,
+        conditionFilter,
         currentPage
     ])
 
@@ -140,6 +145,7 @@ const ShopPageClient = () => {
         let restoredRentalEnd: Date | null = null
         let restoredSortBy = 'newest'
         let restoredPurchaseType: PurchaseType = 'all'
+        let restoredConditionFilter: ConditionFilter = 'all'
         let restoredPage = 1
         let restoredScrollY: number | null = null
 
@@ -158,6 +164,7 @@ const ShopPageClient = () => {
                 restoredRentalEnd = parsed.rentalEndDate ? new Date(parsed.rentalEndDate) : null
                 restoredSortBy = parsed.sortBy || 'newest'
                 restoredPurchaseType = parsed.purchaseType || 'all'
+                restoredConditionFilter = parsed.conditionFilter || 'all'
                 restoredPage = parsed.currentPage || 1
                 restoredScrollY = typeof parsed.scrollY === 'number' ? parsed.scrollY : null
             } catch (e) {
@@ -182,6 +189,7 @@ const ShopPageClient = () => {
         setRentalEndDate(restoredRentalEnd)
         setSortBy(restoredSortBy)
         setPurchaseType(restoredPurchaseType)
+        setConditionFilter(restoredConditionFilter)
         setCurrentPage(restoredPage)
         setSavedScrollY(restoredScrollY)
 
@@ -410,6 +418,11 @@ const ShopPageClient = () => {
                 if (categorySlug) {
                     params.append('category', categorySlug)
                 }
+                if (conditionFilter === 'new') {
+                    params.append('isNew', 'true')
+                } else if (conditionFilter === 'second-hand') {
+                    params.append('isSecondHand', 'true')
+                }
 
                 const url = `/api/products?${params}`
                 const t0 = performance.now()
@@ -504,6 +517,7 @@ const ShopPageClient = () => {
         itemsPerPage,
         selectedCategories,
         selectedPurposes,
+        conditionFilter,
         resolveCategoryApiSlug,
     ])
 
@@ -793,7 +807,12 @@ const ShopPageClient = () => {
             // Rental availability filter
             const rentalAvailabilityMatch = isProductAvailable(product)
 
-            return categoryMatch && purposeMatch && priceMatch && sizeSystemMatch && sizeMatch && colorMatch && locationMatch && rentalAvailabilityMatch
+            const conditionMatch =
+                conditionFilter === 'all' ||
+                (conditionFilter === 'new' && product.isNew) ||
+                (conditionFilter === 'second-hand' && (product.isSecondHand ?? false))
+
+            return categoryMatch && purposeMatch && priceMatch && sizeSystemMatch && sizeMatch && colorMatch && locationMatch && rentalAvailabilityMatch && conditionMatch
         })
     }
 
@@ -859,7 +878,12 @@ const ShopPageClient = () => {
             (purchaseType === "sale-only" && isSaleOnly(product)) ||
             (purchaseType === "rent-and-sale" && isRentAndSale(product))
 
-        return categoryMatch && purposeMatch && priceMatch && sizeSystemMatch && sizeMatch && colorMatch && locationMatch && rentalAvailabilityMatch && purchaseTypeMatch
+        const conditionMatch =
+            conditionFilter === 'all' ||
+            (conditionFilter === 'new' && product.isNew) ||
+            (conditionFilter === 'second-hand' && (product.isSecondHand ?? false))
+
+        return categoryMatch && purposeMatch && priceMatch && sizeSystemMatch && sizeMatch && colorMatch && locationMatch && rentalAvailabilityMatch && purchaseTypeMatch && conditionMatch
     })
 
 
@@ -1010,6 +1034,7 @@ const ShopPageClient = () => {
         setRentalStartDate(null)
         setRentalEndDate(null)
         setPurchaseType("all")
+        setConditionFilter('all')
         setCurrentPage(1)
         
         // Price range will be updated when products are fetched
@@ -1458,6 +1483,32 @@ const ShopPageClient = () => {
                                 </div>
                             </div>
 
+                            {/* Condition Filters */}
+                            <div className="border-b border-gray-200 pb-6">
+                                <h4 className="font-medium text-black md:text-[18px] text-[16px] mb-3">მდგომარეობა</h4>
+                                <div className="space-y-2">
+                                    {([
+                                        { id: 'all', label: 'ყველა' },
+                                        { id: 'new', label: 'ახალი' },
+                                        { id: 'second-hand', label: 'მეორადი' },
+                                    ] as const).map((option) => (
+                                        <label
+                                            key={option.id}
+                                            className="flex items-center gap-2 text-[15px] text-black cursor-pointer"
+                                        >
+                                            <input
+                                                type="radio"
+                                                name="condition-filter"
+                                                checked={conditionFilter === option.id}
+                                                onChange={() => setConditionFilter(option.id)}
+                                                className="w-4 h-4"
+                                            />
+                                            {option.label}
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
                             {/* Purpose Filters */}
                             <div className="border-b border-gray-200 pb-6">
                                 <h4 className="font-medium text-black md:text-[18px] text-[16px] mb-3">დანიშნულება</h4>
@@ -1716,6 +1767,14 @@ const ShopPageClient = () => {
                                                     loading={index < 4 ? "eager" : "lazy"}
                                                     priority={index < 4}
                                                 />
+                                                {(product.isNew || product.isSecondHand) && (
+                                                    <div className="absolute top-2 left-2 z-10">
+                                                        <ProductConditionBadge
+                                                            isNew={product.isNew}
+                                                            isSecondHand={product.isSecondHand ?? false}
+                                                        />
+                                                    </div>
+                                                )}
                                                 </Link>
 
                                             </div>

@@ -19,6 +19,7 @@ const buildProductSelect = () => ({
   sizeSystem: true,
   size: true,
   isNew: true,
+  isSecondHand: true,
   discount: true,
   discountDays: true,
   discountStartDate: true,

@@ -24,6 +24,7 @@ import {
   sortProductCategories,
 } from '@/lib/product-categories'
 import { canUserCreateProducts } from '@/lib/seller-eligibility'
+import ProductConditionFields from '@/component/ProductConditionFields'
 
 const sizeOptions = {
   XS: { UK: [4, 6], EU: [32, 34], US: [0, 2] },
@@ -55,6 +56,7 @@ const productSchema = z.object({
   sizeSystem: z.enum(['EU', 'US', 'UK', 'CN']).optional(),
   size: z.string().optional(),
   isNew: z.boolean().default(false),
+  isSecondHand: z.boolean().default(false),
   discount: z.number().min(0).optional(),
   discountDays: z.number().int().min(1).optional(),
   rating: z.number().min(0).max(5).optional(),
@@ -111,6 +113,7 @@ const NewProductPage = () => {
     sizeSystem: undefined,
     size: undefined,
     isNew: false,
+    isSecondHand: false,
     discount: undefined,
     discountDays: undefined,
     rating: 0,
@@ -708,6 +711,15 @@ const NewProductPage = () => {
                   ))}
                 </select>
               </div>
+
+              <ProductConditionFields
+                isNew={formData.isNew}
+                isSecondHand={formData.isSecondHand}
+                onChange={({ isNew, isSecondHand }) => {
+                  handleInputChange('isNew', isNew)
+                  handleInputChange('isSecondHand', isSecondHand)
+                }}
+              />
 
               <div>
                 <label className="block md:text-[18px] text-[16px] text-black font-medium mb-2">

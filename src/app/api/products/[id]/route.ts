@@ -40,6 +40,7 @@ const productSchema = z.object({
     z.string().optional()
   ),
   isNew: z.boolean().default(false),
+  isSecondHand: z.boolean().default(false),
   discount: z.preprocess(
     (val) => (val === null ? undefined : val),
     z.number().min(0).optional()
@@ -114,6 +115,7 @@ const buildProductSelect = (includeAdminFields: boolean = false) => {
     sizeSystem: true,
     size: true,
     isNew: true,
+    isSecondHand: true,
     discount: true,
     discountDays: true,
     discountStartDate: true,
@@ -382,6 +384,7 @@ export async function PUT(
       sizeSystem: validatedData.sizeSystem,
       size: validatedData.size,
       isNew: validatedData.isNew,
+      isSecondHand: validatedData.isSecondHand,
       discount: validatedData.discount,
       discountDays: validatedData.discountDays,
       discountStartDate: discountStartDate,

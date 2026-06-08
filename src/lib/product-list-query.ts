@@ -10,6 +10,7 @@ export type PublicListFilters = {
   purposeId?: number | null
   gender?: 'WOMEN' | 'MEN' | 'CHILDREN'
   isNew?: boolean
+  isSecondHand?: boolean
   search?: string
   skip: number
   take: number
@@ -24,6 +25,7 @@ type CombinedListRow = {
   color: string | null
   location: string | null
   isNew: boolean
+  isSecondHand: boolean
   discount: number | null
   discountDays: number | null
   discountStartDate: Date | null
@@ -65,6 +67,9 @@ function buildWhere(filters: PublicListFilters): Prisma.Sql {
   if (filters.isNew) {
     parts.push(Prisma.sql`p."isNew" = true`)
   }
+  if (filters.isSecondHand) {
+    parts.push(Prisma.sql`p."isSecondHand" = true`)
+  }
   if (filters.search) {
     const pattern = `%${filters.search}%`
     parts.push(
@@ -94,6 +99,7 @@ export function mapCombinedRowsToProducts(rows: CombinedListRow[]) {
       color: row.color,
       location: row.location,
       isNew: row.isNew,
+      isSecondHand: row.isSecondHand,
       discount: row.discount,
       discountDays: row.discountDays,
       discountStartDate: row.discountStartDate,
@@ -138,6 +144,7 @@ export async function fetchPublicProductListCombined(
         p.color,
         p.location,
         p."isNew",
+        p."isSecondHand",
         p.discount,
         p."discountDays",
         p."discountStartDate",
@@ -189,6 +196,7 @@ export async function fetchPublicProductListCombined(
       f.color,
       f.location,
       f."isNew",
+      f."isSecondHand",
       f.discount,
       f."discountDays",
       f."discountStartDate",
@@ -263,6 +271,7 @@ export function getPublicListCacheKey(filters: PublicListFilters): string {
     purposeId: filters.purposeId ?? null,
     gender: filters.gender ?? null,
     isNew: filters.isNew ?? false,
+    isSecondHand: filters.isSecondHand ?? false,
     search: filters.search ?? null,
     skip: filters.skip,
     take: filters.take,
@@ -275,7 +284,8 @@ function hasActiveFilters(filters: PublicListFilters): boolean {
       filters.categoryId ||
       filters.purposeId ||
       filters.gender ||
-      filters.isNew,
+      filters.isNew ||
+      filters.isSecondHand,
   )
 }
 

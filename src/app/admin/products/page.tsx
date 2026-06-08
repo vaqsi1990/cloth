@@ -8,6 +8,7 @@ import Image from '@/component/AppImage'
 import { Plus, Edit, Trash2, Eye, Search, Filter, Package, Calendar, Clock, Barcode } from 'lucide-react'
 import { showToast } from '@/utils/toast'
 import { attachBatchRentalStatus } from '@/utils/rentalStatusBatch'
+import ProductConditionBadge from '@/component/ProductConditionBadge'
 
 interface RentalPeriod {
   startDate: string
@@ -25,6 +26,7 @@ interface Product {
   color?: string
   location?: string
   isNew: boolean
+  isSecondHand: boolean
   discount?: number
   rating?: number
   createdAt: string
@@ -478,9 +480,15 @@ const AdminProductsPage = () => {
                    <div className="flex-1 min-w-0">
                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
                        <div className="flex-1 min-w-0">
-                         <h3 className="font-semibold text-sm sm:text-base md:text-[18px] text-black mb-1 break-words">
-                           {product.name}
-                         </h3>
+                         <div className="flex flex-wrap items-center gap-2 mb-1">
+                           <h3 className="font-semibold text-sm sm:text-base md:text-[18px] text-black break-words">
+                             {product.name}
+                           </h3>
+                           <ProductConditionBadge
+                             isNew={product.isNew}
+                             isSecondHand={product.isSecondHand ?? false}
+                           />
+                         </div>
                          
                          {/* SKU Code - Always show */}
                          <div className="mb-2">

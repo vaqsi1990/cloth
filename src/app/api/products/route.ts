@@ -47,6 +47,7 @@ const productSchema = z.object({
   sizeSystem: z.enum(['EU', 'US', 'UK', 'CN']).optional(),
   size: z.string().optional(),
   isNew: z.boolean().default(false),
+  isSecondHand: z.boolean().default(false),
   discount: z.number().min(0).optional(),
   discountDays: z.number().int().min(1).optional(),
   rating: z.number().min(0).max(5).optional(),
@@ -122,6 +123,7 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category')
     const gender = searchParams.get('gender')
     const isNew = searchParams.get('isNew')
+    const isSecondHand = searchParams.get('isSecondHand')
     const purpose = searchParams.get('purpose')
     const search = searchParams.get('search')?.trim()
     const cursor = searchParams.get('cursor')
@@ -173,7 +175,7 @@ export async function GET(request: NextRequest) {
     const needsFreshData = isAdminOrSupportRole || shouldIncludeUnapproved
     const useAccelerateCache = !needsFreshData
     const listCacheStrategy =
-      search || category || purpose || gender || isNew
+      search || category || purpose || gender || isNew || isSecondHand
         ? FILTERED_LIST_CACHE
         : PUBLIC_LIST_CACHE
 
@@ -200,6 +202,7 @@ export async function GET(request: NextRequest) {
         purposeId,
         gender: genderEnum,
         isNew: isNew === 'true',
+        isSecondHand: isSecondHand === 'true',
         search: search || undefined,
         skip: (page - 1) * pageLimit,
         take: listTake,
@@ -270,6 +273,7 @@ export async function GET(request: NextRequest) {
       color: true,
       location: true,
       isNew: true,
+      isSecondHand: true,
       discount: true,
       discountDays: true,
       discountStartDate: true,
@@ -319,6 +323,7 @@ export async function GET(request: NextRequest) {
       ...(purposeId ? { purposeId } : {}),
       ...(genderEnum ? { gender: genderEnum } : {}),
       ...(isNew === 'true' ? { isNew: true } : {}),
+      ...(isSecondHand === 'true' ? { isSecondHand: true } : {}),
     }
 
     const listOrderBy = [
@@ -482,7 +487,7 @@ export async function GET(request: NextRequest) {
     // Admin/support approval views must not be cached (stale PENDING after approve)
     if (needsFreshData) {
       response.headers.set('Cache-Control', 'private, no-store, must-revalidate')
-    } else if (!search && !category && !purpose && !gender && !isNew) {
+    } else if (!search && !category && !purpose && !gender && !isNew && !isSecondHand) {
       response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600')
     } else {
       response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120')
@@ -618,6 +623,7 @@ export async function POST(request: NextRequest) {
       sizeSystem: validatedData.sizeSystem,
       size: validatedData.size,
       isNew: validatedData.isNew,
+      isSecondHand: validatedData.isSecondHand,
       discount: validatedData.discount,
       discountDays: validatedData.discountDays,
       discountStartDate: validatedData.discount && validatedData.discountDays ? new Date() : null,

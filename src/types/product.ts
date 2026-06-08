@@ -58,6 +58,7 @@ export interface Product {
   sizeSystem?: 'EU' | 'US' | 'UK' | 'CN'
   size?: string
   isNew: boolean
+  isSecondHand: boolean
   discount?: number
   discountDays?: number
   discountStartDate?: string | null

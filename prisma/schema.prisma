@@ -234,6 +234,7 @@ model Product {
   sizeSystem    SizeSystem?
   size          String?
   isNew         Boolean          @default(false)
+  isSecondHand  Boolean          @default(false)
   discount      Int?
   discountDays  Int?
   discountStartDate DateTime?    // When discount was set
@@ -271,6 +272,7 @@ model Product {
   @@index([approvalStatus])
   @@index([gender])
   @@index([isNew])
+  @@index([isSecondHand])
   @@index([createdAt, id]) // For cursor-based pagination
   @@index([userId])
   @@index([status, approvalStatus, userId]) // Composite index covers status+approvalStatus queries

@@ -11,6 +11,7 @@ import ContactForm from '@/component/ContactForm'
 import { showToast } from '@/utils/toast'
 import ChatTypingIndicator from '@/components/ChatTypingIndicator'
 import { useChatTyping } from '@/hooks/useChatTyping'
+import ProductConditionBadge from '@/component/ProductConditionBadge'
 
 interface Order {
   id: number
@@ -51,6 +52,8 @@ interface ProductItem {
   status: string
   createdAt: string
   sku?: string | null
+  isNew?: boolean
+  isSecondHand?: boolean
   images?: Array<{ url: string }>
   variants?: Array<{ price: number; size: string; id: number }>
   approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED'
@@ -1578,7 +1581,13 @@ const AccountPageContent = () => {
                 </div>
 
                 <div className="p-4">
-                  <h4 className="font-semibold text-black mb-2">{product.name}</h4>
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                    <h4 className="font-semibold text-black">{product.name}</h4>
+                    <ProductConditionBadge
+                      isNew={product.isNew ?? false}
+                      isSecondHand={product.isSecondHand ?? false}
+                    />
+                  </div>
                   {product.sku && (
                     <div className="mb-2">
                       <span className="md:text-[18px] text-[16px] font-mono px-2 py-1 rounded text-black bg-gray-100">

@@ -22,6 +22,7 @@ import {
   PRODUCT_GENDER_OPTIONS,
   sortProductCategories,
 } from '@/lib/product-categories'
+import ProductConditionFields from '@/component/ProductConditionFields'
 const productSchema = z.object({
   name: z.string()
     .min(1, 'სახელი აუცილებელია')
@@ -46,6 +47,7 @@ const productSchema = z.object({
     z.string().optional()
   ),
   isNew: z.boolean().default(false),
+  isSecondHand: z.boolean().default(false),
   discount: z.preprocess(
     (val) => (val === null ? undefined : val),
     z.number().min(0).optional()
@@ -111,6 +113,7 @@ const EditProductPage = () => {
     sizeSystem: undefined,
     size: undefined,
     isNew: false,
+    isSecondHand: false,
     discount: undefined,
     discountDays: undefined,
     rating: 0,
@@ -308,6 +311,7 @@ const EditProductPage = () => {
             sizeSystem: product.sizeSystem,
             size: product.size || undefined,
             isNew: product.isNew,
+            isSecondHand: product.isSecondHand ?? false,
             discount: product.discount,
             discountDays: product.discountDays,
             rating: product.rating || 0,
@@ -777,6 +781,16 @@ const EditProductPage = () => {
                   ))}
                 </select>
               </div>
+
+              <ProductConditionFields
+                isNew={formData.isNew}
+                isSecondHand={formData.isSecondHand}
+                labelClassName="block text-[20px] text-black font-medium mb-2"
+                onChange={({ isNew, isSecondHand }) => {
+                  handleInputChange('isNew', isNew)
+                  handleInputChange('isSecondHand', isSecondHand)
+                }}
+              />
 
               <div>
                 <label className="block text-[20px] text-black font-medium mb-2">ფერი</label>
