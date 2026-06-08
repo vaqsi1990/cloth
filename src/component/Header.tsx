@@ -422,6 +422,9 @@ const HeaderContent = () => {
                       <div className="pl-4 space-y-1 mt-1 max-h-96 overflow-y-auto">
                         {item === 'ქალი' && (
                           <>
+                            <Link href="/shop?gender=women" onClick={closeMobileMenu} className="block px-4 py-2 text-black font-semibold hover:bg-gray-100 rounded-lg text-[16px]">
+                              ყველა
+                            </Link>
                             <Link href="/shop?gender=women&category=პალტოები და მოსასხამი" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
                               1. ქალების პალტოები & მოსასხამი
                             </Link>
@@ -462,6 +465,9 @@ const HeaderContent = () => {
                         )}
                         {item === 'მამაკაცი' && (
                           <>
+                            <Link href="/shop?gender=men" onClick={closeMobileMenu} className="block px-4 py-2 text-black font-semibold hover:bg-gray-100 rounded-lg text-[16px]">
+                              ყველა
+                            </Link>
                             <Link href="/shop?gender=men&category=შარვალ კოსტუმი" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
                               1. შარვალ კოსტუმი
                             </Link>
@@ -484,6 +490,9 @@ const HeaderContent = () => {
                         )}
                         {item === 'ბავშვები' && (
                           <>
+                            <Link href="/shop?gender=children" onClick={closeMobileMenu} className="block px-4 py-2 text-black font-semibold hover:bg-gray-100 rounded-lg text-[16px]">
+                              ყველა
+                            </Link>
                             <Link href="/shop?gender=children&category=ბავშვთა კაბები" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
                               1. კაბები
                             </Link>
