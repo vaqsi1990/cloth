@@ -30,8 +30,6 @@ import ChatTypingIndicator from "@/components/ChatTypingIndicator"
 import { useChatTyping } from "@/hooks/useChatTyping"
 import StructuredData from "@/components/StructuredData"
 import { PRODUCT_IMAGE_QUALITY } from "@/lib/image-config"
-import ProductConditionBadge from "@/component/ProductConditionBadge"
-
 type Tier = { minDays: number; pricePerDay: number }
 
 // Helper to normalize date to start of day
@@ -1317,13 +1315,7 @@ const ProductPage = () => {
                             </div>
                             {/* Title */}
                             <div className="bg-white  p-6 s">
-                                <div className="flex flex-wrap items-center gap-3">
-                                    <h1 className="text-3xl font-bold text-black md:text-[20px] text-[18px]">{product.name}</h1>
-                                    <ProductConditionBadge
-                                        isNew={product.isNew}
-                                        isSecondHand={product.isSecondHand ?? false}
-                                    />
-                                </div>
+                                <h1 className="text-3xl font-bold text-black md:text-[20px] text-[18px]">{product.name}</h1>
                                 {product.description && (
                                     <p className="text-black md:text-[18px] text-[16px] mt-2 leading-relaxed">{product.description}</p>
                                 )}

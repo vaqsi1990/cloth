@@ -24,8 +24,6 @@ import {
   sortProductCategories,
 } from '@/lib/product-categories'
 import { canUserCreateProducts } from '@/lib/seller-eligibility'
-import ProductConditionFields from '@/component/ProductConditionFields'
-
 const sizeOptions = {
   XS: { UK: [4, 6], EU: [32, 34], US: [0, 2] },
   S: { UK: [8, 10], EU: [36, 38], US: [4, 6] },
@@ -711,15 +709,6 @@ const NewProductPage = () => {
                   ))}
                 </select>
               </div>
-
-              <ProductConditionFields
-                isNew={formData.isNew}
-                isSecondHand={formData.isSecondHand}
-                onChange={({ isNew, isSecondHand }) => {
-                  handleInputChange('isNew', isNew)
-                  handleInputChange('isSecondHand', isSecondHand)
-                }}
-              />
 
               <div>
                 <label className="block md:text-[18px] text-[16px] text-black font-medium mb-2">

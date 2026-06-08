@@ -22,7 +22,6 @@ import {
   PRODUCT_GENDER_OPTIONS,
   sortProductCategories,
 } from '@/lib/product-categories'
-import ProductConditionFields from '@/component/ProductConditionFields'
 const productSchema = z.object({
   name: z.string()
     .min(1, 'სახელი აუცილებელია')
@@ -781,16 +780,6 @@ const EditProductPage = () => {
                   ))}
                 </select>
               </div>
-
-              <ProductConditionFields
-                isNew={formData.isNew}
-                isSecondHand={formData.isSecondHand}
-                labelClassName="block text-[20px] text-black font-medium mb-2"
-                onChange={({ isNew, isSecondHand }) => {
-                  handleInputChange('isNew', isNew)
-                  handleInputChange('isSecondHand', isSecondHand)
-                }}
-              />
 
               <div>
                 <label className="block text-[20px] text-black font-medium mb-2">ფერი</label>

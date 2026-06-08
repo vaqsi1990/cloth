@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { Filter, X, ChevronDown, Calendar, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Product } from '@/types/product'
-import ProductConditionBadge from '@/component/ProductConditionBadge'
 import DatePicker from "react-datepicker"
 import StarRating from "@/components/StarRating"
 import { PURPOSE_OPTIONS } from '@/data/purposes'
@@ -22,7 +21,6 @@ import {
 } from '@/lib/product-categories'
 
 type PurchaseType = 'all' | 'rent-only' | 'sale-only' | 'rent-and-sale'
-type ConditionFilter = 'all' | 'new' | 'second-hand'
 
 const ShopPageClient = () => {
     const searchParams = useSearchParams()
@@ -52,7 +50,6 @@ const ShopPageClient = () => {
     const [rentalStartDate, setRentalStartDate] = useState<Date | null>(null)
     const [rentalEndDate, setRentalEndDate] = useState<Date | null>(null)
     const [purchaseType, setPurchaseType] = useState<PurchaseType>("all")
-    const [conditionFilter, setConditionFilter] = useState<ConditionFilter>('all')
     const [productRentalStatus, setProductRentalStatus] = useState<Record<number, {
         variantId: number;
         size: string;
@@ -109,7 +106,6 @@ const ShopPageClient = () => {
             rentalEndDate: rentalEndDate ? rentalEndDate.toISOString() : null,
             sortBy,
             purchaseType,
-            conditionFilter,
             currentPage,
             scrollY: scrollYRef.current,
         }
@@ -126,7 +122,6 @@ const ShopPageClient = () => {
         rentalEndDate,
         sortBy,
         purchaseType,
-        conditionFilter,
         currentPage
     ])
 
@@ -145,7 +140,6 @@ const ShopPageClient = () => {
         let restoredRentalEnd: Date | null = null
         let restoredSortBy = 'newest'
         let restoredPurchaseType: PurchaseType = 'all'
-        let restoredConditionFilter: ConditionFilter = 'all'
         let restoredPage = 1
         let restoredScrollY: number | null = null
 
@@ -164,7 +158,6 @@ const ShopPageClient = () => {
                 restoredRentalEnd = parsed.rentalEndDate ? new Date(parsed.rentalEndDate) : null
                 restoredSortBy = parsed.sortBy || 'newest'
                 restoredPurchaseType = parsed.purchaseType || 'all'
-                restoredConditionFilter = parsed.conditionFilter || 'all'
                 restoredPage = parsed.currentPage || 1
                 restoredScrollY = typeof parsed.scrollY === 'number' ? parsed.scrollY : null
             } catch (e) {
@@ -189,7 +182,6 @@ const ShopPageClient = () => {
         setRentalEndDate(restoredRentalEnd)
         setSortBy(restoredSortBy)
         setPurchaseType(restoredPurchaseType)
-        setConditionFilter(restoredConditionFilter)
         setCurrentPage(restoredPage)
         setSavedScrollY(restoredScrollY)
 
@@ -418,12 +410,6 @@ const ShopPageClient = () => {
                 if (categorySlug) {
                     params.append('category', categorySlug)
                 }
-                if (conditionFilter === 'new') {
-                    params.append('isNew', 'true')
-                } else if (conditionFilter === 'second-hand') {
-                    params.append('isSecondHand', 'true')
-                }
-
                 const url = `/api/products?${params}`
                 const t0 = performance.now()
                 const response = await fetch(url, { signal: controller.signal })
@@ -517,7 +503,6 @@ const ShopPageClient = () => {
         itemsPerPage,
         selectedCategories,
         selectedPurposes,
-        conditionFilter,
         resolveCategoryApiSlug,
     ])
 
@@ -699,25 +684,26 @@ const ShopPageClient = () => {
         return false
     }
 
-    // Check if product is rent-only (has rental parameters but no sale parameters)
-    const isRentOnly = (product: Product): boolean => {
-        // Must have rental parameters
+    function isRentOnly(product: Product): boolean {
         if (!hasRentalParameters(product)) return false
-        // Must NOT have sale parameters
         return !hasSaleParameters(product)
     }
 
-    // Check if product is sale-only (has sale parameters but no rental parameters)
-    const isSaleOnly = (product: Product): boolean => {
-        // Must have sale parameters
+    function isSaleOnly(product: Product): boolean {
         if (!hasSaleParameters(product)) return false
-        // Must NOT have rental parameters
         return !hasRentalParameters(product)
     }
 
-    // Check if product supports both rental and sale
-    const isRentAndSale = (product: Product): boolean => {
+    function isRentAndSale(product: Product): boolean {
         return hasRentalParameters(product) && hasSaleParameters(product)
+    }
+
+    function matchesPurchaseType(product: Product): boolean {
+        if (purchaseType === 'all') return true
+        if (purchaseType === 'rent-only') return isRentOnly(product)
+        if (purchaseType === 'sale-only') return isSaleOnly(product)
+        if (purchaseType === 'rent-and-sale') return isRentAndSale(product)
+        return true
     }
 
     // Check if product is available during selected dates
@@ -807,84 +793,16 @@ const ShopPageClient = () => {
             // Rental availability filter
             const rentalAvailabilityMatch = isProductAvailable(product)
 
-            const conditionMatch =
-                conditionFilter === 'all' ||
-                (conditionFilter === 'new' && product.isNew) ||
-                (conditionFilter === 'second-hand' && (product.isSecondHand ?? false))
-
-            return categoryMatch && purposeMatch && priceMatch && sizeSystemMatch && sizeMatch && colorMatch && locationMatch && rentalAvailabilityMatch && conditionMatch
+            return categoryMatch && purposeMatch && priceMatch && sizeSystemMatch && sizeMatch && colorMatch && locationMatch && rentalAvailabilityMatch
         })
     }
 
     // Get products filtered by all other criteria (excluding purchase type) for count calculations
     const productsForTypeCounts = getProductsFilteredByOtherCriteria(allProductsForCounts)
 
-    // Filter products by all criteria (excluding gender since it's handled by API)
-    const filteredProducts = products.filter(product => {
-        // Category filter (multiple selection)
-        const categoryMatch = productMatchesCategoryFilter(
-            product,
-            selectedCategories,
-            shopCategories,
-        )
-
-        // Purpose filter
-        const purposeMatch = selectedPurposes.length === 0 ||
-            selectedPurposes.includes(product.purpose?.slug || '') ||
-            selectedPurposes.includes(product.purpose?.name || '')
-
-        // Price filter
-        const minPrice = getMinPrice(product)
-        const maxPrice = getMaxPrice(product)
-        // If priceRange is not initialized (both are 0), show all products
-        const priceMatch = (priceRange[0] === 0 && priceRange[1] === 0) ||
-            (minPrice >= priceRange[0] && minPrice <= priceRange[1]) ||
-            (maxPrice >= priceRange[0] && maxPrice <= priceRange[1]) ||
-            (minPrice <= priceRange[0] && maxPrice >= priceRange[1])
-
-        // Size System filter (variants no longer have sizeSystem, use product sizeSystem)
-        const sizeSystemMatch = selectedSizeSystems.length === 0 ||
-            (product.sizeSystem && selectedSizeSystems.includes(product.sizeSystem))
-
-        // Size filter (product.size) - case-insensitive for letter sizes
-        const sizeMatch = selectedSizes.length === 0 ||
-            (product.size && selectedSizes.some(selectedSize => {
-                if (!product.size) return false
-                const productSizeUpper = product.size.toUpperCase()
-                const selectedSizeUpper = selectedSize.toUpperCase()
-                // Match exact or case-insensitive for letter sizes
-                return product.size === selectedSize || productSizeUpper === selectedSizeUpper
-            }))
-
-        // Color filter
-        const colorMatch = selectedColors.length === 0 ||
-            selectedColors.some(selectedColor => {
-                const colorVariations = PRODUCT_COLOR_FILTER_MAPPING[selectedColor] || [selectedColor];
-                return colorVariations.some(color =>
-                    product.color?.toLowerCase().includes(color.toLowerCase())
-                );
-            })
-
-        // Location filter
-        const locationMatch = selectedLocations.length === 0 ||
-            selectedLocations.includes(product.location || '')
-
-        // Rental availability filter
-        const rentalAvailabilityMatch = isProductAvailable(product)
-
-        // Purchase type filter
-        const purchaseTypeMatch = purchaseType === "all" ||
-            (purchaseType === "rent-only" && isRentOnly(product)) ||
-            (purchaseType === "sale-only" && isSaleOnly(product)) ||
-            (purchaseType === "rent-and-sale" && isRentAndSale(product))
-
-        const conditionMatch =
-            conditionFilter === 'all' ||
-            (conditionFilter === 'new' && product.isNew) ||
-            (conditionFilter === 'second-hand' && (product.isSecondHand ?? false))
-
-        return categoryMatch && purposeMatch && priceMatch && sizeSystemMatch && sizeMatch && colorMatch && locationMatch && rentalAvailabilityMatch && purchaseTypeMatch && conditionMatch
-    })
+    const filteredProducts: Product[] = getProductsFilteredByOtherCriteria(products).filter(
+        matchesPurchaseType,
+    )
 
 
 
@@ -1034,7 +952,6 @@ const ShopPageClient = () => {
         setRentalStartDate(null)
         setRentalEndDate(null)
         setPurchaseType("all")
-        setConditionFilter('all')
         setCurrentPage(1)
         
         // Price range will be updated when products are fetched
@@ -1483,32 +1400,6 @@ const ShopPageClient = () => {
                                 </div>
                             </div>
 
-                            {/* Condition Filters */}
-                            <div className="border-b border-gray-200 pb-6">
-                                <h4 className="font-medium text-black md:text-[18px] text-[16px] mb-3">მდგომარეობა</h4>
-                                <div className="space-y-2">
-                                    {([
-                                        { id: 'all', label: 'ყველა' },
-                                        { id: 'new', label: 'ახალი' },
-                                        { id: 'second-hand', label: 'მეორადი' },
-                                    ] as const).map((option) => (
-                                        <label
-                                            key={option.id}
-                                            className="flex items-center gap-2 text-[15px] text-black cursor-pointer"
-                                        >
-                                            <input
-                                                type="radio"
-                                                name="condition-filter"
-                                                checked={conditionFilter === option.id}
-                                                onChange={() => setConditionFilter(option.id)}
-                                                className="w-4 h-4"
-                                            />
-                                            {option.label}
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-
                             {/* Purpose Filters */}
                             <div className="border-b border-gray-200 pb-6">
                                 <h4 className="font-medium text-black md:text-[18px] text-[16px] mb-3">დანიშნულება</h4>
@@ -1767,14 +1658,6 @@ const ShopPageClient = () => {
                                                     loading={index < 4 ? "eager" : "lazy"}
                                                     priority={index < 4}
                                                 />
-                                                {(product.isNew || product.isSecondHand) && (
-                                                    <div className="absolute top-2 left-2 z-10">
-                                                        <ProductConditionBadge
-                                                            isNew={product.isNew}
-                                                            isSecondHand={product.isSecondHand ?? false}
-                                                        />
-                                                    </div>
-                                                )}
                                                 </Link>
 
                                             </div>

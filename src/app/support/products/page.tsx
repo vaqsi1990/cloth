@@ -8,7 +8,6 @@ import Image from '@/component/AppImage'
 import { ArrowLeft, Plus, Edit, Trash2, Eye, Search, Filter, Package, Calendar, Clock, Barcode, MessageSquare, ChevronDown, ChevronUp, Star, X } from 'lucide-react'
 import { showToast } from '@/utils/toast'
 import { attachBatchRentalStatus } from '@/utils/rentalStatusBatch'
-import ProductConditionBadge from '@/component/ProductConditionBadge'
 import { isSupport } from '@/lib/roles'
 
 interface RentalPeriod {
@@ -623,15 +622,9 @@ const SupportProductsPage = () => {
                    <div className="flex-1 min-w-0">
                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
                        <div className="flex-1 min-w-0">
-                         <div className="flex flex-wrap items-center gap-2 mb-1">
-                           <h3 className="font-semibold text-sm sm:text-base md:text-[18px] text-black break-words">
-                             {product.name}
-                           </h3>
-                           <ProductConditionBadge
-                             isNew={product.isNew}
-                             isSecondHand={product.isSecondHand ?? false}
-                           />
-                         </div>
+                         <h3 className="font-semibold text-sm sm:text-base md:text-[18px] text-black mb-1 break-words">
+                           {product.name}
+                         </h3>
                          
                          {/* SKU Code */}
                          {product.sku && (
