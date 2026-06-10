@@ -117,17 +117,20 @@ export default function VoucherGiftPopup() {
              
             </div>
 
-            {voucher.message && (
-              <p className="absolute left-1/2 -translate-x-1/2 bottom-[16%] w-[72%] text-center text-black font-semibold text-[15px] leading-snug">
-                {voucher.message}
-              </p>
-            )}
-
-            {voucher.expiresAt && (
-              <p className="absolute left-1/2 -translate-x-1/2 bottom-[10.5%] w-[65%] text-center text-black/80 font-medium text-[15px]">
-                ვადა:{' '}
-                {new Date(voucher.expiresAt).toLocaleDateString('ka-GE')}
-              </p>
+            {(voucher.message || voucher.expiresAt) && (
+              <div className="absolute left-1/2 -translate-x-1/2 bottom-[7%] w-[44%] bg-white rounded-md px-2 py-1.5 text-center shadow-sm">
+                {voucher.message && (
+                  <p className="text-black font-semibold text-[13px] leading-snug">
+                    {voucher.message}
+                  </p>
+                )}
+                {voucher.expiresAt && (
+                  <p className={`text-black/80 font-medium text-[12px] ${voucher.message ? 'mt-1' : ''}`}>
+                    ვადა:{' '}
+                    {new Date(voucher.expiresAt).toLocaleDateString('ka-GE')}
+                  </p>
+                )}
+              </div>
             )}
           </div>
         </div>
