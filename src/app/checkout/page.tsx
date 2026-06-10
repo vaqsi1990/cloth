@@ -1,8 +1,9 @@
 "use client"
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import Image from '@/component/AppImage'
 import { useCart } from '@/hooks/useCart'
 import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { ArrowLeft, MapPin, Phone, Mail, User, ShoppingCart, Truck, Store, Ticket, X } from 'lucide-react'
 import Link from 'next/link'
 import { formatDate } from '@/utils/dateUtils'
@@ -19,6 +20,8 @@ interface DeliveryCity {
 const CheckoutPage = () => {
     const { cartItems, getTotalPrice, loading, initialized } = useCart()
     const router = useRouter()
+    const { data: session, status: sessionStatus } = useSession()
+    const hasPrefilledProfileRef = useRef(false)
     
     const [formData, setFormData] = useState({
         firstName: '',
@@ -37,7 +40,7 @@ const CheckoutPage = () => {
     const [selectedDeliveryCityId, setSelectedDeliveryCityId] = useState<number | null>(null)
     const [loadingCities, setLoadingCities] = useState(false)
     const [userPickupAddress, setUserPickupAddress] = useState<string | null>(null)
-    const [loadingUserAddress, setLoadingUserAddress] = useState(false)
+    const [loadingProfile, setLoadingProfile] = useState(false)
     const [voucherInput, setVoucherInput] = useState('')
     const [appliedVoucher, setAppliedVoucher] = useState<{
         code: string
@@ -92,27 +95,39 @@ const CheckoutPage = () => {
         }
     }, [deliveryType, fetchDeliveryCities])
 
-    // Fetch user's pickup address
+    // Pre-fill checkout from authenticated user's profile
     useEffect(() => {
-        const fetchUserPickupAddress = async () => {
+        if (sessionStatus !== 'authenticated' || !session?.user?.id) return
+        if (hasPrefilledProfileRef.current) return
+
+        const fetchUserProfile = async () => {
             try {
-                setLoadingUserAddress(true)
+                setLoadingProfile(true)
                 const response = await fetch('/api/user/profile')
                 const data = await response.json()
-                
-                if (data.success && data.user?.pickupAddress) {
-                    setUserPickupAddress(data.user.pickupAddress)
+
+                if (data.success && data.user) {
+                    const user = data.user
+                    setUserPickupAddress(user.pickupAddress || null)
+                    hasPrefilledProfileRef.current = true
+                    setFormData((prev) => ({
+                        ...prev,
+                        firstName: user.name || prev.firstName,
+                        lastName: user.lastName || prev.lastName,
+                        email: user.email || prev.email,
+                        phone: user.phone || prev.phone,
+                        address: user.address || prev.address,
+                    }))
                 }
             } catch (error) {
-                // User might not be logged in, which is fine
-                console.log('User not logged in or error fetching pickup address:', error)
+                console.error('Error fetching user profile for checkout:', error)
             } finally {
-                setLoadingUserAddress(false)
+                setLoadingProfile(false)
             }
         }
 
-        fetchUserPickupAddress()
-    }, [])
+        fetchUserProfile()
+    }, [session?.user?.id, sessionStatus])
 
     // Get selected delivery city
     const selectedDeliveryCity = deliveryCities.find(city => city.id === selectedDeliveryCityId)
@@ -606,7 +621,8 @@ const CheckoutPage = () => {
                                             value={formData.firstName}
                                             onChange={handleInputChange}
                                             required
-                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-[#1B3729]"
+                                            readOnly={loadingProfile}
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-[#1B3729] read-only:bg-gray-50"
                                         />
                                         {fieldErrors.firstName && (
                                             <p className="text-red-500 md:text-[18px] text-[16px] mt-1">{fieldErrors.firstName}</p>
@@ -622,7 +638,8 @@ const CheckoutPage = () => {
                                             value={formData.lastName}
                                             onChange={handleInputChange}
                                             required
-                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-[#1B3729]"
+                                            readOnly={loadingProfile}
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-[#1B3729] read-only:bg-gray-50"
                                         />
                                         {fieldErrors.lastName && (
                                             <p className="text-red-500 md:text-[18px] text-[16px] mt-1">{fieldErrors.lastName}</p>
@@ -642,7 +659,8 @@ const CheckoutPage = () => {
                                         value={formData.email}
                                         onChange={handleInputChange}
                                         required
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-[#1B3729]"
+                                        readOnly={loadingProfile}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-[#1B3729] read-only:bg-gray-50"
                                     />
                                 </div>
 
@@ -657,7 +675,8 @@ const CheckoutPage = () => {
                                         value={formData.phone}
                                         onChange={handleInputChange}
                                         required
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-[#1B3729]"
+                                        readOnly={loadingProfile}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-[#1B3729] read-only:bg-gray-50"
                                     />
                                 </div>
 
