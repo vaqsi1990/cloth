@@ -5,7 +5,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from '@/component/AppImage'
-import { User, Package, ShoppingCart, Settings, MapPin, Phone, Mail, Camera, MessageCircle, Search, Trash2, TrendingUp, ClipboardList, Ticket, Copy } from 'lucide-react'
+import { User, Package, ShoppingCart, Settings, MapPin, Phone, Mail, Camera, MessageCircle, Search, Trash2, TrendingUp, ClipboardList, Ticket, Copy, ArrowLeft } from 'lucide-react'
 import ImageUpload from '@/component/CloudinaryUploader'
 import ContactForm from '@/component/ContactForm'
 import { showToast } from '@/utils/toast'
@@ -1718,23 +1718,51 @@ const AccountPageContent = () => {
     </div>
   )
 
+  const renderTabButtons = (layout: 'vertical' | 'horizontal') => (
+    tabs.map((tab) => {
+      const isActive = activeTab === tab.id
+      const baseClass = layout === 'vertical'
+        ? 'w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors text-[16px]'
+        : 'flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-[14px] sm:text-[16px] whitespace-nowrap shrink-0'
+
+      return (
+        <button
+          key={tab.id}
+          onClick={() => setActiveTab(tab.id)}
+          className={`${baseClass} cursor-pointer ${
+            isActive ? 'bg-[#1B3729] text-white' : 'text-black hover:bg-gray-50'
+          }`}
+        >
+          <tab.icon className="w-5 h-5 shrink-0" />
+          <span>{tab.label}</span>
+        </button>
+      )
+    })
+  )
+
   const renderChatsTab = () => (
-    <div className="space-y-6">
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-        <div className="flex flex-col lg:flex-row h-[calc(100vh-300px)]">
-          {/* Chat Rooms List */}
-          <div className="lg:w-1/3 border-r border-gray-200 flex flex-col">
-            <div className="p-4 border-b border-gray-200">
+    <div className="w-full min-w-0">
+      <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 overflow-hidden w-full">
+        <div className="flex w-full min-w-0 h-[min(560px,calc(100dvh-12rem))] sm:h-[min(620px,calc(100dvh-10rem))] md:h-[calc(100dvh-13rem)] md:min-h-[480px]">
+          {/* Chat Rooms List — full width on mobile until a chat is selected */}
+          <div
+            className={`border-gray-200 flex flex-col min-h-0 min-w-0 overflow-hidden ${
+              selectedChatRoom
+                ? 'hidden md:flex md:w-72 lg:w-80 md:shrink-0 md:border-r'
+                : 'flex w-full md:w-72 lg:w-80 md:shrink-0 md:border-r'
+            }`}
+          >
+            <div className="p-3 sm:p-4 border-b border-gray-200 shrink-0">
               <h3 className="md:text-[20px] text-[18px] font-bold text-black">ჩათები</h3>
             </div>
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 min-w-0">
               {loadingChats ? (
                 <div className="p-4 text-center">
                   <div className="w-8 h-8 border-4 border-gray-300 border-t-[#1B3729] rounded-full animate-spin mx-auto mb-2"></div>
                   <p className="text-black md:text-[16px] text-[14px]">იტვირთება...</p>
                 </div>
               ) : chatRooms.length === 0 ? (
-                <div className="p-4 text-center">
+                <div className="p-6 text-center">
                   <MessageCircle className="w-12 h-12 text-black mx-auto mb-2" />
                   <p className="text-black md:text-[16px] text-[14px]">ჩათები არ არის</p>
                 </div>
@@ -1744,21 +1772,21 @@ const AccountPageContent = () => {
                     const otherUser = session?.user?.id === room.userId ? room.admin_name : room.user_name
                     const otherUserEmail = session?.user?.id === room.userId ? room.admin_email : room.user_email
                     const isSelected = selectedChatRoom?.id === room.id
-                    
+
                     return (
                       <div
                         key={room.id}
-                        className={`flex items-center group ${
+                        className={`flex items-center group min-w-0 overflow-hidden ${
                           isSelected ? 'bg-[#1B3729]' : ''
                         }`}
                       >
                         <button
                           onClick={() => setSelectedChatRoom(room)}
-                          className={`flex-1 text-left p-4  transition-colors ${
-                            isSelected ? ' text-white ' : ''
+                          className={`flex-1 min-w-0 text-left p-3 sm:p-4 transition-colors ${
+                            isSelected ? 'text-white' : ''
                           }`}
                         >
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between gap-2">
                             <div className="flex-1 min-w-0">
                               <p className={`font-semibold md:text-[16px] text-[14px] truncate ${
                                 isSelected ? 'text-white' : 'text-black'
@@ -1767,15 +1795,15 @@ const AccountPageContent = () => {
                               </p>
                               {room.last_message && (
                                 <p className={`mt-1 truncate md:text-[16px] text-[14px] ${
-                                  isSelected ? 'text-white' : 'text-black'
+                                  isSelected ? 'text-white/90' : 'text-gray-600'
                                 }`}>
                                   {room.last_message}
                                 </p>
                               )}
                             </div>
                             {room.message_count > 0 && (
-                              <span className={`ml-2 px-2 py-1 rounded-full text-xs font-bold ${
-                                isSelected ? 'bg-white text-[#1B3729]' : ' text-white'
+                              <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-bold ${
+                                isSelected ? 'bg-white text-[#1B3729]' : 'bg-[#1B3729] text-white'
                               }`}>
                                 {room.message_count}
                               </span>
@@ -1784,8 +1812,8 @@ const AccountPageContent = () => {
                         </button>
                         <button
                           onClick={(e) => handleDeleteChat(room.id, e)}
-                          className={`p-2 mr-2 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-100 rounded ${
-                            isSelected ? 'hover:bg-red-900' : ''
+                          className={`p-2 mr-1 sm:mr-2 shrink-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity hover:bg-red-100 rounded ${
+                            isSelected ? 'hover:bg-red-900/40' : ''
                           }`}
                           title="ჩათის წაშლა"
                         >
@@ -1801,37 +1829,48 @@ const AccountPageContent = () => {
             </div>
           </div>
 
-          {/* Chat Messages */}
-          <div className="lg:w-2/3 flex flex-col">
+          {/* Chat Messages — full width on mobile when a chat is selected */}
+          <div
+            className={`flex-col min-h-0 min-w-0 flex-1 overflow-hidden ${
+              selectedChatRoom ? 'flex' : 'hidden md:flex'
+            }`}
+          >
             {selectedChatRoom ? (
               <>
-                <div className="p-4 border-b border-gray-200">
-                  <h3 className="md:text-[18px] text-[16px] font-semibold text-black">
-                    {session?.user?.id === selectedChatRoom.userId 
+                <div className="p-3 sm:p-4 border-b border-gray-200 shrink-0 flex items-center gap-2 sm:gap-3 min-w-0">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedChatRoom(null)}
+                    className="md:hidden p-2 -ml-1 rounded-lg hover:bg-gray-100 shrink-0"
+                    aria-label="ჩათების სიაზე დაბრუნება"
+                  >
+                    <ArrowLeft className="w-5 h-5 text-black" />
+                  </button>
+                  <h3 className="md:text-[18px] text-[16px] font-semibold text-black truncate min-w-0">
+                    {session?.user?.id === selectedChatRoom.userId
                       ? selectedChatRoom.admin_name || selectedChatRoom.admin_email || 'ავტორი'
                       : selectedChatRoom.user_name || selectedChatRoom.user_email || 'მომხმარებელი'}
                   </h3>
                 </div>
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 min-h-0">
                   {chatMessages.map((message) => {
                     const isFromMe = message.userId === session?.user?.id && !message.isFromAdmin
-                    const isFromOther = !isFromMe
-                    
+
                     return (
                       <div
                         key={message.id}
                         className={`flex ${isFromMe ? 'justify-end' : 'justify-start'}`}
                       >
                         <div
-                          className={`max-w-[70%] rounded-lg px-4 py-2 ${
+                          className={`max-w-[88%] sm:max-w-[75%] lg:max-w-[70%] rounded-lg px-3 sm:px-4 py-2 ${
                             isFromMe
                               ? 'bg-[#1B3729] text-white'
                               : 'bg-gray-200 text-black'
                           }`}
                         >
-                          <p className="md:text-[16px] text-[14px]">{message.content}</p>
+                          <p className="md:text-[16px] text-[14px] break-words">{message.content}</p>
                           <p className={`text-xs mt-1 ${
-                            isFromMe ? 'text-black' : 'text-black'
+                            isFromMe ? 'text-white/70' : 'text-gray-600'
                           }`}>
                             {new Date(message.createdAt).toLocaleString('ka-GE')}
                           </p>
@@ -1841,8 +1880,8 @@ const AccountPageContent = () => {
                   })}
                   <ChatTypingIndicator show={otherPartyTyping} align="start" />
                 </div>
-                <div className="p-4 border-t border-gray-200">
-                  <div className="flex space-x-2">
+                <div className="p-3 sm:p-4 border-t border-gray-200 shrink-0">
+                  <div className="flex gap-2">
                     <input
                       type="text"
                       value={newMessage}
@@ -1858,12 +1897,12 @@ const AccountPageContent = () => {
                         }
                       }}
                       placeholder="დაწერეთ შეტყობინება..."
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B3729] md:text-[16px] text-[14px]"
+                      className="flex-1 min-w-0 px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1B3729] md:text-[16px] text-[14px]"
                     />
                     <button
                       onClick={sendChatMessage}
                       disabled={!newMessage.trim() || sendingMessage}
-                      className="px-6 py-2 bg-[#1B3729] text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity md:text-[16px] text-[14px] font-medium"
+                      className="shrink-0 px-4 sm:px-6 py-2 bg-[#1B3729] text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity md:text-[16px] text-[14px] font-medium"
                     >
                       {sendingMessage ? '...' : 'გაგზავნა'}
                     </button>
@@ -1871,9 +1910,9 @@ const AccountPageContent = () => {
                 </div>
               </>
             ) : (
-              <div className="flex-1 flex items-center justify-center">
+              <div className="flex-1 flex items-center justify-center p-6">
                 <div className="text-center">
-                  <MessageCircle className="w-16 h-16 text-black mx-auto mb-4" />
+                  <MessageCircle className="w-12 h-12 sm:w-16 sm:h-16 text-black mx-auto mb-4" />
                   <p className="text-black md:text-[18px] text-[16px]">აირჩიეთ ჩათი საუბრის დასაწყებად</p>
                 </div>
               </div>
@@ -1946,34 +1985,33 @@ const AccountPageContent = () => {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Sidebar */}
-          <div className="lg:w-64 flex-shrink-0">
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-black">
-              <nav className="space-y-2">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`w-full cursor-pointer flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors text-[16px]  ${activeTab === tab.id
-                      ? 'bg-[#1B3729] text-white'
-                      : 'text-black '
-                      }`}
-                  >
-                    <tab.icon className="w-5 h-5" />
-                    <span>{tab.label}</span>
-                  </button>
-                ))}
-              </nav>
+      <div className={`container mx-auto px-4 ${activeTab === 'chats' ? 'py-4 lg:py-6' : 'py-8'}`}>
+        {activeTab === 'chats' ? (
+          <div className="w-full min-w-0 space-y-4">
+            <div className="overflow-x-auto -mx-1 px-1">
+              <div className="bg-white rounded-xl p-2 shadow-sm border border-gray-100 inline-flex min-w-full md:flex md:flex-wrap gap-1">
+                {renderTabButtons('horizontal')}
+              </div>
+            </div>
+            {renderChatsTab()}
+          </div>
+        ) : (
+          <div className="flex flex-col lg:flex-row gap-8">
+            {/* Sidebar */}
+            <div className="lg:w-64 flex-shrink-0">
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-black">
+                <nav className="space-y-2">
+                  {renderTabButtons('vertical')}
+                </nav>
+              </div>
+            </div>
+
+            {/* Main Content */}
+            <div className="flex-1 min-w-0">
+              {renderTabContent()}
             </div>
           </div>
-
-          {/* Main Content */}
-          <div className="flex-1">
-            {renderTabContent()}
-          </div>
-        </div>
+        )}
       </div>
     </div>
   )

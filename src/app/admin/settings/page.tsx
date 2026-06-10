@@ -32,6 +32,7 @@ const AdminSettingsPage = () => {
     address: '',
     postalIndex: '',
     pickupAddress: '',
+    iban: '',
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
@@ -60,6 +61,7 @@ const AdminSettingsPage = () => {
               address: data.user.address || '',
               postalIndex: data.user.postalIndex || '',
               pickupAddress: data.user.pickupAddress || '',
+              iban: data.user.iban || '',
               currentPassword: '',
               newPassword: '',
               confirmPassword: ''
@@ -75,6 +77,7 @@ const AdminSettingsPage = () => {
               address: '',
               postalIndex: '',
               pickupAddress: '',
+              iban: session.user.iban || '',
               currentPassword: '',
               newPassword: '',
               confirmPassword: ''
@@ -92,6 +95,7 @@ const AdminSettingsPage = () => {
             address: '',
             postalIndex: '',
             pickupAddress: '',
+            iban: session.user.iban || '',
             currentPassword: '',
             newPassword: '',
             confirmPassword: ''
@@ -169,7 +173,8 @@ const AdminSettingsPage = () => {
           location: profileData.location,
           address: profileData.address,
           postalIndex: profileData.postalIndex,
-          pickupAddress: profileData.pickupAddress
+          pickupAddress: profileData.pickupAddress,
+          iban: profileData.iban || null
         }),
       })
 
@@ -180,7 +185,8 @@ const AdminSettingsPage = () => {
         await update({
           name: profileData.name,
           email: profileData.email,
-          image: profileImage
+          image: profileImage,
+          iban: (data.user?.iban ?? profileData.iban) || null
         })
         
         setIsSubmitted(true)
@@ -264,7 +270,8 @@ const AdminSettingsPage = () => {
           location: profileData.location,
           address: profileData.address,
           postalIndex: profileData.postalIndex,
-          pickupAddress: profileData.pickupAddress
+          pickupAddress: profileData.pickupAddress,
+          iban: profileData.iban || null
         }),
       })
 
@@ -469,6 +476,34 @@ const AdminSettingsPage = () => {
                       placeholder="შეიყვანეთ თქვენი ელფოსტა"
                     />
                   </div>
+                </div>
+
+                {/* IBAN */}
+                <div>
+                  <label htmlFor="iban" className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
+                    ბანკის IBAN
+                  </label>
+                  <input
+                    type="text"
+                    id="iban"
+                    name="iban"
+                    value={profileData.iban}
+                    onChange={(e) => {
+                      setProfileData({
+                        ...profileData,
+                        iban: e.target.value.toUpperCase()
+                      })
+                      setError(null)
+                    }}
+                    placeholder="მაგ: GE00TB0000000000000000"
+                    className="w-full uppercase px-4 placeholder:text-gray-500 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300 font-mono"
+                  />
+                  <p className="text-sm text-gray-600 mt-1">
+                    პლატფორმის/მერჩანტის IBAN გადახდების გასანაწილებლად. გამოიყენეთ მხოლოდ ქართული (GE) IBAN.
+                  </p>
+                  {profileData.iban && profileData.iban.startsWith('GE') && profileData.iban.length >= 22 && (
+                    <p className="text-sm text-green-600 mt-1">✓ IBAN სწორია</p>
+                  )}
                 </div>
 
                 {/* Phone */}

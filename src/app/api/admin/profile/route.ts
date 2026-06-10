@@ -4,6 +4,11 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
+const normalizeIban = (value: unknown) => {
+  if (value === '' || value === null || value === undefined) return null
+  return typeof value === 'string' ? value.replace(/\s+/g, '').toUpperCase() : value
+}
+
 const profileSchema = z.object({
   name: z.string().min(1, 'სახელი აუცილებელია'),
   email: z.string().email('არასწორი ელფოსტა'),
@@ -12,7 +17,17 @@ const profileSchema = z.object({
   location: z.string().optional(),
   address: z.string().optional(),
   postalIndex: z.string().optional(),
-  pickupAddress: z.string().optional()
+  pickupAddress: z.string().optional(),
+  iban: z.preprocess(
+    normalizeIban,
+    z.union([
+      z.null(),
+      z.string()
+        .min(22, 'IBAN აუცილებელია')
+        .max(34, 'IBAN არასწორია')
+        .regex(/^GE\d{2}[0-9A-Z]{16,}$/, 'გთხოვთ შეიყვანოთ ქართული ბანკის IBAN (GE...)')
+    ])
+  ).optional()
 })
 
 // PUT - Update user profile
@@ -28,7 +43,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, email, image, phone, location, address, postalIndex, pickupAddress } = profileSchema.parse(body)
+    const { name, email, image, phone, location, address, postalIndex, pickupAddress, iban } = profileSchema.parse(body)
 
     // Check if email is already taken by another user
     const existingUser = await prisma.user.findFirst({
@@ -72,7 +87,8 @@ export async function PUT(request: NextRequest) {
         location: location ?? undefined,
         address: address ?? undefined,
         postalIndex: postalIndex ?? undefined,
-        pickupAddress: pickupAddress ?? undefined
+        pickupAddress: pickupAddress ?? undefined,
+        iban: iban ?? null
       },
       select: {
         id: true,
@@ -84,7 +100,8 @@ export async function PUT(request: NextRequest) {
         location: true,
         address: true,
         postalIndex: true,
-        pickupAddress: true
+        pickupAddress: true,
+        iban: true
       }
     })
 

@@ -1,5 +1,5 @@
 "use client"
-import React, { useEffect, useMemo, useState } from "react"
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Image from "@/component/AppImage"
 import Link from "next/link"
@@ -125,37 +125,59 @@ const ProductPage = () => {
     const [requiresInquiry, setRequiresInquiry] = useState(true)
     const [canBookFromInquiry, setCanBookFromInquiry] = useState(false)
     const [submittingInquiry, setSubmittingInquiry] = useState(false)
+    const prevInquiryStatusRef = useRef<string | null>(null)
 
     const { notifyTyping, stopTyping } = useChatTyping({
         chatRoomId,
         enabled: isChatOpen && !!chatRoomId,
     })
 
-    useEffect(() => {
-        const loadInquiryStatus = async () => {
-            if (!session?.user?.id || !productId) return
-            const params = new URLSearchParams()
-            if (rentalStartDate) params.set('startDate', rentalStartDate)
-            if (rentalEndDate) params.set('endDate', rentalEndDate)
-            try {
-                const res = await fetch(
-                    `/api/products/${productId}/rental-inquiry?${params.toString()}`,
-                )
-                const data = await res.json()
-                if (data.success) {
-                    setRequiresInquiry(Boolean(data.requiresInquiry))
-                    setRentalInquiry(data.inquiry || null)
-                    setCanBookFromInquiry(Boolean(data.canBook))
-                    if (data.inquiry?.chatRoomId) {
-                        setChatRoomId(data.inquiry.chatRoomId)
-                    }
+    const refreshInquiryStatus = useCallback(async () => {
+        if (!session?.user?.id || !productId) return
+        const params = new URLSearchParams()
+        if (rentalStartDate) params.set('startDate', rentalStartDate)
+        if (rentalEndDate) params.set('endDate', rentalEndDate)
+        try {
+            const res = await fetch(
+                `/api/products/${productId}/rental-inquiry?${params.toString()}`,
+            )
+            const data = await res.json()
+            if (data.success) {
+                const nextStatus = data.inquiry?.status ?? null
+                if (prevInquiryStatusRef.current === 'PENDING' && nextStatus === 'APPROVED') {
+                    showToast('დადასტურებულია — შეგიძლიათ დაჯავშნოთ', 'success')
+                } else if (prevInquiryStatusRef.current === 'PENDING' && nextStatus === 'REJECTED') {
+                    showToast('ამ თარიღებზე პროდუქტი ადგილზე არ არის', 'warning')
                 }
-            } catch (e) {
-                console.error('Inquiry status:', e)
+                prevInquiryStatusRef.current = nextStatus
+
+                setRequiresInquiry(Boolean(data.requiresInquiry))
+                setRentalInquiry(data.inquiry || null)
+                setCanBookFromInquiry(Boolean(data.canBook))
+                if (data.inquiry?.chatRoomId) {
+                    setChatRoomId(data.inquiry.chatRoomId)
+                }
             }
+        } catch (e) {
+            console.error('Inquiry status:', e)
         }
-        loadInquiryStatus()
     }, [session?.user?.id, productId, rentalStartDate, rentalEndDate])
+
+    useEffect(() => {
+        refreshInquiryStatus()
+    }, [refreshInquiryStatus])
+
+    // Poll inquiry status while waiting for seller confirmation
+    useEffect(() => {
+        if (!session?.user?.id || !requiresInquiry) return
+        if (rentalInquiry?.status !== 'PENDING') return
+
+        const interval = setInterval(() => {
+            refreshInquiryStatus()
+        }, 3000)
+
+        return () => clearInterval(interval)
+    }, [session?.user?.id, requiresInquiry, rentalInquiry?.status, refreshInquiryStatus])
 
     // Check if user has an active chat for this product
     useEffect(() => {
@@ -1001,6 +1023,7 @@ const ProductPage = () => {
             const data = await res.json()
             if (data.success) {
                 showToast(data.message || 'მოთხოვნა გაგზავნილია', 'success')
+                prevInquiryStatusRef.current = 'PENDING'
                 setRentalInquiry({
                     id: data.inquiry.id,
                     status: 'PENDING',
