@@ -40,7 +40,7 @@ const AdminDeliveryCitiesPage = () => {
   const fetchCities = useCallback(async () => {
     try {
       setLoading(true)
-      const response = await fetch(`/api/admin/delivery-cities?includeInactive=${showInactive}`)
+      const response = await fetch('/api/admin/delivery-cities?includeInactive=true')
       const data = await response.json()
       
       if (data.success) {
@@ -54,7 +54,7 @@ const AdminDeliveryCitiesPage = () => {
     } finally {
       setLoading(false)
     }
-  }, [showInactive])
+  }, [])
 
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.role === 'ADMIN') {
@@ -370,7 +370,9 @@ const AdminDeliveryCitiesPage = () => {
             <div className="p-8 sm:p-12 text-center">
               <MapPin className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-4" />
               <p className="text-sm sm:text-base md:text-[18px] text-gray-600">
-                {showInactive ? 'ქალაქები არ მოიძებნა' : 'აქტიური ქალაქები არ მოიძებნა'}
+                {showInactive
+                  ? 'ქალაქები არ მოიძებნა'
+                  : 'აქტიური ქალაქები არ მოიძებნა. ჩართეთ „არააქტიური ქალაქების ჩვენება“ და გააქტიურეთ საჭირო ქალაქები.'}
               </p>
             </div>
           ) : (

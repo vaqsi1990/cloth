@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import Image from '@/component/AppImage'
 import { useCart } from '@/hooks/useCart'
 import { useRouter } from 'next/navigation'
@@ -57,26 +57,40 @@ const CheckoutPage = () => {
     // Use seller's pickup address if available, otherwise use user's, otherwise use default
     const pickupAddress = sellerPickupAddress || userPickupAddress || defaultPickupAddress
 
-    // Fetch delivery cities
-    useEffect(() => {
-        const fetchDeliveryCities = async () => {
-            try {
-                setLoadingCities(true)
-                const response = await fetch('/api/delivery-cities')
-                const data = await response.json()
-                
-                if (data.success) {
-                    setDeliveryCities(data.cities)
-                }
-            } catch (error) {
-                console.error('Error fetching delivery cities:', error)
-            } finally {
-                setLoadingCities(false)
-            }
-        }
+    const fetchDeliveryCities = useCallback(async () => {
+        try {
+            setLoadingCities(true)
+            const response = await fetch('/api/delivery-cities', { cache: 'no-store' })
+            const data = await response.json()
 
-        fetchDeliveryCities()
+            if (response.ok && data.success && Array.isArray(data.cities)) {
+                setDeliveryCities(
+                    data.cities.map((city: DeliveryCity) => ({
+                        ...city,
+                        price: Number(city.price),
+                    })),
+                )
+            } else {
+                setDeliveryCities([])
+                console.error('Failed to load delivery cities:', data.error || response.status)
+            }
+        } catch (error) {
+            console.error('Error fetching delivery cities:', error)
+            setDeliveryCities([])
+        } finally {
+            setLoadingCities(false)
+        }
     }, [])
+
+    useEffect(() => {
+        fetchDeliveryCities()
+    }, [fetchDeliveryCities])
+
+    useEffect(() => {
+        if (deliveryType === 'delivery') {
+            fetchDeliveryCities()
+        }
+    }, [deliveryType, fetchDeliveryCities])
 
     // Fetch user's pickup address
     useEffect(() => {
@@ -707,30 +721,40 @@ const CheckoutPage = () => {
                                                 <MapPin className="w-4 h-4 inline mr-2" />
                                                 მიტანის ქალაქი *
                                             </label>
-                                            <select
-                                                name="deliveryCity"
-                                                value={selectedDeliveryCityId || ''}
-                                                onChange={(e) => {
-                                                    const cityId = e.target.value ? parseInt(e.target.value, 10) : null
-                                                    setSelectedDeliveryCityId(cityId)
-                                                    if (cityId) {
-                                                        const city = deliveryCities.find(c => c.id === cityId)
-                                                        if (city) {
-                                                            setFormData(prev => ({ ...prev, city: city.name }))
+                                            {loadingCities ? (
+                                                <div className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 md:text-[18px] text-[16px]">
+                                                    ქალაქების ჩატვირთვა...
+                                                </div>
+                                            ) : deliveryCities.length === 0 ? (
+                                                <div className="w-full px-4 py-3 border border-amber-300 rounded-lg bg-amber-50 text-amber-900 md:text-[16px] text-[14px]">
+                                                    მიტანის ქალაქები ამჟამად არ არის ხელმისაწვდომი. გთხოვთ აირჩიოთ „ადგილზე“ ან დაელოდოთ ადმინისტრატორის მიერ ქალაქების გააქტიურებას.
+                                                </div>
+                                            ) : (
+                                                <select
+                                                    name="deliveryCity"
+                                                    value={selectedDeliveryCityId || ''}
+                                                    onChange={(e) => {
+                                                        const cityId = e.target.value ? parseInt(e.target.value, 10) : null
+                                                        setSelectedDeliveryCityId(cityId)
+                                                        if (cityId) {
+                                                            const city = deliveryCities.find(c => c.id === cityId)
+                                                            if (city) {
+                                                                setFormData(prev => ({ ...prev, city: city.name }))
+                                                            }
                                                         }
-                                                    }
-                                                    clearFieldError('deliveryCity')
-                                                }}
-                                                required
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-[#1B3729]"
-                                            >
-                                                <option value="">აირჩიეთ ქალაქი</option>
-                                                {deliveryCities.map(city => (
-                                                    <option key={city.id} value={city.id}>
-                                                        {city.name} - ₾{city.price.toFixed(2)}
-                                                    </option>
-                                                ))}
-                                            </select>
+                                                        clearFieldError('deliveryCity')
+                                                    }}
+                                                    required
+                                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-[#1B3729]"
+                                                >
+                                                    <option value="">აირჩიეთ ქალაქი</option>
+                                                    {deliveryCities.map(city => (
+                                                        <option key={city.id} value={city.id}>
+                                                            {city.name} - ₾{Number(city.price).toFixed(2)}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            )}
                                             {fieldErrors.deliveryCity && (
                                                 <p className="text-red-500 md:text-[18px] text-[16px] mt-1">{fieldErrors.deliveryCity}</p>
                                             )}
