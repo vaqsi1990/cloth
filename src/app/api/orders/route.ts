@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { findRentalDateConflict } from '@/lib/rental-date-conflicts'
+import { MAX_CART_ITEMS, MAX_CART_ITEM_QUANTITY, CART_SINGLE_ITEM_MESSAGE } from '@/lib/cart-limits'
 
 // Order validation schema
 const orderSchema = z.object({
@@ -22,7 +23,7 @@ const orderSchema = z.object({
     image: z.string(),
     size: z.string(),
     price: z.number(),
-    quantity: z.number().min(1),
+    quantity: z.number().min(1).max(MAX_CART_ITEM_QUANTITY),
     // Rental fields
     isRental: z.boolean().optional(),
     rentalStartDate: z.string().optional(),
@@ -60,6 +61,16 @@ export async function POST(request: NextRequest) {
     
     // Validate the request body
     const validatedData = orderSchema.parse(body)
+
+    if (
+      validatedData.items.length > MAX_CART_ITEMS ||
+      validatedData.items.some((item) => item.quantity > MAX_CART_ITEM_QUANTITY)
+    ) {
+      return NextResponse.json({
+        success: false,
+        message: CART_SINGLE_ITEM_MESSAGE
+      }, { status: 400 })
+    }
     
     // Validate products exist and are approved
     const uniqueProductIds = Array.from(new Set(validatedData.items.map(item => item.productId)))

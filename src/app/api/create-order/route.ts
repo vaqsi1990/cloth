@@ -8,6 +8,7 @@ import { bogTokenManager } from '@/lib/bog-token'
 import { computeUserCartSubtotal } from '@/lib/cart-totals'
 import { validateVoucher } from '@/lib/voucher'
 import { z } from 'zod'
+import { MAX_CART_ITEMS, MAX_CART_ITEM_QUANTITY, CART_SINGLE_ITEM_MESSAGE } from '@/lib/cart-limits'
 
 interface CartItemInput {
   productId: string | number
@@ -308,6 +309,16 @@ export async function POST(req: NextRequest) {
     if (!cart || cart.items.length === 0) {
       return NextResponse.json(
         { success: false, error: 'კალათა ცარიელია' },
+        { status: 400 },
+      )
+    }
+
+    if (
+      cart.items.length > MAX_CART_ITEMS ||
+      cart.items.some((item) => item.quantity > MAX_CART_ITEM_QUANTITY)
+    ) {
+      return NextResponse.json(
+        { success: false, error: CART_SINGLE_ITEM_MESSAGE },
         { status: 400 },
       )
     }

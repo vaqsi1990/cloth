@@ -3,20 +3,13 @@ import React from 'react'
 import Image from '@/component/AppImage'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ShoppingCart, Plus, Minus, Trash2, ArrowLeft } from 'lucide-react'
+import { ShoppingCart, Trash2, ArrowLeft } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { formatDate } from '@/utils/dateUtils'
 import AnimatedDotsLoader from '@/component/AnimatedDotsLoader'
 const CartPage = () => {
     const router = useRouter()
-    const { cartItems, removeFromCart, updateQuantity, getTotalPrice, clearCart, loading, initialized } = useCart()
-    const handleQuantityChange = async (id: number, newQuantity: number) => {
-        if (newQuantity <= 0) {
-            await removeFromCart(id)
-        } else {
-            await updateQuantity(id, newQuantity)
-        }
-    }
+    const { cartItems, removeFromCart, getTotalPrice, clearCart, loading, initialized } = useCart()
 
     const handleRemoveItem = async (id: number) => {
         await removeFromCart(id)
@@ -143,34 +136,10 @@ const CartPage = () => {
                                                 )}
                                             </div>
 
-                                            {/* Quantity Controls - Only show for non-rental items */}
-                                            {!item.isRental && (
-                                                <div className="flex items-center text-center mt-0  md:mt-10 space-x-2 ">
-                                                    <button
-                                                        onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
-                                                        className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
-                                                    >
-                                                        <Minus className="w-4 h-4 text-black" />
-                                                    </button>
-                                                    <span className="w-12 text-center font-medium text-black">
-                                                        {item.quantity}
-                                                    </span>
-                                                    <button
-                                                        onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
-                                                        className="w-8 h-8 rounded-full border border-gray-300  flex items-center justify-center hover:bg-gray-50 transition-colors"
-                                                    >
-                                                        <Plus className="w-4 h-4 text-black" />
-                                                    </button>
-                                                </div>
-                                            )}
-
-                                            {/* Rental items show quantity as 1 */}
-                                            {item.isRental && (
-                                                <div className="text-center sm:self-auto self-start">
-                                                    <span className="md:text-[18px] text-[16px] text-black">რაოდენობა:</span>
-                                                    <div className="font-medium text-black">1</div>
-                                                </div>
-                                            )}
+                                            <div className="text-center sm:self-auto self-start mt-0 md:mt-10">
+                                                <span className="md:text-[18px] text-[16px] text-black">რაოდენობა:</span>
+                                                <div className="font-medium text-black">1</div>
+                                            </div>
 
                                             {/* Remove Button */}
                                             <button

@@ -19,6 +19,7 @@ import {
     X,
 } from "lucide-react"
 import { useCart } from "@/hooks/useCart"
+import { CART_SINGLE_ITEM_MESSAGE } from "@/lib/cart-limits"
 import { useSession } from 'next-auth/react';
 
 import { Product, RentalPeriod } from "@/types/product"
@@ -46,7 +47,7 @@ const ProductPage = () => {
     const productId = params.id as string
 
 
-    const { addToCart } = useCart()
+    const { addToCart, cartItems } = useCart()
     const { data: session } = useSession();
 
     const [product, setProduct] = useState<Product | null>(null)
@@ -825,22 +826,35 @@ const ProductPage = () => {
             return
         }
         
+        if (
+            cartItems.length > 0 &&
+            !cartItems.some(
+                (item) =>
+                    item.productId === product.id &&
+                    item.size === selectedSize &&
+                    !item.isRental
+            )
+        ) {
+            showToast(CART_SINGLE_ITEM_MESSAGE, "warning")
+            return
+        }
+
         setIsAdding(true)
 
-        const ok = await addToCart({
+        const result = await addToCart({
             productId: product.id,
             productName: product.name,
             image: getMainImage(),
             size: selectedSize,
-            quantity,
+            quantity: 1,
             price: selectedPrice,
             isRental: false,
         })
 
-        if (ok) {
+        if (result.success) {
             showToast("პროდუქტი დაემატა კალათაში", "success")
         } else {
-            showToast("შეცდომა კალათაში დამატებისას", "error")
+            showToast(result.message, "error")
         }
         setIsAdding(false)
     }
@@ -1096,11 +1110,27 @@ const ProductPage = () => {
         }
 
         if (isAdding) return
+
+        if (
+            cartItems.length > 0 &&
+            !cartItems.some(
+                (item) =>
+                    item.productId === product.id &&
+                    item.size === sizeForCart &&
+                    item.isRental &&
+                    item.rentalStartDate === rentalStartDate &&
+                    item.rentalEndDate === rentalEndDate
+            )
+        ) {
+            showToast(CART_SINGLE_ITEM_MESSAGE, "warning")
+            return
+        }
+
         setIsAdding(true)
 
         const total = priceForDays(days)
 
-        const ok = await addToCart({
+        const result = await addToCart({
             productId: product.id,
             productName: product.name,
             image: getMainImage(),
@@ -1113,11 +1143,11 @@ const ProductPage = () => {
             price: total,
         })
 
-        if (ok) {
+        if (result.success) {
             showToast("დაემატა კალათაში", "success")
             setRentalInquiry((prev) => (prev ? { ...prev, status: 'BOOKED' } : prev))
         } else {
-            showToast("შეცდომა ქირაობის დამატებისას", "error")
+            showToast(result.message, "error")
         }
         setIsAdding(false)
     }

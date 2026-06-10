@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { MAX_CART_ITEM_QUANTITY } from '@/lib/cart-limits'
 
 // PUT - Update cart item quantity
 export async function PUT(
@@ -31,7 +32,7 @@ export async function PUT(
 
     const body = await request.json()
     const quantitySchema = z.object({
-      quantity: z.number().min(1)
+      quantity: z.number().min(1).max(MAX_CART_ITEM_QUANTITY)
     })
     const validatedData = quantitySchema.parse(body)
 

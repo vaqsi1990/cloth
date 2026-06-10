@@ -5,6 +5,11 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { processExpiredDiscount } from '@/utils/discountUtils'
 import { assertRentalInquiryApproved, markInquiryBooked } from '@/lib/rental-inquiry-guard'
+import {
+  MAX_CART_ITEMS,
+  MAX_CART_ITEM_QUANTITY,
+  CART_SINGLE_ITEM_MESSAGE,
+} from '@/lib/cart-limits'
 
 // Cart item validation schema
 const cartItemSchema = z.object({
@@ -13,7 +18,7 @@ const cartItemSchema = z.object({
   image: z.string().optional(),
   size: z.string(),
   price: z.number(),
-  quantity: z.number().min(1),
+  quantity: z.number().min(1).max(MAX_CART_ITEM_QUANTITY),
   // Rental fields
   isRental: z.boolean().optional(),
   rentalStartDate: z.string().optional(),
@@ -266,48 +271,41 @@ export async function POST(request: NextRequest) {
     console.log('Existing item:', existingItem)
 
     if (existingItem) {
-      console.log('Item already exists, updating quantity')
-      // Update quantity if it's a purchase item
-      if (!validatedData.isRental) {
-        const updatedItem = await prisma.cartItem.update({
-          where: { id: existingItem.id },
-          data: {
-            quantity: existingItem.quantity + validatedData.quantity
-          }
-        })
-        console.log('Updated item:', updatedItem)
-        return NextResponse.json({
-          success: true,
-          message: 'Item quantity updated in cart'
-        })
-      } else {
-        console.log('Rental item already exists, returning error')
-        return NextResponse.json({
-          success: false,
-          message: 'Rental item already exists in cart'
-        }, { status: 400 })
-      }
-    } else {
-      // Add new item to cart
-      await prisma.cartItem.create({
-        data: {
-          cartId: cart.id,
-          productId: validatedData.productId,
-          productName: validatedData.productName,
-          image: validatedData.image,
-          size: validatedData.size,
-          price: validatedData.price,
-          quantity: validatedData.quantity,
-          isRental: validatedData.isRental || false,
-          rentalStartDate: validatedData.rentalStartDate ? new Date(validatedData.rentalStartDate) : null,
-          rentalEndDate: validatedData.rentalEndDate ? new Date(validatedData.rentalEndDate) : null,
-          rentalDays: validatedData.rentalDays
-        }
+      return NextResponse.json({
+        success: true,
+        message: 'Item already in cart'
       })
+    }
 
-      if (approvedInquiryId) {
-        await markInquiryBooked(approvedInquiryId)
+    const existingItemCount = await prisma.cartItem.count({
+      where: { cartId: cart.id }
+    })
+
+    if (existingItemCount >= MAX_CART_ITEMS) {
+      return NextResponse.json({
+        success: false,
+        message: CART_SINGLE_ITEM_MESSAGE
+      }, { status: 400 })
+    }
+
+    await prisma.cartItem.create({
+      data: {
+        cartId: cart.id,
+        productId: validatedData.productId,
+        productName: validatedData.productName,
+        image: validatedData.image,
+        size: validatedData.size,
+        price: validatedData.price,
+        quantity: MAX_CART_ITEM_QUANTITY,
+        isRental: validatedData.isRental || false,
+        rentalStartDate: validatedData.rentalStartDate ? new Date(validatedData.rentalStartDate) : null,
+        rentalEndDate: validatedData.rentalEndDate ? new Date(validatedData.rentalEndDate) : null,
+        rentalDays: validatedData.rentalDays
       }
+    })
+
+    if (approvedInquiryId) {
+      await markInquiryBooked(approvedInquiryId)
     }
 
     return NextResponse.json({
