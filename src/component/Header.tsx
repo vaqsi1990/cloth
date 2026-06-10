@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { Search, Menu, User, LogOut, ShoppingCart, ChevronRight, Plus } from 'lucide-react'
 import Image from '@/component/AppImage'
 import { useSession, signOut } from 'next-auth/react'
@@ -22,6 +22,7 @@ const HeaderContent = () => {
   const isAuthenticated = status === 'authenticated' && !!session
   const router = useRouter()
   const searchParams = useSearchParams()
+  const pathname = usePathname()
 
   // Update active category based on URL params
   useEffect(() => {
@@ -147,6 +148,30 @@ const HeaderContent = () => {
     setMobileDropdownOpen(null)
   }
 
+  const closeAllOverlays = () => {
+    closeMobileMenu()
+    setIsSearchOpen(false)
+    setIsMobileUserDropdownOpen(false)
+    setIsDesktopUserDropdownOpen(false)
+  }
+
+  useEffect(() => {
+    closeAllOverlays()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname])
+
+  useEffect(() => {
+    if (!isMobileMenuOpen) {
+      document.body.style.overflow = ''
+      return
+    }
+
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [isMobileMenuOpen])
+
   const newProductHref = !isAuthenticated
     ? '/auth/signup'
     : session.user.role === 'ADMIN'
@@ -163,11 +188,15 @@ const HeaderContent = () => {
   }
 
   return (
-    <header className=" bg-[#1B3729] text-gray-900 shadow-sm  top-0 z-50">
+    <header className="sticky bg-[#1B3729] text-gray-900 shadow-sm top-0 z-50">
       <div className="container max-w-7xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between gap-4">
           {/* --- Logo --- */}
-          <Link href="/" className="group flex items-center space-x-3 transition-all duration-300 hover:scale-105 flex-shrink-0">
+          <Link
+            href="/"
+            onClick={closeAllOverlays}
+            className="group flex items-center space-x-3 transition-all duration-300 hover:scale-105 flex-shrink-0"
+          >
             <div className="relative overflow-hidden rounded-full">
               <Image
                 src="/logo.jpg"
@@ -297,6 +326,7 @@ const HeaderContent = () => {
           <div className="flex lg:hidden items-center space-x-4">
             <Link
               href={newProductHref}
+              onClick={closeAllOverlays}
               className="inline-flex items-center gap-1.5 bg-white text-[#1B3729] font-bold text-sm px-3 py-2 rounded-lg"
               aria-label="ახალი პროდუქტი"
             >
@@ -366,7 +396,7 @@ const HeaderContent = () => {
               </Link>
             )}
 
-            <Link href="/cart" className="relative p-2 text-white">
+            <Link href="/cart" onClick={closeAllOverlays} className="relative p-2 text-white">
               <ShoppingCart className="w-5 h-5" />
               {cartItemCount > 0 && (
                 <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
@@ -404,7 +434,7 @@ const HeaderContent = () => {
 
       {/* --- Mobile Menu --- */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden border-t border-gray-200 h-screen bg-white">
+        <div className="lg:hidden fixed inset-x-0 top-[73px] bottom-0 z-40 overflow-y-auto border-t border-gray-200 bg-white">
           <div className="container mx-auto px-4 py-4">
             <nav className="space-y-2">
               {/* Menu Categories */}
