@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Check, MessageCircle, X } from 'lucide-react'
+import { Check, MessageCircle, Trash2, X } from 'lucide-react'
 import { showToast } from '@/utils/toast'
 
 type Inquiry = {
@@ -126,6 +126,30 @@ export default function RentalInquiriesPanel({ scope, title }: RentalInquiriesPa
     }
   }
 
+  const handleDelete = async (id: number) => {
+    if (!window.confirm('ნამდვილად გსურთ მოთხოვნის წაშლა?')) {
+      return
+    }
+
+    setActingId(id)
+    try {
+      const res = await fetch(`/api/rental-inquiries/${id}`, {
+        method: 'DELETE',
+      })
+      const data = await res.json()
+      if (data.success) {
+        showToast('მოთხოვნა წაიშალა', 'success')
+        setInquiries((prev) => prev.filter((inq) => inq.id !== id))
+      } else {
+        showToast(data.message || 'შეცდომა', 'error')
+      }
+    } catch {
+      showToast('შეცდომა', 'error')
+    } finally {
+      setActingId(null)
+    }
+  }
+
   if (loading) {
     return <p className="text-black">იტვირთება...</p>
   }
@@ -229,16 +253,28 @@ export default function RentalInquiriesPanel({ scope, title }: RentalInquiriesPa
                 </div>
               )}
 
-              {scope === 'buyer' && inq.status === 'PENDING' && (
+              <div className="flex flex-wrap items-center gap-3 mt-2">
+                {scope === 'buyer' && inq.status === 'PENDING' && (
+                  <button
+                    type="button"
+                    disabled={actingId === inq.id}
+                    onClick={() => handleCancel(inq.id)}
+                    className="text-sm text-red-600 underline disabled:opacity-50"
+                  >
+                    მოთხოვნის გაუქმება
+                  </button>
+                )}
+
                 <button
                   type="button"
                   disabled={actingId === inq.id}
-                  onClick={() => handleCancel(inq.id)}
-                  className="text-sm text-red-600 underline disabled:opacity-50"
+                  onClick={() => handleDelete(inq.id)}
+                  className="inline-flex items-center gap-1.5 text-sm text-red-600 hover:text-red-700 disabled:opacity-50"
                 >
-                  მოთხოვნის გაუქმება
+                  <Trash2 className="w-4 h-4" />
+                  წაშლა
                 </button>
-              )}
+              </div>
 
               {scope === 'buyer' && inq.status === 'APPROVED' && (
                 <Link

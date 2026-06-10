@@ -215,3 +215,50 @@ export async function PATCH(
     return NextResponse.json({ success: false, message: 'შეცდომა' }, { status: 500 })
   }
 }
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return NextResponse.json({ success: false, message: 'ავტორიზაცია საჭიროა' }, { status: 401 })
+    }
+
+    const { id } = await params
+    const inquiryId = parseInt(id, 10)
+    if (isNaN(inquiryId)) {
+      return NextResponse.json({ success: false, message: 'არასწორი ID' }, { status: 400 })
+    }
+
+    const inquiry = await prisma.rentalInquiry.findUnique({
+      where: { id: inquiryId },
+      select: { id: true, buyerId: true, sellerId: true },
+    })
+
+    if (!inquiry) {
+      return NextResponse.json({ success: false, message: 'მოთხოვნა ვერ მოიძებნა' }, { status: 404 })
+    }
+
+    const isBuyer = inquiry.buyerId === session.user.id
+    const isSeller = inquiry.sellerId === session.user.id
+    const isStaff = isAdminOrSupport(session.user.role)
+
+    if (!isBuyer && !isSeller && !isStaff) {
+      return NextResponse.json({ success: false, message: 'წვდომა აკრძალულია' }, { status: 403 })
+    }
+
+    await prisma.rentalInquiry.delete({
+      where: { id: inquiryId },
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: 'მოთხოვნა წაიშალა',
+    })
+  } catch (error) {
+    console.error('DELETE rental-inquiry:', error)
+    return NextResponse.json({ success: false, message: 'შეცდომა' }, { status: 500 })
+  }
+}

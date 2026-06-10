@@ -1060,6 +1060,28 @@ const ProductPage = () => {
         }
     }
 
+    const handleDeleteInquiry = async () => {
+        if (!rentalInquiry?.id) return
+        if (!window.confirm('ნამდვილად გსურთ მოთხოვნის წაშლა?')) return
+
+        try {
+            const res = await fetch(`/api/rental-inquiries/${rentalInquiry.id}`, {
+                method: 'DELETE',
+            })
+            const data = await res.json()
+            if (data.success) {
+                showToast('მოთხოვნა წაიშალა', 'success')
+                prevInquiryStatusRef.current = null
+                setRentalInquiry(null)
+                setCanBookFromInquiry(false)
+            } else {
+                showToast(data.message || 'შეცდომა', 'error')
+            }
+        } catch {
+            showToast('შეცდომა მოთხოვნის წაშლისას', 'error')
+        }
+    }
+
     const handleRental = async () => {
         if (!product) return
 
@@ -1738,6 +1760,13 @@ const ProductPage = () => {
                                             {rentalInquiry.status === 'REJECTED' && 'ამ თარიღებზე პროდუქტი ადგილზე არ არის'}
                                             {rentalInquiry.status === 'EXPIRED' && 'მოთხოვნის ვადა ამოიწურა — გაგზავნეთ ახალი'}
                                             {rentalInquiry.status === 'BOOKED' && 'უკვე დაჯავშნილია'}
+                                            <button
+                                                type="button"
+                                                onClick={handleDeleteInquiry}
+                                                className="block mx-auto mt-2 text-xs text-red-600 underline hover:text-red-700"
+                                            >
+                                                მოთხოვნის წაშლა
+                                            </button>
                                         </div>
                                     )}
 
