@@ -118,7 +118,7 @@ export default function VoucherGiftPopup() {
             </div>
 
             {(voucher.message || voucher.expiresAt) && (
-              <div className="absolute left-1/2 -translate-x-1/2 bottom-[7%] w-[44%] bg-white rounded-md px-2 py-1.5 text-center shadow-sm">
+              <div className="absolute left-1/2 -translate-x-1/2 bottom-[7%] w-[44%]  px-2 py-1.5 text-center shadow-sm">
                 {voucher.message && (
                   <p className="text-black font-semibold text-[13px] leading-snug">
                     {voucher.message}
