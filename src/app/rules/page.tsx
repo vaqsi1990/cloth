@@ -1,11 +1,19 @@
 "use client"
 
-import React, { useState } from 'react'
-import type { Metadata } from 'next'
+import React, { useEffect, useState } from 'react'
 import { Shield, FileText, RotateCcw, Cookie } from 'lucide-react'
+
+const VALID_TABS = ['privacy', 'terms', 'return', 'coockies'] as const
 
 const RulesPage = () => {
     const [activeTab, setActiveTab] = useState('privacy')
+
+    useEffect(() => {
+        const tab = new URLSearchParams(window.location.search).get('tab')
+        if (tab && VALID_TABS.includes(tab as (typeof VALID_TABS)[number])) {
+            setActiveTab(tab)
+        }
+    }, [])
 
     const tabs = [
         { 

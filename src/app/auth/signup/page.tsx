@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Mail, Lock, User, Eye, EyeOff, MapPin } from 'lucide-react'
 import { showToast } from '@/utils/toast'
+import TermsModal from '@/component/TermsModal'
 import {
   getPersonFieldLabel,
   isValidPersonAddress,
@@ -40,6 +41,9 @@ const SignUpPage = () => {
   const [success, setSuccess] = useState('')
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [step, setStep] = useState<1 | 2 | 3>(1)
+  const [agreedToTerms, setAgreedToTerms] = useState(false)
+  const [termsError, setTermsError] = useState('')
+  const [showTermsModal, setShowTermsModal] = useState(false)
 
   const router = useRouter()
 
@@ -164,6 +168,16 @@ const SignUpPage = () => {
     return true
   }
 
+  const validateTermsAgreement = (): boolean => {
+    if (!agreedToTerms) {
+      setTermsError('გთხოვთ დაადასტუროთ, რომ ეთანხმებით წესებსა და პირობებს')
+      showToast('გთხოვთ დაადასტუროთ, რომ ეთანხმებით წესებსა და პირობებს', 'error')
+      return false
+    }
+    setTermsError('')
+    return true
+  }
+
   const validateStep2 = (): boolean => {
     const requiredStep2 = ['gender', 'dateOfBirth', 'personalId', 'email', 'password', 'confirmPassword'] as const
     if (requiredStep2.some((field) => !formData[field]?.trim())) {
@@ -174,6 +188,9 @@ const SignUpPage = () => {
       (field) => fieldErrors[field],
     )) {
       showToast('გთხოვთ გაასწოროთ შეცდომები', 'error')
+      return false
+    }
+    if (!validateTermsAgreement()) {
       return false
     }
     return true
@@ -643,6 +660,44 @@ const SignUpPage = () => {
               </div>
             </div>
 
+            <div
+              className={`rounded-lg border p-4 ${
+                termsError ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-gray-50'
+              }`}
+            >
+              <label className="flex cursor-pointer items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={agreedToTerms}
+                  onChange={(e) => {
+                    setAgreedToTerms(e.target.checked)
+                    if (e.target.checked) {
+                      setTermsError('')
+                    }
+                  }}
+                  className={`mt-1 h-4 w-4 rounded border-gray-300 text-[#1B3729] focus:ring-[#1B3729] ${
+                    termsError ? 'border-red-500' : ''
+                  }`}
+                />
+                <span className="text-sm md:text-base text-black">
+                  <span className="text-red-600">*</span>ვეთანხმები წესებს და პირობებს
+                </span>
+              </label>
+              <p className="mt-2 text-sm text-gray-600">
+                თუ ენდომება გაეცნოთ ჩვენს წესებს და პირობებს{' '}
+                <button
+                  type="button"
+                  onClick={() => setShowTermsModal(true)}
+                  className="font-medium text-[#1B3729] underline hover:opacity-80"
+                >
+                  წაკითხვა
+                </button>
+              </p>
+              {termsError && (
+                <p className="mt-2 text-sm font-medium text-red-600">{termsError}</p>
+              )}
+            </div>
+
               </>
             )}
 
@@ -761,6 +816,8 @@ const SignUpPage = () => {
           </div>
         </form>
       </div>
+
+      <TermsModal open={showTermsModal} onClose={() => setShowTermsModal(false)} />
     </div>
   )
 }
