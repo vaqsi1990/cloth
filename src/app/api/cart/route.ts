@@ -121,7 +121,7 @@ function buildCartResponse(cart: {
     size: string | null
     price: number
     quantity: number
-    isRental: boolean
+    isRental: boolean | null
     rentalStartDate: Date | null
     rentalEndDate: Date | null
     rentalDays: number | null
@@ -154,7 +154,7 @@ function buildCartResponse(cart: {
       size: item.size,
       price: item.price,
       quantity: item.quantity,
-      isRental: item.isRental,
+      isRental: item.isRental ?? false,
       rentalStartDate: item.rentalStartDate?.toISOString(),
       rentalEndDate: item.rentalEndDate?.toISOString(),
       rentalDays: item.rentalDays,

@@ -67,14 +67,7 @@ export async function GET(request: NextRequest) {
               location: true,
             },
           },
-          deliveryCity: {
-            select: {
-              id: true,
-              name: true,
-              price: true,
-              isActive: true,
-            },
-          },
+          deliveryCity: true,
         },
         orderBy: { createdAt: 'desc' },
         skip,
