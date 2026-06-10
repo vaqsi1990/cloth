@@ -10,7 +10,8 @@ import { showToast } from '@/utils/toast'
 interface DeliveryCity {
   id: number
   name: string
-  price: number
+  extraPrice: number
+  standardPrice: number
   isActive: boolean
   createdAt: string
   updatedAt: string
@@ -26,7 +27,8 @@ const AdminDeliveryCitiesPage = () => {
   const [isCreating, setIsCreating] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
-    price: '',
+    extraPrice: '',
+    standardPrice: '',
     isActive: true
   })
 
@@ -64,7 +66,7 @@ const AdminDeliveryCitiesPage = () => {
 
   const handleCreate = () => {
     setIsCreating(true)
-    setFormData({ name: '', price: '', isActive: true })
+    setFormData({ name: '', extraPrice: '', standardPrice: '', isActive: true })
     setEditingId(null)
   }
 
@@ -72,7 +74,8 @@ const AdminDeliveryCitiesPage = () => {
     setEditingId(city.id)
     setFormData({
       name: city.name,
-      price: city.price.toString(),
+      extraPrice: city.extraPrice.toString(),
+      standardPrice: city.standardPrice.toString(),
       isActive: city.isActive
     })
     setIsCreating(false)
@@ -81,7 +84,7 @@ const AdminDeliveryCitiesPage = () => {
   const handleCancel = () => {
     setIsCreating(false)
     setEditingId(null)
-    setFormData({ name: '', price: '', isActive: true })
+    setFormData({ name: '', extraPrice: '', standardPrice: '', isActive: true })
   }
 
   const handleSave = async () => {
@@ -91,9 +94,14 @@ const AdminDeliveryCitiesPage = () => {
       return
     }
 
-    const price = parseFloat(formData.price)
-    if (isNaN(price) || price < 0) {
-      showToast('მიტანის ფასი უნდა იყოს დადებითი რიცხვი', 'error')
+    const extraPrice = parseFloat(formData.extraPrice)
+    const standardPrice = parseFloat(formData.standardPrice)
+    if (isNaN(extraPrice) || extraPrice < 0) {
+      showToast('ექსტრა მიტანის ფასი უნდა იყოს დადებითი რიცხვი', 'error')
+      return
+    }
+    if (isNaN(standardPrice) || standardPrice < 0) {
+      showToast('სტანდარტული მიტანის ფასი უნდა იყოს დადებითი რიცხვი', 'error')
       return
     }
 
@@ -107,7 +115,8 @@ const AdminDeliveryCitiesPage = () => {
           },
           body: JSON.stringify({
             name: formData.name.trim(),
-            price: price,
+            extraPrice,
+            standardPrice,
             isActive: formData.isActive
           }),
         })
@@ -117,7 +126,7 @@ const AdminDeliveryCitiesPage = () => {
         if (data.success) {
           showToast('ქალაქი წარმატებით დაემატა', 'success')
           setIsCreating(false)
-          setFormData({ name: '', price: '', isActive: true })
+          setFormData({ name: '', extraPrice: '', standardPrice: '', isActive: true })
           fetchCities()
         } else {
           showToast(data.error || 'შეცდომა ქალაქის დამატებისას', 'error')
@@ -132,7 +141,8 @@ const AdminDeliveryCitiesPage = () => {
           body: JSON.stringify({
             id: editingId,
             name: formData.name.trim(),
-            price: price,
+            extraPrice,
+            standardPrice,
             isActive: formData.isActive
           }),
         })
@@ -142,7 +152,7 @@ const AdminDeliveryCitiesPage = () => {
         if (data.success) {
           showToast('ქალაქი წარმატებით განახლდა', 'success')
           setEditingId(null)
-          setFormData({ name: '', price: '', isActive: true })
+          setFormData({ name: '', extraPrice: '', standardPrice: '', isActive: true })
           fetchCities()
         } else {
           showToast(data.error || 'შეცდომა ქალაქის განახლებისას', 'error')
@@ -304,7 +314,7 @@ const AdminDeliveryCitiesPage = () => {
               </button>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="sm:col-span-2 lg:col-span-1">
                 <label className="block text-black text-sm sm:text-base md:text-[18px] font-medium mb-2">
                   ქალაქის სახელი *
@@ -320,14 +330,29 @@ const AdminDeliveryCitiesPage = () => {
               
               <div className="sm:col-span-2 lg:col-span-1">
                 <label className="block text-black text-sm sm:text-base md:text-[18px] font-medium mb-2">
-                  მიტანის ფასი (₾) *
+                  ექსტრა (1 დღე) ₾ *
                 </label>
                 <input
                   type="number"
                   step="0.01"
                   min="0"
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  value={formData.extraPrice}
+                  onChange={(e) => setFormData({ ...formData, extraPrice: e.target.value })}
+                  placeholder="0.00"
+                  className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base md:text-[18px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                />
+              </div>
+
+              <div className="sm:col-span-2 lg:col-span-1">
+                <label className="block text-black text-sm sm:text-base md:text-[18px] font-medium mb-2">
+                  სტანდარტული (5 დღე) ₾ *
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.standardPrice}
+                  onChange={(e) => setFormData({ ...formData, standardPrice: e.target.value })}
                   placeholder="0.00"
                   className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base md:text-[18px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                 />
@@ -386,7 +411,10 @@ const AdminDeliveryCitiesPage = () => {
                         ქალაქი
                       </th>
                       <th className="px-4 lg:px-6 py-3 lg:py-4 text-left text-sm lg:text-[18px] font-bold text-black">
-                        მიტანის ფასი
+                        ექსტრა (1 დღე)
+                      </th>
+                      <th className="px-4 lg:px-6 py-3 lg:py-4 text-left text-sm lg:text-[18px] font-bold text-black">
+                        სტანდარტული (5 დღე)
                       </th>
                       <th className="px-4 lg:px-6 py-3 lg:py-4 text-center text-sm lg:text-[18px] font-bold text-black">
                         სტატუსი
@@ -412,7 +440,12 @@ const AdminDeliveryCitiesPage = () => {
                         </td>
                         <td className="px-4 lg:px-6 py-3 lg:py-4">
                           <span className="text-sm lg:text-[18px] text-black font-semibold">
-                            ₾{city.price.toFixed(2)}
+                            ₾{city.extraPrice.toFixed(2)}
+                          </span>
+                        </td>
+                        <td className="px-4 lg:px-6 py-3 lg:py-4">
+                          <span className="text-sm lg:text-[18px] text-black font-semibold">
+                            ₾{city.standardPrice.toFixed(2)}
                           </span>
                         </td>
                         <td className="px-4 lg:px-6 py-3 lg:py-4 text-center">
@@ -492,12 +525,13 @@ const AdminDeliveryCitiesPage = () => {
                         </button>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-sm text-gray-600">მიტანის ფასი:</span>
-                        <span className="text-base text-black font-semibold ml-2">
-                          ₾{city.price.toFixed(2)}
-                        </span>
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <div className="text-sm text-gray-600">
+                        <span>ექსტრა: </span>
+                        <span className="text-black font-semibold">₾{city.extraPrice.toFixed(2)}</span>
+                        <span className="mx-2">·</span>
+                        <span>სტანდარტული: </span>
+                        <span className="text-black font-semibold">₾{city.standardPrice.toFixed(2)}</span>
                       </div>
                       <button
                         onClick={() => handleToggleActive(city)}

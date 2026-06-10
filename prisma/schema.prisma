@@ -206,13 +206,19 @@ model Purpose {
   products  Product[]
 }
 
+enum DeliverySpeed {
+  EXTRA
+  STANDARD
+}
+
 model DeliveryCity {
-  id        Int       @id @default(autoincrement())
-  name      String    @unique // ქალაქის სახელი
-  price     Float     // მიტანის ფასი
-  isActive  Boolean   @default(true) // აქტიურია თუ არა
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id            Int       @id @default(autoincrement())
+  name          String    @unique // ქალაქის სახელი
+  extraPrice    Float     // ექსტრა მიტანა (1 დღე)
+  standardPrice Float     // სტანდარტული მიტანა (5 დღე)
+  isActive      Boolean   @default(true) // აქტიურია თუ არა
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   orders    Order[]
   carts     Cart[]
@@ -342,9 +348,11 @@ model Cart {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
-  // Delivery city
+  // Delivery
+  deliveryType   String?        // pickup | delivery
   deliveryCityId Int?
-  deliveryCity   DeliveryCity? @relation(fields: [deliveryCityId], references: [id])
+  deliveryCity   DeliveryCity?  @relation(fields: [deliveryCityId], references: [id])
+  deliverySpeed  DeliverySpeed?
   deliveryPrice  Float? // მიტანის ფასი (denormalized for quick access)
   
   items CartItem[]
@@ -395,9 +403,10 @@ model Order {
   country       String? 
   note          String?
 
-  // Delivery city
+  // Delivery
   deliveryCityId Int?
   deliveryCity   DeliveryCity? @relation(fields: [deliveryCityId], references: [id])
+  deliverySpeed  DeliverySpeed?
   deliveryPrice  Float? // მიტანის ფასი (denormalized for order history)
 
   // optional for payment

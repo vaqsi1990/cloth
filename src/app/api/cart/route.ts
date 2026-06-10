@@ -10,6 +10,11 @@ import {
   MAX_CART_ITEM_QUANTITY,
   CART_SINGLE_ITEM_MESSAGE,
 } from '@/lib/cart-limits'
+import {
+  fromPrismaDeliverySpeed,
+  getDeliveryPriceForCity,
+  toPrismaDeliverySpeed,
+} from '@/lib/delivery'
 
 // Cart item validation schema
 const cartItemSchema = z.object({
@@ -25,6 +30,167 @@ const cartItemSchema = z.object({
   rentalEndDate: z.string().optional(),
   rentalDays: z.number().optional()
 })
+
+const cartDeliverySchema = z.object({
+  deliveryType: z.enum(['pickup', 'delivery']),
+  deliveryCityId: z.number().nullable().optional(),
+  deliverySpeed: z.enum(['extra', 'standard']).nullable().optional(),
+})
+
+const cartSelect = {
+  id: true,
+  deliveryType: true,
+  deliveryCityId: true,
+  deliverySpeed: true,
+  deliveryPrice: true,
+  deliveryCity: {
+    select: {
+      id: true,
+      name: true,
+      extraPrice: true,
+      standardPrice: true,
+    },
+  },
+  items: {
+    select: {
+      id: true,
+      productId: true,
+      productName: true,
+      image: true,
+      size: true,
+      price: true,
+      quantity: true,
+      isRental: true,
+      rentalStartDate: true,
+      rentalEndDate: true,
+      rentalDays: true,
+      product: {
+        select: {
+          id: true,
+          name: true,
+          discount: true,
+          discountDays: true,
+          discountStartDate: true,
+          images: {
+            select: {
+              url: true,
+              alt: true,
+            },
+          },
+          rentalPriceTiers: {
+            select: {
+              id: true,
+              minDays: true,
+              pricePerDay: true,
+              productId: true,
+            },
+            orderBy: { minDays: 'asc' as const },
+          },
+          user: {
+            select: {
+              id: true,
+              pickupAddress: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: {
+      createdAt: 'desc' as const,
+    },
+  },
+} as const
+
+function buildCartResponse(cart: {
+  id: number
+  deliveryType: string | null
+  deliveryCityId: number | null
+  deliverySpeed: import('@prisma/client').DeliverySpeed | null
+  deliveryPrice: number | null
+  deliveryCity: {
+    id: number
+    name: string
+    extraPrice: number
+    standardPrice: number
+  } | null
+  items: Array<{
+    id: number
+    productId: number | null
+    productName: string
+    image: string | null
+    size: string | null
+    price: number
+    quantity: number
+    isRental: boolean
+    rentalStartDate: Date | null
+    rentalEndDate: Date | null
+    rentalDays: number | null
+    product: {
+      id: number
+      name: string
+      discount: number | null
+      discountDays: number | null
+      discountStartDate: Date | null
+      images: Array<{ url: string; alt: string | null }>
+      rentalPriceTiers: Array<{
+        id: number
+        minDays: number
+        pricePerDay: number
+        productId: number
+      }>
+      user: { id: string; pickupAddress: string | null } | null
+    } | null
+  }>
+}) {
+  const processedItems = cart.items.map((item) => {
+    const product = item.product ? processExpiredDiscount(item.product) : null
+    const discount = product?.discount && product.discount > 0 ? product.discount : null
+
+    return {
+      id: item.id,
+      productId: item.productId,
+      productName: item.productName,
+      image: item.image || item.product?.images?.[0]?.url,
+      size: item.size,
+      price: item.price,
+      quantity: item.quantity,
+      isRental: item.isRental,
+      rentalStartDate: item.rentalStartDate?.toISOString(),
+      rentalEndDate: item.rentalEndDate?.toISOString(),
+      rentalDays: item.rentalDays,
+      discount,
+      discountDays: product?.discountDays ?? null,
+      discountStartDate: product?.discountStartDate?.toISOString() ?? null,
+      sellerPickupAddress: item.product?.user?.pickupAddress || null,
+    }
+  })
+
+  const itemsTotal = processedItems.reduce((sum, item) => {
+    const itemPrice =
+      item.discount && item.discount > 0 ? item.price - item.discount : item.price
+    return sum + itemPrice * item.quantity
+  }, 0)
+
+  const deliverySpeed = fromPrismaDeliverySpeed(cart.deliverySpeed)
+
+  return {
+    id: cart.id,
+    items: processedItems,
+    totalItems: cart.items.reduce((sum, item) => sum + item.quantity, 0),
+    totalPrice: itemsTotal,
+    delivery: {
+      type: (cart.deliveryType as 'pickup' | 'delivery' | null) || 'pickup',
+      cityId: cart.deliveryCityId,
+      cityName: cart.deliveryCity?.name || null,
+      speed: deliverySpeed,
+      price: cart.deliveryPrice || 0,
+    },
+    totalWithDelivery:
+      cart.deliveryType === 'delivery' && cart.deliveryPrice
+        ? itemsTotal + cart.deliveryPrice
+        : itemsTotal,
+  }
+}
 
 // GET - Fetch user's cart
 export async function GET(request: NextRequest) {
@@ -46,148 +212,22 @@ export async function GET(request: NextRequest) {
         swr: 60, // Stale-while-revalidating for 60 seconds
         ttl: 60, // Cache results for 60 seconds
       },
-      select: {
-        id: true,
-        items: {
-          select: {
-            id: true,
-            productId: true,
-            productName: true,
-            image: true,
-            size: true,
-            price: true,
-            quantity: true,
-            isRental: true,
-            rentalStartDate: true,
-            rentalEndDate: true,
-            rentalDays: true,
-            product: {
-              select: {
-                id: true,
-                name: true,
-                discount: true,
-                discountDays: true,
-                discountStartDate: true,
-                images: {
-                  select: {
-                    url: true,
-                    alt: true
-                  }
-                },
-                rentalPriceTiers: {
-                  select: {
-                    id: true,
-                    minDays: true,
-                    pricePerDay: true,
-                    productId: true
-                  },
-                  orderBy: { minDays: 'asc' }
-                },
-                user: {
-                  select: {
-                    id: true,
-                    pickupAddress: true
-                  }
-                }
-              }
-            }
-          },
-          orderBy: {
-            createdAt: 'desc'
-          }
-        }
-      }
+      select: cartSelect,
     })
 
     if (!cart) {
-      // Create new cart
       cart = await prisma.cart.create({
         data: {
-          userId: session.user.id
+          userId: session.user.id,
+          deliveryType: 'pickup',
         },
-        select: {
-          id: true,
-          items: {
-            select: {
-              id: true,
-              productId: true,
-              productName: true,
-              image: true,
-              size: true,
-              price: true,
-              quantity: true,
-              isRental: true,
-              rentalStartDate: true,
-              rentalEndDate: true,
-              rentalDays: true,
-              product: {
-                select: {
-                  id: true,
-                  name: true,
-                  discount: true,
-                  discountDays: true,
-                  discountStartDate: true,
-                  images: {
-                    select: {
-                      url: true,
-                      alt: true
-                    }
-                  },
-                  user: {
-                    select: {
-                      id: true,
-                      pickupAddress: true
-                    }
-                  }
-                }
-              }
-            },
-            orderBy: {
-              createdAt: 'desc'
-            }
-          }
-        }
+        select: cartSelect,
       })
     }
 
-    // Process items and check for expired discounts
-    const processedItems = cart.items.map(item => {
-      const product = item.product ? processExpiredDiscount(item.product) : null
-      const discount = product?.discount && product.discount > 0 ? product.discount : null
-      const finalPrice = discount ? (item.price - discount) : item.price
-      
-      return {
-        id: item.id,
-        productId: item.productId,
-        productName: item.productName,
-        image: item.image || item.product?.images?.[0]?.url,
-        size: item.size,
-        price: item.price,
-        quantity: item.quantity,
-        isRental: item.isRental,
-        rentalStartDate: item.rentalStartDate?.toISOString(),
-        rentalEndDate: item.rentalEndDate?.toISOString(),
-        rentalDays: item.rentalDays,
-        discount: discount,
-        discountDays: product?.discountDays ?? null,
-        discountStartDate: product?.discountStartDate?.toISOString() ?? null,
-        sellerPickupAddress: item.product?.user?.pickupAddress || null
-      }
-    })
-
     return NextResponse.json({
       success: true,
-      cart: {
-        id: cart.id,
-        items: processedItems,
-        totalItems: cart.items.reduce((sum, item) => sum + item.quantity, 0),
-        totalPrice: processedItems.reduce((sum, item) => {
-          const itemPrice = item.discount && item.discount > 0 
-            ? (item.price - item.discount) 
-            : item.price
-          return sum + (itemPrice * item.quantity)
-        }, 0)
-      }
+      cart: buildCartResponse(cart),
     })
 
   } catch (error) {
@@ -325,6 +365,123 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: false,
       message: 'Error adding to cart'
+    }, { status: 500 })
+  }
+}
+
+// PATCH - Update cart delivery settings
+export async function PATCH(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+
+    if (!session?.user?.id) {
+      return NextResponse.json({
+        success: false,
+        message: 'Authentication required',
+      }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const data = cartDeliverySchema.parse(body)
+
+    let cart = await prisma.cart.findUnique({
+      where: { userId: session.user.id },
+      select: { id: true },
+    })
+
+    if (!cart) {
+      cart = await prisma.cart.create({
+        data: {
+          userId: session.user.id,
+          deliveryType: 'pickup',
+        },
+        select: { id: true },
+      })
+    }
+
+    if (data.deliveryType === 'pickup') {
+      const updatedCart = await prisma.cart.update({
+        where: { id: cart.id },
+        data: {
+          deliveryType: 'pickup',
+          deliveryCityId: null,
+          deliverySpeed: null,
+          deliveryPrice: null,
+        },
+        select: cartSelect,
+      })
+
+      return NextResponse.json({
+        success: true,
+        message: 'მიღების ტიპი განახლდა',
+        cart: buildCartResponse(updatedCart),
+      })
+    }
+
+    if (!data.deliveryCityId) {
+      return NextResponse.json({
+        success: false,
+        message: 'აირჩიეთ მიტანის ქალაქი',
+      }, { status: 400 })
+    }
+
+    if (!data.deliverySpeed) {
+      return NextResponse.json({
+        success: false,
+        message: 'აირჩიეთ მიტანის ტიპი (ექსტრა ან სტანდარტული)',
+      }, { status: 400 })
+    }
+
+    const city = await prisma.deliveryCity.findFirst({
+      where: {
+        id: data.deliveryCityId,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        extraPrice: true,
+        standardPrice: true,
+      },
+    })
+
+    if (!city) {
+      return NextResponse.json({
+        success: false,
+        message: 'მიტანის ქალაქი ვერ მოიძებნა',
+      }, { status: 400 })
+    }
+
+    const deliveryPrice = getDeliveryPriceForCity(city, data.deliverySpeed)
+
+    const updatedCart = await prisma.cart.update({
+      where: { id: cart.id },
+      data: {
+        deliveryType: 'delivery',
+        deliveryCityId: city.id,
+        deliverySpeed: toPrismaDeliverySpeed(data.deliverySpeed),
+        deliveryPrice,
+      },
+      select: cartSelect,
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: 'მიტანის პარამეტრები განახლდა',
+      cart: buildCartResponse(updatedCart),
+    })
+  } catch (error) {
+    console.error('Error updating cart delivery:', error)
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({
+        success: false,
+        message: 'Invalid data',
+        errors: error.issues,
+      }, { status: 400 })
+    }
+    return NextResponse.json({
+      success: false,
+      message: 'Error updating cart delivery',
     }, { status: 500 })
   }
 }

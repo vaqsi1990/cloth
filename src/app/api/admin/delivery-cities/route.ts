@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, price, isActive } = body
+    const { name, extraPrice, standardPrice, isActive } = body
 
     // Validation
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
@@ -63,9 +63,26 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (price === undefined || price === null || typeof price !== 'number' || price < 0) {
+    if (
+      extraPrice === undefined ||
+      extraPrice === null ||
+      typeof extraPrice !== 'number' ||
+      extraPrice < 0
+    ) {
       return NextResponse.json(
-        { success: false, error: 'მიტანის ფასი აუცილებელია და უნდა იყოს დადებითი რიცხვი' },
+        { success: false, error: 'ექსტრა მიტანის ფასი აუცილებელია და უნდა იყოს დადებითი რიცხვი' },
+        { status: 400 }
+      )
+    }
+
+    if (
+      standardPrice === undefined ||
+      standardPrice === null ||
+      typeof standardPrice !== 'number' ||
+      standardPrice < 0
+    ) {
+      return NextResponse.json(
+        { success: false, error: 'სტანდარტული მიტანის ფასი აუცილებელია და უნდა იყოს დადებითი რიცხვი' },
         { status: 400 }
       )
     }
@@ -86,7 +103,8 @@ export async function POST(request: NextRequest) {
     const newCity = await prisma.deliveryCity.create({
       data: {
         name: name.trim(),
-        price: price,
+        extraPrice,
+        standardPrice,
         isActive: isActive !== undefined ? isActive : true
       }
     })
@@ -119,7 +137,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { id, name, price, isActive } = body
+    const { id, name, extraPrice, standardPrice, isActive } = body
 
     // Validation
     if (!id || typeof id !== 'number') {
@@ -144,7 +162,8 @@ export async function PUT(request: NextRequest) {
     // Prepare update data
     const updateData: {
       name?: string
-      price?: number
+      extraPrice?: number
+      standardPrice?: number
       isActive?: boolean
     } = {}
 
@@ -171,14 +190,24 @@ export async function PUT(request: NextRequest) {
       updateData.name = name.trim()
     }
 
-    if (price !== undefined) {
-      if (typeof price !== 'number' || price < 0) {
+    if (extraPrice !== undefined) {
+      if (typeof extraPrice !== 'number' || extraPrice < 0) {
         return NextResponse.json(
-          { success: false, error: 'მიტანის ფასი უნდა იყოს დადებითი რიცხვი' },
+          { success: false, error: 'ექსტრა მიტანის ფასი უნდა იყოს დადებითი რიცხვი' },
           { status: 400 }
         )
       }
-      updateData.price = price
+      updateData.extraPrice = extraPrice
+    }
+
+    if (standardPrice !== undefined) {
+      if (typeof standardPrice !== 'number' || standardPrice < 0) {
+        return NextResponse.json(
+          { success: false, error: 'სტანდარტული მიტანის ფასი უნდა იყოს დადებითი რიცხვი' },
+          { status: 400 }
+        )
+      }
+      updateData.standardPrice = standardPrice
     }
 
     if (isActive !== undefined) {

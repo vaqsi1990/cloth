@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
+import { DeliverySpeedOption, DeliveryType } from '@/lib/delivery'
 
 interface CartItem {
   id: number
@@ -21,11 +22,21 @@ interface CartItem {
   sellerPickupAddress?: string | null
 }
 
+interface CartDelivery {
+  type: DeliveryType
+  cityId: number | null
+  cityName: string | null
+  speed: DeliverySpeedOption | null
+  price: number
+}
+
 interface Cart {
   id: number
   items: CartItem[]
   totalItems: number
   totalPrice: number
+  delivery: CartDelivery
+  totalWithDelivery: number
 }
 
 export const useCart = () => {
@@ -145,6 +156,42 @@ export const useCart = () => {
     }
   }
 
+  const updateCartDelivery = async (delivery: {
+    deliveryType: DeliveryType
+    deliveryCityId?: number | null
+    deliverySpeed?: DeliverySpeedOption | null
+  }) => {
+    if (!session?.user?.id) {
+      return { success: false, message: 'ავტორიზაცია საჭიროა' }
+    }
+
+    try {
+      const response = await fetch('/api/cart', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(delivery),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setCart(data.cart)
+        localStorage.setItem('cart-updated', Date.now().toString())
+        return { success: true as const }
+      }
+
+      return {
+        success: false as const,
+        message: data.message || 'შეცდომა მიტანის განახლებისას',
+      }
+    } catch (error) {
+      console.error('Error updating cart delivery:', error)
+      return { success: false as const, message: 'შეცდომა მიტანის განახლებისას' }
+    }
+  }
+
   // Clear entire cart
   const clearCart = async () => {
     if (!session?.user?.id) return
@@ -179,6 +226,14 @@ export const useCart = () => {
     return cart?.totalPrice || 0
   }
 
+  const getDeliveryPrice = () => {
+    return cart?.delivery?.price || 0
+  }
+
+  const getTotalWithDelivery = () => {
+    return cart?.totalWithDelivery ?? getTotalPrice()
+  }
+
   // Get cart items
   const getCartItems = () => {
     return cart?.items || []
@@ -208,6 +263,9 @@ export const useCart = () => {
     clearCart,
     getTotalItems,
     getTotalPrice,
+    getDeliveryPrice,
+    getTotalWithDelivery,
+    updateCartDelivery,
     loading,
     initialized,
     fetchCart

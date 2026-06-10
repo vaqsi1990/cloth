@@ -9,6 +9,7 @@ import { computeUserCartSubtotal } from '@/lib/cart-totals'
 import { validateVoucher } from '@/lib/voucher'
 import { z } from 'zod'
 import { MAX_CART_ITEMS, MAX_CART_ITEM_QUANTITY, CART_SINGLE_ITEM_MESSAGE } from '@/lib/cart-limits'
+import { toPrismaDeliverySpeed } from '@/lib/delivery'
 
 interface CartItemInput {
   productId: string | number
@@ -97,6 +98,7 @@ const orderDataSchema = z.object({
     deliveryOption: z.string().optional(),
     deliveryType: z.enum(['pickup', 'delivery']).optional(),
     deliveryCityId: z.union([z.string(), z.number()]).nullable().optional(),
+    deliverySpeed: z.enum(['extra', 'standard']).nullable().optional(),
     deliveryPrice: z.union([z.string(), z.number()]).optional(),
     paymentMethod: z.enum(['google_pay', 'card', 'apple_pay']).optional(),
     googlePayToken: z.string().optional(),
@@ -383,6 +385,9 @@ export async function POST(req: NextRequest) {
         address: orderData.deliveryOption || "",
         city: orderData.deliveryType === 'pickup' ? 'თბილისი' : (deliveryCityName || null),
         deliveryCityId: deliveryCityId,
+        deliverySpeed: orderData.deliverySpeed
+          ? toPrismaDeliverySpeed(orderData.deliverySpeed)
+          : null,
         deliveryPrice: deliveryPrice,
         paymentMethod: "BOG Card Payment",
         total,

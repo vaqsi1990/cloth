@@ -13,7 +13,8 @@ export async function GET(request: NextRequest) {
       select: {
         id: true,
         name: true,
-        price: true,
+        extraPrice: true,
+        standardPrice: true,
         isActive: true,
       },
     })
@@ -23,7 +24,8 @@ export async function GET(request: NextRequest) {
         success: true,
         cities: cities.map((city) => ({
           ...city,
-          price: Number(city.price),
+          extraPrice: Number(city.extraPrice),
+          standardPrice: Number(city.standardPrice),
         })),
       },
       {

@@ -1,26 +1,120 @@
 "use client"
-import React from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import Image from '@/component/AppImage'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ShoppingCart, Trash2, ArrowLeft } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { formatDate } from '@/utils/dateUtils'
-import AnimatedDotsLoader from '@/component/AnimatedDotsLoader'
+import DeliveryOptions, { DeliveryCityOption } from '@/components/DeliveryOptions'
+import { DeliverySpeedOption, DeliveryType, getDeliverySpeedLabel } from '@/lib/delivery'
+import { showToast } from '@/utils/toast'
+
+const defaultPickupAddress = 'ლეო დავითაშვილის ქუჩა 120, 0190 თბილისი, საქართველო'
+
 const CartPage = () => {
     const router = useRouter()
-    const { cartItems, removeFromCart, getTotalPrice, clearCart, loading, initialized } = useCart()
+    const {
+        cart,
+        cartItems,
+        removeFromCart,
+        getTotalPrice,
+        getDeliveryPrice,
+        getTotalWithDelivery,
+        updateCartDelivery,
+        clearCart,
+        loading,
+        initialized,
+    } = useCart()
+
+    const [deliveryCities, setDeliveryCities] = useState<DeliveryCityOption[]>([])
+    const [loadingCities, setLoadingCities] = useState(false)
+    const [deliveryType, setDeliveryType] = useState<DeliveryType>('pickup')
+    const [selectedCityId, setSelectedCityId] = useState<number | null>(null)
+    const [deliverySpeed, setDeliverySpeed] = useState<DeliverySpeedOption | null>(null)
+    const [savingDelivery, setSavingDelivery] = useState(false)
+
+    const sellerPickupAddress =
+        cartItems
+            .map((item) => item.sellerPickupAddress)
+            .find((address) => address && address.trim() !== '') || null
+    const pickupAddress = sellerPickupAddress || defaultPickupAddress
+
+    const fetchDeliveryCities = useCallback(async () => {
+        try {
+            setLoadingCities(true)
+            const response = await fetch('/api/delivery-cities', { cache: 'no-store' })
+            const data = await response.json()
+            if (data.success) {
+                setDeliveryCities(data.cities || [])
+            }
+        } catch (error) {
+            console.error('Error fetching delivery cities:', error)
+        } finally {
+            setLoadingCities(false)
+        }
+    }, [])
+
+    useEffect(() => {
+        fetchDeliveryCities()
+    }, [fetchDeliveryCities])
+
+    useEffect(() => {
+        if (!cart?.delivery) return
+        setDeliveryType(cart.delivery.type)
+        setSelectedCityId(cart.delivery.cityId)
+        setDeliverySpeed(cart.delivery.speed)
+    }, [cart?.delivery])
+
+    const persistDelivery = async (
+        nextType: DeliveryType,
+        nextCityId: number | null,
+        nextSpeed: DeliverySpeedOption | null,
+    ) => {
+        setSavingDelivery(true)
+        const result = await updateCartDelivery({
+            deliveryType: nextType,
+            deliveryCityId: nextType === 'delivery' ? nextCityId : null,
+            deliverySpeed: nextType === 'delivery' ? nextSpeed : null,
+        })
+        setSavingDelivery(false)
+
+        if (!result.success) {
+            showToast(result.message, 'error')
+        }
+    }
+
+    const handleDeliveryTypeChange = async (type: DeliveryType) => {
+        setDeliveryType(type)
+        if (type === 'pickup') {
+            setSelectedCityId(null)
+            setDeliverySpeed(null)
+            await persistDelivery('pickup', null, null)
+            return
+        }
+    }
+
+    const handleCityChange = async (cityId: number | null) => {
+        setSelectedCityId(cityId)
+        if (!cityId) {
+            setDeliverySpeed(null)
+            return
+        }
+        const nextSpeed = deliverySpeed || 'standard'
+        setDeliverySpeed(nextSpeed)
+        await persistDelivery('delivery', cityId, nextSpeed)
+    }
+
+    const handleSpeedChange = async (speed: DeliverySpeedOption) => {
+        setDeliverySpeed(speed)
+        if (selectedCityId) {
+            await persistDelivery('delivery', selectedCityId, speed)
+        }
+    }
 
     const handleRemoveItem = async (id: number) => {
         await removeFromCart(id)
     }
-    // if (loading) {
-    //     return (
-    //         <div className="min-h-screen  flex items-center justify-center px-4">
-    //             <AnimatedDotsLoader />
-    //         </div>
-    //     )
-    // }
 
     if (initialized && !loading && cartItems.length === 0) {
         return (
@@ -50,7 +144,9 @@ const CartPage = () => {
         )
     }
 
-
+    const deliveryReady =
+        deliveryType === 'pickup' ||
+        (deliveryType === 'delivery' && selectedCityId && deliverySpeed)
 
     return (
         <div className="min-h-screen  py-16">
@@ -68,8 +164,7 @@ const CartPage = () => {
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        {/* Cart Items */}
-                        <div className="lg:col-span-2">
+                        <div className="lg:col-span-2 space-y-6">
                             <div className="bg-white rounded-2xl shadow-sm p-6">
                                 <h2 className="text-xl font-semibold text-black mb-6">
                                     ნივთები ({cartItems.length})
@@ -78,7 +173,6 @@ const CartPage = () => {
                                 <div className="space-y-6">
                                     {cartItems.map((item) => (
                                             <div key={item.id} className="flex flex-col sm:flex-row text-center md:text-start items-center md:items-start gap-4 p-4 border border-gray-200 rounded-lg">
-                                            {/* Product Image */}
                                             <div className="relative w-full md:w-24 h-62 md:h-32 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                                                 <Image
                                                     src={item.image || '/placeholder.jpg'}
@@ -87,7 +181,6 @@ const CartPage = () => {
                                                     className="object-cover"
                                                     sizes="80px"
                                                 />
-                                                {/* Rental Badge */}
                                                 {item.isRental && (
                                                     <div className="absolute top-1 right-1 bg-blue-500 text-white text-xs px-1 py-0.5 rounded">
                                                         ქირა
@@ -95,7 +188,6 @@ const CartPage = () => {
                                                 )}
                                             </div>
 
-                                            {/* Product Info */}
                                             <div className="flex-1 min-w-0">
                                                 <h3 className="text-lg font-medium text-black truncate">
                                                     {item.productName}
@@ -104,7 +196,6 @@ const CartPage = () => {
                                                     ზომა: <span className="font-medium">{item.size}</span>
                                                 </p>
 
-                                                {/* Rental Information */}
                                                 {item.isRental && item.rentalStartDate && item.rentalEndDate && (
                                                     <div className="md:text-[18px] text-[16px] text-blue-600 mb-1">
                                                         <p>ქირაობის პერიოდი: {formatDate(item.rentalStartDate)} - {formatDate(item.rentalEndDate)}</p>
@@ -141,7 +232,6 @@ const CartPage = () => {
                                                 <div className="font-medium text-black">1</div>
                                             </div>
 
-                                            {/* Remove Button */}
                                             <button
                                                 onClick={() => handleRemoveItem(item.id)}
                                                 className="p-2 text-black mt-0  md:mt-10 hover:text-red-600 transition-colors"
@@ -152,35 +242,65 @@ const CartPage = () => {
                                     ))}
                                 </div>
                             </div>
+
+                            <div className="bg-white rounded-2xl shadow-sm p-6">
+                                <h2 className="text-xl font-semibold text-black mb-6">მიღება / მიტანა</h2>
+                                <DeliveryOptions
+                                    deliveryType={deliveryType}
+                                    onDeliveryTypeChange={handleDeliveryTypeChange}
+                                    deliveryCities={deliveryCities}
+                                    loadingCities={loadingCities || savingDelivery}
+                                    selectedCityId={selectedCityId}
+                                    onCityChange={handleCityChange}
+                                    deliverySpeed={deliverySpeed}
+                                    onSpeedChange={handleSpeedChange}
+                                    pickupAddress={pickupAddress}
+                                    compact
+                                />
+                            </div>
                         </div>
 
-                        {/* Order Summary */}
                         <div className="lg:col-span-1">
                             <div className="bg-white rounded-2xl shadow-sm p-6 lg:sticky lg:top-8">
                                 <h2 className="text-xl font-semibold text-black mb-6">შეკვეთის შეჯამება</h2>
 
                                 <div className="space-y-4 mb-6">
                                     <div className="flex justify-between text-black md:text-[18px] text-[16px]">
-                                        <span>ყიდვის ნივთები:</span>
-                                        <span className="font-medium">{cartItems.filter(item => !item.isRental).reduce((total, item) => total + item.quantity, 0)}</span>
+                                        <span>პროდუქტები:</span>
+                                        <span className="font-medium">₾{getTotalPrice().toFixed(2)}</span>
                                     </div>
-                                    <div className="flex justify-between text-black md:text-[18px] text-[16px]">
-                                        <span>ქირაობის ნივთები:</span>
-                                        <span className="font-medium">{cartItems.filter(item => item.isRental).length}</span>
-                                    </div>
-                                    <div className="flex justify-between text-black md:text-[18px] text-[16px]">
-                                        <span>ჯამური ღირებულება:</span>
-                                        <span className="font-bold text-lg">₾{getTotalPrice().toFixed(2)}</span>
+                                    {deliveryType === 'delivery' && getDeliveryPrice() > 0 && (
+                                        <div className="flex justify-between text-black md:text-[18px] text-[16px]">
+                                            <span>
+                                                მიტანა
+                                                {deliverySpeed ? ` (${getDeliverySpeedLabel(deliverySpeed)})` : ''}
+                                            </span>
+                                            <span className="font-medium">₾{getDeliveryPrice().toFixed(2)}</span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between text-black md:text-[18px] text-[16px] border-t pt-4">
+                                        <span className="font-semibold">ჯამი:</span>
+                                        <span className="font-bold text-lg">₾{getTotalWithDelivery().toFixed(2)}</span>
                                     </div>
                                 </div>
 
                                 <div className="space-y-4">
-                                    <Link
-                                        href="/checkout"
-                                        className="flex md:text-[18px] text-[16px] font-bold justify-center md:mt-14 items-center w-full mx-auto mt-4 bg-[#1B3729] text-white px-8 py-4 rounded-lg font-bold uppercase tracking-wide  transition-colors duration-300"
-                                    >
-                                        შეკვეთის გაფორმება
-                                    </Link>
+                                    {deliveryReady ? (
+                                        <Link
+                                            href="/checkout"
+                                            className="flex md:text-[18px] text-[16px] font-bold justify-center md:mt-14 items-center w-full mx-auto mt-4 bg-[#1B3729] text-white px-8 py-4 rounded-lg font-bold uppercase tracking-wide transition-colors duration-300"
+                                        >
+                                            შეკვეთის გაფორმება
+                                        </Link>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            disabled
+                                            className="flex md:text-[18px] text-[16px] font-bold justify-center md:mt-14 items-center w-full mx-auto mt-4 bg-gray-300 text-gray-600 px-8 py-4 rounded-lg font-bold uppercase tracking-wide cursor-not-allowed"
+                                        >
+                                            აირჩიეთ მიტანის ტიპი
+                                        </button>
+                                    )}
 
                                     <Link
                                         href="/shop"
@@ -189,9 +309,6 @@ const CartPage = () => {
                                         მაღაზიაში დაბრუნება
                                     </Link>
                                 </div>
-
-                                {/* Shipping Info */}
-                            
                             </div>
                         </div>
                     </div>
