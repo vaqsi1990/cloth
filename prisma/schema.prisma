@@ -237,6 +237,7 @@ model Product {
   gender        Gender           @default(UNISEX)
   color         String?
   location      String?
+  allowsPickup  Boolean          @default(false)
   sizeSystem    SizeSystem?
   size          String?
   isNew         Boolean          @default(false)

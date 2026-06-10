@@ -55,6 +55,7 @@ export interface Product {
   gender: 'MEN' | 'WOMEN' | 'CHILDREN' | 'UNISEX'
   color?: string
   location?: string
+  allowsPickup?: boolean
   sizeSystem?: 'EU' | 'US' | 'UK' | 'CN'
   size?: string
   isNew: boolean

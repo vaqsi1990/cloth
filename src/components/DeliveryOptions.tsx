@@ -27,6 +27,7 @@ interface DeliveryOptionsProps {
   deliverySpeed: DeliverySpeedOption | null
   onSpeedChange: (speed: DeliverySpeedOption) => void
   pickupAddress: string
+  pickupAvailable?: boolean
   cityError?: string
   speedError?: string
   compact?: boolean
@@ -42,6 +43,7 @@ export default function DeliveryOptions({
   deliverySpeed,
   onSpeedChange,
   pickupAddress,
+  pickupAvailable = true,
   cityError,
   speedError,
   compact = false,
@@ -53,47 +55,59 @@ export default function DeliveryOptions({
 
   return (
     <div className="space-y-4">
-      <div>
-        <label className={labelClass}>მიღების ტიპი</label>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <label
-            className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-colors ${
-              deliveryType === 'pickup'
-                ? 'border-[#1B3729] bg-[#1B3729]/5'
-                : 'border-gray-300 hover:border-gray-400'
-            }`}
-          >
-            <input
-              type="radio"
-              name="deliveryType"
-              checked={deliveryType === 'pickup'}
-              onChange={() => onDeliveryTypeChange('pickup')}
-              className="sr-only"
-            />
-            <Store className="w-5 h-5 text-black flex-shrink-0" />
-            <span className="text-black font-medium">ადგილზე</span>
-          </label>
-          <label
-            className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-colors ${
-              deliveryType === 'delivery'
-                ? 'border-[#1B3729] bg-[#1B3729]/5'
-                : 'border-gray-300 hover:border-gray-400'
-            }`}
-          >
-            <input
-              type="radio"
-              name="deliveryType"
-              checked={deliveryType === 'delivery'}
-              onChange={() => onDeliveryTypeChange('delivery')}
-              className="sr-only"
-            />
+      {pickupAvailable ? (
+        <div>
+          <label className={labelClass}>მიღების ტიპი</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label
+              className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-colors ${
+                deliveryType === 'pickup'
+                  ? 'border-[#1B3729] bg-[#1B3729]/5'
+                  : 'border-gray-300 hover:border-gray-400'
+              }`}
+            >
+              <input
+                type="radio"
+                name="deliveryType"
+                checked={deliveryType === 'pickup'}
+                onChange={() => onDeliveryTypeChange('pickup')}
+                className="sr-only"
+              />
+              <Store className="w-5 h-5 text-black flex-shrink-0" />
+              <span className="text-black font-medium">ადგილზე</span>
+            </label>
+            <label
+              className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-colors ${
+                deliveryType === 'delivery'
+                  ? 'border-[#1B3729] bg-[#1B3729]/5'
+                  : 'border-gray-300 hover:border-gray-400'
+              }`}
+            >
+              <input
+                type="radio"
+                name="deliveryType"
+                checked={deliveryType === 'delivery'}
+                onChange={() => onDeliveryTypeChange('delivery')}
+                className="sr-only"
+              />
+              <Truck className="w-5 h-5 text-black flex-shrink-0" />
+              <span className="text-black font-medium">მიტანით</span>
+            </label>
+          </div>
+        </div>
+      ) : (
+        <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+          <div className="flex items-center gap-3">
             <Truck className="w-5 h-5 text-black flex-shrink-0" />
             <span className="text-black font-medium">მიტანით</span>
-          </label>
+          </div>
+          <p className="text-sm text-gray-600 mt-2">
+            ამ პროდუქტისთვის ხელმისაწვდომია მხოლოდ მიტანა.
+          </p>
         </div>
-      </div>
+      )}
 
-      {deliveryType === 'pickup' ? (
+      {deliveryType === 'pickup' && pickupAvailable ? (
         <div>
           <label className={labelClass}>
             <MapPin className="w-4 h-4 inline mr-2" />

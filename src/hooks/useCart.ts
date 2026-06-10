@@ -35,6 +35,7 @@ interface Cart {
   items: CartItem[]
   totalItems: number
   totalPrice: number
+  pickupAvailable: boolean
   delivery: CartDelivery
   totalWithDelivery: number
 }

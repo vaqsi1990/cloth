@@ -69,6 +69,7 @@ const CheckoutPage = () => {
       .find((address: string | undefined) => address && address.trim() !== '') || null
     // Use seller's pickup address if available, otherwise use user's, otherwise use default
     const pickupAddress = sellerPickupAddress || userPickupAddress || defaultPickupAddress
+    const pickupAvailable = cart?.pickupAvailable ?? true
 
     const fetchDeliveryCities = useCallback(async () => {
         try {
@@ -116,6 +117,14 @@ const CheckoutPage = () => {
         }
     }, [cart?.delivery])
 
+    useEffect(() => {
+        if (!pickupAvailable && deliveryType === 'pickup') {
+            setDeliveryType('delivery')
+            setSelectedDeliveryCityId(null)
+            setDeliverySpeed(null)
+        }
+    }, [pickupAvailable, deliveryType])
+
     // Pre-fill checkout from authenticated user's profile
     useEffect(() => {
         if (sessionStatus !== 'authenticated' || !session?.user?.id) return
@@ -150,9 +159,10 @@ const CheckoutPage = () => {
         fetchUserProfile()
     }, [session?.user?.id, sessionStatus])
 
+    const effectiveDeliveryType: DeliveryType = pickupAvailable ? deliveryType : 'delivery'
     const selectedDeliveryCity = deliveryCities.find((city) => city.id === selectedDeliveryCityId) ?? null
     const deliveryPrice =
-        deliveryType === 'delivery' && selectedDeliveryCity && deliverySpeed
+        effectiveDeliveryType === 'delivery' && selectedDeliveryCity && deliverySpeed
             ? getDeliveryPriceForCity(selectedDeliveryCity, deliverySpeed)
             : getDeliveryPrice()
 
@@ -167,7 +177,7 @@ const CheckoutPage = () => {
     // Calculate total with delivery and voucher
     const getTotalWithDelivery = () => {
         const baseTotal = Math.max(0, getTotalPrice() - getVoucherDiscount())
-        return deliveryType === 'delivery' && selectedDeliveryCity ? baseTotal + deliveryPrice : baseTotal
+        return effectiveDeliveryType === 'delivery' && selectedDeliveryCity ? baseTotal + deliveryPrice : baseTotal
     }
 
     const validateVoucherCode = async (
@@ -301,7 +311,7 @@ const CheckoutPage = () => {
         }
 
         // Validate delivery-specific fields
-        if (deliveryType === 'delivery') {
+        if (effectiveDeliveryType === 'delivery') {
             if (!selectedDeliveryCityId) {
                 errors.deliveryCity = 'გთხოვთ აირჩიოთ მიტანის ქალაქი'
             }
@@ -311,7 +321,7 @@ const CheckoutPage = () => {
         }
 
         // City and address validation only for delivery
-        if (deliveryType === 'delivery') {
+        if (effectiveDeliveryType === 'delivery') {
             if (!formData.city || !georgianTextRegex.test(formData.city.trim())) {
                 errors.city = 'ქალაქი უნდა შეიცავდეს ქართულ სიმბოლოებს'
             }
@@ -371,7 +381,7 @@ const CheckoutPage = () => {
             const orderId = `order_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`
 
             // Determine delivery address
-            const deliveryAddress = deliveryType === 'pickup' 
+            const deliveryAddress = effectiveDeliveryType === 'pickup' 
                 ? pickupAddress 
                 : `${formData.address}, ${formData.city}`
 
@@ -413,10 +423,10 @@ const CheckoutPage = () => {
                 totalAmount: totalAmount,
                 orderId: orderId,
                 deliveryOption: deliveryAddress,
-                deliveryType: deliveryType,
-                deliveryCityId: deliveryType === 'delivery' ? selectedDeliveryCityId : null,
-                deliverySpeed: deliveryType === 'delivery' ? deliverySpeed : null,
-                deliveryPrice: deliveryType === 'delivery' ? deliveryPrice : 0,
+                deliveryType: effectiveDeliveryType,
+                deliveryCityId: effectiveDeliveryType === 'delivery' ? selectedDeliveryCityId : null,
+                deliverySpeed: effectiveDeliveryType === 'delivery' ? deliverySpeed : null,
+                deliveryPrice: effectiveDeliveryType === 'delivery' ? deliveryPrice : 0,
                 address: {
                     firstName: formData.firstName,
                     lastName: formData.lastName,
@@ -437,7 +447,7 @@ const CheckoutPage = () => {
             // Calculate split payment amounts (9% admin, 91% seller)
             // Note: Delivery fee goes 100% to admin
             const baseAmount = getTotalPrice()
-            const adminAmount = (baseAmount * 0.09) + (deliveryType === 'delivery' ? deliveryPrice : 0)
+            const adminAmount = (baseAmount * 0.09) + (effectiveDeliveryType === 'delivery' ? deliveryPrice : 0)
             const sellerAmount = baseAmount * 0.91
             
             console.log('💰 Split Payment Breakdown:')
@@ -613,6 +623,9 @@ const CheckoutPage = () => {
     }
 
     const handleDeliveryTypeChange = async (type: DeliveryType) => {
+        if (type === 'pickup' && !pickupAvailable) {
+            return
+        }
         setDeliveryType(type)
         if (type === 'pickup') {
             setSelectedDeliveryCityId(null)
@@ -643,7 +656,7 @@ const CheckoutPage = () => {
     }
 
     const hasErrors = Object.keys(fieldErrors).length > 0
-    const requiredFieldsFilled = deliveryType === 'pickup' 
+    const requiredFieldsFilled = effectiveDeliveryType === 'pickup' 
         ? Object.values({
             firstName: formData.firstName.trim(),
             lastName: formData.lastName.trim(),
@@ -756,7 +769,7 @@ const CheckoutPage = () => {
                                 </div>
 
                                 <DeliveryOptions
-                                    deliveryType={deliveryType}
+                                    deliveryType={effectiveDeliveryType}
                                     onDeliveryTypeChange={handleDeliveryTypeChange}
                                     deliveryCities={deliveryCities}
                                     loadingCities={loadingCities || savingDelivery}
@@ -765,11 +778,12 @@ const CheckoutPage = () => {
                                     deliverySpeed={deliverySpeed}
                                     onSpeedChange={handleSpeedChange}
                                     pickupAddress={pickupAddress}
+                                    pickupAvailable={pickupAvailable}
                                     cityError={fieldErrors.deliveryCity}
                                     speedError={fieldErrors.deliverySpeed}
                                 />
 
-                                {deliveryType === 'delivery' && (
+                                {effectiveDeliveryType === 'delivery' && (
                                     <div>
                                         <label className="block md:text-[18px] text-[16px] text-black font-medium mb-2">
                                             <MapPin className="w-4 h-4 inline mr-2" />
@@ -894,7 +908,7 @@ const CheckoutPage = () => {
                                 {paymentMethod === 'card' ? (
                                     <button
                                         type="submit"
-                                        disabled={isProcessing || voucherLoading || hasUnappliedVoucher || hasErrors || !requiredFieldsFilled || (deliveryType === 'delivery' && (!selectedDeliveryCityId || !deliverySpeed))}
+                                        disabled={isProcessing || voucherLoading || hasUnappliedVoucher || hasErrors || !requiredFieldsFilled || (effectiveDeliveryType === 'delivery' && (!selectedDeliveryCityId || !deliverySpeed))}
                                         className="flex cursor-pointer md:text-[18px] text-[16px] font-bold justify-center items-center w-full mx-auto mt-6 bg-[#1B3729] text-white px-8 py-4 rounded-lg font-bold uppercase tracking-wide transition-colors duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed hover:opacity-95"
                                     >
                                         {isProcessing
@@ -908,7 +922,7 @@ const CheckoutPage = () => {
                                             currency="GEL"
                                             onPaymentSuccess={handleGooglePaySuccess}
                                             onError={handleGooglePayError}
-                                            disabled={isProcessing || voucherLoading || hasUnappliedVoucher || hasErrors || !requiredFieldsFilled || (deliveryType === 'delivery' && (!selectedDeliveryCityId || !deliverySpeed))}
+                                            disabled={isProcessing || voucherLoading || hasUnappliedVoucher || hasErrors || !requiredFieldsFilled || (effectiveDeliveryType === 'delivery' && (!selectedDeliveryCityId || !deliverySpeed))}
                                         />
                                     </div>
                                 )}
@@ -1001,7 +1015,7 @@ const CheckoutPage = () => {
                                             <span className="font-medium">-₾{appliedVoucher.discountAmount.toFixed(2)}</span>
                                         </div>
                                     )}
-                                    {deliveryType === 'delivery' && selectedDeliveryCity && deliverySpeed && (
+                                    {effectiveDeliveryType === 'delivery' && selectedDeliveryCity && deliverySpeed && (
                                         <div className="flex justify-between text-black md:text-[18px] text-[16px]">
                                             <span>მიტანა ({getDeliverySpeedLabel(deliverySpeed)}):</span>
                                             <span className="font-medium">₾{deliveryPrice.toFixed(2)}</span>

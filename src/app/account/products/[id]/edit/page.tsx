@@ -36,6 +36,7 @@ const productSchema = z.object({
   gender: z.enum(['MEN', 'WOMEN', 'CHILDREN', 'UNISEX']).default('UNISEX'),
   color: z.string().optional(),
   location: z.string().optional(),
+  allowsPickup: z.boolean().default(false),
   sizeSystem: z.preprocess(
     (val) => (val === '' || val === null ? undefined : val),
     z.enum(['EU', 'US', 'UK', 'CN']).optional()
@@ -106,6 +107,7 @@ const EditProductPage = () => {
     gender: 'UNISEX',
     color: '',
     location: '',
+    allowsPickup: false,
     sizeSystem: undefined,
     size: undefined,
     isNew: false,
@@ -286,6 +288,7 @@ const EditProductPage = () => {
             gender: product.gender || 'UNISEX',
             color: productColor,
             location: product.location || '',
+            allowsPickup: product.allowsPickup ?? false,
             sizeSystem: product.sizeSystem,
             size: product.size || undefined,
             isNew: product.isNew,
@@ -775,6 +778,25 @@ const EditProductPage = () => {
                   <option value="რუსთავი">რუსთავი</option>
                   <option value="ბათუმი">ბათუმი</option>
                 </select>
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.allowsPickup}
+                    onChange={(e) => handleInputChange('allowsPickup', e.target.checked)}
+                    className="mt-1 w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
+                  />
+                  <span>
+                    <span className="block text-[20px] text-black font-medium">
+                      გატანა ადგილიდან
+                    </span>
+                    <span className="block text-sm text-gray-600 mt-1">
+                      თუ მონიშნულია, მყიდველს შეუძლია აირჩიოს ადგილზე მიღება ან მიტანა. თუ არა — მხოლოდ მიტანა.
+                    </span>
+                  </span>
+                </label>
               </div>
               
             </div>

@@ -39,6 +39,7 @@ const CartPage = () => {
             .map((item) => item.sellerPickupAddress)
             .find((address) => address && address.trim() !== '') || null
     const pickupAddress = sellerPickupAddress || defaultPickupAddress
+    const pickupAvailable = cart?.pickupAvailable ?? true
 
     const fetchDeliveryCities = useCallback(async () => {
         try {
@@ -66,6 +67,14 @@ const CartPage = () => {
         setDeliverySpeed(cart.delivery.speed)
     }, [cart?.delivery])
 
+    useEffect(() => {
+        if (!pickupAvailable && deliveryType === 'pickup') {
+            setDeliveryType('delivery')
+            setSelectedCityId(null)
+            setDeliverySpeed(null)
+        }
+    }, [pickupAvailable, deliveryType])
+
     const persistDelivery = async (
         nextType: DeliveryType,
         nextCityId: number | null,
@@ -85,6 +94,9 @@ const CartPage = () => {
     }
 
     const handleDeliveryTypeChange = async (type: DeliveryType) => {
+        if (type === 'pickup' && !pickupAvailable) {
+            return
+        }
         setDeliveryType(type)
         if (type === 'pickup') {
             setSelectedCityId(null)
@@ -144,9 +156,10 @@ const CartPage = () => {
         )
     }
 
+    const effectiveDeliveryType = pickupAvailable ? deliveryType : 'delivery'
     const deliveryReady =
-        deliveryType === 'pickup' ||
-        (deliveryType === 'delivery' && selectedCityId && deliverySpeed)
+        effectiveDeliveryType === 'pickup' ||
+        (effectiveDeliveryType === 'delivery' && selectedCityId && deliverySpeed)
 
     return (
         <div className="min-h-screen  py-16">
@@ -246,7 +259,7 @@ const CartPage = () => {
                             <div className="bg-white rounded-2xl shadow-sm p-6">
                                 <h2 className="text-xl font-semibold text-black mb-6">მიღება / მიტანა</h2>
                                 <DeliveryOptions
-                                    deliveryType={deliveryType}
+                                    deliveryType={effectiveDeliveryType}
                                     onDeliveryTypeChange={handleDeliveryTypeChange}
                                     deliveryCities={deliveryCities}
                                     loadingCities={loadingCities || savingDelivery}
@@ -255,6 +268,7 @@ const CartPage = () => {
                                     deliverySpeed={deliverySpeed}
                                     onSpeedChange={handleSpeedChange}
                                     pickupAddress={pickupAddress}
+                                    pickupAvailable={pickupAvailable}
                                     compact
                                 />
                             </div>
@@ -269,7 +283,7 @@ const CartPage = () => {
                                         <span>პროდუქტები:</span>
                                         <span className="font-medium">₾{getTotalPrice().toFixed(2)}</span>
                                     </div>
-                                    {deliveryType === 'delivery' && getDeliveryPrice() > 0 && (
+                                    {effectiveDeliveryType === 'delivery' && getDeliveryPrice() > 0 && (
                                         <div className="flex justify-between text-black md:text-[18px] text-[16px]">
                                             <span>
                                                 მიტანა

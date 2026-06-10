@@ -68,6 +68,7 @@ const cartSelect = {
         select: {
           id: true,
           name: true,
+          allowsPickup: true,
           discount: true,
           discountDays: true,
           discountStartDate: true,
@@ -101,6 +102,15 @@ const cartSelect = {
   },
 } as const
 
+function cartPickupAvailable(
+  items: Array<{ product: { allowsPickup: boolean } | null }>,
+): boolean {
+  if (items.length === 0) {
+    return true
+  }
+  return items.every((item) => item.product?.allowsPickup === true)
+}
+
 function buildCartResponse(cart: {
   id: number
   deliveryType: string | null
@@ -128,6 +138,7 @@ function buildCartResponse(cart: {
     product: {
       id: number
       name: string
+      allowsPickup: boolean
       discount: number | null
       discountDays: number | null
       discountStartDate: Date | null
@@ -172,24 +183,58 @@ function buildCartResponse(cart: {
   }, 0)
 
   const deliverySpeed = fromPrismaDeliverySpeed(cart.deliverySpeed)
+  const pickupAvailable = cartPickupAvailable(cart.items)
+  const effectiveDeliveryType =
+    !pickupAvailable && cart.deliveryType === 'pickup'
+      ? 'delivery'
+      : ((cart.deliveryType as 'pickup' | 'delivery' | null) || 'pickup')
 
   return {
     id: cart.id,
     items: processedItems,
     totalItems: cart.items.reduce((sum, item) => sum + item.quantity, 0),
     totalPrice: itemsTotal,
+    pickupAvailable,
     delivery: {
-      type: (cart.deliveryType as 'pickup' | 'delivery' | null) || 'pickup',
+      type: effectiveDeliveryType,
       cityId: cart.deliveryCityId,
       cityName: cart.deliveryCity?.name || null,
       speed: deliverySpeed,
       price: cart.deliveryPrice || 0,
     },
     totalWithDelivery:
-      cart.deliveryType === 'delivery' && cart.deliveryPrice
+      effectiveDeliveryType === 'delivery' && cart.deliveryPrice
         ? itemsTotal + cart.deliveryPrice
         : itemsTotal,
   }
+}
+
+async function enforceCartDeliveryRules(cartId: number) {
+  const cart = await prisma.cart.findUnique({
+    where: { id: cartId },
+    select: cartSelect,
+  })
+
+  if (!cart) {
+    return null
+  }
+
+  const pickupAvailable = cartPickupAvailable(cart.items)
+
+  if (!pickupAvailable && cart.deliveryType === 'pickup') {
+    return prisma.cart.update({
+      where: { id: cartId },
+      data: {
+        deliveryType: 'delivery',
+        deliveryCityId: null,
+        deliverySpeed: null,
+        deliveryPrice: null,
+      },
+      select: cartSelect,
+    })
+  }
+
+  return cart
 }
 
 // GET - Fetch user's cart
@@ -225,9 +270,11 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    const normalizedCart = (await enforceCartDeliveryRules(cart.id)) || cart
+
     return NextResponse.json({
       success: true,
-      cart: buildCartResponse(cart),
+      cart: buildCartResponse(normalizedCart),
     })
 
   } catch (error) {
@@ -328,6 +375,11 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
+    const product = await prisma.product.findUnique({
+      where: { id: validatedData.productId },
+      select: { allowsPickup: true },
+    })
+
     await prisma.cartItem.create({
       data: {
         cartId: cart.id,
@@ -343,6 +395,18 @@ export async function POST(request: NextRequest) {
         rentalDays: validatedData.rentalDays
       }
     })
+
+    if (!product?.allowsPickup) {
+      await prisma.cart.update({
+        where: { id: cart.id },
+        data: {
+          deliveryType: 'delivery',
+          deliveryCityId: null,
+          deliverySpeed: null,
+          deliveryPrice: null,
+        },
+      })
+    }
 
     if (approvedInquiryId) {
       await markInquiryBooked(approvedInquiryId)
@@ -400,6 +464,18 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (data.deliveryType === 'pickup') {
+      const currentCart = await prisma.cart.findUnique({
+        where: { id: cart.id },
+        select: cartSelect,
+      })
+
+      if (currentCart && !cartPickupAvailable(currentCart.items)) {
+        return NextResponse.json({
+          success: false,
+          message: 'ამ პროდუქტისთვის ხელმისაწვდომია მხოლოდ მიტანა',
+        }, { status: 400 })
+      }
+
       const updatedCart = await prisma.cart.update({
         where: { id: cart.id },
         data: {

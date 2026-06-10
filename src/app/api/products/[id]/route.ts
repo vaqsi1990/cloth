@@ -31,6 +31,7 @@ const productSchema = z.object({
   gender: z.enum(['MEN', 'WOMEN', 'CHILDREN', 'UNISEX']).default('UNISEX'),
   color: z.string().optional(),
   location: z.string().optional(),
+  allowsPickup: z.boolean().default(false),
   sizeSystem: z.preprocess(
     (val) => (val === '' || val === null ? undefined : val),
     z.enum(['EU', 'US', 'UK', 'CN']).optional()
@@ -112,6 +113,7 @@ const buildProductSelect = (includeAdminFields: boolean = false) => {
     stock: true,
     gender: true,
     location: true,
+    allowsPickup: true,
     sizeSystem: true,
     size: true,
     isNew: true,
@@ -381,6 +383,7 @@ export async function PUT(
       gender: validatedData.gender,
       color: validatedData.color,
       location: validatedData.location,
+      allowsPickup: validatedData.allowsPickup,
       sizeSystem: validatedData.sizeSystem,
       size: validatedData.size,
       isNew: validatedData.isNew,
