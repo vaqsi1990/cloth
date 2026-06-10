@@ -1312,6 +1312,12 @@ const ProductPage = () => {
                                         </button>
                                     )}
                                 </div>
+                                {product.sku && (
+                                    <div className="bg-white flex items-center justify-between p-6 ">
+                                        <p className="text-black md:text-[18px] text-[16px] uppercase tracking-wide">პროდუქტის საიდენტიფიკაციო </p>
+                                        <p className="text-black md:text-[18px] text-[16px]">{product.sku}</p>
+                                    </div>
+                                )}
                             </div>
                             {/* Title */}
                             <div className="bg-white  p-6 s">
