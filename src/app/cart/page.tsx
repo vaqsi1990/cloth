@@ -1,128 +1,22 @@
 "use client"
-import React, { useCallback, useEffect, useState } from 'react'
+import React from 'react'
 import Image from '@/component/AppImage'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ShoppingCart, Trash2, ArrowLeft } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import { formatDate } from '@/utils/dateUtils'
-import DeliveryOptions, { DeliveryCityOption } from '@/components/DeliveryOptions'
-import { DeliverySpeedOption, DeliveryType, getDeliverySpeedLabel } from '@/lib/delivery'
-import { showToast } from '@/utils/toast'
-
-const defaultPickupAddress = 'ლეო დავითაშვილის ქუჩა 120, 0190 თბილისი, საქართველო'
 
 const CartPage = () => {
     const router = useRouter()
     const {
-        cart,
         cartItems,
         removeFromCart,
         getTotalPrice,
-        getDeliveryPrice,
-        getTotalWithDelivery,
-        updateCartDelivery,
         clearCart,
         loading,
         initialized,
     } = useCart()
-
-    const [deliveryCities, setDeliveryCities] = useState<DeliveryCityOption[]>([])
-    const [loadingCities, setLoadingCities] = useState(false)
-    const [deliveryType, setDeliveryType] = useState<DeliveryType>('pickup')
-    const [selectedCityId, setSelectedCityId] = useState<number | null>(null)
-    const [deliverySpeed, setDeliverySpeed] = useState<DeliverySpeedOption | null>(null)
-    const [savingDelivery, setSavingDelivery] = useState(false)
-
-    const sellerPickupAddress =
-        cartItems
-            .map((item) => item.sellerPickupAddress)
-            .find((address) => address && address.trim() !== '') || null
-    const pickupAddress = sellerPickupAddress || defaultPickupAddress
-    const pickupAvailable = cart?.pickupAvailable ?? true
-
-    const fetchDeliveryCities = useCallback(async () => {
-        try {
-            setLoadingCities(true)
-            const response = await fetch('/api/delivery-cities', { cache: 'no-store' })
-            const data = await response.json()
-            if (data.success) {
-                setDeliveryCities(data.cities || [])
-            }
-        } catch (error) {
-            console.error('Error fetching delivery cities:', error)
-        } finally {
-            setLoadingCities(false)
-        }
-    }, [])
-
-    useEffect(() => {
-        fetchDeliveryCities()
-    }, [fetchDeliveryCities])
-
-    useEffect(() => {
-        if (!cart?.delivery) return
-        setDeliveryType(cart.delivery.type)
-        setSelectedCityId(cart.delivery.cityId)
-        setDeliverySpeed(cart.delivery.speed)
-    }, [cart?.delivery])
-
-    useEffect(() => {
-        if (!pickupAvailable && deliveryType === 'pickup') {
-            setDeliveryType('delivery')
-            setSelectedCityId(null)
-            setDeliverySpeed(null)
-        }
-    }, [pickupAvailable, deliveryType])
-
-    const persistDelivery = async (
-        nextType: DeliveryType,
-        nextCityId: number | null,
-        nextSpeed: DeliverySpeedOption | null,
-    ) => {
-        setSavingDelivery(true)
-        const result = await updateCartDelivery({
-            deliveryType: nextType,
-            deliveryCityId: nextType === 'delivery' ? nextCityId : null,
-            deliverySpeed: nextType === 'delivery' ? nextSpeed : null,
-        })
-        setSavingDelivery(false)
-
-        if (!result.success) {
-            showToast(result.message, 'error')
-        }
-    }
-
-    const handleDeliveryTypeChange = async (type: DeliveryType) => {
-        if (type === 'pickup' && !pickupAvailable) {
-            return
-        }
-        setDeliveryType(type)
-        if (type === 'pickup') {
-            setSelectedCityId(null)
-            setDeliverySpeed(null)
-            await persistDelivery('pickup', null, null)
-            return
-        }
-    }
-
-    const handleCityChange = async (cityId: number | null) => {
-        setSelectedCityId(cityId)
-        if (!cityId) {
-            setDeliverySpeed(null)
-            return
-        }
-        const nextSpeed = deliverySpeed || 'standard'
-        setDeliverySpeed(nextSpeed)
-        await persistDelivery('delivery', cityId, nextSpeed)
-    }
-
-    const handleSpeedChange = async (speed: DeliverySpeedOption) => {
-        setDeliverySpeed(speed)
-        if (selectedCityId) {
-            await persistDelivery('delivery', selectedCityId, speed)
-        }
-    }
 
     const handleRemoveItem = async (id: number) => {
         await removeFromCart(id)
@@ -155,11 +49,6 @@ const CartPage = () => {
             </div>
         )
     }
-
-    const effectiveDeliveryType = pickupAvailable ? deliveryType : 'delivery'
-    const deliveryReady =
-        effectiveDeliveryType === 'pickup' ||
-        (effectiveDeliveryType === 'delivery' && selectedCityId && deliverySpeed)
 
     return (
         <div className="min-h-screen  py-16">
@@ -255,23 +144,6 @@ const CartPage = () => {
                                     ))}
                                 </div>
                             </div>
-
-                            <div className="bg-white rounded-2xl shadow-sm p-6">
-                                <h2 className="text-xl font-semibold text-black mb-6">მიღება / მიტანა</h2>
-                                <DeliveryOptions
-                                    deliveryType={effectiveDeliveryType}
-                                    onDeliveryTypeChange={handleDeliveryTypeChange}
-                                    deliveryCities={deliveryCities}
-                                    loadingCities={loadingCities || savingDelivery}
-                                    selectedCityId={selectedCityId}
-                                    onCityChange={handleCityChange}
-                                    deliverySpeed={deliverySpeed}
-                                    onSpeedChange={handleSpeedChange}
-                                    pickupAddress={pickupAddress}
-                                    pickupAvailable={pickupAvailable}
-                                    compact
-                                />
-                            </div>
                         </div>
 
                         <div className="lg:col-span-1">
@@ -279,42 +151,19 @@ const CartPage = () => {
                                 <h2 className="text-xl font-semibold text-black mb-6">შეკვეთის შეჯამება</h2>
 
                                 <div className="space-y-4 mb-6">
-                                    <div className="flex justify-between text-black md:text-[18px] text-[16px]">
-                                        <span>პროდუქტები:</span>
-                                        <span className="font-medium">₾{getTotalPrice().toFixed(2)}</span>
-                                    </div>
-                                    {effectiveDeliveryType === 'delivery' && getDeliveryPrice() > 0 && (
-                                        <div className="flex justify-between text-black md:text-[18px] text-[16px]">
-                                            <span>
-                                                მიტანა
-                                                {deliverySpeed ? ` (${getDeliverySpeedLabel(deliverySpeed)})` : ''}
-                                            </span>
-                                            <span className="font-medium">₾{getDeliveryPrice().toFixed(2)}</span>
-                                        </div>
-                                    )}
                                     <div className="flex justify-between text-black md:text-[18px] text-[16px] border-t pt-4">
                                         <span className="font-semibold">ჯამი:</span>
-                                        <span className="font-bold text-lg">₾{getTotalWithDelivery().toFixed(2)}</span>
+                                        <span className="font-bold text-lg">₾{getTotalPrice().toFixed(2)}</span>
                                     </div>
                                 </div>
 
                                 <div className="space-y-4">
-                                    {deliveryReady ? (
-                                        <Link
-                                            href="/checkout"
-                                            className="flex md:text-[18px] text-[16px] font-bold justify-center md:mt-14 items-center w-full mx-auto mt-4 bg-[#1B3729] text-white px-8 py-4 rounded-lg font-bold uppercase tracking-wide transition-colors duration-300"
-                                        >
-                                            შეკვეთის გაფორმება
-                                        </Link>
-                                    ) : (
-                                        <button
-                                            type="button"
-                                            disabled
-                                            className="flex md:text-[18px] text-[16px] font-bold justify-center md:mt-14 items-center w-full mx-auto mt-4 bg-gray-300 text-gray-600 px-8 py-4 rounded-lg font-bold uppercase tracking-wide cursor-not-allowed"
-                                        >
-                                            აირჩიეთ მიტანის ტიპი
-                                        </button>
-                                    )}
+                                    <Link
+                                        href="/checkout"
+                                        className="flex md:text-[18px] text-[16px] font-bold justify-center md:mt-14 items-center w-full mx-auto mt-4 bg-[#1B3729] text-white px-8 py-4 rounded-lg font-bold uppercase tracking-wide transition-colors duration-300"
+                                    >
+                                        შეკვეთის გაფორმება
+                                    </Link>
 
                                     <Link
                                         href="/shop"
