@@ -102,7 +102,7 @@ export default function VoucherGiftPopup() {
 
           <div className="absolute inset-0">
             <div className="absolute left-1/2 -translate-x-1/2 top-[50%] w-[40%] h-[7.5%] flex items-center justify-center">
-              <p className="text-white text-[clamp(20px,7vw,30px)] font-bold leading-none tracking-tight">
+              <p className="text-black text-[clamp(20px,7vw,30px)] font-bold leading-none tracking-tight">
                 ₾{formatDiscount(voucher.discountAmount)}
               </p>
             </div>
@@ -118,13 +118,13 @@ export default function VoucherGiftPopup() {
             </div>
 
             {voucher.message && (
-              <p className="absolute left-1/2 -translate-x-1/2 top-[64.5%] w-[55%] text-center text-white/85 text-[9px] italic leading-snug">
+              <p className="absolute left-1/2 -translate-x-1/2 bottom-[16%] w-[72%] text-center text-black font-semibold text-[15px] leading-snug">
                 {voucher.message}
               </p>
             )}
 
             {voucher.expiresAt && (
-              <p className="absolute left-1/2 -translate-x-1/2 bottom-[10.5%] w-[65%] text-center text-[#1a2e4a]/55 text-[9px]">
+              <p className="absolute left-1/2 -translate-x-1/2 bottom-[10.5%] w-[65%] text-center text-black/80 font-medium text-[15px]">
                 ვადა:{' '}
                 {new Date(voucher.expiresAt).toLocaleDateString('ka-GE')}
               </p>
