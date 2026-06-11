@@ -3,11 +3,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { MessageCircle, Send, Clock, XCircle, Play, Trash2, Menu, X, ArrowLeft } from 'lucide-react'
+import { MessageCircle, Send, Clock, XCircle, Play, Trash2, ArrowLeft, Bell, BellOff } from 'lucide-react'
 import { formatDateTime } from '@/utils/dateUtils'
 import { showToast } from '@/utils/toast'
 import ChatTypingIndicator from '@/components/ChatTypingIndicator'
 import { useChatTyping } from '@/hooks/useChatTyping'
+import { useSupportChatNotification } from '@/components/SupportChatNotificationProvider'
 
 interface ChatMessage {
   id: number
@@ -50,6 +51,7 @@ const SupportChatPage = () => {
     chatRoomId: selectedChatRoom?.id,
     enabled: !!selectedChatRoom,
   })
+  const { soundEnabled, toggleSound, setActiveChatRoomId, acknowledgeActiveChat } = useSupportChatNotification()
 
  
   const fetchChatRooms = useCallback(async () => {
@@ -141,6 +143,11 @@ const SupportChatPage = () => {
   }, [status, session?.user?.role, fetchChatRooms])
 
   useEffect(() => {
+    setActiveChatRoomId(selectedChatRoom?.id ?? null)
+    return () => setActiveChatRoomId(null)
+  }, [selectedChatRoom?.id, setActiveChatRoomId])
+
+  useEffect(() => {
     if (selectedChatRoom) {
       fetchMessages()
       // On mobile, hide chat list when chat is selected
@@ -209,6 +216,7 @@ const SupportChatPage = () => {
           return [...prev, transformedMessage]
         })
         fetchChatRooms() // Refresh chat rooms list
+        acknowledgeActiveChat()
       } else {
         throw new Error(data.message || 'Failed to send message')
       }
@@ -334,7 +342,7 @@ const SupportChatPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <div className="flex-shrink-0 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 bg-white border-b border-gray-200">
-        <div className="flex items-center space-x-2 sm:space-x-4">
+        <div className="flex items-center space-x-2 sm:space-x-4 w-full">
           <button
             onClick={() => router.push('/support')}
             className="p-1 hover:bg-gray-100 rounded transition-colors flex-shrink-0"
@@ -343,6 +351,15 @@ const SupportChatPage = () => {
             <ArrowLeft className="w-5 h-5 text-black" />
           </button>
           <h1 className="text-base sm:text-lg md:text-[20px] font-bold text-black">Live Chat მართვა</h1>
+          <button
+            type="button"
+            onClick={toggleSound}
+            className="hidden lg:flex ml-auto items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-black hover:bg-gray-50 transition-colors"
+            title={soundEnabled ? 'შემომავალი მესიჯის ხმა ჩართულია' : 'შემომავალი მესიჯის ხმა გამორთულია'}
+          >
+            {soundEnabled ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+            <span>{soundEnabled ? 'ხმა ჩართულია' : 'ხმა გამორთულია'}</span>
+          </button>
         </div>
       </div>
 

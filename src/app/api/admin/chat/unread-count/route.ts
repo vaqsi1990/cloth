@@ -53,11 +53,45 @@ export async function GET(request: NextRequest) {
 
     const totalUnread = pendingCount + activeUnreadCount
 
+    const latestUnreadMessageResult = await prisma.$queryRaw<Array<{
+      latestUnreadMessageId: number | null
+      latestUnreadChatRoomId: number | null
+    }>>`
+      SELECT
+        cm.id::int as "latestUnreadMessageId",
+        cm."chatRoomId"::int as "latestUnreadChatRoomId"
+      FROM "ChatMessage" cm
+      INNER JOIN "ChatRoom" cr ON cm."chatRoomId" = cr.id
+      LEFT JOIN "User" a ON cr."adminId" = a.id
+      WHERE (cr."adminId" IS NULL OR a.role = 'ADMIN')
+        AND cm."isFromAdmin" = false
+        AND (
+          cr.status = 'PENDING'
+          OR (
+            cr.status = 'ACTIVE'
+            AND cm.id = (
+              SELECT id
+              FROM "ChatMessage"
+              WHERE "chatRoomId" = cr.id
+              ORDER BY "createdAt" DESC
+              LIMIT 1
+            )
+          )
+        )
+      ORDER BY cm.id DESC
+      LIMIT 1
+    `
+
+    const latestUnreadMessageId = latestUnreadMessageResult[0]?.latestUnreadMessageId ?? null
+    const latestUnreadChatRoomId = latestUnreadMessageResult[0]?.latestUnreadChatRoomId ?? null
+
     return NextResponse.json({
       success: true,
       unreadCount: totalUnread,
       pendingCount,
-      activeUnreadCount
+      activeUnreadCount,
+      latestUnreadMessageId,
+      latestUnreadChatRoomId,
     })
 
   } catch (error) {

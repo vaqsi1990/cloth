@@ -8,6 +8,7 @@ import Footer from "@/component/Footer";
 import AuthProvider from "@/components/AuthProvider";
 import { authOptions } from "@/lib/auth";
 import ChatProvider from "@/components/ChatProvider";
+import SupportChatNotificationProvider from "@/components/SupportChatNotificationProvider";
 import ToastProvider from "@/components/ToastProvider";
 import ScrollRestorer from "@/components/ScrollRestorer";
 import CookieConsent from "@/components/CookieConsent";
@@ -116,6 +117,7 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <AuthProvider session={session}>
+          <SupportChatNotificationProvider>
           <ChatProvider>
             <ToastProvider />
             <VoucherGiftPopup />
@@ -129,6 +131,7 @@ export default async function RootLayout({
             <Footer />
             <CookieConsent />
           </ChatProvider>
+          </SupportChatNotificationProvider>
         </AuthProvider>
       </body>
     </html>

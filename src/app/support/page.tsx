@@ -9,12 +9,15 @@ import {
   ShoppingCart,
   MessageCircle,
   Package,
+  Bell,
+  BellOff,
 } from 'lucide-react'
+import { useSupportChatNotification } from '@/components/SupportChatNotificationProvider'
 
 const SupportDashboard = () => {
   const { data: session, status } = useSession()
   const router = useRouter()
-  const [unreadChatCount, setUnreadChatCount] = useState<number>(0)
+  const { unreadCount: unreadChatCount, soundEnabled, toggleSound } = useSupportChatNotification()
 
   // Redirect unauthenticated users
   useEffect(() => {
@@ -23,36 +26,6 @@ const SupportDashboard = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status])
-
-  // Fetch unread chat count
-  useEffect(() => {
-    if (status === 'authenticated' && session?.user?.role === 'SUPPORT') {
-      const fetchUnreadCount = async () => {
-        try {
-          const response = await fetch('/api/admin/chat/unread-count', {
-            cache: 'no-store',
-            headers: {
-              'Cache-Control': 'no-cache'
-            }
-          })
-          
-          if (response.ok) {
-            const data = await response.json()
-            if (data.success) {
-              setUnreadChatCount(data.unreadCount || 0)
-            }
-          }
-        } catch (error) {
-          console.error('Error fetching unread chat count:', error)
-        }
-      }
-
-      fetchUnreadCount()
-      // Refresh every 30 seconds
-      const interval = setInterval(fetchUnreadCount, 30000)
-      return () => clearInterval(interval)
-    }
-  }, [status, session?.user?.role])
 
   // ---------------------
   // Loading states
@@ -139,12 +112,23 @@ const SupportDashboard = () => {
               <h1 className="md:text-[24px] text-[20px] font-bold text-gray-900">საფორთის პანელი</h1>
               <p className="text-black mt-1">მოგესალმებით, {session.user.name}</p>
             </div>
-            <Link
-              href="/"
-              className="px-4 py-2 bg-black md:text-[18px] text-[16px] text-white rounded-lg font-bold uppercase tracking-wide transition-colors"
-            >
-              მთავარ გვერდზე დაბრუნება
-            </Link>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={toggleSound}
+                className="hidden lg:flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium text-black hover:bg-gray-50 transition-colors"
+                title={soundEnabled ? 'შემომავალი მესიჯის ხმა ჩართულია' : 'შემომავალი მესიჯის ხმა გამორთულია'}
+              >
+                {soundEnabled ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+                <span>{soundEnabled ? 'ხმა ჩართულია' : 'ხმა გამორთულია'}</span>
+              </button>
+              <Link
+                href="/"
+                className="px-4 py-2 bg-black md:text-[18px] text-[16px] text-white rounded-lg font-bold uppercase tracking-wide transition-colors"
+              >
+                მთავარ გვერდზე დაბრუნება
+              </Link>
+            </div>
           </div>
         </div>
       </div>

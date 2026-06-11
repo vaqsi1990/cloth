@@ -1,0 +1,140 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { playChatNotificationSound, unlockChatNotificationAudio } from '@/utils/chatNotificationSound'
+
+const STORAGE_KEY = 'support-chat-sound-enabled'
+const POLL_INTERVAL_MS = 5000
+
+interface UnreadChatResponse {
+  success: boolean
+  unreadCount?: number
+  latestUnreadMessageId?: number | null
+  latestUnreadChatRoomId?: number | null
+}
+
+export function useSupportChatNotifications(enabled: boolean) {
+  const [soundEnabled, setSoundEnabled] = useState(true)
+  const [unreadCount, setUnreadCount] = useState(0)
+  const soundEnabledRef = useRef(true)
+  const activeChatRoomIdRef = useRef<number | null>(null)
+  const latestUnreadMessageIdRef = useRef<number | null>(null)
+  const isInitialLoadRef = useRef(true)
+
+  useEffect(() => {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    const nextEnabled = stored === null ? true : stored === 'true'
+    soundEnabledRef.current = nextEnabled
+    setSoundEnabled(nextEnabled)
+  }, [])
+
+  useEffect(() => {
+    const unlock = () => {
+      void unlockChatNotificationAudio()
+    }
+
+    window.addEventListener('pointerdown', unlock, { once: true })
+    window.addEventListener('keydown', unlock, { once: true })
+
+    return () => {
+      window.removeEventListener('pointerdown', unlock)
+      window.removeEventListener('keydown', unlock)
+    }
+  }, [])
+
+  const setActiveChatRoomId = useCallback((chatRoomId: number | null) => {
+    activeChatRoomIdRef.current = chatRoomId
+  }, [])
+
+  const syncUnreadState = useCallback(async (playSound: boolean) => {
+    if (!enabled) return
+
+    try {
+      const response = await fetch('/api/admin/chat/unread-count', {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+        },
+      })
+
+      if (!response.ok) return
+
+      const data: UnreadChatResponse = await response.json()
+      if (!data.success) return
+
+      const nextUnreadCount = data.unreadCount || 0
+      const nextLatestUnreadMessageId = data.latestUnreadMessageId ?? null
+      const nextLatestUnreadChatRoomId = data.latestUnreadChatRoomId ?? null
+
+      setUnreadCount(nextUnreadCount)
+
+      if (isInitialLoadRef.current) {
+        latestUnreadMessageIdRef.current = nextLatestUnreadMessageId
+        isInitialLoadRef.current = false
+        return
+      }
+
+      const hasNewUnreadMessage =
+        nextLatestUnreadMessageId !== null &&
+        (latestUnreadMessageIdRef.current === null ||
+          nextLatestUnreadMessageId > latestUnreadMessageIdRef.current)
+
+      const isActiveChatRoom =
+        nextLatestUnreadChatRoomId !== null &&
+        nextLatestUnreadChatRoomId === activeChatRoomIdRef.current
+
+      latestUnreadMessageIdRef.current = nextLatestUnreadMessageId
+
+      if (hasNewUnreadMessage && soundEnabledRef.current && playSound && !isActiveChatRoom) {
+        void playChatNotificationSound()
+      }
+    } catch (error) {
+      console.error('Error checking support chat notifications:', error)
+    }
+  }, [enabled])
+
+  const checkUnreadChats = useCallback(() => syncUnreadState(true), [syncUnreadState])
+
+  const acknowledgeActiveChat = useCallback(() => {
+    void syncUnreadState(false)
+  }, [syncUnreadState])
+
+  const toggleSound = useCallback(() => {
+    setSoundEnabled((prev) => {
+      const next = !prev
+      soundEnabledRef.current = next
+      localStorage.setItem(STORAGE_KEY, String(next))
+      if (next) {
+        void unlockChatNotificationAudio().then((unlocked) => {
+          if (unlocked) {
+            void playChatNotificationSound()
+          }
+        })
+      }
+      return next
+    })
+  }, [])
+
+  useEffect(() => {
+    if (!enabled) {
+      setUnreadCount(0)
+      activeChatRoomIdRef.current = null
+      latestUnreadMessageIdRef.current = null
+      isInitialLoadRef.current = true
+      return
+    }
+
+    void checkUnreadChats()
+    const interval = setInterval(() => {
+      void checkUnreadChats()
+    }, POLL_INTERVAL_MS)
+
+    return () => clearInterval(interval)
+  }, [enabled, checkUnreadChats])
+
+  return {
+    unreadCount,
+    soundEnabled,
+    toggleSound,
+    setActiveChatRoomId,
+    acknowledgeActiveChat,
+  }
+}
