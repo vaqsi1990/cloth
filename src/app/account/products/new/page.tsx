@@ -866,7 +866,7 @@ const NewProductPage = () => {
 
           {/* Rental Options */}
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="md:text-[20px] text-[18px] text-black font-semibold mb-6">გაქირავების პარამეტრები</h2>
+            <h2 className="md:text-[20px] text-[18px] text-black font-semibold mb-6">გაქირავება</h2>
 
 
 
@@ -968,7 +968,7 @@ const NewProductPage = () => {
                   onChange={(e) => setShowPurchaseOptions(e.target.checked)}
                   className="h-5 w-5"
                 />
-                <span>გაყიდვის პარამეტრები</span>
+                <span>გაყიდვა</span>
               </label>
               {showPurchaseOptions && (
                 <button

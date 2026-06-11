@@ -868,7 +868,7 @@ const EditProductPage = () => {
                   }}
                   className="h-5 w-5"
                 />
-                <span>ყიდვის პარამეტრები</span>
+                <span>გაყიდვა</span>
               </label>
               {formData.variants.length > 0 && (
                 <button
@@ -928,7 +928,7 @@ const EditProductPage = () => {
 
           {/* Rental Options */}
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-[20px] text-black font-semibold mb-6">გაქირავების პარამეტრები</h2>
+            <h2 className="text-[20px] text-black font-semibold mb-6">გაქირავება</h2>
 
             <div className="space-y-6">
               {/* Rental Price Tiers */}
