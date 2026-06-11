@@ -356,7 +356,6 @@ const ProductPage = () => {
     }, [productId])
 
     useEffect(() => {
-        // Fetch verification only if logged in
         if (session?.user?.id) {
             fetch('/api/user/verification')
                 .then((r) => r.json())
@@ -1701,7 +1700,38 @@ const ProductPage = () => {
                             </div>
 
                             {/* Action button */}
-                            {(session && (purchaseMode === "buy" || userVerification?.status === 'APPROVED')) ? (
+                            {!session ? (
+                                <div className="space-y-2">
+                                    <div className="p-4 text-center border-2 border-red-500 text-red-500 rounded-lg">
+                                        <p className="font-bold mb-4">
+                                            {purchaseMode === "rent"
+                                                ? 'პროდუქტის ქირაობა შესაძლებელია მხოლოდ რეგისტრირებული მომხმარებლებისთვის. გთხოვთ, შეხვიდეთ ანგარიშში.'
+                                                : 'პროდუქტის შეძენისთვის საჭიროა ანგარიში. გთხოვთ, შეხვიდეთ ანგარიშში.'}
+                                        </p>
+                                        <Link
+                                            href="/auth/signin"
+                                            className="inline-block px-6 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide transition-colors hover:opacity-90"
+                                        >
+                                            შესვლა
+                                        </Link>
+                                    </div>
+                                </div>
+                            ) : purchaseMode === "rent" && userVerification?.status !== 'APPROVED' ? (
+                                <div className="space-y-2">
+                                    <div className="p-4 text-center border-2 border-amber-500 text-amber-700 rounded-lg font-bold">
+                                        <div className="space-y-1">
+                                            <p>პროდუქტის ქირაობა შესაძლებელია მხოლოდ ვერიფიცირებული მომხმარებლებისთვის.</p>
+                                            <p>
+                                                გთხოვთ, გაიაროთ{' '}
+                                                <Link href="/account" className="underline hover:opacity-80">
+                                                    ვერიფიკაცია
+                                                </Link>
+                                                !
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
                                 <div className="space-y-2">
                                     {product.status !== 'AVAILABLE' && (
                                         <p className="text-sm text-white font-medium text-center">
@@ -1818,22 +1848,6 @@ const ProductPage = () => {
                                             ) : null}
                                         </div>
                                     )}
-                                </div>
-                            ) : (
-                                <div className="space-y-2">
-                                    <div className="p-4 text-center  border-2 border-red-500 text-red-500 rounded-lg font-bold">
-                                        {purchaseMode === "rent" ? (
-                                            <div className="space-y-1">
-                                                <p>პროდუქტის ქირაობა შესაძლებელია მხოლოდ ვერიფიცირებული მომხმარებლებისთვის.</p>
-                                                <p>გთხოვთ, შეხვიდეთ ანგარიშში და გაიაროთ ვერიფიკაცია!</p>
-                                            </div>
-                                        ) : (
-                                            <div className="space-y-1">
-                                                <p>პროდუქტის შეძენისთვის საჭიროა ანგარიში.</p>
-                                                <p>გთხოვთ, შეხვიდეთ ანგარიშში განაგრძეთ შესყიდვა.</p>
-                                            </div>
-                                        )}
-                                    </div>
                                 </div>
                             )}
 
