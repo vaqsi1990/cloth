@@ -20,6 +20,7 @@ import {
   refineProductPickupAddress,
 } from '@/lib/product-pickup'
 import ProductDiscountFields from '@/components/ProductDiscountFields'
+import { getProductDiscountBasePrice } from '@/lib/discount-helpers'
 import {
   DEFAULT_PRODUCT_CATEGORIES,
   isSizeOptionalCategoryId,
@@ -911,19 +912,6 @@ const EditProductPage = () => {
               <p className="text-sm text-gray-500">თქვენ შეგიძლიათ დაამატოთ ზომები და საწყობის რაოდენობა.</p>
             )}
 
-            {formData.variants.length > 0 && (
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <ProductDiscountFields
-                  variants={formData.variants}
-                  discount={formData.discount}
-                  discountDays={formData.discountDays}
-                  onDiscountChange={(value) => handleInputChange('discount', value)}
-                  onDiscountDaysChange={(value) => handleInputChange('discountDays', value)}
-                  discountError={errors.discount}
-                  discountDaysError={errors.discountDays}
-                />
-              </div>
-            )}
           </div>
 
           {/* Rental Options */}
@@ -1011,6 +999,21 @@ const EditProductPage = () => {
               </div>
             </div>
           </div>
+
+          {getProductDiscountBasePrice(formData.variants, formData.rentalPriceTiers).basePrice > 0 && (
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <ProductDiscountFields
+                variants={formData.variants}
+                rentalPriceTiers={formData.rentalPriceTiers}
+                discount={formData.discount}
+                discountDays={formData.discountDays}
+                onDiscountChange={(value) => handleInputChange('discount', value)}
+                onDiscountDaysChange={(value) => handleInputChange('discountDays', value)}
+                discountError={errors.discount}
+                discountDaysError={errors.discountDays}
+              />
+            </div>
+          )}
 
           {/* Images */}
           <div className="bg-white rounded-lg shadow-sm p-6">

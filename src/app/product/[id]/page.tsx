@@ -26,6 +26,7 @@ import { Product, RentalPeriod } from "@/types/product"
 import { formatDate } from "@/utils/dateUtils"
 import SimilarProducts from "@/components/SimilarProducts"
 import ProductSalePrice from "@/components/ProductSalePrice"
+import RentalTierPrice from "@/components/RentalTierPrice"
 import StarRating from "@/components/StarRating"
 import { showToast } from "@/utils/toast"
 import ChatTypingIndicator from "@/components/ChatTypingIndicator"
@@ -1458,8 +1459,11 @@ const ProductPage = () => {
                                         {tiers[0] && (
                                             <div className="border border-gray-200 rounded-xl p-4">
                                                 <p className="text-[16px] text-black">{tiers[0].minDays} + დღე</p>
-                                                <p className="text-[16px] font-bold text-black">₾{tiers[0].pricePerDay.toFixed(2)}/დღე</p>
-                                                <p className="md:text-[18px] text-[16px] text-black mt-1">ჯამი: ₾{fromAmount(tiers[0]).toFixed(2)}</p>
+                                                <RentalTierPrice
+                                                    minDays={tiers[0].minDays}
+                                                    pricePerDay={tiers[0].pricePerDay}
+                                                    discount={product.discount}
+                                                />
                                             </div>
                                         )}
 
@@ -1470,8 +1474,12 @@ const ProductPage = () => {
                                                     რეკომენდირებული
                                                 </span>
                                                 <p className="text-[16px] text-black">{tiers[1].minDays} + დღე</p>
-                                                <p className="text-[16px] font-bold text-black">₾{tiers[1].pricePerDay.toFixed(2)}/დღე</p>
-                                                <p className="md:text-[18px] text-[16px] text-emerald-700 mt-1 font-medium">ჯამი: ₾{fromAmount(tiers[1]).toFixed(2)}</p>
+                                                <RentalTierPrice
+                                                    minDays={tiers[1].minDays}
+                                                    pricePerDay={tiers[1].pricePerDay}
+                                                    discount={product.discount}
+                                                    totalClassName="md:text-[18px] text-[16px] text-emerald-700 mt-1 font-medium"
+                                                />
                                             </div>
                                         )}
 
@@ -1479,8 +1487,11 @@ const ProductPage = () => {
                                         {tiers[2] && (
                                             <div className="border border-gray-200 rounded-xl p-4">
                                                 <p className="text-[16px] text-black">{tiers[2].minDays} + დღე</p>
-                                                <p className="text-[16px] font-bold text-black">₾{tiers[2].pricePerDay.toFixed(2)}/დღე</p>
-                                                <p className="md:text-[18px] text-[16px] text-black mt-1">ჯამი: ₾{fromAmount(tiers[2]).toFixed(2)}</p>
+                                                <RentalTierPrice
+                                                    minDays={tiers[2].minDays}
+                                                    pricePerDay={tiers[2].pricePerDay}
+                                                    discount={product.discount}
+                                                />
                                             </div>
                                         )}
                                     </div>
@@ -1685,10 +1696,18 @@ const ProductPage = () => {
 
                                         {!!calcDays() && (
                                             <div className="text-center bg-white rounded-lg border p-3">
-                                                <div className="text-lg font-semibold">
-                                                    ჯამური ფასი: ₾{priceForDays(calcDays()).toFixed(2)}
+                                                <div className="text-lg font-semibold flex items-center justify-center gap-2 flex-wrap">
+                                                    <span>ჯამური ფასი:</span>
+                                                    {product.discount && product.discount > 0 ? (
+                                                        <ProductSalePrice
+                                                            originalPrice={priceForDays(calcDays())}
+                                                            discount={product.discount}
+                                                            size="sm"
+                                                        />
+                                                    ) : (
+                                                        <span>₾{priceForDays(calcDays()).toFixed(2)}</span>
+                                                    )}
                                                 </div>
-
                                             </div>
                                         )}
 

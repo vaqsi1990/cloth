@@ -26,6 +26,7 @@ import {
   refineProductPickupAddress,
 } from '@/lib/product-pickup'
 import ProductDiscountFields from '@/components/ProductDiscountFields'
+import { getProductDiscountBasePrice } from '@/lib/discount-helpers'
 const sizeOptions = {
   XS: { UK: [4, 6], EU: [32, 34], US: [0, 2],  },
   S: { UK: [8, 10], EU: [36, 38], US: [4, 6],  },
@@ -924,20 +925,22 @@ const NewProductPage = () => {
               <p className="md:text-[18px] text-[16px] text-black">თქვენ შეგიძლიათ დაამატოთ ზომები და საწყობის რაოდენობა.</p>
             )}
 
-            {showPurchaseOptions && formData.variants.length > 0 && (
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <ProductDiscountFields
-                  variants={formData.variants}
-                  discount={formData.discount}
-                  discountDays={formData.discountDays}
-                  onDiscountChange={(value) => handleInputChange('discount', value)}
-                  onDiscountDaysChange={(value) => handleInputChange('discountDays', value)}
-                  discountError={errors.discount}
-                  discountDaysError={errors.discountDays}
-                />
-              </div>
-            )}
           </div>
+
+          {getProductDiscountBasePrice(formData.variants, formData.rentalPriceTiers).basePrice > 0 && (
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <ProductDiscountFields
+                variants={formData.variants}
+                rentalPriceTiers={formData.rentalPriceTiers}
+                discount={formData.discount}
+                discountDays={formData.discountDays}
+                onDiscountChange={(value) => handleInputChange('discount', value)}
+                onDiscountDaysChange={(value) => handleInputChange('discountDays', value)}
+                discountError={errors.discount}
+                discountDaysError={errors.discountDays}
+              />
+            </div>
+          )}
 
           {/* Images */}
           <div className="bg-white  rounded-lg shadow-sm p-6">

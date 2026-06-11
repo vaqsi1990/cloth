@@ -3,12 +3,13 @@
 import React, { useEffect, useState } from 'react'
 import {
   discountFromSalePrice,
-  getProductBasePrice,
+  getProductDiscountBasePrice,
   salePriceFromDiscount,
 } from '@/lib/discount-helpers'
 
 interface ProductDiscountFieldsProps {
   variants: Array<{ price?: number | null }>
+  rentalPriceTiers?: Array<{ minDays: number; pricePerDay: number }>
   discount?: number | null
   discountDays?: number | null
   onDiscountChange: (discount: number | undefined) => void
@@ -21,6 +22,7 @@ interface ProductDiscountFieldsProps {
 
 export default function ProductDiscountFields({
   variants,
+  rentalPriceTiers = [],
   discount,
   discountDays,
   onDiscountChange,
@@ -30,7 +32,7 @@ export default function ProductDiscountFields({
   labelClassName = 'block text-[20px] text-black font-medium mb-2',
   inputClassName = 'w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none',
 }: ProductDiscountFieldsProps) {
-  const basePrice = getProductBasePrice(variants)
+  const { basePrice, priceType } = getProductDiscountBasePrice(variants, rentalPriceTiers)
   const [salePriceInput, setSalePriceInput] = useState('')
 
   useEffect(() => {
@@ -57,18 +59,31 @@ export default function ProductDiscountFields({
   const savings =
     discount && discount > 0 ? discount : discountFromSalePrice(basePrice, parseFloat(salePriceInput))
 
+  const currentPriceLabel =
+    priceType === 'rental'
+      ? 'გაქირავების საწყისი ფასი (პირველი გეგმა)'
+      : 'მიმდინარე გაყიდვის ფასი'
+
+  const emptyPriceMessage =
+    priceType === null
+      ? 'ჯერ მიუთითეთ გაყიდვის ან გაქირავების ფასი, შემდეგ შეძლებთ ახალი ფასის დაყენებას.'
+      : ''
+
   return (
     <div className="space-y-4">
       <h3 className="text-[20px] text-black font-semibold">ფასდაკლება</h3>
 
       {basePrice <= 0 ? (
-        <p className="text-sm text-gray-600">
-          ჯერ მიუთითეთ გაყიდვის ფასი, შემდეგ შეძლებთ ახალი ფასის დაყენებას.
-        </p>
+        <p className="text-sm text-gray-600">{emptyPriceMessage}</p>
       ) : (
         <>
           <p className="text-sm text-gray-600">
-            მიმდინარე ფასი: <span className="font-medium text-black">₾{basePrice.toFixed(2)}</span>
+            {currentPriceLabel}: <span className="font-medium text-black">₾{basePrice.toFixed(2)}</span>
+            {priceType === 'rental' && (
+              <span className="block mt-1">
+                ფასდაკლება გამოიყენება როგორც გაყიდვაზე, ისე გაქირავებაზე.
+              </span>
+            )}
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

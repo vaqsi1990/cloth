@@ -39,6 +39,39 @@ export function getProductBasePrice(variants: Array<{ price?: number | null }>):
   return prices.length > 0 ? Math.min(...prices) : 0
 }
 
+export function getRentalBasePrice(
+  tiers: Array<{ minDays: number; pricePerDay: number }>,
+): number {
+  const validTiers = tiers.filter(
+    (tier) => tier.pricePerDay > 0 && tier.minDays > 0,
+  )
+
+  if (validTiers.length === 0) {
+    return 0
+  }
+
+  const sortedTiers = [...validTiers].sort((a, b) => a.minDays - b.minDays)
+  const firstTier = sortedTiers[0]
+  return firstTier.minDays * firstTier.pricePerDay
+}
+
+export function getProductDiscountBasePrice(
+  variants: Array<{ price?: number | null }>,
+  rentalPriceTiers?: Array<{ minDays: number; pricePerDay: number }> | null,
+): { basePrice: number; priceType: 'buy' | 'rental' | null } {
+  const buyPrice = getProductBasePrice(variants)
+  if (buyPrice > 0) {
+    return { basePrice: buyPrice, priceType: 'buy' }
+  }
+
+  const rentalPrice = getRentalBasePrice(rentalPriceTiers || [])
+  if (rentalPrice > 0) {
+    return { basePrice: rentalPrice, priceType: 'rental' }
+  }
+
+  return { basePrice: 0, priceType: null }
+}
+
 export function getDiscountedPrice(
   basePrice: number,
   discount?: number | null,
