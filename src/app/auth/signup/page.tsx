@@ -684,7 +684,7 @@ const SignUpPage = () => {
                 </span>
               </label>
               <p className="mt-2 text-sm text-gray-600">
-                თუ ენდომება გაეცნოთ ჩვენს წესებს და პირობებს{' '}
+              გაეცანით წესებს და პირობებს {' '}
                 <button
                   type="button"
                   onClick={() => setShowTermsModal(true)}
