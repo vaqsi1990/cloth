@@ -125,6 +125,7 @@ export async function GET(request: NextRequest) {
     const gender = searchParams.get('gender')
     const isNew = searchParams.get('isNew')
     const isSecondHand = searchParams.get('isSecondHand')
+    const hasDiscount = searchParams.get('hasDiscount')
     const purpose = searchParams.get('purpose')
     const search = searchParams.get('search')?.trim()
     const cursor = searchParams.get('cursor')
@@ -176,7 +177,7 @@ export async function GET(request: NextRequest) {
     const needsFreshData = isAdminOrSupportRole || shouldIncludeUnapproved
     const useAccelerateCache = !needsFreshData
     const listCacheStrategy =
-      search || category || purpose || gender || isNew || isSecondHand
+      search || category || purpose || gender || isNew || isSecondHand || hasDiscount
         ? FILTERED_LIST_CACHE
         : PUBLIC_LIST_CACHE
 
@@ -204,6 +205,7 @@ export async function GET(request: NextRequest) {
         gender: genderEnum,
         isNew: isNew === 'true',
         isSecondHand: isSecondHand === 'true',
+        hasDiscount: hasDiscount === 'true',
         search: search || undefined,
         skip: (page - 1) * pageLimit,
         take: listTake,
@@ -325,6 +327,7 @@ export async function GET(request: NextRequest) {
       ...(genderEnum ? { gender: genderEnum } : {}),
       ...(isNew === 'true' ? { isNew: true } : {}),
       ...(isSecondHand === 'true' ? { isSecondHand: true } : {}),
+      ...(hasDiscount === 'true' ? { discount: { gt: 0 } } : {}),
     }
 
     const listOrderBy = [

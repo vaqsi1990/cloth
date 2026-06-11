@@ -11,6 +11,7 @@ export type PublicListFilters = {
   gender?: 'WOMEN' | 'MEN' | 'CHILDREN'
   isNew?: boolean
   isSecondHand?: boolean
+  hasDiscount?: boolean
   search?: string
   skip: number
   take: number
@@ -69,6 +70,14 @@ function buildWhere(filters: PublicListFilters): Prisma.Sql {
   }
   if (filters.isSecondHand) {
     parts.push(Prisma.sql`p."isSecondHand" = true`)
+  }
+  if (filters.hasDiscount) {
+    parts.push(
+      Prisma.sql`p.discount IS NOT NULL AND p.discount > 0 AND (
+        p."discountStartDate" IS NULL OR p."discountDays" IS NULL OR
+        (p."discountStartDate" + (p."discountDays" || ' days')::interval) > NOW()
+      )`,
+    )
   }
   if (filters.search) {
     const pattern = `%${filters.search}%`
@@ -272,6 +281,7 @@ export function getPublicListCacheKey(filters: PublicListFilters): string {
     gender: filters.gender ?? null,
     isNew: filters.isNew ?? false,
     isSecondHand: filters.isSecondHand ?? false,
+    hasDiscount: filters.hasDiscount ?? false,
     search: filters.search ?? null,
     skip: filters.skip,
     take: filters.take,
@@ -285,7 +295,8 @@ function hasActiveFilters(filters: PublicListFilters): boolean {
       filters.purposeId ||
       filters.gender ||
       filters.isNew ||
-      filters.isSecondHand,
+      filters.isSecondHand ||
+      filters.hasDiscount,
   )
 }
 

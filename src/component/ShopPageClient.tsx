@@ -19,6 +19,7 @@ import {
   sortProductCategories,
   type ProductCategory,
 } from '@/lib/product-categories'
+import { productHasActiveDiscount } from '@/lib/discount-helpers'
 
 type PurchaseType = 'all' | 'rent-only' | 'sale-only' | 'rent-and-sale'
 
@@ -29,6 +30,7 @@ const ShopPageClient = () => {
     const searchParam = searchParams.get('search')
     const purposeParam = searchParams.get('purpose')
     const categoryParam = searchParams.get('category')
+    const discountParam = searchParams.get('discount')
 
     const [products, setProducts] = useState<Product[]>([])
     const [allProductsForCounts, setAllProductsForCounts] = useState<Product[]>([])
@@ -50,6 +52,7 @@ const ShopPageClient = () => {
     const [rentalStartDate, setRentalStartDate] = useState<Date | null>(null)
     const [rentalEndDate, setRentalEndDate] = useState<Date | null>(null)
     const [purchaseType, setPurchaseType] = useState<PurchaseType>("all")
+    const [onlyDiscounted, setOnlyDiscounted] = useState(false)
     const [productRentalStatus, setProductRentalStatus] = useState<Record<number, {
         variantId: number;
         size: string;
@@ -106,6 +109,7 @@ const ShopPageClient = () => {
             rentalEndDate: rentalEndDate ? rentalEndDate.toISOString() : null,
             sortBy,
             purchaseType,
+            onlyDiscounted,
             currentPage,
             scrollY: scrollYRef.current,
         }
@@ -122,6 +126,7 @@ const ShopPageClient = () => {
         rentalEndDate,
         sortBy,
         purchaseType,
+        onlyDiscounted,
         currentPage
     ])
 
@@ -140,6 +145,7 @@ const ShopPageClient = () => {
         let restoredRentalEnd: Date | null = null
         let restoredSortBy = 'newest'
         let restoredPurchaseType: PurchaseType = 'all'
+        let restoredOnlyDiscounted = false
         let restoredPage = 1
         let restoredScrollY: number | null = null
 
@@ -158,6 +164,7 @@ const ShopPageClient = () => {
                 restoredRentalEnd = parsed.rentalEndDate ? new Date(parsed.rentalEndDate) : null
                 restoredSortBy = parsed.sortBy || 'newest'
                 restoredPurchaseType = parsed.purchaseType || 'all'
+                restoredOnlyDiscounted = Boolean(parsed.onlyDiscounted)
                 restoredPage = parsed.currentPage || 1
                 restoredScrollY = typeof parsed.scrollY === 'number' ? parsed.scrollY : null
             } catch (e) {
@@ -182,6 +189,7 @@ const ShopPageClient = () => {
         setRentalEndDate(restoredRentalEnd)
         setSortBy(restoredSortBy)
         setPurchaseType(restoredPurchaseType)
+        setOnlyDiscounted(discountParam === 'true' || restoredOnlyDiscounted)
         setCurrentPage(restoredPage)
         setSavedScrollY(restoredScrollY)
 
@@ -225,6 +233,7 @@ const ShopPageClient = () => {
         rentalEndDate,
         sortBy,
         purchaseType,
+        onlyDiscounted,
         currentPage,
         saveState
     ])
@@ -410,6 +419,9 @@ const ShopPageClient = () => {
                 if (categorySlug) {
                     params.append('category', categorySlug)
                 }
+                if (onlyDiscounted) {
+                    params.append('hasDiscount', 'true')
+                }
                 const url = `/api/products?${params}`
                 const t0 = performance.now()
                 const response = await fetch(url, { signal: controller.signal })
@@ -503,6 +515,7 @@ const ShopPageClient = () => {
         itemsPerPage,
         selectedCategories,
         selectedPurposes,
+        onlyDiscounted,
         resolveCategoryApiSlug,
     ])
 
@@ -740,7 +753,12 @@ const ShopPageClient = () => {
     }
 
     // Helper function to filter products by all criteria except purchase type (for count calculations)
-    const getProductsFilteredByOtherCriteria = (productsToFilter: Product[]) => {
+    const getProductsFilteredByOtherCriteria = (
+        productsToFilter: Product[],
+        options?: { includeDiscountFilter?: boolean },
+    ) => {
+        const applyDiscountFilter = options?.includeDiscountFilter !== false
+
         return productsToFilter.filter(product => {
             // Category filter (multiple selection)
             const categoryMatch = productMatchesCategoryFilter(
@@ -793,12 +811,18 @@ const ShopPageClient = () => {
             // Rental availability filter
             const rentalAvailabilityMatch = isProductAvailable(product)
 
-            return categoryMatch && purposeMatch && priceMatch && sizeSystemMatch && sizeMatch && colorMatch && locationMatch && rentalAvailabilityMatch
+            const discountMatch =
+                !applyDiscountFilter || !onlyDiscounted || productHasActiveDiscount(product)
+
+            return categoryMatch && purposeMatch && priceMatch && sizeSystemMatch && sizeMatch && colorMatch && locationMatch && rentalAvailabilityMatch && discountMatch
         })
     }
 
     // Get products filtered by all other criteria (excluding purchase type) for count calculations
     const productsForTypeCounts = getProductsFilteredByOtherCriteria(allProductsForCounts)
+    const discountedProductsCount = getProductsFilteredByOtherCriteria(allProductsForCounts, {
+        includeDiscountFilter: false,
+    }).filter(productHasActiveDiscount).length
 
     const filteredProducts: Product[] = getProductsFilteredByOtherCriteria(products).filter(
         matchesPurchaseType,
@@ -840,10 +864,12 @@ const ShopPageClient = () => {
             rentalEndDate: rentalEndDate?.toISOString() ?? null,
             sortBy,
             purchaseType,
+            onlyDiscounted,
             purposeParam,
             categoryParam,
             genderParam,
             searchParam,
+            discountParam,
         })
 
         if (filtersSnapshotRef.current === null) {
@@ -868,10 +894,12 @@ const ShopPageClient = () => {
         rentalEndDate,
         sortBy,
         purchaseType,
+        onlyDiscounted,
         purposeParam,
         categoryParam,
         genderParam,
         searchParam,
+        discountParam,
     ])
 
     // Handle category selection
@@ -952,6 +980,7 @@ const ShopPageClient = () => {
         setRentalStartDate(null)
         setRentalEndDate(null)
         setPurchaseType("all")
+        setOnlyDiscounted(false)
         setCurrentPage(1)
         
         // Price range will be updated when products are fetched
@@ -1066,6 +1095,15 @@ const ShopPageClient = () => {
                                             }`}
                                     >
                                         ტიპი
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveMobileFilter('discount')}
+                                        className={`w-full text-left px-3 py-2 text-[16px] font-medium rounded mb-1 ${activeMobileFilter === 'discount'
+                                            ? 'bg-[#1B3729] text-white'
+                                            : 'text-black hover:bg-gray-200'
+                                            }`}
+                                    >
+                                        ფასდაკლებები
                                     </button>
                                 </div>
                             </div>
@@ -1258,6 +1296,31 @@ const ShopPageClient = () => {
                                     </div>
                                 )}
 
+                                {activeMobileFilter === 'discount' && (
+                                    <div className="space-y-3">
+                                        <h3 className="text-lg font-semibold text-black mb-4">ფასდაკლებები</h3>
+                                        <label
+                                            className={`flex items-center justify-between gap-3 p-3 rounded-lg cursor-pointer ${onlyDiscounted
+                                                ? 'bg-[#1B3729] text-white'
+                                                : 'bg-gray-50 text-black hover:bg-gray-100'
+                                                }`}
+                                        >
+                                            <span className="flex items-center gap-3">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={onlyDiscounted}
+                                                    onChange={(e) => setOnlyDiscounted(e.target.checked)}
+                                                    className="w-4 h-4"
+                                                />
+                                                <span className="text-[16px]">მხოლოდ ფასდაკლებული</span>
+                                            </span>
+                                            <span className={`text-[16px] ${onlyDiscounted ? 'text-white' : 'text-gray-600'}`}>
+                                                {discountedProductsCount}
+                                            </span>
+                                        </label>
+                                    </div>
+                                )}
+
                                 {activeMobileFilter === 'type' && (
                                     <div className="space-y-3">
                                         <h3 className="text-lg font-semibold text-black mb-4">ტიპი</h3>
@@ -1365,6 +1428,27 @@ const ShopPageClient = () => {
                                         <span>₾{priceRange[1]}</span>
                                     </div>
                                 </div>
+                            </div>
+
+                            {/* Discounts */}
+                            <div className="border-b border-gray-200 pb-6">
+                                <h4 className="font-medium text-black md:text-[18px] text-[16px] mb-3">ფასდაკლებები</h4>
+                                <label
+                                    className={`flex items-center justify-between gap-2 cursor-pointer rounded-md px-3 py-2 ${onlyDiscounted ? 'bg-gray-100 text-black' : 'hover:bg-gray-100 text-black'}`}
+                                >
+                                    <span className="flex items-center gap-2">
+                                        <input
+                                            type="checkbox"
+                                            checked={onlyDiscounted}
+                                            onChange={(e) => setOnlyDiscounted(e.target.checked)}
+                                            className="w-4 h-4 accent-black"
+                                        />
+                                        მხოლოდ ფასდაკლებული
+                                    </span>
+                                    <span className={`text-[16px] ${onlyDiscounted ? 'text-black font-medium' : 'text-gray-600'}`}>
+                                        {discountedProductsCount}
+                                    </span>
+                                </label>
                             </div>
 
                             {/* Type */}

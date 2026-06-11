@@ -1,19 +1,12 @@
 import { prisma } from '@/lib/prisma'
+import {
+  discountIsExpired,
+  processExpiredDiscount,
+  productHasActiveDiscount,
+  type DiscountFields,
+} from '@/lib/discount-helpers'
 
-type DiscountFields = {
-  discount: number | null
-  discountDays: number | null
-  discountStartDate: Date | null
-}
-
-function discountIsExpired(product: DiscountFields): boolean {
-  if (!product.discount || !product.discountDays || !product.discountStartDate) {
-    return false
-  }
-  const expiration = new Date(product.discountStartDate)
-  expiration.setDate(expiration.getDate() + product.discountDays)
-  return Date.now() > expiration.getTime()
-}
+export { processExpiredDiscount, productHasActiveDiscount, type DiscountFields }
 
 /**
  * Checks if a product's discount has expired and clears it if necessary
@@ -87,20 +80,4 @@ export async function checkAndClearExpiredDiscounts(productIds: number[]): Promi
   })
 
   return expiredIds.length
-}
-
-/**
- * Processes a product to check if discount has expired (without database update)
- */
-export function processExpiredDiscount<T extends DiscountFields>(product: T): T {
-  if (!discountIsExpired(product)) {
-    return product
-  }
-
-  return {
-    ...product,
-    discount: null,
-    discountDays: null,
-    discountStartDate: null,
-  }
 }
