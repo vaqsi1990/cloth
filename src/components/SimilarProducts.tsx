@@ -5,6 +5,7 @@ import Link from "next/link"
 import { Plus } from "lucide-react"
 import { Product } from "@/types/product"
 import StarRating from "@/components/StarRating"
+import ProductSalePrice from "@/components/ProductSalePrice"
 
 interface SimilarProductsProps {
   productId: number
@@ -126,24 +127,10 @@ const SimilarProducts: React.FC<SimilarProductsProps> = ({ productId, categoryNa
                 </Link>
               </div>
               <div className="flex items-center justify-between gap-2">
-                {product.discount && product.discount > 0 ? (
-                  <div className="flex items-center gap-2">
-                    <span className="font-regular text-black md:text-[18px] text-[16px]">
-                      ₾{(() => {
-                        const originalPrice = getDisplayPrice(product)
-                        const discountedPrice = originalPrice - (product.discount || 0)
-                        return Math.max(0, discountedPrice).toFixed(2)
-                      })()}
-                    </span>
-                    <span className="font-regular text-black md:text-[18px] text-[16px] line-through decoration-black" style={{ textDecorationThickness: '1px' }}>
-                      ₾{getDisplayPrice(product).toFixed(2)}
-                    </span>
-                  </div>
-                ) : (
-                  <span className="font-regular text-black md:text-[18px] text-[16px]">
-                    ₾{getDisplayPrice(product).toFixed(2)}
-                  </span>
-                )}
+                <ProductSalePrice
+                  originalPrice={getDisplayPrice(product)}
+                  discount={product.discount}
+                />
               </div>
 
               {product.discount && product.discount > 0 && (

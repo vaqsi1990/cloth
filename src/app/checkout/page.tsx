@@ -970,7 +970,7 @@ const CheckoutPage = () => {
                                                 {item.discount && item.discount > 0 ? (
                                                     <div className="flex flex-col gap-1">
                                                         <div className="flex items-center gap-2">
-                                                            <span className="md:text-[18px] text-[16px] font-bold text-black">
+                                                            <span className="md:text-[18px] text-[16px] font-bold text-red-600">
                                                                 ფასი: ₾{((item.price - item.discount) * item.quantity).toFixed(2)}
                                                             </span>
                                                             <span className="md:text-[16px] text-[14px] font-bold text-black line-through decoration-black opacity-60" style={{ textDecorationThickness: '2px' }}>

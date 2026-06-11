@@ -26,6 +26,7 @@ import {
   productPickupAddressField,
   refineProductPickupAddress,
 } from '@/lib/product-pickup'
+import ProductDiscountFields from '@/components/ProductDiscountFields'
 const productSchema = z.object({
   name: z.string()
     .min(1, 'სახელი აუცილებელია')
@@ -74,7 +75,7 @@ const productSchema = z.object({
       z.string().optional()
     ),
     price: z.number().min(0, 'ფასი უნდა იყოს დადებითი'),
-    discount: z.number().min(0).max(100).optional(),
+    discount: z.number().min(0).optional(),
     sizeSystem: z.enum(['EU', 'US', 'UK', 'CN']).optional()
   })).default([]),
   imageUrls: z.array(z.string().min(1, 'URL აუცილებელია')).default([]),
@@ -916,36 +917,6 @@ const EditProductPage = () => {
               />
             </div>
 
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-[20px] text-black font-medium mb-2">
-                  ფასდაკლება (₾)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={formData.discount ?? ''}
-                  onChange={(e) => handleInputChange('discount', e.target.value ? parseFloat(e.target.value) : undefined)}
-                  placeholder="0.00"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                />
-              </div>
-              <div>
-                <label className="block text-[20px] text-black font-medium mb-2">
-                  ფასდაკლების ვადა (დღეები)
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={formData.discountDays ?? ''}
-                  onChange={(e) => handleInputChange('discountDays', e.target.value ? parseInt(e.target.value) : undefined)}
-                  placeholder="დღეები"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                />
-              </div>
-            </div>
           </div>
 
           {/* Rental Options */}
@@ -1064,7 +1035,7 @@ const EditProductPage = () => {
             </div>
 
             {formData.variants.length > 0 && formData.variants.map((variant, index) => (
-              <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border border-gray-200 rounded-lg mb-4">
+              <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border border-gray-200 rounded-lg mb-4">
                 <div>
                   <label className="block text-[20px] text-black font-medium mb-2">ფასი </label>
                   <input
@@ -1075,37 +1046,6 @@ const EditProductPage = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
-                <div className="hidden ">
-                  <div>
-                    <label className="block text-[20px] text-black font-medium mb-2">
-                    ფასდაკლება (₾)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={formData.discount ?? ''}
-                      onChange={(e) => handleInputChange('discount', e.target.value ? parseFloat(e.target.value) : undefined)}
-                      placeholder="0.00"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    />
-                  </div>
-               
-              </div>
-                  <div >
-                    <label className="block text-[20px] text-black font-medium mb-2">
-                    ფასდაკლების ვადა (დღეები)
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      step="1"
-                      value={formData.discountDays ?? ''}
-                      onChange={(e) => handleInputChange('discountDays', e.target.value ? parseInt(e.target.value) : undefined)}
-                      placeholder="დღეები"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    />
-                  </div>
                 <div className="flex items-end">
                   <button
                     type="button"
@@ -1123,7 +1063,19 @@ const EditProductPage = () => {
               <p className="text-sm text-gray-500">თქვენ შეგიძლიათ დაამატოთ ზომები და საწყობის რაოდენობა.</p>
             )}
 
-        
+            {formData.variants.length > 0 && (
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <ProductDiscountFields
+                  variants={formData.variants}
+                  discount={formData.discount}
+                  discountDays={formData.discountDays}
+                  onDiscountChange={(value) => handleInputChange('discount', value)}
+                  onDiscountDaysChange={(value) => handleInputChange('discountDays', value)}
+                  discountError={errors.discount}
+                  discountDaysError={errors.discountDays}
+                />
+              </div>
+            )}
           </div>
 
           {/* Images */}

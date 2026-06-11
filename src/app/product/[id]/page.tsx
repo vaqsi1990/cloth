@@ -25,6 +25,7 @@ import { useSession } from 'next-auth/react';
 import { Product, RentalPeriod } from "@/types/product"
 import { formatDate } from "@/utils/dateUtils"
 import SimilarProducts from "@/components/SimilarProducts"
+import ProductSalePrice from "@/components/ProductSalePrice"
 import StarRating from "@/components/StarRating"
 import { showToast } from "@/utils/toast"
 import ChatTypingIndicator from "@/components/ChatTypingIndicator"
@@ -1417,14 +1418,11 @@ const ProductPage = () => {
                                             <div className="flex flex-col items-end gap-2">
                                                 {product.discount && product.discount > 0 ? (
                                                     <>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-3xl font-bold text-black">
-                                                                ₾{(selectedPrice - product.discount).toFixed(2)}
-                                                            </span>
-                                                            <span className="text-xl font-bold text-black line-through decoration-black opacity-60" style={{ textDecorationThickness: '2px' }}>
-                                                                ₾{selectedPrice.toFixed(2)}
-                                                            </span>
-                                                        </div>
+                                                        <ProductSalePrice
+                                                            originalPrice={selectedPrice}
+                                                            discount={product.discount}
+                                                            size="lg"
+                                                        />
                                                         <div className="bg-[#1B3729] rounded-md text-[#FFFFFF] font-regular flex items-center px-2 py-1">
                                                             <span className="text-sm whitespace-nowrap">დანაზოგი: ₾{product.discount.toFixed(2)}</span>
                                                             {product.discountDays && (

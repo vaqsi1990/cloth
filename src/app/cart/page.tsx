@@ -108,7 +108,7 @@ const CartPage = () => {
                                                 {item.discount && item.discount > 0 ? (
                                                     <div className="flex flex-col gap-1">
                                                         <div className="flex items-center gap-2">
-                                                            <span className="text-lg font-bold text-black">
+                                                            <span className="text-lg font-bold text-red-600">
                                                                 ₾{(item.price - item.discount).toFixed(2)}
                                                             </span>
                                                             <span className="text-base font-bold text-black line-through decoration-black opacity-60" style={{ textDecorationThickness: '2px' }}>

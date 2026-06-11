@@ -28,6 +28,7 @@ import {
   productPickupAddressField,
   refineProductPickupAddress,
 } from '@/lib/product-pickup'
+import ProductDiscountFields from '@/components/ProductDiscountFields'
 const sizeOptions = {
   XS: { UK: [4, 6], EU: [32, 34], US: [0, 2] },
   S: { UK: [8, 10], EU: [36, 38], US: [4, 6] },
@@ -982,7 +983,7 @@ const NewProductPage = () => {
             </div>
 
             {showPurchaseOptions && formData.variants.map((variant, index) => (
-              <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border border-gray-200 rounded-lg mb-4">
+              <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border border-gray-200 rounded-lg mb-4">
                 <div>
                   <label className="block text-[20px] text-black font-medium mb-2">ფასი</label>
                   <input
@@ -993,17 +994,6 @@ const NewProductPage = () => {
                       const val = e.target.value === '' ? undefined : (e.target.value ? parseFloat(e.target.value) : undefined)
                       updateVariant(index, 'price', val)
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[20px] text-black font-medium mb-2">ფასდაკლება</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={variant.discount ?? ''}
-                    onChange={(e) => updateVariant(index, 'discount', e.target.value ? parseFloat(e.target.value) : undefined)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
@@ -1023,6 +1013,20 @@ const NewProductPage = () => {
 
             {showPurchaseOptions && formData.variants.length === 0 && (
               <p className="text-sm text-gray-500">თქვენ შეგიძლიათ დაამატოთ ზომები და საწყობის რაოდენობა.</p>
+            )}
+
+            {showPurchaseOptions && formData.variants.length > 0 && (
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <ProductDiscountFields
+                  variants={formData.variants}
+                  discount={formData.discount}
+                  discountDays={formData.discountDays}
+                  onDiscountChange={(value) => handleInputChange('discount', value)}
+                  onDiscountDaysChange={(value) => handleInputChange('discountDays', value)}
+                  discountError={errors.discount}
+                  discountDaysError={errors.discountDays}
+                />
+              </div>
             )}
           </div>
 
