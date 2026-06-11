@@ -16,6 +16,7 @@ import {
     getDeliveryPriceForCity,
     getDeliverySpeedLabel,
 } from '@/lib/delivery'
+import { resolveCartPickupAddress } from '@/lib/product-pickup'
 
 const CheckoutPage = () => {
     const {
@@ -49,7 +50,6 @@ const CheckoutPage = () => {
     const [deliverySpeed, setDeliverySpeed] = useState<DeliverySpeedOption | null>(null)
     const [loadingCities, setLoadingCities] = useState(false)
     const [savingDelivery, setSavingDelivery] = useState(false)
-    const [userPickupAddress, setUserPickupAddress] = useState<string | null>(null)
     const [loadingProfile, setLoadingProfile] = useState(false)
     const [voucherInput, setVoucherInput] = useState('')
     const [appliedVoucher, setAppliedVoucher] = useState<{
@@ -61,14 +61,9 @@ const CheckoutPage = () => {
     const georgianTextRegex = /^[\u10A0-\u10FF\s.,\-'():;!?/\\"]+$/
     const georgianAddressRegex = /^[\u10A0-\u10FF\s0-9№N.,\-'():;!?/\\"#]+$/
 
-    // Fixed pickup address (fallback)
-    const defaultPickupAddress = 'ლეო დავითაშვილის ქუჩა 120, 0190 თბილისი, საქართველო'
-    // Get seller's (product author's) pickup address from cart items
-    const sellerPickupAddress = cartItems
-      .map(item => (item as any).sellerPickupAddress)
-      .find((address: string | undefined) => address && address.trim() !== '') || null
-    // Use seller's pickup address if available, otherwise use user's, otherwise use default
-    const pickupAddress = sellerPickupAddress || userPickupAddress || defaultPickupAddress
+    const pickupAddress = resolveCartPickupAddress(
+        cartItems.map((item) => item.sellerPickupAddress),
+    )
     const pickupAvailable = cart?.pickupAvailable ?? true
 
     const fetchDeliveryCities = useCallback(async () => {
@@ -138,7 +133,6 @@ const CheckoutPage = () => {
 
                 if (data.success && data.user) {
                     const user = data.user
-                    setUserPickupAddress(user.pickupAddress || null)
                     hasPrefilledProfileRef.current = true
                     setFormData((prev) => ({
                         ...prev,
@@ -318,6 +312,10 @@ const CheckoutPage = () => {
             if (!deliverySpeed) {
                 errors.deliverySpeed = 'აირჩიეთ მიტანის ტიპი (ექსტრა ან სტანდარტული)'
             }
+        }
+
+        if (effectiveDeliveryType === 'pickup' && !pickupAddress) {
+            errors.pickupAddress = 'გატანის მისამართი არ არის მითითებული'
         }
 
         // City and address validation only for delivery
@@ -778,6 +776,7 @@ const CheckoutPage = () => {
                                     deliverySpeed={deliverySpeed}
                                     onSpeedChange={handleSpeedChange}
                                     pickupAddress={pickupAddress}
+                                    pickupAddressError={fieldErrors.pickupAddress}
                                     pickupAvailable={pickupAvailable}
                                     cityError={fieldErrors.deliveryCity}
                                     speedError={fieldErrors.deliverySpeed}

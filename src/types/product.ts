@@ -56,6 +56,7 @@ export interface Product {
   color?: string
   location?: string
   allowsPickup?: boolean
+  pickupAddress?: string
   sizeSystem?: 'EU' | 'US' | 'UK' | 'CN'
   size?: string
   isNew: boolean

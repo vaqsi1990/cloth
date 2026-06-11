@@ -196,7 +196,7 @@ const AdminInfoPage = () => {
               // Get pickupAddress from product.user (product author/seller) - from User model pickupAddress field
               // Collect all unique seller pickup addresses
               const sellerPickupAddresses = order.items
-                .map((item: any) => item.product?.user?.pickupAddress)
+                .map((item: any) => item.product?.pickupAddress || item.product?.user?.pickupAddress)
                 .filter((address: string | undefined): address is string => 
                   address !== null && address !== undefined && address.trim() !== ''
                 )

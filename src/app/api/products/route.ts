@@ -20,6 +20,10 @@ import {
   PRODUCT_TEXT_REGEX,
 } from '@/lib/product-text'
 import { enrichProductListRows } from '@/lib/product-list-enrichment'
+import {
+  productPickupAddressField,
+  refineProductPickupAddress,
+} from '@/lib/product-pickup'
 import { canUserCreateProducts } from '@/lib/seller-eligibility'
 import {
   finalizeProductListResponse,
@@ -45,6 +49,7 @@ const productSchema = z.object({
   color: z.string().optional(),
   location: z.string().optional(),
   allowsPickup: z.boolean().default(false),
+  pickupAddress: productPickupAddressField,
   sizeSystem: z.enum(['EU', 'US', 'UK', 'CN']).optional(),
   size: z.string().optional(),
   isNew: z.boolean().default(false),
@@ -77,7 +82,7 @@ const productSchema = z.object({
       pricePerDay: z.number().min(0, 'ფასი დღეში უნდა იყოს დადებითი ან ნული')
     })).optional()
   )
-})
+}).superRefine(refineProductPickupAddress)
 
 const PUBLIC_LIST_CACHE = { swr: 300, ttl: 300 }
 const FILTERED_LIST_CACHE = { swr: 60, ttl: 60 }
@@ -625,6 +630,9 @@ export async function POST(request: NextRequest) {
       color: validatedData.color,
       location: validatedData.location,
       allowsPickup: validatedData.allowsPickup,
+      pickupAddress: validatedData.allowsPickup
+        ? validatedData.pickupAddress?.trim()
+        : null,
       sizeSystem: validatedData.sizeSystem,
       size: validatedData.size,
       isNew: validatedData.isNew,

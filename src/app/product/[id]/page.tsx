@@ -1882,6 +1882,13 @@ const ProductPage = () => {
                                         {product.location || "Tbilisi, GE"}
                                     </li>
 
+                                    {product.allowsPickup && product.pickupAddress && (
+                                        <li>
+                                            <span className="font-semibold">გატანის მისამართი: </span>
+                                            {product.pickupAddress}
+                                        </li>
+                                    )}
+
                                     <li>
                                         <span className="font-semibold">მინიმალური ქირაობის დღეები: </span>
                                         {minDaysGlobal} days

@@ -14,6 +14,10 @@ import {
   PRODUCT_NAME_ERROR_MESSAGE,
   PRODUCT_TEXT_REGEX,
 } from '@/lib/product-text'
+import {
+  productPickupAddressField,
+  refineProductPickupAddress,
+} from '@/lib/product-pickup'
 
 // Product validation schema
 const productSchema = z.object({
@@ -32,6 +36,7 @@ const productSchema = z.object({
   color: z.string().optional(),
   location: z.string().optional(),
   allowsPickup: z.boolean().default(false),
+  pickupAddress: productPickupAddressField,
   sizeSystem: z.preprocess(
     (val) => (val === '' || val === null ? undefined : val),
     z.enum(['EU', 'US', 'UK', 'CN']).optional()
@@ -81,7 +86,7 @@ const productSchema = z.object({
       pricePerDay: z.number().min(0, 'ფასი დღეში უნდა იყოს დადებითი ან ნული')
     })).optional()
   )
-})
+}).superRefine(refineProductPickupAddress)
 
 const buildPurposeRelation = (purposeId?: number, purposeSlug?: string) => {
   if (purposeId) {
@@ -114,6 +119,7 @@ const buildProductSelect = (includeAdminFields: boolean = false) => {
     gender: true,
     location: true,
     allowsPickup: true,
+    pickupAddress: true,
     sizeSystem: true,
     size: true,
     isNew: true,
@@ -384,6 +390,9 @@ export async function PUT(
       color: validatedData.color,
       location: validatedData.location,
       allowsPickup: validatedData.allowsPickup,
+      pickupAddress: validatedData.allowsPickup
+        ? validatedData.pickupAddress?.trim()
+        : null,
       sizeSystem: validatedData.sizeSystem,
       size: validatedData.size,
       isNew: validatedData.isNew,

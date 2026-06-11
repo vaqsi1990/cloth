@@ -238,6 +238,7 @@ model Product {
   color         String?
   location      String?
   allowsPickup  Boolean          @default(false)
+  pickupAddress String?
   sizeSystem    SizeSystem?
   size          String?
   isNew         Boolean          @default(false)

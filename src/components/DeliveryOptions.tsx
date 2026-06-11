@@ -27,6 +27,7 @@ interface DeliveryOptionsProps {
   deliverySpeed: DeliverySpeedOption | null
   onSpeedChange: (speed: DeliverySpeedOption) => void
   pickupAddress: string
+  pickupAddressError?: string
   pickupAvailable?: boolean
   cityError?: string
   speedError?: string
@@ -43,6 +44,7 @@ export default function DeliveryOptions({
   deliverySpeed,
   onSpeedChange,
   pickupAddress,
+  pickupAddressError,
   pickupAvailable = true,
   cityError,
   speedError,
@@ -113,9 +115,16 @@ export default function DeliveryOptions({
             <MapPin className="w-4 h-4 inline mr-2" />
             მისამართი
           </label>
-          <div className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-black text-sm md:text-base">
-            {pickupAddress}
+          <div
+            className={`w-full px-4 py-3 border rounded-lg bg-gray-50 text-sm md:text-base ${
+              pickupAddress ? 'border-gray-300 text-black' : 'border-amber-300 text-amber-900'
+            }`}
+          >
+            {pickupAddress || 'გატანის მისამართი არ არის მითითებული'}
           </div>
+          {pickupAddressError && (
+            <p className="text-red-500 text-sm mt-1">{pickupAddressError}</p>
+          )}
         </div>
       ) : (
         <>

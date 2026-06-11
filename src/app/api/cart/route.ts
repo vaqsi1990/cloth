@@ -69,6 +69,7 @@ const cartSelect = {
           id: true,
           name: true,
           allowsPickup: true,
+          pickupAddress: true,
           discount: true,
           discountDays: true,
           discountStartDate: true,
@@ -139,6 +140,7 @@ function buildCartResponse(cart: {
       id: number
       name: string
       allowsPickup: boolean
+      pickupAddress: string | null
       discount: number | null
       discountDays: number | null
       discountStartDate: Date | null
@@ -172,7 +174,7 @@ function buildCartResponse(cart: {
       discount,
       discountDays: product?.discountDays ?? null,
       discountStartDate: product?.discountStartDate?.toISOString() ?? null,
-      sellerPickupAddress: item.product?.user?.pickupAddress || null,
+      sellerPickupAddress: item.product?.pickupAddress?.trim() || null,
     }
   })
 

@@ -43,6 +43,7 @@ export async function GET(request: NextRequest) {
                     orderBy: { minDays: 'asc' },
                     take: 5,
                   },
+                  pickupAddress: true,
                   user: {
                     select: {
                       id: true,

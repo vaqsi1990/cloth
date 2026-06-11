@@ -22,6 +22,10 @@ import {
   PRODUCT_GENDER_OPTIONS,
   sortProductCategories,
 } from '@/lib/product-categories'
+import {
+  productPickupAddressField,
+  refineProductPickupAddress,
+} from '@/lib/product-pickup'
 const productSchema = z.object({
   name: z.string()
     .min(1, 'სახელი აუცილებელია')
@@ -38,6 +42,7 @@ const productSchema = z.object({
   color: z.string().optional(),
   location: z.string().optional(),
   allowsPickup: z.boolean().default(false),
+  pickupAddress: productPickupAddressField,
   sizeSystem: z.preprocess(
     (val) => (val === '' || val === null ? undefined : val),
     z.enum(['EU', 'US', 'UK', 'CN']).optional()
@@ -87,7 +92,7 @@ const productSchema = z.object({
       pricePerDay: z.number().min(0, 'ფასი დღეში უნდა იყოს დადებითი ან ნული')
     })).default([])
   )
-})
+}).superRefine(refineProductPickupAddress)
 
 const purposes = PURPOSE_OPTIONS
 
@@ -111,6 +116,7 @@ const EditProductPage = () => {
     color: '',
     location: '',
     allowsPickup: false,
+    pickupAddress: undefined,
     sizeSystem: undefined,
     size: undefined,
     isNew: false,
@@ -310,6 +316,7 @@ const EditProductPage = () => {
             color: productColor,
             location: product.location || '',
             allowsPickup: product.allowsPickup ?? false,
+            pickupAddress: product.pickupAddress || undefined,
             sizeSystem: product.sizeSystem,
             size: product.size || undefined,
             isNew: product.isNew,
@@ -730,7 +737,14 @@ const EditProductPage = () => {
                   <input
                     type="checkbox"
                     checked={formData.allowsPickup}
-                    onChange={(e) => handleInputChange('allowsPickup', e.target.checked)}
+                    onChange={(e) => {
+                      const checked = e.target.checked
+                      setFormData((prev) => ({
+                        ...prev,
+                        allowsPickup: checked,
+                        pickupAddress: checked ? prev.pickupAddress : undefined,
+                      }))
+                    }}
                     className="mt-1 w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
                   />
                   <span>
@@ -743,6 +757,27 @@ const EditProductPage = () => {
                   </span>
                 </label>
               </div>
+
+              {formData.allowsPickup && (
+                <div className="sm:col-span-2">
+                  <label className="block text-[20px] text-black font-medium mb-2">
+                    გატანის ზუსტი მისამართი *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.pickupAddress || ''}
+                    onChange={(e) => handleInputChange('pickupAddress', e.target.value)}
+                    placeholder="მაგ: ლეო დავითაშვილის ქუჩა 120, 0190 თბილისი, საქართველო"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  />
+                  {errors.pickupAddress && (
+                    <p className="text-red-500 text-sm mt-1">{errors.pickupAddress}</p>
+                  )}
+                  <p className="text-sm text-gray-600 mt-1">
+                    მიუთითეთ ზუსტი მისამართი, სადაც მყიდველი გაიტანს პროდუქტს.
+                  </p>
+                </div>
+              )}
 
               <div>
                 <label className="block text-[20px] text-black font-medium mb-2">
