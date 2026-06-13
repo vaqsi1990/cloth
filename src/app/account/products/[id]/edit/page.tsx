@@ -25,8 +25,8 @@ import { isProductVipActive, VIP_MONTHLY_PRICE_GEL } from '@/lib/product-vip'
 import {
   DEFAULT_PRODUCT_CATEGORIES,
   isSizeOptionalCategoryId,
+  mergeProductCategoriesWithDefaults,
   PRODUCT_GENDER_OPTIONS,
-  sortProductCategories,
 } from '@/lib/product-categories'
 const productSchema = z.object({
   name: z.string()
@@ -104,7 +104,7 @@ const EditProductPage = () => {
   const productId = params.id as string
 
   const [product, setProduct] = useState<Product | null>(null)
-  const [categories, setCategories] = useState<{ id: number; name: string; slug: string }[]>([])
+  const [categories, setCategories] = useState(DEFAULT_PRODUCT_CATEGORIES)
   const [loading, setLoading] = useState(true)
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
@@ -306,16 +306,11 @@ const EditProductPage = () => {
     try {
       const response = await fetch('/api/categories')
       const data = await response.json()
-      if (data.success && data.categories && data.categories.length > 0) {
-        setCategories(sortProductCategories(data.categories))
-      } else {
-        // Use default categories if API returns empty or fails
-        setCategories(DEFAULT_PRODUCT_CATEGORIES)
+      if (data.success && data.categories?.length > 0) {
+        setCategories(mergeProductCategoriesWithDefaults(data.categories))
       }
     } catch (error) {
       console.error('Error fetching categories:', error)
-      // Use default categories on error
-      setCategories(DEFAULT_PRODUCT_CATEGORIES)
     }
   }
 

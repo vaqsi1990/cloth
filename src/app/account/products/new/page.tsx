@@ -18,10 +18,9 @@ import {
 } from '@/lib/product-text'
 import {
   DEFAULT_PRODUCT_CATEGORIES,
-  dedupeProductCategories,
   isSizeOptionalCategoryId,
+  mergeProductCategoriesWithDefaults,
   PRODUCT_GENDER_OPTIONS,
-  sortProductCategories,
 } from '@/lib/product-categories'
 import { canUserCreateProducts } from '@/lib/seller-eligibility'
 import {
@@ -248,9 +247,7 @@ const NewProductPage = () => {
         const response = await fetch('/api/categories')
         const data = await response.json()
         if (data.success && data.categories?.length > 0) {
-          setCategories(
-            sortProductCategories(dedupeProductCategories(data.categories)),
-          )
+          setCategories(mergeProductCategoriesWithDefaults(data.categories))
         }
       } catch {
         // keep defaults

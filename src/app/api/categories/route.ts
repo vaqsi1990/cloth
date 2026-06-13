@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { syncDefaultCategoriesToDb } from '@/lib/category-sync'
 import {
   dedupeProductCategories,
   sortProductCategories,
@@ -8,6 +9,8 @@ import {
 // GET - Fetch all categories
 export async function GET(request: NextRequest) {
   try {
+    await syncDefaultCategoriesToDb()
+
     const categories = await prisma.category.findMany()
 
     // Remove duplicates by id (in case of any data inconsistencies)

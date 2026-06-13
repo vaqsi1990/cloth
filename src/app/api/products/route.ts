@@ -32,6 +32,7 @@ import {
   loadPublicProductList,
   revalidateProductListCache,
 } from '@/lib/product-list-query'
+import { resolveCategoryIdForWrite } from '@/lib/category-sync'
 import { sortProductsByVipPriority } from '@/lib/product-vip'
 import { prismaCacheStrategy } from '@/lib/prisma-cache'
 
@@ -628,6 +629,17 @@ export async function POST(request: NextRequest) {
     const uniqueSlug = await ensureUniqueProductSlug(validatedData.slug)
     const purposeRelation = buildPurposeRelation(validatedData.purposeId, validatedData.purposeSlug)
 
+    let resolvedCategoryId: number | null = null
+    if (validatedData.categoryId) {
+      resolvedCategoryId = await resolveCategoryIdForWrite(validatedData.categoryId)
+      if (!resolvedCategoryId) {
+        return NextResponse.json(
+          { success: false, message: 'არჩეული კატეგორია ვერ მოიძებნა' },
+          { status: 400 },
+        )
+      }
+    }
+
     // Create product in database using Prisma (approval fields rely on DB defaults)
     const productData: Prisma.ProductCreateInput = {
       name: validatedData.name,
@@ -651,8 +663,8 @@ export async function POST(request: NextRequest) {
       discountDays: validatedData.discountDays,
       discountStartDate: validatedData.discount && validatedData.discountDays ? new Date() : null,
       rating: validatedData.rating,
-      category: validatedData.categoryId
-        ? { connect: { id: validatedData.categoryId } }
+      category: resolvedCategoryId
+        ? { connect: { id: resolvedCategoryId } }
         : undefined,
       isRentable: validatedData.isRentable,
       pricePerDay: validatedData.pricePerDay,

@@ -32,13 +32,16 @@ export const DEFAULT_PRODUCT_CATEGORIES: ProductCategory[] = [
   { id: 23, name: 'სადღესასწაულო ტანსაცმელი', slug: 'festive' },
   { id: 47, name: 'ბავშვების კალიასკა', slug: 'bavshvebis-kaliaska' },
   { id: 48, name: 'ბავშვების სათამაშოები', slug: 'bavshvebis-satamashoebi' },
+  { id: 49, name: 'ტრადიციული და კულტურული ტანსაცმელი', slug: 'traditional-cultural' },
+  { id: 50, name: 'სათხილამურო ტანსაცმელი', slug: 'ski-wear' },
+  { id: 51, name: 'სათხილამურო სათვალე', slug: 'ski-goggles' },
 ]
 
-const WOMEN_CATEGORY_IDS = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 44, 13, 14, 21, 22, 23])
-const MEN_CATEGORY_IDS = new Set([15, 16])
-const CHILDREN_CATEGORY_IDS = new Set([18, 19, 20, 47, 48])
-const ACCESSORY_CATEGORY_IDS = new Set([11, 12, 17])
-const ACCESSORY_CATEGORY_SLUGS = new Set(['accessories', 'goggles', 'helmet', 'aksesuarebi'])
+const WOMEN_CATEGORY_IDS = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 44, 13, 14, 21, 22, 23, 49, 50, 51])
+const MEN_CATEGORY_IDS = new Set([9, 11, 12, 13, 15, 16, 49, 50, 51])
+const CHILDREN_CATEGORY_IDS = new Set([11, 12, 18, 19, 20, 47, 48, 51])
+const ACCESSORY_CATEGORY_IDS = new Set([11, 12, 17, 51])
+const ACCESSORY_CATEGORY_SLUGS = new Set(['accessories', 'goggles', 'helmet', 'ski-goggles', 'aksesuarebi'])
 const SIZE_OPTIONAL_CATEGORY_IDS = new Set([...ACCESSORY_CATEGORY_IDS, 47, 48])
 const SIZE_OPTIONAL_CATEGORY_SLUGS = new Set([
   ...ACCESSORY_CATEGORY_SLUGS,
@@ -78,16 +81,24 @@ export function isSizeOptionalCategoryId(
   return isSizeOptionalCategory(categories.find((c) => c.id === categoryId))
 }
 
+function getCategoryGroups(category: ProductCategory): number[] {
+  const groups: number[] = []
+  if (WOMEN_CATEGORY_IDS.has(category.id)) groups.push(0)
+  if (MEN_CATEGORY_IDS.has(category.id)) groups.push(1)
+  if (CHILDREN_CATEGORY_IDS.has(category.id)) groups.push(2)
+  if (isAccessoryCategory(category)) groups.push(3)
+  if (groups.length === 0) {
+    const name = category.name.toLowerCase()
+    if (name.includes('ბავშვ')) groups.push(2)
+    else if (name.includes('ქალ')) groups.push(0)
+    else if (name.includes('შარვალ') || name.includes('პიჯაკ')) groups.push(1)
+    else groups.push(4)
+  }
+  return groups
+}
+
 function getCategoryGroup(category: ProductCategory): number {
-  if (isAccessoryCategory(category)) return 3
-  if (WOMEN_CATEGORY_IDS.has(category.id)) return 0
-  if (MEN_CATEGORY_IDS.has(category.id)) return 1
-  if (CHILDREN_CATEGORY_IDS.has(category.id)) return 2
-  const name = category.name.toLowerCase()
-  if (name.includes('ბავშვ')) return 2
-  if (name.includes('ქალ')) return 0
-  if (name.includes('შარვალ') || name.includes('პიჯაკ')) return 1
-  return 4
+  return getCategoryGroups(category)[0] ?? 4
 }
 
 /** Drop duplicate category names and ids (keep canonical DEFAULT row per id) */
@@ -126,6 +137,25 @@ export function dedupeProductCategories<T extends ProductCategory>(
   }
 
   return [...byId.values()]
+}
+
+/** Form selects: canonical defaults merged with DB rows (real ids from API by slug). */
+export function mergeProductCategoriesWithDefaults<T extends ProductCategory>(
+  apiCategories: T[],
+): ProductCategory[] {
+  const apiBySlug = new Map(
+    apiCategories.map((category) => [category.slug, category]),
+  )
+  const defaultSlugs = new Set(DEFAULT_PRODUCT_CATEGORIES.map((c) => c.slug))
+
+  const fromDefaults = DEFAULT_PRODUCT_CATEGORIES.map(
+    (defaultCategory) => apiBySlug.get(defaultCategory.slug) ?? defaultCategory,
+  )
+  const extras = apiCategories.filter((category) => !defaultSlugs.has(category.slug))
+
+  return sortProductCategories(
+    dedupeProductCategories([...fromDefaults, ...extras]),
+  )
 }
 
 /** All predefined categories + API rows; always shows full shop taxonomy in filters */
@@ -213,8 +243,20 @@ export function groupProductCategories<T extends ProductCategory>(
 ): ProductCategoryGroup[] {
   const buckets: T[][] = [[], [], [], [], []]
   for (const category of sortProductCategories(categories)) {
-    buckets[getCategoryGroup(category)].push(category)
+    for (const groupIndex of getCategoryGroups(category)) {
+      buckets[groupIndex].push(category)
+    }
   }
+
+  for (let index = 0; index < buckets.length; index += 1) {
+    const seen = new Set<number>()
+    buckets[index] = buckets[index].filter((category) => {
+      if (seen.has(category.id)) return false
+      seen.add(category.id)
+      return true
+    })
+  }
+
   return CATEGORY_GROUP_LABELS.map((label, index) => ({
     label,
     categories: buckets[index],
@@ -255,7 +297,7 @@ const CATEGORY_SLUG_ALIASES: Record<string, string> = {
   chapkhuti: 'helmet',
   traditional: 'traditional',
   'traditsiuli-tansatsmeli': 'traditional',
-  'traditsiuli-da-kulturuli-tansatsmeli': 'kids-traditional',
+  'traditsiuli-da-kulturuli-tansatsmeli': 'traditional-cultural',
   cosplay: 'cosplay',
   'qospleis-kostumebi': 'cosplay',
   suit: 'suit',
@@ -270,6 +312,10 @@ const CATEGORY_SLUG_ALIASES: Record<string, string> = {
   'bavshvta-traditsiuli-tansatsmeli': 'kids-traditional',
   'kids-ski': 'kids-ski',
   'bavshvta-sathilamuro-tansatsmeli': 'kids-ski',
+  'ski-wear': 'ski-wear',
+  'sathilamuro-tansatsmeli': 'ski-wear',
+  'ski-goggles': 'ski-goggles',
+  'sathilamuro-satvale': 'ski-goggles',
   'kalta-or-natsilad-shekruli-kompleqtebi': 'tops',
   'კაბები': 'dresses',
   'ბლუზები': 'tops',
@@ -286,7 +332,7 @@ const CATEGORY_SLUG_ALIASES: Record<string, string> = {
   'სათვალე': 'goggles',
   'ჩაფხუტი': 'helmet',
   'ტრადიციული ტანსაცმელი': 'traditional',
-  'ტრადიციული და კულტურული ტანსაცმელი': 'kids-traditional',
+  'ტრადიციული და კულტურული ტანსაცმელი': 'traditional-cultural',
   'ქოსფლეის კოსტუმები': 'cosplay',
   'შარვალ კოსტუმი': 'suit',
   'პიჯაკი': 'blazer',
@@ -294,6 +340,8 @@ const CATEGORY_SLUG_ALIASES: Record<string, string> = {
   'ბავშვთა კაბები': 'kids-dresses',
   'ბავშვთა ტრადიციული ტანსაცმელი': 'kids-traditional',
   'ბავშვთა სათხილამურო ტანსაცმელი': 'kids-ski',
+  'სათხილამურო ტანსაცმელი': 'ski-wear',
+  'სათხილამურო სათვალე': 'ski-goggles',
   'ბავშვების კალიასკა': 'bavshvebis-kaliaska',
   'ბავშვების სათამაშოები': 'bavshvebis-satamashoebi',
 }

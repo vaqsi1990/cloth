@@ -19,8 +19,8 @@ import {
 import {
   DEFAULT_PRODUCT_CATEGORIES,
   isSizeOptionalCategoryId,
+  mergeProductCategoriesWithDefaults,
   PRODUCT_GENDER_OPTIONS,
-  sortProductCategories,
 } from '@/lib/product-categories'
 import {
   productPickupAddressField,
@@ -107,7 +107,7 @@ const EditProductPage = () => {
   const productId = params.id as string
 
   const [product, setProduct] = useState<Product | null>(null)
-  const [categories, setCategories] = useState<{ id: number; name: string; slug: string }[]>([])
+  const [categories, setCategories] = useState(DEFAULT_PRODUCT_CATEGORIES)
   const [loading, setLoading] = useState(true)
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
@@ -267,30 +267,13 @@ const EditProductPage = () => {
   // Fetch categories
   const fetchCategories = async () => {
     try {
-      console.log('=== FETCHING CATEGORIES ===')
       const response = await fetch('/api/categories')
       const data = await response.json()
-      console.log('Categories response:', data)
-      if (data.success && data.categories && data.categories.length > 0) {
-        // Remove duplicates by id
-        const uniqueById = data.categories.filter((category: { id: number }, index: number, self: { id: number }[]) =>
-          index === self.findIndex((c) => c.id === category.id)
-        )
-        // Remove duplicates by name (case-insensitive)
-        const uniqueCategories = uniqueById.filter((category: { name: string }, index: number, self: { name: string }[]) =>
-          index === self.findIndex((c) => c.name.toLowerCase().trim() === category.name.toLowerCase().trim())
-        )
-        setCategories(sortProductCategories(uniqueCategories))
-        console.log('Categories set successfully:', uniqueCategories)
-      } else {
-        // Use default categories if API returns empty or fails
-        setCategories(DEFAULT_PRODUCT_CATEGORIES)
-        console.log('Using default categories')
+      if (data.success && data.categories?.length > 0) {
+        setCategories(mergeProductCategoriesWithDefaults(data.categories))
       }
     } catch (error) {
       console.error('Error fetching categories:', error)
-      // Use default categories on error
-      setCategories(DEFAULT_PRODUCT_CATEGORIES)
     }
   }
 

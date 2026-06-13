@@ -19,6 +19,7 @@ import {
   refineProductPickupAddress,
 } from '@/lib/product-pickup'
 import { revalidateProductListCache } from '@/lib/product-list-query'
+import { resolveCategoryIdForWrite } from '@/lib/category-sync'
 
 // Product validation schema
 const productSchema = z.object({
@@ -376,10 +377,22 @@ export async function PUT(
     }
 
     const purposeRelation = buildPurposeRelation(validatedData.purposeId, validatedData.purposeSlug)
+
+    let resolvedCategoryId: number | null = null
+    if (validatedData.categoryId) {
+      resolvedCategoryId = await resolveCategoryIdForWrite(validatedData.categoryId)
+      if (!resolvedCategoryId) {
+        return NextResponse.json(
+          { success: false, message: 'არჩეული კატეგორია ვერ მოიძებნა' },
+          { status: 400 },
+        )
+      }
+    }
+
     const categoryRelation =
       validatedData.categoryId !== undefined
-        ? (validatedData.categoryId
-            ? { connect: { id: validatedData.categoryId } }
+        ? (resolvedCategoryId
+            ? { connect: { id: resolvedCategoryId } }
             : { disconnect: true })
         : undefined
 
