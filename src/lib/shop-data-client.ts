@@ -10,7 +10,10 @@ export async function fetchShopData(
 ): Promise<ShopDataResponse> {
   const url = `${SHOP_API_PATH}?${queryKey}`
   const t0 = performance.now()
-  const response = await fetch(url, { signal })
+  const response = await fetch(url, {
+    signal,
+    cache: 'no-store',
+  })
   const data = (await response.json()) as ShopDataResponse
 
   if (process.env.NODE_ENV === 'development') {

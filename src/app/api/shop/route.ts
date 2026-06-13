@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import {
-  getShopBundleCacheControl,
   loadShopBundle,
 } from '@/lib/shop-bundle-query'
 
@@ -37,7 +36,8 @@ export async function GET(request: NextRequest) {
 
     const response = NextResponse.json(responseBody)
     response.headers.set('Server-Timing', `app;dur=${reqTotalMs}`)
-    response.headers.set('Cache-Control', getShopBundleCacheControl(searchParams))
+    // Shop listings must reflect create/update/delete immediately — do not CDN-cache.
+    response.headers.set('Cache-Control', 'private, no-store, must-revalidate')
     return response
   } catch (error) {
     console.error('Error fetching shop data:', error)

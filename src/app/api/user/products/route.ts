@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { checkAndClearExpiredDiscounts, processExpiredDiscount } from '@/utils/discountUtils'
 import { ownerProductListSelect, parseListPagination } from '@/lib/product-owner-query'
+import { revalidateProductListCache } from '@/lib/product-list-query'
 
 // GET - Fetch user's products
 export async function GET(request: NextRequest) {
@@ -95,6 +96,8 @@ export async function DELETE(request: NextRequest) {
     await prisma.product.delete({
       where: { id: parseInt(productId) },
     })
+
+    revalidateProductListCache()
 
     return NextResponse.json({
       success: true,
