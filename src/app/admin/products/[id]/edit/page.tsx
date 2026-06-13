@@ -300,7 +300,7 @@ const EditProductPage = () => {
       try {
         console.log('=== FETCHING PRODUCT ===')
         console.log('Product ID:', productId)
-        const response = await fetch(`/api/products/${productId}`)
+        const response = await fetch(`/api/products/${productId}`, { cache: 'no-store' })
         console.log('Fetch response status:', response.status)
         const data = await response.json()
         console.log('Fetch response data:', data)
@@ -343,7 +343,7 @@ const EditProductPage = () => {
             discount: product.discount,
             discountDays: product.discountDays,
             rating: product.rating || 0,
-            categoryId: product.categoryId,
+            categoryId: product.category?.id ?? product.categoryId,
             purposeSlug: product.purpose?.slug,
             isRentable: product.isRentable ?? true,
             pricePerDay: product.pricePerDay || undefined,

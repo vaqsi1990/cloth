@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { prismaCacheStrategy } from '@/lib/prisma-cache'
 import { z } from 'zod'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -119,6 +118,7 @@ const buildProductSelect = (includeAdminFields: boolean = false) => {
     sku: true,
     stock: true,
     gender: true,
+    color: true,
     location: true,
     allowsPickup: true,
     pickupAddress: true,
@@ -132,8 +132,9 @@ const buildProductSelect = (includeAdminFields: boolean = false) => {
     discountDays: true,
     discountStartDate: true,
     rating: true,
+    categoryId: true,
+    purposeId: true,
     userId: true, // Needed for isOwner check
-    // Removed: categoryId, purposeId - not needed, we have relations
     isRentable: true,
     requiresInquiryBeforeRent: true,
     pricePerDay: true,
@@ -217,11 +218,10 @@ export async function GET(
     // Fetch product and session in parallel for maximum performance
     const [product, session] = await Promise.all([
       prisma.product.findUnique({
-        ...prismaCacheStrategy({ swr: 300, ttl: 300 }),
         where: { id: productId },
-        select: buildProductSelect(true) // Always fetch admin fields (small overhead, avoids re-fetch)
+        select: buildProductSelect(true),
       }),
-      getServerSession(authOptions)
+      getServerSession(authOptions),
     ])
     
     const isAdminOrSupportRole = isAdminOrSupport(session?.user?.role)
@@ -263,6 +263,10 @@ export async function GET(
     return NextResponse.json({
       success: true,
       product: finalProduct
+    }, {
+      headers: {
+        'Cache-Control': 'no-store',
+      },
     })
     
   } catch (error) {

@@ -323,7 +323,7 @@ const EditProductPage = () => {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const response = await fetch(`/api/products/${productId}`)
+        const response = await fetch(`/api/products/${productId}`, { cache: 'no-store' })
         const data = await response.json()
         if (data.success) {
           const product = data.product
@@ -361,7 +361,7 @@ const EditProductPage = () => {
             discount: product.discount,
             discountDays: product.discountDays,
             rating: product.rating || 0,
-            categoryId: product.categoryId,
+            categoryId: product.category?.id ?? product.categoryId,
             isRentable: product.isRentable ?? true,
             pricePerDay: product.pricePerDay || undefined,
             maxRentalDays: product.maxRentalDays || undefined,
