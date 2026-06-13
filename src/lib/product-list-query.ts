@@ -129,6 +129,27 @@ export async function countActiveDiscountProducts(
   return rows[0]?.count ?? 0
 }
 
+export async function getProductColorCounts(
+  filters: Omit<PublicListFilters, 'skip' | 'take'>,
+): Promise<Array<{ colorValue: string; count: number }>> {
+  const where = buildWhere({ ...filters, skip: 0, take: 0 })
+  const rows = await prisma.$queryRaw<
+    Array<{ color: string; count: number }>
+  >(Prisma.sql`
+    SELECT p.color, COUNT(*)::int AS count
+    FROM "Product" p
+    WHERE ${where}
+      AND p.color IS NOT NULL
+      AND TRIM(p.color) <> ''
+    GROUP BY p.color
+  `)
+
+  return rows.map((row) => ({
+    colorValue: row.color,
+    count: row.count,
+  }))
+}
+
 export function mapCombinedRowsToProducts(rows: CombinedListRow[]) {
   return rows.map((row) => {
     const variants: Array<{ price: number }> = []

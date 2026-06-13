@@ -8,11 +8,10 @@ import { Product } from '@/types/product'
 import DatePicker from "react-datepicker"
 import StarRating from "@/components/StarRating"
 import { PURPOSE_OPTIONS } from '@/data/purposes'
-import { collectShopFilterColors } from '@/lib/product-colors'
+import { PRODUCT_COLORS, type ProductColorFacet } from '@/lib/product-colors'
 import {
   collectAvailableSizes,
   countProductsForCategory,
-  countProductsForColor,
   formatFilterCount,
   productMatchesColorFilter,
   productMatchesSizeFilter,
@@ -59,6 +58,9 @@ const ShopPageClient = () => {
     const [selectedSizeSystems, setSelectedSizeSystems] = useState<string[]>([])
     const [selectedSizes, setSelectedSizes] = useState<string[]>([])
     const [selectedColors, setSelectedColors] = useState<string[]>([])
+    const [colorFacets, setColorFacets] = useState<ProductColorFacet[]>(() =>
+        PRODUCT_COLORS.map((color) => ({ ...color, count: 0 })),
+    )
     const [selectedLocations, setSelectedLocations] = useState<string[]>([])
 
     const [rentalStartDate, setRentalStartDate] = useState<Date | null>(null)
@@ -376,11 +378,6 @@ const ShopPageClient = () => {
       [catalogProducts],
     )
 
-    const filterColors = React.useMemo(
-        () => collectShopFilterColors(catalogProducts),
-        [catalogProducts],
-    )
-
     const locations = [
         { id: "თბილისი", label: "თბილისი" },
         { id: "ქუთაისი", label: "ქუთაისი" },
@@ -571,6 +568,60 @@ const ShopPageClient = () => {
         return () => controller.abort('cleanup')
     }, [hasRestoredState, refreshFilterCounts])
 
+    // Fast color facets (single lightweight SQL query, cached on CDN)
+    useEffect(() => {
+        if (!hasRestoredState) return
+
+        const controller = new AbortController()
+
+        const fetchColorFacets = async () => {
+            try {
+                const params = new URLSearchParams()
+                if (genderParam) params.append('gender', genderParam)
+                if (searchParam) params.append('search', searchParam)
+                if (purposeParam) {
+                    params.append('purpose', purposeParam)
+                } else if (selectedPurposes.length === 1) {
+                    params.append('purpose', selectedPurposes[0])
+                }
+                const categorySlug = resolveCategoryApiSlug(
+                    categoryParam,
+                    selectedCategories,
+                )
+                if (categorySlug) params.append('category', categorySlug)
+
+                const response = await fetch(
+                    `/api/products/color-facets?${params}`,
+                    { signal: controller.signal },
+                )
+                const data = await response.json()
+                if (data.success && Array.isArray(data.colors)) {
+                    setColorFacets(data.colors)
+                }
+            } catch (error: unknown) {
+                if (
+                    controller.signal.aborted ||
+                    (error instanceof DOMException && error.name === 'AbortError')
+                ) {
+                    return
+                }
+                console.error('Error fetching color facets:', error)
+            }
+        }
+
+        void fetchColorFacets()
+        return () => controller.abort('cleanup')
+    }, [
+        hasRestoredState,
+        genderParam,
+        searchParam,
+        purposeParam,
+        categoryParam,
+        selectedCategories,
+        selectedPurposes,
+        resolveCategoryApiSlug,
+    ])
+
     // Fetch all products (offset pagination) for filter count calculations
     useEffect(() => {
         if (!hasRestoredState) return
@@ -591,7 +642,6 @@ const ShopPageClient = () => {
                 if (purposeParam) {
                     baseParams.append('purpose', purposeParam)
                 }
-                baseParams.set('fresh', '1')
 
                 const allProducts: Product[] = []
                 let page = 1
@@ -1237,8 +1287,7 @@ const ShopPageClient = () => {
                                     <div className="space-y-3">
                                         <h3 className="text-lg font-semibold text-black mb-4">ფერი</h3>
                                         <div className="flex flex-wrap gap-4">
-                                            {filterColors.map((color) => {
-                                                const colorCount = countProductsForColor(catalogProducts, color.id)
+                                            {colorFacets.map((color) => {
                                                 return (
                                                     <div key={color.id} className="flex flex-col items-center gap-1">
                                                         <button
@@ -1251,7 +1300,7 @@ const ShopPageClient = () => {
                                                             title={color.label}
                                                         />
                                                         <span className="text-xs text-gray-500">
-                                                            {formatFilterCount(colorCount)}
+                                                            {formatFilterCount(color.count)}
                                                         </span>
                                                     </div>
                                                 )
@@ -1823,8 +1872,7 @@ const ShopPageClient = () => {
                             <div className="mb-6  pb-6">
                                 <h4 className="font-medium text-black md:text-[20px] text-[16px] mb-3">ფერი</h4>
                                 <div className="flex flex-wrap gap-4">
-                                    {filterColors.map((color) => {
-                                        const colorCount = countProductsForColor(catalogProducts, color.id)
+                                    {colorFacets.map((color) => {
                                         return (
                                             <div key={color.id} className="flex flex-col items-center gap-1">
                                                 <button
@@ -1837,7 +1885,7 @@ const ShopPageClient = () => {
                                                     title={color.label}
                                                 />
                                                 <span className="text-xs text-gray-500">
-                                                    {formatFilterCount(colorCount)}
+                                                    {formatFilterCount(color.count)}
                                                 </span>
                                             </div>
                                         )

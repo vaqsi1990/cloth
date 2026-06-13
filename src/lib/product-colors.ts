@@ -4,6 +4,8 @@ export type ProductColor = {
   color: string
 }
 
+export type ProductColorFacet = ProductColor & { count: number }
+
 export const PRODUCT_COLORS: ProductColor[] = [
   { id: "black", label: "შავი", color: "#000000" },
   { id: "white", label: "თეთრი", color: "#FFFFFF" },
@@ -85,6 +87,46 @@ export function collectShopFilterColors(
       id: `custom:${key}`,
       label: raw,
       color: '#CCCCCC',
+    })
+  }
+
+  return result
+}
+
+/** Aggregate raw DB color counts into shop filter swatches with totals. */
+export function buildShopColorFacets(
+  rows: Array<{ colorValue: string; count: number }>,
+): ProductColorFacet[] {
+  const countById = new Map<string, number>()
+  const customColors = new Map<string, ProductColor>()
+
+  for (const row of rows) {
+    const raw = row.colorValue.trim()
+    if (!raw) continue
+
+    const filterId = resolveProductColorFilterId(raw)
+    if (filterId) {
+      countById.set(filterId, (countById.get(filterId) ?? 0) + row.count)
+      continue
+    }
+
+    const key = raw.toLowerCase()
+    const id = `custom:${key}`
+    countById.set(id, (countById.get(id) ?? 0) + row.count)
+    if (!customColors.has(key)) {
+      customColors.set(key, { id, label: raw, color: '#CCCCCC' })
+    }
+  }
+
+  const result: ProductColorFacet[] = PRODUCT_COLORS.map((color) => ({
+    ...color,
+    count: countById.get(color.id) ?? 0,
+  }))
+
+  for (const custom of customColors.values()) {
+    result.push({
+      ...custom,
+      count: countById.get(custom.id) ?? 0,
     })
   }
 
