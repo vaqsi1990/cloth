@@ -5,6 +5,10 @@ import { prisma } from '@/lib/prisma'
 import { sortProductsByVipPriority } from '@/lib/product-vip'
 import { resolveCanonicalCategory } from '@/lib/product-categories'
 import { getDbColorMatchValues } from '@/lib/product-colors'
+import {
+  isLetterSize,
+  LETTER_SIZE_TO_SYSTEM_SIZES,
+} from '@/lib/shop-product-filters'
 import type { ShopPurchaseType, ShopSortBy } from '@/lib/shop-list-params'
 
 export const PRODUCT_LIST_CACHE_TAG = 'product-list'
@@ -66,9 +70,64 @@ type CombinedListRow = {
   pur_slug: string | null
 }
 
+const ALL_SIZE_SYSTEMS = ['EU', 'US', 'UK', 'CN'] as const
+
 function buildColorWhere(colorId: string): Prisma.Sql {
   const values = getDbColorMatchValues(colorId).map((v) => v.toLowerCase())
   return Prisma.sql`LOWER(TRIM(p.color)) IN (${Prisma.join(values)})`
+}
+
+function buildSizeWhere(filters: PublicListFilters): Prisma.Sql | null {
+  if (!filters.sizes?.length) return null
+
+  const activeSystems =
+    filters.sizeSystems?.length && filters.sizeSystems.length > 0
+      ? filters.sizeSystems
+      : [...ALL_SIZE_SYSTEMS]
+
+  const perSelectedSize = filters.sizes
+    .map((raw) => raw.trim())
+    .filter(Boolean)
+    .map((selectedSize) => {
+      const upper = selectedSize.toUpperCase()
+
+      if (isLetterSize(selectedSize)) {
+        const mapping = LETTER_SIZE_TO_SYSTEM_SIZES[upper]
+        const parts: Prisma.Sql[] = [
+          Prisma.sql`UPPER(TRIM(p.size)) = ${upper}`,
+        ]
+
+        for (const system of activeSystems) {
+          const values = mapping?.[system as keyof typeof mapping]
+          if (!values?.length) continue
+
+          if (system === 'CN') {
+            parts.push(
+              Prisma.sql`(p."sizeSystem"::text = 'CN' AND UPPER(TRIM(p.size)) = ${upper})`,
+            )
+          } else {
+            parts.push(
+              Prisma.sql`(p."sizeSystem"::text = ${system} AND TRIM(p.size) IN (${Prisma.join(
+                values,
+              )}))`,
+            )
+          }
+        }
+
+        return Prisma.sql`(${Prisma.join(parts, ' OR ')})`
+      }
+
+      if (filters.sizeSystems?.length) {
+        return Prisma.sql`(TRIM(p.size) = ${selectedSize} AND p."sizeSystem"::text IN (${Prisma.join(
+          filters.sizeSystems,
+        )}))`
+      }
+
+      return Prisma.sql`TRIM(p.size) = ${selectedSize}`
+    })
+
+  if (perSelectedSize.length === 0) return null
+  return Prisma.sql`(${Prisma.join(perSelectedSize, ' OR ')})`
 }
 
 function buildPurchaseTypeWhere(purchaseType: ShopPurchaseType): Prisma.Sql {
@@ -204,15 +263,9 @@ function buildWhere(filters: PublicListFilters): Prisma.Sql {
   if (filters.color) {
     parts.push(buildColorWhere(filters.color))
   }
-  if (filters.sizes?.length) {
-    const normalizedSizes = filters.sizes.map((s) => s.trim()).filter(Boolean)
-    if (normalizedSizes.length > 0) {
-      parts.push(
-        Prisma.sql`UPPER(TRIM(p.size)) IN (${Prisma.join(
-          normalizedSizes.map((s) => s.toUpperCase()),
-        )})`,
-      )
-    }
+  const sizeWhere = buildSizeWhere(filters)
+  if (sizeWhere) {
+    parts.push(sizeWhere)
   }
   if (filters.sizeSystems?.length) {
     parts.push(
@@ -281,6 +334,28 @@ export async function getProductColorCounts(
 
   return rows.map((row) => ({
     colorValue: row.color,
+    count: row.count,
+  }))
+}
+
+export async function getProductSizeCounts(
+  filters: Omit<PublicListFilters, 'skip' | 'take' | 'sizes'>,
+): Promise<Array<{ sizeValue: string; sizeSystem: string | null; count: number }>> {
+  const where = buildWhere({ ...filters, skip: 0, take: 0 })
+  const rows = await prisma.$queryRaw<
+    Array<{ size: string; size_system: string | null; count: number }>
+  >(Prisma.sql`
+    SELECT TRIM(p.size) AS size, p."sizeSystem"::text AS size_system, COUNT(*)::int AS count
+    FROM "Product" p
+    WHERE ${where}
+      AND p.size IS NOT NULL
+      AND TRIM(p.size) <> ''
+    GROUP BY TRIM(p.size), p."sizeSystem"
+  `)
+
+  return rows.map((row) => ({
+    sizeValue: row.size,
+    sizeSystem: row.size_system,
     count: row.count,
   }))
 }
@@ -601,7 +676,7 @@ const getCachedProductList = unstable_cache(
     const filters = JSON.parse(filtersKey) as PublicListFilters
     return buildListPayload(filters)
   },
-  ['public-product-list-v4'],
+  ['public-product-list-v5'],
   {
     revalidate: 120,
     tags: [PRODUCT_LIST_CACHE_TAG],

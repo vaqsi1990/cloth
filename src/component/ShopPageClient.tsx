@@ -56,6 +56,7 @@ const ShopPageClient = () => {
     const [colorFacets, setColorFacets] = useState<ProductColorFacet[]>(() =>
         PRODUCT_COLORS.map((color) => ({ ...color, count: 0 })),
     )
+    const [availableSizes, setAvailableSizes] = useState<string[]>(PREDEFINED_LETTER_SIZES)
     const [selectedLocations, setSelectedLocations] = useState<string[]>([])
 
     const [rentalStartDate, setRentalStartDate] = useState<Date | null>(null)
@@ -429,8 +430,6 @@ const ShopPageClient = () => {
         [],
     )
 
-    const availableSizes = PREDEFINED_LETTER_SIZES
-
     const locations = [
         { id: "თბილისი", label: "თბილისი" },
         { id: "ქუთაისი", label: "ქუთაისი" },
@@ -649,6 +648,60 @@ const ShopPageClient = () => {
         }
 
         void fetchColorFacets()
+        return () => controller.abort('cleanup')
+    }, [
+        hasRestoredState,
+        genderParam,
+        searchParam,
+        purposeParam,
+        categoryParam,
+        selectedCategories,
+        selectedPurposes,
+        resolveCategoryApiSlug,
+    ])
+
+    // Size options from DB (numeric sizes) + predefined letter sizes
+    useEffect(() => {
+        if (!hasRestoredState) return
+
+        const controller = new AbortController()
+
+        const fetchSizeFacets = async () => {
+            try {
+                const params = new URLSearchParams()
+                if (genderParam) params.append('gender', genderParam)
+                if (searchParam) params.append('search', searchParam)
+                if (purposeParam) {
+                    params.append('purpose', purposeParam)
+                } else if (selectedPurposes.length === 1) {
+                    params.append('purpose', selectedPurposes[0])
+                }
+                const categorySlug = resolveCategoryApiSlug(
+                    categoryParam,
+                    selectedCategories,
+                )
+                if (categorySlug) params.append('category', categorySlug)
+
+                const response = await fetch(
+                    `/api/products/size-facets?${params}`,
+                    { signal: controller.signal },
+                )
+                const data = await response.json()
+                if (data.success && Array.isArray(data.sizes) && data.sizes.length > 0) {
+                    setAvailableSizes(data.sizes)
+                }
+            } catch (error: unknown) {
+                if (
+                    controller.signal.aborted ||
+                    (error instanceof DOMException && error.name === 'AbortError')
+                ) {
+                    return
+                }
+                console.error('Error fetching size facets:', error)
+            }
+        }
+
+        void fetchSizeFacets()
         return () => controller.abort('cleanup')
     }, [
         hasRestoredState,
