@@ -26,6 +26,12 @@ import {
 } from '@/lib/product-categories'
 import { isProductVipActive } from '@/lib/product-vip'
 import ProductSalePrice from '@/components/ProductSalePrice'
+import {
+    fetchShopData,
+    getShopFilterKey,
+    SHOP_FETCH_DEBOUNCE_MS,
+} from '@/lib/shop-data-client'
+import type { BatchRentalStatusMap } from '@/lib/product-rental-status-batch'
 
 type PurchaseType = 'all' | 'rent-only' | 'sale-only' | 'rent-and-sale'
 
@@ -65,13 +71,7 @@ const ShopPageClient = () => {
     const [purchaseType, setPurchaseType] = useState<PurchaseType>("all")
     const [onlyDiscounted, setOnlyDiscounted] = useState(false)
     const [onlyVip, setOnlyVip] = useState(false)
-    const [productRentalStatus, setProductRentalStatus] = useState<Record<number, {
-        variantId: number;
-        size: string;
-        stock: number;
-        activeRentals: Array<{ startDate: string; endDate: string; status: string }>;
-        isAvailable: boolean;
-    }[]>>({})
+    const [productRentalStatus, setProductRentalStatus] = useState<BatchRentalStatusMap>({})
     const [isCategoryOpen, setIsCategoryOpen] = useState(false)
     const [isSizeOpen, setIsSizeOpen] = useState(false)
 
@@ -91,8 +91,7 @@ const ShopPageClient = () => {
 
     // Persist state across navigation
     const scrollYRef = useRef(0)
-    const productsFetchIdRef = useRef(0)
-    const rentalFetchIdRef = useRef(0)
+    const shopFetchIdRef = useRef(0)
     const shopInitializedRef = useRef(false)
     const prevPurposeParamRef = useRef(purposeParam)
     const prevCategoryParamRef = useRef(categoryParam)
@@ -360,91 +359,85 @@ const ShopPageClient = () => {
         ],
     )
 
-    const appendBaseProductParams = useCallback(
-        (params: URLSearchParams) => {
-            if (genderParam) {
-                params.append('gender', genderParam)
-            }
-            if (searchParam) {
-                params.append('search', searchParam)
-            }
-            if (purposeParam) {
-                params.append('purpose', purposeParam)
-            } else if (selectedPurposes.length === 1) {
-                params.append('purpose', selectedPurposes[0])
-            }
-            const categorySlug = resolveCategoryApiSlug(
-                categoryParam,
-                selectedCategories,
-            )
-            if (categorySlug) {
-                params.append('category', categorySlug)
-            }
-            if (onlyDiscounted) {
-                params.append('hasDiscount', 'true')
-            }
-            if (onlyVip) {
-                params.append('isVip', 'true')
-            }
-            appendShopListFilterParams(params, shopListFilters())
-        },
-        [
-            genderParam,
-            searchParam,
-            purposeParam,
+    const shopQueryKey = React.useMemo(() => {
+        const params = new URLSearchParams()
+        params.set('page', String(currentPage))
+        params.set('limit', String(itemsPerPage))
+        if (genderParam) {
+            params.append('gender', genderParam)
+        }
+        if (searchParam) {
+            params.append('search', searchParam)
+        }
+        if (purposeParam) {
+            params.append('purpose', purposeParam)
+        } else if (selectedPurposes.length === 1) {
+            params.append('purpose', selectedPurposes[0])
+        }
+        const categorySlug = resolveCategoryApiSlug(
             categoryParam,
             selectedCategories,
-            selectedPurposes,
-            onlyDiscounted,
-            onlyVip,
-            resolveCategoryApiSlug,
-            shopListFilters,
-        ],
+        )
+        if (categorySlug) {
+            params.append('category', categorySlug)
+        }
+        if (onlyDiscounted) {
+            params.append('hasDiscount', 'true')
+        }
+        if (onlyVip) {
+            params.append('isVip', 'true')
+        }
+        appendShopListFilterParams(params, shopListFilters())
+        return params.toString()
+    }, [
+        currentPage,
+        itemsPerPage,
+        genderParam,
+        searchParam,
+        purposeParam,
+        categoryParam,
+        selectedCategories,
+        selectedPurposes,
+        onlyDiscounted,
+        onlyVip,
+        resolveCategoryApiSlug,
+        shopListFilters,
+    ])
+
+    const shopFilterKey = React.useMemo(
+        () => getShopFilterKey(shopQueryKey),
+        [shopQueryKey],
     )
 
-    const appendFacetFilterParams = useCallback(
-        (params: URLSearchParams, options?: { includeCategory?: boolean }) => {
-            if (genderParam) {
-                params.append('gender', genderParam)
-            }
-            if (searchParam) {
-                params.append('search', searchParam)
-            }
-            if (purposeParam) {
-                params.append('purpose', purposeParam)
-            } else if (selectedPurposes.length === 1) {
-                params.append('purpose', selectedPurposes[0])
-            }
-            if (options?.includeCategory !== false) {
-                const categorySlug = resolveCategoryApiSlug(
-                    categoryParam,
-                    selectedCategories,
-                )
-                if (categorySlug) {
-                    params.append('category', categorySlug)
-                }
-            }
-            if (onlyDiscounted) {
-                params.append('hasDiscount', 'true')
-            }
-            if (onlyVip) {
-                params.append('isVip', 'true')
-            }
-            appendShopListFilterParams(params, shopListFilters())
-        },
-        [
-            genderParam,
-            searchParam,
-            purposeParam,
-            categoryParam,
-            selectedCategories,
-            selectedPurposes,
-            onlyDiscounted,
-            onlyVip,
-            resolveCategoryApiSlug,
-            shopListFilters,
-        ],
-    )
+    const shopFetchReadyRef = useRef(false)
+    const prevShopFilterKeyRef = useRef(shopFilterKey)
+    const [activeShopQueryKey, setActiveShopQueryKey] = useState<string | null>(null)
+
+    // Debounce filter changes; pagination and first load fetch immediately
+    useEffect(() => {
+        if (!hasRestoredState) return
+
+        if (!shopFetchReadyRef.current) {
+            shopFetchReadyRef.current = true
+            prevShopFilterKeyRef.current = shopFilterKey
+            setActiveShopQueryKey(shopQueryKey)
+            return
+        }
+
+        const filterChanged = prevShopFilterKeyRef.current !== shopFilterKey
+        prevShopFilterKeyRef.current = shopFilterKey
+
+        if (!filterChanged) {
+            setActiveShopQueryKey(shopQueryKey)
+            return
+        }
+
+        const timer = window.setTimeout(() => {
+            setActiveShopQueryKey(shopQueryKey)
+        }, SHOP_FETCH_DEBOUNCE_MS)
+
+        return () => window.clearTimeout(timer)
+    }, [hasRestoredState, shopQueryKey, shopFilterKey])
 
     useEffect(() => {
         const loadCategories = async () => {
@@ -487,121 +480,46 @@ const ShopPageClient = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' })
     }
 
-    const refreshFilterCounts = useCallback(async (signal?: AbortSignal) => {
-        try {
-            const params = new URLSearchParams()
-            if (genderParam) params.append('gender', genderParam)
-            if (searchParam) params.append('search', searchParam)
-            if (purposeParam) {
-                params.append('purpose', purposeParam)
-            } else if (selectedPurposes.length === 1) {
-                params.append('purpose', selectedPurposes[0])
-            }
-            const categorySlug = resolveCategoryApiSlug(categoryParam, selectedCategories)
-            if (categorySlug) params.append('category', categorySlug)
-
-            const response = await fetch(`/api/products/filter-counts?${params}`, { signal })
-            const data = await response.json()
-            if (data.success) {
-                setVipProductsCount(data.vipCount ?? 0)
-                setDiscountedProductsCount(data.discountCount ?? 0)
-            }
-        } catch (error: unknown) {
-            if (error instanceof DOMException && error.name === 'AbortError') return
-        }
-    }, [
-        genderParam,
-        searchParam,
-        purposeParam,
-        categoryParam,
-        selectedCategories,
-        selectedPurposes,
-        resolveCategoryApiSlug,
-    ])
-
-    // Fetch products from API (server-side pagination: 16 per page)
+    // Single orchestrated fetch via /api/shop
     useEffect(() => {
-        if (!hasRestoredState) return
+        if (!hasRestoredState || activeShopQueryKey === null) return
 
-        const fetchId = ++productsFetchIdRef.current
+        const fetchId = ++shopFetchIdRef.current
         const controller = new AbortController()
-        const isStale = () => fetchId !== productsFetchIdRef.current
+        const isStale = () => fetchId !== shopFetchIdRef.current
 
-        const fetchProducts = async () => {
+        const loadShopData = async () => {
             setLoading(true)
             try {
-                const params = new URLSearchParams()
-                params.set('page', String(currentPage))
-                params.set('limit', String(itemsPerPage))
-                appendBaseProductParams(params)
-                const url = `/api/products?${params}`
-                const t0 = performance.now()
-                const response = await fetch(url, { signal: controller.signal })
+                const data = await fetchShopData(activeShopQueryKey, controller.signal)
                 if (isStale()) return
 
-                const tHeaders = performance.now()
-                const data = await response.json()
-                if (isStale()) return
+                setProducts(data.products)
+                setServerTotalPages(data.totalPages ?? 1)
+                setServerTotalCount(data.totalCount ?? data.products.length)
+                setServerHasMore(Boolean(data.hasMore))
+                setIsTotalPagesKnown(
+                    data.totalPages !== null && data.totalPages !== undefined,
+                )
 
-                const tDone = performance.now()
-                if (process.env.NODE_ENV === 'development') {
-                    const st = response.headers.get('server-timing')
-                    const resourceUrl = new URL(url, window.location.origin).href
-                    const entries = performance.getEntriesByName(
-                        resourceUrl,
-                        'resource',
-                    ) as PerformanceResourceTiming[]
-                    const rt = entries[entries.length - 1]
-                    const ttfbMs = rt ? rt.responseStart - rt.requestStart : null
-                    const downloadMs = rt ? rt.responseEnd - rt.responseStart : null
-                    const gapMs =
-                        ttfbMs !== null ? Math.max(0, tHeaders - t0 - ttfbMs) : null
-                    console.log('[ShopPageClient] /api/products', {
-                        totalMs: Math.round(tDone - t0),
-                        ttfbMs: ttfbMs !== null ? Math.round(ttfbMs) : null,
-                        downloadMs: downloadMs !== null ? Math.round(downloadMs) : null,
-                        jsonParseMs: Math.round(tDone - tHeaders),
-                        compileOrQueueMs: gapMs !== null ? Math.round(gapMs) : null,
-                        serverTiming: st ?? null,
-                        timings: data.timings ?? null,
-                    })
+                setColorFacets(data.facets.colors)
+                setCategoryCountsBySlug(data.facets.categoryCounts)
+                if (data.facets.sizes.length > 0) {
+                    setAvailableSizes(data.facets.sizes)
                 }
-                if (data.success) {
-                    if (process.env.NODE_ENV === 'development' && purposeParam) {
-                        console.log(`[ShopPageClient] Fetched ${data.products.length} products for purpose: ${purposeParam}`)
-                    }
-                    setProducts(data.products)
-                    setServerTotalPages(data.totalPages ?? 1)
-                    setServerTotalCount(data.totalCount ?? data.products.length)
-                    setServerHasMore(Boolean(data.hasMore))
-                    setIsTotalPagesKnown(data.totalPages !== null && data.totalPages !== undefined)
+                setVipProductsCount(data.facets.vipCount)
+                setDiscountedProductsCount(data.facets.discountCount)
 
-                    const allPrices = data.products.flatMap((product: Product) => {
-                        const prices: number[] = []
-                        // Add buy prices
-                        if (product.variants && product.variants.length > 0) {
-                            prices.push(...product.variants.map(variant => variant.price))
-                        }
-                        // Add rental prices if product is rentable
-                        if (product.isRentable && product.rentalPriceTiers && product.rentalPriceTiers.length > 0) {
-                            const sortedTiers = [...product.rentalPriceTiers].sort((a, b) => a.minDays - b.minDays)
-                            const tier0 = sortedTiers[0]
-                            prices.push(tier0.pricePerDay * tier0.minDays)
-                        }
-                        return prices
-                    })
-                    const calculatedMaxPrice = allPrices.length > 0 ? Math.max.apply(null, allPrices) : 200
-                    setMaxPrice(calculatedMaxPrice)
+                setProductRentalStatus(data.rentalStatus ?? {})
 
-                    // Update price range if current max is higher than calculated max
-                    if (calculatedMaxPrice > priceRange[1] || priceRange[1] === 0) {
-                        setPriceRange([0, calculatedMaxPrice])
-                    }
-
-                    void refreshFilterCounts()
-                }
+                const calculatedMaxPrice = data.priceRange?.max ?? 200
+                setMaxPrice(calculatedMaxPrice)
+                setPriceRange((prev) =>
+                    calculatedMaxPrice > prev[1] || prev[1] === 0
+                        ? [0, calculatedMaxPrice]
+                        : prev,
+                )
             } catch (error: unknown) {
-                // Effect cleanup / StrictMode re-run aborts the previous in-flight request.
                 if (
                     isStale() ||
                     controller.signal.aborted ||
@@ -609,7 +527,7 @@ const ShopPageClient = () => {
                 ) {
                     return
                 }
-                console.error('Error fetching products:', error)
+                console.error('Error fetching shop data:', error)
             } finally {
                 if (!isStale()) {
                     setLoading(false)
@@ -617,227 +535,9 @@ const ShopPageClient = () => {
             }
         }
 
-        void fetchProducts()
+        void loadShopData()
         return () => controller.abort('cleanup')
-    }, [
-        hasRestoredState,
-        currentPage,
-        genderParam,
-        searchParam,
-        purposeParam,
-        categoryParam,
-        selectedCategories,
-        selectedPurposes,
-        selectedColors,
-        selectedSizes,
-        selectedSizeSystems,
-        selectedLocations,
-        priceRange,
-        maxPrice,
-        purchaseType,
-        sortBy,
-        onlyDiscounted,
-        onlyVip,
-        appendBaseProductParams,
-        refreshFilterCounts,
-    ])
-
-    // Fetch VIP count from server (includes BOG sync for pending payments)
-    useEffect(() => {
-        if (!hasRestoredState) return
-
-        const controller = new AbortController()
-        void refreshFilterCounts(controller.signal)
-        return () => controller.abort('cleanup')
-    }, [hasRestoredState, refreshFilterCounts])
-
-    // Fast color facets (single lightweight SQL query, cached on CDN)
-    useEffect(() => {
-        if (!hasRestoredState) return
-
-        const controller = new AbortController()
-
-        const fetchColorFacets = async () => {
-            try {
-                const params = new URLSearchParams()
-                if (genderParam) params.append('gender', genderParam)
-                if (searchParam) params.append('search', searchParam)
-                if (purposeParam) {
-                    params.append('purpose', purposeParam)
-                } else if (selectedPurposes.length === 1) {
-                    params.append('purpose', selectedPurposes[0])
-                }
-                const categorySlug = resolveCategoryApiSlug(
-                    categoryParam,
-                    selectedCategories,
-                )
-                if (categorySlug) params.append('category', categorySlug)
-
-                const response = await fetch(
-                    `/api/products/color-facets?${params}`,
-                    { signal: controller.signal },
-                )
-                const data = await response.json()
-                if (data.success && Array.isArray(data.colors)) {
-                    setColorFacets(data.colors)
-                }
-            } catch (error: unknown) {
-                if (
-                    controller.signal.aborted ||
-                    (error instanceof DOMException && error.name === 'AbortError')
-                ) {
-                    return
-                }
-                console.error('Error fetching color facets:', error)
-            }
-        }
-
-        void fetchColorFacets()
-        return () => controller.abort('cleanup')
-    }, [
-        hasRestoredState,
-        genderParam,
-        searchParam,
-        purposeParam,
-        categoryParam,
-        selectedCategories,
-        selectedPurposes,
-        resolveCategoryApiSlug,
-    ])
-
-    // Category counts for filter sidebar (excludes category filter itself)
-    useEffect(() => {
-        if (!hasRestoredState) return
-
-        const controller = new AbortController()
-
-        const fetchCategoryFacets = async () => {
-            try {
-                const params = new URLSearchParams()
-                appendFacetFilterParams(params, { includeCategory: false })
-
-                const response = await fetch(
-                    `/api/products/category-facets?${params}`,
-                    { signal: controller.signal },
-                )
-                const data = await response.json()
-                if (data.success && data.counts && typeof data.counts === 'object') {
-                    setCategoryCountsBySlug(data.counts)
-                }
-            } catch (error: unknown) {
-                if (
-                    controller.signal.aborted ||
-                    (error instanceof DOMException && error.name === 'AbortError')
-                ) {
-                    return
-                }
-                console.error('Error fetching category facets:', error)
-            }
-        }
-
-        void fetchCategoryFacets()
-        return () => controller.abort('cleanup')
-    }, [
-        hasRestoredState,
-        appendFacetFilterParams,
-    ])
-
-    // Size options from DB (numeric sizes) + predefined letter sizes
-    useEffect(() => {
-        if (!hasRestoredState) return
-
-        const controller = new AbortController()
-
-        const fetchSizeFacets = async () => {
-            try {
-                const params = new URLSearchParams()
-                if (genderParam) params.append('gender', genderParam)
-                if (searchParam) params.append('search', searchParam)
-                if (purposeParam) {
-                    params.append('purpose', purposeParam)
-                } else if (selectedPurposes.length === 1) {
-                    params.append('purpose', selectedPurposes[0])
-                }
-                const categorySlug = resolveCategoryApiSlug(
-                    categoryParam,
-                    selectedCategories,
-                )
-                if (categorySlug) params.append('category', categorySlug)
-
-                const response = await fetch(
-                    `/api/products/size-facets?${params}`,
-                    { signal: controller.signal },
-                )
-                const data = await response.json()
-                if (data.success && Array.isArray(data.sizes) && data.sizes.length > 0) {
-                    setAvailableSizes(data.sizes)
-                }
-            } catch (error: unknown) {
-                if (
-                    controller.signal.aborted ||
-                    (error instanceof DOMException && error.name === 'AbortError')
-                ) {
-                    return
-                }
-                console.error('Error fetching size facets:', error)
-            }
-        }
-
-        void fetchSizeFacets()
-        return () => controller.abort('cleanup')
-    }, [
-        hasRestoredState,
-        genderParam,
-        searchParam,
-        purposeParam,
-        categoryParam,
-        selectedCategories,
-        selectedPurposes,
-        resolveCategoryApiSlug,
-    ])
-
-    // Fetch rental status for rentable products on current page (batched)
-    useEffect(() => {
-        const rentableIds = products.filter((p) => p.isRentable).map((p) => p.id)
-        if (rentableIds.length === 0) {
-            setProductRentalStatus({})
-            return
-        }
-
-        const fetchId = ++rentalFetchIdRef.current
-        const controller = new AbortController()
-        const isStale = () => fetchId !== rentalFetchIdRef.current
-
-        const fetchRentalStatus = async () => {
-            try {
-                const productIds = rentableIds.join(',')
-                const response = await fetch(
-                    `/api/products/rental-status?ids=${productIds}`,
-                    { signal: controller.signal },
-                )
-                if (isStale()) return
-
-                const data = await response.json()
-                if (isStale()) return
-
-                if (data.success && data.statuses) {
-                    setProductRentalStatus(data.statuses)
-                }
-            } catch (error: unknown) {
-                if (
-                    isStale() ||
-                    controller.signal.aborted ||
-                    (error instanceof DOMException && error.name === 'AbortError')
-                ) {
-                    return
-                }
-                console.error('Error fetching batch rental status:', error)
-            }
-        }
-
-        void fetchRentalStatus()
-        return () => controller.abort('cleanup')
-    }, [products])
+    }, [hasRestoredState, activeShopQueryKey])
 
     // Check if product is available during selected dates
     const isProductAvailable = (product: Product): boolean => {
@@ -850,17 +550,10 @@ const ShopPageClient = () => {
         const end = new Date(rentalEndDate)
 
         // Check if any variant has availability for the selected dates
-        return variants.some((variant: {
-            variantId: number;
-            size: string;
-            stock: number;
-            activeRentals: Array<{ startDate: string; endDate: string; status: string }>;
-            isAvailable: boolean;
-        }) => {
+        return variants.some((variant) => {
             const activeRentals = variant.activeRentals || []
 
-            // Check if there are any conflicts
-            const hasConflict = activeRentals.some((period: { startDate: string; endDate: string; status: string }) => {
+            const hasConflict = activeRentals.some((period) => {
                 const periodStart = new Date(period.startDate)
                 const periodEnd = new Date(period.endDate)
                 const periodLastBlockedDate = new Date(periodEnd.getTime() + 24 * 60 * 60 * 1000)
