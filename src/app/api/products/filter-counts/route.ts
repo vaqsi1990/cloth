@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { countActiveVipProducts } from '@/lib/product-list-query'
+import { countActiveDiscountProducts, countActiveVipProducts } from '@/lib/product-list-query'
 import { syncPendingVipPayments } from '@/lib/product-vip-payment'
 import { getCategoryIdBySlugParam, resolveCategorySlugParam } from '@/lib/product-categories'
 import { getPurposeIdBySlug } from '@/lib/purpose-ids'
@@ -42,19 +42,30 @@ export async function GET(request: NextRequest) {
       new Promise((resolve) => setTimeout(resolve, 8000)),
     ])
 
-    const vipCount = await countActiveVipProducts({
-      categoryId,
-      purposeId,
-      gender: genderEnum,
-      isNew: false,
-      isSecondHand: false,
-      hasDiscount: false,
-      search: search || undefined,
-    })
+    const [vipCount, discountCount] = await Promise.all([
+      countActiveVipProducts({
+        categoryId,
+        purposeId,
+        gender: genderEnum,
+        isNew: false,
+        isSecondHand: false,
+        hasDiscount: false,
+        search: search || undefined,
+      }),
+      countActiveDiscountProducts({
+        categoryId,
+        purposeId,
+        gender: genderEnum,
+        isNew: false,
+        isSecondHand: false,
+        isVip: false,
+        search: search || undefined,
+      }),
+    ])
 
-    return NextResponse.json({ success: true, vipCount })
+    return NextResponse.json({ success: true, vipCount, discountCount })
   } catch (error) {
     console.error('Error fetching filter counts:', error)
-    return NextResponse.json({ success: false, vipCount: 0 }, { status: 500 })
+    return NextResponse.json({ success: false, vipCount: 0, discountCount: 0 }, { status: 500 })
   }
 }

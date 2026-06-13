@@ -619,7 +619,7 @@ const EditProductPage = () => {
           const payResponse = await fetch('/api/product-vip/pay', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ productId: parseInt(productId, 10) }),
+            body: JSON.stringify({ productId: parseInt(productId, 10), returnTo: 'admin' }),
           })
           const payResult = await payResponse.json()
 

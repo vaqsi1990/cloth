@@ -10,7 +10,22 @@ import { getBogCallbackUrl, getSiteUrl } from '@/lib/site-url'
 
 const paySchema = z.object({
   productId: z.number().int().positive(),
+  returnTo: z.enum(['account', 'admin']).optional().default('account'),
 })
+
+function buildVipRedirectUrls(siteUrl: string, productId: number, returnTo: 'account' | 'admin') {
+  if (returnTo === 'admin') {
+    return {
+      success: `${siteUrl}/admin/products?vipSuccess=1&productId=${productId}`,
+      fail: `${siteUrl}/admin/products?vipFailed=1&productId=${productId}`,
+    }
+  }
+
+  return {
+    success: `${siteUrl}/account?tab=products&vipSuccess=1&productId=${productId}`,
+    fail: `${siteUrl}/account?tab=products&vipFailed=1&productId=${productId}`,
+  }
+}
 
 interface BOGResponseData {
   id?: string
@@ -37,7 +52,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { productId } = paySchema.parse(await req.json())
+    const { productId, returnTo } = paySchema.parse(await req.json())
 
     const product = await prisma.product.findUnique({
       where: { id: productId },
@@ -72,6 +87,7 @@ export async function POST(req: NextRequest) {
     })
 
     const siteUrl = getSiteUrl()
+    const redirectUrls = buildVipRedirectUrls(siteUrl, productId, returnTo)
     const requestData = {
       callback_url: getBogCallbackUrl(),
       external_order_id: `vip-${vipPayment.id}`,
@@ -86,10 +102,7 @@ export async function POST(req: NextRequest) {
           },
         ],
       },
-      redirect_urls: {
-        success: `${siteUrl}/account?tab=products&vipSuccess=1&productId=${productId}`,
-        fail: `${siteUrl}/account?tab=products&vipFailed=1&productId=${productId}`,
-      },
+      redirect_urls: redirectUrls,
       payment_method: ['card'],
     }
 

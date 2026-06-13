@@ -76,6 +76,7 @@ const ShopPageClient = () => {
     const [serverHasMore, setServerHasMore] = useState(false)
     const [isTotalPagesKnown, setIsTotalPagesKnown] = useState(false)
     const [vipProductsCount, setVipProductsCount] = useState(0)
+    const [discountedProductsCount, setDiscountedProductsCount] = useState(0)
     const [activeMobileFilter, setActiveMobileFilter] = useState<string | null>(null)
     const [isMobileFilterOverlayOpen, setIsMobileFilterOverlayOpen] = useState(false)
     const [isCategorySectionOpen, setIsCategorySectionOpen] = useState(false)
@@ -398,7 +399,7 @@ const ShopPageClient = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' })
     }
 
-    const refreshVipCount = useCallback(async (signal?: AbortSignal) => {
+    const refreshFilterCounts = useCallback(async (signal?: AbortSignal) => {
         try {
             const params = new URLSearchParams()
             if (genderParam) params.append('gender', genderParam)
@@ -415,6 +416,7 @@ const ShopPageClient = () => {
             const data = await response.json()
             if (data.success) {
                 setVipProductsCount(data.vipCount ?? 0)
+                setDiscountedProductsCount(data.discountCount ?? 0)
             }
         } catch (error: unknown) {
             if (error instanceof DOMException && error.name === 'AbortError') return
@@ -531,7 +533,7 @@ const ShopPageClient = () => {
                         setPriceRange([0, calculatedMaxPrice])
                     }
 
-                    void refreshVipCount()
+                    void refreshFilterCounts()
                 }
             } catch (error: unknown) {
                 // Effect cleanup / StrictMode re-run aborts the previous in-flight request.
@@ -565,7 +567,7 @@ const ShopPageClient = () => {
         onlyDiscounted,
         onlyVip,
         resolveCategoryApiSlug,
-        refreshVipCount,
+        refreshFilterCounts,
     ])
 
     // Fetch VIP count from server (includes BOG sync for pending payments)
@@ -573,9 +575,9 @@ const ShopPageClient = () => {
         if (!hasRestoredState) return
 
         const controller = new AbortController()
-        void refreshVipCount(controller.signal)
+        void refreshFilterCounts(controller.signal)
         return () => controller.abort('cleanup')
-    }, [hasRestoredState, refreshVipCount])
+    }, [hasRestoredState, refreshFilterCounts])
 
     // Fetch all products (offset pagination) for filter count calculations
     useEffect(() => {
@@ -879,9 +881,6 @@ const ShopPageClient = () => {
 
     // Get products filtered by all other criteria (excluding purchase type) for count calculations
     const productsForTypeCounts = getProductsFilteredByOtherCriteria(allProductsForCounts)
-    const discountedProductsCount = getProductsFilteredByOtherCriteria(allProductsForCounts, {
-        includeDiscountFilter: false,
-    }).filter(productHasActiveDiscount).length
 
     const filteredProducts: Product[] = getProductsFilteredByOtherCriteria(products).filter(
         matchesPurchaseType,

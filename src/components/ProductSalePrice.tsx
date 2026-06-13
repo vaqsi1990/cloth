@@ -12,12 +12,12 @@ interface ProductSalePriceProps {
 
 const sizeClasses = {
   sm: {
-    sale: 'font-regular text-red-600 md:text-[18px] text-[16px]',
     original: 'font-regular text-black md:text-[18px] text-[16px] line-through decoration-black opacity-60',
+    sale: 'font-regular text-red-600 md:text-[18px] text-[16px]',
   },
   lg: {
-    sale: 'text-3xl font-bold text-red-600',
     original: 'text-xl font-bold text-black line-through decoration-black opacity-60',
+    sale: 'text-3xl font-bold text-red-600',
   },
 }
 
@@ -47,10 +47,10 @@ export default function ProductSalePrice({
 
   return (
     <div className={`flex items-center gap-2 ${className}`}>
-      <span className={classes.sale}>₾{salePrice.toFixed(2)}</span>
       <span className={classes.original} style={{ textDecorationThickness: size === 'lg' ? '2px' : '1px' }}>
         ₾{originalPrice.toFixed(2)}
       </span>
+      <span className={`${classes.sale}`}>₾{salePrice.toFixed(2)}</span>
     </div>
   )
 }

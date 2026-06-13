@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from '@/component/AppImage'
 import { Plus, Edit, Trash2, Eye, Search, Filter, Package, Calendar, Clock, Barcode } from 'lucide-react'
@@ -67,6 +67,7 @@ interface Product {
 const AdminProductsPage = () => {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -132,6 +133,51 @@ const AdminProductsPage = () => {
       fetchProducts()
     }
   }, [status, session?.user?.role, fetchProducts])
+
+  useEffect(() => {
+    const vipSuccess = searchParams.get('vipSuccess')
+    const vipFailed = searchParams.get('vipFailed')
+    const productIdParam = searchParams.get('productId')
+
+    if (!productIdParam) return
+
+    const productId = parseInt(productIdParam, 10)
+    if (Number.isNaN(productId)) return
+
+    if (vipFailed === '1') {
+      showToast('VIP გადახდა ვერ დასრულდა', 'error')
+      router.replace('/admin/products')
+      return
+    }
+
+    if (vipSuccess !== '1') return
+
+    const confirmVip = async () => {
+      try {
+        const response = await fetch('/api/product-vip/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ productId }),
+        })
+        const result = await response.json()
+
+        if (result.success) {
+          showToast('VIP სტატუსი წარმატებით გააქტიურდა!', 'success')
+          void fetchProducts()
+        } else if (result.status === 'BOG_CHECK_FAILED') {
+          showToast('VIP გადახდის დადასტურება ვერ მოხერხდა. სცადეთ მოგვიანებით.', 'error')
+        } else if (result.status !== 'ALREADY_ACTIVE') {
+          showToast('VIP გადახდა ჯერ არ არის დადასტურებული', 'error')
+        }
+      } catch {
+        showToast('VIP გადახდის დადასტურება ვერ მოხერხდა', 'error')
+      } finally {
+        router.replace('/admin/products')
+      }
+    }
+
+    void confirmVip()
+  }, [searchParams, router, fetchProducts])
 
   const handleDeleteProduct = async (productId: number) => {
     if (!confirm('ნამდვილად გსურთ პროდუქტის წაშლა?')) {

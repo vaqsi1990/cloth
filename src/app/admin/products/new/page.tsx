@@ -455,7 +455,7 @@ const NewProductPage = () => {
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ productId: result.product.id }),
+            body: JSON.stringify({ productId: result.product.id, returnTo: 'admin' }),
           })
           const payResult = await payResponse.json()
 
@@ -471,7 +471,7 @@ const NewProductPage = () => {
         }
 
         showToast('პროდუქტი წარმატებით შეიქმნა!', 'success')
-        router.push('/admin')
+        router.push('/admin/products')
       } else {
         if (result.errors) {
           const newErrors: Record<string, string> = {}
