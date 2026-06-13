@@ -538,7 +538,7 @@ const HeaderContent = () => {
                             <Link href="/shop?gender=children&category=ბავშვების სათამაშოები" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
                               5. სათამაშოები
                             </Link>
-                            <Link href="/shop?gender=children&category=თერმო ტანსაცმელი" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
+                            <Link href="/shop?gender=children&category=მეორე ფენა" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
                               6. მეორე ფენა
                             </Link>
                             <Link href="/shop?gender=children&category=სათვალე" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">

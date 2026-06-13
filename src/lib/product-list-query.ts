@@ -445,6 +445,7 @@ const getCachedProductList = unstable_cache(
  */
 export async function loadPublicProductList(
   filters: PublicListFilters,
+  options?: { forceFresh?: boolean },
 ): Promise<{
   payload: CachedListPayload
   cacheSource: ProductListCacheSource
@@ -452,7 +453,7 @@ export async function loadPublicProductList(
 }> {
   const cacheKey = getPublicListCacheKey(filters)
 
-  const memoryHit = readMemoryCache(cacheKey, filters)
+  const memoryHit = options?.forceFresh ? null : readMemoryCache(cacheKey, filters)
   if (memoryHit) {
     return {
       payload: memoryHit,
@@ -462,18 +463,22 @@ export async function loadPublicProductList(
   }
 
   const queryStart = Date.now()
-  const payload = filters.search
-    ? await buildListPayload(filters)
-    : await getCachedProductList(cacheKey)
+  const payload =
+    filters.search || options?.forceFresh
+      ? await buildListPayload(filters)
+      : await getCachedProductList(cacheKey)
   const listMs = Date.now() - queryStart
 
-  writeMemoryCache(cacheKey, payload)
+  if (!options?.forceFresh) {
+    writeMemoryCache(cacheKey, payload)
+  }
 
-  const cacheSource: ProductListCacheSource = filters.search
-    ? 'database'
-    : listMs < 100
-      ? 'next-cache'
-      : 'database'
+  const cacheSource: ProductListCacheSource =
+    filters.search || options?.forceFresh
+      ? 'database'
+      : listMs < 100
+        ? 'next-cache'
+        : 'database'
 
   return { payload, cacheSource, listMs }
 }

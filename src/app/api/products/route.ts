@@ -147,6 +147,7 @@ export async function GET(request: NextRequest) {
     const cursorId =
       !useOffsetPagination && cursor ? parseInt(cursor, 10) : undefined
     const includeUnapproved = searchParams.get('includeUnapproved') === 'true'
+    const forceFresh = searchParams.get('fresh') === '1'
 
     const prepStart = Date.now()
     const sessionPromise = includeUnapproved
@@ -215,7 +216,10 @@ export async function GET(request: NextRequest) {
         take: listTake,
       }
       const enrichMs = 0
-      const { payload, cacheSource, listMs } = await loadPublicProductList(combinedFilters)
+      const { payload, cacheSource, listMs } = await loadPublicProductList(
+        combinedFilters,
+        { forceFresh },
+      )
       const finalized = finalizeProductListResponse(payload)
       const productsToReturn = finalized.products
       const hasMore = finalized.hasMore

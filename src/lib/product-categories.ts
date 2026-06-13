@@ -16,6 +16,7 @@ export const DEFAULT_PRODUCT_CATEGORIES: ProductCategory[] = [
   { id: 8, name: 'საღამოს ტანსაცმელი', slug: 'evening-wear' },
   { id: 9, name: 'სათხილამურო ქურთუკი', slug: 'ski-jacket' },
   { id: 10, name: 'თერმო ტანსაცმელი', slug: 'thermal-wear' },
+  { id: 44, name: 'მეორე ფენა', slug: 'meore-pena' },
   { id: 11, name: 'სათვალე', slug: 'goggles' },
   { id: 12, name: 'ჩაფხუტი', slug: 'helmet' },
   { id: 13, name: 'ტრადიციული ტანსაცმელი', slug: 'traditional' },
@@ -33,7 +34,7 @@ export const DEFAULT_PRODUCT_CATEGORIES: ProductCategory[] = [
   { id: 48, name: 'ბავშვების სათამაშოები', slug: 'bavshvebis-satamashoebi' },
 ]
 
-const WOMEN_CATEGORY_IDS = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14, 21, 22, 23])
+const WOMEN_CATEGORY_IDS = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 44, 13, 14, 21, 22, 23])
 const MEN_CATEGORY_IDS = new Set([15, 16])
 const CHILDREN_CATEGORY_IDS = new Set([18, 19, 20, 47, 48])
 const ACCESSORY_CATEGORY_IDS = new Set([11, 12, 17])
@@ -146,6 +147,8 @@ export function resolveCanonicalCategorySlug(
   if (category.id != null) {
     const byId = DEFAULT_PRODUCT_CATEGORIES.find((c) => c.id === category.id)
     if (byId) return byId.slug
+    const legacySlug = LEGACY_CATEGORY_ID_TO_SLUG[category.id]
+    if (legacySlug) return legacySlug
   }
 
   const slug = category.slug?.trim().toLowerCase()
@@ -245,12 +248,14 @@ const CATEGORY_SLUG_ALIASES: Record<string, string> = {
   'sathilamuro-qurtuki': 'ski-jacket',
   'thermal-wear': 'thermal-wear',
   'termo-tansatsmeli': 'thermal-wear',
+  'meore-pena': 'meore-pena',
   goggles: 'goggles',
   satvale: 'goggles',
   helmet: 'helmet',
   chapkhuti: 'helmet',
   traditional: 'traditional',
   'traditsiuli-tansatsmeli': 'traditional',
+  'traditsiuli-da-kulturuli-tansatsmeli': 'kids-traditional',
   cosplay: 'cosplay',
   'qospleis-kostumebi': 'cosplay',
   suit: 'suit',
@@ -277,9 +282,11 @@ const CATEGORY_SLUG_ALIASES: Record<string, string> = {
   'საღამოს ტანსაცმელი': 'evening-wear',
   'სათხილამურო ქურთუკი': 'ski-jacket',
   'თერმო ტანსაცმელი': 'thermal-wear',
+  'მეორე ფენა': 'meore-pena',
   'სათვალე': 'goggles',
   'ჩაფხუტი': 'helmet',
   'ტრადიციული ტანსაცმელი': 'traditional',
+  'ტრადიციული და კულტურული ტანსაცმელი': 'kids-traditional',
   'ქოსფლეის კოსტუმები': 'cosplay',
   'შარვალ კოსტუმი': 'suit',
   'პიჯაკი': 'blazer',
@@ -298,6 +305,29 @@ const categoryIdBySlug = new Map(
 const categoryMetaById = new Map(
   DEFAULT_PRODUCT_CATEGORIES.map((c) => [c.id, { id: c.id, name: c.name, slug: c.slug }]),
 )
+
+/** Legacy duplicate Category rows (ids 24+) → canonical primary slug */
+const LEGACY_CATEGORY_ID_TO_SLUG: Record<number, string> = {
+  24: 'dresses',
+  25: 'tops',
+  26: 'pants',
+  27: 'skirts',
+  29: 'wedding-dresses',
+  30: 'ski-jacket',
+  31: 'kids-ski',
+  33: 'goggles',
+  35: 'traditional',
+  36: 'kids-traditional',
+  37: 'cosplay',
+  38: 'suit',
+  39: 'blazer',
+  40: 'kids-dresses',
+  41: 'kids-traditional',
+  42: 'kids-ski',
+  43: 'thermal-wear',
+  45: 'coats',
+  46: 'accessories',
+}
 
 /** Normalize category URL/filter param to canonical DB slug */
 export function resolveCategorySlugParam(param: string): string {

@@ -19,6 +19,7 @@ import {
   productPickupAddressField,
   refineProductPickupAddress,
 } from '@/lib/product-pickup'
+import { revalidateProductListCache } from '@/lib/product-list-query'
 
 // Product validation schema
 const productSchema = z.object({
@@ -465,6 +466,8 @@ export async function PUT(
       })
     }
 
+    revalidateProductListCache()
+
     return NextResponse.json({
       success: true,
       message: 'პროდუქტი წარმატებით განახლდა',
@@ -577,6 +580,8 @@ export async function PATCH(
       data: updateData
     })
 
+    revalidateProductListCache()
+
     return NextResponse.json({
       success: true,
       message: 'პროდუქტი წარმატებით განახლდა',
@@ -642,6 +647,8 @@ export async function DELETE(
     await prisma.product.delete({
       where: { id: productId }
     })
+
+    revalidateProductListCache()
 
     return NextResponse.json({
       success: true,

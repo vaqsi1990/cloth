@@ -588,6 +588,7 @@ const ShopPageClient = () => {
                 if (purposeParam) {
                     baseParams.append('purpose', purposeParam)
                 }
+                baseParams.set('fresh', '1')
 
                 const allProducts: Product[] = []
                 let page = 1
