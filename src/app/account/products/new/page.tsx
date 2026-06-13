@@ -30,6 +30,8 @@ import {
 import ProductDiscountFields from '@/components/ProductDiscountFields'
 import { getProductDiscountBasePrice } from '@/lib/discount-helpers'
 import { VIP_MONTHLY_PRICE_GEL } from '@/lib/product-vip'
+import { optionalCategoryIdField } from '@/lib/product-schema-fields'
+
 const sizeOptions = {
   XS: { UK: [4, 6], EU: [32, 34], US: [0, 2] },
   S: { UK: [8, 10], EU: [36, 38], US: [4, 6] },
@@ -66,7 +68,7 @@ const productSchema = z.object({
   discount: z.number().min(0).optional(),
   discountDays: z.number().int().min(1).optional(),
   rating: z.number().min(0).max(5).optional(),
-  categoryId: z.number().optional(),
+  categoryId: optionalCategoryIdField,
   purposeSlug: z.string().optional(),
   isRentable: z.boolean().default(true),
   pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional(),

@@ -28,6 +28,8 @@ import {
   mergeProductCategoriesWithDefaults,
   PRODUCT_GENDER_OPTIONS,
 } from '@/lib/product-categories'
+import { optionalCategoryIdField } from '@/lib/product-schema-fields'
+
 const productSchema = z.object({
   name: z.string()
     .min(1, 'სახელი აუცილებელია')
@@ -65,7 +67,7 @@ const productSchema = z.object({
     z.number().int().min(1).optional()
   ),
   rating: z.number().min(0).max(5).optional(),
-  categoryId: z.number().optional(),
+  categoryId: optionalCategoryIdField,
   isRentable: z.boolean().default(true),
   pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').nullable().optional(),
   maxRentalDays: z.number().nullable().optional(),
@@ -356,7 +358,7 @@ const EditProductPage = () => {
             discount: product.discount,
             discountDays: product.discountDays,
             rating: product.rating || 0,
-            categoryId: product.category?.id ?? product.categoryId,
+            categoryId: product.category?.id ?? product.categoryId ?? undefined,
             isRentable: product.isRentable ?? true,
             pricePerDay: product.pricePerDay || undefined,
             maxRentalDays: product.maxRentalDays || undefined,

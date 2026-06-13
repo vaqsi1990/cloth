@@ -9,6 +9,10 @@ import { checkAndClearExpiredDiscount, processExpiredDiscount } from '@/utils/di
 import { PURPOSE_NAME_BY_SLUG } from '@/data/purposes'
 import { isAdminOrSupport } from '@/lib/roles'
 import {
+  optionalCategoryIdField,
+  optionalPurposeIdField,
+} from '@/lib/product-schema-fields'
+import {
   isValidProductText,
   PRODUCT_DESCRIPTION_ERROR_MESSAGE,
   PRODUCT_NAME_ERROR_MESSAGE,
@@ -58,8 +62,8 @@ const productSchema = z.object({
     z.number().int().min(1).optional()
   ),
   rating: z.number().min(0).max(5).optional(),
-  categoryId: z.number().optional(),
-  purposeId: z.number().optional(),
+  categoryId: optionalCategoryIdField,
+  purposeId: optionalPurposeIdField,
   purposeSlug: z.string().optional(),
   isRentable: z.boolean().default(true),
   pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional(),

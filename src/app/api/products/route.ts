@@ -36,6 +36,10 @@ import { parseShopListFilterParams } from '@/lib/shop-list-params'
 import { resolveCategoryIdForWrite } from '@/lib/category-sync'
 import { sortProductsByVipPriority } from '@/lib/product-vip'
 import { prismaCacheStrategy } from '@/lib/prisma-cache'
+import {
+  optionalCategoryIdField,
+  optionalPurposeIdField,
+} from '@/lib/product-schema-fields'
 
 // Product validation schema
 const productSchema = z.object({
@@ -62,8 +66,8 @@ const productSchema = z.object({
   discount: z.number().min(0).optional(),
   discountDays: z.number().int().min(1).optional(),
   rating: z.number().min(0).max(5).optional(),
-  categoryId: z.number().optional(),
-  purposeId: z.number().optional(),
+  categoryId: optionalCategoryIdField,
+  purposeId: optionalPurposeIdField,
   purposeSlug: z.string().optional(),
   isRentable: z.boolean().default(true),
   pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional(),

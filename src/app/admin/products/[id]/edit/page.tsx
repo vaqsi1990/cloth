@@ -28,7 +28,11 @@ import {
 } from '@/lib/product-pickup'
 import ProductDiscountFields from '@/components/ProductDiscountFields'
 import { getProductDiscountBasePrice } from '@/lib/discount-helpers'
+import {
+  optionalCategoryIdField,
+} from '@/lib/product-schema-fields'
 import { isProductVipActive, VIP_MONTHLY_PRICE_GEL } from '@/lib/product-vip'
+
 const productSchema = z.object({
   name: z.string()
     .min(1, 'სახელი აუცილებელია')
@@ -65,7 +69,7 @@ const productSchema = z.object({
     z.number().int().min(1).optional()
   ),
   rating: z.number().min(0).max(5).optional(),
-  categoryId: z.number().optional(),
+  categoryId: optionalCategoryIdField,
   purposeSlug: z.string().optional(),
   isRentable: z.boolean().default(true),
   pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').nullable().optional(),
@@ -326,7 +330,7 @@ const EditProductPage = () => {
             discount: product.discount,
             discountDays: product.discountDays,
             rating: product.rating || 0,
-            categoryId: product.category?.id ?? product.categoryId,
+            categoryId: product.category?.id ?? product.categoryId ?? undefined,
             purposeSlug: product.purpose?.slug,
             isRentable: product.isRentable ?? true,
             pricePerDay: product.pricePerDay || undefined,
