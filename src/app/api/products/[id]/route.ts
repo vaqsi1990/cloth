@@ -338,19 +338,29 @@ export async function PUT(
 
     const shouldResetApproval = !isAdminOrSupportRole
 
-    // Delete existing related data before updating
-    // This ensures clean state for images, variants, and rental price tiers
-    const deletePromises = [
-      prisma.productImage.deleteMany({ where: { productId } }),
-      prisma.productVariant.deleteMany({ where: { productId } })
-    ]
+    // Resolve relations before any destructive writes (failed saves must not wipe data)
+    const purposeRelation = buildPurposeRelation(
+      validatedData.purposeId,
+      validatedData.purposeSlug,
+    )
 
-    // Delete rental price tiers if we're updating them
-    if (validatedData.rentalPriceTiers !== undefined) {
-      deletePromises.push(prisma.rentalPriceTier.deleteMany({ where: { productId } }))
+    let resolvedCategoryId: number | null = null
+    if (validatedData.categoryId) {
+      resolvedCategoryId = await resolveCategoryIdForWrite(validatedData.categoryId)
+      if (!resolvedCategoryId) {
+        return NextResponse.json(
+          { success: false, message: 'არჩეული კატეგორია ვერ მოიძებნა' },
+          { status: 400 },
+        )
+      }
     }
 
-    await Promise.all(deletePromises)
+    const categoryRelation =
+      validatedData.categoryId !== undefined
+        ? (resolvedCategoryId
+            ? { connect: { id: resolvedCategoryId } }
+            : { disconnect: true })
+        : undefined
 
     // Ensure unique slug
     const uniqueSlug = await ensureUniqueProductSlug(validatedData.slug, {
@@ -376,27 +386,7 @@ export async function PUT(
       discountStartDate = existingProduct.discountStartDate
     }
 
-    const purposeRelation = buildPurposeRelation(validatedData.purposeId, validatedData.purposeSlug)
-
-    let resolvedCategoryId: number | null = null
-    if (validatedData.categoryId) {
-      resolvedCategoryId = await resolveCategoryIdForWrite(validatedData.categoryId)
-      if (!resolvedCategoryId) {
-        return NextResponse.json(
-          { success: false, message: 'არჩეული კატეგორია ვერ მოიძებნა' },
-          { status: 400 },
-        )
-      }
-    }
-
-    const categoryRelation =
-      validatedData.categoryId !== undefined
-        ? (resolvedCategoryId
-            ? { connect: { id: resolvedCategoryId } }
-            : { disconnect: true })
-        : undefined
-
-    const updateData: any = {
+    const updateData: Prisma.ProductUpdateInput = {
       name: validatedData.name,
       slug: uniqueSlug,
       brand: validatedData.brand,
@@ -441,7 +431,6 @@ export async function PUT(
       },
       // Update rental price tiers if provided
       // undefined = don't update, [] = clear all, [tiers] = replace with new tiers
-      // Note: We already deleted existing tiers above, so we just create new ones
       rentalPriceTiers: validatedData.rentalPriceTiers !== undefined && validatedData.rentalPriceTiers.length > 0 ? {
         create: validatedData.rentalPriceTiers.map(tier => ({
           minDays: tier.minDays,
@@ -458,18 +447,27 @@ export async function PUT(
       updateData.purpose = purposeRelation
     }
 
-    const updatedProduct = await prisma.product.update({
-      where: { id: productId },
-      data: updateData,
-      include: { 
-        images: true, 
-        variants: true, 
-        category: true,
-        purpose: true,
-        rentalPriceTiers: {
-          orderBy: { minDays: 'asc' }
-        }
+    const updatedProduct = await prisma.$transaction(async (tx) => {
+      await tx.productImage.deleteMany({ where: { productId } })
+      await tx.productVariant.deleteMany({ where: { productId } })
+
+      if (validatedData.rentalPriceTiers !== undefined) {
+        await tx.rentalPriceTier.deleteMany({ where: { productId } })
       }
+
+      return tx.product.update({
+        where: { id: productId },
+        data: updateData,
+        include: {
+          images: true,
+          variants: true,
+          category: true,
+          purpose: true,
+          rentalPriceTiers: {
+            orderBy: { minDays: 'asc' }
+          }
+        }
+      })
     })
 
     // If product status changed to AVAILABLE, clean up rental order items
