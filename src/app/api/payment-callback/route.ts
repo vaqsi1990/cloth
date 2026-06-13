@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { recordSellerTransactions } from '@/utils/sellerTransactions'
 import { redeemVoucher } from '@/lib/voucher'
+import { activateVipPayment } from '@/lib/product-vip-payment'
 import crypto from 'crypto'
 
 const BOG_PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
@@ -94,7 +95,12 @@ export async function POST(req: NextRequest) {
 
     if (event === "order_payment") {
       const status = body.order_status?.key || body.status || "UNKNOWN"
-      await updateOrderStatus(orderId, status)
+      const orderUpdated = await updateOrderStatus(orderId, status)
+      const vipResult = await activateVipPayment(orderId, status)
+
+      if (!orderUpdated && !vipResult.found) {
+        console.warn("Payment callback: no matching order or VIP payment for", orderId)
+      }
 
       if (body.split) {
         console.log("ORDER PAYMENT SPLIT INFO:", body.split)

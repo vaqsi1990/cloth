@@ -28,6 +28,7 @@ import {
 } from '@/lib/product-pickup'
 import ProductDiscountFields from '@/components/ProductDiscountFields'
 import { getProductDiscountBasePrice } from '@/lib/discount-helpers'
+import { isProductVipActive, VIP_MONTHLY_PRICE_GEL } from '@/lib/product-vip'
 const productSchema = z.object({
   name: z.string()
     .min(1, 'სახელი აუცილებელია')
@@ -138,6 +139,9 @@ const EditProductPage = () => {
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [wantsVip, setWantsVip] = useState(false)
+  const [wantsRenewal, setWantsRenewal] = useState(false)
+  const [vipWasActiveOnLoad, setVipWasActiveOnLoad] = useState(false)
   const [customColor, setCustomColor] = useState('')
   const [useCustomColor, setUseCustomColor] = useState(false)
 
@@ -251,6 +255,15 @@ const EditProductPage = () => {
     [formData.categoryId, categories],
   )
 
+  const isVipActive = useMemo(
+    () => (product ? isProductVipActive(product) : false),
+    [product],
+  )
+
+  const vipExpiryLabel = product?.vipExpiresAt
+    ? new Date(product.vipExpiresAt).toLocaleDateString('ka-GE')
+    : null
+
   // Fetch categories
   const fetchCategories = async () => {
     try {
@@ -298,6 +311,10 @@ const EditProductPage = () => {
           const imageUrls = product.images?.map((img: { url: string }) => img.url) || []
           console.log('Mapped image URLs:', imageUrls)
           setProduct(product)
+          const vipActive = isProductVipActive(product)
+          setWantsVip(vipActive)
+          setVipWasActiveOnLoad(vipActive)
+          setWantsRenewal(false)
           const productColor = product.color || ''
           // Check if color is in the predefined list
           const isPredefinedColor = colors.some(c => c.label === productColor)
@@ -597,6 +614,26 @@ const EditProductPage = () => {
       console.log('Update response:', result)
       
       if (result.success) {
+        const needsVipPayment = (!vipWasActiveOnLoad && wantsVip) || wantsRenewal
+        if (needsVipPayment) {
+          const payResponse = await fetch('/api/product-vip/pay', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ productId: parseInt(productId, 10) }),
+          })
+          const payResult = await payResponse.json()
+
+          if (payResult.success && payResult.redirectUrl) {
+            showToast('პროდუქტი განახლდა. გადადით VIP გადახდაზე', 'success')
+            window.location.href = payResult.redirectUrl
+            return
+          }
+
+          showToast(payResult.error || 'VIP გადახდის დაწყება ვერ მოხერხდა', 'error')
+          router.push('/admin/products')
+          return
+        }
+
         console.log('=== SUCCESS ===')
         showToast('პროდუქტი წარმატებით განახლდა!', 'success')
         router.push('/admin')
@@ -1080,6 +1117,62 @@ const EditProductPage = () => {
               />
             </div>
           )}
+
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            {isVipActive ? (
+              <div>
+                <label className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={wantsVip}
+                    disabled
+                    className="mt-1 w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
+                  />
+                  <span>
+                    <span className="block md:text-[18px] text-[16px] text-black font-medium">
+                      VIP პროდუქცია
+                    </span>
+                    <span className="block text-sm text-[#1B3729] font-medium mt-1">
+                      VIP აქტიურია ვადამდე: {vipExpiryLabel}
+                    </span>
+                  </span>
+                </label>
+                <label className="flex items-start gap-3 cursor-pointer mt-4">
+                  <input
+                    type="checkbox"
+                    checked={wantsRenewal}
+                    onChange={(e) => setWantsRenewal(e.target.checked)}
+                    className="mt-1 w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
+                  />
+                  <span className="text-sm text-gray-600">
+                    განაახლე VIP — {VIP_MONTHLY_PRICE_GEL} ლარი 1 თვეში
+                  </span>
+                </label>
+              </div>
+            ) : (
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={wantsVip}
+                  onChange={(e) => setWantsVip(e.target.checked)}
+                  className="mt-1 w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
+                />
+                <span>
+                  <span className="block md:text-[18px] text-[16px] text-black font-medium">
+                    VIP პროდუქცია
+                  </span>
+                  <span className="block text-sm text-gray-600 mt-1">
+                    ღირებულება: {VIP_MONTHLY_PRICE_GEL} ლარი 1 თვეში. თქვენი პროდუქტი გამოჩნდება საიტზე პრიორიტეტულად.
+                  </span>
+                  {wantsVip && (
+                    <span className="block text-sm text-[#1B3729] font-medium mt-2">
+                      განახლების შემდეგ გადახდის გვერდზე გადახდით {VIP_MONTHLY_PRICE_GEL} ლარს VIP სტატუსისთვის.
+                    </span>
+                  )}
+                </span>
+              </label>
+            )}
+          </div>
 
           {/* Images */}
           <div className="bg-white rounded-lg shadow-sm p-6">

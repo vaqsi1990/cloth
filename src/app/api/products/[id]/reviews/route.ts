@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { prismaCacheStrategy } from '@/lib/prisma-cache'
 import { z } from 'zod'
 import { checkCanUserReviewProduct } from '@/lib/review-eligibility'
 
@@ -32,11 +33,7 @@ export async function GET(
     const isAdminOrSupportRole = isAdmin || isSupport
 
     const product = await prisma.product.findUnique({
-      // @ts-ignore - cacheStrategy is available with Prisma Accelerate
-      cacheStrategy: {
-        swr: 60, // Stale-while-revalidating for 60 seconds
-        ttl: 60, // Cache results for 60 seconds
-      },
+      ...prismaCacheStrategy({ swr: 60, ttl: 60 }),
       where: { id: productId },
       select: { status: true, userId: true, approvalStatus: true },
     })
@@ -65,11 +62,7 @@ export async function GET(
     }
 
     const reviews = await prisma.review.findMany({
-      // @ts-ignore - cacheStrategy is available with Prisma Accelerate
-      cacheStrategy: {
-        swr: 60, // Stale-while-revalidating for 60 seconds
-        ttl: 60, // Cache results for 60 seconds
-      },
+      ...prismaCacheStrategy({ swr: 60, ttl: 60 }),
       where: { productId },
       select: {
         id: true,
@@ -154,11 +147,7 @@ export async function POST(
 
     // Check if product exists
     const product = await prisma.product.findUnique({
-      // @ts-ignore - cacheStrategy is available with Prisma Accelerate
-      cacheStrategy: {
-        swr: 60, // Stale-while-revalidating for 60 seconds
-        ttl: 60, // Cache results for 60 seconds
-      },
+      ...prismaCacheStrategy({ swr: 60, ttl: 60 }),
       where: { id: productId },
       select: { status: true, userId: true },
     })

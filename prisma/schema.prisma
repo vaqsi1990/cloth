@@ -75,6 +75,13 @@ enum VerificationStatus {
   REJECTED
 }
 
+enum VipPaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
 enum UserGender {
   MALE      // კაცი
   FEMALE    // ქალი
@@ -134,6 +141,7 @@ model User {
   voucherRedemptions      VoucherRedemption[]
   userVouchers            UserVoucher[]
   transactions  Transaction[]
+  vipPayments   ProductVipPayment[]
   
   // Chat relations
   chatRooms     ChatRoom[]
@@ -243,6 +251,8 @@ model Product {
   size          String?
   isNew         Boolean          @default(false)
   isSecondHand  Boolean          @default(false)
+  isVip         Boolean          @default(false)
+  vipExpiresAt  DateTime?
   discount      Int?
   discountDays  Int?
   discountStartDate DateTime?    // When discount was set
@@ -275,17 +285,38 @@ model Product {
   rentalInquiries RentalInquiry[]
   chatRooms     ChatRoom[]
   reviews       Review[]
+  vipPayments   ProductVipPayment[]
 
   // Indexes for better query performance
   @@index([approvalStatus])
   @@index([gender])
   @@index([isNew])
   @@index([isSecondHand])
+  @@index([isVip, vipExpiresAt])
   @@index([createdAt, id]) // For cursor-based pagination
   @@index([userId])
   @@index([status, approvalStatus, userId]) // Composite index covers status+approvalStatus queries
   @@index([categoryId, status, approvalStatus]) // Composite index covers categoryId queries
   @@index([purposeId, status, approvalStatus]) // Composite index covers purposeId queries
+}
+
+model ProductVipPayment {
+  id           Int              @id @default(autoincrement())
+  productId    Int
+  product      Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount       Float            @default(2)
+  status       VipPaymentStatus @default(PENDING)
+  paymentId    String?
+  paidAt       DateTime?
+  vipExpiresAt DateTime?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([productId])
+  @@index([paymentId])
+  @@index([userId])
 }
 
 model Review {

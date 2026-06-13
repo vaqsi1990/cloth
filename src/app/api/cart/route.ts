@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { prismaCacheStrategy } from '@/lib/prisma-cache'
 import { z } from 'zod'
 import { processExpiredDiscount } from '@/utils/discountUtils'
 import { assertRentalInquiryApproved, markInquiryBooked } from '@/lib/rental-inquiry-guard'
@@ -254,11 +255,7 @@ export async function GET(request: NextRequest) {
     // Find or create cart for user
     let cart = await prisma.cart.findUnique({
       where: { userId: session.user.id },
-      // @ts-ignore - cacheStrategy is available with Prisma Accelerate
-      cacheStrategy: {
-        swr: 60, // Stale-while-revalidating for 60 seconds
-        ttl: 60, // Cache results for 60 seconds
-      },
+      ...prismaCacheStrategy({ swr: 60, ttl: 60 }),
       select: cartSelect,
     })
 

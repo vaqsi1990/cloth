@@ -8,6 +8,7 @@ import Image from '@/component/AppImage'
 import { Plus, Edit, Trash2, Eye, Search, Filter, Package, Calendar, Clock, Barcode } from 'lucide-react'
 import { showToast } from '@/utils/toast'
 import { attachBatchRentalStatus } from '@/utils/rentalStatusBatch'
+import { isProductVipActive } from '@/lib/product-vip'
 interface RentalPeriod {
   startDate: string
   endDate: string
@@ -25,6 +26,8 @@ interface Product {
   location?: string
   isNew: boolean
   isSecondHand: boolean
+  isVip?: boolean
+  vipExpiresAt?: string | null
   discount?: number
   rating?: number
   createdAt: string
@@ -459,6 +462,11 @@ const AdminProductsPage = () => {
                  <div key={product.id} className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
                    {/* Product Image */}
                    <div className="w-full sm:w-16 sm:h-20 h-62 bg-gray-200 rounded-lg relative flex-shrink-0">
+                     {isProductVipActive(product) && (
+                       <span className="absolute top-1 left-1 bg-[#1B3729] text-white text-[10px] sm:text-xs font-semibold px-1.5 py-0.5 rounded z-10">
+                         VIP
+                       </span>
+                     )}
                      {product.images.length > 0 ? (
                        <Image
                          src={product.images[0].url}
@@ -545,6 +553,11 @@ const AdminProductsPage = () => {
                           {product.discount && product.discount > 0 && (
                             <span className="px-2 py-1 bg-red-100 text-red-800 text-xs sm:text-sm md:text-[16px] rounded-full whitespace-nowrap">
                               -₾{product.discount.toFixed(2)}
+                            </span>
+                          )}
+                          {isProductVipActive(product) && (
+                            <span className="px-2 py-1 bg-[#1B3729] text-white text-xs sm:text-sm md:text-[16px] rounded-full font-semibold whitespace-nowrap">
+                              VIP
                             </span>
                           )}
                            {hasActiveRentals(product) && (

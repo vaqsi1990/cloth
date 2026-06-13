@@ -22,6 +22,8 @@ export type ProductListScalar = {
   location: string | null
   isNew: boolean
   isSecondHand: boolean
+  isVip?: boolean
+  vipExpiresAt?: Date | null
   discount: number | null
   discountDays: number | null
   discountStartDate: Date | null

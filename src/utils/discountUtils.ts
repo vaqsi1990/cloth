@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { prismaCacheStrategy } from '@/lib/prisma-cache'
 import {
   discountIsExpired,
   processExpiredDiscount,
@@ -14,11 +15,7 @@ export { processExpiredDiscount, productHasActiveDiscount, type DiscountFields }
 export async function checkAndClearExpiredDiscount(productId: number): Promise<boolean> {
   try {
     const product = await prisma.product.findUnique({
-      // @ts-ignore - cacheStrategy is available with Prisma Accelerate
-      cacheStrategy: {
-        swr: 60,
-        ttl: 60,
-      },
+      ...prismaCacheStrategy({ swr: 60, ttl: 60 }),
       where: { id: productId },
       select: {
         id: true,

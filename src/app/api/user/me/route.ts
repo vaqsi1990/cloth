@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { prismaCacheStrategy } from '@/lib/prisma-cache'
 
 export async function GET() {
   try {
@@ -11,11 +12,7 @@ export async function GET() {
     }
 
     const user = await prisma.user.findUnique({
-      // @ts-ignore - cacheStrategy is available with Prisma Accelerate
-      cacheStrategy: {
-        swr: 60, // Stale-while-revalidating for 60 seconds
-        ttl: 60, // Cache results for 60 seconds
-      },
+      ...prismaCacheStrategy({ swr: 60, ttl: 60 }),
       where: { id: session.user.id },
       select: {
         id: true,

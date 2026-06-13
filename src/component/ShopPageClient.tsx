@@ -20,6 +20,7 @@ import {
   type ProductCategory,
 } from '@/lib/product-categories'
 import { productHasActiveDiscount } from '@/lib/discount-helpers'
+import { isProductVipActive } from '@/lib/product-vip'
 import ProductSalePrice from '@/components/ProductSalePrice'
 
 type PurchaseType = 'all' | 'rent-only' | 'sale-only' | 'rent-and-sale'
@@ -32,6 +33,7 @@ const ShopPageClient = () => {
     const purposeParam = searchParams.get('purpose')
     const categoryParam = searchParams.get('category')
     const discountParam = searchParams.get('discount')
+    const vipParam = searchParams.get('vip')
 
     const [products, setProducts] = useState<Product[]>([])
     const [allProductsForCounts, setAllProductsForCounts] = useState<Product[]>([])
@@ -54,6 +56,7 @@ const ShopPageClient = () => {
     const [rentalEndDate, setRentalEndDate] = useState<Date | null>(null)
     const [purchaseType, setPurchaseType] = useState<PurchaseType>("all")
     const [onlyDiscounted, setOnlyDiscounted] = useState(false)
+    const [onlyVip, setOnlyVip] = useState(false)
     const [productRentalStatus, setProductRentalStatus] = useState<Record<number, {
         variantId: number;
         size: string;
@@ -72,6 +75,7 @@ const ShopPageClient = () => {
     // In that case we only know whether there is more (`hasMore`), not exact total pages.
     const [serverHasMore, setServerHasMore] = useState(false)
     const [isTotalPagesKnown, setIsTotalPagesKnown] = useState(false)
+    const [vipProductsCount, setVipProductsCount] = useState(0)
     const [activeMobileFilter, setActiveMobileFilter] = useState<string | null>(null)
     const [isMobileFilterOverlayOpen, setIsMobileFilterOverlayOpen] = useState(false)
     const [isCategorySectionOpen, setIsCategorySectionOpen] = useState(false)
@@ -111,6 +115,7 @@ const ShopPageClient = () => {
             sortBy,
             purchaseType,
             onlyDiscounted,
+            onlyVip,
             currentPage,
             scrollY: scrollYRef.current,
         }
@@ -128,6 +133,7 @@ const ShopPageClient = () => {
         sortBy,
         purchaseType,
         onlyDiscounted,
+        onlyVip,
         currentPage
     ])
 
@@ -147,6 +153,7 @@ const ShopPageClient = () => {
         let restoredSortBy = 'newest'
         let restoredPurchaseType: PurchaseType = 'all'
         let restoredOnlyDiscounted = false
+        let restoredOnlyVip = false
         let restoredPage = 1
         let restoredScrollY: number | null = null
 
@@ -166,6 +173,7 @@ const ShopPageClient = () => {
                 restoredSortBy = parsed.sortBy || 'newest'
                 restoredPurchaseType = parsed.purchaseType || 'all'
                 restoredOnlyDiscounted = Boolean(parsed.onlyDiscounted)
+                restoredOnlyVip = Boolean(parsed.onlyVip)
                 restoredPage = parsed.currentPage || 1
                 restoredScrollY = typeof parsed.scrollY === 'number' ? parsed.scrollY : null
             } catch (e) {
@@ -191,6 +199,7 @@ const ShopPageClient = () => {
         setSortBy(restoredSortBy)
         setPurchaseType(restoredPurchaseType)
         setOnlyDiscounted(discountParam === 'true' || restoredOnlyDiscounted)
+        setOnlyVip(vipParam === 'true' || restoredOnlyVip)
         setCurrentPage(restoredPage)
         setSavedScrollY(restoredScrollY)
 
@@ -235,6 +244,7 @@ const ShopPageClient = () => {
         sortBy,
         purchaseType,
         onlyDiscounted,
+        onlyVip,
         currentPage,
         saveState
     ])
@@ -388,6 +398,37 @@ const ShopPageClient = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' })
     }
 
+    const refreshVipCount = useCallback(async (signal?: AbortSignal) => {
+        try {
+            const params = new URLSearchParams()
+            if (genderParam) params.append('gender', genderParam)
+            if (searchParam) params.append('search', searchParam)
+            if (purposeParam) {
+                params.append('purpose', purposeParam)
+            } else if (selectedPurposes.length === 1) {
+                params.append('purpose', selectedPurposes[0])
+            }
+            const categorySlug = resolveCategoryApiSlug(categoryParam, selectedCategories)
+            if (categorySlug) params.append('category', categorySlug)
+
+            const response = await fetch(`/api/products/filter-counts?${params}`, { signal })
+            const data = await response.json()
+            if (data.success) {
+                setVipProductsCount(data.vipCount ?? 0)
+            }
+        } catch (error: unknown) {
+            if (error instanceof DOMException && error.name === 'AbortError') return
+        }
+    }, [
+        genderParam,
+        searchParam,
+        purposeParam,
+        categoryParam,
+        selectedCategories,
+        selectedPurposes,
+        resolveCategoryApiSlug,
+    ])
+
     // Fetch products from API (server-side pagination: 16 per page)
     useEffect(() => {
         if (!hasRestoredState) return
@@ -422,6 +463,9 @@ const ShopPageClient = () => {
                 }
                 if (onlyDiscounted) {
                     params.append('hasDiscount', 'true')
+                }
+                if (onlyVip) {
+                    params.append('isVip', 'true')
                 }
                 const url = `/api/products?${params}`
                 const t0 = performance.now()
@@ -486,6 +530,8 @@ const ShopPageClient = () => {
                     if (calculatedMaxPrice > priceRange[1] || priceRange[1] === 0) {
                         setPriceRange([0, calculatedMaxPrice])
                     }
+
+                    void refreshVipCount()
                 }
             } catch (error: unknown) {
                 // Effect cleanup / StrictMode re-run aborts the previous in-flight request.
@@ -517,10 +563,21 @@ const ShopPageClient = () => {
         selectedCategories,
         selectedPurposes,
         onlyDiscounted,
+        onlyVip,
         resolveCategoryApiSlug,
+        refreshVipCount,
     ])
 
-    // Fetch all products (cursor pagination) for filter count calculations
+    // Fetch VIP count from server (includes BOG sync for pending payments)
+    useEffect(() => {
+        if (!hasRestoredState) return
+
+        const controller = new AbortController()
+        void refreshVipCount(controller.signal)
+        return () => controller.abort('cleanup')
+    }, [hasRestoredState, refreshVipCount])
+
+    // Fetch all products (offset pagination) for filter count calculations
     useEffect(() => {
         if (!hasRestoredState) return
 
@@ -551,13 +608,12 @@ const ShopPageClient = () => {
                 }
 
                 const allProducts: Product[] = []
-                let cursor: string | null = null
+                let page = 1
 
                 do {
                     const params = new URLSearchParams(baseParams)
-                    if (cursor) {
-                        params.set('cursor', cursor)
-                    }
+                    params.set('page', String(page))
+                    params.set('limit', '50')
 
                     const response = await fetch(`/api/products?${params}`, { signal: controller.signal })
                     if (isStale()) return
@@ -567,8 +623,8 @@ const ShopPageClient = () => {
                     if (!data.success) break
 
                     allProducts.push(...data.products)
-                    cursor = data.nextCursor ?? null
-                    if (!data.hasMore || !cursor) break
+                    if (!data.hasMore) break
+                    page += 1
                 } while (true)
 
                 if (!isStale()) {
@@ -815,7 +871,9 @@ const ShopPageClient = () => {
             const discountMatch =
                 !applyDiscountFilter || !onlyDiscounted || productHasActiveDiscount(product)
 
-            return categoryMatch && purposeMatch && priceMatch && sizeSystemMatch && sizeMatch && colorMatch && locationMatch && rentalAvailabilityMatch && discountMatch
+            const vipMatch = !onlyVip || isProductVipActive(product)
+
+            return categoryMatch && purposeMatch && priceMatch && sizeSystemMatch && sizeMatch && colorMatch && locationMatch && rentalAvailabilityMatch && discountMatch && vipMatch
         })
     }
 
@@ -831,8 +889,12 @@ const ShopPageClient = () => {
 
 
 
-    // Sort products
+    // Sort products — VIP always first, then user-selected sort
     const sortedProducts = [...filteredProducts].sort((a, b) => {
+        const aVip = isProductVipActive(a) ? 1 : 0
+        const bVip = isProductVipActive(b) ? 1 : 0
+        if (aVip !== bVip) return bVip - aVip
+
         switch (sortBy) {
             case "price-low":
                 return getMinPrice(a) - getMinPrice(b)
@@ -841,8 +903,11 @@ const ShopPageClient = () => {
             case "rating":
                 return (b.rating || 0) - (a.rating || 0)
             case "newest":
-            default:
-                return b.isNew ? 1 : -1
+            default: {
+                const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0
+                const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0
+                return bTime - aTime
+            }
         }
     })
 
@@ -866,11 +931,13 @@ const ShopPageClient = () => {
             sortBy,
             purchaseType,
             onlyDiscounted,
+            onlyVip,
             purposeParam,
             categoryParam,
             genderParam,
             searchParam,
             discountParam,
+            vipParam,
         })
 
         if (filtersSnapshotRef.current === null) {
@@ -896,11 +963,13 @@ const ShopPageClient = () => {
         sortBy,
         purchaseType,
         onlyDiscounted,
+        onlyVip,
         purposeParam,
         categoryParam,
         genderParam,
         searchParam,
         discountParam,
+        vipParam,
     ])
 
     // Handle category selection
@@ -982,6 +1051,7 @@ const ShopPageClient = () => {
         setRentalEndDate(null)
         setPurchaseType("all")
         setOnlyDiscounted(false)
+        setOnlyVip(false)
         setCurrentPage(1)
         
         // Price range will be updated when products are fetched
@@ -1096,6 +1166,15 @@ const ShopPageClient = () => {
                                             }`}
                                     >
                                         ტიპი
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveMobileFilter('vip')}
+                                        className={`w-full text-left px-3 py-2 text-[16px] font-medium rounded mb-1 ${activeMobileFilter === 'vip'
+                                            ? 'bg-[#1B3729] text-white'
+                                            : 'text-black hover:bg-gray-200'
+                                            }`}
+                                    >
+                                        VIP
                                     </button>
                                     <button
                                         onClick={() => setActiveMobileFilter('discount')}
@@ -1297,6 +1376,36 @@ const ShopPageClient = () => {
                                     </div>
                                 )}
 
+                                {activeMobileFilter === 'vip' && (
+                                    <div className="space-y-3">
+                                        <h3 className="text-lg font-semibold text-black mb-4">VIP პროდუქტები</h3>
+                                        <label
+                                            className={`flex items-center justify-between gap-3 p-3 rounded-lg cursor-pointer ${onlyVip
+                                                ? 'bg-[#1B3729] text-white'
+                                                : 'bg-gray-50 text-black hover:bg-gray-100'
+                                                }`}
+                                        >
+                                            <span className="flex items-center gap-3">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={onlyVip}
+                                                    onChange={(e) => setOnlyVip(e.target.checked)}
+                                                    className="w-4 h-4"
+                                                />
+                                                <span className="text-[16px]">მხოლოდ VIP პროდუქტები</span>
+                                            </span>
+                                            <span className={`text-[16px] ${onlyVip ? 'text-white' : 'text-gray-600'}`}>
+                                                {vipProductsCount}
+                                            </span>
+                                        </label>
+                                        {vipProductsCount === 0 && (
+                                            <p className="text-xs text-gray-500 mt-2">
+                                                VIP პროდუქტები გამოჩნდება მას შემდეგ, რაც გადაიხდება 2 ლარიანი გადასახადი.
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+
                                 {activeMobileFilter === 'discount' && (
                                     <div className="space-y-3">
                                         <h3 className="text-lg font-semibold text-black mb-4">ფასდაკლებები</h3>
@@ -1429,6 +1538,32 @@ const ShopPageClient = () => {
                                         <span>₾{priceRange[1]}</span>
                                     </div>
                                 </div>
+                            </div>
+
+                            {/* VIP */}
+                            <div className="border-b border-gray-200 pb-6">
+                                <h4 className="font-medium text-black md:text-[18px] text-[16px] mb-3">VIP პროდუქტები</h4>
+                                <label
+                                    className={`flex items-center justify-between gap-2 cursor-pointer rounded-md px-3 py-2 ${onlyVip ? 'bg-gray-100 text-black' : 'hover:bg-gray-100 text-black'}`}
+                                >
+                                    <span className="flex items-center gap-2">
+                                        <input
+                                            type="checkbox"
+                                            checked={onlyVip}
+                                            onChange={(e) => setOnlyVip(e.target.checked)}
+                                            className="w-4 h-4 accent-black"
+                                        />
+                                        მხოლოდ VIP პროდუქტები
+                                    </span>
+                                    <span className={`text-[16px] ${onlyVip ? 'text-black font-medium' : 'text-gray-600'}`}>
+                                        {vipProductsCount}
+                                    </span>
+                                </label>
+                                {vipProductsCount === 0 && (
+                                    <p className="text-xs text-gray-500 mt-2 px-3">
+                                        VIP პროდუქტები გამოჩნდება მას შემდეგ, რაც გადაიხდება 2 ლარიანი გადასახადი.
+                                    </p>
+                                )}
                             </div>
 
                             {/* Discounts */}
@@ -1744,6 +1879,12 @@ const ShopPageClient = () => {
                                                     priority={index < 4}
                                                 />
                                                 </Link>
+
+                                                {isProductVipActive(product) && (
+                                                    <span className="absolute top-2 left-2 bg-[#1B3729] text-white text-xs font-semibold px-2 py-1 rounded-md z-10">
+                                                        VIP
+                                                    </span>
+                                                )}
 
                                             </div>
                                         </div>

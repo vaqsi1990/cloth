@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { prismaCacheStrategy } from '@/lib/prisma-cache'
 import { Prisma } from '@prisma/client'
 
 type ReviewEligibilityInput = {
@@ -59,15 +60,13 @@ export async function checkCanUserReviewProduct(
   if (productStatus !== 'RENTED') {
     const [userRental, userOrderRental] = await Promise.all([
       prisma.rental.findFirst({
-        // @ts-ignore - Prisma Accelerate cacheStrategy
-        cacheStrategy: { swr: 60, ttl: 60 },
+        ...prismaCacheStrategy({ swr: 60, ttl: 60 }),
         where: rentalWhere,
         select: { id: true },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.orderItem.findFirst({
-        // @ts-ignore - Prisma Accelerate cacheStrategy
-        cacheStrategy: { swr: 60, ttl: 60 },
+        ...prismaCacheStrategy({ swr: 60, ttl: 60 }),
         where: { productId, isRental: true, ...orderMatch },
         select: { id: true },
       }),
@@ -78,27 +77,23 @@ export async function checkCanUserReviewProduct(
   const [userRental, userOrderRental, userOrderItem, lenientOrderItem] =
     await Promise.all([
       prisma.rental.findFirst({
-        // @ts-ignore - Prisma Accelerate cacheStrategy
-        cacheStrategy: { swr: 60, ttl: 60 },
+        ...prismaCacheStrategy({ swr: 60, ttl: 60 }),
         where: rentalWhere,
         select: { id: true },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.orderItem.findFirst({
-        // @ts-ignore - Prisma Accelerate cacheStrategy
-        cacheStrategy: { swr: 60, ttl: 60 },
+        ...prismaCacheStrategy({ swr: 60, ttl: 60 }),
         where: { productId, isRental: true, ...orderMatch },
         select: { id: true },
       }),
       prisma.orderItem.findFirst({
-        // @ts-ignore - Prisma Accelerate cacheStrategy
-        cacheStrategy: { swr: 60, ttl: 60 },
+        ...prismaCacheStrategy({ swr: 60, ttl: 60 }),
         where: { productId, ...orderMatch },
         select: { id: true },
       }),
       prisma.orderItem.findFirst({
-        // @ts-ignore - Prisma Accelerate cacheStrategy
-        cacheStrategy: { swr: 60, ttl: 60 },
+        ...prismaCacheStrategy({ swr: 60, ttl: 60 }),
         where: {
           productId,
           order: { status: ACTIVE_ORDER_STATUSES },

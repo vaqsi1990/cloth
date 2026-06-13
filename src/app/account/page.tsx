@@ -243,6 +243,42 @@ const AccountPageContent = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
 
+  // Confirm VIP payment after BOG redirect (callback may not hit local/dev)
+  useEffect(() => {
+    const vipSuccess = searchParams.get('vipSuccess')
+    const productIdParam = searchParams.get('productId')
+
+    if (vipSuccess !== '1' || !productIdParam) return
+
+    const productId = parseInt(productIdParam, 10)
+    if (Number.isNaN(productId)) return
+
+    const confirmVip = async () => {
+      try {
+        const response = await fetch('/api/product-vip/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ productId }),
+        })
+        const result = await response.json()
+
+        if (result.success) {
+          showToast('VIP სტატუსი წარმატებით გააქტიურდა!', 'success')
+        } else if (result.status === 'BOG_CHECK_FAILED') {
+          showToast('VIP გადახდის დადასტურება ვერ მოხერხდა. სცადეთ მოგვიანებით.', 'error')
+        } else if (result.status !== 'ALREADY_ACTIVE') {
+          showToast('VIP გადახდა ჯერ არ არის დადასტურებული', 'error')
+        }
+      } catch {
+        showToast('VIP გადახდის დადასტურება ვერ მოხერხდა', 'error')
+      } finally {
+        router.replace('/account?tab=products')
+      }
+    }
+
+    void confirmVip()
+  }, [searchParams, router])
+
   // Fetch chats when tab changes to chats
   useEffect(() => {
     if (activeTab === 'chats' && session?.user?.id) {

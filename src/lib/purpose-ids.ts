@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { prismaCacheStrategy } from '@/lib/prisma-cache'
 
 type PurposeMeta = { id: number; name: string; slug: string }
 
@@ -18,8 +19,7 @@ async function ensurePurposeCache(): Promise<void> {
 
   const rows = await prisma.purpose.findMany({
     select: { id: true, name: true, slug: true },
-    // @ts-ignore - Prisma Accelerate cacheStrategy
-    cacheStrategy: { swr: 300, ttl: 300 },
+    ...prismaCacheStrategy({ swr: 300, ttl: 300 }),
   })
   slugToId = new Map(rows.map((r) => [r.slug, r.id]))
   idToMeta = new Map(rows.map((r) => [r.id, r]))

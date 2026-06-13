@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { prismaCacheStrategy } from '@/lib/prisma-cache'
 import { z } from 'zod'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -124,6 +125,8 @@ const buildProductSelect = (includeAdminFields: boolean = false) => {
     size: true,
     isNew: true,
     isSecondHand: true,
+    isVip: true,
+    vipExpiresAt: true,
     discount: true,
     discountDays: true,
     discountStartDate: true,
@@ -213,11 +216,7 @@ export async function GET(
     // Fetch product and session in parallel for maximum performance
     const [product, session] = await Promise.all([
       prisma.product.findUnique({
-        // @ts-ignore - cacheStrategy is available with Prisma Accelerate
-        cacheStrategy: {
-          swr: 300, // Stale-while-revalidating for 5 minutes
-          ttl: 300, // Cache results for 5 minutes
-        },
+        ...prismaCacheStrategy({ swr: 300, ttl: 300 }),
         where: { id: productId },
         select: buildProductSelect(true) // Always fetch admin fields (small overhead, avoids re-fetch)
       }),

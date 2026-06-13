@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { withOptimize } from "@prisma/extension-optimize";
 import { withAccelerate } from "@prisma/extension-accelerate";
 import { generateUniqueSKU } from "@/utils/skuUtils";
+import { isAccelerateEnabled } from "@/lib/prisma-cache";
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
@@ -23,20 +24,21 @@ const useOptimize =
   Boolean(process.env.OPTIMIZE_API_KEY?.trim());
 
 // Prisma Optimize is sunset (HTTP 410) — only attach when explicitly enabled in production.
-let client = basePrisma;
+let client: PrismaClient = basePrisma;
 if (useOptimize) {
   client = client.$extends(
     withOptimize({
       apiKey: process.env.OPTIMIZE_API_KEY || "",
     }),
-  ) as typeof basePrisma;
+  ) as unknown as PrismaClient;
 }
 
-// Extend Prisma Client with Accelerate and custom SKU generation
+if (isAccelerateEnabled) {
+  client = client.$extends(withAccelerate()) as unknown as PrismaClient;
+}
+
+// Custom SKU generation extension
 export const prisma = client
-  .$extends(
-    withAccelerate()
-  )
   .$extends({
     query: {
       product: {

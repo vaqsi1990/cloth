@@ -21,6 +21,7 @@ import {
 } from '@/lib/product-pickup'
 import ProductDiscountFields from '@/components/ProductDiscountFields'
 import { getProductDiscountBasePrice } from '@/lib/discount-helpers'
+import { isProductVipActive, VIP_MONTHLY_PRICE_GEL } from '@/lib/product-vip'
 import {
   DEFAULT_PRODUCT_CATEGORIES,
   isSizeOptionalCategoryId,
@@ -134,6 +135,11 @@ const EditProductPage = () => {
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [wantsVip, setWantsVip] = useState(false)
+  const [wantsRenewal, setWantsRenewal] = useState(false)
+  const [vipWasActiveOnLoad, setVipWasActiveOnLoad] = useState(false)
+  const [hasPendingVipPayment, setHasPendingVipPayment] = useState(false)
+  const [isResumingVipPayment, setIsResumingVipPayment] = useState(false)
   const [customColor, setCustomColor] = useState('')
   const [useCustomColor, setUseCustomColor] = useState(false)
 
@@ -247,6 +253,52 @@ const EditProductPage = () => {
     [formData.categoryId, categories],
   )
 
+  const isVipActive = useMemo(
+    () => (product ? isProductVipActive(product) : false),
+    [product],
+  )
+
+  const vipExpiryLabel = product?.vipExpiresAt
+    ? new Date(product.vipExpiresAt).toLocaleDateString('ka-GE')
+    : null
+
+  const handleResumeVipPayment = async () => {
+    setIsResumingVipPayment(true)
+    try {
+      const payResponse = await fetch('/api/product-vip/pay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId: parseInt(productId, 10) }),
+      })
+      const payResult = await payResponse.json()
+      if (payResult.success && payResult.redirectUrl) {
+        window.location.href = payResult.redirectUrl
+        return
+      }
+      showToast(payResult.error || 'VIP გადახდის დაწყება ვერ მოხერხდა', 'error')
+    } catch {
+      showToast('VIP გადახდის დაწყება ვერ მოხერხდა', 'error')
+    } finally {
+      setIsResumingVipPayment(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!productId) return
+    const fetchVipStatus = async () => {
+      try {
+        const response = await fetch(`/api/product-vip/status?productId=${productId}`)
+        const data = await response.json()
+        if (data.success) {
+          setHasPendingVipPayment(Boolean(data.hasPendingPayment) && !data.isVipActive)
+        }
+      } catch {
+        // ignore
+      }
+    }
+    void fetchVipStatus()
+  }, [productId, product?.isVip, product?.vipExpiresAt])
+
   const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
 
   // Fetch categories
@@ -277,6 +329,10 @@ const EditProductPage = () => {
           const product = data.product
           const imageUrls = product.images?.map((img: { url: string }) => img.url) || []
           setProduct(product)
+          const vipActive = isProductVipActive(product)
+          setWantsVip(vipActive)
+          setVipWasActiveOnLoad(vipActive)
+          setWantsRenewal(false)
           const productColor = product.color || ''
           // Check if color is in the predefined list
           const isPredefinedColor = colors.some(c => c.label === productColor)
@@ -553,6 +609,26 @@ const EditProductPage = () => {
       const result = await response.json()
       
       if (result.success) {
+        const needsVipPayment = (!vipWasActiveOnLoad && wantsVip) || wantsRenewal
+        if (needsVipPayment) {
+          const payResponse = await fetch('/api/product-vip/pay', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ productId: parseInt(productId, 10) }),
+          })
+          const payResult = await payResponse.json()
+
+          if (payResult.success && payResult.redirectUrl) {
+            showToast('პროდუქტი განახლდა. გადადით VIP გადახდაზე', 'success')
+            window.location.href = payResult.redirectUrl
+            return
+          }
+
+          showToast(payResult.error || 'VIP გადახდის დაწყება ვერ მოხერხდა', 'error')
+          router.push('/account?tab=products')
+          return
+        }
+
         showToast('პროდუქტი წარმატებით განახლდა!', 'success')
         router.push('/account')
       } else {
@@ -1014,6 +1090,79 @@ const EditProductPage = () => {
               />
             </div>
           )}
+
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            {isVipActive ? (
+              <div>
+                <label className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={wantsVip}
+                    disabled
+                    className="mt-1 w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
+                  />
+                  <span>
+                    <span className="block md:text-[18px] text-[16px] text-black font-medium">
+                      VIP პროდუქცია
+                    </span>
+                    <span className="block text-sm text-[#1B3729] font-medium mt-1">
+                      VIP აქტიურია ვადამდე: {vipExpiryLabel}
+                    </span>
+                  </span>
+                </label>
+                <label className="flex items-start gap-3 cursor-pointer mt-4">
+                  <input
+                    type="checkbox"
+                    checked={wantsRenewal}
+                    onChange={(e) => setWantsRenewal(e.target.checked)}
+                    className="mt-1 w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
+                  />
+                  <span className="text-sm text-gray-600">
+                    განაახლე VIP — {VIP_MONTHLY_PRICE_GEL} ლარი 1 თვეში
+                  </span>
+                </label>
+              </div>
+            ) : (
+              <div>
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={wantsVip}
+                    onChange={(e) => setWantsVip(e.target.checked)}
+                    className="mt-1 w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
+                  />
+                  <span>
+                    <span className="block md:text-[18px] text-[16px] text-black font-medium">
+                      VIP პროდუქცია
+                    </span>
+                    <span className="block text-sm text-gray-600 mt-1">
+                      ღირებულება: {VIP_MONTHLY_PRICE_GEL} ლარი 1 თვეში. თქვენი პროდუქტი გამოჩნდება საიტზე პრიორიტეტულად.
+                    </span>
+                    {wantsVip && (
+                      <span className="block text-sm text-[#1B3729] font-medium mt-2">
+                        განახლების შემდეგ გადახდის გვერდზე გადახდით {VIP_MONTHLY_PRICE_GEL} ლარს VIP სტატუსისთვის.
+                      </span>
+                    )}
+                  </span>
+                </label>
+                {hasPendingVipPayment && (
+                  <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p className="text-sm text-amber-900 mb-3">
+                      VIP გადახდა დაწყებულია, მაგრამ ჯერ არ არის დასრულებული. ფილტრში გამოჩნდება მხოლოდ გადახდის შემდეგ.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleResumeVipPayment}
+                      disabled={isResumingVipPayment}
+                      className="bg-[#1B3729] text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
+                    >
+                      {isResumingVipPayment ? 'იტვირთება...' : `გადახდის გაგრძელება (${VIP_MONTHLY_PRICE_GEL} ლარი)`}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Images */}
           <div className="bg-white rounded-lg shadow-sm p-6">

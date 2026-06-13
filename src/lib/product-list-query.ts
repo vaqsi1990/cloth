@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client'
 import { unstable_cache } from 'next/cache'
 import { revalidateTag } from 'next/cache'
 import { prisma } from '@/lib/prisma'
+import { sortProductsByVipPriority } from '@/lib/product-vip'
 
 export const PRODUCT_LIST_CACHE_TAG = 'product-list'
 
@@ -12,6 +13,7 @@ export type PublicListFilters = {
   isNew?: boolean
   isSecondHand?: boolean
   hasDiscount?: boolean
+  isVip?: boolean
   search?: string
   skip: number
   take: number
@@ -27,6 +29,8 @@ type CombinedListRow = {
   location: string | null
   isNew: boolean
   isSecondHand: boolean
+  isVip: boolean
+  vipExpiresAt: Date | null
   discount: number | null
   discountDays: number | null
   discountStartDate: Date | null
@@ -36,6 +40,7 @@ type CombinedListRow = {
   sizeSystem: string | null
   size: string | null
   isRentable: boolean
+  createdAt: Date
   image_url: string | null
   min_price: number | null
   max_price: number | null
@@ -79,6 +84,11 @@ function buildWhere(filters: PublicListFilters): Prisma.Sql {
       )`,
     )
   }
+  if (filters.isVip) {
+    parts.push(
+      Prisma.sql`p."isVip" = true AND p."vipExpiresAt" IS NOT NULL AND p."vipExpiresAt" > NOW()`,
+    )
+  }
   if (filters.search) {
     const pattern = `%${filters.search}%`
     parts.push(
@@ -87,6 +97,18 @@ function buildWhere(filters: PublicListFilters): Prisma.Sql {
   }
 
   return Prisma.join(parts, ' AND ')
+}
+
+export async function countActiveVipProducts(
+  filters: Omit<PublicListFilters, 'skip' | 'take' | 'isVip'>,
+): Promise<number> {
+  const where = buildWhere({ ...filters, isVip: true, skip: 0, take: 0 })
+  const rows = await prisma.$queryRaw<[{ count: number }]>(Prisma.sql`
+    SELECT COUNT(*)::int AS count
+    FROM "Product" p
+    WHERE ${where}
+  `)
+  return rows[0]?.count ?? 0
 }
 
 export function mapCombinedRowsToProducts(rows: CombinedListRow[]) {
@@ -109,6 +131,8 @@ export function mapCombinedRowsToProducts(rows: CombinedListRow[]) {
       location: row.location,
       isNew: row.isNew,
       isSecondHand: row.isSecondHand,
+      isVip: row.isVip,
+      vipExpiresAt: row.vipExpiresAt,
       discount: row.discount,
       discountDays: row.discountDays,
       discountStartDate: row.discountStartDate,
@@ -118,6 +142,7 @@ export function mapCombinedRowsToProducts(rows: CombinedListRow[]) {
       sizeSystem: row.sizeSystem,
       size: row.size,
       isRentable: row.isRentable,
+      createdAt: row.createdAt,
       images: row.image_url ? [{ url: row.image_url }] : [],
       variants,
       rentalPriceTiers:
@@ -154,6 +179,8 @@ export async function fetchPublicProductListCombined(
         p.location,
         p."isNew",
         p."isSecondHand",
+        p."isVip",
+        p."vipExpiresAt",
         p.discount,
         p."discountDays",
         p."discountStartDate",
@@ -166,7 +193,10 @@ export async function fetchPublicProductListCombined(
         p."createdAt"
       FROM "Product" p
       WHERE ${where}
-      ORDER BY p."createdAt" DESC, p.id DESC
+      ORDER BY
+        (p."isVip" = true AND p."vipExpiresAt" IS NOT NULL AND p."vipExpiresAt" > NOW()) DESC,
+        p."createdAt" DESC,
+        p.id DESC
       LIMIT ${filters.take}
       OFFSET ${filters.skip}
     ),
@@ -206,6 +236,8 @@ export async function fetchPublicProductListCombined(
       f.location,
       f."isNew",
       f."isSecondHand",
+      f."isVip",
+      f."vipExpiresAt",
       f.discount,
       f."discountDays",
       f."discountStartDate",
@@ -215,6 +247,7 @@ export async function fetchPublicProductListCombined(
       f."sizeSystem",
       f.size,
       f."isRentable",
+      f."createdAt",
       ci.url AS image_url,
       vp.min_price,
       vp.max_price,
@@ -232,7 +265,10 @@ export async function fetchPublicProductListCombined(
     LEFT JOIN first_tiers ft ON ft."productId" = f.id
     LEFT JOIN "Category" c ON c.id = f."categoryId"
     LEFT JOIN "Purpose" pu ON pu.id = f."purposeId"
-    ORDER BY f."createdAt" DESC, f.id DESC
+    ORDER BY
+      (f."isVip" = true AND f."vipExpiresAt" IS NOT NULL AND f."vipExpiresAt" > NOW()) DESC,
+      f."createdAt" DESC,
+      f.id DESC
   `)
 }
 
@@ -282,6 +318,7 @@ export function getPublicListCacheKey(filters: PublicListFilters): string {
     isNew: filters.isNew ?? false,
     isSecondHand: filters.isSecondHand ?? false,
     hasDiscount: filters.hasDiscount ?? false,
+    isVip: filters.isVip ?? false,
     search: filters.search ?? null,
     skip: filters.skip,
     take: filters.take,
@@ -296,7 +333,8 @@ function hasActiveFilters(filters: PublicListFilters): boolean {
       filters.gender ||
       filters.isNew ||
       filters.isSecondHand ||
-      filters.hasDiscount,
+      filters.hasDiscount ||
+      filters.isVip,
   )
 }
 
@@ -358,7 +396,7 @@ export function finalizeProductListResponse(payload: CachedListPayload): CachedL
 
 async function buildListPayload(filters: PublicListFilters): Promise<CachedListPayload> {
   const rows = await fetchPublicProductListCombined(filters)
-  const mapped = mapCombinedRowsToProducts(rows)
+  const mapped = sortProductsByVipPriority(mapCombinedRowsToProducts(rows))
   const pageSize = filters.take - 1
   const hasMore = mapped.length > pageSize
   const products = hasMore ? mapped.slice(0, pageSize) : mapped
@@ -370,7 +408,7 @@ const getCachedProductList = unstable_cache(
     const filters = JSON.parse(filtersKey) as PublicListFilters
     return buildListPayload(filters)
   },
-  ['public-product-list-v2'],
+  ['public-product-list-v3'],
   {
     revalidate: 120,
     tags: [PRODUCT_LIST_CACHE_TAG],

@@ -26,6 +26,7 @@ import {
   refineProductPickupAddress,
 } from '@/lib/product-pickup'
 import ProductDiscountFields from '@/components/ProductDiscountFields'
+import { VIP_MONTHLY_PRICE_GEL } from '@/lib/product-vip'
 import { getProductDiscountBasePrice } from '@/lib/discount-helpers'
 const sizeOptions = {
   XS: { UK: [4, 6], EU: [32, 34], US: [0, 2],  },
@@ -139,6 +140,7 @@ const NewProductPage = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [wantsVip, setWantsVip] = useState(false)
   const [showPurchaseOptions, setShowPurchaseOptions] = useState(false)
   const [sizeSystem, setSizeSystem] = useState(formData.sizeSystem ?? '')
   const [selectedSize, setSelectedSize] = useState('')
@@ -447,6 +449,27 @@ const NewProductPage = () => {
       const result = await response.json()
 
       if (result.success) {
+        if (wantsVip && result.product?.id) {
+          const payResponse = await fetch('/api/product-vip/pay', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ productId: result.product.id }),
+          })
+          const payResult = await payResponse.json()
+
+          if (payResult.success && payResult.redirectUrl) {
+            showToast('პროდუქტი შეიქმნა. გადადით VIP გადახდაზე', 'success')
+            window.location.href = payResult.redirectUrl
+            return
+          }
+
+          showToast(payResult.error || 'VIP გადახდის დაწყება ვერ მოხერხდა', 'error')
+          router.push('/admin/products')
+          return
+        }
+
         showToast('პროდუქტი წარმატებით შეიქმნა!', 'success')
         router.push('/admin')
       } else {
@@ -941,6 +964,30 @@ const NewProductPage = () => {
               />
             </div>
           )}
+
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={wantsVip}
+                onChange={(e) => setWantsVip(e.target.checked)}
+                className="mt-1 w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
+              />
+              <span>
+                <span className="block md:text-[18px] text-[16px] text-black font-medium">
+                  VIP პროდუქცია
+                </span>
+                <span className="block text-sm text-gray-600 mt-1">
+                  ღირებულება: {VIP_MONTHLY_PRICE_GEL} ლარი 1 თვეში. თქვენი პროდუქტი გამოჩნდება საიტზე პრიორიტეტულად.
+                </span>
+                {wantsVip && (
+                  <span className="block text-sm text-[#1B3729] font-medium mt-2">
+                    დამატების შემდეგ გადახდის გვერდზე გადახდით {VIP_MONTHLY_PRICE_GEL} ლარს VIP სტატუსისთვის.
+                  </span>
+                )}
+              </span>
+            </label>
+          </div>
 
           {/* Images */}
           <div className="bg-white  rounded-lg shadow-sm p-6">

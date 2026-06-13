@@ -31,6 +31,8 @@ import {
   loadPublicProductList,
   revalidateProductListCache,
 } from '@/lib/product-list-query'
+import { sortProductsByVipPriority } from '@/lib/product-vip'
+import { prismaCacheStrategy } from '@/lib/prisma-cache'
 
 // Product validation schema
 const productSchema = z.object({
@@ -97,8 +99,7 @@ const listProducts = (
   }
   return prisma.product.findMany({
     ...args,
-    // @ts-ignore - Prisma Accelerate cacheStrategy
-    cacheStrategy,
+    ...prismaCacheStrategy(cacheStrategy),
   })
 }
 
@@ -131,6 +132,7 @@ export async function GET(request: NextRequest) {
     const isNew = searchParams.get('isNew')
     const isSecondHand = searchParams.get('isSecondHand')
     const hasDiscount = searchParams.get('hasDiscount')
+    const isVip = searchParams.get('isVip')
     const purpose = searchParams.get('purpose')
     const search = searchParams.get('search')?.trim()
     const cursor = searchParams.get('cursor')
@@ -158,8 +160,7 @@ export async function GET(request: NextRequest) {
             .findUnique({
               where: { slug: resolvedCategorySlug },
               select: { id: true },
-              // @ts-ignore - cacheStrategy is available with Prisma Accelerate
-              cacheStrategy: { swr: 300, ttl: 300 },
+              ...prismaCacheStrategy({ swr: 300, ttl: 300 }),
             })
             .then((c) => c?.id ?? getCategoryIdBySlugParam(category!))
             .catch(() => getCategoryIdBySlugParam(category!))
@@ -182,7 +183,7 @@ export async function GET(request: NextRequest) {
     const needsFreshData = isAdminOrSupportRole || shouldIncludeUnapproved
     const useAccelerateCache = !needsFreshData
     const listCacheStrategy =
-      search || category || purpose || gender || isNew || isSecondHand || hasDiscount
+      search || category || purpose || gender || isNew || isSecondHand || hasDiscount || isVip
         ? FILTERED_LIST_CACHE
         : PUBLIC_LIST_CACHE
 
@@ -211,6 +212,7 @@ export async function GET(request: NextRequest) {
         isNew: isNew === 'true',
         isSecondHand: isSecondHand === 'true',
         hasDiscount: hasDiscount === 'true',
+        isVip: isVip === 'true',
         search: search || undefined,
         skip: (page - 1) * pageLimit,
         take: listTake,
@@ -282,6 +284,8 @@ export async function GET(request: NextRequest) {
       location: true,
       isNew: true,
       isSecondHand: true,
+      isVip: true,
+      vipExpiresAt: true,
       discount: true,
       discountDays: true,
       discountStartDate: true,
@@ -291,6 +295,7 @@ export async function GET(request: NextRequest) {
       sizeSystem: true,
       size: true,
       isRentable: true,
+      createdAt: true,
       ...(isAdminOrSupportRole
         ? {
             pricePerDay: true,
@@ -333,9 +338,17 @@ export async function GET(request: NextRequest) {
       ...(isNew === 'true' ? { isNew: true } : {}),
       ...(isSecondHand === 'true' ? { isSecondHand: true } : {}),
       ...(hasDiscount === 'true' ? { discount: { gt: 0 } } : {}),
+      ...(isVip === 'true'
+        ? {
+            isVip: true,
+            vipExpiresAt: { gt: new Date() },
+          }
+        : {}),
     }
 
     const listOrderBy = [
+      { isVip: 'desc' as const },
+      { vipExpiresAt: 'desc' as const },
       { createdAt: 'desc' as const },
       { id: 'desc' as const },
     ]
@@ -402,7 +415,7 @@ export async function GET(request: NextRequest) {
     // Filter out products with blocked users (if not admin)
     // Optimized: Skip this check if products are already approved (blocked users can't have approved products)
     // This check is only needed if business logic allows blocked users to have approved products
-    let filteredProducts = flatProducts
+    let filteredProducts = sortProductsByVipPriority(flatProducts)
     // Note: If blocked users cannot have approved products, we can skip this entire check
     // Uncomment below if you need to filter blocked users:
     /*
@@ -412,11 +425,7 @@ export async function GET(request: NextRequest) {
         const users = await prisma.user.findMany({
           where: { id: { in: userIds } },
           select: { id: true, blocked: true },
-          // @ts-ignore - cacheStrategy is available with Prisma Accelerate
-          cacheStrategy: {
-            swr: 60,
-            ttl: 60,
-          }
+          ...prismaCacheStrategy({ swr: 60, ttl: 60 }),
         })
         const blockedUserIds = new Set(users.filter(u => u.blocked).map(u => u.id))
         filteredProducts = products.filter(p => !p.userId || !blockedUserIds.has(p.userId))

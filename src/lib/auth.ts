@@ -2,6 +2,7 @@ import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import GoogleProvider from "next-auth/providers/google"
 import { prisma } from "@/lib/prisma"
+import { prismaCacheStrategy } from "@/lib/prisma-cache"
 import bcrypt from "bcryptjs"
 
 // Validate required environment variables
@@ -27,11 +28,7 @@ export const authOptions: NextAuthOptions = {
           where: {
             email: credentials.email
           },
-          // @ts-ignore - cacheStrategy is available with Prisma Accelerate
-          cacheStrategy: {
-            swr: 60, // Stale-while-revalidating for 60 seconds
-            ttl: 60, // Cache results for 60 seconds
-          },
+          ...prismaCacheStrategy({ swr: 60, ttl: 60 }),
           select: {
             id: true,
             email: true,
@@ -239,11 +236,7 @@ export const authOptions: NextAuthOptions = {
       if (account?.provider === "google" && token.sub) {
         try {
           const dbUser = await prisma.user.findUnique({
-            // @ts-ignore - cacheStrategy is available with Prisma Accelerate
-            cacheStrategy: {
-              swr: 60, // Stale-while-revalidating for 60 seconds
-              ttl: 60, // Cache results for 60 seconds
-            },
+            ...prismaCacheStrategy({ swr: 60, ttl: 60 }),
             where: { id: token.sub },
             select: {
               role: true,
@@ -280,11 +273,7 @@ export const authOptions: NextAuthOptions = {
       if (token.sub && !account) {
         try {
           const dbUser = await prisma.user.findUnique({
-            // @ts-ignore - cacheStrategy is available with Prisma Accelerate
-            cacheStrategy: {
-              swr: 60, // Stale-while-revalidating for 60 seconds
-              ttl: 60, // Cache results for 60 seconds
-            },
+            ...prismaCacheStrategy({ swr: 60, ttl: 60 }),
             where: { id: token.sub },
             select: {
               role: true,

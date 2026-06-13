@@ -61,6 +61,8 @@ export interface Product {
   size?: string
   isNew: boolean
   isSecondHand: boolean
+  isVip?: boolean
+  vipExpiresAt?: string | null
   discount?: number
   discountDays?: number
   discountStartDate?: string | null

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { prismaCacheStrategy } from '@/lib/prisma-cache'
 
 const RENTAL_STATUS_CACHE = { swr: 30, ttl: 30 }
 
@@ -45,8 +46,7 @@ export async function GET(request: NextRequest) {
         },
         orderBy: { startDate: 'asc' },
         take: 200,
-        // @ts-ignore - Prisma Accelerate cacheStrategy
-        cacheStrategy: RENTAL_STATUS_CACHE,
+        ...prismaCacheStrategy(RENTAL_STATUS_CACHE),
       }),
       prisma.order.findMany({
         where: {
@@ -77,8 +77,7 @@ export async function GET(request: NextRequest) {
           },
         },
         take: 100,
-        // @ts-ignore - Prisma Accelerate cacheStrategy
-        cacheStrategy: RENTAL_STATUS_CACHE,
+        ...prismaCacheStrategy(RENTAL_STATUS_CACHE),
       }),
       prisma.product.findMany({
         where: { id: { in: productIds } },
@@ -89,8 +88,7 @@ export async function GET(request: NextRequest) {
           },
         },
         take: 100,
-        // @ts-ignore - Prisma Accelerate cacheStrategy
-        cacheStrategy: RENTAL_STATUS_CACHE,
+        ...prismaCacheStrategy(RENTAL_STATUS_CACHE),
       }),
     ])
 
