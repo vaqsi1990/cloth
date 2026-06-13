@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
-import { getCategoryMetaByIdsSync } from '@/lib/product-categories'
+import { getCategoryMetaByIdsSync, resolveCanonicalCategory } from '@/lib/product-categories'
 import { getPurposeMetaByIdsSync } from '@/lib/purpose-ids'
 
 type EnrichmentRow = {
@@ -130,7 +130,11 @@ export async function enrichProductListRows<T extends ProductListScalar>(
   ])
 
   const categoryById = new Map(
-    dbCategories.map((c) => [c.id, { id: c.id, name: c.name, slug: c.slug }]),
+    dbCategories.map((c) => {
+      const canonical = resolveCanonicalCategory(c)
+      const meta = canonical ?? { id: c.id, name: c.name, slug: c.slug }
+      return [c.id, meta] as const
+    }),
   )
   for (const id of categoryIds) {
     if (!categoryById.has(id)) {

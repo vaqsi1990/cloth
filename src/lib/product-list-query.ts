@@ -3,11 +3,13 @@ import { unstable_cache } from 'next/cache'
 import { revalidateTag } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { sortProductsByVipPriority } from '@/lib/product-vip'
+import { resolveCanonicalCategory } from '@/lib/product-categories'
 
 export const PRODUCT_LIST_CACHE_TAG = 'product-list'
 
 export type PublicListFilters = {
   categoryId?: number | null
+  categoryIds?: number[] | null
   purposeId?: number | null
   gender?: 'WOMEN' | 'MEN' | 'CHILDREN'
   isNew?: boolean
@@ -61,7 +63,11 @@ function buildWhere(filters: PublicListFilters): Prisma.Sql {
     Prisma.sql`p."userId" IS NOT NULL`,
   ]
 
-  if (filters.categoryId) {
+  if (filters.categoryIds?.length) {
+    parts.push(
+      Prisma.sql`p."categoryId" IN (${Prisma.join(filters.categoryIds)})`,
+    )
+  } else if (filters.categoryId) {
     parts.push(Prisma.sql`p."categoryId" = ${filters.categoryId}`)
   }
   if (filters.purposeId) {
@@ -163,7 +169,11 @@ export function mapCombinedRowsToProducts(rows: CombinedListRow[]) {
           : [],
       category:
         row.cat_id != null && row.cat_name && row.cat_slug
-          ? { id: row.cat_id, name: row.cat_name, slug: row.cat_slug }
+          ? resolveCanonicalCategory({
+              id: row.cat_id,
+              name: row.cat_name,
+              slug: row.cat_slug,
+            }) ?? { id: row.cat_id, name: row.cat_name, slug: row.cat_slug }
           : null,
       purpose:
         row.pur_id != null && row.pur_name && row.pur_slug
@@ -325,6 +335,7 @@ const publicListCache = new Map<string, { at: number; data: CachedListPayload }>
 export function getPublicListCacheKey(filters: PublicListFilters): string {
   return JSON.stringify({
     categoryId: filters.categoryId ?? null,
+    categoryIds: filters.categoryIds ?? null,
     purposeId: filters.purposeId ?? null,
     gender: filters.gender ?? null,
     isNew: filters.isNew ?? false,
@@ -341,6 +352,7 @@ function hasActiveFilters(filters: PublicListFilters): boolean {
   return Boolean(
     filters.search ||
       filters.categoryId ||
+      filters.categoryIds?.length ||
       filters.purposeId ||
       filters.gender ||
       filters.isNew ||

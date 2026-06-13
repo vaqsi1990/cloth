@@ -13,6 +13,7 @@ import {
   getCategoryIdBySlugParam,
   resolveCategorySlugParam,
 } from '@/lib/product-categories'
+import { resolveCategoryIdsForFilter } from '@/lib/product-category-resolve'
 import {
   isValidProductText,
   PRODUCT_DESCRIPTION_ERROR_MESSAGE,
@@ -154,25 +155,21 @@ export async function GET(request: NextRequest) {
 
     const resolvedCategorySlug =
       category && category !== 'ALL' ? resolveCategorySlugParam(category) : null
-    const categoryIdPromise =
-      resolvedCategorySlug
-        ? prisma.category
-            .findUnique({
-              where: { slug: resolvedCategorySlug },
-              select: { id: true },
-              ...prismaCacheStrategy({ swr: 300, ttl: 300 }),
-            })
-            .then((c) => c?.id ?? getCategoryIdBySlugParam(category!))
-            .catch(() => getCategoryIdBySlugParam(category!))
-        : Promise.resolve(null)
+    const categoryIdsPromise =
+      resolvedCategorySlug && category
+        ? resolveCategoryIdsForFilter(category).catch(() => {
+            const fallbackId = getCategoryIdBySlugParam(category)
+            return fallbackId != null ? [fallbackId] : []
+          })
+        : Promise.resolve([] as number[])
 
     const purposeIdPromise = purpose
       ? getPurposeIdBySlug(purpose).catch(() => null)
       : Promise.resolve(null)
 
-    const [session, categoryId, purposeId] = await Promise.all([
+    const [session, categoryIds, purposeId] = await Promise.all([
       sessionPromise,
-      categoryIdPromise,
+      categoryIdsPromise,
       purposeIdPromise,
     ])
 
@@ -206,7 +203,7 @@ export async function GET(request: NextRequest) {
 
     if (useCombinedPublicQuery) {
       const combinedFilters = {
-        categoryId,
+        categoryIds: categoryIds.length > 0 ? categoryIds : null,
         purposeId,
         gender: genderEnum,
         isNew: isNew === 'true',
@@ -332,7 +329,7 @@ export async function GET(request: NextRequest) {
             ],
           }
         : {}),
-      ...(categoryId ? { categoryId } : {}),
+      ...(categoryIds.length > 0 ? { categoryId: { in: categoryIds } } : {}),
       ...(purposeId ? { purposeId } : {}),
       ...(genderEnum ? { gender: genderEnum } : {}),
       ...(isNew === 'true' ? { isNew: true } : {}),

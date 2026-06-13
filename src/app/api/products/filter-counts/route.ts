@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { countActiveDiscountProducts, countActiveVipProducts } from '@/lib/product-list-query'
 import { syncPendingVipPayments } from '@/lib/product-vip-payment'
-import { getCategoryIdBySlugParam, resolveCategorySlugParam } from '@/lib/product-categories'
+import { resolveCategorySlugParam } from '@/lib/product-categories'
+import { resolveCategoryIdsForFilter } from '@/lib/product-category-resolve'
 import { getPurposeIdBySlug } from '@/lib/purpose-ids'
-import { prisma } from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,14 +15,10 @@ export async function GET(request: NextRequest) {
 
     const resolvedCategorySlug =
       category && category !== 'ALL' ? resolveCategorySlugParam(category) : null
-    const categoryId = resolvedCategorySlug
-      ? (
-          await prisma.category.findUnique({
-            where: { slug: resolvedCategorySlug },
-            select: { id: true },
-          })
-        )?.id ?? (await getCategoryIdBySlugParam(category!))
-      : null
+    const categoryIds =
+      resolvedCategorySlug && category
+        ? await resolveCategoryIdsForFilter(category)
+        : []
 
     const purposeId = purpose ? await getPurposeIdBySlug(purpose).catch(() => null) : null
 
@@ -44,7 +40,7 @@ export async function GET(request: NextRequest) {
 
     const [vipCount, discountCount] = await Promise.all([
       countActiveVipProducts({
-        categoryId,
+        categoryIds: categoryIds.length > 0 ? categoryIds : null,
         purposeId,
         gender: genderEnum,
         isNew: false,
@@ -53,7 +49,7 @@ export async function GET(request: NextRequest) {
         search: search || undefined,
       }),
       countActiveDiscountProducts({
-        categoryId,
+        categoryIds: categoryIds.length > 0 ? categoryIds : null,
         purposeId,
         gender: genderEnum,
         isNew: false,

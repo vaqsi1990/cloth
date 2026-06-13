@@ -33,7 +33,7 @@ export const DEFAULT_PRODUCT_CATEGORIES: ProductCategory[] = [
   { id: 48, name: 'ბავშვების სათამაშოები', slug: 'bavshvebis-satamashoebi' },
 ]
 
-const WOMEN_CATEGORY_IDS = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 13, 14, 21, 22, 23])
+const WOMEN_CATEGORY_IDS = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14, 21, 22, 23])
 const MEN_CATEGORY_IDS = new Set([15, 16])
 const CHILDREN_CATEGORY_IDS = new Set([18, 19, 20, 47, 48])
 const ACCESSORY_CATEGORY_IDS = new Set([11, 12, 17])
@@ -89,19 +89,103 @@ function getCategoryGroup(category: ProductCategory): number {
   return 4
 }
 
-/** Drop duplicate category names (keep lowest id = primary row) */
+/** Drop duplicate category names and ids (keep canonical DEFAULT row per id) */
 export function dedupeProductCategories<T extends ProductCategory>(
   categories: T[],
 ): T[] {
-  const byName = new Map<string, T>()
+  const defaultById = new Map(DEFAULT_PRODUCT_CATEGORIES.map((c) => [c.id, c]))
+  const byId = new Map<number, T>()
+
   for (const category of categories) {
-    const key = category.name.toLowerCase().trim()
-    const existing = byName.get(key)
-    if (!existing || category.id < existing.id) {
-      byName.set(key, category)
+    const canonical = defaultById.get(category.id)
+
+    if (byId.has(category.id)) {
+      if (canonical) {
+        byId.set(category.id, canonical as T)
+      }
+      continue
+    }
+
+    const nameKey = category.name.toLowerCase().trim()
+    const duplicateName = [...byId.values()].find(
+      (existing) => existing.name.toLowerCase().trim() === nameKey,
+    )
+    if (duplicateName) {
+      const keepCanonical =
+        canonical &&
+        duplicateName.name.toLowerCase().trim() === canonical.name.toLowerCase().trim()
+      if (keepCanonical) {
+        byId.delete(duplicateName.id)
+        byId.set(category.id, canonical as T)
+      }
+      continue
+    }
+
+    byId.set(category.id, (canonical ?? category) as T)
+  }
+
+  return [...byId.values()]
+}
+
+/** All predefined categories + API rows; always shows full shop taxonomy in filters */
+export function collectShopFilterCategories(
+  _apiCategories?: ProductCategory[],
+): ProductCategory[] {
+  return sortProductCategories([...DEFAULT_PRODUCT_CATEGORIES])
+}
+
+/** Map any DB/legacy category row to canonical primary slug (ids 1–23, 47–48). */
+export function resolveCanonicalCategorySlug(
+  category:
+    | { id?: number | null; name?: string | null; slug?: string | null }
+    | null
+    | undefined,
+): string | null {
+  if (!category) return null
+
+  if (category.id != null) {
+    const byId = DEFAULT_PRODUCT_CATEGORIES.find((c) => c.id === category.id)
+    if (byId) return byId.slug
+  }
+
+  const slug = category.slug?.trim().toLowerCase()
+  if (slug) {
+    const canonical = CATEGORY_SLUG_ALIASES[slug] ?? slug
+    if (categoryIdBySlug.has(canonical)) return canonical
+  }
+
+  const name = category.name?.trim()
+  if (name) {
+    const byAlias = CATEGORY_SLUG_ALIASES[name] ?? CATEGORY_SLUG_ALIASES[name.toLowerCase()]
+    if (byAlias) return byAlias
+    const byName = DEFAULT_PRODUCT_CATEGORIES.find((c) => c.name === name)
+    if (byName) return byName.slug
+  }
+
+  return slug ?? null
+}
+
+/** Canonical display meta for shop filters and product cards. */
+export function resolveCanonicalCategory(
+  category:
+    | { id?: number | null; name?: string | null; slug?: string | null }
+    | null
+    | undefined,
+): ProductCategory | null {
+  const slug = resolveCanonicalCategorySlug(category)
+  if (!slug) return null
+  return DEFAULT_PRODUCT_CATEGORIES.find((c) => c.slug === slug) ?? null
+}
+
+/** All slugs (canonical + legacy aliases) that belong to one primary category. */
+export function getAliasSlugsForCanonical(canonicalSlug: string): string[] {
+  const slugs = new Set<string>([canonicalSlug])
+  for (const [alias, canonical] of Object.entries(CATEGORY_SLUG_ALIASES)) {
+    if (canonical === canonicalSlug) {
+      slugs.add(alias)
     }
   }
-  return [...byName.values()]
+  return [...slugs]
 }
 
 /** Sort: women → men → children → other; stable within group by id */
@@ -189,6 +273,7 @@ const CATEGORY_SLUG_ALIASES: Record<string, string> = {
   'ზედა ტანსაცმელი': 'outerwear',
   'პალტოები და მოსასხამი': 'coats',
   'საქორწინო კაბები': 'wedding-dresses',
+  'საქორწილო კაბები': 'wedding-dresses',
   'საღამოს ტანსაცმელი': 'evening-wear',
   'სათხილამურო ქურთუკი': 'ski-jacket',
   'თერმო ტანსაცმელი': 'thermal-wear',
@@ -244,24 +329,25 @@ export function findCategoryByParam(
 }
 
 export function productMatchesCategoryFilter(
-  product: { category?: { name?: string; slug?: string } | null },
+  product: {
+    categoryId?: number | null
+    category?: { id?: number; name?: string; slug?: string } | null
+  },
   selected: string[],
   categories: ProductCategory[],
 ): boolean {
   if (selected.length === 0) return true
-  if (!product.category) return false
+
+  const productSlug = resolveCanonicalCategorySlug(
+    product.category ??
+      (product.categoryId != null ? { id: product.categoryId } : null),
+  )
+  if (!productSlug) return false
 
   return selected.some((sel) => {
     const resolved = findCategoryByParam(sel, categories)
-    const targetName = resolved?.name ?? sel
     const targetSlug = resolved?.slug ?? resolveCategorySlugParam(sel)
-
-    return (
-      product.category?.name === targetName ||
-      product.category?.slug === targetSlug ||
-      product.category?.name === sel ||
-      product.category?.slug === sel
-    )
+    return productSlug === targetSlug
   })
 }
 

@@ -8,10 +8,19 @@ import { Product } from '@/types/product'
 import DatePicker from "react-datepicker"
 import StarRating from "@/components/StarRating"
 import { PURPOSE_OPTIONS } from '@/data/purposes'
-import { PRODUCT_COLORS, PRODUCT_COLOR_FILTER_MAPPING } from '@/lib/product-colors'
+import { PRODUCT_COLORS } from '@/lib/product-colors'
+import {
+  collectAvailableSizes,
+  countProductsForCategory,
+  countProductsForColor,
+  formatFilterCount,
+  productMatchesColorFilter,
+  productMatchesSizeFilter,
+} from '@/lib/shop-product-filters'
 import { PRODUCT_IMAGE_QUALITY } from '@/lib/image-config'
 import {
   DEFAULT_PRODUCT_CATEGORIES,
+  collectShopFilterCategories,
   dedupeProductCategories,
   findCategoryByParam,
   productMatchesCategoryFilter,
@@ -354,36 +363,18 @@ const ShopPageClient = () => {
         { id: "CN", label: "CN" }
     ]
 
-    // Predefined letter sizes that should always be available
-    const predefinedLetterSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL']
-    
-    // Get all unique sizes from products
-    const availableSizes = React.useMemo(() => {
-        const sizes = new Set<string>()
-        // Add predefined letter sizes
-        predefinedLetterSizes.forEach(size => sizes.add(size))
-        // Add sizes from products
-        products.forEach(product => {
-            if (product.size) {
-                // Normalize size to uppercase for letter sizes
-                const normalizedSize = product.size.toUpperCase()
-                if (predefinedLetterSizes.includes(normalizedSize)) {
-                    sizes.add(normalizedSize)
-                } else {
-                    sizes.add(product.size)
-                }
-            }
-        })
-        // Sort sizes: letter sizes first (in order), then others
-        return Array.from(sizes).sort((a, b) => {
-            const aIndex = predefinedLetterSizes.indexOf(a.toUpperCase())
-            const bIndex = predefinedLetterSizes.indexOf(b.toUpperCase())
-            if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex
-            if (aIndex !== -1) return -1
-            if (bIndex !== -1) return 1
-            return a.localeCompare(b)
-        })
-    }, [products])
+    const catalogProducts = allProductsForCounts.length > 0 ? allProductsForCounts : products
+
+    const filterCategories = React.useMemo(
+        () => collectShopFilterCategories(),
+        [],
+    )
+
+    // Letter sizes always visible; DB sizes (e.g. 36, 44) appended
+    const availableSizes = React.useMemo(
+      () => collectAvailableSizes(catalogProducts),
+      [catalogProducts],
+    )
 
     const colors = PRODUCT_COLORS
 
@@ -560,8 +551,6 @@ const ShopPageClient = () => {
         searchParam,
         purposeParam,
         categoryParam,
-        currentPage,
-        itemsPerPage,
         selectedCategories,
         selectedPurposes,
         onlyDiscounted,
@@ -598,15 +587,6 @@ const ShopPageClient = () => {
                 }
                 if (purposeParam) {
                     baseParams.append('purpose', purposeParam)
-                } else if (selectedPurposes.length === 1) {
-                    baseParams.append('purpose', selectedPurposes[0])
-                }
-                const categorySlug = resolveCategoryApiSlug(
-                    categoryParam,
-                    selectedCategories,
-                )
-                if (categorySlug) {
-                    baseParams.append('category', categorySlug)
                 }
 
                 const allProducts: Product[] = []
@@ -631,6 +611,26 @@ const ShopPageClient = () => {
 
                 if (!isStale()) {
                     setAllProductsForCounts(allProducts)
+
+                    const allPrices = allProducts.flatMap((product: Product) => {
+                        const prices: number[] = []
+                        if (product.variants && product.variants.length > 0) {
+                            prices.push(...product.variants.map((variant) => variant.price))
+                        }
+                        if (product.isRentable && product.rentalPriceTiers && product.rentalPriceTiers.length > 0) {
+                            const sortedTiers = [...product.rentalPriceTiers].sort((a, b) => a.minDays - b.minDays)
+                            const tier0 = sortedTiers[0]
+                            prices.push(tier0.pricePerDay * tier0.minDays)
+                        }
+                        return prices
+                    })
+                    const calculatedMaxPrice = allPrices.length > 0 ? Math.max(...allPrices) : 200
+                    setMaxPrice(calculatedMaxPrice)
+                    setPriceRange((prev) =>
+                        calculatedMaxPrice > prev[1] || prev[1] === 0
+                            ? [0, calculatedMaxPrice]
+                            : prev,
+                    )
                 }
             } catch (error: unknown) {
                 if (
@@ -651,10 +651,6 @@ const ShopPageClient = () => {
         genderParam,
         searchParam,
         purposeParam,
-        categoryParam,
-        selectedCategories,
-        selectedPurposes,
-        resolveCategoryApiSlug,
     ])
 
     // Fetch rental status for rentable products (batched)
@@ -823,7 +819,7 @@ const ShopPageClient = () => {
             const categoryMatch = productMatchesCategoryFilter(
                 product,
                 selectedCategories,
-                shopCategories,
+                filterCategories,
             )
 
             // Purpose filter
@@ -844,24 +840,11 @@ const ShopPageClient = () => {
             const sizeSystemMatch = selectedSizeSystems.length === 0 ||
                 (product.sizeSystem && selectedSizeSystems.includes(product.sizeSystem))
 
-            // Size filter (product.size) - case-insensitive for letter sizes
-            const sizeMatch = selectedSizes.length === 0 ||
-                (product.size && selectedSizes.some(selectedSize => {
-                    if (!product.size) return false
-                    const productSizeUpper = product.size.toUpperCase()
-                    const selectedSizeUpper = selectedSize.toUpperCase()
-                    // Match exact or case-insensitive for letter sizes
-                    return product.size === selectedSize || productSizeUpper === selectedSizeUpper
-                }))
+            // Size filter (product.size)
+            const sizeMatch = productMatchesSizeFilter(product.size, selectedSizes)
 
             // Color filter
-            const colorMatch = selectedColors.length === 0 ||
-                selectedColors.some(selectedColor => {
-                    const colorVariations = PRODUCT_COLOR_FILTER_MAPPING[selectedColor] || [selectedColor];
-                    return colorVariations.some(color =>
-                        product.color?.toLowerCase().includes(color.toLowerCase())
-                    );
-                })
+            const colorMatch = productMatchesColorFilter(product.color, selectedColors)
 
             // Location filter
             const locationMatch = selectedLocations.length === 0 ||
@@ -882,11 +865,9 @@ const ShopPageClient = () => {
     // Get products filtered by all other criteria (excluding purchase type) for count calculations
     const productsForTypeCounts = getProductsFilteredByOtherCriteria(allProductsForCounts)
 
-    const filteredProducts: Product[] = getProductsFilteredByOtherCriteria(products).filter(
+    const filteredProducts: Product[] = getProductsFilteredByOtherCriteria(catalogProducts).filter(
         matchesPurchaseType,
     )
-
-
 
     // Sort products — VIP always first, then user-selected sort
     const sortedProducts = [...filteredProducts].sort((a, b) => {
@@ -910,8 +891,11 @@ const ShopPageClient = () => {
         }
     })
 
-    const totalPages = serverTotalPages
-    const currentProducts = sortedProducts
+    const totalPages = Math.max(1, Math.ceil(sortedProducts.length / itemsPerPage))
+    const currentProducts = sortedProducts.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage,
+    )
 
     // Reset to page 1 when filters change (skip initial restore snapshot)
     useEffect(() => {
@@ -1208,17 +1192,13 @@ const ShopPageClient = () => {
                                                 </label>
                                             ))}
                                         </div>
-                                        {availableSizes.length > 0 && (
-                                            <div className="space-y-3">
+                                        <div className="space-y-3">
                                                 <h3 className="text-lg font-semibold text-black mb-4">ზომა</h3>
                                                 <div className="space-y-2">
                                                     {availableSizes.map((size) => {
-                                                        const sizeCount = products.filter(product => {
-                                                            if (!product.size) return false
-                                                            const productSizeUpper = product.size.toUpperCase()
-                                                            const sizeUpper = size.toUpperCase()
-                                                            return product.size === size || productSizeUpper === sizeUpper
-                                                        }).length
+                                                        const sizeCount = catalogProducts.filter((product) =>
+                                                            productMatchesSizeFilter(product.size, [size]),
+                                                        ).length
                                                         const isSelected = selectedSizes.some(selectedSize => {
                                                             const selectedSizeUpper = selectedSize.toUpperCase()
                                                             const sizeUpper = size.toUpperCase()
@@ -1238,32 +1218,40 @@ const ShopPageClient = () => {
                                                                     />
                                                                     <span>{size}</span>
                                                                 </span>
-                                                                <span className="text-xs text-gray-500">{sizeCount}</span>
+                                                                <span className="text-xs text-gray-500">
+                                                                    {formatFilterCount(sizeCount)}
+                                                                </span>
                                                             </label>
                                                         )
                                                     })}
                                                 </div>
                                             </div>
-                                        )}
                                     </div>
                                 )}
 
                                 {activeMobileFilter === 'color' && (
                                     <div className="space-y-3">
                                         <h3 className="text-lg font-semibold text-black mb-4">ფერი</h3>
-                                        <div className="flex flex-wrap gap-3">
-                                            {colors.map((color) => (
-                                                <button
-                                                    key={color.id}
-                                                    onClick={() => toggleColor(color.id)}
-                                                    className={`relative w-12 h-12 rounded-full border-2 transition-all ${selectedColors.includes(color.id)
-                                                        ? 'border-[#1B3729] ring-2 ring-[#1B3729] ring-offset-2'
-                                                        : 'border-gray-300'
-                                                        }`}
-                                                    style={{ backgroundColor: color.color }}
-                                                    title={color.label}
-                                                />
-                                            ))}
+                                        <div className="flex flex-wrap gap-4">
+                                            {colors.map((color) => {
+                                                const colorCount = countProductsForColor(catalogProducts, color.id)
+                                                return (
+                                                    <div key={color.id} className="flex flex-col items-center gap-1">
+                                                        <button
+                                                            onClick={() => toggleColor(color.id)}
+                                                            className={`relative w-12 h-12 rounded-full border-2 transition-all ${selectedColors.includes(color.id)
+                                                                ? 'border-[#1B3729] ring-2 ring-[#1B3729] ring-offset-2'
+                                                                : 'border-gray-300'
+                                                                }`}
+                                                            style={{ backgroundColor: color.color }}
+                                                            title={color.label}
+                                                        />
+                                                        <span className="text-xs text-gray-500">
+                                                            {formatFilterCount(colorCount)}
+                                                        </span>
+                                                    </div>
+                                                )
+                                            })}
                                         </div>
                                     </div>
                                 )}
@@ -1272,15 +1260,17 @@ const ShopPageClient = () => {
                                     <div className="space-y-3">
                                         <h3 className="text-lg font-semibold text-black mb-4">კატეგორია</h3>
                                         <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-                                            {shopCategories.map((category) => {
-                                                const categoryCount = allProductsForCounts.filter(product =>
-                                                    productMatchesCategoryFilter(product, [category.name], shopCategories)
-                                                ).length;
+                                            {filterCategories.map((category) => {
+                                                const categoryCount = countProductsForCategory(
+                                                    catalogProducts,
+                                                    category,
+                                                    filterCategories,
+                                                )
                                                 const isSelected = selectedCategories.includes(category.name);
 
                                                 return (
                                                     <label
-                                                        key={category.id}
+                                                        key={category.slug}
                                                         className="flex items-center justify-between p-3 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100"
                                                     >
                                                         <span className="flex items-center gap-3">
@@ -1292,7 +1282,9 @@ const ShopPageClient = () => {
                                                             />
                                                             <span className="text-[16px] text-black">{category.name}</span>
                                                         </span>
-                                                        <span className="text-sm text-gray-500">{categoryCount}</span>
+                                                        <span className="text-sm text-gray-500">
+                                                            {formatFilterCount(categoryCount)}
+                                                        </span>
                                                     </label>
                                                 );
                                             })}
@@ -1662,15 +1654,17 @@ const ShopPageClient = () => {
                                 </button>
                                 {isCategoryOpen && (
                                     <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-                                        {shopCategories.map((category) => {
-                                            const categoryCount = allProductsForCounts.filter(product =>
-                                                productMatchesCategoryFilter(product, [category.name], shopCategories)
-                                            ).length;
+                                        {filterCategories.map((category) => {
+                                            const categoryCount = countProductsForCategory(
+                                                catalogProducts,
+                                                category,
+                                                filterCategories,
+                                            )
                                             const isSelected = selectedCategories.includes(category.name);
 
                                             return (
                                                 <label
-                                                    key={category.id}
+                                                    key={category.slug}
                                                     className="flex items-center justify-between text-[15px] text-black cursor-pointer py-1"
                                                 >
                                                     <span className="flex items-center gap-2">
@@ -1682,7 +1676,9 @@ const ShopPageClient = () => {
                                                         />
                                                         {category.name}
                                                     </span>
-                                                    <span className="text-xs text-gray-500">{categoryCount}</span>
+                                                    <span className="text-xs text-gray-500">
+                                                        {formatFilterCount(categoryCount)}
+                                                    </span>
                                                 </label>
                                             );
                                         })}
@@ -1715,8 +1711,7 @@ const ShopPageClient = () => {
                             </div>
 
                             {/* Size Filter */}
-                            {availableSizes.length > 0 && (
-                                <div className="border-b border-gray-200 pb-6">
+                            <div className="border-b border-gray-200 pb-6">
                                     <button
                                         type="button"
                                         onClick={() => setIsSizeOpen(!isSizeOpen)}
@@ -1728,12 +1723,9 @@ const ShopPageClient = () => {
                                     {isSizeOpen && (
                                         <div className="space-y-2 overflow-hidden">
                                             {availableSizes.map((size) => {
-                                                const sizeCount = products.filter(product => {
-                                                    if (!product.size) return false
-                                                    const productSizeUpper = product.size.toUpperCase()
-                                                    const sizeUpper = size.toUpperCase()
-                                                    return product.size === size || productSizeUpper === sizeUpper
-                                                }).length
+                                                const sizeCount = catalogProducts.filter((product) =>
+                                                    productMatchesSizeFilter(product.size, [size]),
+                                                ).length
                                                 const isSelected = selectedSizes.some(selectedSize => {
                                                     const selectedSizeUpper = selectedSize.toUpperCase()
                                                     const sizeUpper = size.toUpperCase()
@@ -1753,14 +1745,15 @@ const ShopPageClient = () => {
                                                             />
                                                             {size}
                                                         </span>
-                                                        <span className="text-xs text-gray-500">{sizeCount}</span>
+                                                        <span className="text-xs text-gray-500">
+                                                            {formatFilterCount(sizeCount)}
+                                                        </span>
                                                     </label>
                                                 )
                                             })}
                                         </div>
                                     )}
                                 </div>
-                            )}
 
                             {/* Location Filter (styled like type) */}
                             <div className="mb-6  pb-6">
@@ -1825,20 +1818,26 @@ const ShopPageClient = () => {
                             {/* Color Filter (moved below rental date) */}
                             <div className="mb-6  pb-6">
                                 <h4 className="font-medium text-black md:text-[20px] text-[16px] mb-3">ფერი</h4>
-                                <div className="flex flex-wrap gap-3">
-                                    {colors.map((color) => (
-                                        <button
-                                            key={color.id}
-                                            onClick={() => toggleColor(color.id)}
-                                            className={`relative w-10 h-10 rounded-full border-2 transition-all duration-200 ${selectedColors.includes(color.id)
-                                                ? 'border-[#1B3729] ring-2 ring-[#1B3729] ring-offset-2'
-                                                : 'border-gray-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2'
-                                                }`}
-                                            style={{ backgroundColor: color.color }}
-                                        >
-
-                                        </button>
-                                    ))}
+                                <div className="flex flex-wrap gap-4">
+                                    {colors.map((color) => {
+                                        const colorCount = countProductsForColor(catalogProducts, color.id)
+                                        return (
+                                            <div key={color.id} className="flex flex-col items-center gap-1">
+                                                <button
+                                                    onClick={() => toggleColor(color.id)}
+                                                    className={`relative w-10 h-10 rounded-full border-2 transition-all duration-200 ${selectedColors.includes(color.id)
+                                                        ? 'border-[#1B3729] ring-2 ring-[#1B3729] ring-offset-2'
+                                                        : 'border-gray-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2'
+                                                        }`}
+                                                    style={{ backgroundColor: color.color }}
+                                                    title={color.label}
+                                                />
+                                                <span className="text-xs text-gray-500">
+                                                    {formatFilterCount(colorCount)}
+                                                </span>
+                                            </div>
+                                        )
+                                    })}
                                 </div>
                             </div>
 
@@ -1961,7 +1960,7 @@ const ShopPageClient = () => {
                         )}
 
                         {/* Pagination */}
-                        {(isTotalPagesKnown ? totalPages > 1 : (serverHasMore || currentPage > 1)) && (
+                        {totalPages > 1 && (
                             <div className="flex flex-col items-center justify-center gap-4 mt-8">
                                 <div className="flex items-center gap-2">
                                     <button
@@ -1976,51 +1975,43 @@ const ShopPageClient = () => {
                                         წინა
                                     </button>
 
-                                    {isTotalPagesKnown ? (
-                                        <div className="flex items-center gap-1">
-                                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                                                // Show first page, last page, current page, and pages around current
-                                                if (
-                                                    page === 1 ||
-                                                    page === totalPages ||
-                                                    (page >= currentPage - 1 && page <= currentPage + 1)
-                                                ) {
-                                                    return (
-                                                        <button
-                                                            key={page}
-                                                            onClick={() => goToPage(page)}
-                                                            className={`px-4 py-2 rounded-lg border transition-colors md:text-[18px] text-[16px] ${currentPage === page
-                                                                ? 'bg-black text-white border-black'
-                                                                : 'bg-white text-black border-gray-300 hover:bg-gray-50 hover:border-black'
-                                                                }`}
-                                                        >
-                                                            {page}
-                                                        </button>
-                                                    )
-                                                } else if (
-                                                    page === currentPage - 2 ||
-                                                    page === currentPage + 2
-                                                ) {
-                                                    return (
-                                                        <span key={page} className="px-2 text-black">
-                                                            ...
-                                                        </span>
-                                                    )
-                                                }
-                                                return null
-                                            })}
-                                        </div>
-                                    ) : (
-                                        <div className="px-2 text-black md:text-[16px] text-[14px]">
-                                            {/* Offset mode: we only know "next exists", not exact page count */}
-                                            {currentPage}
-                                        </div>
-                                    )}
+                                    <div className="flex items-center gap-1">
+                                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                                            if (
+                                                page === 1 ||
+                                                page === totalPages ||
+                                                (page >= currentPage - 1 && page <= currentPage + 1)
+                                            ) {
+                                                return (
+                                                    <button
+                                                        key={page}
+                                                        onClick={() => goToPage(page)}
+                                                        className={`px-4 py-2 rounded-lg border transition-colors md:text-[18px] text-[16px] ${currentPage === page
+                                                            ? 'bg-black text-white border-black'
+                                                            : 'bg-white text-black border-gray-300 hover:bg-gray-50 hover:border-black'
+                                                            }`}
+                                                    >
+                                                        {page}
+                                                    </button>
+                                                )
+                                            } else if (
+                                                page === currentPage - 2 ||
+                                                page === currentPage + 2
+                                            ) {
+                                                return (
+                                                    <span key={page} className="px-2 text-black">
+                                                        ...
+                                                    </span>
+                                                )
+                                            }
+                                            return null
+                                        })}
+                                    </div>
 
                                     <button
-                                        onClick={() => goToPage(isTotalPagesKnown ? Math.min(totalPages, currentPage + 1) : currentPage + 1)}
-                                        disabled={isTotalPagesKnown ? currentPage === totalPages : !serverHasMore}
-                                        className={`px-4 py-2 rounded-lg border transition-colors md:text-[18px] text-[16px] flex items-center gap-2 ${((isTotalPagesKnown ? currentPage === totalPages : !serverHasMore))
+                                        onClick={() => goToPage(Math.min(totalPages, currentPage + 1))}
+                                        disabled={currentPage === totalPages}
+                                        className={`px-4 py-2 rounded-lg border transition-colors md:text-[18px] text-[16px] flex items-center gap-2 ${currentPage === totalPages
                                             ? 'bg-gray-100 text-black cursor-not-allowed border-gray-300'
                                             : 'bg-white text-black border-gray-300 hover:bg-gray-50 hover:border-black'
                                             }`}
@@ -2031,7 +2022,7 @@ const ShopPageClient = () => {
                                 </div>
 
                                 <p className="text-black md:text-[16px] text-[14px]">
-                                    {isTotalPagesKnown ? `გვერდი ${currentPage} ${totalPages}-დან` : `გვერდი ${currentPage}`}
+                                    გვერდი {currentPage} {totalPages}-დან
                                 </p>
                             </div>
                         )}
