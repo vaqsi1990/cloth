@@ -360,6 +360,48 @@ export async function getProductSizeCounts(
   }))
 }
 
+export async function getProductCategoryCounts(
+  filters: Omit<
+    PublicListFilters,
+    'skip' | 'take' | 'categoryIds' | 'categoryId'
+  >,
+): Promise<
+  Array<{
+    categoryId: number
+    categorySlug: string | null
+    categoryName: string | null
+    count: number
+  }>
+> {
+  const where = buildWhere({ ...filters, skip: 0, take: 0 })
+  const rows = await prisma.$queryRaw<
+    Array<{
+      category_id: number
+      category_slug: string | null
+      category_name: string | null
+      count: number
+    }>
+  >(Prisma.sql`
+    SELECT
+      p."categoryId" AS category_id,
+      c.slug AS category_slug,
+      c.name AS category_name,
+      COUNT(*)::int AS count
+    FROM "Product" p
+    LEFT JOIN "Category" c ON c.id = p."categoryId"
+    WHERE ${where}
+      AND p."categoryId" IS NOT NULL
+    GROUP BY p."categoryId", c.slug, c.name
+  `)
+
+  return rows.map((row) => ({
+    categoryId: row.category_id,
+    categorySlug: row.category_slug,
+    categoryName: row.category_name,
+    count: row.count,
+  }))
+}
+
 export function mapCombinedRowsToProducts(rows: CombinedListRow[]) {
   return rows.map((row) => {
     const variants: Array<{ price: number }> = []

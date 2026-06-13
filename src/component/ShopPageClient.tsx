@@ -57,6 +57,7 @@ const ShopPageClient = () => {
         PRODUCT_COLORS.map((color) => ({ ...color, count: 0 })),
     )
     const [availableSizes, setAvailableSizes] = useState<string[]>(PREDEFINED_LETTER_SIZES)
+    const [categoryCountsBySlug, setCategoryCountsBySlug] = useState<Record<string, number>>({})
     const [selectedLocations, setSelectedLocations] = useState<string[]>([])
 
     const [rentalStartDate, setRentalStartDate] = useState<Date | null>(null)
@@ -401,6 +402,50 @@ const ShopPageClient = () => {
         ],
     )
 
+    const appendFacetFilterParams = useCallback(
+        (params: URLSearchParams, options?: { includeCategory?: boolean }) => {
+            if (genderParam) {
+                params.append('gender', genderParam)
+            }
+            if (searchParam) {
+                params.append('search', searchParam)
+            }
+            if (purposeParam) {
+                params.append('purpose', purposeParam)
+            } else if (selectedPurposes.length === 1) {
+                params.append('purpose', selectedPurposes[0])
+            }
+            if (options?.includeCategory !== false) {
+                const categorySlug = resolveCategoryApiSlug(
+                    categoryParam,
+                    selectedCategories,
+                )
+                if (categorySlug) {
+                    params.append('category', categorySlug)
+                }
+            }
+            if (onlyDiscounted) {
+                params.append('hasDiscount', 'true')
+            }
+            if (onlyVip) {
+                params.append('isVip', 'true')
+            }
+            appendShopListFilterParams(params, shopListFilters())
+        },
+        [
+            genderParam,
+            searchParam,
+            purposeParam,
+            categoryParam,
+            selectedCategories,
+            selectedPurposes,
+            onlyDiscounted,
+            onlyVip,
+            resolveCategoryApiSlug,
+            shopListFilters,
+        ],
+    )
+
     useEffect(() => {
         const loadCategories = async () => {
             try {
@@ -658,6 +703,43 @@ const ShopPageClient = () => {
         selectedCategories,
         selectedPurposes,
         resolveCategoryApiSlug,
+    ])
+
+    // Category counts for filter sidebar (excludes category filter itself)
+    useEffect(() => {
+        if (!hasRestoredState) return
+
+        const controller = new AbortController()
+
+        const fetchCategoryFacets = async () => {
+            try {
+                const params = new URLSearchParams()
+                appendFacetFilterParams(params, { includeCategory: false })
+
+                const response = await fetch(
+                    `/api/products/category-facets?${params}`,
+                    { signal: controller.signal },
+                )
+                const data = await response.json()
+                if (data.success && data.counts && typeof data.counts === 'object') {
+                    setCategoryCountsBySlug(data.counts)
+                }
+            } catch (error: unknown) {
+                if (
+                    controller.signal.aborted ||
+                    (error instanceof DOMException && error.name === 'AbortError')
+                ) {
+                    return
+                }
+                console.error('Error fetching category facets:', error)
+            }
+        }
+
+        void fetchCategoryFacets()
+        return () => controller.abort('cleanup')
+    }, [
+        hasRestoredState,
+        appendFacetFilterParams,
     ])
 
     // Size options from DB (numeric sizes) + predefined letter sizes
@@ -1153,6 +1235,7 @@ const ShopPageClient = () => {
                                         <div className="space-y-2 max-h-[60vh] overflow-y-auto">
                                             {filterCategories.map((category) => {
                                                 const isSelected = selectedCategories.includes(category.name);
+                                                const categoryCount = categoryCountsBySlug[category.slug] ?? 0
 
                                                 return (
                                                     <label
@@ -1167,6 +1250,9 @@ const ShopPageClient = () => {
                                                                 className="w-4 h-4"
                                                             />
                                                             <span className="text-[16px] text-black">{category.name}</span>
+                                                        </span>
+                                                        <span className="text-sm text-gray-500">
+                                                            {formatFilterCount(categoryCount)}
                                                         </span>
                                                     </label>
                                                 );
@@ -1533,6 +1619,7 @@ const ShopPageClient = () => {
                                     <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                                         {filterCategories.map((category) => {
                                             const isSelected = selectedCategories.includes(category.name);
+                                            const categoryCount = categoryCountsBySlug[category.slug] ?? 0
 
                                             return (
                                                 <label
@@ -1547,6 +1634,9 @@ const ShopPageClient = () => {
                                                             className="w-4 h-4"
                                                         />
                                                         {category.name}
+                                                    </span>
+                                                    <span className="text-xs text-gray-500">
+                                                        {formatFilterCount(categoryCount)}
                                                     </span>
                                                 </label>
                                             );

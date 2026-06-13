@@ -446,3 +446,30 @@ export function getCategoryMetaByIdsSync(
   }
   return result
 }
+
+/** Per canonical shop category slug — totals from raw DB categoryId rows. */
+export function buildShopCategoryFacetCounts(
+  rows: Array<{
+    categoryId: number
+    categorySlug: string | null
+    categoryName: string | null
+    count: number
+  }>,
+): Record<string, number> {
+  const countByCanonicalSlug = new Map<string, number>()
+
+  for (const row of rows) {
+    const canonicalSlug = resolveCanonicalCategorySlug({
+      id: row.categoryId,
+      slug: row.categorySlug,
+      name: row.categoryName,
+    })
+    if (!canonicalSlug) continue
+    countByCanonicalSlug.set(
+      canonicalSlug,
+      (countByCanonicalSlug.get(canonicalSlug) ?? 0) + row.count,
+    )
+  }
+
+  return Object.fromEntries(countByCanonicalSlug)
+}
