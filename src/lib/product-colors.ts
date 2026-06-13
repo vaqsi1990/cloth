@@ -13,7 +13,7 @@ export const PRODUCT_COLORS: ProductColor[] = [
   { id: "yellow", label: "ყვითელი", color: "#FFFF00" },
   { id: "pink", label: "ვარდისფერი", color: "#FFC0CB" },
   { id: "purple", label: "იისფერი", color: "#800080" },
-  { id: "gray", label: "ნაცრისფერი", color: "#A52A2A" },
+  { id: "gray", label: "ნაცრისფერი", color: "#808080" },
   { id: "beige", label: "ბეჟი", color: "#8B4513" },
   { id: "cream", label: "კრემისფერი", color: "#FFFDD0" },
   { id: "coffee", label: "ყავისფერი", color: "#6F4E37" },
@@ -40,4 +40,53 @@ export const PRODUCT_COLOR_FILTER_MAPPING: Record<string, string[]> = {
   cream: ["კრემისფერი", "cream"],
   coffee: ["ყავისფერი", "coffee"],
   skyblue: ["ცისფერი", "skyblue"],
+}
+
+const COLOR_VALUE_TO_FILTER_ID = new Map<string, string>()
+
+for (const color of PRODUCT_COLORS) {
+  COLOR_VALUE_TO_FILTER_ID.set(color.id.toLowerCase(), color.id)
+  COLOR_VALUE_TO_FILTER_ID.set(color.label.toLowerCase(), color.id)
+}
+
+for (const [id, variations] of Object.entries(PRODUCT_COLOR_FILTER_MAPPING)) {
+  COLOR_VALUE_TO_FILTER_ID.set(id.toLowerCase(), id)
+  for (const variation of variations) {
+    COLOR_VALUE_TO_FILTER_ID.set(variation.toLowerCase(), id)
+  }
+}
+
+/** Map DB product.color (Georgian label, English id, or custom text) → filter color id. */
+export function resolveProductColorFilterId(
+  color: string | null | undefined,
+): string | null {
+  const normalized = color?.trim().toLowerCase()
+  if (!normalized) return null
+  return COLOR_VALUE_TO_FILTER_ID.get(normalized) ?? null
+}
+
+/** Predefined swatches + any custom color strings found in the catalog. */
+export function collectShopFilterColors(
+  products: Array<{ color?: string | null }>,
+): ProductColor[] {
+  const result: ProductColor[] = [...PRODUCT_COLORS]
+  const customSeen = new Set<string>()
+
+  for (const product of products) {
+    const raw = product.color?.trim()
+    if (!raw) continue
+    if (resolveProductColorFilterId(raw)) continue
+
+    const key = raw.toLowerCase()
+    if (customSeen.has(key)) continue
+    customSeen.add(key)
+
+    result.push({
+      id: `custom:${key}`,
+      label: raw,
+      color: '#CCCCCC',
+    })
+  }
+
+  return result
 }

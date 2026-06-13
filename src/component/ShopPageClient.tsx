@@ -8,7 +8,7 @@ import { Product } from '@/types/product'
 import DatePicker from "react-datepicker"
 import StarRating from "@/components/StarRating"
 import { PURPOSE_OPTIONS } from '@/data/purposes'
-import { PRODUCT_COLORS } from '@/lib/product-colors'
+import { collectShopFilterColors } from '@/lib/product-colors'
 import {
   collectAvailableSizes,
   countProductsForCategory,
@@ -376,7 +376,10 @@ const ShopPageClient = () => {
       [catalogProducts],
     )
 
-    const colors = PRODUCT_COLORS
+    const filterColors = React.useMemo(
+        () => collectShopFilterColors(catalogProducts),
+        [catalogProducts],
+    )
 
     const locations = [
         { id: "თბილისი", label: "თბილისი" },
@@ -1234,7 +1237,7 @@ const ShopPageClient = () => {
                                     <div className="space-y-3">
                                         <h3 className="text-lg font-semibold text-black mb-4">ფერი</h3>
                                         <div className="flex flex-wrap gap-4">
-                                            {colors.map((color) => {
+                                            {filterColors.map((color) => {
                                                 const colorCount = countProductsForColor(catalogProducts, color.id)
                                                 return (
                                                     <div key={color.id} className="flex flex-col items-center gap-1">
@@ -1820,7 +1823,7 @@ const ShopPageClient = () => {
                             <div className="mb-6  pb-6">
                                 <h4 className="font-medium text-black md:text-[20px] text-[16px] mb-3">ფერი</h4>
                                 <div className="flex flex-wrap gap-4">
-                                    {colors.map((color) => {
+                                    {filterColors.map((color) => {
                                         const colorCount = countProductsForColor(catalogProducts, color.id)
                                         return (
                                             <div key={color.id} className="flex flex-col items-center gap-1">

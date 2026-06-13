@@ -2,7 +2,7 @@ import {
   productMatchesCategoryFilter,
   type ProductCategory,
 } from '@/lib/product-categories'
-import { PRODUCT_COLOR_FILTER_MAPPING } from '@/lib/product-colors'
+import { resolveProductColorFilterId } from '@/lib/product-colors'
 
 export const PREDEFINED_LETTER_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL']
 
@@ -16,17 +16,17 @@ export function productMatchesColorFilter(
 ): boolean {
   if (selectedColorIds.length === 0) return true
 
-  const normalized = productColor?.trim()
-  if (!normalized) return false
+  const productNorm = productColor?.trim().toLowerCase()
+  if (!productNorm) return false
 
-  const productLower = normalized.toLowerCase()
+  const productColorId = resolveProductColorFilterId(productColor)
 
   return selectedColorIds.some((selectedColorId) => {
-    const variations = PRODUCT_COLOR_FILTER_MAPPING[selectedColorId] ?? [selectedColorId]
-    return variations.some((variation) => {
-      const variationLower = variation.toLowerCase()
-      return productLower === variationLower || productLower.includes(variationLower)
-    })
+    if (selectedColorId.startsWith('custom:')) {
+      return productNorm === selectedColorId.slice('custom:'.length)
+    }
+    if (productColorId) return productColorId === selectedColorId
+    return false
   })
 }
 
