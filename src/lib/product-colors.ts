@@ -67,6 +67,18 @@ export function resolveProductColorFilterId(
   return COLOR_VALUE_TO_FILTER_ID.get(normalized) ?? null
 }
 
+/** DB values that match a shop filter color id (for server-side SQL). */
+export function getDbColorMatchValues(colorId: string): string[] {
+  if (colorId.startsWith('custom:')) {
+    return [colorId.slice('custom:'.length)]
+  }
+
+  const mapped = PRODUCT_COLOR_FILTER_MAPPING[colorId]
+  if (mapped?.length) return mapped
+
+  return [colorId]
+}
+
 /** Predefined swatches + any custom color strings found in the catalog. */
 export function collectShopFilterColors(
   products: Array<{ color?: string | null }>,

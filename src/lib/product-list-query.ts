@@ -4,6 +4,8 @@ import { revalidateTag } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { sortProductsByVipPriority } from '@/lib/product-vip'
 import { resolveCanonicalCategory } from '@/lib/product-categories'
+import { getDbColorMatchValues } from '@/lib/product-colors'
+import type { ShopPurchaseType, ShopSortBy } from '@/lib/shop-list-params'
 
 export const PRODUCT_LIST_CACHE_TAG = 'product-list'
 
@@ -17,6 +19,14 @@ export type PublicListFilters = {
   hasDiscount?: boolean
   isVip?: boolean
   search?: string
+  color?: string | null
+  sizes?: string[] | null
+  sizeSystems?: string[] | null
+  locations?: string[] | null
+  priceMin?: number | null
+  priceMax?: number | null
+  purchaseType?: ShopPurchaseType | null
+  sort?: ShopSortBy | null
   skip: number
   take: number
 }
@@ -54,6 +64,96 @@ type CombinedListRow = {
   pur_id: number | null
   pur_name: string | null
   pur_slug: string | null
+}
+
+function buildColorWhere(colorId: string): Prisma.Sql {
+  const values = getDbColorMatchValues(colorId).map((v) => v.toLowerCase())
+  return Prisma.sql`LOWER(TRIM(p.color)) IN (${Prisma.join(values)})`
+}
+
+function buildPurchaseTypeWhere(purchaseType: ShopPurchaseType): Prisma.Sql {
+  const hasSalePrice = Prisma.sql`EXISTS (
+    SELECT 1 FROM "ProductVariant" pv
+    WHERE pv."productId" = p.id AND pv.price > 0
+  )`
+
+  switch (purchaseType) {
+    case 'rent-only':
+      return Prisma.sql`p."isRentable" = true AND NOT ${hasSalePrice}`
+    case 'sale-only':
+      return Prisma.sql`(p."isRentable" = false OR p."isRentable" IS NULL) AND ${hasSalePrice}`
+    case 'rent-and-sale':
+      return Prisma.sql`p."isRentable" = true AND ${hasSalePrice}`
+    default:
+      return Prisma.sql`TRUE`
+  }
+}
+
+function buildPriceRangeWhere(priceMin: number, priceMax: number): Prisma.Sql {
+  const rentalTotal = Prisma.sql`(
+    SELECT (rpt."pricePerDay" * rpt."minDays")::float8
+    FROM "RentalPriceTier" rpt
+    WHERE rpt."productId" = p.id
+    ORDER BY rpt."minDays" ASC
+    LIMIT 1
+  )`
+
+  const minBuyPrice = Prisma.sql`(
+    SELECT MIN(pv.price)::float8
+    FROM "ProductVariant" pv
+    WHERE pv."productId" = p.id AND pv.price > 0
+  )`
+
+  const maxBuyPrice = Prisma.sql`(
+    SELECT MAX(pv.price)::float8
+    FROM "ProductVariant" pv
+    WHERE pv."productId" = p.id
+  )`
+
+  return Prisma.sql`(
+    EXISTS (
+      SELECT 1 FROM "ProductVariant" pv
+      WHERE pv."productId" = p.id
+        AND pv.price >= ${priceMin}
+        AND pv.price <= ${priceMax}
+    )
+    OR EXISTS (
+      SELECT 1 FROM "RentalPriceTier" rpt
+      WHERE rpt."productId" = p.id
+        AND (rpt."pricePerDay" * rpt."minDays") >= ${priceMin}
+        AND (rpt."pricePerDay" * rpt."minDays") <= ${priceMax}
+    )
+    OR (
+      COALESCE(${minBuyPrice}, ${rentalTotal}, 0) >= ${priceMin}
+      AND COALESCE(${maxBuyPrice}, ${rentalTotal}, 0) <= ${priceMax}
+    )
+    OR (
+      COALESCE(${minBuyPrice}, ${rentalTotal}, 999999999) <= ${priceMin}
+      AND COALESCE(${maxBuyPrice}, ${rentalTotal}, 0) >= ${priceMax}
+    )
+  )`
+}
+
+function buildOrderByClause(sort?: ShopSortBy | null): Prisma.Sql {
+  const vipOrder = Prisma.sql`(p."isVip" = true AND p."vipExpiresAt" IS NOT NULL AND p."vipExpiresAt" > NOW()) DESC`
+
+  switch (sort) {
+    case 'price-low':
+      return Prisma.sql`${vipOrder}, (
+        SELECT MIN(pv.price) FROM "ProductVariant" pv
+        WHERE pv."productId" = p.id AND pv.price > 0
+      ) ASC NULLS LAST, p."createdAt" DESC, p.id DESC`
+    case 'price-high':
+      return Prisma.sql`${vipOrder}, (
+        SELECT MAX(pv.price) FROM "ProductVariant" pv
+        WHERE pv."productId" = p.id
+      ) DESC NULLS LAST, p."createdAt" DESC, p.id DESC`
+    case 'rating':
+      return Prisma.sql`${vipOrder}, COALESCE(p.rating, 0) DESC, p."createdAt" DESC, p.id DESC`
+    case 'newest':
+    default:
+      return Prisma.sql`${vipOrder}, p."createdAt" DESC, p.id DESC`
+  }
 }
 
 function buildWhere(filters: PublicListFilters): Prisma.Sql {
@@ -100,6 +200,41 @@ function buildWhere(filters: PublicListFilters): Prisma.Sql {
     parts.push(
       Prisma.sql`(p.name ILIKE ${pattern} OR p.brand ILIKE ${pattern})`,
     )
+  }
+  if (filters.color) {
+    parts.push(buildColorWhere(filters.color))
+  }
+  if (filters.sizes?.length) {
+    const normalizedSizes = filters.sizes.map((s) => s.trim()).filter(Boolean)
+    if (normalizedSizes.length > 0) {
+      parts.push(
+        Prisma.sql`UPPER(TRIM(p.size)) IN (${Prisma.join(
+          normalizedSizes.map((s) => s.toUpperCase()),
+        )})`,
+      )
+    }
+  }
+  if (filters.sizeSystems?.length) {
+    parts.push(
+      Prisma.sql`p."sizeSystem"::text IN (${Prisma.join(filters.sizeSystems)})`,
+    )
+  }
+  if (filters.locations?.length) {
+    parts.push(
+      Prisma.sql`p.location IN (${Prisma.join(filters.locations)})`,
+    )
+  }
+  if (
+    filters.priceMin != null &&
+    filters.priceMax != null &&
+    Number.isFinite(filters.priceMin) &&
+    Number.isFinite(filters.priceMax) &&
+    filters.priceMax > 0
+  ) {
+    parts.push(buildPriceRangeWhere(filters.priceMin, filters.priceMax))
+  }
+  if (filters.purchaseType && filters.purchaseType !== 'all') {
+    parts.push(buildPurchaseTypeWhere(filters.purchaseType))
   }
 
   return Prisma.join(parts, ' AND ')
@@ -209,6 +344,7 @@ export async function fetchPublicProductListCombined(
   filters: PublicListFilters,
 ): Promise<CombinedListRow[]> {
   const where = buildWhere(filters)
+  const orderBy = buildOrderByClause(filters.sort)
 
   return prisma.$queryRaw<CombinedListRow[]>(Prisma.sql`
     WITH filtered AS (
@@ -236,10 +372,7 @@ export async function fetchPublicProductListCombined(
         p."createdAt"
       FROM "Product" p
       WHERE ${where}
-      ORDER BY
-        (p."isVip" = true AND p."vipExpiresAt" IS NOT NULL AND p."vipExpiresAt" > NOW()) DESC,
-        p."createdAt" DESC,
-        p.id DESC
+      ORDER BY ${orderBy}
       LIMIT ${filters.take}
       OFFSET ${filters.skip}
     ),
@@ -364,6 +497,14 @@ export function getPublicListCacheKey(filters: PublicListFilters): string {
     hasDiscount: filters.hasDiscount ?? false,
     isVip: filters.isVip ?? false,
     search: filters.search ?? null,
+    color: filters.color ?? null,
+    sizes: filters.sizes ?? null,
+    sizeSystems: filters.sizeSystems ?? null,
+    locations: filters.locations ?? null,
+    priceMin: filters.priceMin ?? null,
+    priceMax: filters.priceMax ?? null,
+    purchaseType: filters.purchaseType ?? null,
+    sort: filters.sort ?? null,
     skip: filters.skip,
     take: filters.take,
   })
@@ -379,7 +520,14 @@ function hasActiveFilters(filters: PublicListFilters): boolean {
       filters.isNew ||
       filters.isSecondHand ||
       filters.hasDiscount ||
-      filters.isVip,
+      filters.isVip ||
+      filters.color ||
+      filters.sizes?.length ||
+      filters.sizeSystems?.length ||
+      filters.locations?.length ||
+      (filters.priceMin != null && filters.priceMax != null && filters.priceMax > 0) ||
+      (filters.purchaseType && filters.purchaseType !== 'all') ||
+      (filters.sort && filters.sort !== 'newest'),
   )
 }
 
@@ -453,7 +601,7 @@ const getCachedProductList = unstable_cache(
     const filters = JSON.parse(filtersKey) as PublicListFilters
     return buildListPayload(filters)
   },
-  ['public-product-list-v3'],
+  ['public-product-list-v4'],
   {
     revalidate: 120,
     tags: [PRODUCT_LIST_CACHE_TAG],

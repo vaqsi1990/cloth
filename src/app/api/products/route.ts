@@ -32,6 +32,7 @@ import {
   loadPublicProductList,
   revalidateProductListCache,
 } from '@/lib/product-list-query'
+import { parseShopListFilterParams } from '@/lib/shop-list-params'
 import { resolveCategoryIdForWrite } from '@/lib/category-sync'
 import { sortProductsByVipPriority } from '@/lib/product-vip'
 import { prismaCacheStrategy } from '@/lib/prisma-cache'
@@ -149,6 +150,7 @@ export async function GET(request: NextRequest) {
       !useOffsetPagination && cursor ? parseInt(cursor, 10) : undefined
     const includeUnapproved = searchParams.get('includeUnapproved') === 'true'
     const forceFresh = searchParams.get('fresh') === '1'
+    const shopFilters = parseShopListFilterParams(searchParams)
 
     const prepStart = Date.now()
     const sessionPromise = includeUnapproved
@@ -182,7 +184,22 @@ export async function GET(request: NextRequest) {
     const needsFreshData = isAdminOrSupportRole || shouldIncludeUnapproved
     const useAccelerateCache = !needsFreshData
     const listCacheStrategy =
-      search || category || purpose || gender || isNew || isSecondHand || hasDiscount || isVip
+      search ||
+      category ||
+      purpose ||
+      gender ||
+      isNew ||
+      isSecondHand ||
+      hasDiscount ||
+      isVip ||
+      shopFilters.color ||
+      shopFilters.sizes?.length ||
+      shopFilters.sizeSystems?.length ||
+      shopFilters.locations?.length ||
+      shopFilters.priceMin != null ||
+      shopFilters.priceMax != null ||
+      shopFilters.purchaseType ||
+      shopFilters.sort
         ? FILTERED_LIST_CACHE
         : PUBLIC_LIST_CACHE
 
@@ -213,6 +230,14 @@ export async function GET(request: NextRequest) {
         hasDiscount: hasDiscount === 'true',
         isVip: isVip === 'true',
         search: search || undefined,
+        color: shopFilters.color,
+        sizes: shopFilters.sizes,
+        sizeSystems: shopFilters.sizeSystems,
+        locations: shopFilters.locations,
+        priceMin: shopFilters.priceMin,
+        priceMax: shopFilters.priceMax,
+        purchaseType: shopFilters.purchaseType,
+        sort: shopFilters.sort,
         skip: (page - 1) * pageLimit,
         take: listTake,
       }

@@ -10,24 +10,20 @@ import StarRating from "@/components/StarRating"
 import { PURPOSE_OPTIONS } from '@/data/purposes'
 import { PRODUCT_COLORS, type ProductColorFacet } from '@/lib/product-colors'
 import {
-  collectAvailableSizes,
-  countProductsForCategory,
+  PREDEFINED_LETTER_SIZES,
   formatFilterCount,
-  productMatchesColorFilter,
-  productMatchesSizeFilter,
 } from '@/lib/shop-product-filters'
+import { appendShopListFilterParams, type ShopSortBy } from '@/lib/shop-list-params'
 import { PRODUCT_IMAGE_QUALITY } from '@/lib/image-config'
 import {
   DEFAULT_PRODUCT_CATEGORIES,
   collectShopFilterCategories,
   dedupeProductCategories,
   findCategoryByParam,
-  productMatchesCategoryFilter,
   resolveCategorySlugParam,
   sortProductCategories,
   type ProductCategory,
 } from '@/lib/product-categories'
-import { productHasActiveDiscount } from '@/lib/discount-helpers'
 import { isProductVipActive } from '@/lib/product-vip'
 import ProductSalePrice from '@/components/ProductSalePrice'
 
@@ -44,7 +40,6 @@ const ShopPageClient = () => {
     const vipParam = searchParams.get('vip')
 
     const [products, setProducts] = useState<Product[]>([])
-    const [allProductsForCounts, setAllProductsForCounts] = useState<Product[]>([])
     const [shopCategories, setShopCategories] = useState<ProductCategory[]>(
         DEFAULT_PRODUCT_CATEGORIES,
     )
@@ -95,7 +90,6 @@ const ShopPageClient = () => {
     // Persist state across navigation
     const scrollYRef = useRef(0)
     const productsFetchIdRef = useRef(0)
-    const productsForCountsFetchIdRef = useRef(0)
     const rentalFetchIdRef = useRef(0)
     const shopInitializedRef = useRef(false)
     const prevPurposeParamRef = useRef(purposeParam)
@@ -341,6 +335,71 @@ const ShopPageClient = () => {
         [shopCategories],
     )
 
+    const shopListFilters = useCallback(
+        () => ({
+            selectedColors,
+            selectedSizes,
+            selectedSizeSystems,
+            selectedLocations,
+            priceRange: priceRange as [number, number],
+            maxPrice,
+            purchaseType,
+            sortBy: sortBy as ShopSortBy,
+        }),
+        [
+            selectedColors,
+            selectedSizes,
+            selectedSizeSystems,
+            selectedLocations,
+            priceRange,
+            maxPrice,
+            purchaseType,
+            sortBy,
+        ],
+    )
+
+    const appendBaseProductParams = useCallback(
+        (params: URLSearchParams) => {
+            if (genderParam) {
+                params.append('gender', genderParam)
+            }
+            if (searchParam) {
+                params.append('search', searchParam)
+            }
+            if (purposeParam) {
+                params.append('purpose', purposeParam)
+            } else if (selectedPurposes.length === 1) {
+                params.append('purpose', selectedPurposes[0])
+            }
+            const categorySlug = resolveCategoryApiSlug(
+                categoryParam,
+                selectedCategories,
+            )
+            if (categorySlug) {
+                params.append('category', categorySlug)
+            }
+            if (onlyDiscounted) {
+                params.append('hasDiscount', 'true')
+            }
+            if (onlyVip) {
+                params.append('isVip', 'true')
+            }
+            appendShopListFilterParams(params, shopListFilters())
+        },
+        [
+            genderParam,
+            searchParam,
+            purposeParam,
+            categoryParam,
+            selectedCategories,
+            selectedPurposes,
+            onlyDiscounted,
+            onlyVip,
+            resolveCategoryApiSlug,
+            shopListFilters,
+        ],
+    )
+
     useEffect(() => {
         const loadCategories = async () => {
             try {
@@ -365,18 +424,12 @@ const ShopPageClient = () => {
         { id: "CN", label: "CN" }
     ]
 
-    const catalogProducts = allProductsForCounts.length > 0 ? allProductsForCounts : products
-
     const filterCategories = React.useMemo(
         () => collectShopFilterCategories(),
         [],
     )
 
-    // Letter sizes always visible; DB sizes (e.g. 36, 44) appended
-    const availableSizes = React.useMemo(
-      () => collectAvailableSizes(catalogProducts),
-      [catalogProducts],
-    )
+    const availableSizes = PREDEFINED_LETTER_SIZES
 
     const locations = [
         { id: "თბილისი", label: "თბილისი" },
@@ -436,30 +489,7 @@ const ShopPageClient = () => {
                 const params = new URLSearchParams()
                 params.set('page', String(currentPage))
                 params.set('limit', String(itemsPerPage))
-                if (genderParam) {
-                    params.append('gender', genderParam)
-                }
-                if (searchParam) {
-                    params.append('search', searchParam)
-                }
-                if (purposeParam) {
-                    params.append('purpose', purposeParam)
-                } else if (selectedPurposes.length === 1) {
-                    params.append('purpose', selectedPurposes[0])
-                }
-                const categorySlug = resolveCategoryApiSlug(
-                    categoryParam,
-                    selectedCategories,
-                )
-                if (categorySlug) {
-                    params.append('category', categorySlug)
-                }
-                if (onlyDiscounted) {
-                    params.append('hasDiscount', 'true')
-                }
-                if (onlyVip) {
-                    params.append('isVip', 'true')
-                }
+                appendBaseProductParams(params)
                 const url = `/api/products?${params}`
                 const t0 = performance.now()
                 const response = await fetch(url, { signal: controller.signal })
@@ -547,15 +577,24 @@ const ShopPageClient = () => {
         return () => controller.abort('cleanup')
     }, [
         hasRestoredState,
+        currentPage,
         genderParam,
         searchParam,
         purposeParam,
         categoryParam,
         selectedCategories,
         selectedPurposes,
+        selectedColors,
+        selectedSizes,
+        selectedSizeSystems,
+        selectedLocations,
+        priceRange,
+        maxPrice,
+        purchaseType,
+        sortBy,
         onlyDiscounted,
         onlyVip,
-        resolveCategoryApiSlug,
+        appendBaseProductParams,
         refreshFilterCounts,
     ])
 
@@ -622,92 +661,7 @@ const ShopPageClient = () => {
         resolveCategoryApiSlug,
     ])
 
-    // Fetch all products (offset pagination) for filter count calculations
-    useEffect(() => {
-        if (!hasRestoredState) return
-
-        const fetchId = ++productsForCountsFetchIdRef.current
-        const controller = new AbortController()
-        const isStale = () => fetchId !== productsForCountsFetchIdRef.current
-
-        const fetchAllProductsForCounts = async () => {
-            try {
-                const baseParams = new URLSearchParams()
-                if (genderParam) {
-                    baseParams.append('gender', genderParam)
-                }
-                if (searchParam) {
-                    baseParams.append('search', searchParam)
-                }
-                if (purposeParam) {
-                    baseParams.append('purpose', purposeParam)
-                }
-
-                const allProducts: Product[] = []
-                let page = 1
-
-                do {
-                    const params = new URLSearchParams(baseParams)
-                    params.set('page', String(page))
-                    params.set('limit', '50')
-
-                    const response = await fetch(`/api/products?${params}`, { signal: controller.signal })
-                    if (isStale()) return
-
-                    const data = await response.json()
-                    if (isStale()) return
-                    if (!data.success) break
-
-                    allProducts.push(...data.products)
-                    if (!data.hasMore) break
-                    page += 1
-                } while (true)
-
-                if (!isStale()) {
-                    setAllProductsForCounts(allProducts)
-
-                    const allPrices = allProducts.flatMap((product: Product) => {
-                        const prices: number[] = []
-                        if (product.variants && product.variants.length > 0) {
-                            prices.push(...product.variants.map((variant) => variant.price))
-                        }
-                        if (product.isRentable && product.rentalPriceTiers && product.rentalPriceTiers.length > 0) {
-                            const sortedTiers = [...product.rentalPriceTiers].sort((a, b) => a.minDays - b.minDays)
-                            const tier0 = sortedTiers[0]
-                            prices.push(tier0.pricePerDay * tier0.minDays)
-                        }
-                        return prices
-                    })
-                    const calculatedMaxPrice = allPrices.length > 0 ? Math.max(...allPrices) : 200
-                    setMaxPrice(calculatedMaxPrice)
-                    setPriceRange((prev) =>
-                        calculatedMaxPrice > prev[1] || prev[1] === 0
-                            ? [0, calculatedMaxPrice]
-                            : prev,
-                    )
-                }
-            } catch (error: unknown) {
-                if (
-                    isStale() ||
-                    controller.signal.aborted ||
-                    (error instanceof DOMException && error.name === 'AbortError')
-                ) {
-                    return
-                }
-                console.error('Error fetching products for filter counts:', error)
-            }
-        }
-
-        void fetchAllProductsForCounts()
-        return () => controller.abort('cleanup')
-    }, [
-        hasRestoredState,
-        genderParam,
-        searchParam,
-        purposeParam,
-    ])
-
-    // Fetch rental status for rentable products (batched)
+    // Fetch rental status for rentable products on current page (batched)
     useEffect(() => {
         const rentableIds = products.filter((p) => p.isRentable).map((p) => p.id)
         if (rentableIds.length === 0) {
@@ -750,84 +704,6 @@ const ShopPageClient = () => {
         return () => controller.abort('cleanup')
     }, [products])
 
-    // Get minimum price from variants, or rental price if buy price is 0
-    const getMinPrice = (product: Product) => {
-        // First check if product has variants with prices
-        if (product.variants && product.variants.length > 0) {
-            const prices = product.variants.map(v => v.price).filter(p => p > 0)
-            // If all prices are 0 or no positive prices, check rental
-            if (prices.length === 0) {
-                return getRentalPrice(product)
-            }
-            const minBuyPrice = Math.min(...prices)
-            // If min buy price is 0, show rental price instead
-            if (minBuyPrice === 0) {
-                const rentalPrice = getRentalPrice(product)
-                return rentalPrice > 0 ? rentalPrice : 0
-            }
-            return minBuyPrice
-        }
-        // If no variants, check if it's rentable
-        return getRentalPrice(product)
-    }
-
-    // Get maximum price from variants, or rental price if buy price is 0
-    const getMaxPrice = (product: Product) => {
-        // First check if product has variants with prices
-        if (product.variants && product.variants.length > 0) {
-            const prices = product.variants.map(v => v.price).filter(p => p > 0)
-            // If all prices are 0 or no positive prices, check rental
-            if (prices.length === 0) {
-                return getRentalPrice(product)
-            }
-            const maxBuyPrice = Math.max(...prices)
-            // If max buy price is 0, show rental price instead
-            if (maxBuyPrice === 0) {
-                const rentalPrice = getRentalPrice(product)
-                return rentalPrice > 0 ? rentalPrice : 0
-            }
-            return maxBuyPrice
-        }
-        // If no variants, check if it's rentable
-        return getRentalPrice(product)
-    }
-
-    // Check if product has rental parameters (is rentable)
-    const hasRentalParameters = (product: Product): boolean => {
-        return product.isRentable === true
-    }
-
-    // Check if product has sale parameters (can be bought)
-    const hasSaleParameters = (product: Product): boolean => {
-        // Check if product has variants with prices > 0
-        if (product.variants && product.variants.length > 0) {
-            return product.variants.some(v => v && v.price > 0)
-        }
-        return false
-    }
-
-    function isRentOnly(product: Product): boolean {
-        if (!hasRentalParameters(product)) return false
-        return !hasSaleParameters(product)
-    }
-
-    function isSaleOnly(product: Product): boolean {
-        if (!hasSaleParameters(product)) return false
-        return !hasRentalParameters(product)
-    }
-
-    function isRentAndSale(product: Product): boolean {
-        return hasRentalParameters(product) && hasSaleParameters(product)
-    }
-
-    function matchesPurchaseType(product: Product): boolean {
-        if (purchaseType === 'all') return true
-        if (purchaseType === 'rent-only') return isRentOnly(product)
-        if (purchaseType === 'sale-only') return isSaleOnly(product)
-        if (purchaseType === 'rent-and-sale') return isRentAndSale(product)
-        return true
-    }
-
     // Check if product is available during selected dates
     const isProductAvailable = (product: Product): boolean => {
         if (!rentalStartDate || !rentalEndDate || !product.isRentable) return true
@@ -861,95 +737,10 @@ const ShopPageClient = () => {
         })
     }
 
-    // Helper function to filter products by all criteria except purchase type (for count calculations)
-    const getProductsFilteredByOtherCriteria = (
-        productsToFilter: Product[],
-        options?: { includeDiscountFilter?: boolean },
-    ) => {
-        const applyDiscountFilter = options?.includeDiscountFilter !== false
+    // Server-side filtered page; rental dates applied client-side on current page only
+    const currentProducts = products.filter((product) => isProductAvailable(product))
 
-        return productsToFilter.filter(product => {
-            // Category filter (multiple selection)
-            const categoryMatch = productMatchesCategoryFilter(
-                product,
-                selectedCategories,
-                filterCategories,
-            )
-
-            // Purpose filter
-            const purposeMatch = selectedPurposes.length === 0 ||
-                selectedPurposes.includes(product.purpose?.slug || '') ||
-                selectedPurposes.includes(product.purpose?.name || '')
-
-            // Price filter
-            const minPrice = getMinPrice(product)
-            const maxPrice = getMaxPrice(product)
-            // If priceRange is not initialized (both are 0), show all products
-            const priceMatch = (priceRange[0] === 0 && priceRange[1] === 0) ||
-                (minPrice >= priceRange[0] && minPrice <= priceRange[1]) ||
-                (maxPrice >= priceRange[0] && maxPrice <= priceRange[1]) ||
-                (minPrice <= priceRange[0] && maxPrice >= priceRange[1])
-
-            // Size System filter (variants no longer have sizeSystem, use product sizeSystem)
-            const sizeSystemMatch = selectedSizeSystems.length === 0 ||
-                (product.sizeSystem && selectedSizeSystems.includes(product.sizeSystem))
-
-            // Size filter (product.size)
-            const sizeMatch = productMatchesSizeFilter(product.size, selectedSizes)
-
-            // Color filter
-            const colorMatch = productMatchesColorFilter(product.color, selectedColors)
-
-            // Location filter
-            const locationMatch = selectedLocations.length === 0 ||
-                selectedLocations.includes(product.location || '')
-
-            // Rental availability filter
-            const rentalAvailabilityMatch = isProductAvailable(product)
-
-            const discountMatch =
-                !applyDiscountFilter || !onlyDiscounted || productHasActiveDiscount(product)
-
-            const vipMatch = !onlyVip || isProductVipActive(product)
-
-            return categoryMatch && purposeMatch && priceMatch && sizeSystemMatch && sizeMatch && colorMatch && locationMatch && rentalAvailabilityMatch && discountMatch && vipMatch
-        })
-    }
-
-    // Get products filtered by all other criteria (excluding purchase type) for count calculations
-    const productsForTypeCounts = getProductsFilteredByOtherCriteria(allProductsForCounts)
-
-    const filteredProducts: Product[] = getProductsFilteredByOtherCriteria(catalogProducts).filter(
-        matchesPurchaseType,
-    )
-
-    // Sort products — VIP always first, then user-selected sort
-    const sortedProducts = [...filteredProducts].sort((a, b) => {
-        const aVip = isProductVipActive(a) ? 1 : 0
-        const bVip = isProductVipActive(b) ? 1 : 0
-        if (aVip !== bVip) return bVip - aVip
-
-        switch (sortBy) {
-            case "price-low":
-                return getMinPrice(a) - getMinPrice(b)
-            case "price-high":
-                return getMaxPrice(b) - getMaxPrice(a)
-            case "rating":
-                return (b.rating || 0) - (a.rating || 0)
-            case "newest":
-            default: {
-                const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0
-                const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0
-                return bTime - aTime
-            }
-        }
-    })
-
-    const totalPages = Math.max(1, Math.ceil(sortedProducts.length / itemsPerPage))
-    const currentProducts = sortedProducts.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage,
-    )
+    const showPagination = currentPage > 1 || serverHasMore
 
     // Reset to page 1 when filters change (skip initial restore snapshot)
     useEffect(() => {
@@ -1250,9 +1041,6 @@ const ShopPageClient = () => {
                                                 <h3 className="text-lg font-semibold text-black mb-4">ზომა</h3>
                                                 <div className="space-y-2">
                                                     {availableSizes.map((size) => {
-                                                        const sizeCount = catalogProducts.filter((product) =>
-                                                            productMatchesSizeFilter(product.size, [size]),
-                                                        ).length
                                                         const isSelected = selectedSizes.some(selectedSize => {
                                                             const selectedSizeUpper = selectedSize.toUpperCase()
                                                             const sizeUpper = size.toUpperCase()
@@ -1271,9 +1059,6 @@ const ShopPageClient = () => {
                                                                         className="w-4 h-4"
                                                                     />
                                                                     <span>{size}</span>
-                                                                </span>
-                                                                <span className="text-xs text-gray-500">
-                                                                    {formatFilterCount(sizeCount)}
                                                                 </span>
                                                             </label>
                                                         )
@@ -1314,11 +1099,6 @@ const ShopPageClient = () => {
                                         <h3 className="text-lg font-semibold text-black mb-4">კატეგორია</h3>
                                         <div className="space-y-2 max-h-[60vh] overflow-y-auto">
                                             {filterCategories.map((category) => {
-                                                const categoryCount = countProductsForCategory(
-                                                    catalogProducts,
-                                                    category,
-                                                    filterCategories,
-                                                )
                                                 const isSelected = selectedCategories.includes(category.name);
 
                                                 return (
@@ -1334,9 +1114,6 @@ const ShopPageClient = () => {
                                                                 className="w-4 h-4"
                                                             />
                                                             <span className="text-[16px] text-black">{category.name}</span>
-                                                        </span>
-                                                        <span className="text-sm text-gray-500">
-                                                            {formatFilterCount(categoryCount)}
                                                         </span>
                                                     </label>
                                                 );
@@ -1479,11 +1256,11 @@ const ShopPageClient = () => {
                                     <div className="space-y-3">
                                         <h3 className="text-lg font-semibold text-black mb-4">ტიპი</h3>
                                         {[
-                                            { value: "all", label: "ყველა", count: productsForTypeCounts.length },
-                                            { value: "rent-only", label: "მხოლოდ გაქირავება", count: productsForTypeCounts.filter(p => isRentOnly(p)).length },
-                                            { value: "sale-only", label: "მხოლოდ ყიდვა", count: productsForTypeCounts.filter(p => isSaleOnly(p)).length },
-                                            { value: "rent-and-sale", label: "გაქირავება და ყიდვა", count: productsForTypeCounts.filter(p => isRentAndSale(p)).length },
-                                        ].map(({ value, label, count }) => {
+                                            { value: "all", label: "ყველა" },
+                                            { value: "rent-only", label: "მხოლოდ გაქირავება" },
+                                            { value: "sale-only", label: "მხოლოდ ყიდვა" },
+                                            { value: "rent-and-sale", label: "გაქირავება და ყიდვა" },
+                                        ].map(({ value, label }) => {
                                             const active = purchaseType === value;
                                             return (
                                                 <label
@@ -1503,7 +1280,6 @@ const ShopPageClient = () => {
                                                         />
                                                         <span className="text-[16px]">{label}</span>
                                                     </span>
-                                                    <span className={`text-[16px] ${active ? 'text-white' : 'text-gray-600'}`}>{count}</span>
                                                 </label>
                                             );
                                         })}
@@ -1527,7 +1303,7 @@ const ShopPageClient = () => {
                                 onClick={() => setIsMobileFilterOverlayOpen(false)}
                                 className="flex-1 px-4 py-3 bg-[#1B3729] text-white rounded-lg font-medium hover:bg-[#1B3729]"
                             >
-                                ჩვენება {serverTotalCount} შედეგი
+                                ჩვენება
                             </button>
                         </div>
                     </div>
@@ -1636,11 +1412,11 @@ const ShopPageClient = () => {
                                 <h4 className="font-medium text-black md:text-[18px] text-[16px] mb-3">ტიპი</h4>
                                 <div className="space-y-2 text-[15px] text-black">
                                     {[
-                                        { value: "all", label: "ყველა", count: productsForTypeCounts.length },
-                                        { value: "rent-only", label: "მხოლოდ გაქირავება", count: productsForTypeCounts.filter(p => isRentOnly(p)).length },
-                                        { value: "sale-only", label: "მხოლოდ ყიდვა", count: productsForTypeCounts.filter(p => isSaleOnly(p)).length },
-                                        { value: "rent-and-sale", label: "გაქირავება და ყიდვა", count: productsForTypeCounts.filter(p => isRentAndSale(p)).length },
-                                    ].map(({ value, label, count }) => {
+                                        { value: "all", label: "ყველა" },
+                                        { value: "rent-only", label: "მხოლოდ გაქირავება" },
+                                        { value: "sale-only", label: "მხოლოდ ყიდვა" },
+                                        { value: "rent-and-sale", label: "გაქირავება და ყიდვა" },
+                                    ].map(({ value, label }) => {
                                         const active = purchaseType === value
                                         return (
                                             <label
@@ -1657,7 +1433,6 @@ const ShopPageClient = () => {
                                                     />
                                                     {label}
                                                 </span>
-                                                <span className={`text-[16px] ${active ? 'text-black font-medium' : 'text-gray-600'}`}>{count}</span>
                                             </label>
                                         )
                                     })}
@@ -1669,9 +1444,6 @@ const ShopPageClient = () => {
                                 <h4 className="font-medium text-black md:text-[18px] text-[16px] mb-3">დანიშნულება</h4>
                                 <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                                     {purposes.map((purpose) => {
-                                        const purposeCount = products.filter(product =>
-                                            product.purpose?.slug === purpose.slug
-                                        ).length
                                         const isSelected = selectedPurposes.includes(purpose.slug)
 
                                         return (
@@ -1688,7 +1460,6 @@ const ShopPageClient = () => {
                                                     />
                                                     {purpose.name}
                                                 </span>
-                                                <span className="text-xs text-gray-500">{purposeCount}</span>
                                             </label>
                                         )
                                     })}
@@ -1708,11 +1479,6 @@ const ShopPageClient = () => {
                                 {isCategoryOpen && (
                                     <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                                         {filterCategories.map((category) => {
-                                            const categoryCount = countProductsForCategory(
-                                                catalogProducts,
-                                                category,
-                                                filterCategories,
-                                            )
                                             const isSelected = selectedCategories.includes(category.name);
 
                                             return (
@@ -1728,9 +1494,6 @@ const ShopPageClient = () => {
                                                             className="w-4 h-4"
                                                         />
                                                         {category.name}
-                                                    </span>
-                                                    <span className="text-xs text-gray-500">
-                                                        {formatFilterCount(categoryCount)}
                                                     </span>
                                                 </label>
                                             );
@@ -1776,9 +1539,6 @@ const ShopPageClient = () => {
                                     {isSizeOpen && (
                                         <div className="space-y-2 overflow-hidden">
                                             {availableSizes.map((size) => {
-                                                const sizeCount = catalogProducts.filter((product) =>
-                                                    productMatchesSizeFilter(product.size, [size]),
-                                                ).length
                                                 const isSelected = selectedSizes.some(selectedSize => {
                                                     const selectedSizeUpper = selectedSize.toUpperCase()
                                                     const sizeUpper = size.toUpperCase()
@@ -1797,9 +1557,6 @@ const ShopPageClient = () => {
                                                                 className="w-4 h-4"
                                                             />
                                                             {size}
-                                                        </span>
-                                                        <span className="text-xs text-gray-500">
-                                                            {formatFilterCount(sizeCount)}
                                                         </span>
                                                     </label>
                                                 )
@@ -2012,7 +1769,7 @@ const ShopPageClient = () => {
                         )}
 
                         {/* Pagination */}
-                        {totalPages > 1 && (
+                        {showPagination && (
                             <div className="flex flex-col items-center justify-center gap-4 mt-8">
                                 <div className="flex items-center gap-2">
                                     <button
@@ -2027,43 +1784,14 @@ const ShopPageClient = () => {
                                         წინა
                                     </button>
 
-                                    <div className="flex items-center gap-1">
-                                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                                            if (
-                                                page === 1 ||
-                                                page === totalPages ||
-                                                (page >= currentPage - 1 && page <= currentPage + 1)
-                                            ) {
-                                                return (
-                                                    <button
-                                                        key={page}
-                                                        onClick={() => goToPage(page)}
-                                                        className={`px-4 py-2 rounded-lg border transition-colors md:text-[18px] text-[16px] ${currentPage === page
-                                                            ? 'bg-black text-white border-black'
-                                                            : 'bg-white text-black border-gray-300 hover:bg-gray-50 hover:border-black'
-                                                            }`}
-                                                    >
-                                                        {page}
-                                                    </button>
-                                                )
-                                            } else if (
-                                                page === currentPage - 2 ||
-                                                page === currentPage + 2
-                                            ) {
-                                                return (
-                                                    <span key={page} className="px-2 text-black">
-                                                        ...
-                                                    </span>
-                                                )
-                                            }
-                                            return null
-                                        })}
-                                    </div>
+                                    <span className="px-4 py-2 text-black md:text-[18px] text-[16px]">
+                                        {currentPage}
+                                    </span>
 
                                     <button
-                                        onClick={() => goToPage(Math.min(totalPages, currentPage + 1))}
-                                        disabled={currentPage === totalPages}
-                                        className={`px-4 py-2 rounded-lg border transition-colors md:text-[18px] text-[16px] flex items-center gap-2 ${currentPage === totalPages
+                                        onClick={() => goToPage(currentPage + 1)}
+                                        disabled={!serverHasMore}
+                                        className={`px-4 py-2 rounded-lg border transition-colors md:text-[18px] text-[16px] flex items-center gap-2 ${!serverHasMore
                                             ? 'bg-gray-100 text-black cursor-not-allowed border-gray-300'
                                             : 'bg-white text-black border-gray-300 hover:bg-gray-50 hover:border-black'
                                             }`}
@@ -2072,10 +1800,6 @@ const ShopPageClient = () => {
                                         <ChevronRight className="w-5 h-5" />
                                     </button>
                                 </div>
-
-                                <p className="text-black md:text-[16px] text-[14px]">
-                                    გვერდი {currentPage} {totalPages}-დან
-                                </p>
                             </div>
                         )}
 
