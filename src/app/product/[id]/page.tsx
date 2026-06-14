@@ -1940,7 +1940,7 @@ const ProductPage = () => {
 
                                     <li>
                                         <span className="font-semibold">მინიმალური ქირაობის დღეები: </span>
-                                        {minDaysGlobal} days
+                                        {minDaysGlobal} დღე
                                     </li>
                                 </ul>
                             </div>
