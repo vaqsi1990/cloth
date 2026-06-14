@@ -64,6 +64,7 @@ const CheckoutPage = () => {
     const [voucherLoading, setVoucherLoading] = useState(false)
 
     const georgianTextRegex = /^[\u10A0-\u10FF\s.,\-'():;!?/\\"]+$/
+    const nameTextRegex = /^[a-zA-Z\u10A0-\u10FF\s.\-'():;!?/\\"]+$/
     const georgianAddressRegex = /^[\u10A0-\u10FF\s0-9№N.,\-'():;!?/\\"#]+$/
 
     const pickupAddress = resolveCartPickupAddress(
@@ -271,12 +272,21 @@ const CheckoutPage = () => {
             [name]: value
         }))
 
-        if (['firstName', 'lastName', 'city'].includes(name)) {
-            if (value && !georgianTextRegex.test(value)) {
-                const fieldName = name === 'firstName' ? 'სახელი' : name === 'lastName' ? 'გვარი' : 'ქალაქი'
+        if (['firstName', 'lastName'].includes(name)) {
+            if (value && !nameTextRegex.test(value)) {
+                const fieldName = name === 'firstName' ? 'სახელი' : 'გვარი'
                 setFieldErrors(prev => ({
                     ...prev,
-                    [name]: `${fieldName} უნდა შეიცავდეს ქართულ სიმბოლოებს`
+                    [name]: `${fieldName} უნდა შეიცავდეს ქართულ ან ინგლისურ სიმბოლოებს`
+                }))
+            } else {
+                clearFieldError(name)
+            }
+        } else if (name === 'city') {
+            if (value && !georgianTextRegex.test(value)) {
+                setFieldErrors(prev => ({
+                    ...prev,
+                    city: 'ქალაქი უნდა შეიცავდეს ქართულ სიმბოლოებს'
                 }))
             } else {
                 clearFieldError(name)
@@ -301,12 +311,12 @@ const CheckoutPage = () => {
     const validateCheckoutFields = () => {
         const errors: Record<string, string> = {}
 
-        if (!formData.firstName || !georgianTextRegex.test(formData.firstName.trim())) {
-            errors.firstName = 'სახელი უნდა შეიცავდეს ქართულ სიმბოლოებს'
+        if (!formData.firstName || !nameTextRegex.test(formData.firstName.trim())) {
+            errors.firstName = 'სახელი უნდა შეიცავდეს ქართულ ან ინგლისურ სიმბოლოებს'
         }
 
-        if (!formData.lastName || !georgianTextRegex.test(formData.lastName.trim())) {
-            errors.lastName = 'გვარი უნდა შეიცავდეს ქართულ სიმბოლოებს'
+        if (!formData.lastName || !nameTextRegex.test(formData.lastName.trim())) {
+            errors.lastName = 'გვარი უნდა შეიცავდეს ქართულ ან ინგლისურ სიმბოლოებს'
         }
 
         // Validate delivery-specific fields
