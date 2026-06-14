@@ -1,4 +1,5 @@
 import {
+  isChildrenProductCategory,
   productMatchesCategoryFilter,
   type ProductCategory,
 } from '@/lib/product-categories'
@@ -42,6 +43,44 @@ export function isChildrenAgeSize(size: string): boolean {
 
 export function isChildrenShopGender(genderParam: string | null | undefined): boolean {
   return genderParam === 'children'
+}
+
+export function isChildrenShopContext(input: {
+  genderParam?: string | null
+  categoryParam?: string | null
+  selectedCategories?: string[]
+  categories?: ProductCategory[]
+}): boolean {
+  const categories = input.categories ?? []
+
+  if (isChildrenShopGender(input.genderParam)) {
+    return true
+  }
+
+  if (isChildrenProductCategory(input.categoryParam, categories)) {
+    return true
+  }
+
+  return (input.selectedCategories ?? []).some((category) =>
+    isChildrenProductCategory(category, categories),
+  )
+}
+
+export function resolveShopDisplaySizes(
+  apiSizes: string[],
+  isChildren: boolean,
+): string[] {
+  if (isChildren) {
+    return sortChildrenAgeSizes([
+      ...new Set([
+        ...CHILDREN_AGE_SIZES,
+        ...apiSizes.filter((size) => isChildrenAgeSize(size)),
+      ]),
+    ])
+  }
+
+  const fallback = apiSizes.length > 0 ? apiSizes : [...PREDEFINED_LETTER_SIZES]
+  return sortShopFilterSizes(fallback.filter((size) => !isChildrenAgeSize(size)))
 }
 
 export function buildAdultProductFormSizeOptions(): ProductFormSizeOption[] {

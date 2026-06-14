@@ -3,6 +3,7 @@ import { buildShopCategoryFacetCounts } from '@/lib/product-categories'
 import { resolveCategoryIdsForFilter } from '@/lib/product-category-resolve'
 import {
   getCategoryIdBySlugParam,
+  isChildrenProductCategory,
   resolveCategorySlugParam,
 } from '@/lib/product-categories'
 import {
@@ -222,6 +223,9 @@ export async function loadShopBundle(input: ShopBundleInput): Promise<ShopBundle
 
   const rentableIds = products.filter((p) => p.isRentable).map((p) => p.id)
   const rentalStatus = await fetchBatchRentalStatus(rentableIds)
+  const isChildrenShop =
+    ctx.genderEnum === 'CHILDREN' ||
+    isChildrenProductCategory(searchParams.get('category'))
 
   return {
     products,
@@ -233,7 +237,7 @@ export async function loadShopBundle(input: ShopBundleInput): Promise<ShopBundle
       colors: buildShopColorFacets(colorRows),
       categoryCounts: buildShopCategoryFacetCounts(categoryRows),
       sizes: buildShopFilterSizeOptions(sizeRows, {
-        isChildren: ctx.genderEnum === 'CHILDREN',
+        isChildren: isChildrenShop,
       }),
       vipCount,
       discountCount,

@@ -81,6 +81,35 @@ export function isSizeOptionalCategoryId(
   return isSizeOptionalCategory(categories.find((c) => c.id === categoryId))
 }
 
+export function isChildrenProductCategory(
+  category: ProductCategory | string | null | undefined,
+  categories: ProductCategory[] = DEFAULT_PRODUCT_CATEGORIES,
+): boolean {
+  if (!category) return false
+
+  if (typeof category === 'string') {
+    const trimmed = category.trim()
+    if (!trimmed) return false
+    const lower = trimmed.toLowerCase()
+    if (lower.includes('ბავშვ') || lower.includes('kids') || lower.includes('bavshv')) {
+      return true
+    }
+    const resolved = findCategoryByParam(trimmed, categories)
+    if (resolved) {
+      return (
+        CHILDREN_CATEGORY_IDS.has(resolved.id) ||
+        resolved.name.toLowerCase().includes('ბავშვ')
+      )
+    }
+    return false
+  }
+
+  return (
+    CHILDREN_CATEGORY_IDS.has(category.id) ||
+    category.name.toLowerCase().includes('ბავშვ')
+  )
+}
+
 function getCategoryGroups(category: ProductCategory): number[] {
   const groups: number[] = []
   if (WOMEN_CATEGORY_IDS.has(category.id)) groups.push(0)

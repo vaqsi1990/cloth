@@ -11,10 +11,10 @@ import { PURPOSE_OPTIONS } from '@/data/purposes'
 import { PRODUCT_COLORS, type ProductColorFacet } from '@/lib/product-colors'
 import {
   PREDEFINED_LETTER_SIZES,
-  CHILDREN_AGE_SIZES,
   formatFilterCount,
   isChildrenAgeSize,
-  isChildrenShopGender,
+  isChildrenShopContext,
+  resolveShopDisplaySizes,
 } from '@/lib/shop-product-filters'
 import { appendShopListFilterParams, type ShopSortBy } from '@/lib/shop-list-params'
 import { PRODUCT_IMAGE_QUALITY } from '@/lib/image-config'
@@ -67,7 +67,16 @@ const ShopPageClient = () => {
         PRODUCT_COLORS.map((color) => ({ ...color, count: 0 })),
     )
     const [availableSizes, setAvailableSizes] = useState<string[]>(PREDEFINED_LETTER_SIZES)
-    const isChildrenShop = isChildrenShopGender(genderParam)
+    const isChildrenShop = React.useMemo(
+        () =>
+            isChildrenShopContext({
+                genderParam,
+                categoryParam,
+                selectedCategories,
+                categories: shopCategories,
+            }),
+        [genderParam, categoryParam, selectedCategories, shopCategories],
+    )
     const [categoryCountsBySlug, setCategoryCountsBySlug] = useState<Record<string, number>>({})
     const [selectedLocations, setSelectedLocations] = useState<string[]>([])
 
@@ -246,7 +255,7 @@ const ShopPageClient = () => {
         if (isChildrenShop) {
             setSelectedSizeSystems([])
             setSelectedSizes((prev) => prev.filter((size) => isChildrenAgeSize(size)))
-            setAvailableSizes([...CHILDREN_AGE_SIZES])
+            setAvailableSizes(resolveShopDisplaySizes([], true))
             return
         }
 
@@ -523,13 +532,7 @@ const ShopPageClient = () => {
 
                 setColorFacets(data.facets.colors)
                 setCategoryCountsBySlug(data.facets.categoryCounts)
-                setAvailableSizes(
-                    data.facets.sizes.length > 0
-                        ? data.facets.sizes
-                        : isChildrenShop
-                          ? [...CHILDREN_AGE_SIZES]
-                          : PREDEFINED_LETTER_SIZES,
-                )
+                setAvailableSizes(resolveShopDisplaySizes(data.facets.sizes, isChildrenShop))
                 setVipProductsCount(data.facets.vipCount)
                 setDiscountedProductsCount(data.facets.discountCount)
 
@@ -819,7 +822,7 @@ const ShopPageClient = () => {
                                             : 'text-black hover:bg-gray-200'
                                             }`}
                                     >
-                                        ზომა
+                                        {isChildrenShop ? 'ასაკი' : 'ზომა'}
                                     </button>
                                     <button
                                         onClick={() => setActiveMobileFilter('color')}
