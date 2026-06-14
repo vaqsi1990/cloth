@@ -22,6 +22,10 @@ import { fetchBatchRentalStatus, type BatchRentalStatusMap } from '@/lib/product
 import { getPurposeIdBySlug } from '@/lib/purpose-ids'
 import { buildShopFilterSizeOptions } from '@/lib/shop-product-filters'
 import { parseShopListFilterParams } from '@/lib/shop-list-params'
+import {
+  convertBuyerPriceFiltersToSeller,
+  getBuyerPrice,
+} from '@/lib/platform-pricing'
 import type { ProductColorFacet } from '@/lib/product-colors'
 
 import type { ShopPriceRange } from '@/types/shop-data'
@@ -90,6 +94,7 @@ async function resolveShopContext(searchParams: URLSearchParams) {
   const hasDiscount = searchParams.get('hasDiscount')
   const isVip = searchParams.get('isVip')
   const shopFilters = parseShopListFilterParams(searchParams)
+  const sellerPriceFilters = convertBuyerPriceFiltersToSeller(shopFilters)
 
   const resolvedCategorySlug =
     category && category !== 'ALL' ? resolveCategorySlugParam(category) : null
@@ -123,8 +128,8 @@ async function resolveShopContext(searchParams: URLSearchParams) {
     sizes: shopFilters.sizes,
     sizeSystems: shopFilters.sizeSystems,
     locations: shopFilters.locations,
-    priceMin: shopFilters.priceMin,
-    priceMax: shopFilters.priceMax,
+    priceMin: sellerPriceFilters.priceMin,
+    priceMax: sellerPriceFilters.priceMax,
     purchaseType: shopFilters.purchaseType,
     sort: shopFilters.sort,
     skip: 0,
@@ -152,8 +157,8 @@ async function resolveShopContext(searchParams: URLSearchParams) {
     sizes: shopFilters.sizes,
     sizeSystems: shopFilters.sizeSystems,
     locations: shopFilters.locations,
-    priceMin: shopFilters.priceMin,
-    priceMax: shopFilters.priceMax,
+    priceMin: sellerPriceFilters.priceMin,
+    priceMax: sellerPriceFilters.priceMax,
     purchaseType: shopFilters.purchaseType,
   }
 
@@ -232,7 +237,10 @@ export async function loadShopBundle(input: ShopBundleInput): Promise<ShopBundle
     hasMore,
     page,
     limit: pageLimit,
-    priceRange: { min: 0, max: catalogMaxPrice },
+    priceRange: {
+      min: 0,
+      max: Math.max(1, Math.ceil(getBuyerPrice(catalogMaxPrice))),
+    },
     facets: {
       colors: buildShopColorFacets(colorRows),
       categoryCounts: buildShopCategoryFacetCounts(categoryRows),

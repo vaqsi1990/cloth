@@ -1,4 +1,9 @@
 import { prisma } from '@/lib/prisma'
+import { getCartItemPayablePrice } from '@/lib/cart-item-pricing'
+import {
+  cartProductPricingSelect,
+  resolveCartItemBuyerListPrice,
+} from '@/lib/resolve-cart-item-price'
 import { processExpiredDiscount } from '@/utils/discountUtils'
 
 export async function computeUserCartSubtotal(userId: string): Promise<number> {
@@ -9,12 +14,10 @@ export async function computeUserCartSubtotal(userId: string): Promise<number> {
         select: {
           price: true,
           quantity: true,
+          isRental: true,
+          rentalDays: true,
           product: {
-            select: {
-              discount: true,
-              discountDays: true,
-              discountStartDate: true,
-            },
+            select: cartProductPricingSelect,
           },
         },
       },
@@ -27,7 +30,13 @@ export async function computeUserCartSubtotal(userId: string): Promise<number> {
     const product = item.product ? processExpiredDiscount(item.product) : null
     const productDiscount =
       product?.discount && product.discount > 0 ? product.discount : 0
-    const finalPrice = item.price - productDiscount
+    const buyerListPrice = resolveCartItemBuyerListPrice({
+      storedPrice: item.price,
+      isRental: item.isRental ?? false,
+      rentalDays: item.rentalDays,
+      product,
+    })
+    const finalPrice = getCartItemPayablePrice(buyerListPrice, productDiscount)
     return sum + finalPrice * item.quantity
   }, 0)
 }

@@ -28,6 +28,7 @@ import {
   type ProductCategory,
 } from '@/lib/product-categories'
 import { isProductVipActive } from '@/lib/product-vip'
+import { getBuyerSavingsFromSellerDiscount } from '@/lib/platform-pricing'
 import ProductSalePrice from '@/components/ProductSalePrice'
 import {
     fetchShopData,
@@ -1550,7 +1551,7 @@ const ShopPageClient = () => {
                                                 <div className="bg-[#1B3729] rounded-md text-[#FFFFFF] font-regular flex items-center">
 
                                                 <div className='px-2 py-1 text-[15px] flex flex-col md:flex-row items-center gap-2 flex-1'>
-                                                    <span className='whitespace-nowrap'>დანაზოგი: ₾{product.discount.toFixed(2)}</span>
+                                                    <span className='whitespace-nowrap'>დანაზოგი: ₾{getBuyerSavingsFromSellerDiscount(product.discount).toFixed(2)}</span>
                                                     {product.discountDays && (
                                                         <span className="bg-white text-black px-3 py-1 rounded whitespace-nowrap">{product.discountDays} დღე</span>
                                                     )}

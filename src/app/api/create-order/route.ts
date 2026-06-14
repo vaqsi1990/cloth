@@ -6,7 +6,15 @@ import { prisma } from '@/lib/prisma'
 import { reevaluateUserBlocking } from '@/utils/revenue'
 import { bogTokenManager } from '@/lib/bog-token'
 import { computeUserCartSubtotal } from '@/lib/cart-totals'
+import { getCartItemPayablePrice } from '@/lib/cart-item-pricing'
 import { validateVoucher } from '@/lib/voucher'
+import { processExpiredDiscount } from '@/utils/discountUtils'
+import { computePaymentSplitPercents } from '@/lib/platform-pricing'
+import {
+  cartProductPricingSelect,
+  resolveCartItemBuyerListPrice,
+} from '@/lib/resolve-cart-item-price'
+import { syncCartItemBuyerListPrices } from '@/lib/sync-cart-prices'
 import { z } from 'zod'
 import { MAX_CART_ITEMS, MAX_CART_ITEM_QUANTITY, CART_SINGLE_ITEM_MESSAGE } from '@/lib/cart-limits'
 import { toPrismaDeliverySpeed } from '@/lib/delivery'
@@ -182,7 +190,13 @@ function getMerchantIBAN(): string | null {
   return normalized
 }
 
-async function buildSplitPaymentConfig(paymentMethod: string | undefined, productIds: (string | number)[]) {
+async function buildSplitPaymentConfig(
+  paymentMethod: string | undefined,
+  productIds: (string | number)[],
+  totalAmount: number,
+  productBuyerSubtotal: number,
+  deliveryFee: number,
+) {
   console.log('🔍 [SPLIT] Building split payment config...')
   console.log(`🔍 [SPLIT] Payment method: ${paymentMethod}, Product IDs: ${productIds.length}`)
   
@@ -207,22 +221,30 @@ async function buildSplitPaymentConfig(paymentMethod: string | undefined, produc
   // So we'll try with only seller IBAN and see if BOG accepts it
   // If not, we might need to get merchant IBAN from BOG API or configuration
   
+  const splitPercents = computePaymentSplitPercents(
+    totalAmount,
+    productBuyerSubtotal,
+    deliveryFee,
+  )
+  if (!splitPercents) {
+    console.error('❌ [SPLIT] Could not compute split percentages')
+    return null
+  }
+
   const split_payments: BOGSplitPayment[] = []
   
   if (merchantIban) {
-    // If we have merchant IBAN, include it in split
     split_payments.push({
       amount: null,
-      percent: 9,
+      percent: splitPercents.platformPercent,
       iban: merchantIban,
       description: validateSplitDescription("Platform commission")
     })
   }
   
-  // Seller gets 91%
   split_payments.push({
-    amount: null,  // Required when using percent
-    percent: 91,
+    amount: null,
+    percent: splitPercents.sellerPercent,
     iban: sellerIban,
     description: validateSplitDescription("Seller earning")
   })
@@ -239,13 +261,38 @@ async function buildSplitPaymentConfig(paymentMethod: string | undefined, produc
 
   console.log('✅ [SPLIT] Split payment config created:')
   if (merchantIban) {
-    console.log(`   📊 Merchant/Platform (9%): ${merchantIban.substring(0, 8)}...${merchantIban.substring(merchantIban.length - 4)}`)
+    console.log(`   📊 Merchant/Platform (${splitPercents.platformPercent}%): ${merchantIban.substring(0, 8)}...${merchantIban.substring(merchantIban.length - 4)}`)
   } else {
-    console.log(`   📊 Merchant/Platform (9%): Will be handled automatically by BOG merchant account`)
+    console.log(`   📊 Merchant/Platform (${splitPercents.platformPercent}%): Will be handled automatically by BOG merchant account`)
   }
-  console.log(`   📊 Seller (91%): ${sellerIban.substring(0, 8)}...${sellerIban.substring(sellerIban.length - 4)}`)
+  console.log(`   📊 Seller (${splitPercents.sellerPercent}%): ${sellerIban.substring(0, 8)}...${sellerIban.substring(sellerIban.length - 4)}`)
 
   return { split_payments }
+}
+
+function buildBasketFromResolvedCartItems(
+  items: Array<{
+    productId: number | null
+    quantity: number
+    buyerListPrice: number
+    product: {
+      discount: number | null
+      discountDays: number | null
+      discountStartDate: Date | null
+    } | null
+  }>,
+): BOGBasketItem[] {
+  return items.map((item) => {
+    const product = item.product ? processExpiredDiscount(item.product) : null
+    const discount = product?.discount && product.discount > 0 ? product.discount : 0
+    const unitPrice = getCartItemPayablePrice(item.buyerListPrice, discount)
+
+    return {
+      quantity: Number(item.quantity),
+      unit_price: unitPrice,
+      product_id: String(item.productId),
+    }
+  })
 }
 
 function transformCartItemsToBasket(items: CartItemInput[]): BOGBasketItem[] {
@@ -305,7 +352,15 @@ export async function POST(req: NextRequest) {
 
     const cart = await prisma.cart.findFirst({
       where: { userId: session.user.id },
-      include: { items: true }
+      include: {
+        items: {
+          include: {
+            product: {
+              select: cartProductPricingSelect,
+            },
+          },
+        },
+      },
     })
 
     if (!cart || cart.items.length === 0) {
@@ -324,6 +379,24 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       )
     }
+
+    const resolvedCartItems = cart.items.map((item) => ({
+      ...item,
+      buyerListPrice: resolveCartItemBuyerListPrice({
+        storedPrice: item.price,
+        isRental: item.isRental ?? false,
+        rentalDays: item.rentalDays,
+        product: item.product,
+      }),
+    }))
+
+    await syncCartItemBuyerListPrices(
+      resolvedCartItems.map((item) => ({
+        id: item.id,
+        storedPrice: item.price,
+        buyerListPrice: item.buyerListPrice,
+      })),
+    )
 
     const cartSubtotal = await computeUserCartSubtotal(session.user.id)
 
@@ -358,10 +431,12 @@ export async function POST(req: NextRequest) {
 
     const deliveryFee =
       orderData.deliveryType === 'delivery' && deliveryPrice ? deliveryPrice : 0
+    const productBuyerSubtotal =
+      Math.round((cartSubtotal - voucherDiscount) * 100) / 100
     const total =
-      Math.round((cartSubtotal - voucherDiscount + deliveryFee) * 100) / 100
+      Math.round((productBuyerSubtotal + deliveryFee) * 100) / 100
 
-    let basket = transformCartItemsToBasket(orderData.cart.items)
+    let basket = buildBasketFromResolvedCartItems(resolvedCartItems)
     if (voucherDiscount > 0) {
       basket = applyDiscountToBasket(basket, voucherDiscount)
     }
@@ -396,18 +471,30 @@ export async function POST(req: NextRequest) {
         voucherId,
         status: "PENDING",
         items: {
-          create: cart.items.map((i) => ({
+          create: resolvedCartItems.map((i) => ({
             productId: i.productId,
             productName: i.productName,
-            price: i.price,
-            quantity: i.quantity
+            price: i.buyerListPrice,
+            quantity: i.quantity,
+            isRental: i.isRental ?? false,
+            rentalStartDate: i.rentalStartDate,
+            rentalEndDate: i.rentalEndDate,
+            rentalDays: i.rentalDays,
+            size: i.size,
+            image: i.image,
           }))
         }
       }
     })
 
     const productIds = cart.items.map(i => i.productId).filter((id): id is number => id !== null)
-    const splitConfig = await buildSplitPaymentConfig(orderData.paymentMethod || 'card', productIds)
+    const splitConfig = await buildSplitPaymentConfig(
+      orderData.paymentMethod || 'card',
+      productIds,
+      total,
+      productBuyerSubtotal,
+      deliveryFee,
+    )
 
     const requestData: BOGRequestData = {
       callback_url: "https://www.dressla.ge/api/payment-callback",

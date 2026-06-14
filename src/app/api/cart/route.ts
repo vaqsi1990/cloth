@@ -16,6 +16,15 @@ import {
   getDeliveryPriceForCity,
   toPrismaDeliverySpeed,
 } from '@/lib/delivery'
+import { getCartItemPayablePrice } from '@/lib/cart-item-pricing'
+import {
+  cartProductPricingSelect,
+  resolveCartItemBuyerListPrice,
+} from '@/lib/resolve-cart-item-price'
+import {
+  resolveCartItemsBuyerListPrices,
+  syncCartItemBuyerListPrices,
+} from '@/lib/sync-cart-prices'
 
 // Cart item validation schema
 const cartItemSchema = z.object({
@@ -71,23 +80,11 @@ const cartSelect = {
           name: true,
           allowsPickup: true,
           pickupAddress: true,
-          discount: true,
-          discountDays: true,
-          discountStartDate: true,
           images: {
             select: {
               url: true,
               alt: true,
             },
-          },
-          rentalPriceTiers: {
-            select: {
-              id: true,
-              minDays: true,
-              pricePerDay: true,
-              productId: true,
-            },
-            orderBy: { minDays: 'asc' as const },
           },
           user: {
             select: {
@@ -95,6 +92,7 @@ const cartSelect = {
               pickupAddress: true,
             },
           },
+          ...cartProductPricingSelect,
         },
       },
     },
@@ -146,19 +144,24 @@ function buildCartResponse(cart: {
       discountDays: number | null
       discountStartDate: Date | null
       images: Array<{ url: string; alt: string | null }>
+      variants: Array<{ price: number }>
       rentalPriceTiers: Array<{
-        id: number
         minDays: number
         pricePerDay: number
-        productId: number
       }>
       user: { id: string; pickupAddress: string | null } | null
     } | null
   }>
 }) {
+  const resolvedPrices = resolveCartItemsBuyerListPrices(cart.items)
+  const priceByItemId = new Map(
+    resolvedPrices.map((entry) => [entry.id, entry.buyerListPrice]),
+  )
+
   const processedItems = cart.items.map((item) => {
     const product = item.product ? processExpiredDiscount(item.product) : null
     const discount = product?.discount && product.discount > 0 ? product.discount : null
+    const buyerListPrice = priceByItemId.get(item.id) ?? item.price
 
     return {
       id: item.id,
@@ -166,7 +169,7 @@ function buildCartResponse(cart: {
       productName: item.productName,
       image: item.image || item.product?.images?.[0]?.url,
       size: item.size,
-      price: item.price,
+      price: buyerListPrice,
       quantity: item.quantity,
       isRental: item.isRental ?? false,
       rentalStartDate: item.rentalStartDate?.toISOString(),
@@ -180,9 +183,8 @@ function buildCartResponse(cart: {
   })
 
   const itemsTotal = processedItems.reduce((sum, item) => {
-    const itemPrice =
-      item.discount && item.discount > 0 ? item.price - item.discount : item.price
-    return sum + itemPrice * item.quantity
+    const payable = getCartItemPayablePrice(item.price, item.discount || 0)
+    return sum + payable * item.quantity
   }, 0)
 
   const deliverySpeed = fromPrismaDeliverySpeed(cart.deliverySpeed)
@@ -270,6 +272,9 @@ export async function GET(request: NextRequest) {
     }
 
     const normalizedCart = (await enforceCartDeliveryRules(cart.id)) || cart
+
+    const resolvedPrices = resolveCartItemsBuyerListPrices(normalizedCart.items)
+    await syncCartItemBuyerListPrices(resolvedPrices)
 
     return NextResponse.json({
       success: true,
@@ -376,7 +381,17 @@ export async function POST(request: NextRequest) {
 
     const product = await prisma.product.findUnique({
       where: { id: validatedData.productId },
-      select: { allowsPickup: true },
+      select: {
+        allowsPickup: true,
+        ...cartProductPricingSelect,
+      },
+    })
+
+    const buyerListPrice = resolveCartItemBuyerListPrice({
+      storedPrice: validatedData.price,
+      isRental: validatedData.isRental || false,
+      rentalDays: validatedData.rentalDays ?? null,
+      product,
     })
 
     await prisma.cartItem.create({
@@ -386,7 +401,7 @@ export async function POST(request: NextRequest) {
         productName: validatedData.productName,
         image: validatedData.image,
         size: validatedData.size,
-        price: validatedData.price,
+        price: buyerListPrice,
         quantity: MAX_CART_ITEM_QUANTITY,
         isRental: validatedData.isRental || false,
         rentalStartDate: validatedData.rentalStartDate ? new Date(validatedData.rentalStartDate) : null,

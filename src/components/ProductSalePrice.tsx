@@ -2,12 +2,17 @@
 
 import React from 'react'
 import { getDiscountedPrice } from '@/lib/discount-helpers'
+import { getBuyerPrice } from '@/lib/platform-pricing'
+
+export type ProductPricingMode = 'seller' | 'buyer'
 
 interface ProductSalePriceProps {
   originalPrice: number
   discount?: number | null
   size?: 'sm' | 'lg'
   className?: string
+  /** Seller price for authors; buyer price (×1.09) for public listings. */
+  pricingMode?: ProductPricingMode
 }
 
 const sizeClasses = {
@@ -21,14 +26,34 @@ const sizeClasses = {
   },
 }
 
+function toDisplayPrices(
+  sellerPrice: number,
+  discount: number | null | undefined,
+  pricingMode: ProductPricingMode,
+) {
+  const sellerOriginal = sellerPrice
+  const sellerSale = getDiscountedPrice(sellerPrice, discount)
+
+  if (pricingMode === 'seller') {
+    return { original: sellerOriginal, sale: sellerSale }
+  }
+
+  return {
+    original: getBuyerPrice(sellerOriginal),
+    sale: getBuyerPrice(sellerSale),
+  }
+}
+
 export default function ProductSalePrice({
   originalPrice,
   discount,
   size = 'sm',
   className = '',
+  pricingMode = 'buyer',
 }: ProductSalePriceProps) {
   const hasDiscount = typeof discount === 'number' && discount > 0
   const classes = sizeClasses[size]
+  const { original, sale } = toDisplayPrices(originalPrice, discount, pricingMode)
 
   if (!hasDiscount) {
     const regularClass =
@@ -38,19 +63,17 @@ export default function ProductSalePrice({
 
     return (
       <span className={`${regularClass} ${className}`}>
-        ₾{originalPrice.toFixed(2)}
+        ₾{original.toFixed(2)}
       </span>
     )
   }
 
-  const salePrice = getDiscountedPrice(originalPrice, discount)
-
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       <span className={classes.original} style={{ textDecorationThickness: size === 'lg' ? '2px' : '1px' }}>
-        ₾{originalPrice.toFixed(2)}
+        ₾{original.toFixed(2)}
       </span>
-      <span className={`${classes.sale}`}>₾{salePrice.toFixed(2)}</span>
+      <span className={`${classes.sale}`}>₾{sale.toFixed(2)}</span>
     </div>
   )
 }

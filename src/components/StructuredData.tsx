@@ -1,4 +1,5 @@
 import { Product } from "@/types/product";
+import { getBuyerPrice } from "@/lib/platform-pricing";
 
 interface StructuredDataProps {
   type: "Organization" | "Product" | "WebSite";
@@ -70,7 +71,7 @@ export default function StructuredData({ type, data }: StructuredDataProps) {
         if (minPrice && minPrice > 0) {
           offers.push({
             "@type": "Offer",
-            price: minPrice,
+            price: getBuyerPrice(minPrice),
             priceCurrency: "GEL",
             availability: "https://schema.org/InStock",
             url: `${baseUrl}/product/${product.id}`,

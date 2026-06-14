@@ -27,6 +27,8 @@ import { formatDate } from "@/utils/dateUtils"
 import SimilarProducts from "@/components/SimilarProducts"
 import ProductSalePrice from "@/components/ProductSalePrice"
 import RentalTierPrice from "@/components/RentalTierPrice"
+import BuyerPriceBreakdown from "@/components/BuyerPriceBreakdown"
+import { getBuyerPrice, getBuyerSavingsFromSellerDiscount } from "@/lib/platform-pricing"
 import StarRating from "@/components/StarRating"
 import { showToast } from "@/utils/toast"
 import ChatTypingIndicator from "@/components/ChatTypingIndicator"
@@ -705,6 +707,8 @@ const ProductPage = () => {
     const selectedVariantIndex = hasVariants ? 0 : -1
     const selectedVariant = hasVariants ? product.variants[0] : undefined
     const selectedPrice = selectedVariant?.price ?? 0
+    const isProductOwner = session?.user?.id === product?.user?.id
+    const pricingMode = isProductOwner ? 'seller' : 'buyer'
     const showBuyOption = Boolean(canBuyProduct && selectedSize && selectedPrice > 0)
     const rentStatusAllowed =
         product?.status === 'AVAILABLE' ||
@@ -848,7 +852,7 @@ const ProductPage = () => {
             image: getMainImage(),
             size: selectedSize,
             quantity: 1,
-            price: selectedPrice,
+            price: getBuyerPrice(selectedPrice),
             isRental: false,
         })
 
@@ -1163,7 +1167,7 @@ const ProductPage = () => {
             rentalStartDate,
             rentalEndDate,
             rentalDays: days,
-            price: total,
+            price: getBuyerPrice(total),
         })
 
         if (result.success) {
@@ -1423,9 +1427,16 @@ const ProductPage = () => {
                                                             originalPrice={selectedPrice}
                                                             discount={product.discount}
                                                             size="lg"
+                                                            pricingMode={pricingMode}
                                                         />
                                                         <div className="bg-[#1B3729] rounded-md text-[#FFFFFF] font-regular flex items-center px-2 py-1">
-                                                            <span className="text-sm whitespace-nowrap">დანაზოგი: ₾{product.discount.toFixed(2)}</span>
+                                                            <span className="text-sm whitespace-nowrap">
+                                                                დანაზოგი: ₾
+                                                                {(pricingMode === 'buyer'
+                                                                    ? getBuyerSavingsFromSellerDiscount(product.discount)
+                                                                    : product.discount
+                                                                ).toFixed(2)}
+                                                            </span>
                                                             {product.discountDays && (
                                                                 <span className="bg-white text-black px-2 py-1 rounded ml-2 text-sm whitespace-nowrap">{product.discountDays} დღე</span>
                                                             )}
@@ -1433,8 +1444,19 @@ const ProductPage = () => {
                                                     </>
                                                 ) : (
                                                     <div className="text-3xl font-bold text-black">
-                                                        ₾{selectedPrice.toFixed(2)}
+                                                        ₾
+                                                        {(pricingMode === 'buyer'
+                                                            ? getBuyerPrice(selectedPrice)
+                                                            : selectedPrice
+                                                        ).toFixed(2)}
                                                     </div>
+                                                )}
+                                                {pricingMode === 'buyer' && (
+                                                    <BuyerPriceBreakdown
+                                                        sellerPrice={selectedPrice}
+                                                        discount={product.discount}
+                                                        className="w-full max-w-xs"
+                                                    />
                                                 )}
                                             </div>
                                         ) : (
@@ -1463,6 +1485,7 @@ const ProductPage = () => {
                                                     minDays={tiers[0].minDays}
                                                     pricePerDay={tiers[0].pricePerDay}
                                                     discount={product.discount}
+                                                    pricingMode={pricingMode}
                                                 />
                                             </div>
                                         )}
@@ -1478,6 +1501,7 @@ const ProductPage = () => {
                                                     minDays={tiers[1].minDays}
                                                     pricePerDay={tiers[1].pricePerDay}
                                                     discount={product.discount}
+                                                    pricingMode={pricingMode}
                                                     totalClassName="md:text-[18px] text-[16px] text-emerald-700 mt-1 font-medium"
                                                 />
                                             </div>
@@ -1491,6 +1515,7 @@ const ProductPage = () => {
                                                     minDays={tiers[2].minDays}
                                                     pricePerDay={tiers[2].pricePerDay}
                                                     discount={product.discount}
+                                                    pricingMode={pricingMode}
                                                 />
                                             </div>
                                         )}
@@ -1703,9 +1728,16 @@ const ProductPage = () => {
                                                             originalPrice={priceForDays(calcDays())}
                                                             discount={product.discount}
                                                             size="sm"
+                                                            pricingMode={pricingMode}
                                                         />
                                                     ) : (
-                                                        <span>₾{priceForDays(calcDays()).toFixed(2)}</span>
+                                                        <span>
+                                                            ₾
+                                                            {(pricingMode === 'buyer'
+                                                                ? getBuyerPrice(priceForDays(calcDays()))
+                                                                : priceForDays(calcDays())
+                                                            ).toFixed(2)}
+                                                        </span>
                                                     )}
                                                 </div>
                                             </div>

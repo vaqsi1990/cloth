@@ -17,6 +17,11 @@ import {
     getDeliverySpeedLabel,
 } from '@/lib/delivery'
 import { resolveCartPickupAddress } from '@/lib/product-pickup'
+import {
+  getCartItemBuyerSavings,
+  getCartItemPayablePrice,
+} from '@/lib/cart-item-pricing'
+import { getSellerPriceFromBuyer } from '@/lib/platform-pricing'
 
 const CheckoutPage = () => {
     const {
@@ -442,17 +447,18 @@ const CheckoutPage = () => {
                 orderData.voucherCode = appliedVoucher.code
             }
 
-            // Calculate split payment amounts (9% admin, 91% seller)
-            // Note: Delivery fee goes 100% to admin
+            // Platform commission is 9% of seller price; delivery goes to admin
             const baseAmount = getTotalPrice()
-            const adminAmount = (baseAmount * 0.09) + (effectiveDeliveryType === 'delivery' ? deliveryPrice : 0)
-            const sellerAmount = baseAmount * 0.91
+            const sellerAmount = getSellerPriceFromBuyer(baseAmount)
+            const adminAmount =
+              baseAmount - sellerAmount +
+              (effectiveDeliveryType === 'delivery' ? deliveryPrice : 0)
             
             console.log('💰 Split Payment Breakdown:')
             console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
             console.log(`📊 მთლიანი თანხა: ₾${totalAmount.toFixed(2)}`)
-            console.log(`👤 ადმინის ნაწილი (9%): ₾${adminAmount.toFixed(2)}`)
-            console.log(`✍️ ავტორის ნაწილი (91%): ₾${sellerAmount.toFixed(2)}`)
+            console.log(`👤 ადმინის ნაწილი: ₾${adminAmount.toFixed(2)}`)
+            console.log(`✍️ ავტორის ნაწილი: ₾${sellerAmount.toFixed(2)}`)
             console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
 
             // Step 3: Create payment order
@@ -971,14 +977,14 @@ const CheckoutPage = () => {
                                                     <div className="flex flex-col gap-1">
                                                         <div className="flex items-center gap-2">
                                                             <span className="md:text-[18px] text-[16px] font-bold text-red-600">
-                                                                ფასი: ₾{((item.price - item.discount) * item.quantity).toFixed(2)}
+                                                                ფასი: ₾{(getCartItemPayablePrice(item.price, item.discount) * item.quantity).toFixed(2)}
                                                             </span>
                                                             <span className="md:text-[16px] text-[14px] font-bold text-black line-through decoration-black opacity-60" style={{ textDecorationThickness: '2px' }}>
                                                                 ₾{(item.price * item.quantity).toFixed(2)}
                                                             </span>
                                                         </div>
                                                         <div className="bg-[#1B3729] rounded-md text-[#FFFFFF] font-regular flex items-center px-2 py-1 w-fit">
-                                                            <span className="text-xs whitespace-nowrap">დანაზოგი: ₾{(item.discount * item.quantity).toFixed(2)}</span>
+                                                            <span className="text-xs whitespace-nowrap">დანაზოგი: ₾{(getCartItemBuyerSavings(item.price, item.discount) * item.quantity).toFixed(2)}</span>
                                                             {item.discountDays && (
                                                                 <span className="bg-white text-black px-2 py-1 rounded ml-2 text-xs whitespace-nowrap">{item.discountDays} დღე</span>
                                                             )}

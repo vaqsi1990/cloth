@@ -1,5 +1,8 @@
 import { prisma } from '@/lib/prisma'
 import { checkAndBlockUser, reevaluateUserBlocking } from '@/utils/revenue'
+import { getDiscountedPrice } from '@/lib/discount-helpers'
+import { getSellerPriceFromBuyer } from '@/lib/platform-pricing'
+import { processExpiredDiscount } from '@/utils/discountUtils'
 
 type TransactionType = 'SALE' | 'RENT'
 
@@ -19,6 +22,9 @@ export async function recordSellerTransactions(orderId: number) {
           product: {
             select: {
               userId: true,
+              discount: true,
+              discountDays: true,
+              discountStartDate: true,
             },
           },
         },
@@ -50,7 +56,12 @@ export async function recordSellerTransactions(orderId: number) {
     }
 
     const transactionType: TransactionType = item.isRental ? 'RENT' : 'SALE'
-    const itemTotal = (item.price || 0) * (item.quantity || 1)
+    const product = item.product ? processExpiredDiscount(item.product) : null
+    const sellerDiscount =
+      product?.discount && product.discount > 0 ? product.discount : 0
+    const sellerListPerUnit = getSellerPriceFromBuyer(item.price || 0)
+    const sellerPayablePerUnit = getDiscountedPrice(sellerListPerUnit, sellerDiscount)
+    const itemTotal = sellerPayablePerUnit * (item.quantity || 1)
     if (itemTotal <= 0) {
       continue
     }
