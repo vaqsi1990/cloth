@@ -32,6 +32,7 @@ import {
     SHOP_FETCH_DEBOUNCE_MS,
 } from '@/lib/shop-data-client'
 import type { BatchRentalStatusMap } from '@/lib/product-rental-status-batch'
+import PriceRangeFilter from '@/component/PriceRangeFilter'
 
 type PurchaseType = 'all' | 'rent-only' | 'sale-only' | 'rent-and-sale'
 
@@ -96,6 +97,7 @@ const ShopPageClient = () => {
     const prevPurposeParamRef = useRef(purposeParam)
     const prevCategoryParamRef = useRef(categoryParam)
     const filtersSnapshotRef = useRef<string | null>(null)
+    const prevPriceCeilingKeyRef = useRef<string | null>(null)
     const [savedScrollY, setSavedScrollY] = useState<number | null>(null)
     const [hasRestoredState, setHasRestoredState] = useState(false)
 
@@ -512,13 +514,33 @@ const ShopPageClient = () => {
 
                 setProductRentalStatus(data.rentalStatus ?? {})
 
-                const calculatedMaxPrice = data.priceRange?.max ?? 200
+                const calculatedMaxPrice = Math.max(1, Math.ceil(data.priceRange?.max ?? 200))
                 setMaxPrice(calculatedMaxPrice)
-                setPriceRange((prev) =>
-                    calculatedMaxPrice > prev[1] || prev[1] === 0
-                        ? [0, calculatedMaxPrice]
-                        : prev,
-                )
+
+                const ceilingParams = new URLSearchParams(activeShopQueryKey)
+                ceilingParams.delete('priceMin')
+                ceilingParams.delete('priceMax')
+                ceilingParams.delete('page')
+                const priceCeilingKey = ceilingParams.toString()
+                const priceCeilingChanged =
+                    prevPriceCeilingKeyRef.current !== null &&
+                    prevPriceCeilingKeyRef.current !== priceCeilingKey
+                prevPriceCeilingKeyRef.current = priceCeilingKey
+
+                setPriceRange((prev) => {
+                    if (priceCeilingChanged) {
+                        return [0, calculatedMaxPrice]
+                    }
+                    if (prev[0] === 0 && prev[1] === 0) {
+                        return [0, calculatedMaxPrice]
+                    }
+                    const nextMin = Math.max(0, Math.min(prev[0], calculatedMaxPrice))
+                    const nextMax = Math.max(nextMin, Math.min(prev[1], calculatedMaxPrice))
+                    if (nextMin === prev[0] && nextMax === prev[1]) {
+                        return prev
+                    }
+                    return [nextMin, nextMax]
+                })
             } catch (error: unknown) {
                 if (
                     isStale() ||
@@ -957,49 +979,11 @@ const ShopPageClient = () => {
                                 {activeMobileFilter === 'price' && (
                                     <div className="space-y-4">
                                         <h3 className="text-lg font-semibold text-black mb-4">ფასის დიაპაზონი</h3>
-                                        <div className="space-y-3">
-                                            <div className="flex items-center gap-2">
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    max={maxPrice}
-                                                    value={priceRange[0]}
-                                                    onChange={(e) => {
-                                                        const val = Number(e.target.value) || 0
-                                                        setPriceRange([Math.min(val, priceRange[1]), priceRange[1]])
-                                                    }}
-                                                    className="w-1/2 px-3 py-2 border border-gray-300 rounded text-[14px] text-black"
-                                                />
-                                                <input
-                                                    type="number"
-                                                    min={priceRange[0]}
-                                                    max={maxPrice}
-                                                    value={priceRange[1]}
-                                                    onChange={(e) => {
-                                                        const val = Number(e.target.value) || 0
-                                                        setPriceRange([priceRange[0], Math.max(val, priceRange[0])])
-                                                    }}
-                                                    className="w-1/2 px-3 py-2 border border-gray-300 rounded text-[14px] text-black"
-                                                />
-                                            </div>
-                                            {maxPrice > 0 && (
-                                                <input
-                                                    type="range"
-                                                    min="0"
-                                                    max={maxPrice}
-                                                    value={priceRange[1]}
-                                                    onChange={(e) => {
-                                                        const val = parseInt(e.target.value) || 0
-                                                        setPriceRange([priceRange[0], val])
-                                                    }}
-                                                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-                                                />
-                                            )}
-                                            <div className="flex items-center justify-between md:text-[16px] text-[14px] text-black">
-                                                <span>₾{priceRange[0]}</span>
-                                                <span>₾{priceRange[1]}</span>
-                                            </div>
-                                        </div>
+                                        <PriceRangeFilter
+                                            priceRange={priceRange as [number, number]}
+                                            maxPrice={maxPrice}
+                                            onChange={setPriceRange}
+                                        />
                                     </div>
                                 )}
 
@@ -1162,34 +1146,11 @@ const ShopPageClient = () => {
                             {/* Price Range FIRST */}
                             <div className="border-b border-gray-200 pb-6">
                                 <h2 className="font-medium text-black md:text-[18px] text-[16px] mb-3">ფასის დიაპაზონი</h2>
-                                <div className="space-y-3">
-                                    <div className="flex items-center gap-2">
-                                        <input
-                                            type="number"
-                                            value={priceRange[0]}
-                                            onChange={(e) => setPriceRange([Number(e.target.value) || 0, priceRange[1]])}
-                                            className="w-1/2 px-3 py-2 border border-gray-300 rounded text-[14px] text-black"
-                                        />
-                                        <input
-                                            type="number"
-                                            value={priceRange[1]}
-                                            onChange={(e) => setPriceRange([priceRange[0], Number(e.target.value) || 0])}
-                                            className="w-1/2 px-3 py-2 border border-gray-300 rounded text-[14px] text-black"
-                                        />
-                                    </div>
-                                    <input
-                                        type="range"
-                                        min="0"
-                                        max={maxPrice}
-                                        value={priceRange[1]}
-                                        onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
-                                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-                                    />
-                                    <div className="flex items-center justify-between md:text-[16px] text-[14px] text-black">
-                                        <span>₾{priceRange[0]}</span>
-                                        <span>₾{priceRange[1]}</span>
-                                    </div>
-                                </div>
+                                <PriceRangeFilter
+                                    priceRange={priceRange as [number, number]}
+                                    maxPrice={maxPrice}
+                                    onChange={setPriceRange}
+                                />
                             </div>
 
                             {/* VIP */}

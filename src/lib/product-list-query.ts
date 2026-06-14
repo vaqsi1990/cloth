@@ -317,6 +317,40 @@ export async function countActiveDiscountProducts(
   return rows[0]?.count ?? 0
 }
 
+/** Catalog-wide max price for slider ceiling (ignores priceMin/priceMax). */
+export async function getShopCatalogPriceMax(
+  filters: Omit<PublicListFilters, 'skip' | 'take' | 'priceMin' | 'priceMax'>,
+): Promise<number> {
+  const where = buildWhere({ ...filters, priceMin: null, priceMax: null, skip: 0, take: 0 })
+  const rows = await prisma.$queryRaw<[{ max_price: number | null }]>(Prisma.sql`
+    WITH filtered AS (
+      SELECT p.id
+      FROM "Product" p
+      WHERE ${where}
+    ),
+    all_prices AS (
+      SELECT pv.price::float8 AS price
+      FROM "ProductVariant" pv
+      WHERE pv."productId" IN (SELECT id FROM filtered)
+      UNION ALL
+      SELECT (rpt."pricePerDay" * rpt."minDays")::float8 AS price
+      FROM (
+        SELECT DISTINCT ON (rpt."productId")
+          rpt."productId",
+          rpt."pricePerDay",
+          rpt."minDays"
+        FROM "RentalPriceTier" rpt
+        WHERE rpt."productId" IN (SELECT id FROM filtered)
+        ORDER BY rpt."productId", rpt."minDays" ASC
+      ) rpt
+    )
+    SELECT MAX(price)::float8 AS max_price
+    FROM all_prices
+  `)
+  const max = rows[0]?.max_price
+  return max != null && Number.isFinite(max) && max > 0 ? Math.ceil(max) : 200
+}
+
 export async function getProductColorCounts(
   filters: Omit<PublicListFilters, 'skip' | 'take'>,
 ): Promise<Array<{ colorValue: string; count: number }>> {

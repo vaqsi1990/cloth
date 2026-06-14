@@ -13,6 +13,7 @@ import {
   getProductCategoryCounts,
   getProductColorCounts,
   getProductSizeCounts,
+  getShopCatalogPriceMax,
   loadPublicProductList,
   type PublicListFilters,
 } from '@/lib/product-list-query'
@@ -204,6 +205,7 @@ export async function loadShopBundle(input: ShopBundleInput): Promise<ShopBundle
     sizeRows,
     vipCount,
     discountCount,
+    catalogMaxPrice,
   ] = await Promise.all([
     loadPublicProductList(combinedFilters, { forceFresh }),
     getProductColorCounts(ctx.colorSizeFacetFilters),
@@ -211,6 +213,7 @@ export async function loadShopBundle(input: ShopBundleInput): Promise<ShopBundle
     getProductSizeCounts(ctx.colorSizeFacetFilters),
     countActiveVipProducts(ctx.countFilters),
     countActiveDiscountProducts(ctx.countFilters),
+    getShopCatalogPriceMax(ctx.listFilters),
   ])
 
   const finalized = finalizeProductListResponse(payload)
@@ -219,14 +222,13 @@ export async function loadShopBundle(input: ShopBundleInput): Promise<ShopBundle
 
   const rentableIds = products.filter((p) => p.isRentable).map((p) => p.id)
   const rentalStatus = await fetchBatchRentalStatus(rentableIds)
-  const maxPrice = computeShopPriceRangeMax(products)
 
   return {
     products,
     hasMore,
     page,
     limit: pageLimit,
-    priceRange: { min: 0, max: maxPrice },
+    priceRange: { min: 0, max: catalogMaxPrice },
     facets: {
       colors: buildShopColorFacets(colorRows),
       categoryCounts: buildShopCategoryFacetCounts(categoryRows),
