@@ -9,6 +9,10 @@ import { ArrowLeft, Plus, Edit, Trash2, Eye, Search, Filter, Package, Calendar, 
 import { showToast } from '@/utils/toast'
 import { attachBatchRentalStatus } from '@/utils/rentalStatusBatch'
 import { isSupport } from '@/lib/roles'
+import {
+  broadcastProductStatusUpdate,
+  type ProductStatusValue,
+} from '@/lib/product-status-sync'
 
 interface RentalPeriod {
   startDate: string
@@ -104,6 +108,7 @@ const SupportProductsPage = () => {
   const [deletingReviewId, setDeletingReviewId] = useState<number | null>(null)
   const [deletingReplyId, setDeletingReplyId] = useState<number | null>(null)
   const [approvalUpdatingId, setApprovalUpdatingId] = useState<number | null>(null)
+  const [statusUpdatingId, setStatusUpdatingId] = useState<number | null>(null)
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -162,31 +167,60 @@ const SupportProductsPage = () => {
   }
 
   const handleStatusChange = async (productId: number, newStatus: string) => {
+    const previousStatus = products.find((p) => p.id === productId)?.status
+
+    setStatusUpdatingId(productId)
+    setProducts((prev) =>
+      prev.map((p) =>
+        p.id === productId
+          ? { ...p, status: newStatus as Product['status'] }
+          : p,
+      ),
+    )
+
     try {
-      console.log('Changing status to:', newStatus, 'for product:', productId)
       const response = await fetch(`/api/products/${productId}`, {
         method: 'PATCH',
+        credentials: 'same-origin',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify({ status: newStatus }),
       })
-      
+
       const result = await response.json()
-      console.log('Response status:', response.status, 'Response data:', result)
-      
+
       if (response.ok && result.success) {
-        setProducts(products.map(p => 
-          p.id === productId ? { ...p, status: newStatus as 'AVAILABLE' | 'RENTED' | 'RESERVED' | 'MAINTENANCE' | 'DAMAGED' } : p
-        ))
+        const savedStatus = (result.product?.status ?? newStatus) as Product['status']
+        setProducts((prev) =>
+          prev.map((p) =>
+            p.id === productId ? { ...p, status: savedStatus } : p,
+          ),
+        )
+        broadcastProductStatusUpdate({
+          productId,
+          status: savedStatus as ProductStatusValue,
+        })
+        router.refresh()
         showToast('სტატუსი წარმატებით განახლდა', 'success')
       } else {
-        console.error('Status change failed:', result)
+        setProducts((prev) =>
+          prev.map((p) =>
+            p.id === productId ? { ...p, status: previousStatus } : p,
+          ),
+        )
         showToast(result.message || result.error || 'შეცდომა სტატუსის შეცვლისას', 'error')
       }
     } catch (error) {
       console.error('Error updating status:', error)
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.id === productId ? { ...p, status: previousStatus } : p,
+        ),
+      )
       showToast('შეცდომა სტატუსის შეცვლისას', 'error')
+    } finally {
+      setStatusUpdatingId(null)
     }
   }
 
@@ -650,7 +684,8 @@ const SupportProductsPage = () => {
                           <select
                             value={product.status || 'AVAILABLE'}
                             onChange={(e) => handleStatusChange(product.id, e.target.value)}
-                            className="text-xs sm:text-sm md:text-[18px] border border-gray-300 rounded px-2 py-1 text-black focus:outline-none focus:ring-1 focus:ring-black w-full sm:w-auto"
+                            disabled={statusUpdatingId === product.id}
+                            className="text-xs sm:text-sm md:text-[18px] border border-gray-300 rounded px-2 py-1 text-black focus:outline-none focus:ring-1 focus:ring-black w-full sm:w-auto disabled:opacity-60"
                           >
                             <option value="AVAILABLE">თავისუფალია</option>
                             <option value="RENTED">გაქირავებულია</option>

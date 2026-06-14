@@ -8,6 +8,11 @@ import { Product } from "@/types/product"
 import StarRating from "@/components/StarRating"
 import ProductSalePrice from "@/components/ProductSalePrice"
 import { getBuyerSavingsFromSellerDiscount } from '@/lib/platform-pricing'
+import {
+  isProductHiddenFromShop,
+  PRODUCT_STATUS_UPDATED_EVENT,
+  type ProductStatusUpdateDetail,
+} from '@/lib/product-status-sync'
 
 const AuthorPage = () => {
     const params = useParams()
@@ -73,6 +78,22 @@ const AuthorPage = () => {
         }
         if (authorId) fetchData()
     }, [authorId])
+
+    useEffect(() => {
+        const handler = (event: Event) => {
+            const { productId, status } = (event as CustomEvent<ProductStatusUpdateDetail>).detail
+            setProducts((prev) => {
+                if (isProductHiddenFromShop(status)) {
+                    return prev.filter((p) => p.id !== productId)
+                }
+                return prev.map((p) =>
+                    p.id === productId ? { ...p, status } : p,
+                )
+            })
+        }
+        window.addEventListener(PRODUCT_STATUS_UPDATED_EVENT, handler)
+        return () => window.removeEventListener(PRODUCT_STATUS_UPDATED_EVENT, handler)
+    }, [])
 
     // Pagination calculations
     const totalPages = Math.ceil(products.length / itemsPerPage)

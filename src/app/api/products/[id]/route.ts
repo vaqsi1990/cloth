@@ -22,8 +22,20 @@ import {
   productPickupAddressField,
   refineProductPickupAddress,
 } from '@/lib/product-pickup'
-import { revalidateProductListCache } from '@/lib/product-list-query'
+import { revalidateProductCaches } from '@/lib/product-cache-revalidation'
 import { resolveCategoryIdForWrite } from '@/lib/category-sync'
+
+const VALID_PRODUCT_STATUSES = new Set([
+  'AVAILABLE',
+  'RENTED',
+  'RESERVED',
+  'MAINTENANCE',
+  'DAMAGED',
+])
+
+function isValidProductStatus(value: unknown): value is 'AVAILABLE' | 'RENTED' | 'RESERVED' | 'MAINTENANCE' | 'DAMAGED' {
+  return typeof value === 'string' && VALID_PRODUCT_STATUSES.has(value)
+}
 
 // Product validation schema
 const productSchema = z.object({
@@ -485,7 +497,7 @@ export async function PUT(
       })
     }
 
-    revalidateProductListCache()
+    revalidateProductCaches(productId, { authorId: updatedProduct.userId })
 
     return NextResponse.json({
       success: true,
@@ -575,15 +587,13 @@ export async function PATCH(
 
     // Update only the fields provided
     const updateData: Prisma.ProductUpdateInput = {}
-    
-    // Validate and set status if provided
-    const validStatuses = ['AVAILABLE', 'RENTED', 'RESERVED', 'MAINTENANCE', 'DAMAGED'] as const
-    if (body.status && validStatuses.includes(body.status)) {
+
+    if (isValidProductStatus(body.status)) {
       updateData.status = body.status
-    } else if (body.status) {
+    } else if (body.status != null && body.status !== '') {
       return NextResponse.json({
         success: false,
-        message: `Invalid status: ${body.status}. Allowed values: ${validStatuses.join(', ')}`
+        message: `Invalid status: ${body.status}. Allowed values: ${[...VALID_PRODUCT_STATUSES].join(', ')}`
       }, { status: 400 })
     }
 
@@ -599,7 +609,7 @@ export async function PATCH(
       data: updateData
     })
 
-    revalidateProductListCache()
+    revalidateProductCaches(productId, { authorId: updatedProduct.userId })
 
     return NextResponse.json({
       success: true,
@@ -667,7 +677,7 @@ export async function DELETE(
       where: { id: productId }
     })
 
-    revalidateProductListCache()
+    revalidateProductCaches(productId, { authorId: existingProduct.userId })
 
     return NextResponse.json({
       success: true,

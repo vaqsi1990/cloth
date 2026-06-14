@@ -35,7 +35,17 @@ import ChatTypingIndicator from "@/components/ChatTypingIndicator"
 import { useChatTyping } from "@/hooks/useChatTyping"
 import StructuredData from "@/components/StructuredData"
 import { PRODUCT_IMAGE_QUALITY } from "@/lib/image-config"
-import { isRentalEndBeforeStart } from "@/lib/rental-dates"
+import { useProductStatusSync } from "@/hooks/useProductStatusSync"
+import {
+  calcRentalDays,
+  firstAvailableRentalStartAfter,
+  getBlockedCalendarDates,
+  getMaintenanceEndDate,
+  hasRentalPeriodConflict,
+  isDateBlockedByRentalPeriods,
+  isRentalEndBeforeStart,
+  normalizeDateOnly,
+} from "@/lib/rental-dates"
 type Tier = { minDays: number; pricePerDay: number }
 
 function formatDateInput(date: Date): string {
@@ -46,11 +56,7 @@ function formatDateInput(date: Date): string {
 }
 
 // Helper to normalize date to start of day
-const startOfDay = (date: Date) => {
-    const d = new Date(date)
-    d.setHours(0, 0, 0, 0)
-    return d
-}
+const startOfDay = (date: Date) => normalizeDateOnly(date)
 
 
 const ProductPage = () => {
@@ -298,64 +304,66 @@ const ProductPage = () => {
         }
     }, [product, purchaseMode, selectedSize, canRent, canBuyProduct])
 
-    // size => busy periods
-    const [rentalStatus, setRentalStatus] = useState<Record<string, RentalPeriod[]>>({})
+    // Active rental periods for calendar blocking
+    const [activeRentalPeriods, setActiveRentalPeriods] = useState<RentalPeriod[]>([])
 
     // -------------------------
     // Fetch product + rental status
     // -------------------------
+    const reloadProduct = useCallback(async () => {
+        if (!productId) return false
+        try {
+            const [pRes, rRes] = await Promise.all([
+                fetch(`/api/products/${productId}`, { cache: 'no-store' }),
+                fetch(`/api/products/${productId}/rental-status`, { cache: 'no-store' }),
+            ])
+            const pJson = await pRes.json()
+            const rJson = await rRes.json()
+
+            if (pJson?.success) {
+                setProduct(pJson.product)
+                setRequiresInquiry(
+                    Boolean(
+                        pJson.product?.isRentable &&
+                            pJson.product?.requiresInquiryBeforeRent !== false,
+                    ),
+                )
+                setError(null)
+            } else {
+                setError(pJson?.message || 'პროდუქტი ვერ მოიძებნა')
+                setProduct(null)
+                return false
+            }
+
+            if (rJson?.success) {
+                const periods: RentalPeriod[] = Array.isArray(rJson.activeRentals)
+                    ? rJson.activeRentals
+                    : (rJson.variants || []).flatMap(
+                          (v: { activeRentals?: RentalPeriod[] }) => v.activeRentals || [],
+                      )
+                const unique = periods.filter((period, index, list) =>
+                    list.findIndex(
+                        (p) =>
+                            p.startDate === period.startDate &&
+                            p.endDate === period.endDate,
+                    ) === index,
+                )
+                setActiveRentalPeriods(unique)
+            } else {
+                setActiveRentalPeriods([])
+            }
+            return true
+        } catch (e) {
+            console.error('Error refreshing product data:', e)
+            return false
+        }
+    }, [productId])
+
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [pRes, rRes] = await Promise.all([
-                    fetch(`/api/products/${productId}`),
-                    fetch(`/api/products/${productId}/rental-status`),
-                ])
-                const pJson = await pRes.json()
-                const rJson = await rRes.json()
-
-                if (pJson?.success) {
-                    setProduct(pJson.product)
-                    const p = pJson.product
-                    setRequiresInquiry(
-                        Boolean(p?.isRentable && p?.requiresInquiryBeforeRent !== false),
-                    )
-                    setError(null)
-                } else {
-                    setError(pJson?.message || 'პროდუქტი ვერ მოიძებნა')
-                    setProduct(null)
-                }
-                if (rJson?.success) {
-                    const map: Record<string, RentalPeriod[]> = {}
-                    const allRentals: RentalPeriod[] = []
-                    
-                    // Map rental status by variant ID (API now returns variantId instead of size)
-                    rJson.variants?.forEach(
-                        (v: { variantId: number; activeRentals?: RentalPeriod[] }) => {
-                            const variantKey = `variant_${v.variantId}`
-                            const rentals = v.activeRentals || []
-                            map[variantKey] = rentals
-                            allRentals.push(...rentals)
-                        }
-                    )
-                    
-                    // Also add a product-level key for convenience (using product size or 'default')
-                    // This allows us to use selectedSize (product size) to get all rentals
-                    const productKey = pJson?.product?.size || 'default'
-                    if (allRentals.length > 0) {
-                        // Remove duplicates based on startDate/endDate (O(n) instead of O(n^2))
-                        const seen = new Set<string>()
-                        const uniqueRentals: RentalPeriod[] = []
-                        for (const rental of allRentals) {
-                            const key = `${rental.startDate}|${rental.endDate}`
-                            if (seen.has(key)) continue
-                            seen.add(key)
-                            uniqueRentals.push(rental)
-                        }
-                        map[productKey] = uniqueRentals
-                    }
-                    setRentalStatus(map)
-                }
+                setLoading(true)
+                await reloadProduct()
             } catch (e) {
                 console.error('Error fetching product data:', e)
                 setError('შეცდომა პროდუქტის ჩატვირთვისას')
@@ -365,7 +373,12 @@ const ProductPage = () => {
             }
         }
         if (productId) fetchData()
-    }, [productId])
+    }, [productId, reloadProduct])
+
+    useProductStatusSync(productId, ({ status }) => {
+        setProduct((prev) => (prev ? { ...prev, status } : prev))
+        void reloadProduct()
+    })
 
     useEffect(() => {
         if (session?.user?.id) {
@@ -678,26 +691,17 @@ const ProductPage = () => {
     // Since variants no longer have size, use product size
     const getAvailableSizes = () => product?.size ? [product.size] : []
 
-    // Helper to get rental periods by size (product-level) or variant ID
-    const getRentalPeriods = (key: string | number): RentalPeriod[] => {
-        if (typeof key === 'number') {
-            // If key is a variant ID
-            const variantKey = `variant_${key}`
-            return rentalStatus[variantKey] || []
-        }
-        // If key is a size string (product size)
-        return rentalStatus[key] || []
-    }
+    const getRentalPeriods = (): RentalPeriod[] => activeRentalPeriods
 
-    // Check if there are active rentals for a given key (size or variant ID)
-    const hasActiveRentals = (key: string | number): boolean => {
-        return getRentalPeriods(key).length > 0
-    }
+    const hasActiveRentals = (): boolean => activeRentalPeriods.length > 0
+
+    const blockedRentalDates = getBlockedCalendarDates(activeRentalPeriods)
 
     // Get first available variant (one without active rentals)
     const firstAvailableVariant = () => {
         if (!product?.variants) return null
-        return product.variants.find(v => !hasActiveRentals(v.id)) || product.variants[0] || null
+        if (hasActiveRentals()) return product.variants[0] || null
+        return product.variants[0] || null
     }
 
     useEffect(() => {
@@ -708,7 +712,7 @@ const ProductPage = () => {
                 setSelectedSize(sz)
             }
         }
-    }, [product, rentalStatus, selectedSize])
+    }, [product, activeRentalPeriods, selectedSize])
 
     // Select variant by index (since variants are just different prices now)
     const hasVariants = product?.variants && Array.isArray(product.variants) && product.variants.length > 0
@@ -738,76 +742,54 @@ const ProductPage = () => {
     }
 
     const earliestAvailableGlobal = () => {
-        const all = Object.values(rentalStatus).flat()
-        if (!all.length) return null
-        const sorted = [...all].sort(
+        if (!activeRentalPeriods.length) return null
+        const sorted = [...activeRentalPeriods].sort(
             (a, b) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime()
         )
-        // Add 2 days for return + maintenance (endDate + 1 day for return + 1 day for maintenance)
-        const earliestEndDate = new Date(sorted[0].endDate)
-        earliestEndDate.setDate(earliestEndDate.getDate() + 2)
+        const earliestEndDate = firstAvailableRentalStartAfter(sorted[0].endDate)
         return earliestEndDate.toISOString()
     }
 
-    // Helper to get all blocked dates (rental periods + 2 days buffer)
-    const getBlockedDates = () => {
-        const blockedDates: Date[] = []
-        const periods = getRentalPeriods(selectedSize)
+    const getRentalConflicts = (startDate: string, endDate: string) =>
+        getRentalPeriods().filter((period) =>
+            hasRentalPeriodConflict(startDate, endDate, period.startDate, period.endDate),
+        )
 
-        periods.forEach(period => {
-            const start = new Date(period.startDate)
-            const end = new Date(period.endDate)
-            // Normalize to avoid timezone issues
-            start.setHours(0, 0, 0, 0)
-            end.setHours(0, 0, 0, 0)
-            // Add only 1 day for maintenance (so last maintenance day is selectable)
-            const lastBlockedDate = new Date(end.getTime() + 24 * 60 * 60 * 1000)
-
-            const currentDate = new Date(start)
-            while (currentDate <= lastBlockedDate) {
-                const normalizedDate = new Date(currentDate)
-                normalizedDate.setHours(0, 0, 0, 0)
-                blockedDates.push(normalizedDate)
-                currentDate.setDate(currentDate.getDate() + 1)
-            }
-        })
-
-        return blockedDates
-    }
-
-    // Helper to check if a date is blocked
     const isDateBlocked = (date: Date) => {
-        if (!date) return false;
-
-        // Normalize the date to avoid timezone issues
-        const dateToCheck = new Date(date)
-        dateToCheck.setHours(0, 0, 0, 0)
-
-        const blockedDates = getBlockedDates()
-
-        const isBlocked = blockedDates.some(blockedDate => {
-            const normalizedBlocked = new Date(blockedDate)
-            normalizedBlocked.setHours(0, 0, 0, 0)
-            return dateToCheck.getTime() === normalizedBlocked.getTime()
-        })
-
-        return isBlocked
+        if (!date) return false
+        return isDateBlockedByRentalPeriods(date, activeRentalPeriods)
     }
+
+    useEffect(() => {
+        if (!rentalStartDate && !rentalEndDate) return
+
+        const startBlocked =
+            rentalStartDate &&
+            isDateBlockedByRentalPeriods(rentalStartDate, activeRentalPeriods)
+        const endBlocked =
+            rentalEndDate &&
+            isDateBlockedByRentalPeriods(rentalEndDate, activeRentalPeriods)
+        const hasConflict =
+            rentalStartDate &&
+            rentalEndDate &&
+            activeRentalPeriods.some((period) =>
+                hasRentalPeriodConflict(
+                    rentalStartDate,
+                    rentalEndDate,
+                    period.startDate,
+                    period.endDate,
+                ),
+            )
+
+        if (startBlocked || endBlocked || hasConflict) {
+            setRentalStartDate('')
+            setRentalEndDate('')
+        }
+    }, [activeRentalPeriods, rentalStartDate, rentalEndDate])
 
     const calcDays = () => {
         if (!rentalStartDate || !rentalEndDate) return 0
-        const start = new Date(rentalStartDate)
-        const end = new Date(rentalEndDate)
-
-        // Set time to start of day to avoid timezone issues
-        start.setHours(0, 0, 0, 0)
-        end.setHours(0, 0, 0, 0)
-
-        const diffTime = end.getTime() - start.getTime()
-        const diffDays = diffTime / (1000 * 60 * 60 * 24)
-
-        // Add 1 to include both start and end days
-        return Math.max(1, Math.floor(diffDays) + 1)
+        return calcRentalDays(rentalStartDate, rentalEndDate)
     }
 
     // price from tiers by days
@@ -1026,14 +1008,7 @@ const ProductPage = () => {
             return
         }
 
-        const start = new Date(rentalStartDate)
-        const end = new Date(rentalEndDate)
-        const conflicts = getRentalPeriods(selectedSize).filter(period => {
-            const periodStart = new Date(period.startDate)
-            const periodEnd = new Date(period.endDate)
-            const periodLastBlockedDate = new Date(periodEnd.getTime() + 24 * 60 * 60 * 1000)
-            return start < periodLastBlockedDate && end >= periodStart
-        })
+        const conflicts = getRentalConflicts(rentalStartDate, rentalEndDate)
 
         if (conflicts.length > 0) {
             showToast('ამ თარიღებზე პროდუქტი დაკავებულია', 'warning')
@@ -1137,17 +1112,7 @@ const ProductPage = () => {
             return
         }
 
-        // Check if the selected dates conflict with existing rentals
-        const start = new Date(rentalStartDate)
-        const end = new Date(rentalEndDate)
-        const conflicts = getRentalPeriods(selectedSize).filter(period => {
-            const periodStart = new Date(period.startDate)
-            const periodEnd = new Date(period.endDate)
-            // Add 1 day buffer for maintenance (last maintenance day is selectable)
-            const periodLastBlockedDate = new Date(periodEnd.getTime() + 24 * 60 * 60 * 1000)
-            // Check for overlap
-            return start < periodLastBlockedDate && end >= periodStart
-        })
+        const conflicts = getRentalConflicts(rentalStartDate, rentalEndDate)
 
         if (conflicts.length > 0) {
             showToast("ამ თარიღებზე პროდუქტი დაკავებულია. გთხოვთ აირჩიოთ სხვა თარიღები", "warning")
@@ -1610,7 +1575,7 @@ const ProductPage = () => {
                                             <div>
                                                 <label className="block md:text-[18px] text-black text-[16px] font-medium mb-1">დაწყება</label>
                                                 <DatePicker
-                                                    selected={rentalStartDate ? new Date(rentalStartDate) : null}
+                                                    selected={rentalStartDate ? normalizeDateOnly(rentalStartDate) : null}
                                                     onChange={(date: Date | null) => {
                                                         if (date) {
                                                             const nextStart = formatDateInput(date)
@@ -1625,9 +1590,14 @@ const ProductPage = () => {
                                                     }}
                                                     filterDate={(date) => {
                                                         if (!date) return false;
-                                                        const blocked = isDateBlocked(date);
-                                                        return !blocked;
+                                                        return !isDateBlocked(date);
                                                     }}
+                                                    excludeDates={blockedRentalDates}
+                                                    dayClassName={(date) =>
+                                                        date && isDateBlocked(date)
+                                                            ? 'react-datepicker__day--disabled'
+                                                            : ''
+                                                    }
                                                     minDate={new Date()}
                                                     placeholderText="აირჩიე თარიღი"
                                                     dateFormat="dd/MM/yyyy"
@@ -1638,7 +1608,7 @@ const ProductPage = () => {
                                                 <label className="block md:text-[18px] text-black text-[16px] font-medium mb-1">დასრულება</label>
 
                                                 <DatePicker
-                                                    selected={rentalEndDate ? new Date(rentalEndDate) : null}
+                                                    selected={rentalEndDate ? normalizeDateOnly(rentalEndDate) : null}
                                                     onChange={(date: Date | null) => {
                                                         if (date) {
                                                             setRentalEndDate(formatDateInput(date))
@@ -1646,28 +1616,30 @@ const ProductPage = () => {
                                                     }}
                                                     filterDate={(date) => {
                                                         if (!date) return false;
-                                                        const blocked = isDateBlocked(date);
-                                                        if (blocked) return false;
+                                                        if (isDateBlocked(date)) return false;
 
                                                         // Check 60-day limit from start date
                                                         if (rentalStartDate) {
-                                                            const start = new Date(rentalStartDate)
-                                                            start.setHours(0, 0, 0, 0)
-                                                            const checkDate = new Date(date)
-                                                            checkDate.setHours(0, 0, 0, 0)
-                                                            const diffTime = checkDate.getTime() - start.getTime()
-                                                            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1
+                                                            const start = normalizeDateOnly(rentalStartDate)
+                                                            const checkDate = normalizeDateOnly(date)
+                                                            const diffDays = calcRentalDays(start, checkDate)
                                                             if (diffDays > MAX_RENTAL_DAYS) return false
                                                         }
 
                                                         return true;
                                                     }}
-                                                    minDate={rentalStartDate ? new Date(rentalStartDate) : new Date()}
+                                                    minDate={rentalStartDate ? normalizeDateOnly(rentalStartDate) : new Date()}
                                                     maxDate={rentalStartDate ? (() => {
-                                                        const maxDate = new Date(rentalStartDate)
+                                                        const maxDate = normalizeDateOnly(rentalStartDate)
                                                         maxDate.setDate(maxDate.getDate() + MAX_RENTAL_DAYS - 1)
                                                         return maxDate
                                                     })() : undefined}
+                                                    excludeDates={blockedRentalDates}
+                                                    dayClassName={(date) =>
+                                                        date && isDateBlocked(date)
+                                                            ? 'react-datepicker__day--disabled'
+                                                            : ''
+                                                    }
                                                     placeholderText="აირჩიე თარიღი"
                                                     dateFormat="dd/MM/yyyy"
                                                     className="w-full text-[16px] placeholder:text-[16px] placeholder:text-gray-500 px-3 py-2 border rounded-lg"
@@ -1679,8 +1651,8 @@ const ProductPage = () => {
                                         </p>
 
                                         {/* Show busy rental periods */}
-                                        {hasActiveRentals(selectedSize) && (() => {
-                                            const periods = getRentalPeriods(selectedSize)
+                                        {hasActiveRentals() && (() => {
+                                            const periods = getRentalPeriods()
                                             // Get the last rental period (with latest endDate)
                                             const lastPeriod = periods.length > 0
                                                 ? periods.sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime())[0]
@@ -1688,9 +1660,9 @@ const ProductPage = () => {
 
                                             if (!lastPeriod) return null
 
-                                            // Add 2 days: 1 day for return + 1 day for maintenance
-                                            const availableDate = new Date(new Date(lastPeriod.endDate).getTime() + 2 * 24 * 60 * 60 * 1000)
-                                            const maintenanceEndDate = new Date(new Date(lastPeriod.endDate).getTime() + 24 * 60 * 60 * 1000)
+                                            // Blocked through maintenance; next rental starts 2 days after end
+                                            const availableDate = firstAvailableRentalStartAfter(lastPeriod.endDate)
+                                            const maintenanceEndDate = getMaintenanceEndDate(lastPeriod.endDate)
 
                                             return (
                                                 <div className="text-[16px] bg-white border border-gray-200 rounded-lg p-3">
@@ -1722,17 +1694,7 @@ const ProductPage = () => {
 
                                         {/* Show warning if dates conflict with existing rentals */}
                                         {(rentalStartDate && rentalEndDate) && (() => {
-                                            const conflicts = getRentalPeriods(selectedSize).filter(period => {
-                                                const start = new Date(rentalStartDate)
-                                                const end = new Date(rentalEndDate)
-                                                const periodStart = new Date(period.startDate)
-                                                const periodEnd = new Date(period.endDate)
-                                                // Add only 1 day buffer (last maintenance day is selectable)
-                                                const periodLastBlockedDate = new Date(periodEnd.getTime() + 24 * 60 * 60 * 1000)
-                                                // Check for overlap - only conflict if start is before the last blocked date
-                                                // Since periodLastBlockedDate is the last blocked day, rentals can start after it
-                                                return start < periodLastBlockedDate && end >= periodStart
-                                            })
+                                            const conflicts = getRentalConflicts(rentalStartDate, rentalEndDate)
 
                                             return conflicts.length > 0 ? (
                                                 <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
@@ -1829,15 +1791,7 @@ const ProductPage = () => {
                                             )
                                         }
 
-                                        // Check if the selected dates conflict with existing rentals
-                                        const start = new Date(rentalStartDate)
-                                        const end = new Date(rentalEndDate)
-                                        const conflicts = getRentalPeriods(selectedSize).filter(period => {
-                                            const periodStart = new Date(period.startDate)
-                                            const periodEnd = new Date(period.endDate)
-                                            const periodLastBlockedDate = new Date(periodEnd.getTime() + 24 * 60 * 60 * 1000)
-                                            return start < periodLastBlockedDate && end >= periodStart
-                                        })
+                                        const conflicts = getRentalConflicts(rentalStartDate, rentalEndDate)
 
                                         return conflicts.length > 0 ? (
                                             <p className="text-[16px] text-red-600 font-medium text-center">

@@ -9,6 +9,10 @@ import { User, Package, ShoppingCart, Settings, MapPin, Phone, Mail, Camera, Mes
 import ImageUpload from '@/component/CloudinaryUploader'
 import ContactForm from '@/component/ContactForm'
 import { showToast } from '@/utils/toast'
+import {
+  broadcastProductStatusUpdate,
+  type ProductStatusValue,
+} from '@/lib/product-status-sync'
 import ChatTypingIndicator from '@/components/ChatTypingIndicator'
 import { useChatTyping } from '@/hooks/useChatTyping'
 interface Order {
@@ -852,25 +856,52 @@ const AccountPageContent = () => {
   }
 
   const handleStatusChange = async (productId: number, newStatus: string) => {
+    const previousStatus = products.find((p) => p.id === productId)?.status
+
+    setProducts((prev) =>
+      prev.map((p) => (p.id === productId ? { ...p, status: newStatus } : p)),
+    )
+
     try {
       const response = await fetch(`/api/products/${productId}`, {
         method: 'PATCH',
+        credentials: 'same-origin',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify({ status: newStatus }),
       })
 
-      if (response.ok) {
-        // Update product status in the list
-        setProducts(products.map(p =>
-          p.id === productId ? { ...p, status: newStatus } : p
-        ))
+      const result = await response.json()
+
+      if (response.ok && result.success) {
+        const savedStatus = result.product?.status ?? newStatus
+        setProducts((prev) =>
+          prev.map((p) =>
+            p.id === productId ? { ...p, status: savedStatus } : p,
+          ),
+        )
+        broadcastProductStatusUpdate({
+          productId,
+          status: savedStatus as ProductStatusValue,
+        })
+        router.refresh()
+        showToast('სტატუსი წარმატებით განახლდა', 'success')
       } else {
-        showToast('შეცდომა სტატუსის შეცვლისას', 'error')
+        setProducts((prev) =>
+          prev.map((p) =>
+            p.id === productId ? { ...p, status: previousStatus ?? p.status } : p,
+          ),
+        )
+        showToast(result.message || result.error || 'შეცდომა სტატუსის შეცვლისას', 'error')
       }
     } catch (error) {
       console.error('Error updating status:', error)
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.id === productId ? { ...p, status: previousStatus ?? p.status } : p,
+        ),
+      )
       showToast('შეცდომა სტატუსის შეცვლისას', 'error')
     }
   }

@@ -33,12 +33,18 @@ export async function attachBatchRentalStatus<T extends { id: number; isRentable
 
     return products.map((product) => {
       const variantStatuses = statuses[product.id]
-      if (!variantStatuses) return product
+      if (!variantStatuses || variantStatuses.length === 0) return product
 
       const rentalStatus: Record<string, RentalPeriod[]> = {}
       for (const variant of variantStatuses) {
-        rentalStatus[`variant_${variant.variantId}`] = variant.activeRentals || []
+        const periods = variant.activeRentals || []
+        if (periods.length === 0) continue
+        const key =
+          variant.variantId > 0 ? `variant_${variant.variantId}` : 'default'
+        rentalStatus[key] = periods
       }
+
+      if (Object.keys(rentalStatus).length === 0) return product
       return { ...product, rentalStatus }
     })
   } catch (error) {

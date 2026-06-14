@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { isRentalEndBeforeStart } from '@/lib/rental-dates'
+import { isRentalEndBeforeStart, hasRentalPeriodConflict } from '@/lib/rental-dates'
 
 export function hasRentalDateConflict(
   start: Date,
@@ -7,8 +7,7 @@ export function hasRentalDateConflict(
   existingStart: Date,
   existingEnd: Date,
 ): boolean {
-  const existingLastBlockedDate = new Date(existingEnd.getTime() + 24 * 60 * 60 * 1000)
-  return start < existingLastBlockedDate && end >= existingStart
+  return hasRentalPeriodConflict(start, end, existingStart, existingEnd)
 }
 
 type RentalItemInput = {

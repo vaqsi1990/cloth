@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { prismaCacheStrategy } from '@/lib/prisma-cache'
+import { dedupeRentalPeriods } from '@/lib/rental-dates'
 
 const RENTAL_STATUS_CACHE = { swr: 30, ttl: 30 }
 
@@ -17,20 +18,48 @@ export type BatchVariantRentalStatus = {
 
 export type BatchRentalStatusMap = Record<number, BatchVariantRentalStatus[]>
 
-/** Batch rental availability for a page of products (server-side). */
-export async function fetchBatchRentalStatus(
+/** Merge rentals from all keys (variant, size, order, inquiry) — single physical item per product. */
+export function mergeProductRentalPeriods(
+  rentalStatusByKey: Record<string, BatchRentalPeriod[]>,
+): BatchRentalPeriod[] {
+  const all: BatchRentalPeriod[] = []
+  for (const periods of Object.values(rentalStatusByKey)) {
+    all.push(...periods)
+  }
+  return dedupeRentalPeriods(all)
+}
+
+function startOfToday(): Date {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return today
+}
+
+function pushPeriod(
+  map: Record<number, Record<string, BatchRentalPeriod[]>>,
+  productId: number,
+  key: string,
+  period: BatchRentalPeriod,
+) {
+  if (!map[productId]) map[productId] = {}
+  if (!map[productId][key]) map[productId][key] = []
+  map[productId][key].push(period)
+}
+
+/** Active rental periods per product (rentals, orders, inquiries). */
+export async function fetchActiveRentalPeriodsByProduct(
   productIds: number[],
-): Promise<BatchRentalStatusMap> {
+): Promise<Record<number, BatchRentalPeriod[]>> {
   if (productIds.length === 0) return {}
 
-  const now = new Date()
+  const today = startOfToday()
 
-  const [activeRentals, activeOrders, products] = await Promise.all([
+  const [activeRentals, activeOrders, activeInquiries] = await Promise.all([
     prisma.rental.findMany({
       where: {
         productId: { in: productIds },
         status: { in: ['RESERVED', 'ACTIVE'] },
-        endDate: { gte: now },
+        endDate: { gte: today },
       },
       select: {
         productId: true,
@@ -50,7 +79,7 @@ export async function fetchBatchRentalStatus(
           some: {
             productId: { in: productIds },
             isRental: true,
-            rentalEndDate: { gte: now },
+            rentalEndDate: { gte: today },
           },
         },
       },
@@ -60,7 +89,7 @@ export async function fetchBatchRentalStatus(
           where: {
             productId: { in: productIds },
             isRental: true,
-            rentalEndDate: { gte: now },
+            rentalEndDate: { gte: today },
           },
           select: {
             productId: true,
@@ -74,13 +103,17 @@ export async function fetchBatchRentalStatus(
       take: 100,
       ...prismaCacheStrategy(RENTAL_STATUS_CACHE),
     }),
-    prisma.product.findMany({
-      where: { id: { in: productIds } },
+    prisma.rentalInquiry.findMany({
+      where: {
+        productId: { in: productIds },
+        status: { in: ['PENDING', 'APPROVED', 'BOOKED'] },
+        endDate: { gte: today },
+      },
       select: {
-        id: true,
-        variants: {
-          select: { id: true },
-        },
+        productId: true,
+        startDate: true,
+        endDate: true,
+        status: true,
       },
       take: 100,
       ...prismaCacheStrategy(RENTAL_STATUS_CACHE),
@@ -91,15 +124,10 @@ export async function fetchBatchRentalStatus(
     {}
 
   for (const rental of activeRentals) {
-    const pid = rental.productId
     const variantKey = rental.variantId
       ? `variant_${rental.variantId}`
       : 'no_variant'
-    if (!rentalStatusByProduct[pid]) rentalStatusByProduct[pid] = {}
-    if (!rentalStatusByProduct[pid][variantKey]) {
-      rentalStatusByProduct[pid][variantKey] = []
-    }
-    rentalStatusByProduct[pid][variantKey].push({
+    pushPeriod(rentalStatusByProduct, rental.productId, variantKey, {
       startDate: rental.startDate.toISOString(),
       endDate: rental.endDate.toISOString(),
       status: rental.status,
@@ -113,11 +141,7 @@ export async function fetchBatchRentalStatus(
       }
       const pid = item.productId as number
       const sizeKey = item.size || 'default'
-      if (!rentalStatusByProduct[pid]) rentalStatusByProduct[pid] = {}
-      if (!rentalStatusByProduct[pid][sizeKey]) {
-        rentalStatusByProduct[pid][sizeKey] = []
-      }
-      rentalStatusByProduct[pid][sizeKey].push({
+      pushPeriod(rentalStatusByProduct, pid, sizeKey, {
         startDate: item.rentalStartDate.toISOString(),
         endDate: item.rentalEndDate.toISOString(),
         status: order.status,
@@ -125,21 +149,135 @@ export async function fetchBatchRentalStatus(
     }
   }
 
+  for (const inquiry of activeInquiries) {
+    pushPeriod(
+      rentalStatusByProduct,
+      inquiry.productId,
+      `inquiry_${inquiry.status}`,
+      {
+        startDate: inquiry.startDate.toISOString(),
+        endDate: inquiry.endDate.toISOString(),
+        status: inquiry.status,
+      },
+    )
+  }
+
+  const result: Record<number, BatchRentalPeriod[]> = {}
+  for (const productId of productIds) {
+    result[productId] = mergeProductRentalPeriods(
+      rentalStatusByProduct[productId] || {},
+    )
+  }
+
+  return result
+}
+
+/** Batch rental availability for a page of products (server-side). */
+export async function fetchBatchRentalStatus(
+  productIds: number[],
+): Promise<BatchRentalStatusMap> {
+  if (productIds.length === 0) return {}
+
+  const [periodsByProduct, products] = await Promise.all([
+    fetchActiveRentalPeriodsByProduct(productIds),
+    prisma.product.findMany({
+      where: { id: { in: productIds } },
+      select: {
+        id: true,
+        variants: {
+          select: { id: true },
+        },
+      },
+      take: 100,
+      ...prismaCacheStrategy(RENTAL_STATUS_CACHE),
+    }),
+  ])
+
   const statuses: BatchRentalStatusMap = {}
 
   for (const product of products) {
-    const rentalStatusBySize = rentalStatusByProduct[product.id] || {}
+    const allProductRentals = periodsByProduct[product.id] || []
 
-    statuses[product.id] = product.variants.map((variant) => {
-      const variantKey = `variant_${variant.id}`
-      const variantRentals = rentalStatusBySize[variantKey] || []
-      return {
-        variantId: variant.id,
-        activeRentals: variantRentals,
-        isAvailable: variantRentals.length === 0,
-      }
-    })
+    if (product.variants.length === 0) {
+      statuses[product.id] = allProductRentals.length > 0
+        ? [{
+            variantId: 0,
+            activeRentals: allProductRentals,
+            isAvailable: false,
+          }]
+        : []
+      continue
+    }
+
+    statuses[product.id] = product.variants.map((variant) => ({
+      variantId: variant.id,
+      activeRentals: allProductRentals,
+      isAvailable: allProductRentals.length === 0,
+    }))
   }
 
   return statuses
+}
+
+export async function fetchProductRentalStatus(productId: number): Promise<{
+  variants: BatchVariantRentalStatus[]
+  activeRentals: BatchRentalPeriod[]
+  totalActiveRentals: number
+  totalActiveOrders: number
+  totalActiveInquiries: number
+}> {
+  const [periodsByProduct, variants, totalActiveRentals, totalActiveOrders, totalActiveInquiries] =
+    await Promise.all([
+      fetchActiveRentalPeriodsByProduct([productId]),
+      prisma.product.findUnique({
+        where: { id: productId },
+        select: {
+          variants: { select: { id: true } },
+        },
+      }),
+      prisma.rental.count({
+        where: {
+          productId,
+          status: { in: ['RESERVED', 'ACTIVE'] },
+          endDate: { gte: startOfToday() },
+        },
+      }),
+      prisma.order.count({
+        where: {
+          status: { in: ['PENDING', 'PAID', 'SHIPPED'] },
+          items: {
+            some: {
+              productId,
+              isRental: true,
+              rentalEndDate: { gte: startOfToday() },
+            },
+          },
+        },
+      }),
+      prisma.rentalInquiry.count({
+        where: {
+          productId,
+          status: { in: ['PENDING', 'APPROVED', 'BOOKED'] },
+          endDate: { gte: startOfToday() },
+        },
+      }),
+    ])
+
+  const activeRentals = periodsByProduct[productId] || []
+  const allProductRentals = activeRentals
+
+  const variantStatuses: BatchVariantRentalStatus[] =
+    variants?.variants.map((variant) => ({
+      variantId: variant.id,
+      activeRentals: allProductRentals,
+      isAvailable: allProductRentals.length === 0,
+    })) ?? []
+
+  return {
+    variants: variantStatuses,
+    activeRentals,
+    totalActiveRentals,
+    totalActiveOrders,
+    totalActiveInquiries,
+  }
 }

@@ -36,6 +36,12 @@ import {
     SHOP_FETCH_DEBOUNCE_MS,
 } from '@/lib/shop-data-client'
 import type { BatchRentalStatusMap } from '@/lib/product-rental-status-batch'
+import { hasRentalPeriodConflict } from '@/lib/rental-dates'
+import {
+  isProductHiddenFromShop,
+  PRODUCT_STATUS_UPDATED_EVENT,
+  type ProductStatusUpdateDetail,
+} from '@/lib/product-status-sync'
 import PriceRangeFilter from '@/component/PriceRangeFilter'
 
 type PurchaseType = 'all' | 'rent-only' | 'sale-only' | 'rent-and-sale'
@@ -121,6 +127,22 @@ const ShopPageClient = () => {
         }
         window.addEventListener('scroll', handleScroll)
         return () => window.removeEventListener('scroll', handleScroll)
+    }, [])
+
+    useEffect(() => {
+        const handler = (event: Event) => {
+            const { productId, status } = (event as CustomEvent<ProductStatusUpdateDetail>).detail
+            setProducts((prev) => {
+                if (isProductHiddenFromShop(status)) {
+                    return prev.filter((p) => p.id !== productId)
+                }
+                return prev.map((p) =>
+                    p.id === productId ? { ...p, status } : p,
+                )
+            })
+        }
+        window.addEventListener(PRODUCT_STATUS_UPDATED_EVENT, handler)
+        return () => window.removeEventListener(PRODUCT_STATUS_UPDATED_EVENT, handler)
     }, [])
 
     const saveState = useCallback(() => {
@@ -593,20 +615,18 @@ const ShopPageClient = () => {
         const variants = productRentalStatus[product.id]
         if (!variants || variants.length === 0) return true
 
-        const start = new Date(rentalStartDate)
-        const end = new Date(rentalEndDate)
-
         // Check if any variant has availability for the selected dates
         return variants.some((variant) => {
             const activeRentals = variant.activeRentals || []
 
-            const hasConflict = activeRentals.some((period) => {
-                const periodStart = new Date(period.startDate)
-                const periodEnd = new Date(period.endDate)
-                const periodLastBlockedDate = new Date(periodEnd.getTime() + 24 * 60 * 60 * 1000)
-
-                return start < periodLastBlockedDate && end >= periodStart
-            })
+            const hasConflict = activeRentals.some((period) =>
+                hasRentalPeriodConflict(
+                    rentalStartDate,
+                    rentalEndDate,
+                    period.startDate,
+                    period.endDate,
+                ),
+            )
 
             return !hasConflict
         })

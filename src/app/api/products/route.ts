@@ -344,11 +344,13 @@ export async function GET(request: NextRequest) {
     }
     
     const productWhere: Prisma.ProductWhereInput = {
-      status: {
-        notIn: isAdminOrSupportRole
-          ? ['RESERVED']
-          : ['MAINTENANCE', 'DAMAGED', 'RESERVED'],
-      },
+      ...(isAdminOrSupportRole
+        ? {}
+        : {
+            status: {
+              notIn: ['MAINTENANCE', 'DAMAGED', 'RESERVED'],
+            },
+          }),
       ...(shouldIncludeUnapproved || isAdminOrSupportRole
         ? {}
         : {
