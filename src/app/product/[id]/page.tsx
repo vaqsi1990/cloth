@@ -35,7 +35,15 @@ import ChatTypingIndicator from "@/components/ChatTypingIndicator"
 import { useChatTyping } from "@/hooks/useChatTyping"
 import StructuredData from "@/components/StructuredData"
 import { PRODUCT_IMAGE_QUALITY } from "@/lib/image-config"
+import { isRentalEndBeforeStart } from "@/lib/rental-dates"
 type Tier = { minDays: number; pricePerDay: number }
+
+function formatDateInput(date: Date): string {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+}
 
 // Helper to normalize date to start of day
 const startOfDay = (date: Date) => {
@@ -1007,6 +1015,11 @@ const ProductPage = () => {
             return
         }
 
+        if (isRentalEndBeforeStart(rentalStartDate, rentalEndDate)) {
+            showToast('დასრულების თარიღი არ შეიძლება იყოს დაწყების წინ', 'warning')
+            return
+        }
+
         const days = calcDays()
         if (days > MAX_RENTAL_DAYS) {
             showToast(`ქირაობა მაქსიმუმ ${MAX_RENTAL_DAYS} დღით შეიძლება`, 'warning')
@@ -1109,6 +1122,11 @@ const ProductPage = () => {
 
         if (!rentalStartDate || !rentalEndDate) {
             showToast("აირჩიე ქირაობის თარიღები", "warning")
+            return
+        }
+
+        if (isRentalEndBeforeStart(rentalStartDate, rentalEndDate)) {
+            showToast("დასრულების თარიღი არ შეიძლება იყოს დაწყების წინ", "warning")
             return
         }
 
@@ -1595,10 +1613,14 @@ const ProductPage = () => {
                                                     selected={rentalStartDate ? new Date(rentalStartDate) : null}
                                                     onChange={(date: Date | null) => {
                                                         if (date) {
-                                                            const year = date.getFullYear()
-                                                            const month = String(date.getMonth() + 1).padStart(2, '0')
-                                                            const day = String(date.getDate()).padStart(2, '0')
-                                                            setRentalStartDate(`${year}-${month}-${day}`)
+                                                            const nextStart = formatDateInput(date)
+                                                            setRentalStartDate(nextStart)
+                                                            if (
+                                                                !rentalEndDate ||
+                                                                isRentalEndBeforeStart(nextStart, rentalEndDate)
+                                                            ) {
+                                                                setRentalEndDate(nextStart)
+                                                            }
                                                         }
                                                     }}
                                                     filterDate={(date) => {
@@ -1619,10 +1641,7 @@ const ProductPage = () => {
                                                     selected={rentalEndDate ? new Date(rentalEndDate) : null}
                                                     onChange={(date: Date | null) => {
                                                         if (date) {
-                                                            const year = date.getFullYear()
-                                                            const month = String(date.getMonth() + 1).padStart(2, '0')
-                                                            const day = String(date.getDate()).padStart(2, '0')
-                                                            setRentalEndDate(`${year}-${month}-${day}`)
+                                                            setRentalEndDate(formatDateInput(date))
                                                         }
                                                     }}
                                                     filterDate={(date) => {
@@ -1655,6 +1674,9 @@ const ProductPage = () => {
                                                 />
                                             </div>
                                         </div>
+                                        <p className="text-sm text-emerald-800">
+                                            ერთი დღით ქირაობისთვის დაწყება და დასრულება იგივე დღე აირჩიეთ.
+                                        </p>
 
                                         {/* Show busy rental periods */}
                                         {hasActiveRentals(selectedSize) && (() => {

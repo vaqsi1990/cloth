@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { checkAndBlockUser, reevaluateUserBlocking } from '@/utils/revenue'
 import { RentalStatus } from '@prisma/client'
+import { isRentalEndBeforeStart } from '@/lib/rental-dates'
 
 export async function POST(request: NextRequest) {
   try {
@@ -61,9 +62,9 @@ export async function POST(request: NextRequest) {
     const start = new Date(startDate)
     const end = new Date(endDate)
     
-    if (start >= end) {
+    if (isRentalEndBeforeStart(start, end)) {
       return NextResponse.json(
-        { error: 'Start date must be before end date' },
+        { error: 'End date cannot be before start date' },
         { status: 400 }
       )
     }

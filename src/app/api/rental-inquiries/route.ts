@@ -11,6 +11,7 @@ import {
   calcRentalDays,
   expireStaleInquiries,
   inquiryExpiresAt,
+  isRentalEndBeforeStart,
   MAX_RENTAL_DAYS_DEFAULT,
   normalizeDateOnly,
 } from '@/lib/rental-inquiry'
@@ -149,8 +150,11 @@ export async function POST(request: NextRequest) {
     const start = normalizeDateOnly(data.startDate)
     const end = normalizeDateOnly(data.endDate)
 
-    if (start >= end) {
-      return NextResponse.json({ success: false, message: 'დაწყება უნდა იყოს დასრულებამდე' }, { status: 400 })
+    if (isRentalEndBeforeStart(start, end)) {
+      return NextResponse.json({
+        success: false,
+        message: 'დასრულების თარიღი არ შეიძლება იყოს დაწყების წინ',
+      }, { status: 400 })
     }
 
     if (start < normalizeDateOnly(new Date())) {

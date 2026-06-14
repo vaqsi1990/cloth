@@ -14,7 +14,7 @@ import {
   fromPrismaDeliverySpeed,
   getDeliverySpeedLabel,
 } from '@/lib/delivery'
-import { processExpiredDiscount } from '@/utils/discountUtils'
+import { processExpiredDiscount } from '@/lib/discount-helpers'
 
 interface OrderItemProduct {
   discount: number | null

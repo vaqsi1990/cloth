@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { isRentalEndBeforeStart } from '@/lib/rental-dates'
 
 export function hasRentalDateConflict(
   start: Date,
@@ -101,7 +102,7 @@ export async function findRentalDateConflict(
     const start = new Date(item.rentalStartDate)
     const end = new Date(item.rentalEndDate)
 
-    if (start >= end) {
+    if (isRentalEndBeforeStart(start, end)) {
       return `არასწორი თარიღების დიაპაზონი პროდუქტისთვის ${item.productName}`
     }
 

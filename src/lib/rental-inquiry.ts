@@ -1,5 +1,11 @@
 import type { PrismaClient } from '@prisma/client'
 import { RentalInquiryStatus } from '@prisma/client'
+import {
+  calcRentalDays,
+  datesMatch,
+  isRentalEndBeforeStart,
+  normalizeDateOnly,
+} from '@/lib/rental-dates'
 
 export const INQUIRY_PENDING_HOURS = 48
 export const INQUIRY_APPROVED_HOURS = 48
@@ -7,18 +13,11 @@ export const MAX_RENTAL_DAYS_DEFAULT = 60
 
 export type RentalPriceTierLike = { minDays: number; pricePerDay: number }
 
-export function normalizeDateOnly(date: Date | string): Date {
-  const d = new Date(date)
-  d.setHours(0, 0, 0, 0)
-  return d
-}
-
-export function calcRentalDays(startDate: Date | string, endDate: Date | string): number {
-  const start = normalizeDateOnly(startDate)
-  const end = normalizeDateOnly(endDate)
-  const diff = end.getTime() - start.getTime()
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24)) + 1
-  return Math.max(1, days)
+export {
+  calcRentalDays,
+  datesMatch,
+  isRentalEndBeforeStart,
+  normalizeDateOnly,
 }
 
 export function calcEstimatedTotal(
@@ -36,18 +35,6 @@ export function calcEstimatedTotal(
     return fallbackPricePerDay * days
   }
   return 0
-}
-
-export function datesMatch(
-  aStart: Date,
-  aEnd: Date,
-  bStart: Date,
-  bEnd: Date,
-): boolean {
-  return (
-    normalizeDateOnly(aStart).getTime() === normalizeDateOnly(bStart).getTime() &&
-    normalizeDateOnly(aEnd).getTime() === normalizeDateOnly(bEnd).getTime()
-  )
 }
 
 export function inquiryExpiresAt(from = new Date()): Date {
