@@ -1,5 +1,5 @@
 "use client"
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Plus, Trash2, X } from 'lucide-react'
 import Link from 'next/link'
@@ -29,17 +29,13 @@ import ProductDiscountFields from '@/components/ProductDiscountFields'
 import { VIP_MONTHLY_PRICE_GEL } from '@/lib/product-vip'
 import { getProductDiscountBasePrice } from '@/lib/discount-helpers'
 import { optionalCategoryIdField } from '@/lib/product-schema-fields'
+import {
+  buildProductFormSizeOptions,
+  getProductFormSizeSelectValue,
+  isChildrenAgeSize,
+  parseProductFormSizeSelection,
+} from '@/lib/shop-product-filters'
 
-const sizeOptions = {
-  XS: { UK: [4, 6], EU: [32, 34], US: [0, 2],  },
-  S: { UK: [8, 10], EU: [36, 38], US: [4, 6],  },
-  M: { UK: [12], EU: [40], US: [8],  },
-  L: { UK: [14], EU: [42], US: [10],  },
-  XL: { UK: [16], EU: [44], US: [12], },
-  XXL: { UK: [18], EU: [46], US: [14],  },
-  XXXL: { UK: [20], EU: [48], US: [16],  },
-
-}
 const purposes = PURPOSE_OPTIONS
 const categories = DEFAULT_PRODUCT_CATEGORIES
 type Category = {
@@ -150,52 +146,11 @@ const NewProductPage = () => {
   const [useCustomColor, setUseCustomColor] = useState(false)
 
   type SizeSystem = NonNullable<ProductFormData['sizeSystem']>
-  type MeasurementSystem = Exclude<SizeSystem, 'CN'>
-  type CombinedSizeOption = {
-    value: string
-    label: string
-    system: SizeSystem
-    size: string
-  }
 
-  const combinedSizeOptions = useMemo<CombinedSizeOption[]>(() => {
-    const options: CombinedSizeOption[] = []
-    const measurementSystems: MeasurementSystem[] = ['EU', 'US', 'UK']
-
-    measurementSystems.forEach((system) => {
-      const sizes = Array.from(
-        new Set(
-          Object.values(sizeOptions)
-            .map((entry) => {
-              const systemValues = entry[system]
-              return systemValues ? systemValues.map((value) => String(value)) : []
-            })
-            .flat()
-            .filter((value): value is string => Boolean(value))
-        )
-      )
-
-      sizes.forEach((size) => {
-        options.push({
-          value: `${system}:${size}`,
-          label: `${system} - ${size}`,
-          system,
-          size,
-        })
-      })
-    })
-
-    Object.keys(sizeOptions).forEach((sizeKey) => {
-      options.push({
-        value: `CN:${sizeKey}`,
-        label: `CN - ${sizeKey}`,
-        system: 'CN',
-        size: sizeKey,
-      })
-    })
-
-    return options
-  }, [])
+  const combinedSizeOptions = useMemo(
+    () => buildProductFormSizeOptions(formData.gender),
+    [formData.gender],
+  )
 
   const handleCombinedSizeSelect = (value: string) => {
     if (!value) {
@@ -213,21 +168,32 @@ const NewProductPage = () => {
       return
     }
 
-    const [system, ...sizeParts] = value.split(':')
-    const nextSize = sizeParts.join(':')
-
-    setSizeSystem(system as SizeSystem)
-    setSelectedSize(nextSize)
-    handleInputChange('sizeSystem', system as SizeSystem)
-    handleInputChange('size', nextSize)
+    const parsed = parseProductFormSizeSelection(value, formData.gender)
+    setSizeSystem(parsed.sizeSystem ?? '')
+    setSelectedSize(parsed.size ?? '')
+    handleInputChange('sizeSystem', parsed.sizeSystem)
+    handleInputChange('size', parsed.size)
     setFormData(prev => ({
       ...prev,
       variants: prev.variants.map(variant => ({
         ...variant,
-        sizeSystem: system as SizeSystem
+        sizeSystem: parsed.sizeSystem,
       }))
     }))
   }
+
+  useEffect(() => {
+    if (formData.gender === 'CHILDREN') {
+      if (selectedSize && !isChildrenAgeSize(selectedSize)) {
+        handleCombinedSizeSelect('')
+      }
+      return
+    }
+
+    if (selectedSize && isChildrenAgeSize(selectedSize)) {
+      handleCombinedSizeSelect('')
+    }
+  }, [formData.gender, selectedSize])
 
   const colors = PRODUCT_FORM_COLORS
 
@@ -328,15 +294,12 @@ const NewProductPage = () => {
   }
 
   const addVariant = () => {
-    const defaultSizeOption =
-      (sizeSystem && selectedSize && `${sizeSystem}:${selectedSize}`) ||
+    const selectionValue =
+      getProductFormSizeSelectValue(formData.gender, sizeSystem, selectedSize) ||
       combinedSizeOptions[0]?.value
+    const parsed = parseProductFormSizeSelection(selectionValue, formData.gender)
 
-    const defaultSize = isSizeOptional
-      ? undefined
-      : (defaultSizeOption ? defaultSizeOption.split(':')[1] : undefined) ||
-        selectedSize ||
-        undefined
+    const defaultSize = isSizeOptional ? undefined : parsed.size || selectedSize || undefined
 
     setFormData(prev => ({
       ...prev,
@@ -763,14 +726,16 @@ const NewProductPage = () => {
               {!isSizeOptional && (
                 <div>
                   <label className="block text-[20px] text-black font-medium mb-2">
-                    ზომა (არასავალდებულო)
+                    {formData.gender === 'CHILDREN' ? 'ასაკი (არასავალდებულო)' : 'ზომა (არასავალდებულო)'}
                   </label>
                   <select
-                    value={sizeSystem && selectedSize ? `${sizeSystem}:${selectedSize}` : ''}
+                    value={getProductFormSizeSelectValue(formData.gender, sizeSystem, selectedSize)}
                     onChange={(e) => handleCombinedSizeSelect(e.target.value)}
                     className="w-full pl-10 pr-4 py-3 placeholder:text-gray-500 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                   >
-                    <option value="">აირჩიეთ ზომა</option>
+                    <option value="">
+                      {formData.gender === 'CHILDREN' ? 'აირჩიეთ ასაკი' : 'აირჩიეთ ზომა'}
+                    </option>
                     {combinedSizeOptions.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}

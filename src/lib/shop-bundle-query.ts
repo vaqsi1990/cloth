@@ -232,7 +232,9 @@ export async function loadShopBundle(input: ShopBundleInput): Promise<ShopBundle
     facets: {
       colors: buildShopColorFacets(colorRows),
       categoryCounts: buildShopCategoryFacetCounts(categoryRows),
-      sizes: buildShopFilterSizeOptions(sizeRows),
+      sizes: buildShopFilterSizeOptions(sizeRows, {
+        isChildren: ctx.genderEnum === 'CHILDREN',
+      }),
       vipCount,
       discountCount,
     },

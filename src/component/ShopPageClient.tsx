@@ -11,7 +11,10 @@ import { PURPOSE_OPTIONS } from '@/data/purposes'
 import { PRODUCT_COLORS, type ProductColorFacet } from '@/lib/product-colors'
 import {
   PREDEFINED_LETTER_SIZES,
+  CHILDREN_AGE_SIZES,
   formatFilterCount,
+  isChildrenAgeSize,
+  isChildrenShopGender,
 } from '@/lib/shop-product-filters'
 import { appendShopListFilterParams, type ShopSortBy } from '@/lib/shop-list-params'
 import { PRODUCT_IMAGE_QUALITY } from '@/lib/image-config'
@@ -64,6 +67,7 @@ const ShopPageClient = () => {
         PRODUCT_COLORS.map((color) => ({ ...color, count: 0 })),
     )
     const [availableSizes, setAvailableSizes] = useState<string[]>(PREDEFINED_LETTER_SIZES)
+    const isChildrenShop = isChildrenShopGender(genderParam)
     const [categoryCountsBySlug, setCategoryCountsBySlug] = useState<Record<string, number>>({})
     const [selectedLocations, setSelectedLocations] = useState<string[]>([])
 
@@ -235,6 +239,19 @@ const ShopPageClient = () => {
             : null
         setSelectedCategories(resolved ? [resolved] : [])
     }, [categoryParam, shopCategories])
+
+    useEffect(() => {
+        if (!hasRestoredState) return
+
+        if (isChildrenShop) {
+            setSelectedSizeSystems([])
+            setSelectedSizes((prev) => prev.filter((size) => isChildrenAgeSize(size)))
+            setAvailableSizes([...CHILDREN_AGE_SIZES])
+            return
+        }
+
+        setSelectedSizes((prev) => prev.filter((size) => !isChildrenAgeSize(size)))
+    }, [hasRestoredState, isChildrenShop])
 
     // Save when key filters/page change (skip until restore completes)
     useEffect(() => {
@@ -506,9 +523,13 @@ const ShopPageClient = () => {
 
                 setColorFacets(data.facets.colors)
                 setCategoryCountsBySlug(data.facets.categoryCounts)
-                if (data.facets.sizes.length > 0) {
-                    setAvailableSizes(data.facets.sizes)
-                }
+                setAvailableSizes(
+                    data.facets.sizes.length > 0
+                        ? data.facets.sizes
+                        : isChildrenShop
+                          ? [...CHILDREN_AGE_SIZES]
+                          : PREDEFINED_LETTER_SIZES,
+                )
                 setVipProductsCount(data.facets.vipCount)
                 setDiscountedProductsCount(data.facets.discountCount)
 
@@ -870,6 +891,7 @@ const ShopPageClient = () => {
                             <div className="flex-1 overflow-y-auto p-4">
                                 {activeMobileFilter === 'size' && (
                                     <div className="space-y-6">
+                                        {!isChildrenShop && (
                                         <div className="space-y-3">
                                             <h3 className="text-lg font-semibold text-black mb-4">ზომის სისტემა</h3>
                                             {sizeSystems.map((sizeSystem) => (
@@ -887,8 +909,11 @@ const ShopPageClient = () => {
                                                 </label>
                                             ))}
                                         </div>
+                                        )}
                                         <div className="space-y-3">
-                                                <h3 className="text-lg font-semibold text-black mb-4">ზომა</h3>
+                                                <h3 className="text-lg font-semibold text-black mb-4">
+                                                    {isChildrenShop ? 'ასაკი' : 'ზომა'}
+                                                </h3>
                                                 <div className="space-y-2">
                                                     {availableSizes.map((size) => {
                                                         const isSelected = selectedSizes.some(selectedSize => {
@@ -1303,6 +1328,7 @@ const ShopPageClient = () => {
 
 
                             {/* Size System Filter */}
+                            {!isChildrenShop && (
                             <div className="border-b border-gray-200 pb-6">
                                 <h2 className="font-medium text-black md:text-[18px] text-[16px] mb-3">ზომის სისტემა</h2>
                                 <div className="space-y-2">
@@ -1322,6 +1348,7 @@ const ShopPageClient = () => {
                                     ))}
                                 </div>
                             </div>
+                            )}
 
                             {/* Size Filter */}
                             <div className="border-b border-gray-200 pb-6">
@@ -1330,7 +1357,9 @@ const ShopPageClient = () => {
                                         onClick={() => setIsSizeOpen(!isSizeOpen)}
                                         className="w-full flex items-center justify-between mb-3"
                                     >
-                                        <h4 className="font-medium text-black md:text-[18px] text-[16px]">ზომა</h4>
+                                        <h4 className="font-medium text-black md:text-[18px] text-[16px]">
+                                            {isChildrenShop ? 'ასაკი' : 'ზომა'}
+                                        </h4>
                                         <ChevronDown className={`w-5 h-5 text-black transition-transform ${isSizeOpen ? "rotate-180" : "rotate-0"}`} />
                                     </button>
                                     {isSizeOpen && (

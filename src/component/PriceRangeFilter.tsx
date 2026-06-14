@@ -38,11 +38,19 @@ export default function PriceRangeFilter({
     const trackRef = useRef<HTMLDivElement>(null)
     const sliderRef = useRef<HTMLDivElement>(null)
     const draggingRef = useRef<'min' | 'max' | null>(null)
+    const localRangeRef = useRef<[number, number]>(priceRange)
     const [localRange, setLocalRange] = useState<[number, number]>(priceRange)
+
+    const updateLocalRange = useCallback((next: [number, number]) => {
+        localRangeRef.current = next
+        setLocalRange(next)
+    }, [])
 
     useEffect(() => {
         if (draggingRef.current === null) {
-            setLocalRange(clampRange(priceRange[0], priceRange[1], maxPrice))
+            const next = clampRange(priceRange[0], priceRange[1], maxPrice)
+            localRangeRef.current = next
+            setLocalRange(next)
         }
     }, [priceRange, maxPrice])
 
@@ -51,10 +59,10 @@ export default function PriceRangeFilter({
     const commitRange = useCallback(
         (nextMin: number, nextMax: number) => {
             const next = clampRange(nextMin, nextMax, maxPrice)
-            setLocalRange(next)
+            updateLocalRange(next)
             onChange(next)
         },
-        [maxPrice, onChange],
+        [maxPrice, onChange, updateLocalRange],
     )
 
     const valueFromClientX = useCallback(
@@ -97,23 +105,29 @@ export default function PriceRangeFilter({
 
         const nextValue = valueFromClientX(event.clientX)
         setLocalRange((prev) => {
+            let next: [number, number]
             if (thumb === 'min') {
                 const nextMin = Math.min(nextValue, prev[1])
-                return nextMin === prev[0] ? prev : [nextMin, prev[1]]
+                next = nextMin === prev[0] ? prev : [nextMin, prev[1]]
+            } else {
+                const nextMax = Math.max(nextValue, prev[0])
+                next = nextMax === prev[1] ? prev : [prev[0], nextMax]
             }
-            const nextMax = Math.max(nextValue, prev[0])
-            return nextMax === prev[1] ? prev : [prev[0], nextMax]
+            localRangeRef.current = next
+            return next
         })
     }
 
     const handlePointerEnd = () => {
         if (!draggingRef.current) return
         draggingRef.current = null
-        setLocalRange((prev) => {
-            const next = clampRange(prev[0], prev[1], maxPrice)
-            onChange(next)
-            return next
-        })
+        const next = clampRange(
+            localRangeRef.current[0],
+            localRangeRef.current[1],
+            maxPrice,
+        )
+        updateLocalRange(next)
+        onChange(next)
     }
 
     const handleTrackPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -126,12 +140,16 @@ export default function PriceRangeFilter({
         sliderRef.current?.setPointerCapture(event.pointerId)
 
         setLocalRange((prev) => {
+            let next: [number, number]
             if (thumb === 'min') {
                 const nextMin = Math.min(clickValue, prev[1])
-                return [nextMin, prev[1]]
+                next = [nextMin, prev[1]]
+            } else {
+                const nextMax = Math.max(clickValue, prev[0])
+                next = [prev[0], nextMax]
             }
-            const nextMax = Math.max(clickValue, prev[0])
-            return [prev[0], nextMax]
+            localRangeRef.current = next
+            return next
         })
     }
 

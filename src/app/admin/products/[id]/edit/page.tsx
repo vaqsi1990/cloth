@@ -32,6 +32,12 @@ import {
   optionalCategoryIdField,
 } from '@/lib/product-schema-fields'
 import { isProductVipActive, VIP_MONTHLY_PRICE_GEL } from '@/lib/product-vip'
+import {
+  buildProductFormSizeOptions,
+  getProductFormSizeSelectValue,
+  isChildrenAgeSize,
+  parseProductFormSizeSelection,
+} from '@/lib/shop-product-filters'
 
 const productSchema = z.object({
   name: z.string()
@@ -149,76 +155,25 @@ const EditProductPage = () => {
   const [customColor, setCustomColor] = useState('')
   const [useCustomColor, setUseCustomColor] = useState(false)
 
-  const sizeOptions = {
-    XS: { UK: [4, 6], EU: [32, 34], US: [0, 2] },
-    S: { UK: [8, 10], EU: [36, 38], US: [4, 6] },
-    M: { UK: [12], EU: [40], US: [8] },
-    L: { UK: [14], EU: [42], US: [10] },
-    XL: { UK: [16], EU: [44], US: [12] },
-    XXL: { UK: [18], EU: [46], US: [14] },
-    XXXL: { UK: [20], EU: [48], US: [16] },
-  }
-
   type SizeSystem = NonNullable<ProductFormData['sizeSystem']>
-  type MeasurementSystem = Exclude<SizeSystem, 'CN'>
-  type CombinedSizeOption = {
-    value: string
-    label: string
-    system: SizeSystem
-    size: string
-  }
 
-  const combinedSizeOptions = useMemo<CombinedSizeOption[]>(() => {
-    const options: CombinedSizeOption[] = []
-    const measurementSystems: MeasurementSystem[] = ['EU', 'US', 'UK']
-
-    measurementSystems.forEach((system) => {
-      const sizes = Array.from(
-        new Set(
-          Object.values(sizeOptions)
-            .map((entry) => {
-              const systemValues = entry[system]
-              return systemValues ? systemValues.map((value) => String(value)) : []
-            })
-            .flat()
-            .filter((value): value is string => Boolean(value))
-        )
-      )
-
-      sizes.forEach((size) => {
-        options.push({
-          value: `${system}:${size}`,
-          label: `${system} - ${size}`,
-          system,
-          size,
-        })
-      })
-    })
-
-    Object.keys(sizeOptions).forEach((sizeKey) => {
-      options.push({
-        value: `CN:${sizeKey}`,
-        label: `CN - ${sizeKey}`,
-        system: 'CN',
-        size: sizeKey,
-      })
-    })
-
-    return options
-  }, [])
+  const combinedSizeOptions = useMemo(
+    () => buildProductFormSizeOptions(formData.gender),
+    [formData.gender],
+  )
 
   const [selectedSizeSystem, setSelectedSizeSystem] = useState<ProductFormData['sizeSystem'] | ''>('')
   const [selectedSizeValue, setSelectedSizeValue] = useState<string>('')
 
   useEffect(() => {
     if (formData.sizeSystem && formData.size) {
-      setSelectedSizeSystem(formData.sizeSystem)
+      setSelectedSizeSystem(formData.gender === 'CHILDREN' ? '' : formData.sizeSystem)
       setSelectedSizeValue(formData.size)
     } else {
       setSelectedSizeSystem('')
       setSelectedSizeValue('')
     }
-  }, [formData.sizeSystem, formData.size])
+  }, [formData.sizeSystem, formData.size, formData.gender])
 
   const handleCombinedSizeSelect = (value: string) => {
     if (!value) {
@@ -236,21 +191,32 @@ const EditProductPage = () => {
       return
     }
 
-    const [system, ...sizeParts] = value.split(':')
-    const nextSize = sizeParts.join(':')
-
-    setSelectedSizeSystem(system as SizeSystem)
-    setSelectedSizeValue(nextSize)
-    handleInputChange('sizeSystem', system as SizeSystem)
-    handleInputChange('size', nextSize)
+    const parsed = parseProductFormSizeSelection(value, formData.gender)
+    setSelectedSizeSystem(parsed.sizeSystem ?? '')
+    setSelectedSizeValue(parsed.size ?? '')
+    handleInputChange('sizeSystem', parsed.sizeSystem)
+    handleInputChange('size', parsed.size)
     setFormData(prev => ({
       ...prev,
       variants: prev.variants.map(variant => ({
         ...variant,
-        sizeSystem: system as SizeSystem,
+        sizeSystem: parsed.sizeSystem,
       })),
     }))
   }
+
+  useEffect(() => {
+    if (formData.gender === 'CHILDREN') {
+      if (selectedSizeValue && !isChildrenAgeSize(selectedSizeValue)) {
+        handleCombinedSizeSelect('')
+      }
+      return
+    }
+
+    if (selectedSizeValue && isChildrenAgeSize(selectedSizeValue)) {
+      handleCombinedSizeSelect('')
+    }
+  }, [formData.gender, selectedSizeValue])
 
   const colors = PRODUCT_FORM_COLORS
 
@@ -906,18 +872,20 @@ const EditProductPage = () => {
               {!isSizeOptional && (
                 <div>
                   <label className="block text-[20px] text-black font-medium mb-2">
-                    ზომა (არასავალდებულო)
+                    {formData.gender === 'CHILDREN' ? 'ასაკი (არასავალდებულო)' : 'ზომა (არასავალდებულო)'}
                   </label>
                   <select
-                    value={
-                      selectedSizeSystem && selectedSizeValue
-                        ? `${selectedSizeSystem}:${selectedSizeValue}`
-                        : ''
-                    }
+                    value={getProductFormSizeSelectValue(
+                      formData.gender,
+                      selectedSizeSystem || undefined,
+                      selectedSizeValue || undefined,
+                    )}
                     onChange={(e) => handleCombinedSizeSelect(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                   >
-                    <option value="">აირჩიეთ ზომა</option>
+                    <option value="">
+                      {formData.gender === 'CHILDREN' ? 'აირჩიეთ ასაკი' : 'აირჩიეთ ზომა'}
+                    </option>
                     {combinedSizeOptions.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
