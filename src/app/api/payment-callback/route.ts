@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { recordSellerTransactions } from '@/utils/sellerTransactions'
 import { redeemVoucher } from '@/lib/voucher'
 import { activateVipPayment } from '@/lib/product-vip-payment'
+import { sendOrderConfirmationEmail } from '@/lib/order-confirmation-email'
 import crypto from 'crypto'
 
 const BOG_PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
@@ -41,6 +42,8 @@ async function updateOrderStatus(paymentId: string, status: string) {
 
   if (!order) return false
 
+  const wasAlreadyPaid = order.status === 'PAID'
+
   await prisma.order.update({
     where: { id: order.id },
     data: { status: final }
@@ -61,6 +64,12 @@ async function updateOrderStatus(paymentId: string, status: string) {
           order.voucherDiscount,
         )
       }
+    }
+
+    if (!wasAlreadyPaid) {
+      void sendOrderConfirmationEmail(order.id).catch((error) => {
+        console.error(`[payment-callback] Order confirmation email failed for #${order.id}:`, error)
+      })
     }
   }
 

@@ -454,9 +454,12 @@ export async function POST(req: NextRequest) {
     const dbOrder = await prisma.order.create({
       data: {
         userId: session.user.id,
-        customerName: session.user.name || "Customer",
-        phone: session.user.phone || "",
-        email: session.user.email || "",
+        customerName:
+          orderData.address
+            ? `${orderData.address.firstName} ${orderData.address.lastName}`.trim()
+            : session.user.name || 'Customer',
+        phone: session.user.phone || '',
+        email: orderData.address?.email || session.user.email || '',
         address: orderData.deliveryOption || "",
         city: orderData.deliveryType === 'pickup' ? 'თბილისი' : (deliveryCityName || null),
         deliveryCityId: deliveryCityId,

@@ -28,6 +28,31 @@ export function isEmailConfigured(): boolean {
   return Boolean(process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL)
 }
 
+export async function sendHtmlEmail(params: {
+  to: string
+  subject: string
+  html: string
+}) {
+  try {
+    const { error } = await getResendClient().emails.send({
+      from: getFromAddress(),
+      to: params.to,
+      subject: params.subject,
+      html: params.html,
+    })
+
+    if (error) {
+      console.error('Error sending email:', error)
+      return { success: false, error }
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error('Error sending email:', error)
+    return { success: false, error }
+  }
+}
+
 export async function sendVerificationEmail(email: string, token: string) {
   try {
     const { error } = await getResendClient().emails.send({
