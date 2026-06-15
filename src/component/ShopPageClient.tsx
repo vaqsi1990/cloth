@@ -14,6 +14,8 @@ import {
   isChildrenAgeSize,
   isChildrenShopContext,
   resolveShopDisplaySizes,
+  SHOP_GENDER_FILTER_OPTIONS,
+  type ShopGenderFilterValue,
 } from '@/lib/shop-product-filters'
 import { appendShopListFilterParams, type ShopSortBy } from '@/lib/shop-list-params'
 import { PRODUCT_IMAGE_QUALITY } from '@/lib/image-config'
@@ -336,6 +338,18 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         params.delete('search')
         const query = params.toString()
         router.push(query ? `/shop?${query}` : '/shop')
+    }
+
+    const setGenderFilter = (gender: ShopGenderFilterValue | null) => {
+        const params = new URLSearchParams(Array.from(searchParams.entries()))
+        if (gender) {
+            params.set('gender', gender)
+        } else {
+            params.delete('gender')
+        }
+        const query = params.toString()
+        const base = homepageMode ? '/' : '/shop'
+        router.push(query ? `${base}?${query}` : base)
     }
 
     // Helper functions for price calculation
@@ -821,6 +835,15 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
                             <div className="w-32 bg-gray-50 border-r border-gray-200 overflow-y-auto">
                                 <div className="p-2">
                                     <button
+                                        onClick={() => setActiveMobileFilter('gender')}
+                                        className={`w-full text-left px-3 py-2 text-[16px] font-medium rounded mb-1 ${activeMobileFilter === 'gender'
+                                            ? 'bg-[#1B3729] text-white'
+                                            : 'text-black hover:bg-gray-200'
+                                            }`}
+                                    >
+                                        სქესი
+                                    </button>
+                                    <button
                                         onClick={() => setActiveMobileFilter('size')}
                                         className={`w-full text-left px-3 py-2 text-[16px] font-medium rounded mb-1 ${activeMobileFilter === 'size'
                                             ? 'bg-[#1B3729] text-white'
@@ -897,6 +920,38 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
 
                             {/* Right Content Area - Filter Options */}
                             <div className="flex-1 overflow-y-auto p-4">
+                                {activeMobileFilter === 'gender' && (
+                                    <div className="space-y-3">
+                                        <h3 className="text-lg font-semibold text-black mb-4">სქესი</h3>
+                                        {SHOP_GENDER_FILTER_OPTIONS.map(({ value, label }) => {
+                                            const active =
+                                                value === null
+                                                    ? !genderParam
+                                                    : genderParam === value
+                                            return (
+                                                <label
+                                                    key={label}
+                                                    className={`flex items-center justify-between gap-3 p-3 rounded-lg cursor-pointer ${active
+                                                        ? 'bg-[#1B3729] text-white'
+                                                        : 'bg-gray-50 text-black hover:bg-gray-100'
+                                                        }`}
+                                                >
+                                                    <span className="flex items-center gap-3">
+                                                        <input
+                                                            type="radio"
+                                                            name="mobileGenderFilter"
+                                                            checked={active}
+                                                            onChange={() => setGenderFilter(value)}
+                                                            className="w-4 h-4"
+                                                        />
+                                                        <span className="text-[16px]">{label}</span>
+                                                    </span>
+                                                </label>
+                                            )
+                                        })}
+                                    </div>
+                                )}
+
                                 {activeMobileFilter === 'size' && (
                                     <div className="space-y-6">
                                         {!isChildrenShop && (
@@ -1255,6 +1310,36 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
                                                         name="purchaseType"
                                                         checked={active}
                                                         onChange={() => setPurchaseType(value as PurchaseType)}
+                                                        className="w-4 h-4 accent-black"
+                                                    />
+                                                    {label}
+                                                </span>
+                                            </label>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Gender */}
+                            <div className="border-b border-gray-200 pb-6">
+                                <h4 className="font-medium text-black md:text-[18px] text-[16px] mb-3">სქესი</h4>
+                                <div className="space-y-2 text-[15px] text-black">
+                                    {SHOP_GENDER_FILTER_OPTIONS.map(({ value, label }) => {
+                                        const active =
+                                            value === null
+                                                ? !genderParam
+                                                : genderParam === value
+                                        return (
+                                            <label
+                                                key={label}
+                                                className={`flex items-center justify-between gap-2 cursor-pointer rounded-md px-3 py-2 ${active ? 'bg-gray-100 text-black' : 'hover:bg-gray-100 text-black'}`}
+                                            >
+                                                <span className="flex items-center gap-2">
+                                                    <input
+                                                        type="radio"
+                                                        name="genderFilter"
+                                                        checked={active}
+                                                        onChange={() => setGenderFilter(value)}
                                                         className="w-4 h-4 accent-black"
                                                     />
                                                     {label}

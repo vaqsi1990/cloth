@@ -45,6 +45,18 @@ export function isChildrenShopGender(genderParam: string | null | undefined): bo
   return genderParam === 'children'
 }
 
+export type ShopGenderFilterValue = 'women' | 'men' | 'children'
+
+export const SHOP_GENDER_FILTER_OPTIONS: Array<{
+  value: ShopGenderFilterValue | null
+  label: string
+}> = [
+  { value: null, label: 'ყველა' },
+  { value: 'women', label: 'ქალი' },
+  { value: 'men', label: 'კაცი' },
+  { value: 'children', label: 'ბავშვი' },
+]
+
 export function isChildrenShopContext(input: {
   genderParam?: string | null
   categoryParam?: string | null
