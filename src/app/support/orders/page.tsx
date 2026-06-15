@@ -60,7 +60,10 @@ const SupportOrdersPage = () => {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [orders, setOrders] = useState<Order[]>([])
+  const [ordersPage, setOrdersPage] = useState(1)
+  const [ordersHasMore, setOrdersHasMore] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [loadingMoreOrders, setLoadingMoreOrders] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('ALL')
   const [expandedOrders, setExpandedOrders] = useState<Set<number>>(new Set())
@@ -72,21 +75,35 @@ const SupportOrdersPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status])
 
-  const fetchOrders = useCallback(async () => {
+  const fetchOrders = useCallback(async (page = 1, append = false) => {
     try {
-      setLoading(true)
-      const response = await fetch('/api/admin/orders?limit=200')
+      if (append) {
+        setLoadingMoreOrders(true)
+      } else {
+        setLoading(true)
+      }
+
+      const response = await fetch(`/api/admin/orders?page=${page}&limit=50`)
       const data = await response.json()
-      
+
       if (data.success) {
-        setOrders(data.orders)
+        setOrders((prev) => (append ? [...prev, ...data.orders] : data.orders))
+        setOrdersPage(data.page ?? page)
+        setOrdersHasMore((data.page ?? page) < (data.totalPages ?? 1))
       }
     } catch (error) {
       console.error('Error fetching orders:', error)
     } finally {
       setLoading(false)
+      setLoadingMoreOrders(false)
     }
   }, [])
+
+  const loadMoreOrders = () => {
+    if (ordersHasMore && !loadingMoreOrders) {
+      fetchOrders(ordersPage + 1, true)
+    }
+  }
 
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.role === 'SUPPORT') {
@@ -479,6 +496,22 @@ const SupportOrdersPage = () => {
                   )}
                 </div>
               ))}
+            </div>
+          )}
+
+          {ordersHasMore && !loading && (
+            <div className="flex flex-col items-center gap-2 mt-6 pt-4 border-t border-gray-100">
+              <p className="text-xs sm:text-sm text-gray-600">
+                ჩატვირთულია {orders.length} შეკვეთა — დააჭირეთ მეტის ჩასატვირთად
+              </p>
+              <button
+                type="button"
+                onClick={loadMoreOrders}
+                disabled={loadingMoreOrders}
+                className="px-6 py-3 bg-black text-white rounded-lg font-bold uppercase tracking-wide text-xs sm:text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loadingMoreOrders ? 'იტვირთება...' : 'მეტის ჩატვირთვა'}
+              </button>
             </div>
           )}
         </div>

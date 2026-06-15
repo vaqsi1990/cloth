@@ -61,7 +61,10 @@ const AdminUsersPage = () => {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [users, setUsers] = useState<User[]>([])
+  const [usersPage, setUsersPage] = useState(1)
+  const [usersHasMore, setUsersHasMore] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [loadingMoreUsers, setLoadingMoreUsers] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterRole, setFilterRole] = useState('ALL')
   const [expandedUser, setExpandedUser] = useState<string | null>(null)
@@ -76,21 +79,35 @@ const AdminUsersPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status])
 
-  const fetchUsers = useCallback(async () => {
+  const fetchUsers = useCallback(async (page = 1, append = false) => {
     try {
-      setLoading(true)
-      const response = await fetch('/api/admin/users?limit=200')
+      if (append) {
+        setLoadingMoreUsers(true)
+      } else {
+        setLoading(true)
+      }
+
+      const response = await fetch(`/api/admin/users?page=${page}&limit=50`)
       const data = await response.json()
-      
+
       if (data.success) {
-        setUsers(data.users)
+        setUsers((prev) => (append ? [...prev, ...data.users] : data.users))
+        setUsersPage(data.page ?? page)
+        setUsersHasMore((data.page ?? page) < (data.totalPages ?? 1))
       }
     } catch (error) {
       console.error('Error fetching users:', error)
     } finally {
       setLoading(false)
+      setLoadingMoreUsers(false)
     }
   }, [])
+
+  const loadMoreUsers = () => {
+    if (usersHasMore && !loadingMoreUsers) {
+      fetchUsers(usersPage + 1, true)
+    }
+  }
 
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.role === 'ADMIN') {
@@ -875,6 +892,22 @@ const AdminUsersPage = () => {
                   )}
                 </div>
               ))}
+            </div>
+          )}
+
+          {usersHasMore && !loading && (
+            <div className="flex flex-col items-center gap-2 mt-6 pt-4 border-t border-gray-100">
+              <p className="text-xs sm:text-sm text-gray-600">
+                ჩატვირთულია {users.length} მომხმარებელი — დააჭირეთ მეტის ჩასატვირთად
+              </p>
+              <button
+                type="button"
+                onClick={loadMoreUsers}
+                disabled={loadingMoreUsers}
+                className="px-6 py-3 bg-black text-white rounded-lg font-bold uppercase tracking-wide text-xs sm:text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loadingMoreUsers ? 'იტვირთება...' : 'მეტის ჩატვირთვა'}
+              </button>
             </div>
           )}
         </div>

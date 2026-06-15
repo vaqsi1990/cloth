@@ -26,54 +26,70 @@ export async function GET(request: NextRequest) {
       await syncMissingBlacklistRecords()
     }
 
-    const records = await prisma.userBlacklistRecord.findMany({
-      where: {
-        ...(status === 'active' ? { isActive: true } : {}),
-        ...(status === 'resolved' ? { isActive: false } : {}),
-        ...(search
-          ? {
-              OR: [
-                { userName: { contains: search, mode: 'insensitive' as const } },
-                { userEmail: { contains: search, mode: 'insensitive' as const } },
-                { userPhone: { contains: search, mode: 'insensitive' as const } },
-                { personalId: { contains: search, mode: 'insensitive' as const } },
-                { reason: { contains: search, mode: 'insensitive' as const } },
-              ],
-            }
-          : {}),
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
-            banned: true,
-            blocked: true,
-            verified: true,
-            _count: { select: { products: true, orders: true } },
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1)
+    const limit = Math.min(
+      Math.max(parseInt(searchParams.get('limit') || '50', 10) || 50, 1),
+      200,
+    )
+    const skip = (page - 1) * limit
+
+    const where = {
+      ...(status === 'active' ? { isActive: true } : {}),
+      ...(status === 'resolved' ? { isActive: false } : {}),
+      ...(search
+        ? {
+            OR: [
+              { userName: { contains: search, mode: 'insensitive' as const } },
+              { userEmail: { contains: search, mode: 'insensitive' as const } },
+              { userPhone: { contains: search, mode: 'insensitive' as const } },
+              { personalId: { contains: search, mode: 'insensitive' as const } },
+              { reason: { contains: search, mode: 'insensitive' as const } },
+            ],
+          }
+        : {}),
+    }
+
+    const [records, totalCount, activeCount] = await Promise.all([
+      prisma.userBlacklistRecord.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phone: true,
+              banned: true,
+              blocked: true,
+              verified: true,
+              _count: { select: { products: true, orders: true } },
+            },
+          },
+          createdBy: {
+            select: { id: true, name: true, email: true },
+          },
+          resolvedBy: {
+            select: { id: true, name: true, email: true },
           },
         },
-        createdBy: {
-          select: { id: true, name: true, email: true },
-        },
-        resolvedBy: {
-          select: { id: true, name: true, email: true },
-        },
-      },
-      orderBy: [{ isActive: 'desc' }, { createdAt: 'desc' }],
-      take: 200,
-    })
-
-    const activeCount = await prisma.userBlacklistRecord.count({
-      where: { isActive: true },
-    })
+        orderBy: [{ isActive: 'desc' }, { createdAt: 'desc' }],
+        skip,
+        take: limit,
+      }),
+      prisma.userBlacklistRecord.count({ where }),
+      prisma.userBlacklistRecord.count({
+        where: { isActive: true },
+      }),
+    ])
 
     return NextResponse.json({
       success: true,
       records,
       activeCount,
+      page,
+      limit,
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit),
     })
   } catch (error) {
     console.error('Error fetching blacklist:', error)

@@ -59,24 +59,41 @@ type RentalInquiriesPanelProps = {
 
 export default function RentalInquiriesPanel({ scope, title }: RentalInquiriesPanelProps) {
   const [inquiries, setInquiries] = useState<Inquiry[]>([])
+  const [inquiriesPage, setInquiriesPage] = useState(1)
+  const [inquiriesHasMore, setInquiriesHasMore] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [actingId, setActingId] = useState<number | null>(null)
   const [sellerNotes, setSellerNotes] = useState<Record<number, string>>({})
 
-  const fetchInquiries = useCallback(async () => {
-    setLoading(true)
+  const fetchInquiries = useCallback(async (page = 1, append = false) => {
+    if (append) {
+      setLoadingMore(true)
+    } else {
+      setLoading(true)
+    }
     try {
-      const res = await fetch(`/api/rental-inquiries?scope=${scope}`)
+      const res = await fetch(`/api/rental-inquiries?scope=${scope}&page=${page}`)
       const data = await res.json()
       if (data.success) {
-        setInquiries(data.inquiries || [])
+        const nextInquiries = data.inquiries || []
+        setInquiries((prev) => (append ? [...prev, ...nextInquiries] : nextInquiries))
+        setInquiriesPage(data.page ?? page)
+        setInquiriesHasMore((data.page ?? page) < (data.totalPages ?? 1))
       }
     } catch (e) {
       console.error(e)
     } finally {
       setLoading(false)
+      setLoadingMore(false)
     }
   }, [scope])
+
+  const loadMoreInquiries = () => {
+    if (inquiriesHasMore && !loadingMore) {
+      fetchInquiries(inquiriesPage + 1, true)
+    }
+  }
 
   useEffect(() => {
     fetchInquiries()
@@ -327,6 +344,22 @@ export default function RentalInquiriesPanel({ scope, title }: RentalInquiriesPa
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {inquiriesHasMore && !loading && (
+        <div className="flex flex-col items-center gap-2 mt-6 pt-4 border-t border-gray-100">
+          <p className="text-sm text-gray-600">
+            ჩატვირთულია {inquiries.length} მოთხოვნა — დააჭირეთ მეტის ჩასატვირთად
+          </p>
+          <button
+            type="button"
+            onClick={loadMoreInquiries}
+            disabled={loadingMore}
+            className="px-6 py-3 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loadingMore ? 'იტვირთება...' : 'მეტის ჩატვირთვა'}
+          </button>
         </div>
       )}
     </div>

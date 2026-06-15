@@ -48,7 +48,10 @@ const AdminBlacklistPage = () => {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [records, setRecords] = useState<BlacklistRecord[]>([])
+  const [recordsPage, setRecordsPage] = useState(1)
+  const [recordsHasMore, setRecordsHasMore] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [loadingMoreRecords, setLoadingMoreRecords] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'resolved'>(
     'active',
@@ -64,12 +67,19 @@ const AdminBlacklistPage = () => {
     }
   }, [status, router])
 
-  const fetchRecords = useCallback(async () => {
+  const fetchRecords = useCallback(async (page = 1, append = false) => {
     try {
-      setLoading(true)
+      if (append) {
+        setLoadingMoreRecords(true)
+      } else {
+        setLoading(true)
+      }
+
       const params = new URLSearchParams({
         status: statusFilter,
-        sync: 'true',
+        sync: page === 1 ? 'true' : 'false',
+        page: String(page),
+        limit: '50',
       })
       if (searchTerm.trim()) {
         params.set('search', searchTerm.trim())
@@ -79,7 +89,9 @@ const AdminBlacklistPage = () => {
       const data = await response.json()
 
       if (data.success) {
-        setRecords(data.records)
+        setRecords((prev) => (append ? [...prev, ...data.records] : data.records))
+        setRecordsPage(data.page ?? page)
+        setRecordsHasMore((data.page ?? page) < (data.totalPages ?? 1))
         setActiveCount(data.activeCount ?? 0)
       }
     } catch (error) {
@@ -87,8 +99,15 @@ const AdminBlacklistPage = () => {
       showToast('შავი სიის ჩატვირთვა ვერ მოხერხდა', 'error')
     } finally {
       setLoading(false)
+      setLoadingMoreRecords(false)
     }
   }, [statusFilter, searchTerm])
+
+  const loadMoreRecords = () => {
+    if (recordsHasMore && !loadingMoreRecords) {
+      fetchRecords(recordsPage + 1, true)
+    }
+  }
 
   useEffect(() => {
     if (
@@ -369,6 +388,22 @@ const AdminBlacklistPage = () => {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {recordsHasMore && !loading && (
+          <div className="flex flex-col items-center gap-2 mt-6 pt-4 border-t border-gray-100">
+            <p className="text-sm text-gray-600">
+              ჩატვირთულია {records.length} ჩანაწერი — დააჭირეთ მეტის ჩასატვირთად
+            </p>
+            <button
+              type="button"
+              onClick={loadMoreRecords}
+              disabled={loadingMoreRecords}
+              className="px-6 py-3 bg-black text-white rounded-lg font-bold uppercase tracking-wide text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loadingMoreRecords ? 'იტვირთება...' : 'მეტის ჩატვირთვა'}
+            </button>
           </div>
         )}
       </div>

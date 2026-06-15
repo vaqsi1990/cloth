@@ -38,6 +38,23 @@ const formatDateShort = (date: Date | string) => {
   return `${day} ${month} ${year}`
 }
 
+async function fetchAllAdminOrders() {
+  const allOrders: unknown[] = []
+  let page = 1
+  let totalPages = 1
+
+  do {
+    const response = await fetch(`/api/admin/orders?page=${page}&limit=200`)
+    const data = await response.json()
+    if (!data.success) break
+    allOrders.push(...(data.orders || []))
+    totalPages = data.totalPages ?? 1
+    page += 1
+  } while (page <= totalPages)
+
+  return allOrders
+}
+
 const AdminInfoPage = () => {
   const { data: session, status } = useSession()
   const router = useRouter()
@@ -59,26 +76,26 @@ const AdminInfoPage = () => {
       if (status === 'authenticated' && session?.user?.role === 'ADMIN') {
         try {
           setLoading(true)
-          const response = await fetch('/api/admin/orders?limit=200')
-          const data = await response.json()
-          
-          console.log('Debug - Raw API response:', data)
-          console.log('Debug - Orders count:', data.orders?.length)
-          
+          const orders = await fetchAllAdminOrders()
+
+          console.log('Debug - Orders count:', orders.length)
+
           // Log first order structure to understand data shape
-          if (data.success && data.orders && data.orders.length > 0) {
+          if (orders.length > 0) {
             console.log('=== FIRST ORDER STRUCTURE ===')
-            console.log('First order:', JSON.stringify(data.orders[0], null, 2))
-            if (data.orders[0].items && data.orders[0].items.length > 0) {
-              console.log('First item:', JSON.stringify(data.orders[0].items[0], null, 2))
-              if (data.orders[0].items[0].product) {
-                console.log('First product:', JSON.stringify(data.orders[0].items[0].product, null, 2))
+            console.log('First order:', JSON.stringify(orders[0], null, 2))
+            const firstOrder = orders[0] as { items?: unknown[] }
+            if (firstOrder.items && firstOrder.items.length > 0) {
+              console.log('First item:', JSON.stringify(firstOrder.items[0], null, 2))
+              const firstItem = firstOrder.items[0] as { product?: unknown }
+              if (firstItem.product) {
+                console.log('First product:', JSON.stringify(firstItem.product, null, 2))
               }
             }
             console.log('===========================\n')
           }
-          
-          if (data.success && data.orders) {
+
+          if (orders.length > 0) {
             // Extract seller information from ALL orders first
             const sellersMap = new Map()
             let totalItems = 0
@@ -86,9 +103,9 @@ const AdminInfoPage = () => {
             let productsWithUsers = 0
             
             console.log('=== DEBUGGING SELLER EXTRACTION ===')
-            console.log('Total orders:', data.orders.length)
+            console.log('Total orders:', orders.length)
             
-            data.orders.forEach((order: any, orderIndex: number) => {
+            orders.forEach((order: any, orderIndex: number) => {
               console.log(`\nOrder ${orderIndex + 1} (ID: ${order.id}):`)
               console.log('  - Has items?', !!order.items)
               console.log('  - Items count:', order.items?.length || 0)
@@ -176,7 +193,7 @@ const AdminInfoPage = () => {
             // 1. Have PAID status (already filtered in API, but double-check)
             // 2. Use delivery service (have deliveryCityId), OR
             // 3. Have purchase items (products that were bought, not rented)
-            const relevantOrders = data.orders.filter((order: any) => {
+            const relevantOrders = orders.filter((order: any) => {
               // Only show PAID orders
               if (order.status !== 'PAID') {
                 return false
@@ -375,14 +392,8 @@ const AdminInfoPage = () => {
       setSelectedIds(new Set())
       
       // Refresh data from server to ensure consistency
-      const response = await fetch('/api/admin/orders?limit=200')
-      const data = await response.json()
-      
-      if (data.success && data.orders) {
-        // Re-process the orders to update the list
-        // This will be handled by the existing useEffect that fetches data
-        window.location.reload() // Simple refresh to reload all data
-      }
+      await fetchAllAdminOrders()
+      window.location.reload()
     } catch (error) {
       console.error('Error deleting orders:', error)
       alert('შეცდომა შეკვეთების წაშლისას')

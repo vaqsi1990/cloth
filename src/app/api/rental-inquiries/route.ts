@@ -86,14 +86,32 @@ export async function GET(request: NextRequest) {
       if (status) where.status = status
     }
 
-    const inquiries = await prisma.rentalInquiry.findMany({
-      where,
-      select: inquirySelect,
-      orderBy: { createdAt: 'desc' },
-      take: 100,
-    })
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1)
+    const limit = Math.min(
+      Math.max(parseInt(searchParams.get('limit') || '50', 10) || 50, 1),
+      100,
+    )
+    const skip = (page - 1) * limit
 
-    return NextResponse.json({ success: true, inquiries })
+    const [inquiries, totalCount] = await Promise.all([
+      prisma.rentalInquiry.findMany({
+        where,
+        select: inquirySelect,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.rentalInquiry.count({ where }),
+    ])
+
+    return NextResponse.json({
+      success: true,
+      inquiries,
+      page,
+      limit,
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+    })
   } catch (error) {
     console.error('GET rental-inquiries:', error)
     return NextResponse.json({ success: false, message: 'შეცდომა' }, { status: 500 })
