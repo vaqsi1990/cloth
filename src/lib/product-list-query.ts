@@ -22,6 +22,7 @@ export type PublicListFilters = {
   isSecondHand?: boolean
   hasDiscount?: boolean
   isVip?: boolean
+  featuredFirst?: boolean
   search?: string
   color?: string | null
   sizes?: string[] | null
@@ -193,25 +194,31 @@ function buildPriceRangeWhere(priceMin: number, priceMax: number): Prisma.Sql {
   )`
 }
 
-function buildOrderByClause(sort?: ShopSortBy | null): Prisma.Sql {
+function buildOrderByClause(
+  sort?: ShopSortBy | null,
+  options?: { featuredFirst?: boolean },
+): Prisma.Sql {
+  const featuredOrder = options?.featuredFirst
+    ? Prisma.sql`p."featuredOnHomepage" DESC, p."homepageFeaturedAt" DESC NULLS LAST,`
+    : Prisma.empty
   const vipOrder = Prisma.sql`(p."isVip" = true AND p."vipExpiresAt" IS NOT NULL AND p."vipExpiresAt" > NOW()) DESC`
 
   switch (sort) {
     case 'price-low':
-      return Prisma.sql`${vipOrder}, (
+      return Prisma.sql`${featuredOrder} ${vipOrder}, (
         SELECT MIN(pv.price) FROM "ProductVariant" pv
         WHERE pv."productId" = p.id AND pv.price > 0
       ) ASC NULLS LAST, p."createdAt" DESC, p.id DESC`
     case 'price-high':
-      return Prisma.sql`${vipOrder}, (
+      return Prisma.sql`${featuredOrder} ${vipOrder}, (
         SELECT MAX(pv.price) FROM "ProductVariant" pv
         WHERE pv."productId" = p.id
       ) DESC NULLS LAST, p."createdAt" DESC, p.id DESC`
     case 'rating':
-      return Prisma.sql`${vipOrder}, COALESCE(p.rating, 0) DESC, p."createdAt" DESC, p.id DESC`
+      return Prisma.sql`${featuredOrder} ${vipOrder}, COALESCE(p.rating, 0) DESC, p."createdAt" DESC, p.id DESC`
     case 'newest':
     default:
-      return Prisma.sql`${vipOrder}, p."createdAt" DESC, p.id DESC`
+      return Prisma.sql`${featuredOrder} ${vipOrder}, p."createdAt" DESC, p.id DESC`
   }
 }
 
@@ -495,7 +502,9 @@ export async function fetchPublicProductListCombined(
   filters: PublicListFilters,
 ): Promise<CombinedListRow[]> {
   const where = buildWhere(filters)
-  const orderBy = buildOrderByClause(filters.sort)
+  const orderBy = buildOrderByClause(filters.sort, {
+    featuredFirst: filters.featuredFirst,
+  })
 
   return prisma.$queryRaw<CombinedListRow[]>(Prisma.sql`
     WITH filtered AS (
@@ -647,6 +656,7 @@ export function getPublicListCacheKey(filters: PublicListFilters): string {
     isSecondHand: filters.isSecondHand ?? false,
     hasDiscount: filters.hasDiscount ?? false,
     isVip: filters.isVip ?? false,
+    featuredFirst: filters.featuredFirst ?? false,
     search: filters.search ?? null,
     color: filters.color ?? null,
     sizes: filters.sizes ?? null,

@@ -93,6 +93,7 @@ async function resolveShopContext(searchParams: URLSearchParams) {
   const search = searchParams.get('search')?.trim()
   const hasDiscount = searchParams.get('hasDiscount')
   const isVip = searchParams.get('isVip')
+  const featuredFirst = searchParams.get('featuredFirst') === 'true'
   const shopFilters = parseShopListFilterParams(searchParams)
   const sellerPriceFilters = convertBuyerPriceFiltersToSeller(shopFilters)
 
@@ -124,6 +125,7 @@ async function resolveShopContext(searchParams: URLSearchParams) {
     ...scopedBase,
     hasDiscount: hasDiscount === 'true',
     isVip: isVip === 'true',
+    featuredFirst,
     color: shopFilters.color,
     sizes: shopFilters.sizes,
     sizeSystems: shopFilters.sizeSystems,
@@ -180,6 +182,7 @@ async function resolveShopContext(searchParams: URLSearchParams) {
     gender,
     hasDiscount,
     isVip,
+    featuredFirst,
   }
 }
 

@@ -355,6 +355,8 @@ export async function GET(request: NextRequest) {
             userId: true,
             approvalStatus: true,
             rejectionReason: true,
+            featuredOnHomepage: true,
+            homepageFeaturedAt: true,
           }
         : {}),
     }

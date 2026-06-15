@@ -33,7 +33,7 @@ export default function Home() {
             </div>
           }
         >
-          <ShopPageClient />
+          <ShopPageClient homepageMode />
         </Suspense>
       </main>
     </>

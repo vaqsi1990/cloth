@@ -46,7 +46,11 @@ import PriceRangeFilter from '@/component/PriceRangeFilter'
 
 type PurchaseType = 'all' | 'rent-only' | 'sale-only' | 'rent-and-sale'
 
-const ShopPageClient = () => {
+type ShopPageClientProps = {
+    homepageMode?: boolean
+}
+
+const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
     const searchParams = useSearchParams()
     const router = useRouter()
     const genderParam = searchParams.get('gender')
@@ -438,6 +442,9 @@ const ShopPageClient = () => {
         if (onlyVip) {
             params.append('isVip', 'true')
         }
+        if (homepageMode) {
+            params.append('featuredFirst', 'true')
+        }
         appendShopListFilterParams(params, shopListFilters())
         return params.toString()
     }, [
@@ -451,6 +458,7 @@ const ShopPageClient = () => {
         selectedPurposes,
         onlyDiscounted,
         onlyVip,
+        homepageMode,
         resolveCategoryApiSlug,
         shopListFilters,
     ])

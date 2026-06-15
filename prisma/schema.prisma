@@ -253,6 +253,8 @@ model Product {
   isSecondHand  Boolean          @default(false)
   isVip         Boolean          @default(false)
   vipExpiresAt  DateTime?
+  featuredOnHomepage Boolean       @default(false)
+  homepageFeaturedAt DateTime?
   discount      Int?
   discountDays  Int?
   discountStartDate DateTime?    // When discount was set
@@ -293,6 +295,7 @@ model Product {
   @@index([isNew])
   @@index([isSecondHand])
   @@index([isVip, vipExpiresAt])
+  @@index([featuredOnHomepage, homepageFeaturedAt])
   @@index([createdAt, id]) // For cursor-based pagination
   @@index([userId])
   @@index([status, approvalStatus, userId]) // Composite index covers status+approvalStatus queries

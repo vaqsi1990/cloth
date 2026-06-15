@@ -67,6 +67,8 @@ interface Product {
   }>
   approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED'
   rejectionReason?: string | null
+  featuredOnHomepage?: boolean
+  homepageFeaturedAt?: string | null
 }
 
 const AdminProductsPage = () => {
@@ -83,6 +85,7 @@ const AdminProductsPage = () => {
   const [filterCategory, setFilterCategory] = useState('ALL')
   const [approvalUpdatingId, setApprovalUpdatingId] = useState<number | null>(null)
   const [statusUpdatingId, setStatusUpdatingId] = useState<number | null>(null)
+  const [homepageFeaturedUpdatingId, setHomepageFeaturedUpdatingId] = useState<number | null>(null)
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -371,6 +374,52 @@ const AdminProductsPage = () => {
     }
   }
 
+  const handleHomepageFeaturedToggle = async (
+    productId: number,
+    featured: boolean,
+  ) => {
+    const product = products.find((item) => item.id === productId)
+    if (featured && product?.approvalStatus !== 'APPROVED') {
+      showToast('მთავარ გვერდზე მხოლოდ დამტკიცებული პროდუქტი შეიძლება გამოჩნდეს', 'warning')
+      return
+    }
+
+    try {
+      setHomepageFeaturedUpdatingId(productId)
+      const response = await fetch(
+        `/api/admin/products/${productId}/homepage-featured`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ featured }),
+        },
+      )
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        setProducts((prev) =>
+          prev.map((item) =>
+            item.id === productId
+              ? {
+                  ...item,
+                  featuredOnHomepage: data.product.featuredOnHomepage,
+                  homepageFeaturedAt: data.product.homepageFeaturedAt,
+                }
+              : item,
+          ),
+        )
+        showToast(data.message, 'success')
+      } else {
+        showToast(data.error || 'შეცდომა მთავარ გვერდის განახლებისას', 'error')
+      }
+    } catch (error) {
+      console.error('Error updating homepage featured status:', error)
+      showToast('შეცდომა მთავარ გვერდის განახლებისას', 'error')
+    } finally {
+      setHomepageFeaturedUpdatingId(null)
+    }
+  }
+
   // Helper to get rental price from tier[0] (first tier with minimum days)
   const getRentalPrice = (product: Product): number => {
     if (!product.isRentable || !product.rentalPriceTiers || product.rentalPriceTiers.length === 0) {
@@ -656,6 +705,11 @@ const AdminProductsPage = () => {
                               VIP
                             </span>
                           )}
+                          {product.featuredOnHomepage && (
+                            <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs sm:text-sm md:text-[16px] rounded-full font-semibold whitespace-nowrap">
+                              მთავარი გვერდი
+                            </span>
+                          )}
                            {hasActiveRentals(product) && (
                              <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs sm:text-sm md:text-[16px] rounded-full flex items-center whitespace-nowrap">
                                <Clock className="w-3 h-3 mr-1" />
@@ -704,6 +758,29 @@ const AdminProductsPage = () => {
                        {/* Actions */}
                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2 sm:ml-4">
                         <div className="flex flex-row sm:flex-col sm:space-y-2 gap-2 sm:mr-4">
+                          {product.approvalStatus === 'APPROVED' && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleHomepageFeaturedToggle(
+                                  product.id,
+                                  !product.featuredOnHomepage,
+                                )
+                              }
+                              disabled={homepageFeaturedUpdatingId === product.id}
+                              className={`px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm md:text-[18px] disabled:opacity-50 whitespace-nowrap ${
+                                product.featuredOnHomepage
+                                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                  : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                              }`}
+                            >
+                              {homepageFeaturedUpdatingId === product.id
+                                ? 'ინახება...'
+                                : product.featuredOnHomepage
+                                  ? 'მთავრიდან მოხსნა'
+                                  : 'მთავარ გვერდზე'}
+                            </button>
+                          )}
                           {product.approvalStatus !== 'APPROVED' && (
                             <>
                               <button
