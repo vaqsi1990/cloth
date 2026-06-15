@@ -32,7 +32,7 @@ const inquirySelect = {
   rejectedAt: true,
   createdAt: true,
   product: {
-    select: { id: true, name: true, slug: true, location: true },
+    select: { id: true, name: true, slug: true, sku: true, location: true },
   },
   buyer: { select: { id: true, name: true, email: true, phone: true } },
   seller: { select: { id: true, name: true, email: true } },

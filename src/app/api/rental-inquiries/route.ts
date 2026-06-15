@@ -48,6 +48,7 @@ const inquirySelect = {
       id: true,
       name: true,
       slug: true,
+      sku: true,
       location: true,
       images: { select: { url: true }, orderBy: { position: 'asc' as const }, take: 1 },
     },

@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
+import Image from '@/component/AppImage'
 import { Check, MessageCircle, Trash2, X } from 'lucide-react'
 import { showToast } from '@/utils/toast'
 
@@ -18,7 +19,14 @@ type Inquiry = {
   sellerNote: string | null
   chatRoomId: number | null
   expiresAt: string
-  product: { id: number; name: string; slug: string; location: string | null }
+  product: {
+    id: number
+    name: string
+    slug: string
+    sku: string | null
+    location: string | null
+    images?: Array<{ url: string }>
+  }
   buyer: { id: string; name: string | null; email: string | null; phone: string | null }
 }
 
@@ -167,16 +175,39 @@ export default function RentalInquiriesPanel({ scope, title }: RentalInquiriesPa
               key={inq.id}
               className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 shadow-sm"
             >
+              <Link
+                href={`/product/${inq.productId}`}
+                className="flex items-center gap-4 mb-4 p-3 rounded-lg bg-gray-50 border border-gray-100 hover:bg-gray-100 transition-colors"
+              >
+                <div className="relative w-16 h-16 md:w-20 md:h-20 shrink-0 rounded-lg overflow-hidden bg-gray-200">
+                  <Image
+                    src={inq.product.images?.[0]?.url || '/placeholder.jpg'}
+                    alt={inq.product.name}
+                    fill
+                    className="object-cover"
+                    sizes="80px"
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+                    პროდუქტი
+                  </p>
+                  <p className="text-lg font-semibold text-black truncate">
+                    {inq.product.name}
+                  </p>
+                  {inq.product.sku && (
+                    <p className="text-sm text-gray-600 mt-0.5">
+                      კოდი: {inq.product.sku}
+                    </p>
+                  )}
+                </div>
+              </Link>
+
               <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
                 <div>
-                  <Link
-                    href={`/product/${inq.productId}`}
-                    className="text-lg font-semibold text-black hover:underline"
-                  >
-                    {inq.product.name}
-                  </Link>
                   {scope !== 'buyer' && inq.buyer && (
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p className="text-sm text-gray-600">
+                      <span className="font-medium text-black">მყიდველი: </span>
                       {inq.buyer.name || inq.buyer.email}
                       {inq.buyer.phone ? ` · ${inq.buyer.phone}` : ''}
                     </p>

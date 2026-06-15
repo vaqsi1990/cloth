@@ -29,6 +29,9 @@ export async function GET(request: NextRequest) {
       createdAt: Date
       updatedAt: Date
       status: string
+      productId: number | null
+      product_name: string | null
+      product_image: string | null
       guestName?: string
       guestEmail?: string
       user_name?: string
@@ -40,7 +43,10 @@ export async function GET(request: NextRequest) {
       last_message_isFromAdmin?: boolean
       last_message_userId?: string
     }>>`
-      SELECT cr.id, cr."createdAt", cr."updatedAt", cr.status, cr."guestName", cr."guestEmail",
+      SELECT cr.id, cr."createdAt", cr."updatedAt", cr.status, cr."productId",
+             p.name as product_name,
+             (SELECT pi.url FROM "ProductImage" pi WHERE pi."productId" = p.id ORDER BY pi.position ASC LIMIT 1) as product_image,
+             cr."guestName", cr."guestEmail",
              u.name as user_name, u.email as user_email,
              a.name as admin_name, a.email as admin_email,
              (SELECT COUNT(*) FROM "ChatMessage" WHERE "chatRoomId" = cr.id)::int as message_count,
@@ -50,6 +56,7 @@ export async function GET(request: NextRequest) {
       FROM "ChatRoom" cr
       LEFT JOIN "User" u ON cr."userId" = u.id
       LEFT JOIN "User" a ON cr."adminId" = a.id
+      LEFT JOIN "Product" p ON cr."productId" = p.id
       WHERE cr."userId" = ${session.user.id} OR cr."adminId" = ${session.user.id}
       ORDER BY cr."updatedAt" DESC
     `

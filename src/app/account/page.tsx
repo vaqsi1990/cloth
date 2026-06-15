@@ -8,6 +8,7 @@ import Image from '@/component/AppImage'
 import { User, Package, ShoppingCart, Settings, MapPin, Phone, Mail, Camera, MessageCircle, Search, Trash2, TrendingUp, ClipboardList, Ticket, Copy, ArrowLeft } from 'lucide-react'
 import ImageUpload from '@/component/CloudinaryUploader'
 import ContactForm from '@/component/ContactForm'
+import RentalInquiriesPanel from '@/components/RentalInquiriesPanel'
 import { showToast } from '@/utils/toast'
 import {
   broadcastProductStatusUpdate,
@@ -1789,6 +1790,13 @@ const AccountPageContent = () => {
                               }`}>
                                 {otherUser || otherUserEmail || 'უცნობი მომხმარებელი'}
                               </p>
+                              {room.product_name && (
+                                <p className={`mt-0.5 truncate text-xs font-medium ${
+                                  isSelected ? 'text-white/80' : 'text-[#1B3729]'
+                                }`}>
+                                  {room.product_name}
+                                </p>
+                              )}
                               {room.last_message && (
                                 <p className={`mt-1 truncate md:text-[16px] text-[14px] ${
                                   isSelected ? 'text-white/90' : 'text-gray-600'
@@ -1842,11 +1850,27 @@ const AccountPageContent = () => {
                   >
                     <ArrowLeft className="w-5 h-5 text-black" />
                   </button>
-                  <h3 className="md:text-[18px] text-[16px] font-semibold text-black truncate min-w-0">
-                    {session?.user?.id === selectedChatRoom.userId
-                      ? selectedChatRoom.admin_name || selectedChatRoom.admin_email || 'ავტორი'
-                      : selectedChatRoom.user_name || selectedChatRoom.user_email || 'მომხმარებელი'}
-                  </h3>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="md:text-[18px] text-[16px] font-semibold text-black truncate">
+                      {session?.user?.id === selectedChatRoom.userId
+                        ? selectedChatRoom.admin_name || selectedChatRoom.admin_email || 'ავტორი'
+                        : selectedChatRoom.user_name || selectedChatRoom.user_email || 'მომხმარებელი'}
+                    </h3>
+                    {selectedChatRoom.product_name && (
+                      <p className="text-sm text-[#1B3729] truncate">
+                        {selectedChatRoom.productId ? (
+                          <Link
+                            href={`/product/${selectedChatRoom.productId}`}
+                            className="hover:underline"
+                          >
+                            {selectedChatRoom.product_name}
+                          </Link>
+                        ) : (
+                          selectedChatRoom.product_name
+                        )}
+                      </p>
+                    )}
+                  </div>
                 </div>
                 <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 min-h-0">
                   {chatMessages.map((message) => {
@@ -1940,16 +1964,11 @@ const AccountPageContent = () => {
         return renderChatsTab()
       case 'inquiries':
         return (
-          <div className="bg-white rounded-2xl p-6 shadow-sm border">
-            <p className="text-black mb-4">
-              ქირავების მოთხოვნების სრული სია და დადასტურება.
-            </p>
-            <Link
-              href="/account/inquiries"
-              className="inline-block px-6 py-3 bg-[#1B3729] text-white rounded-lg font-medium"
-            >
-              მოთხოვნების ნახვა
-            </Link>
+          <div className="space-y-8">
+            {session.user.role !== 'SUPPORT' && (
+              <RentalInquiriesPanel scope="seller" title="ჩემს პროდუქტებზე მიღებული მოთხოვნები" />
+            )}
+            <RentalInquiriesPanel scope="buyer" title="ჩემი გაგზავნილი მოთხოვნები" />
           </div>
         )
       case 'products':
