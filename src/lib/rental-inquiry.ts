@@ -1,6 +1,13 @@
 import type { PrismaClient } from '@prisma/client'
 import { RentalInquiryStatus } from '@prisma/client'
 import {
+  processExpiredDiscount,
+  productHasActiveDiscount,
+  type DiscountFields,
+} from '@/lib/discount-helpers'
+import { getBuyerPrice, getBuyerPriceAfterSellerDiscount } from '@/lib/platform-pricing'
+import { computeRentalSellerTotal } from '@/lib/resolve-cart-item-price'
+import {
   calcRentalDays,
   datesMatch,
   isRentalEndBeforeStart,
@@ -20,21 +27,84 @@ export {
   normalizeDateOnly,
 }
 
+export type RentalInquiryPricingProduct = DiscountFields & {
+  pricePerDay?: number | null
+  rentalPriceTiers: RentalPriceTierLike[]
+}
+
+/** Match product page tier fallback when only pricePerDay is set. */
+export function resolveRentalPriceTiers(
+  tiers: RentalPriceTierLike[],
+  fallbackPricePerDay?: number | null,
+): RentalPriceTierLike[] {
+  const valid = tiers.filter((t) => t.minDays > 0 && t.pricePerDay > 0)
+  if (valid.length > 0) {
+    return valid
+  }
+
+  if (fallbackPricePerDay && fallbackPricePerDay > 0) {
+    return [
+      { minDays: 4, pricePerDay: fallbackPricePerDay },
+      { minDays: 7, pricePerDay: Number((fallbackPricePerDay * 0.6).toFixed(2)) },
+      { minDays: 28, pricePerDay: Number((fallbackPricePerDay * 0.4).toFixed(2)) },
+    ]
+  }
+
+  return []
+}
+
+/** Seller-side rental total for the selected period (tier pricing). */
+export function calcRentalSellerTotalForDays(
+  days: number,
+  tiers: RentalPriceTierLike[],
+  fallbackPricePerDay?: number | null,
+): number {
+  const resolvedTiers = resolveRentalPriceTiers(tiers, fallbackPricePerDay)
+  const fromTiers = computeRentalSellerTotal(days, resolvedTiers)
+  if (fromTiers > 0) return fromTiers
+
+  if (fallbackPricePerDay && fallbackPricePerDay > 0 && days > 0) {
+    return Math.round(fallbackPricePerDay * days * 100) / 100
+  }
+
+  return 0
+}
+
+/** @deprecated Use calcRentalBuyerPayableTotal — kept for compatibility. */
 export function calcEstimatedTotal(
   days: number,
   tiers: RentalPriceTierLike[],
   fallbackPricePerDay?: number | null,
 ): number {
-  if (days <= 0) return 0
-  if (tiers.length > 0) {
-    const sorted = [...tiers].sort((a, b) => b.minDays - a.minDays)
-    const tier = sorted.find((t) => days >= t.minDays) || sorted[sorted.length - 1]
-    return tier.pricePerDay * days
+  return calcRentalSellerTotalForDays(days, tiers, fallbackPricePerDay)
+}
+
+/** Buyer payable total (platform fee + active seller discount), same as cart/checkout. */
+export function calcRentalBuyerPayableTotal(
+  days: number,
+  product: RentalInquiryPricingProduct,
+): {
+  sellerTotal: number
+  buyerListPrice: number
+  buyerPayable: number
+  hasDiscount: boolean
+} {
+  const processed = processExpiredDiscount(product)
+  const sellerTotal = calcRentalSellerTotalForDays(
+    days,
+    product.rentalPriceTiers,
+    product.pricePerDay,
+  )
+  const discount = productHasActiveDiscount(processed) ? processed.discount : null
+  const buyerListPrice = getBuyerPrice(sellerTotal)
+  const buyerPayable = getBuyerPriceAfterSellerDiscount(sellerTotal, discount)
+
+  return {
+    sellerTotal,
+    buyerListPrice,
+    buyerPayable,
+    hasDiscount: typeof discount === 'number' && discount > 0,
   }
-  if (fallbackPricePerDay && fallbackPricePerDay > 0) {
-    return fallbackPricePerDay * days
-  }
-  return 0
 }
 
 export function inquiryExpiresAt(from = new Date()): Date {
@@ -48,14 +118,19 @@ export function buildInquiryChatMessage(params: {
   size?: string | null
   location?: string | null
   estimatedTotal: number
+  hasDiscount?: boolean
   buyerMessage?: string | null
 }): string {
+  const priceLine = params.hasDiscount
+    ? `სავარაუდო ფასი: ₾${params.estimatedTotal.toFixed(2)} (ფასდაკლებით)`
+    : `სავარაუდო ფასი: ₾${params.estimatedTotal.toFixed(2)}`
+
   const lines = [
     `გამარჯობა! მინდა ქირავდეს: ${params.productName}`,
     `თარიღები: ${params.startDate} — ${params.endDate}`,
     params.size ? `ზომა: ${params.size}` : null,
     params.location ? `ლოკაცია: ${params.location}` : null,
-    `სავარაუდო ფასი: ₾${params.estimatedTotal.toFixed(2)}`,
+    priceLine,
     '',
     'გთხოვთ დაადასტუროთ, ადგილზე ხელმისაწვდომია თუ არა.',
     params.buyerMessage?.trim() ? `შენიშვნა: ${params.buyerMessage.trim()}` : null,

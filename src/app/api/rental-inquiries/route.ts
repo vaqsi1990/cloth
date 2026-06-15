@@ -7,7 +7,7 @@ import { RentalInquiryStatus } from '@prisma/client'
 import { isAdminOrSupport } from '@/lib/roles'
 import {
   buildInquiryChatMessage,
-  calcEstimatedTotal,
+  calcRentalBuyerPayableTotal,
   calcRentalDays,
   expireStaleInquiries,
   inquiryExpiresAt,
@@ -124,6 +124,9 @@ export async function POST(request: NextRequest) {
         status: true,
         maxRentalDays: true,
         pricePerDay: true,
+        discount: true,
+        discountDays: true,
+        discountStartDate: true,
         rentalPriceTiers: { select: { minDays: true, pricePerDay: true }, orderBy: { minDays: 'asc' } },
       },
     })
@@ -187,7 +190,14 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    const estimatedTotal = calcEstimatedTotal(days, product.rentalPriceTiers, product.pricePerDay)
+    const pricing = calcRentalBuyerPayableTotal(days, {
+      rentalPriceTiers: product.rentalPriceTiers,
+      pricePerDay: product.pricePerDay,
+      discount: product.discount,
+      discountDays: product.discountDays,
+      discountStartDate: product.discountStartDate,
+    })
+    const estimatedTotal = pricing.buyerPayable
     const startStr = data.startDate.slice(0, 10)
     const endStr = data.endDate.slice(0, 10)
 
@@ -198,6 +208,7 @@ export async function POST(request: NextRequest) {
       size: data.size,
       location: product.location,
       estimatedTotal,
+      hasDiscount: pricing.hasDiscount,
       buyerMessage: data.buyerMessage,
     })
 
