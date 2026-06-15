@@ -24,9 +24,9 @@ export const DEFAULT_PRODUCT_CATEGORIES: ProductCategory[] = [
   { id: 15, name: 'შარვალ კოსტუმი', slug: 'suit' },
   { id: 16, name: 'პიჯაკი', slug: 'blazer' },
   { id: 17, name: 'აქსესუარები', slug: 'accessories' },
-  { id: 18, name: 'ბავშვთა კაბები', slug: 'kids-dresses' },
-  { id: 19, name: 'ბავშვთა ტრადიციული ტანსაცმელი', slug: 'kids-traditional' },
-  { id: 20, name: 'ბავშვთა სათხილამურო ტანსაცმელი', slug: 'kids-ski' },
+  { id: 18, name: 'კაბა', slug: 'kids-dresses' },
+  { id: 19, name: 'ტრადიციული და კულტურული', slug: 'kids-traditional' },
+  { id: 20, name: 'სათხილამურო ტანსაცმელი', slug: 'kids-ski' },
   { id: 21, name: 'ყოველდღიური ტანსაცმელი', slug: 'everyday' },
   { id: 22, name: 'სპორტული ტანსაცმელი', slug: 'sportwear' },
   { id: 23, name: 'სადღესასწაულო კოსტუმი', slug: 'festive' },
@@ -39,8 +39,8 @@ export const DEFAULT_PRODUCT_CATEGORIES: ProductCategory[] = [
   { id: 53, name: 'ჩანთა', slug: 'women-bags' },
   { id: 54, name: 'ფეხსაცმელი', slug: 'men-footwear' },
   { id: 55, name: 'ჩანთა', slug: 'men-bags' },
-  { id: 56, name: 'ბავშვის ფეხსაცმელი', slug: 'kids-footwear' },
-  { id: 57, name: 'ბავშვის ჩანთა', slug: 'kids-bags' },
+  { id: 56, name: 'ფეხსაცმელი', slug: 'kids-footwear' },
+  { id: 57, name: 'ჩანთა', slug: 'kids-bags' },
   { id: 58, name: 'პალტოები& მოსასხამი', slug: 'men-coats' },
   { id: 59, name: 'სადღესასწაულო კოსტუმი', slug: 'men-festive-costume' },
   { id: 60, name: 'ბლუზა', slug: 'men-blouse' },
@@ -51,6 +51,12 @@ export const DEFAULT_PRODUCT_CATEGORIES: ProductCategory[] = [
   { id: 65, name: 'კომბინიზონი', slug: 'jumpsuit' },
   { id: 66, name: 'პერანგი', slug: 'shirt' },
   { id: 67, name: 'შარვალი', slug: 'men-pants' },
+  { id: 68, name: 'ქვედაბოლო', slug: 'kids-skirts' },
+  { id: 69, name: 'პალტოები& მოსასხამი', slug: 'kids-coats' },
+  { id: 70, name: 'სადღესასწაულო კოსტუმი', slug: 'kids-festive-costume' },
+  { id: 71, name: 'ბლუზა', slug: 'kids-blouse' },
+  { id: 72, name: 'ქოსფლეის კოსტუმი', slug: 'kids-cosplay' },
+  { id: 73, name: 'შარვალი', slug: 'kids-pants' },
 ]
 
 /** Canonical women's shop taxonomy — order matches navigation and filters */
@@ -104,9 +110,35 @@ export const MEN_PRODUCT_CATEGORIES: ProductCategory[] = [
   { id: 67, name: 'შარვალი', slug: 'men-pants' },
 ]
 
+/** Canonical children's shop taxonomy — order matches navigation and filters */
+export const CHILDREN_PRODUCT_CATEGORIES: ProductCategory[] = [
+  { id: 18, name: 'კაბა', slug: 'kids-dresses' },
+  { id: 68, name: 'ქვედაბოლო', slug: 'kids-skirts' },
+  { id: 69, name: 'პალტოები& მოსასხამი', slug: 'kids-coats' },
+  { id: 70, name: 'სადღესასწაულო კოსტუმი', slug: 'kids-festive-costume' },
+  { id: 71, name: 'ბლუზა', slug: 'kids-blouse' },
+  { id: 5, name: 'ზედა ტანსაცმელი', slug: 'outerwear' },
+  { id: 20, name: 'სათხილამურო ტანსაცმელი', slug: 'kids-ski' },
+  { id: 11, name: 'სათვალე', slug: 'goggles' },
+  { id: 12, name: 'ჩაფხუტი', slug: 'helmet' },
+  { id: 72, name: 'ქოსფლეის კოსტუმი', slug: 'kids-cosplay' },
+  { id: 22, name: 'სპორტული ტანსაცმელი', slug: 'sportwear' },
+  { id: 19, name: 'ტრადიციული და კულტურული', slug: 'kids-traditional' },
+  { id: 56, name: 'ფეხსაცმელი', slug: 'kids-footwear' },
+  { id: 57, name: 'ჩანთა', slug: 'kids-bags' },
+  { id: 16, name: 'პიჯაკი', slug: 'blazer' },
+  { id: 17, name: 'აქსესუარები', slug: 'accessories' },
+  { id: 62, name: 'საღამური პერანგი', slug: 'evening-shirt' },
+  { id: 63, name: 'სვიტერი', slug: 'sweater' },
+  { id: 64, name: 'შორტი', slug: 'shorts' },
+  { id: 65, name: 'კომბინიზონი', slug: 'jumpsuit' },
+  { id: 66, name: 'პერანგი', slug: 'shirt' },
+  { id: 73, name: 'შარვალი', slug: 'kids-pants' },
+]
+
 const WOMEN_CATEGORY_IDS = new Set(WOMEN_PRODUCT_CATEGORIES.map((category) => category.id))
 const MEN_CATEGORY_IDS = new Set(MEN_PRODUCT_CATEGORIES.map((category) => category.id))
-const CHILDREN_CATEGORY_IDS = new Set([11, 12, 18, 19, 20, 47, 48, 51, 56, 57])
+const CHILDREN_CATEGORY_IDS = new Set(CHILDREN_PRODUCT_CATEGORIES.map((category) => category.id))
 const ACCESSORY_CATEGORY_IDS = new Set([11, 12, 17, 51])
 const ACCESSORY_CATEGORY_SLUGS = new Set(['accessories', 'goggles', 'helmet', 'ski-goggles', 'aksesuarebi'])
 const SIZE_OPTIONAL_CATEGORY_IDS = new Set([...ACCESSORY_CATEGORY_IDS, 47, 48, 53, 55, 57])
@@ -285,6 +317,20 @@ export function mergeMenProductCategories<T extends ProductCategory>(
   })
 }
 
+/** Merge API rows into canonical children's list (preserves order). */
+export function mergeChildrenProductCategories<T extends ProductCategory>(
+  apiCategories: T[] = [],
+): ProductCategory[] {
+  const bySlug = new Map(apiCategories.map((category) => [category.slug, category]))
+  const byId = new Map(apiCategories.map((category) => [category.id, category]))
+
+  return CHILDREN_PRODUCT_CATEGORIES.map((template) => {
+    const fromApi = bySlug.get(template.slug) ?? byId.get(template.id)
+    if (!fromApi) return template
+    return { ...fromApi, name: template.name }
+  })
+}
+
 /** All predefined categories + API rows; always shows full shop taxonomy in filters */
 export function collectShopFilterCategories(
   _apiCategories?: ProductCategory[],
@@ -300,7 +346,8 @@ export function collectShopFilterCategoriesForGender(
   if (!gender) return all
   if (gender === 'men') return mergeMenProductCategories(apiCategories ?? all)
   if (gender === 'women') return mergeWomenProductCategories(apiCategories ?? all)
-  return filterProductCategoriesByGender(all, 'CHILDREN')
+  if (gender === 'children') return mergeChildrenProductCategories(apiCategories ?? all)
+  return all
 }
 
 /** Map any DB/legacy category row to canonical primary slug (ids 1–23, 47–48). */
@@ -439,6 +486,9 @@ export function filterProductCategoriesByGender<T extends ProductCategory>(
   if (gender === 'WOMEN') {
     return mergeWomenProductCategories(categories) as T[]
   }
+  if (gender === 'CHILDREN') {
+    return mergeChildrenProductCategories(categories) as T[]
+  }
   return sortProductCategories(
     categories.filter((category) => categoryMatchesProductGender(category, gender)),
   )
@@ -467,6 +517,15 @@ export function groupProductCategoriesForGender<T extends ProductCategory>(
       {
         label: CATEGORY_GROUP_LABELS[0],
         categories: mergeWomenProductCategories(categories),
+      },
+    ]
+  }
+
+  if (gender === 'CHILDREN') {
+    return [
+      {
+        label: CATEGORY_GROUP_LABELS[2],
+        categories: mergeChildrenProductCategories(categories),
       },
     ]
   }
@@ -550,6 +609,12 @@ const CATEGORY_SLUG_ALIASES: Record<string, string> = {
   aksesuarebi: 'accessories',
   'kids-dresses': 'kids-dresses',
   'bavshvta-kabebi': 'kids-dresses',
+  'kids-skirts': 'kids-skirts',
+  'kids-coats': 'kids-coats',
+  'kids-festive-costume': 'kids-festive-costume',
+  'kids-blouse': 'kids-blouse',
+  'kids-cosplay': 'kids-cosplay',
+  'kids-pants': 'kids-pants',
   'kids-traditional': 'kids-traditional',
   'bavshvta-traditsiuli-tansatsmeli': 'kids-traditional',
   'kids-ski': 'kids-ski',

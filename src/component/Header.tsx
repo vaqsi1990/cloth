@@ -6,7 +6,7 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { Search, Menu, User, LogOut, ShoppingCart, ChevronRight, Plus } from 'lucide-react'
 import Image from '@/component/AppImage'
 import { useSession, signOut } from 'next-auth/react'
-import { MEN_PRODUCT_CATEGORIES, WOMEN_PRODUCT_CATEGORIES } from '@/lib/product-categories'
+import { CHILDREN_PRODUCT_CATEGORIES, MEN_PRODUCT_CATEGORIES, WOMEN_PRODUCT_CATEGORIES } from '@/lib/product-categories'
 
 const HeaderContent = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -490,36 +490,16 @@ const HeaderContent = () => {
                             <Link href="/shop?gender=children" onClick={closeMobileMenu} className="block px-4 py-2 text-black font-semibold hover:bg-gray-100 rounded-lg text-[16px]">
                               ყველა
                             </Link>
-                            <Link href="/shop?gender=children&category=ბავშვთა კაბები" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
-                              1. კაბები
-                            </Link>
-                            <Link href="/shop?gender=children&category=ბავშვთა ტრადიციული ტანსაცმელი" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
-                              2. ტრადიციული და კულტურული ტანსაცმელი
-                            </Link>
-                            <Link href="/shop?gender=children&category=ბავშვთა სათხილამურო ტანსაცმელი" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
-                              3. სათხილამურო ტანსაცმელი
-                            </Link>
-                            <Link href="/shop?gender=children&category=ბავშვების კალიასკა" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
-                              4. კალიასკა
-                            </Link>
-                            <Link href="/shop?gender=children&category=ბავშვების სათამაშოები" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
-                              5. სათამაშოები
-                            </Link>
-                            <Link href="/shop?gender=children&category=მეორე ფენა" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
-                              6. მეორე ფენა
-                            </Link>
-                            <Link href="/shop?gender=children&category=სათვალე" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
-                              7. სათხილამურო სათვალე
-                            </Link>
-                            <Link href="/shop?gender=children&category=ჩაფხუტი" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
-                              8. ჩაფხუტი
-                            </Link>
-                            <Link href="/shop?gender=children&category=ბავშვის ფეხსაცმელი" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
-                              9. ფეხსაცმელი
-                            </Link>
-                            <Link href="/shop?gender=children&category=ბავშვის ჩანთა" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
-                              10. ჩანთა
-                            </Link>
+                            {CHILDREN_PRODUCT_CATEGORIES.map((category, index) => (
+                              <Link
+                                key={category.slug}
+                                href={`/shop?gender=children&category=${encodeURIComponent(category.slug)}`}
+                                onClick={closeMobileMenu}
+                                className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]"
+                              >
+                                {index + 1}. {category.name}
+                              </Link>
+                            ))}
                           </>
                         )}
                       </div>
@@ -616,39 +596,18 @@ const HeaderContent = () => {
                           )}
                           {category === 'ბავშვები' && (
                             <>
-                              <Link href="/shop?gender=children&category=ბავშვთა კაბები" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                1. კაბები
+                              <Link href="/shop?gender=children" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm font-semibold">
+                                ყველა
                               </Link>
-                              <Link href="/shop?gender=children&category=ბავშვთა ტრადიციული ტანსაცმელი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                2. ბავშვთა ტრადიციული ტანსაცმელი
-                              </Link>
-                              <Link href="/shop?gender=children&category=ბავშვთა სათხილამურო ტანსაცმელი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                3. სათხილამურო ტანსაცმელი
-                              </Link>
-                              <Link href="/shop?gender=children&category=ბავშვების კალიასკა" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                4. კალიასკა
-                              </Link>
-                              <Link href="/shop?gender=children&category=ბავშვების სათამაშოები" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                5. სათამაშოები
-                              </Link>
-                              <Link href="/shop?gender=children&category=თერმო ტანსაცმელი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                6. თერმო ტანსაცმელი
-                              </Link>
-                              <Link href="/shop?gender=children&category=მეორე ფენა" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                7. მეორე ფენა
-                              </Link>
-                              <Link href="/shop?gender=children&category=სათვალე" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                8. სათხილამურო სათვალე
-                              </Link>
-                              <Link href="/shop?gender=children&category=ჩაფხუტი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                9. ჩაფხუტი
-                              </Link>
-                              <Link href="/shop?gender=children&category=ბავშვის ფეხსაცმელი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                10. ფეხსაცმელი
-                              </Link>
-                              <Link href="/shop?gender=children&category=ბავშვის ჩანთა" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                11. ჩანთა
-                              </Link>
+                              {CHILDREN_PRODUCT_CATEGORIES.map((childrenCategory, index) => (
+                                <Link
+                                  key={childrenCategory.slug}
+                                  href={`/shop?gender=children&category=${encodeURIComponent(childrenCategory.slug)}`}
+                                  className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm"
+                                >
+                                  {index + 1}. {childrenCategory.name}
+                                </Link>
+                              ))}
                             </>
                           )}
                         </div>
