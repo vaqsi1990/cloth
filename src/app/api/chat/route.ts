@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { isProductChatUnreadForUser } from '@/lib/chat-unread'
+import { accountProductChatWhereForUser } from '@/lib/account-product-chat'
 
 // Validation schemas
 const createChatRoomSchema = z.object({
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
       }, { status: 401 })
     }
 
-    // Use raw query to avoid Prisma Client issues
+    // Buyer ↔ seller product chats only (legacy rows without productId included).
     const chatRooms = await prisma.$queryRaw<Array<{
       id: number
       createdAt: Date
@@ -61,7 +62,7 @@ export async function GET(request: NextRequest) {
       LEFT JOIN "User" u ON cr."userId" = u.id
       LEFT JOIN "User" a ON cr."adminId" = a.id
       LEFT JOIN "Product" p ON cr."productId" = p.id
-      WHERE cr."userId" = ${session.user.id} OR cr."adminId" = ${session.user.id}
+      WHERE ${accountProductChatWhereForUser(session.user.id)}
       ORDER BY cr."updatedAt" DESC
     `
     

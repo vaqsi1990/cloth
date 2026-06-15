@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, Suspense } from 'react'
+import React, { useState, useEffect, useRef, Suspense } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -131,6 +131,8 @@ const AccountPageContent = () => {
   const [newMessage, setNewMessage] = useState('')
   const [sendingMessage, setSendingMessage] = useState(false)
   const [otherPartyTyping, setOtherPartyTyping] = useState(false)
+  const selectedChatRoomIdRef = useRef<number | null>(null)
+  const chatMessagesFetchIdRef = useRef(0)
   const { notifyTyping, stopTyping } = useChatTyping({
     chatRoomId: selectedChatRoom?.id,
     enabled: !!selectedChatRoom,
@@ -318,16 +320,22 @@ const AccountPageContent = () => {
 
   // Fetch messages when chat room is selected
   useEffect(() => {
+    selectedChatRoomIdRef.current = selectedChatRoom?.id ?? null
+
     if (selectedChatRoom?.id) {
+      setChatMessages([])
+      setOtherPartyTyping(false)
       fetchChatMessages(selectedChatRoom.id)
-      // Poll for new messages every 3 seconds
       const interval = setInterval(() => {
         fetchChatMessages(selectedChatRoom.id)
       }, 3000)
       return () => clearInterval(interval)
     }
+
+    setChatMessages([])
+    setOtherPartyTyping(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedChatRoom])
+  }, [selectedChatRoom?.id])
 
   // Check ban status and blocked/verified status
   useEffect(() => {
@@ -435,7 +443,13 @@ const AccountPageContent = () => {
       const response = await fetch('/api/chat')
       const data = await response.json()
       if (data.success) {
-        setChatRooms(data.chatRooms || [])
+        const rooms = data.chatRooms || []
+        setChatRooms(rooms)
+        setSelectedChatRoom((current) =>
+          current && !rooms.some((room: { id: number }) => room.id === current.id)
+            ? null
+            : current,
+        )
         void refreshChatUnread()
       }
     } catch (error) {
@@ -446,10 +460,15 @@ const AccountPageContent = () => {
   }
 
   const fetchChatMessages = async (chatRoomId: number) => {
+    const fetchId = ++chatMessagesFetchIdRef.current
     try {
       const response = await fetch(`/api/chat/${chatRoomId}`)
       const data = await response.json()
-      if (data.success) {
+      if (
+        data.success &&
+        fetchId === chatMessagesFetchIdRef.current &&
+        selectedChatRoomIdRef.current === chatRoomId
+      ) {
         setChatMessages(data.messages || [])
         setOtherPartyTyping(Boolean(data.otherPartyTyping))
         setChatRooms((prev) =>
@@ -1902,7 +1921,14 @@ const AccountPageContent = () => {
                 </div>
                 <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 min-h-0">
                   {chatMessages.map((message) => {
-                    const isFromMe = message.userId === session?.user?.id && !message.isFromAdmin
+                    const viewerIsSeller =
+                      session?.user?.id === selectedChatRoom?.adminId
+                    const isFromMe = viewerIsSeller
+                      ? Boolean(message.isFromAdmin)
+                      : Boolean(
+                          !message.isFromAdmin &&
+                            message.userId === session?.user?.id,
+                        )
 
                     return (
                       <div

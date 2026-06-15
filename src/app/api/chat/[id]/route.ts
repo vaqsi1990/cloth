@@ -10,6 +10,7 @@ import {
   getTypingLabel,
   setChatTyping,
 } from '@/lib/chat-typing'
+import { accountProductChatRoomAccessForUser } from '@/lib/account-product-chat'
 
 // Validation schema
 const sendMessageSchema = z.object({
@@ -59,7 +60,7 @@ export async function GET(
         SELECT "userId", "adminId", "userTypingAt", "adminTypingAt"
         FROM "ChatRoom"
         WHERE id = ${chatRoomId}
-        AND ("userId" = ${session.user.id} OR "adminId" = ${session.user.id})
+        AND ${accountProductChatRoomAccessForUser(session.user.id)}
         LIMIT 1
       `
     } else {
@@ -93,6 +94,8 @@ export async function GET(
       content: string
       createdAt: Date
       isFromAdmin: boolean
+      userId: string | null
+      adminId: string | null
       user_name?: string
       user_email?: string
       admin_name?: string
@@ -100,6 +103,7 @@ export async function GET(
       admin_role?: string
     }>>`
       SELECT cm.id, cm.content, cm."createdAt", cm."isFromAdmin",
+             cm."userId", cm."adminId",
              u.name as user_name, u.email as user_email,
              a.name as admin_name, a.email as admin_email, a.role as admin_role
       FROM "ChatMessage" cm
@@ -180,11 +184,10 @@ export async function POST(
       // Regular users can access their own chat rooms (as buyer) or chat rooms where they are seller (adminId)
       // For guest users, we need to check if they have access via session or if it's a guest chat
       if (session?.user?.id) {
-        // Authenticated user - can be buyer (userId) or seller (adminId)
         chatRoom = await prisma.$queryRaw<Array<{ id: number }>>`
           SELECT id FROM "ChatRoom" 
           WHERE id = ${chatRoomId}
-          AND ("userId" = ${session.user.id} OR "adminId" = ${session.user.id})
+          AND ${accountProductChatRoomAccessForUser(session.user.id)}
           LIMIT 1
         `
       } else {
@@ -401,7 +404,7 @@ export async function DELETE(
         chatRoom = await prisma.$queryRaw<Array<{ id: number }>>`
           SELECT id FROM "ChatRoom" 
           WHERE id = ${chatRoomId}
-          AND ("userId" = ${session.user.id} OR "adminId" = ${session.user.id})
+          AND ${accountProductChatRoomAccessForUser(session.user.id)}
           LIMIT 1
         `
       } else {
