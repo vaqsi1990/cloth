@@ -491,6 +491,12 @@ const HeaderContent = () => {
                             <Link href="/shop?gender=women&category=ქოსფლეის კოსტუმები" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
                               12. ქალების კოსფლეის კოსტიუმები
                             </Link>
+                            <Link href="/shop?gender=women&category=ქალის ფეხსაცმელი" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
+                              13. ფეხსაცმელი
+                            </Link>
+                            <Link href="/shop?gender=women&category=ქალის ჩანთა" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
+                              14. ჩანთა
+                            </Link>
                           </>
                         )}
                         {item === 'მამაკაცი' && (
@@ -515,6 +521,12 @@ const HeaderContent = () => {
                             </Link>
                             <Link href="/shop?gender=men&category=ჩაფხუტი" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
                               6. ჩაფხუტი
+                            </Link>
+                            <Link href="/shop?gender=men&category=კაცის ფეხსაცმელი" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
+                              7. ფეხსაცმელი
+                            </Link>
+                            <Link href="/shop?gender=men&category=კაცის ჩანთა" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
+                              8. ჩანთა
                             </Link>
                           </>
                         )}
@@ -546,6 +558,12 @@ const HeaderContent = () => {
                             </Link>
                             <Link href="/shop?gender=children&category=ჩაფხუტი" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
                               8. ჩაფხუტი
+                            </Link>
+                            <Link href="/shop?gender=children&category=ბავშვის ფეხსაცმელი" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
+                              9. ფეხსაცმელი
+                            </Link>
+                            <Link href="/shop?gender=children&category=ბავშვის ჩანთა" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
+                              10. ჩანთა
                             </Link>
                           </>
                         )}
@@ -656,6 +674,12 @@ const HeaderContent = () => {
                               <Link href="/shop?gender=women&category=ქოსფლეის კოსტუმები" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
                                 15. ქოსფლეის კოსტუმები
                               </Link>
+                              <Link href="/shop?gender=women&category=ქალის ფეხსაცმელი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
+                                16. ფეხსაცმელი
+                              </Link>
+                              <Link href="/shop?gender=women&category=ქალის ჩანთა" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
+                                17. ჩანთა
+                              </Link>
                             </>
                           )}
                           {category === 'მამაკაცი' && (
@@ -687,6 +711,12 @@ const HeaderContent = () => {
                               <Link href="/shop?gender=men&category=ჩაფხუტი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
                                 9. ჩაფხუტი
                               </Link>
+                              <Link href="/shop?gender=men&category=კაცის ფეხსაცმელი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
+                                10. ფეხსაცმელი
+                              </Link>
+                              <Link href="/shop?gender=men&category=კაცის ჩანთა" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
+                                11. ჩანთა
+                              </Link>
                             </>
                           )}
                           {category === 'ბავშვები' && (
@@ -717,6 +747,12 @@ const HeaderContent = () => {
                               </Link>
                               <Link href="/shop?gender=children&category=ჩაფხუტი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
                                 9. ჩაფხუტი
+                              </Link>
+                              <Link href="/shop?gender=children&category=ბავშვის ფეხსაცმელი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
+                                10. ფეხსაცმელი
+                              </Link>
+                              <Link href="/shop?gender=children&category=ბავშვის ჩანთა" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
+                                11. ჩანთა
                               </Link>
                             </>
                           )}

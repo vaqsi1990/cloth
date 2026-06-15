@@ -35,18 +35,27 @@ export const DEFAULT_PRODUCT_CATEGORIES: ProductCategory[] = [
   { id: 49, name: 'ტრადიციული და კულტურული ტანსაცმელი', slug: 'traditional-cultural' },
   { id: 50, name: 'სათხილამურო ტანსაცმელი', slug: 'ski-wear' },
   { id: 51, name: 'სათხილამურო სათვალე', slug: 'ski-goggles' },
+  { id: 52, name: 'ქალის ფეხსაცმელი', slug: 'women-footwear' },
+  { id: 53, name: 'ქალის ჩანთა', slug: 'women-bags' },
+  { id: 54, name: 'კაცის ფეხსაცმელი', slug: 'men-footwear' },
+  { id: 55, name: 'კაცის ჩანთა', slug: 'men-bags' },
+  { id: 56, name: 'ბავშვის ფეხსაცმელი', slug: 'kids-footwear' },
+  { id: 57, name: 'ბავშვის ჩანთა', slug: 'kids-bags' },
 ]
 
-const WOMEN_CATEGORY_IDS = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 44, 13, 14, 21, 22, 23, 49, 50, 51])
-const MEN_CATEGORY_IDS = new Set([9, 11, 12, 13, 15, 16, 49, 50, 51])
-const CHILDREN_CATEGORY_IDS = new Set([11, 12, 18, 19, 20, 47, 48, 51])
+const WOMEN_CATEGORY_IDS = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 44, 13, 14, 21, 22, 23, 49, 50, 51, 52, 53])
+const MEN_CATEGORY_IDS = new Set([9, 11, 12, 13, 15, 16, 49, 50, 51, 54, 55])
+const CHILDREN_CATEGORY_IDS = new Set([11, 12, 18, 19, 20, 47, 48, 51, 56, 57])
 const ACCESSORY_CATEGORY_IDS = new Set([11, 12, 17, 51])
 const ACCESSORY_CATEGORY_SLUGS = new Set(['accessories', 'goggles', 'helmet', 'ski-goggles', 'aksesuarebi'])
-const SIZE_OPTIONAL_CATEGORY_IDS = new Set([...ACCESSORY_CATEGORY_IDS, 47, 48])
+const SIZE_OPTIONAL_CATEGORY_IDS = new Set([...ACCESSORY_CATEGORY_IDS, 47, 48, 53, 55, 57])
 const SIZE_OPTIONAL_CATEGORY_SLUGS = new Set([
   ...ACCESSORY_CATEGORY_SLUGS,
   'bavshvebis-kaliaska',
   'bavshvebis-satamashoebi',
+  'women-bags',
+  'men-bags',
+  'kids-bags',
 ])
 
 export function isAccessoryCategory(category: ProductCategory | undefined | null): boolean {
@@ -70,7 +79,7 @@ export function isSizeOptionalCategory(category: ProductCategory | undefined | n
   if (SIZE_OPTIONAL_CATEGORY_IDS.has(category.id)) return true
   if (SIZE_OPTIONAL_CATEGORY_SLUGS.has(category.slug)) return true
   const name = category.name.toLowerCase()
-  return name.includes('კალიასკ') || name.includes('სათამაშო')
+  return name.includes('კალიასკ') || name.includes('სათამაშო') || name.includes('ჩანთ')
 }
 
 export function isSizeOptionalCategoryId(
@@ -373,6 +382,25 @@ const CATEGORY_SLUG_ALIASES: Record<string, string> = {
   'სათხილამურო სათვალე': 'ski-goggles',
   'ბავშვების კალიასკა': 'bavshvebis-kaliaska',
   'ბავშვების სათამაშოები': 'bavshvebis-satamashoebi',
+  'women-footwear': 'women-footwear',
+  'women-bags': 'women-bags',
+  'men-footwear': 'men-footwear',
+  'men-bags': 'men-bags',
+  'kids-footwear': 'kids-footwear',
+  'kids-bags': 'kids-bags',
+  'ქალის ფეხსაცმელი': 'women-footwear',
+  'ქალის ჩანთა': 'women-bags',
+  'კაცის ფეხსაცმელი': 'men-footwear',
+  'კაცის ჩანთა': 'men-bags',
+  'ბავშვის ფეხსაცმელი': 'kids-footwear',
+  'ბავშვის ჩანთა': 'kids-bags',
+  pecsapertmeli: 'women-footwear',
+  qalispecsapertmeli: 'women-footwear',
+  qalischanta: 'women-bags',
+  kacispecsapertmeli: 'men-footwear',
+  kacischanta: 'men-bags',
+  bavshvispecsapertmeli: 'kids-footwear',
+  bavshvischanta: 'kids-bags',
 }
 
 const categoryIdBySlug = new Map(

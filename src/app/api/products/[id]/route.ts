@@ -190,7 +190,7 @@ const buildProductSelect = (includeAdminFields: boolean = false) => {
       id: true,
       name: true,
       image: true,
-      blocked: true
+      banned: true,
     }
   },
   images: {
