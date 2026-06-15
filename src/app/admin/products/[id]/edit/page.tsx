@@ -718,8 +718,11 @@ const EditProductPage = () => {
                 </label>
                 <input
                   type="number"
-                  value={formData.stock}
-                  onChange={(e) => handleInputChange('stock', parseInt(e.target.value) || 0)}
+                  value={formData.stock === undefined || formData.stock === 0 ? '' : formData.stock}
+                  onChange={(e) => {
+                    const val = e.target.value === '' ? undefined : (parseInt(e.target.value) || 0)
+                    handleInputChange('stock', val)
+                  }}
                   className={`w-full px-4 py-3 border rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${errors.stock ? 'border-red-500' : 'border-gray-300'
                     }`}
                 />

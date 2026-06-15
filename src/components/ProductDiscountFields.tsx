@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import {
   discountFromSalePrice,
   getProductDiscountBasePrice,
@@ -34,11 +34,55 @@ export default function ProductDiscountFields({
 }: ProductDiscountFieldsProps) {
   const { basePrice, priceType } = getProductDiscountBasePrice(variants, rentalPriceTiers)
   const [salePriceInput, setSalePriceInput] = useState('')
+  const prevBasePriceRef = useRef<number | null>(null)
+  const prevDiscountRef = useRef<number | null | undefined>(undefined)
+  const hasSyncedDiscountRef = useRef(false)
 
+  // Sync sale input when discount changes externally (load, clear, manual % field elsewhere).
   useEffect(() => {
+    if (hasSyncedDiscountRef.current && prevDiscountRef.current === discount) {
+      return
+    }
+    hasSyncedDiscountRef.current = true
+    prevDiscountRef.current = discount
+
+    if (!discount || discount <= 0) {
+      setSalePriceInput('')
+      return
+    }
+
     const salePrice = salePriceFromDiscount(basePrice, discount)
     setSalePriceInput(salePrice !== undefined ? String(salePrice) : '')
-  }, [basePrice, discount])
+  }, [discount, basePrice])
+
+  // When base (old) price changes, keep the sale price fixed and update discount amount only.
+  useEffect(() => {
+    if (prevBasePriceRef.current === null) {
+      prevBasePriceRef.current = basePrice
+      return
+    }
+
+    if (prevBasePriceRef.current === basePrice) {
+      return
+    }
+
+    prevBasePriceRef.current = basePrice
+
+    const trimmed = salePriceInput.trim()
+    if (!trimmed) {
+      return
+    }
+
+    const parsed = parseFloat(trimmed)
+    if (Number.isNaN(parsed) || parsed <= 0) {
+      return
+    }
+
+    const nextDiscount = discountFromSalePrice(basePrice, parsed)
+    if (nextDiscount !== discount) {
+      onDiscountChange(nextDiscount)
+    }
+  }, [basePrice, salePriceInput, discount, onDiscountChange])
 
   const handleSalePriceChange = (value: string) => {
     setSalePriceInput(value)
