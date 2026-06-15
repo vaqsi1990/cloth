@@ -19,7 +19,6 @@ export const ownerProductListSelect = {
   discountStartDate: true,
   rating: true,
   categoryId: true,
-  purposeId: true,
   userId: true,
   isRentable: true,
   pricePerDay: true,
@@ -29,13 +28,6 @@ export const ownerProductListSelect = {
   createdAt: true,
   updatedAt: true,
   category: {
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-    },
-  },
-  purpose: {
     select: {
       id: true,
       name: true,

@@ -271,13 +271,6 @@ export async function POST(request: NextRequest) {
                 slug: true,
               }
             },
-            purpose: {
-              select: {
-                id: true,
-                name: true,
-                slug: true,
-              }
-            }
           }
         },
         variant: {
@@ -399,13 +392,6 @@ export async function GET(request: NextRequest) {
                 slug: true,
               }
             },
-            purpose: {
-              select: {
-                id: true,
-                name: true,
-                slug: true,
-              }
-            }
           }
         },
         variant: {

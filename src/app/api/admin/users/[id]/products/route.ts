@@ -42,7 +42,6 @@ export async function GET(
       include: {
         images: true,
         category: true,
-        purpose: true,
         rentalPriceTiers: {
           orderBy: { minDays: 'asc' }
         }

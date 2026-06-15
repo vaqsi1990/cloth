@@ -8,7 +8,6 @@ import { z } from 'zod'
 import ImageUploadForProduct from '@/component/productimage'
 import ProductCategorySelect from '@/component/ProductCategorySelect'
 import { showToast } from '@/utils/toast'
-import { PURPOSE_OPTIONS } from '@/data/purposes'
 import { PRODUCT_FORM_COLORS } from '@/lib/product-colors'
 import {
   isValidProductText,
@@ -41,7 +40,6 @@ import {
   parseProductFormSizeSelection,
 } from '@/lib/shop-product-filters'
 
-const purposes = PURPOSE_OPTIONS
 const categories = DEFAULT_PRODUCT_CATEGORIES
 type Category = {
   id: number
@@ -73,7 +71,6 @@ const productSchema = z.object({
   discountDays: z.number().int().min(1).optional(),
   rating: z.number().min(0).max(5).optional(),
   categoryId: optionalCategoryIdField,
-  purposeSlug: z.string().optional(),
   isRentable: z.boolean().default(true), // 🆕
   pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional(), // 🆕
   maxRentalDays: z.number().optional(), // 🆕
@@ -133,7 +130,6 @@ const NewProductPage = () => {
     discountDays: undefined,
     rating: 0,
     categoryId: undefined,
-    purposeSlug: undefined,
     isRentable: true, // 🆕
     pricePerDay: undefined,
     maxRentalDays: undefined,
@@ -668,24 +664,6 @@ const NewProductPage = () => {
                   onChange={handleCategoryChange}
                   className="w-full pl-10 pr-4 py-3 placeholder:text-gray-500 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                 />
-              </div>
-
-              <div>
-                <label className="block text-[20px] text-black font-medium mb-2">
-                  დანიშნულება
-                </label>
-                <select
-                  value={formData.purposeSlug || ''}
-                  onChange={(e) => handleInputChange('purposeSlug', e.target.value ? e.target.value : undefined)}
-                  className="w-full pl-10 pr-4 py-3 placeholder:text-gray-500 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                >
-                  <option value="">აირჩიეთ დანიშნულება</option>
-                  {purposes.map((purpose) => (
-                    <option key={purpose.slug} value={purpose.slug}>
-                      {purpose.name}
-                    </option>
-                  ))}
-                </select>
               </div>
 
               <div>

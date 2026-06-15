@@ -66,7 +66,6 @@ export async function PUT(
       include: {
         images: true,
         category: true,
-        purpose: true,
         variants: true
       }
     })

@@ -6,9 +6,6 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { generateUniqueSKU } from '@/utils/skuUtils'
 import { ensureUniqueProductSlug } from '@/lib/productSlug'
-// Removed processExpiredDiscount import - we handle discount clearing inline for better performance
-import { PURPOSE_NAME_BY_SLUG } from '@/data/purposes'
-import { getPurposeIdBySlug, warmPurposeCache } from '@/lib/purpose-ids'
 import {
   getCategoryIdBySlugParam,
   resolveCategorySlugParam,
@@ -45,7 +42,6 @@ import { orderProductsByIdList } from '@/lib/admin-product-list-order'
 import { prismaCacheStrategy } from '@/lib/prisma-cache'
 import {
   optionalCategoryIdField,
-  optionalPurposeIdField,
 } from '@/lib/product-schema-fields'
 
 // Product validation schema
@@ -74,8 +70,6 @@ const productSchema = z.object({
   discountDays: z.number().int().min(1).optional(),
   rating: z.number().min(0).max(5).optional(),
   categoryId: optionalCategoryIdField,
-  purposeId: optionalPurposeIdField,
-  purposeSlug: z.string().optional(),
   isRentable: z.boolean().default(true),
   pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional(),
   maxRentalDays: z.number().optional(),
@@ -120,24 +114,6 @@ const listProducts = (
   })
 }
 
-const buildPurposeRelation = (purposeId?: number, purposeSlug?: string) => {
-  if (purposeId) {
-    return { connect: { id: purposeId } }
-  }
-  if (purposeSlug) {
-    return {
-      connectOrCreate: {
-        where: { slug: purposeSlug },
-        create: {
-          slug: purposeSlug,
-          name: PURPOSE_NAME_BY_SLUG[purposeSlug] || purposeSlug
-        }
-      }
-    }
-  }
-  return undefined
-}
-
 // GET - Fetch all products
 export async function GET(request: NextRequest) {
   try {
@@ -150,7 +126,6 @@ export async function GET(request: NextRequest) {
     const isSecondHand = searchParams.get('isSecondHand')
     const hasDiscount = searchParams.get('hasDiscount')
     const isVip = searchParams.get('isVip')
-    const purpose = searchParams.get('purpose')
     const search = searchParams.get('search')?.trim()
     const cursor = searchParams.get('cursor')
     const pageParam = searchParams.get('page')
@@ -183,14 +158,9 @@ export async function GET(request: NextRequest) {
           })
         : Promise.resolve([] as number[])
 
-    const purposeIdPromise = purpose
-      ? getPurposeIdBySlug(purpose).catch(() => null)
-      : Promise.resolve(null)
-
-    const [session, categoryIds, purposeId] = await Promise.all([
+    const [session, categoryIds] = await Promise.all([
       sessionPromise,
       categoryIdsPromise,
-      purposeIdPromise,
     ])
 
     const prepMs = Date.now() - prepStart
@@ -208,7 +178,6 @@ export async function GET(request: NextRequest) {
     const listCacheStrategy =
       search ||
       category ||
-      purpose ||
       gender ||
       isNew ||
       isSecondHand ||
@@ -245,7 +214,6 @@ export async function GET(request: NextRequest) {
     if (useCombinedPublicQuery) {
       const combinedFilters = {
         categoryIds: categoryIds.length > 0 ? categoryIds : null,
-        purposeId,
         gender: genderEnum,
         isNew: isNew === 'true',
         isSecondHand: isSecondHand === 'true',
@@ -340,7 +308,6 @@ export async function GET(request: NextRequest) {
       discountStartDate: true,
       rating: true,
       categoryId: true,
-      purposeId: true,
       sizeSystem: true,
       size: true,
       isRentable: true,
@@ -386,7 +353,6 @@ export async function GET(request: NextRequest) {
           }
         : {}),
       ...(categoryIds.length > 0 ? { categoryId: { in: categoryIds } } : {}),
-      ...(purposeId ? { purposeId } : {}),
       ...(genderEnum ? { gender: genderEnum } : {}),
       ...(isNew === 'true' ? { isNew: true } : {}),
       ...(isSecondHand === 'true' ? { isSecondHand: true } : {}),
@@ -512,8 +478,6 @@ export async function GET(request: NextRequest) {
 
     const processMs = Date.now() - processStart
 
-    await warmPurposeCache()
-
     const enrichStart = Date.now()
     const productsToReturn = await enrichProductListRows(flatPage, {
       includeUser: isAdminOrSupportRole,
@@ -586,7 +550,7 @@ export async function GET(request: NextRequest) {
     // Admin/support approval views must not be cached (stale PENDING after approve)
     if (needsFreshData) {
       response.headers.set('Cache-Control', 'private, no-store, must-revalidate')
-    } else if (!search && !category && !purpose && !gender && !isNew && !isSecondHand) {
+    } else if (!search && !category && !gender && !isNew && !isSecondHand) {
       response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600')
     } else {
       response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120')
@@ -686,14 +650,12 @@ export async function POST(request: NextRequest) {
       images: true,
       variants: true,
       category: true,
-      purpose: true,
       rentalPriceTiers: {
         orderBy: { minDays: 'asc' as const }
       }
     }
 
     const uniqueSlug = await ensureUniqueProductSlug(validatedData.slug)
-    const purposeRelation = buildPurposeRelation(validatedData.purposeId, validatedData.purposeSlug)
 
     let resolvedCategoryId: number | null = null
     if (validatedData.categoryId) {
@@ -755,10 +717,6 @@ export async function POST(request: NextRequest) {
           pricePerDay: tier.pricePerDay
         }))
       } : undefined
-    }
-
-    if (purposeRelation) {
-      productData.purpose = purposeRelation
     }
 
     const createdProduct = await prisma.product.create({

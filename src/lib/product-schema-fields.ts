@@ -9,4 +9,3 @@ export const optionalNumberField = () =>
   )
 
 export const optionalCategoryIdField = optionalNumberField()
-export const optionalPurposeIdField = optionalNumberField()

@@ -19,7 +19,6 @@ import {
   type PublicListFilters,
 } from '@/lib/product-list-query'
 import { fetchBatchRentalStatus, type BatchRentalStatusMap } from '@/lib/product-rental-status-batch'
-import { getPurposeIdBySlug } from '@/lib/purpose-ids'
 import { buildShopFilterSizeOptions } from '@/lib/shop-product-filters'
 import { parseShopListFilterParams } from '@/lib/shop-list-params'
 import {
@@ -89,7 +88,6 @@ function parseGenderEnum(
 async function resolveShopContext(searchParams: URLSearchParams) {
   const category = searchParams.get('category')
   const gender = searchParams.get('gender')
-  const purpose = searchParams.get('purpose')
   const search = searchParams.get('search')?.trim()
   const hasDiscount = searchParams.get('hasDiscount')
   const isVip = searchParams.get('isVip')
@@ -100,21 +98,19 @@ async function resolveShopContext(searchParams: URLSearchParams) {
   const resolvedCategorySlug =
     category && category !== 'ALL' ? resolveCategorySlugParam(category) : null
 
-  const [categoryIds, purposeId] = await Promise.all([
+  const [categoryIds] = await Promise.all([
     resolvedCategorySlug && category
       ? resolveCategoryIdsForFilter(category).catch(() => {
           const fallbackId = getCategoryIdBySlugParam(category)
           return fallbackId != null ? [fallbackId] : []
         })
       : Promise.resolve([] as number[]),
-    purpose ? getPurposeIdBySlug(purpose).catch(() => null) : Promise.resolve(null),
   ])
 
   const genderEnum = parseGenderEnum(gender)
 
   const scopedBase = {
     categoryIds: categoryIds.length > 0 ? categoryIds : null,
-    purposeId,
     gender: genderEnum,
     isNew: false,
     isSecondHand: false,
@@ -148,7 +144,6 @@ async function resolveShopContext(searchParams: URLSearchParams) {
     PublicListFilters,
     'skip' | 'take' | 'categoryIds' | 'categoryId'
   > = {
-    purposeId,
     gender: genderEnum,
     isNew: false,
     isSecondHand: false,
@@ -178,7 +173,6 @@ async function resolveShopContext(searchParams: URLSearchParams) {
     genderEnum,
     search,
     category,
-    purpose,
     gender,
     hasDiscount,
     isVip,
@@ -268,7 +262,6 @@ export function getShopBundleCacheControl(searchParams: URLSearchParams): string
 
   return getHttpCacheControl({
     categoryIds: null,
-    purposeId: null,
     gender: parseGenderEnum(gender),
     isNew: false,
     isSecondHand: false,

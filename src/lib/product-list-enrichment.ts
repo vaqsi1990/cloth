@@ -1,7 +1,6 @@
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { getCategoryMetaByIdsSync, resolveCanonicalCategory } from '@/lib/product-categories'
-import { getPurposeMetaByIdsSync } from '@/lib/purpose-ids'
 
 type EnrichmentRow = {
   productId: number
@@ -29,7 +28,6 @@ export type ProductListScalar = {
   discountStartDate: Date | null
   rating: number | null
   categoryId: number | null
-  purposeId: number | null
   sizeSystem: string | null
   size: string | null
   isRentable: boolean
@@ -103,7 +101,6 @@ export async function enrichProductListRows<T extends ProductListScalar>(
   variants: Array<{ price: number }>
   rentalPriceTiers: Array<{ minDays: number; pricePerDay: number }>
   category: { id: number; name: string; slug: string } | null
-  purpose: { id: number; name: string; slug: string } | null
   user?: { id: string; name: string | null; email: string | null }
 }>> {
   if (products.length === 0) return []
@@ -112,22 +109,17 @@ export async function enrichProductListRows<T extends ProductListScalar>(
   const categoryIds = [
     ...new Set(products.map((p) => p.categoryId).filter((id): id is number => id != null)),
   ]
-  const purposeIds = [
-    ...new Set(products.map((p) => p.purposeId).filter((id): id is number => id != null)),
-  ]
   const userIds = options.includeUser
     ? [...new Set(products.map((p) => p.userId).filter((id): id is string => !!id))]
     : []
 
-  const [dbCategories, purposeById] = await Promise.all([
+  const dbCategories =
     categoryIds.length > 0
-      ? prisma.category.findMany({
+      ? await prisma.category.findMany({
           where: { id: { in: categoryIds } },
           select: { id: true, name: true, slug: true },
         })
-      : Promise.resolve([]),
-    Promise.resolve(getPurposeMetaByIdsSync(purposeIds)),
-  ])
+      : []
 
   const categoryById = new Map(
     dbCategories.map((c) => {
@@ -177,7 +169,6 @@ export async function enrichProductListRows<T extends ProductListScalar>(
           ? [{ minDays: row.minDays, pricePerDay: row.pricePerDay }]
           : [],
       category: product.categoryId ? categoryById.get(product.categoryId) ?? null : null,
-      purpose: product.purposeId ? purposeById.get(product.purposeId) ?? null : null,
       ...(options.includeUser && product.userId
         ? { user: userById.get(product.userId) ?? undefined }
         : {}),

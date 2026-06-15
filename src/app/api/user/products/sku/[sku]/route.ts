@@ -25,7 +25,6 @@ const buildProductSelect = () => ({
   discountStartDate: true,
   rating: true,
   categoryId: true,
-  purposeId: true,
   userId: true,
   isRentable: true,
   pricePerDay: true,
@@ -37,13 +36,6 @@ const buildProductSelect = () => ({
   createdAt: true,
   updatedAt: true,
   category: {
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-    }
-  },
-  purpose: {
     select: {
       id: true,
       name: true,

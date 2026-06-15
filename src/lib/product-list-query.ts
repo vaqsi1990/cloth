@@ -16,7 +16,6 @@ export const PRODUCT_LIST_CACHE_TAG = 'product-list'
 export type PublicListFilters = {
   categoryId?: number | null
   categoryIds?: number[] | null
-  purposeId?: number | null
   gender?: 'WOMEN' | 'MEN' | 'CHILDREN'
   isNew?: boolean
   isSecondHand?: boolean
@@ -54,7 +53,6 @@ type CombinedListRow = {
   discountStartDate: Date | null
   rating: number | null
   categoryId: number | null
-  purposeId: number | null
   sizeSystem: string | null
   size: string | null
   isRentable: boolean
@@ -67,9 +65,6 @@ type CombinedListRow = {
   cat_id: number | null
   cat_name: string | null
   cat_slug: string | null
-  pur_id: number | null
-  pur_name: string | null
-  pur_slug: string | null
 }
 
 const ALL_SIZE_SYSTEMS = ['EU', 'US', 'UK', 'CN'] as const
@@ -234,11 +229,8 @@ function buildWhere(filters: PublicListFilters): Prisma.Sql {
     parts.push(
       Prisma.sql`p."categoryId" IN (${Prisma.join(filters.categoryIds)})`,
     )
-  } else if (filters.categoryId) {
+  } else   if (filters.categoryId) {
     parts.push(Prisma.sql`p."categoryId" = ${filters.categoryId}`)
-  }
-  if (filters.purposeId) {
-    parts.push(Prisma.sql`p."purposeId" = ${filters.purposeId}`)
   }
   if (filters.gender) {
     parts.push(Prisma.sql`p.gender = ${filters.gender}::"Gender"`)
@@ -553,7 +545,6 @@ export function mapCombinedRowsToProducts(rows: CombinedListRow[]) {
       discountStartDate: row.discountStartDate,
       rating: row.rating,
       categoryId: row.categoryId,
-      purposeId: row.purposeId,
       sizeSystem: row.sizeSystem,
       size: row.size,
       isRentable: row.isRentable,
@@ -572,15 +563,11 @@ export function mapCombinedRowsToProducts(rows: CombinedListRow[]) {
               slug: row.cat_slug,
             }) ?? { id: row.cat_id, name: row.cat_name, slug: row.cat_slug }
           : null,
-      purpose:
-        row.pur_id != null && row.pur_name && row.pur_slug
-          ? { id: row.pur_id, name: row.pur_name, slug: row.pur_slug }
-          : null,
     }
   })
 }
 
-/** Single round-trip: products + image + prices + tiers + category + purpose. */
+/** Single round-trip: products + image + prices + tiers + category. */
 export async function fetchPublicProductListCombined(
   filters: PublicListFilters,
 ): Promise<CombinedListRow[]> {
@@ -615,7 +602,6 @@ export async function fetchPublicProductListCombined(
         p."discountStartDate",
         p.rating,
         p."categoryId",
-        p."purposeId",
         p."sizeSystem"::text AS "sizeSystem",
         p.size,
         p."isRentable",
@@ -669,7 +655,6 @@ export async function fetchPublicProductListCombined(
       f."discountStartDate",
       f.rating,
       f."categoryId",
-      f."purposeId",
       f."sizeSystem",
       f.size,
       f."isRentable",
@@ -681,16 +666,12 @@ export async function fetchPublicProductListCombined(
       ft."pricePerDay" AS tier_price_per_day,
       c.id AS cat_id,
       c.name AS cat_name,
-      c.slug AS cat_slug,
-      pu.id AS pur_id,
-      pu.name AS pur_name,
-      pu.slug AS pur_slug
+      c.slug AS cat_slug
     FROM filtered f
     LEFT JOIN cover_images ci ON ci."productId" = f.id
     LEFT JOIN variant_prices vp ON vp."productId" = f.id
     LEFT JOIN first_tiers ft ON ft."productId" = f.id
     LEFT JOIN "Category" c ON c.id = f."categoryId"
-    LEFT JOIN "Purpose" pu ON pu.id = f."purposeId"
     ORDER BY f.sort_ord ASC
   `)
 }
@@ -737,7 +718,6 @@ export function getPublicListCacheKey(filters: PublicListFilters): string {
   return JSON.stringify({
     categoryId: filters.categoryId ?? null,
     categoryIds: filters.categoryIds ?? null,
-    purposeId: filters.purposeId ?? null,
     gender: filters.gender ?? null,
     isNew: filters.isNew ?? false,
     isSecondHand: filters.isSecondHand ?? false,
@@ -763,7 +743,6 @@ function hasActiveFilters(filters: PublicListFilters): boolean {
     filters.search ||
       filters.categoryId ||
       filters.categoryIds?.length ||
-      filters.purposeId ||
       filters.gender ||
       filters.isNew ||
       filters.isSecondHand ||

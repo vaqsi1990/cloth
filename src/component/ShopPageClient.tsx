@@ -7,7 +7,6 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Product } from '@/types/product'
 import DatePicker from "react-datepicker"
 import StarRating from "@/components/StarRating"
-import { PURPOSE_OPTIONS } from '@/data/purposes'
 import { PRODUCT_COLORS, type ProductColorFacet } from '@/lib/product-colors'
 import {
   PREDEFINED_LETTER_SIZES,
@@ -56,7 +55,6 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
     const router = useRouter()
     const genderParam = searchParams.get('gender')
     const searchParam = searchParams.get('search')
-    const purposeParam = searchParams.get('purpose')
     const categoryParam = searchParams.get('category')
     const discountParam = searchParams.get('discount')
     const vipParam = searchParams.get('vip')
@@ -67,7 +65,6 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
     )
     const [loading, setLoading] = useState(true)
     const [selectedCategories, setSelectedCategories] = useState<string[]>([])
-    const [selectedPurposes, setSelectedPurposes] = useState<string[]>([])
     const [sortBy, setSortBy] = useState("newest")
     const [isFilterOpen, setIsFilterOpen] = useState(false)
     const [priceRange, setPriceRange] = useState([0, 0])
@@ -119,7 +116,6 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
     const scrollYRef = useRef(0)
     const shopFetchIdRef = useRef(0)
     const shopInitializedRef = useRef(false)
-    const prevPurposeParamRef = useRef(purposeParam)
     const prevCategoryParamRef = useRef(categoryParam)
     const filtersSnapshotRef = useRef<string | null>(null)
     const prevPriceCeilingKeyRef = useRef<string | null>(null)
@@ -163,7 +159,6 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         if (typeof window === 'undefined' || homepageMode) return
         const state = {
             selectedCategories,
-            selectedPurposes,
             priceRange,
             selectedSizeSystems,
             selectedSizes,
@@ -181,7 +176,6 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         sessionStorage.setItem('shopPageState', JSON.stringify(state))
     }, [
         selectedCategories,
-        selectedPurposes,
         priceRange,
         selectedSizeSystems,
         selectedSizes,
@@ -211,7 +205,6 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         }
 
         let restoredCategories: string[] = []
-        let restoredPurposes: string[] = []
         let restoredPriceRange: [number, number] = [0, 0]
         let restoredSizeSystems: string[] = []
         let restoredSizes: string[] = []
@@ -231,7 +224,6 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
             try {
                 const parsed = JSON.parse(saved)
                 restoredCategories = parsed.selectedCategories || []
-                restoredPurposes = parsed.selectedPurposes || []
                 restoredPriceRange = parsed.priceRange || [0, 0]
                 restoredSizeSystems = parsed.selectedSizeSystems || []
                 restoredSizes = parsed.selectedSizes || []
@@ -257,7 +249,6 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         setSelectedCategories(
             Array.isArray(initialCategory) ? initialCategory : [initialCategory].filter(Boolean),
         )
-        setSelectedPurposes(purposeParam ? [purposeParam] : restoredPurposes)
         setPriceRange(restoredPriceRange)
         setSelectedSizeSystems(restoredSizeSystems)
         setSelectedSizes(restoredSizes)
@@ -273,18 +264,9 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         setSavedScrollY(restoredScrollY)
 
         shopInitializedRef.current = true
-        prevPurposeParamRef.current = purposeParam
         prevCategoryParamRef.current = categoryParam
         setHasRestoredState(true)
     }, [])
-
-    // Sync URL purpose/category changes after initial restore (client navigation)
-    useEffect(() => {
-        if (!shopInitializedRef.current) return
-        if (prevPurposeParamRef.current === purposeParam) return
-        prevPurposeParamRef.current = purposeParam
-        setSelectedPurposes(purposeParam ? [purposeParam] : [])
-    }, [purposeParam])
 
     useEffect(() => {
         if (!shopInitializedRef.current) return
@@ -315,7 +297,6 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         saveState()
     }, [
         selectedCategories,
-        selectedPurposes,
         priceRange,
         selectedSizeSystems,
         selectedSizes,
@@ -357,13 +338,6 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         router.push(query ? `/shop?${query}` : '/shop')
     }
 
-    const clearPurpose = () => {
-        const params = new URLSearchParams(Array.from(searchParams.entries()))
-        params.delete('purpose')
-        const query = params.toString()
-        router.push(query ? `/shop?${query}` : '/shop')
-    }
-
     // Helper functions for price calculation
     const getRentalPrice = (product: Product): number => {
         if (!product.isRentable || !product.rentalPriceTiers || product.rentalPriceTiers.length === 0) {
@@ -394,8 +368,6 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         // If no variants, check if it's rentable
         return getRentalPrice(product)
     }
-
-    const purposes = PURPOSE_OPTIONS
 
     const resolveCategoryApiSlug = useCallback(
         (param: string | null, selected: string[]) => {
@@ -444,11 +416,6 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         if (searchParam) {
             params.append('search', searchParam)
         }
-        if (purposeParam) {
-            params.append('purpose', purposeParam)
-        } else if (selectedPurposes.length === 1) {
-            params.append('purpose', selectedPurposes[0])
-        }
         const categorySlug = resolveCategoryApiSlug(
             categoryParam,
             selectedCategories,
@@ -475,10 +442,8 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         itemsPerPage,
         genderParam,
         searchParam,
-        purposeParam,
         categoryParam,
         selectedCategories,
-        selectedPurposes,
         onlyDiscounted,
         onlyVip,
         homepageMode,
@@ -675,7 +640,6 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
 
         const snapshot = JSON.stringify({
             selectedCategories,
-            selectedPurposes,
             priceRange,
             selectedSizeSystems,
             selectedSizes,
@@ -687,7 +651,6 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
             purchaseType,
             onlyDiscounted,
             onlyVip,
-            purposeParam,
             categoryParam,
             genderParam,
             searchParam,
@@ -707,7 +670,6 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
     }, [
         hasRestoredState,
         selectedCategories,
-        selectedPurposes,
         priceRange,
         selectedSizeSystems,
         selectedSizes,
@@ -719,7 +681,6 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         purchaseType,
         onlyDiscounted,
         onlyVip,
-        purposeParam,
         categoryParam,
         genderParam,
         searchParam,
@@ -733,14 +694,6 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
             prev.includes(categoryName)
                 ? prev.filter(c => c !== categoryName)
                 : [...prev, categoryName]
-        )
-    }
-
-    const togglePurpose = (purposeSlug: string) => {
-        setSelectedPurposes(prev =>
-            prev.includes(purposeSlug)
-                ? prev.filter(p => p !== purposeSlug)
-                : [...prev, purposeSlug]
         )
     }
 
@@ -797,7 +750,6 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         
         // Clear all state filters immediately
         setSelectedCategories([])
-        setSelectedPurposes([])
         setSelectedSizeSystems([])
         setSelectedSizes([])
         setSelectedColors([])
@@ -1306,33 +1258,6 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
                                                         className="w-4 h-4 accent-black"
                                                     />
                                                     {label}
-                                                </span>
-                                            </label>
-                                        )
-                                    })}
-                                </div>
-                            </div>
-
-                            {/* Purpose Filters */}
-                            <div className="border-b border-gray-200 pb-6">
-                                <h4 className="font-medium text-black md:text-[18px] text-[16px] mb-3">დანიშნულება</h4>
-                                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                                    {purposes.map((purpose) => {
-                                        const isSelected = selectedPurposes.includes(purpose.slug)
-
-                                        return (
-                                            <label
-                                                key={purpose.slug}
-                                                className="flex items-center justify-between text-[15px] text-black cursor-pointer py-1"
-                                            >
-                                                <span className="flex items-center gap-2">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={isSelected}
-                                                        onChange={() => togglePurpose(purpose.slug)}
-                                                        className="w-4 h-4"
-                                                    />
-                                                    {purpose.name}
                                                 </span>
                                             </label>
                                         )

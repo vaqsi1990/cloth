@@ -6,11 +6,9 @@ import { authOptions } from '@/lib/auth'
 import { Prisma } from '@prisma/client'
 import { ensureUniqueProductSlug } from '@/lib/productSlug'
 import { checkAndClearExpiredDiscount, processExpiredDiscount } from '@/utils/discountUtils'
-import { PURPOSE_NAME_BY_SLUG } from '@/data/purposes'
 import { isAdminOrSupport } from '@/lib/roles'
 import {
   optionalCategoryIdField,
-  optionalPurposeIdField,
 } from '@/lib/product-schema-fields'
 import {
   isValidProductText,
@@ -84,8 +82,6 @@ const productSchema = z.object({
   ),
   rating: z.number().min(0).max(5).optional(),
   categoryId: optionalCategoryIdField,
-  purposeId: optionalPurposeIdField,
-  purposeSlug: z.string().optional(),
   isRentable: z.boolean().default(true),
   pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional(),
   maxRentalDays: z.number().optional(),
@@ -118,24 +114,6 @@ const productSchema = z.object({
   refineProductImagesAndPricing(data, ctx)
 })
 
-const buildPurposeRelation = (purposeId?: number, purposeSlug?: string) => {
-  if (purposeId) {
-    return { connect: { id: purposeId } }
-  }
-  if (purposeSlug) {
-    return {
-      connectOrCreate: {
-        where: { slug: purposeSlug },
-        create: {
-          slug: purposeSlug,
-          name: PURPOSE_NAME_BY_SLUG[purposeSlug] || purposeSlug
-        }
-      }
-    }
-  }
-  return undefined
-}
-
 // Helper function to build product select query (optimized for performance)
 const buildProductSelect = (includeAdminFields: boolean = false) => {
   const baseSelect = {
@@ -162,7 +140,6 @@ const buildProductSelect = (includeAdminFields: boolean = false) => {
     discountStartDate: true,
     rating: true,
     categoryId: true,
-    purposeId: true,
     userId: true, // Needed for isOwner check
     isRentable: true,
     requiresInquiryBeforeRent: true,
@@ -172,13 +149,6 @@ const buildProductSelect = (includeAdminFields: boolean = false) => {
     approvalStatus: true, // Always needed for permission checks
     // Removed: createdAt, updatedAt - not needed for display
   category: {
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-    }
-  },
-  purpose: {
     select: {
       id: true,
       name: true,
@@ -366,12 +336,6 @@ export async function PUT(
 
     const shouldResetApproval = !isAdminOrSupportRole
 
-    // Resolve relations before any destructive writes (failed saves must not wipe data)
-    const purposeRelation = buildPurposeRelation(
-      validatedData.purposeId,
-      validatedData.purposeSlug,
-    )
-
     let resolvedCategoryId: number | null = null
     if (validatedData.categoryId) {
       resolvedCategoryId = await resolveCategoryIdForWrite(validatedData.categoryId)
@@ -471,10 +435,6 @@ export async function PUT(
       updateData.category = categoryRelation
     }
 
-    if (purposeRelation) {
-      updateData.purpose = purposeRelation
-    }
-
     const updatedProduct = await prisma.$transaction(async (tx) => {
       await tx.productImage.deleteMany({ where: { productId } })
       await tx.productVariant.deleteMany({ where: { productId } })
@@ -490,7 +450,6 @@ export async function PUT(
           images: true,
           variants: true,
           category: true,
-          purpose: true,
           rentalPriceTiers: {
             orderBy: { minDays: 'asc' }
           }

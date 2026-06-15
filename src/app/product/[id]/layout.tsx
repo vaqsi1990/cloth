@@ -33,13 +33,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             slug: true,
           }
         },
-        purpose: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-          }
-        },
         images: {
           select: {
             id: true,
@@ -83,7 +76,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       keywords: [
         product.name,
         product.category?.name || "",
-        product.purpose?.name || "",
         product.brand || "",
         product.color || "",
         "მოდის ქირაობა",

@@ -8,7 +8,6 @@ import { z } from 'zod'
 import ImageUploadForProduct from '@/component/productimage'
 import ProductCategorySelect from '@/component/ProductCategorySelect'
 import { showToast } from '@/utils/toast'
-import { PURPOSE_OPTIONS } from '@/data/purposes'
 import { PRODUCT_FORM_COLORS } from '@/lib/product-colors'
 import {
   isValidProductText,
@@ -43,8 +42,6 @@ import {
   parseProductFormSizeSelection,
 } from '@/lib/shop-product-filters'
 
-const purposes = PURPOSE_OPTIONS
-
 const productSchema = z.object({
   name: z.string()
     .min(1, 'სახელი აუცილებელია')
@@ -70,7 +67,6 @@ const productSchema = z.object({
   discountDays: z.number().int().min(1).optional(),
   rating: z.number().min(0).max(5).optional(),
   categoryId: optionalCategoryIdField,
-  purposeSlug: z.string().optional(),
   isRentable: z.boolean().default(true),
   pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional(),
   maxRentalDays: z.number().optional(),
@@ -132,7 +128,6 @@ const NewProductPage = () => {
     discountDays: undefined,
     rating: 0,
     categoryId: undefined,
-    purposeSlug: undefined,
     isRentable: true,
     pricePerDay: undefined,
     maxRentalDays: undefined,
@@ -686,24 +681,6 @@ const NewProductPage = () => {
                   onChange={handleCategoryChange}
                   className="w-full text-black px-4 py-3 border border-gray-300 rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                 />
-              </div>
-
-              <div>
-                <label className="block md:text-[18px] text-[16px] text-black font-medium mb-2">
-                  დანიშნულება
-                </label>
-                <select
-                  value={formData.purposeSlug || ''}
-                  onChange={(e) => handleInputChange('purposeSlug', e.target.value ? e.target.value : undefined)}
-                  className="w-full text-black px-4 py-3 border border-gray-300 rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                >
-                  <option value="">აირჩიეთ დანიშნულება</option>
-                  {purposes.map((purpose) => (
-                    <option key={purpose.slug} value={purpose.slug}>
-                      {purpose.name}
-                    </option>
-                  ))}
-                </select>
               </div>
 
               <div>

@@ -100,13 +100,6 @@ export async function GET(
             slug: true
           }
         },
-        purpose: {
-          select: {
-            id: true,
-            name: true,
-            slug: true
-          }
-        },
         images: {
           select: {
             id: true,
