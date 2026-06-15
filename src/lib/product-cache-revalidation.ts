@@ -10,6 +10,7 @@ export function revalidateProductCaches(
 
   revalidatePath(`/product/${productId}`, 'page')
   revalidatePath('/shop', 'page')
+  revalidatePath('/', 'page')
   revalidatePath('/admin/products', 'page')
   revalidatePath('/support/products', 'page')
   revalidatePath('/account', 'page')

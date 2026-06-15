@@ -13,6 +13,7 @@ import {
   broadcastProductStatusUpdate,
   type ProductStatusValue,
 } from '@/lib/product-status-sync'
+import { broadcastHomepageFeaturedUpdate } from '@/lib/homepage-featured-sync'
 import { sortProductsByApprovalPriority } from '@/lib/admin-product-list-order'
 interface RentalPeriod {
   startDate: string
@@ -409,6 +410,7 @@ const AdminProductsPage = () => {
           ),
         )
         showToast(data.message, 'success')
+        broadcastHomepageFeaturedUpdate({ productId })
       } else {
         showToast(data.error || 'შეცდომა მთავარ გვერდის განახლებისას', 'error')
       }

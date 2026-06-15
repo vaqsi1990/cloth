@@ -42,6 +42,7 @@ import {
   PRODUCT_STATUS_UPDATED_EVENT,
   type ProductStatusUpdateDetail,
 } from '@/lib/product-status-sync'
+import { HOMEPAGE_FEATURED_UPDATED_EVENT } from '@/lib/homepage-featured-sync'
 import PriceRangeFilter from '@/component/PriceRangeFilter'
 
 type PurchaseType = 'all' | 'rent-only' | 'sale-only' | 'rent-and-sale'
@@ -124,6 +125,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
     const prevPriceCeilingKeyRef = useRef<string | null>(null)
     const [savedScrollY, setSavedScrollY] = useState<number | null>(null)
     const [hasRestoredState, setHasRestoredState] = useState(false)
+    const [homepageRefreshNonce, setHomepageRefreshNonce] = useState(0)
 
     useEffect(() => {
         const handleScroll = () => {
@@ -149,8 +151,16 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         return () => window.removeEventListener(PRODUCT_STATUS_UPDATED_EVENT, handler)
     }, [])
 
+    useEffect(() => {
+        if (!homepageMode) return
+        const handler = () => setHomepageRefreshNonce((value) => value + 1)
+        window.addEventListener(HOMEPAGE_FEATURED_UPDATED_EVENT, handler)
+        return () =>
+            window.removeEventListener(HOMEPAGE_FEATURED_UPDATED_EVENT, handler)
+    }, [homepageMode])
+
     const saveState = useCallback(() => {
-        if (typeof window === 'undefined') return
+        if (typeof window === 'undefined' || homepageMode) return
         const state = {
             selectedCategories,
             selectedPurposes,
@@ -183,12 +193,22 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         purchaseType,
         onlyDiscounted,
         onlyVip,
-        currentPage
+        currentPage,
+        homepageMode,
     ])
 
     // Restore saved state once on mount; URL params override session values
     useEffect(() => {
         if (typeof window === 'undefined') return
+
+        if (homepageMode) {
+            setOnlyDiscounted(discountParam === 'true')
+            setOnlyVip(vipParam === 'true')
+            setCurrentPage(1)
+            shopInitializedRef.current = true
+            setHasRestoredState(true)
+            return
+        }
 
         let restoredCategories: string[] = []
         let restoredPurposes: string[] = []
@@ -444,6 +464,9 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         }
         if (homepageMode) {
             params.append('featuredFirst', 'true')
+            if (homepageRefreshNonce > 0) {
+                params.set('fresh', '1')
+            }
         }
         appendShopListFilterParams(params, shopListFilters())
         return params.toString()
@@ -459,6 +482,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         onlyDiscounted,
         onlyVip,
         homepageMode,
+        homepageRefreshNonce,
         resolveCategoryApiSlug,
         shopListFilters,
     ])

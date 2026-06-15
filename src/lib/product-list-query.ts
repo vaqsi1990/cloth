@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client'
 import { unstable_cache } from 'next/cache'
 import { revalidateTag } from 'next/cache'
 import { prisma } from '@/lib/prisma'
-import { sortProductsByVipPriority } from '@/lib/product-vip'
+import { isProductVipActive } from '@/lib/product-vip'
 import { resolveCanonicalCategory } from '@/lib/product-categories'
 import { getDbColorMatchValues } from '@/lib/product-colors'
 import {
@@ -23,6 +23,7 @@ export type PublicListFilters = {
   hasDiscount?: boolean
   isVip?: boolean
   featuredFirst?: boolean
+  featuredOnly?: boolean
   search?: string
   color?: string | null
   sizes?: string[] | null
@@ -198,27 +199,27 @@ function buildOrderByClause(
   sort?: ShopSortBy | null,
   options?: { featuredFirst?: boolean },
 ): Prisma.Sql {
+  const vipOrder = Prisma.sql`(p."isVip" = true AND p."vipExpiresAt" IS NOT NULL AND p."vipExpiresAt" > NOW()) DESC`
   const featuredOrder = options?.featuredFirst
     ? Prisma.sql`p."featuredOnHomepage" DESC, p."homepageFeaturedAt" DESC NULLS LAST,`
     : Prisma.empty
-  const vipOrder = Prisma.sql`(p."isVip" = true AND p."vipExpiresAt" IS NOT NULL AND p."vipExpiresAt" > NOW()) DESC`
 
   switch (sort) {
     case 'price-low':
-      return Prisma.sql`${featuredOrder} ${vipOrder}, (
+      return Prisma.sql`${vipOrder}, ${featuredOrder} (
         SELECT MIN(pv.price) FROM "ProductVariant" pv
         WHERE pv."productId" = p.id AND pv.price > 0
       ) ASC NULLS LAST, p."createdAt" DESC, p.id DESC`
     case 'price-high':
-      return Prisma.sql`${featuredOrder} ${vipOrder}, (
+      return Prisma.sql`${vipOrder}, ${featuredOrder} (
         SELECT MAX(pv.price) FROM "ProductVariant" pv
         WHERE pv."productId" = p.id
       ) DESC NULLS LAST, p."createdAt" DESC, p.id DESC`
     case 'rating':
-      return Prisma.sql`${featuredOrder} ${vipOrder}, COALESCE(p.rating, 0) DESC, p."createdAt" DESC, p.id DESC`
+      return Prisma.sql`${vipOrder}, ${featuredOrder} COALESCE(p.rating, 0) DESC, p."createdAt" DESC, p.id DESC`
     case 'newest':
     default:
-      return Prisma.sql`${featuredOrder} ${vipOrder}, p."createdAt" DESC, p.id DESC`
+      return Prisma.sql`${vipOrder}, ${featuredOrder} p."createdAt" DESC, p.id DESC`
   }
 }
 
@@ -260,6 +261,9 @@ function buildWhere(filters: PublicListFilters): Prisma.Sql {
     parts.push(
       Prisma.sql`p."isVip" = true AND p."vipExpiresAt" IS NOT NULL AND p."vipExpiresAt" > NOW()`,
     )
+  }
+  if (filters.featuredOnly) {
+    parts.push(Prisma.sql`p."featuredOnHomepage" = true`)
   }
   if (filters.search) {
     const pattern = `%${filters.search}%`
@@ -443,6 +447,85 @@ export async function getProductCategoryCounts(
   }))
 }
 
+type HomepageMergeProduct = {
+  id: number
+  isVip?: boolean
+  vipExpiresAt?: string | Date | null
+}
+
+function dedupeProductsById<T extends { id: number }>(products: T[]): T[] {
+  const seen = new Set<number>()
+  const result: T[] = []
+  for (const product of products) {
+    if (seen.has(product.id)) continue
+    seen.add(product.id)
+    result.push(product)
+  }
+  return result
+}
+
+function mergeHomepageFirstPageProducts<T extends HomepageMergeProduct>(
+  standardProducts: T[],
+  featuredProducts: T[],
+  pageSize: number,
+): T[] {
+  const standard = dedupeProductsById(standardProducts)
+  const featured = dedupeProductsById(featuredProducts)
+  if (featured.length === 0) return standard.slice(0, pageSize)
+
+  const byId = new Map<number, T>()
+  for (const product of standard) byId.set(product.id, product)
+  for (const product of featured) byId.set(product.id, product)
+
+  const result: T[] = []
+  const used = new Set<number>()
+
+  const push = (id: number) => {
+    if (used.has(id) || result.length >= pageSize) return
+    const product = byId.get(id)
+    if (!product) return
+    used.add(id)
+    result.push(product)
+  }
+
+  for (const product of standard) {
+    if (isProductVipActive(product)) push(product.id)
+  }
+
+  const featuredToAdd = featured.filter((product) => !used.has(product.id))
+  while (
+    featuredToAdd.length > 0 &&
+    result.length + featuredToAdd.length > pageSize &&
+    result.length > 0 &&
+    isProductVipActive(result[result.length - 1])
+  ) {
+    const removed = result.pop()
+    if (removed) used.delete(removed.id)
+  }
+
+  for (const product of featured) {
+    push(product.id)
+  }
+
+  for (const product of standard) {
+    push(product.id)
+  }
+
+  return result
+}
+
+async function fetchHomepageFeaturedProducts(
+  filters: PublicListFilters,
+): Promise<CombinedListRow[]> {
+  return fetchPublicProductListCombined({
+    ...filters,
+    skip: 0,
+    take: 50,
+    featuredOnly: true,
+    featuredFirst: true,
+  })
+}
+
 export function mapCombinedRowsToProducts(rows: CombinedListRow[]) {
   return rows.map((row) => {
     const variants: Array<{ price: number }> = []
@@ -507,7 +590,14 @@ export async function fetchPublicProductListCombined(
   })
 
   return prisma.$queryRaw<CombinedListRow[]>(Prisma.sql`
-    WITH filtered AS (
+    WITH ranked AS (
+      SELECT
+        p.id,
+        ROW_NUMBER() OVER (ORDER BY ${orderBy}) AS sort_ord
+      FROM "Product" p
+      WHERE ${where}
+    ),
+    filtered AS (
       SELECT
         p.id,
         p.name,
@@ -529,12 +619,12 @@ export async function fetchPublicProductListCombined(
         p."sizeSystem"::text AS "sizeSystem",
         p.size,
         p."isRentable",
-        p."createdAt"
-      FROM "Product" p
-      WHERE ${where}
-      ORDER BY ${orderBy}
-      LIMIT ${filters.take}
-      OFFSET ${filters.skip}
+        p."createdAt",
+        r.sort_ord
+      FROM ranked r
+      INNER JOIN "Product" p ON p.id = r.id
+      WHERE r.sort_ord > ${filters.skip}
+        AND r.sort_ord <= ${filters.skip + filters.take}
     ),
     cover_images AS (
       SELECT DISTINCT ON (pi."productId")
@@ -601,10 +691,7 @@ export async function fetchPublicProductListCombined(
     LEFT JOIN first_tiers ft ON ft."productId" = f.id
     LEFT JOIN "Category" c ON c.id = f."categoryId"
     LEFT JOIN "Purpose" pu ON pu.id = f."purposeId"
-    ORDER BY
-      (f."isVip" = true AND f."vipExpiresAt" IS NOT NULL AND f."vipExpiresAt" > NOW()) DESC,
-      f."createdAt" DESC,
-      f.id DESC
+    ORDER BY f.sort_ord ASC
   `)
 }
 
@@ -749,11 +836,26 @@ export function finalizeProductListResponse(payload: CachedListPayload): CachedL
 }
 
 async function buildListPayload(filters: PublicListFilters): Promise<CachedListPayload> {
-  const rows = await fetchPublicProductListCombined(filters)
-  const mapped = sortProductsByVipPriority(mapCombinedRowsToProducts(rows))
   const pageSize = filters.take - 1
-  const hasMore = mapped.length > pageSize
-  const products = hasMore ? mapped.slice(0, pageSize) : mapped
+  const rows = await fetchPublicProductListCombined(filters)
+  let mapped = dedupeProductsById(mapCombinedRowsToProducts(rows))
+
+  if (filters.featuredFirst && filters.skip === 0) {
+    const featuredRows = await fetchHomepageFeaturedProducts(filters)
+    const featuredMapped = dedupeProductsById(mapCombinedRowsToProducts(featuredRows))
+    if (featuredMapped.length > 0) {
+      const firstPageIds = new Set(mapped.slice(0, pageSize).map((product) => product.id))
+      const needsMerge = featuredMapped.some((product) => !firstPageIds.has(product.id))
+      if (needsMerge) {
+        mapped = mergeHomepageFirstPageProducts(mapped, featuredMapped, pageSize)
+      }
+    }
+  }
+
+  const hasMore = rows.length > pageSize || mapped.length > pageSize
+  const products = dedupeProductsById(
+    mapped.length > pageSize ? mapped.slice(0, pageSize) : mapped,
+  )
   return { products, hasMore }
 }
 
@@ -762,7 +864,7 @@ const getCachedProductList = unstable_cache(
     const filters = JSON.parse(filtersKey) as PublicListFilters
     return buildListPayload(filters)
   },
-  ['public-product-list-v5'],
+  ['public-product-list-v8'],
   {
     revalidate: 120,
     tags: [PRODUCT_LIST_CACHE_TAG],
