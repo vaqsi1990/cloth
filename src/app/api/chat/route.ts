@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { isProductChatUnreadForUser } from '@/lib/chat-unread'
 
 // Validation schemas
 const createChatRoomSchema = z.object({
@@ -29,6 +30,8 @@ export async function GET(request: NextRequest) {
       createdAt: Date
       updatedAt: Date
       status: string
+      userId: string | null
+      adminId: string | null
       productId: number | null
       product_name: string | null
       product_image: string | null
@@ -43,7 +46,8 @@ export async function GET(request: NextRequest) {
       last_message_isFromAdmin?: boolean
       last_message_userId?: string
     }>>`
-      SELECT cr.id, cr."createdAt", cr."updatedAt", cr.status, cr."productId",
+      SELECT cr.id, cr."createdAt", cr."updatedAt", cr.status,
+             cr."userId", cr."adminId", cr."productId",
              p.name as product_name,
              (SELECT pi.url FROM "ProductImage" pi WHERE pi."productId" = p.id ORDER BY pi.position ASC LIMIT 1) as product_image,
              cr."guestName", cr."guestEmail",
@@ -64,14 +68,29 @@ export async function GET(request: NextRequest) {
     // Note: adminId is used to store product author/seller ID for product-related chats
 
     // Transform the data to include messages array for compatibility
-    const transformedChatRooms = chatRooms.map(room => ({
-      ...room,
-      messages: room.last_message ? [{
-        isFromAdmin: room.last_message_isFromAdmin || false,
-        userId: room.last_message_userId || null,
-        content: room.last_message
-      }] : []
-    }))
+    const transformedChatRooms = chatRooms.map((room) => {
+      const lastMessageIsFromAdmin = room.last_message_isFromAdmin || false
+      const isUnread = room.last_message
+        ? isProductChatUnreadForUser(
+            lastMessageIsFromAdmin,
+            room.userId,
+            room.adminId,
+            session.user.id,
+          )
+        : false
+
+      return {
+        ...room,
+        is_unread: isUnread,
+        messages: room.last_message
+          ? [{
+              isFromAdmin: lastMessageIsFromAdmin,
+              userId: room.last_message_userId || null,
+              content: room.last_message,
+            }]
+          : [],
+      }
+    })
 
     return NextResponse.json({
       success: true,

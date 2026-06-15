@@ -17,6 +17,8 @@ import {
   Ticket,
   ShieldBan,
 } from 'lucide-react'
+import ChatUnreadBadge from '@/components/ChatUnreadBadge'
+import { useSupportChatNotification } from '@/components/SupportChatNotificationProvider'
 
 // ---------------------
 // Types
@@ -41,7 +43,7 @@ const AdminDashboard = () => {
     totalRevenue: 0,
   })
   const [statsLoading, setStatsLoading] = useState(false)
-  const [unreadChatCount, setUnreadChatCount] = useState(0)
+  const { unreadCount: unreadChatCount } = useSupportChatNotification()
   const hasFetchedRef = useRef(false)
 
   // Redirect unauthenticated users
@@ -86,37 +88,6 @@ const AdminDashboard = () => {
     }
     // SUPPORT doesn't need stats, only ADMIN does
   }, [status, session?.user?.role])
-
-  // Fetch unread chat count
-  useEffect(() => {
-    const fetchUnreadChatCount = async () => {
-      if (session?.user?.role === 'ADMIN') {
-        try {
-          const response = await fetch('/api/admin/chat/unread-count', {
-            cache: 'no-store',
-            headers: {
-              'Cache-Control': 'no-cache'
-            }
-          })
-          
-          if (response.ok) {
-            const data = await response.json()
-            if (data.success) {
-              setUnreadChatCount(data.unreadCount || 0)
-            }
-          }
-        } catch (error) {
-          console.error('Error fetching unread chat count:', error)
-        }
-      }
-    }
-
-    fetchUnreadChatCount()
-    
-    // Poll for updates every 30 seconds
-    const interval = setInterval(fetchUnreadChatCount, 30000)
-    return () => clearInterval(interval)
-  }, [session])
 
   // ---------------------
   // Loading states
@@ -284,12 +255,22 @@ const AdminDashboard = () => {
               <h1 className="md:text-[24px] text-[20px] font-bold text-gray-900">ადმინ პანელი</h1>
               <p className="text-black mt-1">მოგესალმებით, {session.user.name}</p>
             </div>
-            <Link
-              href="/"
-              className="px-4 py-2 bg-black md:text-[18px] text-[16px] text-white rounded-lg font-bold uppercase tracking-wide transition-colors"
-            >
-              მთავარ გვერდზე დაბრუნება
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link
+                href="/admin/chat"
+                className="relative flex items-center gap-2 px-4 py-2 bg-[#1B3729] text-white rounded-lg hover:bg-[#2a4d3a] transition-colors"
+              >
+                <MessageCircle className="w-5 h-5" />
+                <span className="md:text-[16px] text-[14px] font-medium">Live Chat</span>
+                <ChatUnreadBadge count={unreadChatCount} className="absolute -top-2 -right-2" />
+              </Link>
+              <Link
+                href="/"
+                className="px-4 py-2 bg-black md:text-[18px] text-[16px] text-white rounded-lg font-bold uppercase tracking-wide transition-colors"
+              >
+                მთავარ გვერდზე დაბრუნება
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -341,10 +322,8 @@ const AdminDashboard = () => {
                     >
                       <action.icon className="w-6 h-6 text-white" />
                     </div>
-                    {action.title === 'Live Chat' && unreadChatCount > 0 && (
-                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center animate-pulse">
-                        {unreadChatCount > 99 ? '99+' : unreadChatCount}
-                      </span>
+                    {action.title === 'Live Chat' && (
+                      <ChatUnreadBadge count={unreadChatCount} className="absolute -top-2 -right-2" />
                     )}
                   </div>
                   <div>

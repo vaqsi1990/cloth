@@ -7,6 +7,7 @@ import { MessageCircle, Send, Clock, XCircle, Play, Trash2, ArrowLeft, Bell, Bel
 import { formatDateTime } from '@/utils/dateUtils'
 import { showToast } from '@/utils/toast'
 import ChatTypingIndicator from '@/components/ChatTypingIndicator'
+import ChatUnreadBadge from '@/components/ChatUnreadBadge'
 import { useChatTyping } from '@/hooks/useChatTyping'
 import { useSupportChatNotification } from '@/components/SupportChatNotificationProvider'
 
@@ -30,6 +31,7 @@ interface ChatRoom {
   admin?: { name: string; email: string }
   messages: ChatMessage[]
   _count: { messages: number }
+  is_unread?: boolean
 }
 
 const SupportChatPage = () => {
@@ -51,7 +53,7 @@ const SupportChatPage = () => {
     chatRoomId: selectedChatRoom?.id,
     enabled: !!selectedChatRoom,
   })
-  const { soundEnabled, toggleSound, setActiveChatRoomId, acknowledgeActiveChat } = useSupportChatNotification()
+  const { soundEnabled, toggleSound, unreadCount, setActiveChatRoomId, acknowledgeActiveChat } = useSupportChatNotification()
 
  
   const fetchChatRooms = useCallback(async () => {
@@ -351,6 +353,7 @@ const SupportChatPage = () => {
             <ArrowLeft className="w-5 h-5 text-black" />
           </button>
           <h1 className="text-base sm:text-lg md:text-[20px] font-bold text-black">Live Chat მართვა</h1>
+          <ChatUnreadBadge count={unreadCount} className="relative ml-2" pulse={false} />
           <button
             type="button"
             onClick={toggleSound}
@@ -369,7 +372,10 @@ const SupportChatPage = () => {
           <div className={`bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col h-full min-h-0 w-full lg:w-auto transition-all duration-300 ${selectedChatRoom && !showChatList ? 'hidden lg:flex' : 'flex'}`}>
             <div className="flex-shrink-0 p-3 sm:p-4 lg:p-4 border-b border-gray-200">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
-                <h2 className="text-base sm:text-lg md:text-[20px] font-semibold text-black">საუბრები</h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base sm:text-lg md:text-[20px] font-semibold text-black">საუბრები</h2>
+                  <ChatUnreadBadge count={unreadCount} className="relative" pulse={false} />
+                </div>
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
@@ -396,6 +402,11 @@ const SupportChatPage = () => {
                       key={room.id}
                       onClick={() => {
                         setSelectedChatRoom(room)
+                        setChatRooms((prev) =>
+                          prev.map((entry) =>
+                            entry.id === room.id ? { ...entry, is_unread: false } : entry,
+                          ),
+                        )
                         // On mobile, hide chat list when chat is selected
                         if (window.innerWidth < 1024) {
                           setShowChatList(false)
@@ -412,6 +423,9 @@ const SupportChatPage = () => {
                           <span className="font-medium text-sm sm:text-base md:text-lg">
                             #{room.id}
                           </span>
+                          {room.is_unread ? (
+                            <span className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0" />
+                          ) : null}
                         </div>
                       </div>
                       

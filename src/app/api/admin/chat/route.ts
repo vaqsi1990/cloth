@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { isAdminOrSupport } from '@/lib/roles'
+import { isStaffChatRoomUnread } from '@/lib/chat-unread'
 
 // GET - Get all chat rooms for admin
 export async function GET(request: NextRequest) {
@@ -42,6 +43,8 @@ export async function GET(request: NextRequest) {
       admin_name: string | null
       admin_email: string | null
       message_count: number
+      last_message_isFromAdmin: boolean | null
+      is_unread: boolean
     }>
 
     let totalResult: Array<{ count: bigint }>
@@ -61,7 +64,27 @@ export async function GET(request: NextRequest) {
           u.email as user_email,
           a.name as admin_name,
           a.email as admin_email,
-          COALESCE(mc.cnt, 0)::int as message_count
+          COALESCE(mc.cnt, 0)::int as message_count,
+          (
+            SELECT cm."isFromAdmin"
+            FROM "ChatMessage" cm
+            WHERE cm."chatRoomId" = cr.id
+            ORDER BY cm."createdAt" DESC
+            LIMIT 1
+          ) as last_message_isFromAdmin,
+          (
+            cr.status = 'PENDING'
+            OR (
+              cr.status = 'ACTIVE'
+              AND COALESCE((
+                SELECT cm."isFromAdmin"
+                FROM "ChatMessage" cm
+                WHERE cm."chatRoomId" = cr.id
+                ORDER BY cm."createdAt" DESC
+                LIMIT 1
+              ), false) = false
+            )
+          ) as is_unread
         FROM "ChatRoom" cr
         LEFT JOIN "User" u ON cr."userId" = u.id
         LEFT JOIN "User" a ON cr."adminId" = a.id
@@ -98,7 +121,27 @@ export async function GET(request: NextRequest) {
           u.email as user_email,
           a.name as admin_name,
           a.email as admin_email,
-          COALESCE(mc.cnt, 0)::int as message_count
+          COALESCE(mc.cnt, 0)::int as message_count,
+          (
+            SELECT cm."isFromAdmin"
+            FROM "ChatMessage" cm
+            WHERE cm."chatRoomId" = cr.id
+            ORDER BY cm."createdAt" DESC
+            LIMIT 1
+          ) as last_message_isFromAdmin,
+          (
+            cr.status = 'PENDING'
+            OR (
+              cr.status = 'ACTIVE'
+              AND COALESCE((
+                SELECT cm."isFromAdmin"
+                FROM "ChatMessage" cm
+                WHERE cm."chatRoomId" = cr.id
+                ORDER BY cm."createdAt" DESC
+                LIMIT 1
+              ), false) = false
+            )
+          ) as is_unread
         FROM "ChatRoom" cr
         LEFT JOIN "User" u ON cr."userId" = u.id
         LEFT JOIN "User" a ON cr."adminId" = a.id
@@ -141,6 +184,7 @@ export async function GET(request: NextRequest) {
       _count: {
         messages: room.message_count
       },
+      is_unread: isStaffChatRoomUnread(room.status, room.last_message_isFromAdmin ?? false),
       messages: []
     }))
 

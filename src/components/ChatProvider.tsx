@@ -55,39 +55,16 @@ const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
 
     const checkUnreadMessages = async () => {
       try {
-        const response = await fetch('/api/chat', {
+        const response = await fetch('/api/chat/unread-count', {
           cache: 'no-store',
-          headers: {
-            'Cache-Control': 'no-cache'
-          }
+          headers: { 'Cache-Control': 'no-cache' },
         })
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
-        }
-        
+
+        if (!response.ok) return
+
         const data = await response.json()
-        
-        if (data.success && data.chatRooms) {
-          // Count unread messages (messages not from current user)
-          let unread = 0
-          data.chatRooms.forEach((room: { 
-            messages: Array<{ 
-              isFromAdmin: boolean; 
-              userId?: string;
-              adminId?: string;
-            }> 
-          }) => {
-            if (room.messages && room.messages.length > 0) {
-              const lastMessage = room.messages[0]
-              // Count as unread if message is from admin or from another user
-              if (lastMessage.isFromAdmin || 
-                  (lastMessage.userId && lastMessage.userId !== session.user.id)) {
-                unread++
-              }
-            }
-          })
-          setUnreadCount(unread)
+        if (data.success) {
+          setUnreadCount(data.unreadCount || 0)
         }
       } catch (error) {
         console.error('Error checking unread messages:', error)

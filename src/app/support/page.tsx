@@ -13,6 +13,7 @@ import {
   BellOff,
 } from 'lucide-react'
 import { useSupportChatNotification } from '@/components/SupportChatNotificationProvider'
+import ChatUnreadBadge from '@/components/ChatUnreadBadge'
 
 const SupportDashboard = () => {
   const { data: session, status } = useSession()
@@ -113,6 +114,14 @@ const SupportDashboard = () => {
               <p className="text-black mt-1">მოგესალმებით, {session.user.name}</p>
             </div>
             <div className="flex items-center gap-3">
+              <Link
+                href="/support/chat"
+                className="relative flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+              >
+                <MessageCircle className="w-5 h-5" />
+                <span className="md:text-[16px] text-[14px] font-medium">Live Chat</span>
+                <ChatUnreadBadge count={unreadChatCount} className="absolute -top-2 -right-2" />
+              </Link>
               <button
                 type="button"
                 onClick={toggleSound}
@@ -150,10 +159,8 @@ const SupportDashboard = () => {
                     className={`w-12 h-12 ${action.color} rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300 relative`}
                   >
                     <action.icon className="w-6 h-6 text-white" />
-                    {action.href === '/support/chat' && unreadChatCount > 0 && (
-                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center min-w-[24px]">
-                        {unreadChatCount > 99 ? '99+' : unreadChatCount}
-                      </span>
+                    {action.href === '/support/chat' && (
+                      <ChatUnreadBadge count={unreadChatCount} className="absolute -top-2 -right-2" />
                     )}
                   </div>
                   <div>

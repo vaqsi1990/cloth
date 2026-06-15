@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { MessageCircle } from 'lucide-react'
+import ChatUnreadBadge from '@/components/ChatUnreadBadge'
 
 interface ChatButtonProps {
   onClick: () => void
@@ -12,14 +13,10 @@ const ChatButton: React.FC<ChatButtonProps> = ({ onClick, unreadCount = 0 }) => 
   return (
     <button
       onClick={onClick}
-      className="fixed bottom-6 right-6 z-40 bg-[#1B3729] text-white p-4 rounded-full shadow-lg hover:bg-[#2a4d3a] transition-all duration-300 hover:scale-110 group"
+      className="fixed bottom-6 right-6 z-40 bg-[#1B3729] text-white p-4 rounded-full shadow-lg hover:bg-[#2a4d3a] transition-all duration-300 hover:scale-110 group relative"
     >
       <MessageCircle className="w-6 h-6" />
-      {unreadCount > 0 && (
-        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold animate-pulse">
-          {unreadCount > 99 ? '99+' : unreadCount}
-        </span>
-      )}
+      <ChatUnreadBadge count={unreadCount} className="absolute -top-1 -right-1" />
       
       {/* Tooltip */}
       <div className="absolute bottom-full right-0 mb-2 px-3 py-1 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">

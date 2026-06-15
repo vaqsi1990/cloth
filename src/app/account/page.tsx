@@ -15,7 +15,9 @@ import {
   type ProductStatusValue,
 } from '@/lib/product-status-sync'
 import ChatTypingIndicator from '@/components/ChatTypingIndicator'
+import ChatUnreadBadge from '@/components/ChatUnreadBadge'
 import { useChatTyping } from '@/hooks/useChatTyping'
+import { useUserChatUnreadCount } from '@/hooks/useUserChatUnreadCount'
 interface Order {
   id: number
   total: number
@@ -133,6 +135,13 @@ const AccountPageContent = () => {
     chatRoomId: selectedChatRoom?.id,
     enabled: !!selectedChatRoom,
   })
+  const { unreadCount: polledChatUnread, refresh: refreshChatUnread } = useUserChatUnreadCount(
+    !!session?.user?.id,
+  )
+  const chatsUnreadCount =
+    activeTab === 'chats' && chatRooms.length > 0
+      ? chatRooms.filter((room) => room.is_unread).length
+      : polledChatUnread
   const isSeller = userStats.productsCount > 0
   // Show verification for all non-admin users who haven't been approved yet
   const sellerNeedsVerification = true // Always show for non-admin users
@@ -427,6 +436,7 @@ const AccountPageContent = () => {
       const data = await response.json()
       if (data.success) {
         setChatRooms(data.chatRooms || [])
+        void refreshChatUnread()
       }
     } catch (error) {
       console.error('Error fetching chat rooms:', error)
@@ -442,6 +452,12 @@ const AccountPageContent = () => {
       if (data.success) {
         setChatMessages(data.messages || [])
         setOtherPartyTyping(Boolean(data.otherPartyTyping))
+        setChatRooms((prev) =>
+          prev.map((room) =>
+            room.id === chatRoomId ? { ...room, is_unread: false } : room,
+          ),
+        )
+        void refreshChatUnread()
       }
     } catch (error) {
       console.error('Error fetching messages:', error)
@@ -1730,7 +1746,15 @@ const AccountPageContent = () => {
             isActive ? 'bg-[#1B3729] text-white' : 'text-black hover:bg-gray-50'
           }`}
         >
-          <tab.icon className="w-5 h-5 shrink-0" />
+          <span className="relative shrink-0">
+            <tab.icon className="w-5 h-5" />
+            {tab.id === 'chats' && (
+              <ChatUnreadBadge
+                count={chatsUnreadCount}
+                className="absolute -top-1.5 -right-2"
+              />
+            )}
+          </span>
           <span>{tab.label}</span>
         </button>
       )
@@ -1749,8 +1773,13 @@ const AccountPageContent = () => {
                 : 'flex w-full md:w-72 lg:w-80 md:shrink-0 md:border-r'
             }`}
           >
-            <div className="p-3 sm:p-4 border-b border-gray-200 shrink-0">
+            <div className="p-3 sm:p-4 border-b border-gray-200 shrink-0 flex items-center justify-between gap-2">
               <h3 className="md:text-[20px] text-[18px] font-bold text-black">ჩათები</h3>
+              <ChatUnreadBadge
+                count={chatsUnreadCount}
+                className="relative"
+                pulse={false}
+              />
             </div>
             <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 min-w-0">
               {loadingChats ? (
@@ -1805,13 +1834,12 @@ const AccountPageContent = () => {
                                 </p>
                               )}
                             </div>
-                            {room.message_count > 0 && (
-                              <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-bold ${
-                                isSelected ? 'bg-white text-[#1B3729]' : 'bg-[#1B3729] text-white'
-                              }`}>
-                                {room.message_count}
-                              </span>
-                            )}
+                            {room.is_unread ? (
+                              <span
+                                className="shrink-0 w-2.5 h-2.5 rounded-full bg-red-500"
+                                title="ახალი შეტყობინება"
+                              />
+                            ) : null}
                           </div>
                         </button>
                         <button

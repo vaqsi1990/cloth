@@ -8,6 +8,8 @@ import { ArrowLeft, Save, User, Mail, Lock, AlertTriangle, Eye, EyeOff, Camera, 
 import ImageUpload from '@/component/CloudinaryUploader'
 import { showToast } from '@/utils/toast'
 import Image from '@/component/AppImage'
+import ChatUnreadBadge from '@/components/ChatUnreadBadge'
+import { useSupportChatNotification } from '@/components/SupportChatNotificationProvider'
 const AdminSettingsPage = () => {
   const { data: session, status, update } = useSession()
   const router = useRouter()
@@ -17,7 +19,7 @@ const AdminSettingsPage = () => {
   const [isEditingProfile, setIsEditingProfile] = useState(false)
   const [profileImage, setProfileImage] = useState<string | null>(null)
   const [isUploadingImage, setIsUploadingImage] = useState(false)
-  const [unreadChatCount, setUnreadChatCount] = useState(0)
+  const { unreadCount: unreadChatCount } = useSupportChatNotification()
   const [showPasswords, setShowPasswords] = useState({
     currentPassword: false,
     newPassword: false,
@@ -106,37 +108,6 @@ const AdminSettingsPage = () => {
     }
     
     fetchAdminProfile()
-  }, [session])
-
-  // Fetch unread chat count
-  useEffect(() => {
-    const fetchUnreadChatCount = async () => {
-      if (session?.user?.role === 'ADMIN') {
-        try {
-          const response = await fetch('/api/admin/chat/unread-count', {
-            cache: 'no-store',
-            headers: {
-              'Cache-Control': 'no-cache'
-            }
-          })
-          
-          if (response.ok) {
-            const data = await response.json()
-            if (data.success) {
-              setUnreadChatCount(data.unreadCount || 0)
-            }
-          }
-        } catch (error) {
-          console.error('Error fetching unread chat count:', error)
-        }
-      }
-    }
-
-    fetchUnreadChatCount()
-    
-    // Poll for updates every 30 seconds
-    const interval = setInterval(fetchUnreadChatCount, 30000)
-    return () => clearInterval(interval)
   }, [session])
 
   const togglePasswordVisibility = (field: keyof typeof showPasswords) => {
@@ -351,11 +322,7 @@ const AdminSettingsPage = () => {
               >
                 <MessageCircle className="w-5 h-5" />
                 <span className="md:text-[18px] text-[16px] font-bold">Live Chat</span>
-                {unreadChatCount > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center animate-pulse">
-                    {unreadChatCount > 99 ? '99+' : unreadChatCount}
-                  </span>
-                )}
+                <ChatUnreadBadge count={unreadChatCount} className="absolute -top-2 -right-2" />
               </Link>
             </div>
           </div>

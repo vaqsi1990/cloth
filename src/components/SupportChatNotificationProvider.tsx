@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext } from 'react'
 import { useSession } from 'next-auth/react'
+import { isAdminOrSupport } from '@/lib/roles'
 import { useSupportChatNotifications } from '@/hooks/useSupportChatNotifications'
 
 interface SupportChatNotificationContextValue {
@@ -30,14 +31,15 @@ export default function SupportChatNotificationProvider({
   children: React.ReactNode
 }) {
   const { data: session, status } = useSession()
-  const isSupportUser = status === 'authenticated' && session?.user?.role === 'SUPPORT'
+  const isStaffChatUser =
+    status === 'authenticated' && isAdminOrSupport(session?.user?.role)
   const {
     unreadCount,
     soundEnabled,
     toggleSound,
     setActiveChatRoomId,
     acknowledgeActiveChat,
-  } = useSupportChatNotifications(isSupportUser)
+  } = useSupportChatNotifications(isStaffChatUser)
 
   return (
     <SupportChatNotificationContext.Provider

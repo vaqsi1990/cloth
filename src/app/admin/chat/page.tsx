@@ -7,7 +7,9 @@ import { MessageCircle, Send, Clock, XCircle, Play, Trash2, Menu, X, ArrowLeft }
 import { formatDateTime } from '@/utils/dateUtils'
 import { showToast } from '@/utils/toast'
 import ChatTypingIndicator from '@/components/ChatTypingIndicator'
+import ChatUnreadBadge from '@/components/ChatUnreadBadge'
 import { useChatTyping } from '@/hooks/useChatTyping'
+import { useSupportChatNotification } from '@/components/SupportChatNotificationProvider'
 
 interface ChatMessage {
   id: number
@@ -29,6 +31,7 @@ interface ChatRoom {
   admin?: { name: string; email: string }
   messages: ChatMessage[]
   _count: { messages: number }
+  is_unread?: boolean
 }
 
 const AdminChatPage = () => {
@@ -50,6 +53,7 @@ const AdminChatPage = () => {
     chatRoomId: selectedChatRoom?.id,
     enabled: !!selectedChatRoom,
   })
+  const { unreadCount, setActiveChatRoomId, acknowledgeActiveChat } = useSupportChatNotification()
 
  
   const fetchChatRooms = useCallback(async () => {
@@ -120,11 +124,17 @@ const AdminChatPage = () => {
         
         setMessages(uniqueMessages)
         setOtherPartyTyping(Boolean(data.otherPartyTyping))
+        acknowledgeActiveChat()
       }
     } catch (error) {
       console.error('Error fetching messages:', error)
     }
-  }, [selectedChatRoom])
+  }, [selectedChatRoom, acknowledgeActiveChat])
+
+  useEffect(() => {
+    setActiveChatRoomId(selectedChatRoom?.id ?? null)
+    return () => setActiveChatRoomId(null)
+  }, [selectedChatRoom?.id, setActiveChatRoomId])
 
   useEffect(() => {
     if (status === 'loading') {
@@ -339,8 +349,10 @@ const AdminChatPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <div className="flex-shrink-0 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 bg-white border-b border-gray-200">
-        <h1 className="text-base sm:text-lg md:text-[20px] font-bold text-black">Live Chat მართვა</h1>
-      
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-base sm:text-lg md:text-[20px] font-bold text-black">Live Chat მართვა</h1>
+          <ChatUnreadBadge count={unreadCount} className="relative" pulse={false} />
+        </div>
       </div>
 
       <div className="flex-1 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 min-h-0">
@@ -349,7 +361,10 @@ const AdminChatPage = () => {
           <div className={`bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col h-full min-h-0 w-full lg:w-auto transition-all duration-300 ${selectedChatRoom && !showChatList ? 'hidden lg:flex' : 'flex'}`}>
             <div className="flex-shrink-0 p-3 sm:p-4 lg:p-4 border-b border-gray-200">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
-                <h2 className="text-base sm:text-lg md:text-[20px] font-semibold text-black">საუბრები</h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base sm:text-lg md:text-[20px] font-semibold text-black">საუბრები</h2>
+                  <ChatUnreadBadge count={unreadCount} className="relative" pulse={false} />
+                </div>
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
@@ -376,6 +391,11 @@ const AdminChatPage = () => {
                       key={room.id}
                       onClick={() => {
                         setSelectedChatRoom(room)
+                        setChatRooms((prev) =>
+                          prev.map((entry) =>
+                            entry.id === room.id ? { ...entry, is_unread: false } : entry,
+                          ),
+                        )
                         // On mobile, hide chat list when chat is selected
                         if (window.innerWidth < 1024) {
                           setShowChatList(false)
@@ -392,6 +412,9 @@ const AdminChatPage = () => {
                           <span className="font-medium text-sm sm:text-base md:text-lg">
                             #{room.id}
                           </span>
+                          {room.is_unread ? (
+                            <span className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0" />
+                          ) : null}
                         </div>
                       </div>
                       
