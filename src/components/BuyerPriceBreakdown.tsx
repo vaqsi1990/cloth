@@ -34,10 +34,7 @@ export default function BuyerPriceBreakdown({
         <span>პროდუქტის ფასი</span>
         <span>₾{sellerEffective.toFixed(2)}</span>
       </div>
-      <div className="flex justify-between gap-4">
-        <span>სერვისის საკომისიო ({commissionPercent}%)</span>
-        <span>₾{commission.toFixed(2)}</span>
-      </div>
+      
       <div className="flex justify-between gap-4 font-semibold border-t border-gray-200 pt-1">
         <span>სულ</span>
         <span>₾{total.toFixed(2)}</span>
