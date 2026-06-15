@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { prismaCacheStrategy } from '@/lib/prisma-cache'
 import { dedupeRentalPeriods, minRentalEndDateStillBlocking } from '@/lib/rental-dates'
+import { isProductRentalBlockingSuspended } from '@/lib/update-product-status'
 
 const RENTAL_STATUS_CACHE = { swr: 30, ttl: 30 }
 
@@ -52,13 +53,32 @@ export async function fetchActiveRentalPeriodsByProduct(
 ): Promise<Record<number, BatchRentalPeriod[]>> {
   if (productIds.length === 0) return {}
 
+  const products = await prisma.product.findMany({
+    where: { id: { in: productIds } },
+    select: { id: true, status: true },
+    take: 100,
+    ...prismaCacheStrategy(RENTAL_STATUS_CACHE),
+  })
+
+  const blockingProductIds = products
+    .filter((product) => !isProductRentalBlockingSuspended(product.status))
+    .map((product) => product.id)
+
+  const emptyResult = Object.fromEntries(
+    productIds.map((productId) => [productId, [] as BatchRentalPeriod[]]),
+  )
+
+  if (blockingProductIds.length === 0) {
+    return emptyResult
+  }
+
   const today = startOfToday()
   const minBlockingEndDate = minRentalEndDateStillBlocking(today)
 
   const [activeRentals, activeOrders, activeInquiries] = await Promise.all([
     prisma.rental.findMany({
       where: {
-        productId: { in: productIds },
+        productId: { in: blockingProductIds },
         status: { in: ['RESERVED', 'ACTIVE'] },
         endDate: { gte: minBlockingEndDate },
       },
@@ -78,7 +98,7 @@ export async function fetchActiveRentalPeriodsByProduct(
         status: { in: ['PENDING', 'PAID', 'SHIPPED'] },
         items: {
           some: {
-            productId: { in: productIds },
+            productId: { in: blockingProductIds },
             isRental: true,
             rentalEndDate: { gte: minBlockingEndDate },
           },
@@ -88,7 +108,7 @@ export async function fetchActiveRentalPeriodsByProduct(
         status: true,
         items: {
           where: {
-            productId: { in: productIds },
+            productId: { in: blockingProductIds },
             isRental: true,
             rentalEndDate: { gte: minBlockingEndDate },
           },
@@ -106,7 +126,7 @@ export async function fetchActiveRentalPeriodsByProduct(
     }),
     prisma.rentalInquiry.findMany({
       where: {
-        productId: { in: productIds },
+        productId: { in: blockingProductIds },
         status: { in: ['PENDING', 'APPROVED', 'BOOKED'] },
         endDate: { gte: minBlockingEndDate },
       },
@@ -163,8 +183,8 @@ export async function fetchActiveRentalPeriodsByProduct(
     )
   }
 
-  const result: Record<number, BatchRentalPeriod[]> = {}
-  for (const productId of productIds) {
+  const result: Record<number, BatchRentalPeriod[]> = { ...emptyResult }
+  for (const productId of blockingProductIds) {
     result[productId] = mergeProductRentalPeriods(
       rentalStatusByProduct[productId] || {},
     )

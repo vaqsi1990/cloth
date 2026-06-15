@@ -19,6 +19,39 @@ export function isProductStatus(value: unknown): value is ProductStatusInput {
   )
 }
 
+/** Manual AVAILABLE status overrides calendar blocks from past rentals/orders. */
+export function isProductRentalBlockingSuspended(
+  status: ProductStatus | string | null | undefined,
+): boolean {
+  return status === 'AVAILABLE'
+}
+
+/** Clear rental blocks so the product can be booked again immediately. */
+export async function clearProductRentalBlocks(productId: number): Promise<void> {
+  await Promise.all([
+    prisma.orderItem.deleteMany({
+      where: {
+        productId,
+        isRental: true,
+      },
+    }),
+    prisma.rental.updateMany({
+      where: {
+        productId,
+        status: { in: ['RESERVED', 'ACTIVE'] },
+      },
+      data: { status: 'CANCELED' },
+    }),
+    prisma.rentalInquiry.updateMany({
+      where: {
+        productId,
+        status: { in: ['PENDING', 'APPROVED', 'BOOKED'] },
+      },
+      data: { status: 'CANCELLED' },
+    }),
+  ])
+}
+
 export async function updateProductStatus(
   productId: number,
   status: ProductStatusInput,
@@ -36,12 +69,7 @@ export async function updateProductStatus(
   })
 
   if (status === 'AVAILABLE') {
-    await prisma.orderItem.deleteMany({
-      where: {
-        productId,
-        isRental: true,
-      },
-    })
+    await clearProductRentalBlocks(productId)
   }
 
   revalidateProductCaches(productId, { authorId: updatedProduct.userId })

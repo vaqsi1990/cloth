@@ -27,6 +27,7 @@ import { resolveCategoryIdForWrite } from '@/lib/category-sync'
 import {
   isProductStatus,
   updateProductStatus,
+  clearProductRentalBlocks,
 } from '@/lib/update-product-status'
 
 const VALID_PRODUCT_STATUSES = new Set([
@@ -490,15 +491,9 @@ export async function PUT(
       })
     })
 
-    // If product status changed to AVAILABLE, clean up rental order items
-    // (This handles the case where a product was rented and is now available again)
+    // If product status changed to AVAILABLE, clear rental calendar blocks
     if (validatedData.status === 'AVAILABLE') {
-      await prisma.orderItem.deleteMany({
-        where: {
-          productId: productId,
-          isRental: true
-        }
-      })
+      await clearProductRentalBlocks(productId)
     }
 
     revalidateProductCaches(productId, { authorId: updatedProduct.userId })

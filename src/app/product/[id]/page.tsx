@@ -691,11 +691,14 @@ const ProductPage = () => {
     // Since variants no longer have size, use product size
     const getAvailableSizes = () => product?.size ? [product.size] : []
 
-    const getRentalPeriods = (): RentalPeriod[] => activeRentalPeriods
+    const effectiveRentalPeriods =
+        product?.status === 'AVAILABLE' ? [] : activeRentalPeriods
 
-    const hasActiveRentals = (): boolean => activeRentalPeriods.length > 0
+    const getRentalPeriods = (): RentalPeriod[] => effectiveRentalPeriods
 
-    const blockedRentalDates = getBlockedCalendarDates(activeRentalPeriods)
+    const hasActiveRentals = (): boolean => effectiveRentalPeriods.length > 0
+
+    const blockedRentalDates = getBlockedCalendarDates(effectiveRentalPeriods)
 
     // Get first available variant (one without active rentals)
     const firstAvailableVariant = () => {
@@ -742,8 +745,8 @@ const ProductPage = () => {
     }
 
     const earliestAvailableGlobal = () => {
-        if (!activeRentalPeriods.length) return null
-        const sorted = [...activeRentalPeriods].sort(
+        if (!effectiveRentalPeriods.length) return null
+        const sorted = [...effectiveRentalPeriods].sort(
             (a, b) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime()
         )
         const earliestEndDate = firstAvailableRentalStartAfter(sorted[0].endDate)
@@ -757,7 +760,7 @@ const ProductPage = () => {
 
     const isDateBlocked = (date: Date) => {
         if (!date) return false
-        return isDateBlockedByRentalPeriods(date, activeRentalPeriods)
+        return isDateBlockedByRentalPeriods(date, effectiveRentalPeriods)
     }
 
     useEffect(() => {
@@ -765,14 +768,14 @@ const ProductPage = () => {
 
         const startBlocked =
             rentalStartDate &&
-            isDateBlockedByRentalPeriods(rentalStartDate, activeRentalPeriods)
+            isDateBlockedByRentalPeriods(rentalStartDate, effectiveRentalPeriods)
         const endBlocked =
             rentalEndDate &&
-            isDateBlockedByRentalPeriods(rentalEndDate, activeRentalPeriods)
+            isDateBlockedByRentalPeriods(rentalEndDate, effectiveRentalPeriods)
         const hasConflict =
             rentalStartDate &&
             rentalEndDate &&
-            activeRentalPeriods.some((period) =>
+            effectiveRentalPeriods.some((period) =>
                 hasRentalPeriodConflict(
                     rentalStartDate,
                     rentalEndDate,
@@ -785,7 +788,7 @@ const ProductPage = () => {
             setRentalStartDate('')
             setRentalEndDate('')
         }
-    }, [activeRentalPeriods, rentalStartDate, rentalEndDate])
+    }, [effectiveRentalPeriods, rentalStartDate, rentalEndDate])
 
     const calcDays = () => {
         if (!rentalStartDate || !rentalEndDate) return 0

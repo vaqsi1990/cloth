@@ -81,6 +81,7 @@ export async function POST(request: NextRequest) {
       where: { id: productId },
       select: {
         id: true,
+        status: true,
         approvalStatus: true,
         userId: true,
         variants: {
@@ -128,6 +129,7 @@ export async function POST(request: NextRequest) {
 
       // Check if variant is available for rental during the requested period
       // Need to check both rental table and order items with active rentals
+      if (product.status !== 'AVAILABLE') {
       
       // 1. Check rental table
       const existingRentals = await prisma.rental.findMany({
@@ -205,6 +207,7 @@ export async function POST(request: NextRequest) {
           { error: 'Product variant is not available for the selected dates' },
           { status: 409 }
         )
+      }
       }
     }
 

@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { isRentalEndBeforeStart, hasRentalPeriodConflict, minRentalEndDateStillBlocking } from '@/lib/rental-dates'
+import { isProductRentalBlockingSuspended } from '@/lib/update-product-status'
 
 export function hasRentalDateConflict(
   start: Date,
@@ -27,10 +28,25 @@ export async function findRentalDateConflict(
   const productIds = [...new Set(items.map((i) => i.productId))]
   const minBlockingEndDate = minRentalEndDateStillBlocking(new Date())
 
+  const products = await prisma.product.findMany({
+    where: { id: { in: productIds } },
+    select: { id: true, status: true },
+  })
+  const blockingProductIds = new Set(
+    products
+      .filter((product) => !isProductRentalBlockingSuspended(product.status))
+      .map((product) => product.id),
+  )
+
+  const blockingItems = items.filter((item) => blockingProductIds.has(item.productId))
+  if (blockingItems.length === 0) return null
+
+  const blockingIds = [...blockingProductIds]
+
   const [existingRentals, existingOrders] = await Promise.all([
     prisma.rental.findMany({
       where: {
-        productId: { in: productIds },
+        productId: { in: blockingIds },
         status: { in: ['RESERVED', 'ACTIVE'] },
       },
       select: {
@@ -44,7 +60,7 @@ export async function findRentalDateConflict(
         status: { in: ['PENDING', 'PAID', 'SHIPPED'] },
         items: {
           some: {
-            productId: { in: productIds },
+            productId: { in: blockingIds },
             isRental: true,
             rentalEndDate: { gte: minBlockingEndDate },
           },
@@ -53,7 +69,7 @@ export async function findRentalDateConflict(
       select: {
         items: {
           where: {
-            productId: { in: productIds },
+            productId: { in: blockingIds },
             isRental: true,
             rentalEndDate: { gte: minBlockingEndDate },
           },
@@ -97,7 +113,7 @@ export async function findRentalDateConflict(
     }
   }
 
-  for (const item of items) {
+  for (const item of blockingItems) {
     const start = new Date(item.rentalStartDate)
     const end = new Date(item.rentalEndDate)
 
