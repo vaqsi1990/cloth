@@ -1,0 +1,1198 @@
+"use client"
+import React, { useState, useEffect, useMemo } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
+import Link from 'next/link'
+import { ArrowLeft, Save, X, Plus } from 'lucide-react'
+import { z } from 'zod'
+import { Product, ProductVariant } from '@/types/product'
+import ImageUploadForProduct from '@/component/productimage'
+import ProductCategorySelect from '@/component/ProductCategorySelect'
+import { showToast } from '@/utils/toast'
+import { PRODUCT_FORM_COLORS } from '@/lib/product-colors'
+import {
+  isValidProductText,
+  PRODUCT_DESCRIPTION_ERROR_MESSAGE,
+  PRODUCT_NAME_ERROR_MESSAGE,
+  PRODUCT_TEXT_REGEX,
+} from '@/lib/product-text'
+import {
+  DEFAULT_PRODUCT_CATEGORIES,
+  filterProductCategoriesByGender,
+  isCategoryValidForProductGender,
+  isSizeOptionalCategoryId,
+  mergeProductCategoriesWithDefaults,
+  PRODUCT_GENDER_OPTIONS,
+} from '@/lib/product-categories'
+import {
+  productPickupAddressField,
+  refineProductPickupAddress,
+} from '@/lib/product-pickup'
+import {
+  productImageUrlsField,
+  refineProductImagesAndPricing,
+  getProductCreateFieldErrors,
+} from '@/lib/product-create-validation'
+import ProductDiscountFields from '@/components/ProductDiscountFields'
+import { getProductDiscountBasePrice } from '@/lib/discount-helpers'
+import {
+  optionalCategoryIdField,
+} from '@/lib/product-schema-fields'
+import { isProductVipActive, VIP_MONTHLY_PRICE_GEL } from '@/lib/product-vip'
+import {
+  buildProductFormSizeOptions,
+  getProductFormSizeSelectValue,
+  isChildrenAgeSize,
+  parseProductFormSizeSelection,
+} from '@/lib/shop-product-filters'
+import { isSupport } from '@/lib/roles'
+
+const productSchema = z.object({
+  name: z.string()
+    .min(1, 'სახელი აუცილებელია')
+    .regex(PRODUCT_TEXT_REGEX, PRODUCT_NAME_ERROR_MESSAGE),
+  slug: z.string().min(1, 'Slug აუცილებელია').regex(/^[a-z0-9-]+$/, 'Slug უნდა შეიცავდეს მხოლოდ პატარა ასოებს, ციფრებს და ტირეებს'),
+  brand: z.string().optional(),
+  description: z.string()
+    .optional()
+    .refine((val) => !val || isValidProductText(val), {
+      message: PRODUCT_DESCRIPTION_ERROR_MESSAGE,
+    }),
+  stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი').default(0),
+  gender: z.enum(['MEN', 'WOMEN', 'CHILDREN', 'UNISEX']).default('UNISEX'),
+  color: z.string().optional(),
+  location: z.string().optional(),
+  allowsPickup: z.boolean().default(false),
+  pickupAddress: productPickupAddressField,
+  sizeSystem: z.preprocess(
+    (val) => (val === '' || val === null ? undefined : val),
+    z.enum(['EU', 'US', 'UK', 'CN']).optional()
+  ),
+  size: z.preprocess(
+    (val) => (val === '' || val === null ? undefined : val),
+    z.string().optional()
+  ),
+  isNew: z.boolean().default(false),
+  isSecondHand: z.boolean().default(false),
+  discount: z.preprocess(
+    (val) => (val === null ? undefined : val),
+    z.number().min(0).optional()
+  ),
+  discountDays: z.preprocess(
+    (val) => (val === null ? undefined : val),
+    z.number().int().min(1).optional()
+  ),
+  rating: z.number().min(0).max(5).optional(),
+  categoryId: optionalCategoryIdField,
+  isRentable: z.boolean().default(true),
+  pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').nullable().optional(),
+  maxRentalDays: z.number().nullable().optional(),
+  status: z.enum(['AVAILABLE', 'RENTED', 'RESERVED', 'MAINTENANCE', 'DAMAGED']).default('AVAILABLE'),
+  variants: z.array(z.object({
+    size: z.preprocess(
+      (val) => (val === '' || val === null ? undefined : val),
+      z.string().optional()
+    ),
+    price: z.number().min(0, 'ფასი უნდა იყოს დადებითი'),
+    discount: z.number().min(0).optional(),
+    sizeSystem: z.enum(['EU', 'US', 'UK', 'CN']).optional()
+  })).default([]),
+  imageUrls: productImageUrlsField,
+  rentalPriceTiers: z.preprocess(
+    (val) => {
+      // If it's an array with all pricePerDay = 0, convert to empty array
+      if (Array.isArray(val) && val.length > 0) {
+        const hasValidPrice = val.some((tier: any) => tier?.pricePerDay > 0)
+        return hasValidPrice ? val : []
+      }
+      return val || []
+    },
+    z.array(z.object({
+      minDays: z.number().int().min(1, 'მინიმალური დღეები უნდა იყოს დადებითი'),
+      pricePerDay: z.number().min(0, 'ფასი დღეში უნდა იყოს დადებითი ან ნული')
+    })).default([])
+  )
+}).superRefine((data, ctx) => {
+  refineProductPickupAddress(data, ctx)
+  refineProductImagesAndPricing(data, ctx)
+})
+
+type ProductFormData = z.infer<typeof productSchema>
+
+const EditProductPage = () => {
+  const params = useParams()
+  const router = useRouter()
+  const { data: session, status } = useSession()
+  const productId = params.id as string
+
+  const [product, setProduct] = useState<Product | null>(null)
+  const [categories, setCategories] = useState(DEFAULT_PRODUCT_CATEGORIES)
+  const [loading, setLoading] = useState(true)
+  const [formData, setFormData] = useState<ProductFormData>({
+    name: '',
+    slug: '',
+    brand: '',
+    description: '',
+    stock: 0,
+    gender: 'UNISEX',
+    color: '',
+    location: '',
+    allowsPickup: false,
+    pickupAddress: undefined,
+    sizeSystem: undefined,
+    size: undefined,
+    isNew: false,
+    isSecondHand: false,
+    discount: undefined,
+    discountDays: undefined,
+    rating: 0,
+    categoryId: undefined,
+    isRentable: true,
+    pricePerDay: undefined,
+    maxRentalDays: undefined,
+    status: 'AVAILABLE',
+    variants: [],
+    imageUrls: [],
+    rentalPriceTiers: [],
+  })
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [wantsVip, setWantsVip] = useState(false)
+  const [wantsRenewal, setWantsRenewal] = useState(false)
+  const [vipWasActiveOnLoad, setVipWasActiveOnLoad] = useState(false)
+  const [customColor, setCustomColor] = useState('')
+  const [useCustomColor, setUseCustomColor] = useState(false)
+
+  type SizeSystem = NonNullable<ProductFormData['sizeSystem']>
+
+  const combinedSizeOptions = useMemo(
+    () => buildProductFormSizeOptions(formData.gender),
+    [formData.gender],
+  )
+
+  const genderCategories = useMemo(
+    () => filterProductCategoriesByGender(categories, formData.gender),
+    [categories, formData.gender],
+  )
+
+  const [selectedSizeSystem, setSelectedSizeSystem] = useState<ProductFormData['sizeSystem'] | ''>('')
+  const [selectedSizeValue, setSelectedSizeValue] = useState<string>('')
+
+  useEffect(() => {
+    if (formData.sizeSystem && formData.size) {
+      setSelectedSizeSystem(formData.gender === 'CHILDREN' ? '' : formData.sizeSystem)
+      setSelectedSizeValue(formData.size)
+    } else {
+      setSelectedSizeSystem('')
+      setSelectedSizeValue('')
+    }
+  }, [formData.sizeSystem, formData.size, formData.gender])
+
+  const handleCombinedSizeSelect = (value: string) => {
+    if (!value) {
+      setSelectedSizeSystem('')
+      setSelectedSizeValue('')
+      handleInputChange('sizeSystem', undefined)
+      handleInputChange('size', undefined)
+      setFormData(prev => ({
+        ...prev,
+        variants: prev.variants.map(variant => ({
+          ...variant,
+          sizeSystem: undefined,
+        })),
+      }))
+      return
+    }
+
+    const parsed = parseProductFormSizeSelection(value, formData.gender)
+    setSelectedSizeSystem(parsed.sizeSystem ?? '')
+    setSelectedSizeValue(parsed.size ?? '')
+    handleInputChange('sizeSystem', parsed.sizeSystem)
+    handleInputChange('size', parsed.size)
+    setFormData(prev => ({
+      ...prev,
+      variants: prev.variants.map(variant => ({
+        ...variant,
+        sizeSystem: parsed.sizeSystem,
+      })),
+    }))
+  }
+
+  useEffect(() => {
+    if (formData.gender === 'CHILDREN') {
+      if (selectedSizeValue && !isChildrenAgeSize(selectedSizeValue)) {
+        handleCombinedSizeSelect('')
+      }
+      return
+    }
+
+    if (selectedSizeValue && isChildrenAgeSize(selectedSizeValue)) {
+      handleCombinedSizeSelect('')
+    }
+  }, [formData.gender, selectedSizeValue])
+
+  const colors = PRODUCT_FORM_COLORS
+
+  const isSizeOptional = useMemo(
+    () => isSizeOptionalCategoryId(formData.categoryId, categories),
+    [formData.categoryId, categories],
+  )
+
+  const isVipActive = useMemo(
+    () => (product ? isProductVipActive(product) : false),
+    [product],
+  )
+
+  const vipExpiryLabel = product?.vipExpiresAt
+    ? new Date(product.vipExpiresAt).toLocaleDateString('ka-GE')
+    : null
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin')
+    } else if (status === 'authenticated' && !isSupport(session?.user?.role)) {
+      router.push('/')
+    }
+  }, [status, session, router])
+
+  // Fetch categories
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch('/api/categories')
+      const data = await response.json()
+      if (data.success && data.categories?.length > 0) {
+        setCategories(mergeProductCategoriesWithDefaults(data.categories))
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error)
+    }
+  }
+
+  // Fetch product data
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        console.log('=== FETCHING PRODUCT ===')
+        console.log('Product ID:', productId)
+        const response = await fetch(`/api/products/${productId}`, { cache: 'no-store' })
+        console.log('Fetch response status:', response.status)
+        const data = await response.json()
+        console.log('Fetch response data:', data)
+        if (data.success) {
+          const product = data.product
+          console.log('Product data:', product)
+          console.log('Product images:', product.images)
+          const imageUrls = product.images?.map((img: { url: string }) => img.url) || []
+          console.log('Mapped image URLs:', imageUrls)
+          setProduct(product)
+          const vipActive = isProductVipActive(product)
+          setWantsVip(vipActive)
+          setVipWasActiveOnLoad(vipActive)
+          setWantsRenewal(false)
+          const productColor = product.color || ''
+          // Check if color is in the predefined list
+          const isPredefinedColor = colors.some(c => c.label === productColor)
+          if (productColor && !isPredefinedColor) {
+            setCustomColor(productColor)
+            setUseCustomColor(true)
+          } else {
+            setCustomColor('')
+            setUseCustomColor(false)
+          }
+          setFormData({
+            name: product.name,
+            slug: product.slug,
+            description: product.description || '',
+            brand: product.brand || '',
+            stock: product.stock || 0,
+            gender: product.gender || 'UNISEX',
+            color: productColor,
+            location: product.location || '',
+            allowsPickup: product.allowsPickup ?? false,
+            pickupAddress: product.pickupAddress || undefined,
+            sizeSystem: product.sizeSystem,
+            size: product.size || undefined,
+            isNew: product.isNew,
+            isSecondHand: product.isSecondHand ?? false,
+            discount: product.discount,
+            discountDays: product.discountDays,
+            rating: product.rating || 0,
+            categoryId: product.category?.id ?? product.categoryId ?? undefined,
+            isRentable: product.isRentable ?? true,
+            pricePerDay: product.pricePerDay || undefined,
+            maxRentalDays: product.maxRentalDays || undefined,
+            status: product.status || 'AVAILABLE',
+            variants: (product.variants || []).map((variant: ProductVariant) => ({
+              price: variant.price
+            })),
+            imageUrls: imageUrls,
+            rentalPriceTiers: product.rentalPriceTiers && product.rentalPriceTiers.length > 0 
+              ? product.rentalPriceTiers 
+              : [{ minDays: 1, pricePerDay: 0 }]
+          })
+          console.log('Form data set successfully')
+        } else {
+          console.log('API returned success: false')
+        }
+      } catch (error) {
+        console.error('=== ERROR FETCHING PRODUCT ===')
+        console.error('Error fetching product:', error)
+      } finally {
+        setLoading(false)
+        console.log('Loading set to false')
+      }
+    }
+
+    if (productId) {
+      fetchProduct()
+      fetchCategories()
+    }
+  }, [productId])
+
+  const generateSlug = (name: string) => {
+    const georgianToLatin: { [key: string]: string } = {
+      'ა': 'a', 'ბ': 'b', 'გ': 'g', 'დ': 'd', 'ე': 'e', 'ვ': 'v', 'ზ': 'z',
+      'თ': 't', 'ი': 'i', 'კ': 'k', 'ლ': 'l', 'მ': 'm', 'ნ': 'n', 'ო': 'o',
+      'პ': 'p', 'ჟ': 'zh', 'რ': 'r', 'ს': 's', 'ტ': 't', 'უ': 'u', 'ფ': 'f',
+      'ქ': 'q', 'ღ': 'gh', 'ყ': 'k', 'შ': 'sh', 'ჩ': 'ch', 'ც': 'ts', 'ძ': 'dz',
+      'წ': 'ts', 'ჭ': 'ch', 'ხ': 'kh', 'ჯ': 'j', 'ჰ': 'h'
+    }
+    
+    return name
+      .toLowerCase()
+      .split('')
+      .map(char => georgianToLatin[char] || char)
+      .join('')
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim()
+  }
+
+  const handleNameChange = (name: string) => {
+    const slug = generateSlug(name)
+    setFormData(prev => ({
+      ...prev,
+      name: name,
+      slug: slug
+    }))
+    
+    // Validate Georgian characters in real-time
+    if (name && !isValidProductText(name)) {
+      setErrors(prev => ({
+        ...prev,
+        name: PRODUCT_NAME_ERROR_MESSAGE,
+      }))
+    } else {
+      // Clear errors when valid
+      if (errors.name) {
+        setErrors(prev => ({ ...prev, name: '' }))
+      }
+    }
+  }
+
+  const handleInputChange = (field: keyof ProductFormData, value: string | number | boolean | undefined) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value,
+      ...(field === 'sizeSystem'
+        ? {
+            variants: prev.variants.map(variant => ({
+              ...variant,
+              sizeSystem:
+                typeof value === 'string' && value.trim() !== ''
+                  ? (value as ProductFormData['sizeSystem'])
+                  : undefined
+            }))
+          }
+        : {})
+    }))
+    
+    // Validate Georgian characters for description in real-time
+    if (field === 'description' && typeof value === 'string') {
+      if (value && !isValidProductText(value)) {
+        setErrors(prev => ({
+          ...prev,
+          description: PRODUCT_DESCRIPTION_ERROR_MESSAGE,
+        }))
+      } else {
+        // Clear errors when valid
+        if (errors.description) {
+          setErrors(prev => ({ ...prev, description: '' }))
+        }
+      }
+    } else {
+      // Clear error when user starts typing for other fields
+      if (errors[field]) {
+        setErrors(prev => ({ ...prev, [field]: '' }))
+      }
+    }
+  }
+
+  const clearSizeFields = () => {
+    setSelectedSizeSystem('')
+    setSelectedSizeValue('')
+    handleInputChange('sizeSystem', undefined)
+    handleInputChange('size', undefined)
+  }
+
+  const handleCategoryChange = (categoryId: number | undefined) => {
+    handleInputChange('categoryId', categoryId)
+    if (isSizeOptionalCategoryId(categoryId, categories)) {
+      clearSizeFields()
+    }
+  }
+
+  const handleGenderChange = (gender: 'MEN' | 'WOMEN' | 'CHILDREN' | 'UNISEX') => {
+    const previousGender = formData.gender
+    setFormData((prev) => ({
+      ...prev,
+      gender,
+      categoryId: isCategoryValidForProductGender(prev.categoryId, gender, categories)
+        ? prev.categoryId
+        : undefined,
+    }))
+    if (previousGender !== gender) {
+      clearSizeFields()
+    }
+  }
+
+  const addVariant = () => {
+    setFormData(prev => ({
+      ...prev,
+      variants: [
+        ...prev.variants,
+        { price: 0 }
+      ]
+    }))
+  }
+
+  const removeVariant = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      variants: prev.variants.filter((_, i) => i !== index)
+    }))
+  }
+
+  const updateVariant = (index: number, field: string, value: string | number | undefined) => {
+    setFormData(prev => ({
+      ...prev,
+      variants: prev.variants.map((variant, i) => 
+        i === index ? { ...variant, [field]: value } : variant
+      )
+    }))
+  }
+
+  const handleImageChange = (urls: string[]) => {
+    setFormData(prev => ({
+      ...prev,
+      imageUrls: urls
+    }))
+  }
+
+  const addRentalPriceTier = () => {
+    setFormData(prev => ({
+      ...prev,
+      rentalPriceTiers: [...(prev.rentalPriceTiers || []), { minDays: 1, pricePerDay: 0 }]
+    }))
+  }
+
+  const removeRentalPriceTier = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      rentalPriceTiers: (prev.rentalPriceTiers || []).filter((_, i) => i !== index)
+    }))
+  }
+
+  const updateRentalPriceTier = (index: number, field: string, value: number) => {
+    setFormData(prev => {
+      const currentTiers = prev.rentalPriceTiers || []
+      // If no tiers exist, create one with the updated value
+      if (currentTiers.length === 0) {
+        const newTier = { minDays: 1, pricePerDay: 0 }
+        return {
+          ...prev,
+          rentalPriceTiers: [{ ...newTier, [field]: value }]
+        }
+      }
+      
+      return {
+        ...prev,
+        rentalPriceTiers: currentTiers.map((tier, i) =>
+          i === index ? { ...tier, [field]: value } : tier
+        )
+      }
+    })
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    console.log('=== FORM SUBMISSION STARTED ===')
+    console.log('Form submitted!')
+    console.log('Product ID:', productId)
+    console.log('Form data:', formData)
+    console.log('Is submitting:', isSubmitting)
+    setIsSubmitting(true)
+    setErrors({})
+
+    const fieldErrors = getProductCreateFieldErrors(formData)
+    if (Object.keys(fieldErrors).length > 0) {
+      setErrors(fieldErrors)
+      showToast(Object.values(fieldErrors).join('; '), 'error')
+      setIsSubmitting(false)
+      return
+    }
+
+    try {
+      console.log('About to validate form data...')
+      console.log('Form data before validation:', JSON.stringify(formData, null, 2))
+      console.log('Image URLs in form data:', formData.imageUrls)
+      console.log('Rental price tiers:', formData.rentalPriceTiers)
+      
+      const hasRentalPrice = formData.rentalPriceTiers && formData.rentalPriceTiers.some(tier => tier.pricePerDay > 0)
+      const hasSalePrice = formData.variants.some((variant) => (variant.price ?? 0) > 0)
+      
+      // Ensure rentalPriceTiers is properly formatted and handle null values
+      const dataToValidate = {
+        ...formData,
+        // Convert empty string to undefined for sizeSystem
+        sizeSystem: formData.sizeSystem && formData.sizeSystem.trim() !== '' 
+          ? formData.sizeSystem 
+          : undefined,
+        // Convert empty string to undefined for size
+        size: formData.size && formData.size.trim() !== '' 
+          ? formData.size 
+          : undefined,
+        // Convert null to undefined for discount
+        discount: formData.discount !== null && formData.discount !== undefined 
+          ? formData.discount 
+          : undefined,
+        discountDays: formData.discountDays !== null && formData.discountDays !== undefined 
+          ? formData.discountDays 
+          : undefined,
+        pricePerDay: formData.pricePerDay || undefined,
+        maxRentalDays: formData.maxRentalDays || undefined,
+        rentalPriceTiers: hasRentalPrice
+          ? (formData.rentalPriceTiers || []).map((tier) => ({
+              ...tier,
+              minDays: tier.minDays < 1 ? 1 : tier.minDays,
+            }))
+          : [],
+        variants: hasSalePrice ? formData.variants : [],
+        color: useCustomColor ? customColor.trim() : formData.color,
+        ...(isSizeOptional
+          ? {
+              size: undefined,
+              sizeSystem: undefined,
+              variants: hasSalePrice
+                ? formData.variants.map((variant) => ({
+                    ...variant,
+                    size: undefined,
+                    sizeSystem: undefined,
+                  }))
+                : [],
+            }
+          : {}),
+      }
+      
+      console.log('Data to validate:', JSON.stringify(dataToValidate, null, 2))
+      const validatedData = productSchema.parse(dataToValidate)
+      console.log('Validation successful, sending update request:', validatedData)
+      
+      const response = await fetch(`/api/products/${productId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(validatedData),
+      })
+      
+      const result = await response.json()
+      console.log('=== API RESPONSE ===')
+      console.log('Response status:', response.status)
+      console.log('Response ok:', response.ok)
+      console.log('Update response:', result)
+      
+      if (result.success) {
+        const needsVipPayment = (!vipWasActiveOnLoad && wantsVip) || wantsRenewal
+        if (needsVipPayment) {
+          const payResponse = await fetch('/api/product-vip/pay', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ productId: parseInt(productId, 10), returnTo: 'support' }),
+          })
+          const payResult = await payResponse.json()
+
+          if (payResult.success && payResult.redirectUrl) {
+            showToast('პროდუქტი განახლდა. გადადით VIP გადახდაზე', 'success')
+            window.location.href = payResult.redirectUrl
+            return
+          }
+
+          showToast(payResult.error || 'VIP გადახდის დაწყება ვერ მოხერხდა', 'error')
+          router.push('/support/products')
+          return
+        }
+
+        console.log('=== SUCCESS ===')
+        showToast('პროდუქტი წარმატებით განახლდა!', 'success')
+        router.push('/support/products')
+      } else {
+        console.log('=== API ERROR ===')
+        console.log('Error result:', result)
+        if (result.errors) {
+          const newErrors: Record<string, string> = {}
+           result.errors.forEach((err: { path: string[]; message: string }) => {
+            if (err.path.length > 0) {
+              newErrors[err.path.join('.')] = err.message
+            }
+          })
+          setErrors(newErrors)
+        } else {
+          showToast(result.message || 'შეცდომა პროდუქტის განახლებისას', 'error')
+        }
+      }
+    } catch (error) {
+      console.log('=== CATCH ERROR ===')
+      console.error('Error updating product:', error)
+      if (error instanceof z.ZodError) {
+        console.log('Zod validation error:', error.issues)
+        const newErrors: Record<string, string> = {}
+        error.issues.forEach(err => {
+          if (err.path.length > 0) {
+            newErrors[err.path.join('.')] = err.message
+          }
+        })
+        setErrors(newErrors)
+      } else {
+        console.error('General error:', error)
+        showToast('შეცდომა პროდუქტის განახლებისას', 'error')
+      }
+    } finally {
+      console.log('=== FINALLY BLOCK ===')
+      setIsSubmitting(false)
+    }
+  }
+
+  if (!session || !isSupport(session.user.role)) {
+    return null
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-black mb-4">იტვირთება...</h1>
+        </div>
+      </div>
+    )
+  }
+
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-black mb-4">პროდუქტი ვერ მოიძებნა</h1>
+          <button 
+            onClick={() => router.push('/support/products')}
+            className="text-black hover:text-black"
+          >
+            დაბრუნდი საფორთში
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="px-6 py-4">
+          <div className="mx-auto px-4 py-4">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="flex md:text-[20px] text-[18px] items-center text-black hover:opacity-80"
+            >
+              <ArrowLeft className="w-5 h-5 mr-2" />
+              უკან დაბრუნება
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-6 py-8">
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Basic Information */}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-[20px] text-black font-semibold mb-6">ძირითადი ინფორმაცია</h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-[20px] text-black font-medium mb-2">
+                  სახელი *
+                </label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => handleNameChange(e.target.value)}
+                  placeholder="შეიყვანეთ პროდუქტის სახელი"
+                  className={`w-full px-4 py-3 border rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black ${errors.name ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                />
+                {errors.name && <p className="text-red-500 md:text-[20px] text-[18px] mt-1">{errors.name}</p>}
+              </div>
+
+              <div>
+                <label className="block text-[20px] text-black font-medium mb-2">
+                  საწყობში რაოდენობა *
+                </label>
+                <input
+                  type="number"
+                  value={formData.stock === undefined || formData.stock === 0 ? '' : formData.stock}
+                  onChange={(e) => {
+                    const val = e.target.value === '' ? undefined : (parseInt(e.target.value) || 0)
+                    handleInputChange('stock', val)
+                  }}
+                  className={`w-full px-4 py-3 border rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${errors.stock ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                />
+                {errors.stock && <p className="text-red-500 md:text-[20px] text-[18px] mt-1">{errors.stock}</p>}
+              </div>
+
+              <div>
+                <label className="block text-[20px] text-black font-medium mb-2">
+                  მდებარეობა
+                </label>
+                <select
+                  value={formData.location || ''}
+                  onChange={(e) => handleInputChange('location', e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                >
+                  <option value="">მდებარეობის არჩევა</option>
+                  <option value="თბილისი">თბილისი</option>
+                  <option value="ქუთაისი">ქუთაისი</option>
+                  <option value="რუსთავი">რუსთავი</option>
+                  <option value="ბათუმი">ბათუმი</option>
+                </select>
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.allowsPickup}
+                    onChange={(e) => {
+                      const checked = e.target.checked
+                      setFormData((prev) => ({
+                        ...prev,
+                        allowsPickup: checked,
+                        pickupAddress: checked ? prev.pickupAddress : undefined,
+                      }))
+                    }}
+                    className="mt-1 w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
+                  />
+                  <span>
+                    <span className="block text-[20px] text-black font-medium">
+                      გატანა ადგილიდან
+                    </span>
+                    <span className="block text-sm text-gray-600 mt-1">
+                      თუ მონიშნულია, მყიდველს შეუძლია აირჩიოს ადგილზე მიღება ან მიტანა. თუ არა — მხოლოდ მიტანა.
+                    </span>
+                  </span>
+                </label>
+              </div>
+
+              {formData.allowsPickup && (
+                <div className="sm:col-span-2">
+                  <label className="block text-[20px] text-black font-medium mb-2">
+                    გატანის ზუსტი მისამართი *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.pickupAddress || ''}
+                    onChange={(e) => handleInputChange('pickupAddress', e.target.value)}
+                    placeholder="მაგ: ლეო დავითაშვილის ქუჩა 120, 0190 თბილისი, საქართველო"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  />
+                  {errors.pickupAddress && (
+                    <p className="text-red-500 text-sm mt-1">{errors.pickupAddress}</p>
+                  )}
+                  <p className="text-sm text-gray-600 mt-1">
+                    მიუთითეთ ზუსტი მისამართი, სადაც მყიდველი გაიტანს პროდუქტს.
+                  </p>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-[20px] text-black font-medium mb-2">
+                  ბრენდი (ოფციონალური)
+                </label>
+                <input
+                  type="text"
+                  value={formData.brand || ''}
+                  onChange={(e) => handleInputChange('brand', e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[20px] text-black font-medium mb-2">
+                  სქესი
+                </label>
+                <select
+                  value={formData.gender}
+                  onChange={(e) => handleGenderChange(e.target.value as 'MEN' | 'WOMEN' | 'CHILDREN' | 'UNISEX')}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                >
+                  {PRODUCT_GENDER_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[20px] text-black font-medium mb-2">
+                  კატეგორია
+                </label>
+                <ProductCategorySelect
+                  categories={genderCategories}
+                  gender={formData.gender}
+                  value={formData.categoryId || ''}
+                  onChange={handleCategoryChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[20px] text-black font-medium mb-2">ფერი</label>
+                <select
+                  value={useCustomColor ? 'სხვა ფერი' : (formData.color || '')}
+                  onChange={(e) => {
+                    const selectedValue = e.target.value
+                    if (selectedValue === 'სხვა ფერი') {
+                      setUseCustomColor(true)
+                      handleInputChange('color', customColor)
+                    } else {
+                      setUseCustomColor(false)
+                      handleInputChange('color', selectedValue)
+                      setCustomColor('')
+                    }
+                  }}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                >
+                  <option value="">აირჩიეთ ფერი</option>
+                  {colors.map((color) => (
+                    <option key={color.id} value={color.label}>
+                      {color.label}
+                    </option>
+                  ))}
+                </select>
+                {useCustomColor && (
+                  <input
+                    type="text"
+                    value={customColor}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      setCustomColor(value)
+                      handleInputChange('color', value)
+                    }}
+                    placeholder="შეიყვანეთ ფერი"
+                    className="w-full mt-2 px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  />
+                )}
+              </div>
+
+              {!isSizeOptional && (
+                <div>
+                  <label className="block text-[20px] text-black font-medium mb-2">
+                    {formData.gender === 'CHILDREN' ? 'ასაკი (არასავალდებულო)' : 'ზომა (არასავალდებულო)'}
+                  </label>
+                  <select
+                    value={getProductFormSizeSelectValue(
+                      formData.gender,
+                      selectedSizeSystem || undefined,
+                      selectedSizeValue || undefined,
+                    )}
+                    onChange={(e) => handleCombinedSizeSelect(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                  >
+                    <option value="">
+                      {formData.gender === 'CHILDREN' ? 'აირჩიეთ ასაკი' : 'აირჩიეთ ზომა'}
+                    </option>
+                    {combinedSizeOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            
+            </div>
+
+            <div className="mt-6">
+              <label className="block text-[20px] text-black font-medium mb-2">
+                აღწერა
+              </label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => handleInputChange('description', e.target.value)}
+                placeholder="შეიყვანეთ პროდუქტის აღწერა"
+                rows={4}
+                className="w-full px-4 text-black py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+              />
+            </div>
+
+          </div>
+
+          {/* Rental Options */}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-[20px] text-black font-semibold mb-6">გაქირავება</h2>
+
+            <div className="space-y-6">
+              {/* Rental Price Tiers */}
+              <div>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-medium text-black">ფასის გეგმა</h3>
+                  <button
+                    type="button"
+                    onClick={addRentalPriceTier}
+                    className="bg-black text-white px-4 py-2 rounded-lg text-[20px] flex items-center space-x-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>ფასის გეგმის დამატება</span>
+                  </button>
+                </div>
+
+                {/* Always show at least one price tier */}
+                {(formData.rentalPriceTiers && formData.rentalPriceTiers.length > 0 ? formData.rentalPriceTiers : [{ minDays: 1, pricePerDay: 0 }]).map((tier, index) => (
+                  <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border border-gray-200 rounded-lg mb-4">
+                    <div>
+                      <label className="block text-[20px] font-medium text-black mb-2">მინიმალური დღეები</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={tier.minDays < 1 ? '' : tier.minDays}
+                        onChange={(e) => {
+                          const raw = e.target.value
+                          if (raw === '') {
+                            updateRentalPriceTier(index, 'minDays', 0)
+                            return
+                          }
+                          const parsed = parseInt(raw, 10)
+                          if (!isNaN(parsed)) {
+                            updateRentalPriceTier(index, 'minDays', parsed)
+                          }
+                        }}
+                        className="w-full px-3 text-black py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[20px] font-medium text-black mb-2">ფასი დღეში</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={tier.pricePerDay}
+                        onChange={(e) => updateRentalPriceTier(index, 'pricePerDay', parseFloat(e.target.value) || 0)}
+                        className="w-full px-3 text-black py-2 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                    </div>
+
+                    <div className="flex items-end">
+                      {(formData.rentalPriceTiers && formData.rentalPriceTiers.length > 0 ? formData.rentalPriceTiers.length : 1) > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeRentalPriceTier(index)}
+                          className="bg-red-500 text-white px-3 py-2 rounded-lg text-[20px] flex items-center space-x-2"
+                        >
+                          <X className="w-4 h-4" />
+                          <span>წაშლა</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Additional Rental Parameters */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-[20px] text-black font-medium mb-2">მაქს დღეები(არასავალდებულო)</label>
+                  <input
+                    type="number"
+                    value={formData.maxRentalDays || ''}
+                    onChange={(e) => handleInputChange('maxRentalDays', e.target.value ? parseInt(e.target.value) : undefined)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="flex justify-between items-center mb-6">
+              <label className="flex items-center gap-3 text-[20px] text-black font-semibold cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={formData.variants.length > 0}
+                  onChange={(e) => {
+                    if (!e.target.checked) {
+                      setFormData(prev => ({ ...prev, variants: [] }))
+                    } else {
+                      addVariant()
+                    }
+                  }}
+                  className="h-5 w-5"
+                />
+                <span>გაყიდვა</span>
+              </label>
+              {formData.variants.length > 0 && (
+                <button
+                  type="button"
+                  onClick={addVariant}
+                  className="bg-black text-white px-4 py-2 rounded-lg text-[20px] flex items-center space-x-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span> დამატება</span>
+                </button>
+              )}
+            </div>
+
+            {formData.variants.length > 0 && formData.variants.map((variant, index) => (
+              <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border border-gray-200 rounded-lg mb-4">
+                <div>
+                  <label className="block text-[20px] text-black font-medium mb-2">ფასი </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={variant.price || ''}
+                    onChange={(e) => updateVariant(index, 'price', e.target.value ? parseFloat(e.target.value) : undefined)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                </div>
+                <div className="flex items-end">
+                  <button
+                    type="button"
+                    onClick={() => removeVariant(index)}
+                    className="bg-red-500 text-white px-3 py-2 rounded-lg text-[20px] flex items-center space-x-2"
+                  >
+                    <X className="w-4 h-4" />
+                    <span>წაშლა</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {formData.variants.length === 0 && (
+              <p className="text-sm text-gray-500">თქვენ შეგიძლიათ დაამატოთ ზომები და საწყობის რაოდენობა.</p>
+            )}
+
+          </div>
+
+          {getProductDiscountBasePrice(formData.variants, formData.rentalPriceTiers).basePrice > 0 && (
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <ProductDiscountFields
+                variants={formData.variants}
+                rentalPriceTiers={formData.rentalPriceTiers}
+                discount={formData.discount}
+                discountDays={formData.discountDays}
+                onDiscountChange={(value) => handleInputChange('discount', value)}
+                onDiscountDaysChange={(value) => handleInputChange('discountDays', value)}
+                discountError={errors.discount}
+                discountDaysError={errors.discountDays}
+              />
+            </div>
+          )}
+
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            {isVipActive ? (
+              <div>
+                <label className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={wantsVip}
+                    disabled
+                    className="mt-1 w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
+                  />
+                  <span>
+                    <span className="block md:text-[18px] text-[16px] text-black font-medium">
+                      VIP პროდუქცია
+                    </span>
+                    <span className="block text-sm text-[#1B3729] font-medium mt-1">
+                      VIP აქტიურია ვადამდე: {vipExpiryLabel}
+                    </span>
+                  </span>
+                </label>
+                <label className="flex items-start gap-3 cursor-pointer mt-4">
+                  <input
+                    type="checkbox"
+                    checked={wantsRenewal}
+                    onChange={(e) => setWantsRenewal(e.target.checked)}
+                    className="mt-1 w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
+                  />
+                  <span className="text-sm text-gray-600">
+                    განაახლე VIP — {VIP_MONTHLY_PRICE_GEL} ლარი 1 თვეში
+                  </span>
+                </label>
+              </div>
+            ) : (
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={wantsVip}
+                  onChange={(e) => setWantsVip(e.target.checked)}
+                  className="mt-1 w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
+                />
+                <span>
+                  <span className="block md:text-[18px] text-[16px] text-black font-medium">
+                    VIP პროდუქცია
+                  </span>
+                  <span className="block text-sm text-gray-600 mt-1">
+                    ღირებულება: {VIP_MONTHLY_PRICE_GEL} ლარი 1 თვეში. თქვენი პროდუქტი გამოჩნდება საიტზე პრიორიტეტულად.
+                  </span>
+                  {wantsVip && (
+                    <span className="block text-sm text-[#1B3729] font-medium mt-2">
+                      განახლების შემდეგ გადახდის გვერდზე გადახდით {VIP_MONTHLY_PRICE_GEL} ლარს VIP სტატუსისთვის.
+                    </span>
+                  )}
+                </span>
+              </label>
+            )}
+          </div>
+
+          {/* Images */}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-[20px] text-black font-semibold mb-6">სურათები</h2>
+            <ImageUploadForProduct
+              value={formData.imageUrls}
+              onChange={handleImageChange}
+            />
+          </div>
+
+          {/* Submit Button */}
+          <div className="flex justify-end space-x-4">
+            <Link
+              href="/support/products"
+              className="bg-gray-500 text-white px-6 py-3 rounded-lg text-[20px] text-black hover:bg-gray-600 transition-colors"
+            >
+              გაუქმება
+            </Link>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="bg-black text-white px-6 py-3 rounded-lg text-[20px] text-black hover:bg-gray-800 transition-colors disabled:bg-gray-400"
+            >
+              {isSubmitting ? 'მუშავდება...' : 'პროდუქტის განახლება'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+export default EditProductPage

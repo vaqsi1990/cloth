@@ -10,14 +10,21 @@ import { getBogCallbackUrl, getSiteUrl } from '@/lib/site-url'
 
 const paySchema = z.object({
   productId: z.number().int().positive(),
-  returnTo: z.enum(['account', 'admin']).optional().default('account'),
+  returnTo: z.enum(['account', 'admin', 'support']).optional().default('account'),
 })
 
-function buildVipRedirectUrls(siteUrl: string, productId: number, returnTo: 'account' | 'admin') {
+function buildVipRedirectUrls(siteUrl: string, productId: number, returnTo: 'account' | 'admin' | 'support') {
   if (returnTo === 'admin') {
     return {
       success: `${siteUrl}/admin/products?vipSuccess=1&productId=${productId}`,
       fail: `${siteUrl}/admin/products?vipFailed=1&productId=${productId}`,
+    }
+  }
+
+  if (returnTo === 'support') {
+    return {
+      success: `${siteUrl}/support/products?vipSuccess=1&productId=${productId}`,
+      fail: `${siteUrl}/support/products?vipFailed=1&productId=${productId}`,
     }
   }
 
