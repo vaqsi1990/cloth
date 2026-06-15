@@ -17,6 +17,8 @@ import {
 } from '@/lib/product-text'
 import {
   DEFAULT_PRODUCT_CATEGORIES,
+  filterProductCategoriesByGender,
+  isCategoryValidForProductGender,
   isSizeOptionalCategoryId,
   mergeProductCategoriesWithDefaults,
   PRODUCT_GENDER_OPTIONS,
@@ -163,6 +165,11 @@ const EditProductPage = () => {
   const combinedSizeOptions = useMemo(
     () => buildProductFormSizeOptions(formData.gender),
     [formData.gender],
+  )
+
+  const genderCategories = useMemo(
+    () => filterProductCategoriesByGender(categories, formData.gender),
+    [categories, formData.gender],
   )
 
   const [selectedSizeSystem, setSelectedSizeSystem] = useState<ProductFormData['sizeSystem'] | ''>('')
@@ -421,6 +428,20 @@ const EditProductPage = () => {
   const handleCategoryChange = (categoryId: number | undefined) => {
     handleInputChange('categoryId', categoryId)
     if (isSizeOptionalCategoryId(categoryId, categories)) {
+      clearSizeFields()
+    }
+  }
+
+  const handleGenderChange = (gender: 'MEN' | 'WOMEN' | 'CHILDREN' | 'UNISEX') => {
+    const previousGender = formData.gender
+    setFormData((prev) => ({
+      ...prev,
+      gender,
+      categoryId: isCategoryValidForProductGender(prev.categoryId, gender, categories)
+        ? prev.categoryId
+        : undefined,
+    }))
+    if (previousGender !== gender) {
       clearSizeFields()
     }
   }
@@ -801,23 +822,11 @@ const EditProductPage = () => {
 
               <div>
                 <label className="block text-[20px] text-black font-medium mb-2">
-                  კატეგორია
-                </label>
-                <ProductCategorySelect
-                  categories={categories}
-                  value={formData.categoryId || ''}
-                  onChange={handleCategoryChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[20px] text-black font-medium mb-2">
                   სქესი
                 </label>
                 <select
                   value={formData.gender}
-                  onChange={(e) => handleInputChange('gender', e.target.value as 'MEN' | 'WOMEN' | 'CHILDREN' | 'UNISEX')}
+                  onChange={(e) => handleGenderChange(e.target.value as 'MEN' | 'WOMEN' | 'CHILDREN' | 'UNISEX')}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                 >
                   {PRODUCT_GENDER_OPTIONS.map((option) => (
@@ -826,6 +835,19 @@ const EditProductPage = () => {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-[20px] text-black font-medium mb-2">
+                  კატეგორია
+                </label>
+                <ProductCategorySelect
+                  categories={genderCategories}
+                  gender={formData.gender}
+                  value={formData.categoryId || ''}
+                  onChange={handleCategoryChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
+                />
               </div>
 
               <div>

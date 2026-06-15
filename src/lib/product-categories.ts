@@ -37,14 +37,48 @@ export const DEFAULT_PRODUCT_CATEGORIES: ProductCategory[] = [
   { id: 51, name: 'სათხილამურო სათვალე', slug: 'ski-goggles' },
   { id: 52, name: 'ქალის ფეხსაცმელი', slug: 'women-footwear' },
   { id: 53, name: 'ქალის ჩანთა', slug: 'women-bags' },
-  { id: 54, name: 'კაცის ფეხსაცმელი', slug: 'men-footwear' },
-  { id: 55, name: 'კაცის ჩანთა', slug: 'men-bags' },
+  { id: 54, name: 'ფეხსაცმელი', slug: 'men-footwear' },
+  { id: 55, name: 'ჩანთა', slug: 'men-bags' },
   { id: 56, name: 'ბავშვის ფეხსაცმელი', slug: 'kids-footwear' },
   { id: 57, name: 'ბავშვის ჩანთა', slug: 'kids-bags' },
+  { id: 58, name: 'პალტოები& მოსასხამი', slug: 'men-coats' },
+  { id: 59, name: 'სადღესასწაულო კოსტუმი', slug: 'men-festive-costume' },
+  { id: 60, name: 'ბლუზა', slug: 'men-blouse' },
+  { id: 61, name: 'ქოსფლეის კოსტუმი', slug: 'men-cosplay' },
+  { id: 62, name: 'საღამური პერანგი', slug: 'evening-shirt' },
+  { id: 63, name: 'სვიტერი', slug: 'sweater' },
+  { id: 64, name: 'შორტი', slug: 'shorts' },
+  { id: 65, name: 'კომბინიზონი', slug: 'jumpsuit' },
+  { id: 66, name: 'პერანგი', slug: 'shirt' },
+  { id: 67, name: 'შარვალი', slug: 'men-pants' },
+]
+
+/** Canonical men's shop taxonomy — order matches navigation and filters */
+export const MEN_PRODUCT_CATEGORIES: ProductCategory[] = [
+  { id: 58, name: 'პალტოები& მოსასხამი', slug: 'men-coats' },
+  { id: 59, name: 'სადღესასწაულო კოსტუმი', slug: 'men-festive-costume' },
+  { id: 60, name: 'ბლუზა', slug: 'men-blouse' },
+  { id: 5, name: 'ზედა ტანსაცმელი', slug: 'outerwear' },
+  { id: 50, name: 'სათხილამურო ტანსაცმელი', slug: 'ski-wear' },
+  { id: 11, name: 'სათვალე', slug: 'goggles' },
+  { id: 12, name: 'ჩაფხუტი', slug: 'helmet' },
+  { id: 61, name: 'ქოსფლეის კოსტუმი', slug: 'men-cosplay' },
+  { id: 22, name: 'სპორტული ტანსაცმელი', slug: 'sportwear' },
+  { id: 49, name: 'ტრადიციული და კულტურული', slug: 'traditional-cultural' },
+  { id: 54, name: 'ფეხსაცმელი', slug: 'men-footwear' },
+  { id: 55, name: 'ჩანთა', slug: 'men-bags' },
+  { id: 16, name: 'პიჯაკი', slug: 'blazer' },
+  { id: 17, name: 'აქსესუარები', slug: 'accessories' },
+  { id: 62, name: 'საღამური პერანგი', slug: 'evening-shirt' },
+  { id: 63, name: 'სვიტერი', slug: 'sweater' },
+  { id: 64, name: 'შორტი', slug: 'shorts' },
+  { id: 65, name: 'კომბინიზონი', slug: 'jumpsuit' },
+  { id: 66, name: 'პერანგი', slug: 'shirt' },
+  { id: 67, name: 'შარვალი', slug: 'men-pants' },
 ]
 
 const WOMEN_CATEGORY_IDS = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 44, 13, 14, 21, 22, 23, 49, 50, 51, 52, 53])
-const MEN_CATEGORY_IDS = new Set([9, 11, 12, 13, 15, 16, 49, 50, 51, 54, 55])
+const MEN_CATEGORY_IDS = new Set(MEN_PRODUCT_CATEGORIES.map((category) => category.id))
 const CHILDREN_CATEGORY_IDS = new Set([11, 12, 18, 19, 20, 47, 48, 51, 56, 57])
 const ACCESSORY_CATEGORY_IDS = new Set([11, 12, 17, 51])
 const ACCESSORY_CATEGORY_SLUGS = new Set(['accessories', 'goggles', 'helmet', 'ski-goggles', 'aksesuarebi'])
@@ -196,11 +230,36 @@ export function mergeProductCategoriesWithDefaults<T extends ProductCategory>(
   )
 }
 
+/** Merge API rows into canonical men's list (preserves order). */
+export function mergeMenProductCategories<T extends ProductCategory>(
+  apiCategories: T[] = [],
+): ProductCategory[] {
+  const bySlug = new Map(apiCategories.map((category) => [category.slug, category]))
+  const byId = new Map(apiCategories.map((category) => [category.id, category]))
+
+  return MEN_PRODUCT_CATEGORIES.map((template) => {
+    const fromApi = bySlug.get(template.slug) ?? byId.get(template.id)
+    if (!fromApi) return template
+    return { ...fromApi, name: template.name }
+  })
+}
+
 /** All predefined categories + API rows; always shows full shop taxonomy in filters */
 export function collectShopFilterCategories(
   _apiCategories?: ProductCategory[],
 ): ProductCategory[] {
   return sortProductCategories([...DEFAULT_PRODUCT_CATEGORIES])
+}
+
+export function collectShopFilterCategoriesForGender(
+  gender: 'women' | 'men' | 'children' | null | undefined,
+  apiCategories?: ProductCategory[],
+): ProductCategory[] {
+  const all = collectShopFilterCategories(apiCategories)
+  if (!gender) return all
+  if (gender === 'men') return mergeMenProductCategories(apiCategories ?? all)
+  const productGender = gender === 'women' ? 'WOMEN' : 'CHILDREN'
+  return filterProductCategoriesByGender(all, productGender)
 }
 
 /** Map any DB/legacy category row to canonical primary slug (ids 1–23, 47–48). */
@@ -333,6 +392,9 @@ export function filterProductCategoriesByGender<T extends ProductCategory>(
   gender: ProductGender | null | undefined,
 ): T[] {
   if (!gender) return []
+  if (gender === 'MEN') {
+    return mergeMenProductCategories(categories) as T[]
+  }
   return sortProductCategories(
     categories.filter((category) => categoryMatchesProductGender(category, gender)),
   )
@@ -345,6 +407,15 @@ export function groupProductCategoriesForGender<T extends ProductCategory>(
 ): ProductCategoryGroup[] {
   if (!gender || gender === 'UNISEX') {
     return groupProductCategories(categories)
+  }
+
+  if (gender === 'MEN') {
+    return [
+      {
+        label: CATEGORY_GROUP_LABELS[1],
+        categories: mergeMenProductCategories(categories),
+      },
+    ]
   }
 
   const primaryIndex = getGenderGroupIndex(gender)
@@ -472,8 +543,32 @@ const CATEGORY_SLUG_ALIASES: Record<string, string> = {
   'ქალის ჩანთა': 'women-bags',
   'კაცის ფეხსაცმელი': 'men-footwear',
   'კაცის ჩანთა': 'men-bags',
+  'ფეხსაცმელი': 'men-footwear',
+  'ჩანთა': 'men-bags',
   'ბავშვის ფეხსაცმელი': 'kids-footwear',
   'ბავშვის ჩანთა': 'kids-bags',
+  'men-coats': 'men-coats',
+  'paltoebi-mosaskhami': 'men-coats',
+  'პალტოები& მოსასხამი': 'men-coats',
+  'men-festive-costume': 'men-festive-costume',
+  'სადღესასწაულო კოსტუმი': 'men-festive-costume',
+  'men-blouse': 'men-blouse',
+  'ბლუზა': 'men-blouse',
+  'men-cosplay': 'men-cosplay',
+  'ქოსფლეის კოსტუმი': 'men-cosplay',
+  'evening-shirt': 'evening-shirt',
+  'საღამური პერანგი': 'evening-shirt',
+  'sweater': 'sweater',
+  'სვიტერი': 'sweater',
+  'shorts': 'shorts',
+  'შორტი': 'shorts',
+  'jumpsuit': 'jumpsuit',
+  'კომბინიზონი': 'jumpsuit',
+  'shirt': 'shirt',
+  'პერანგი': 'shirt',
+  'men-pants': 'men-pants',
+  'შარვალი': 'men-pants',
+  'ტრადიციული და კულტურული': 'traditional-cultural',
   pecsapertmeli: 'women-footwear',
   qalispecsapertmeli: 'women-footwear',
   qalischanta: 'women-bags',

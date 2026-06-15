@@ -21,7 +21,7 @@ import { appendShopListFilterParams, type ShopSortBy } from '@/lib/shop-list-par
 import { PRODUCT_IMAGE_QUALITY } from '@/lib/image-config'
 import {
   DEFAULT_PRODUCT_CATEGORIES,
-  collectShopFilterCategories,
+  collectShopFilterCategoriesForGender,
   dedupeProductCategories,
   findCategoryByParam,
   resolveCategorySlugParam,
@@ -526,8 +526,12 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
     ]
 
     const filterCategories = React.useMemo(
-        () => collectShopFilterCategories(),
-        [],
+        () =>
+            collectShopFilterCategoriesForGender(
+                genderParam as ShopGenderFilterValue | null,
+                shopCategories,
+            ),
+        [genderParam, shopCategories],
     )
 
     const locations = [

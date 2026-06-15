@@ -6,6 +6,7 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { Search, Menu, User, LogOut, ShoppingCart, ChevronRight, Plus } from 'lucide-react'
 import Image from '@/component/AppImage'
 import { useSession, signOut } from 'next-auth/react'
+import { MEN_PRODUCT_CATEGORIES } from '@/lib/product-categories'
 
 const HeaderContent = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -504,30 +505,16 @@ const HeaderContent = () => {
                             <Link href="/shop?gender=men" onClick={closeMobileMenu} className="block px-4 py-2 text-black font-semibold hover:bg-gray-100 rounded-lg text-[16px]">
                               ყველა
                             </Link>
-                            <Link href="/shop?gender=men&category=შარვალ კოსტუმი" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
-                              1. შარვალ კოსტუმი
-                            </Link>
-                            <Link href="/shop?gender=men&category=პიჯაკი" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
-                              2. პიჯაკი
-                            </Link>
-                            <Link href="/shop?gender=men&category=ტრადიციული ტანსაცმელი" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
-                              3. ტრადიციული და კულტურული ტანსაცმელი
-                            </Link>
-                            <Link href="/shop?gender=men&category=სათხილამურო ქურთუკი" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
-                              4. სათხილამურო ტანსაცმელი
-                            </Link>
-                            <Link href="/shop?gender=men&category=სათვალე" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
-                              5. სათხილამურო სათვალე
-                            </Link>
-                            <Link href="/shop?gender=men&category=ჩაფხუტი" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
-                              6. ჩაფხუტი
-                            </Link>
-                            <Link href="/shop?gender=men&category=კაცის ფეხსაცმელი" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
-                              7. ფეხსაცმელი
-                            </Link>
-                            <Link href="/shop?gender=men&category=კაცის ჩანთა" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
-                              8. ჩანთა
-                            </Link>
+                            {MEN_PRODUCT_CATEGORIES.map((category, index) => (
+                              <Link
+                                key={category.slug}
+                                href={`/shop?gender=men&category=${encodeURIComponent(category.name)}`}
+                                onClick={closeMobileMenu}
+                                className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]"
+                              >
+                                {index + 1}. {category.name}
+                              </Link>
+                            ))}
                           </>
                         )}
                         {item === 'ბავშვები' && (
@@ -684,39 +671,18 @@ const HeaderContent = () => {
                           )}
                           {category === 'მამაკაცი' && (
                             <>
-                              <Link href="/shop?gender=men&category=შარვალ კოსტუმი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                1. შარვალ კოსტუმი
+                              <Link href="/shop?gender=men" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm font-semibold">
+                                ყველა
                               </Link>
-                              <Link href="/shop?gender=men&category=პიჯაკი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                2. პიჯაკი
-                              </Link>
-                              <Link href="/shop?gender=men&category=ტრადიციული ტანსაცმელი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                3. ტრადიციული ტანსაცმელი
-                              </Link>
-                              <Link href="/shop?gender=men&category=ტრადიციული და კულტურული ტანსაცმელი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                4. ტრადიციული და კულტურული ტანსაცმელი
-                              </Link>
-                              <Link href="/shop?gender=men&category=სათხილამურო ქურთუკი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                5. სათხილამურო ქურთუკი
-                              </Link>
-                              <Link href="/shop?gender=men&category=სათხილამურო ტანსაცმელი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                6. სათხილამურო ტანსაცმელი
-                              </Link>
-                              <Link href="/shop?gender=men&category=სათვალე" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                7. სათვალე
-                              </Link>
-                              <Link href="/shop?gender=men&category=სათხილამურო სათვალე" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                8. სათხილამურო სათვალე
-                              </Link>
-                              <Link href="/shop?gender=men&category=ჩაფხუტი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                9. ჩაფხუტი
-                              </Link>
-                              <Link href="/shop?gender=men&category=კაცის ფეხსაცმელი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                10. ფეხსაცმელი
-                              </Link>
-                              <Link href="/shop?gender=men&category=კაცის ჩანთა" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                11. ჩანთა
-                              </Link>
+                              {MEN_PRODUCT_CATEGORIES.map((menCategory, index) => (
+                                <Link
+                                  key={menCategory.slug}
+                                  href={`/shop?gender=men&category=${encodeURIComponent(menCategory.name)}`}
+                                  className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm"
+                                >
+                                  {index + 1}. {menCategory.name}
+                                </Link>
+                              ))}
                             </>
                           )}
                           {category === 'ბავშვები' && (
