@@ -40,10 +40,8 @@ import { parseShopListFilterParams } from '@/lib/shop-list-params'
 import { convertBuyerPriceFiltersToSeller } from '@/lib/platform-pricing'
 import { resolveCategoryIdForWrite } from '@/lib/category-sync'
 import { sortProductsByVipPriority } from '@/lib/product-vip'
-import {
-  fetchProductIdsByApprovalPriority,
-  orderProductsByIdList,
-} from '@/lib/admin-product-list-order'
+import { fetchProductIdsByApprovalPriority } from '@/lib/admin-product-list-order.server'
+import { orderProductsByIdList } from '@/lib/admin-product-list-order'
 import { prismaCacheStrategy } from '@/lib/prisma-cache'
 import {
   optionalCategoryIdField,
