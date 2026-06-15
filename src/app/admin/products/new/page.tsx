@@ -17,8 +17,11 @@ import {
 } from '@/lib/product-text'
 import {
   DEFAULT_PRODUCT_CATEGORIES,
+  filterProductCategoriesByGender,
+  isCategoryValidForProductGender,
   isSizeOptionalCategoryId,
   PRODUCT_GENDER_OPTIONS,
+  type ProductGender,
 } from '@/lib/product-categories'
 import {
   productPickupAddressField,
@@ -58,7 +61,9 @@ const productSchema = z.object({
       message: PRODUCT_DESCRIPTION_ERROR_MESSAGE,
     }),
   stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი').default(0),
-  gender: z.enum(['MEN', 'WOMEN', 'CHILDREN', 'UNISEX']).default('UNISEX'),
+  gender: z.enum(['MEN', 'WOMEN', 'CHILDREN', 'UNISEX'], {
+    message: 'სქესის არჩევა სავალდებულოა',
+  }),
   color: z.string().optional(),
   location: z.string().optional(),
   allowsPickup: z.boolean().default(false),
@@ -108,16 +113,17 @@ const productSchema = z.object({
 
 
 type ProductFormData = z.infer<typeof productSchema>
+type ProductFormGender = ProductGender | ''
 
 const NewProductPage = () => {
   const router = useRouter()
-  const [formData, setFormData] = useState<ProductFormData>({
+  const [formData, setFormData] = useState<Omit<ProductFormData, 'gender'> & { gender: ProductFormGender }>({
     name: '',
     slug: '',
     brand: '',
     description: '',
     stock: 0,
-    gender: 'UNISEX',
+    gender: '',
     color: '',
     location: '',
     allowsPickup: false,
@@ -152,9 +158,16 @@ const NewProductPage = () => {
   type SizeSystem = NonNullable<ProductFormData['sizeSystem']>
 
   const combinedSizeOptions = useMemo(
-    () => buildProductFormSizeOptions(formData.gender),
+    () => (formData.gender ? buildProductFormSizeOptions(formData.gender) : []),
     [formData.gender],
   )
+
+  const genderCategories = useMemo(
+    () => filterProductCategoriesByGender(categories, formData.gender || null),
+    [formData.gender],
+  )
+
+  const hasSelectedGender = Boolean(formData.gender)
 
   const handleCombinedSizeSelect = (value: string) => {
     if (!value) {
@@ -216,6 +229,20 @@ const NewProductPage = () => {
   const handleCategoryChange = (categoryId: number | undefined) => {
     handleInputChange('categoryId', categoryId)
     if (isSizeOptionalCategoryId(categoryId, categories)) {
+      clearSizeFields()
+    }
+  }
+
+  const handleGenderChange = (gender: ProductFormGender) => {
+    const previousGender = formData.gender
+    setFormData((prev) => ({
+      ...prev,
+      gender,
+      categoryId: isCategoryValidForProductGender(prev.categoryId, gender || null, categories)
+        ? prev.categoryId
+        : undefined,
+    }))
+    if (!gender || (previousGender && previousGender !== gender)) {
       clearSizeFields()
     }
   }
@@ -656,32 +683,36 @@ const NewProductPage = () => {
 
               <div>
                 <label className="block text-[20px] text-black font-medium mb-2">
-                  კატეგორია
-                </label>
-                <ProductCategorySelect
-                  categories={categories}
-                  value={formData.categoryId || ''}
-                  onChange={handleCategoryChange}
-                  className="w-full pl-10 pr-4 py-3 placeholder:text-gray-500 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[20px] text-black font-medium mb-2">
-                  სქესი
+                  ვისთვის <span className="text-red-600">*</span>
                 </label>
                 <select
                   value={formData.gender}
-                  onChange={(e) => handleInputChange('gender', e.target.value as 'MEN' | 'WOMEN' | 'CHILDREN' | 'UNISEX')}
-                  className="w-full pl-10 pr-4 py-3 placeholder:text-gray-500 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                  onChange={(e) => handleGenderChange(e.target.value as ProductFormGender)}
+                  className={`w-full pl-10 pr-4 py-3 placeholder:text-gray-500 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${errors.gender ? 'border-red-500' : 'border-gray-300'}`}
                 >
+                  <option value="">აირჩიეთ სქესი</option>
                   {PRODUCT_GENDER_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>
                   ))}
                 </select>
+                {errors.gender && <p className="text-red-500 md:text-[20px] text-[18px] mt-1">{errors.gender}</p>}
               </div>
+
+              {hasSelectedGender && (
+              <div>
+                <label className="block text-[20px] text-black font-medium mb-2">
+                  კატეგორია
+                </label>
+                <ProductCategorySelect
+                  categories={genderCategories}
+                  value={formData.categoryId || ''}
+                  onChange={handleCategoryChange}
+                  className="w-full pl-10 pr-4 py-3 placeholder:text-gray-500 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                />
+              </div>
+              )}
 
               <div>
                 <label className="block text-[20px] text-black font-medium mb-2">ფერი</label>
@@ -722,7 +753,7 @@ const NewProductPage = () => {
                 )}
               </div>
 
-              {!isSizeOptional && (
+              {hasSelectedGender && !isSizeOptional && (
                 <div>
                   <label className="block text-[20px] text-black font-medium mb-2">
                     {formData.gender === 'CHILDREN' ? 'ასაკი (არასავალდებულო)' : 'ზომა (არასავალდებულო)'}

@@ -308,6 +308,44 @@ export const PRODUCT_GENDER_OPTIONS = [
   { value: 'UNISEX' as const, label: 'უნივერსალური' },
 ]
 
+export type ProductGender = (typeof PRODUCT_GENDER_OPTIONS)[number]['value']
+
+const GENDER_CATEGORY_GROUP_INDICES: Record<ProductGender, number[]> = {
+  WOMEN: [0, 3],
+  MEN: [1, 3],
+  CHILDREN: [2, 3],
+  UNISEX: [0, 1, 2, 3, 4],
+}
+
+export function categoryMatchesProductGender(
+  category: ProductCategory,
+  gender: ProductGender,
+): boolean {
+  const allowedGroups = new Set(GENDER_CATEGORY_GROUP_INDICES[gender])
+  return getCategoryGroups(category).some((group) => allowedGroups.has(group))
+}
+
+export function filterProductCategoriesByGender<T extends ProductCategory>(
+  categories: T[],
+  gender: ProductGender | null | undefined,
+): T[] {
+  if (!gender) return []
+  return sortProductCategories(
+    categories.filter((category) => categoryMatchesProductGender(category, gender)),
+  )
+}
+
+export function isCategoryValidForProductGender(
+  categoryId: number | undefined,
+  gender: ProductGender | null | undefined,
+  categories: ProductCategory[],
+): boolean {
+  if (!categoryId || !gender) return false
+  const category = categories.find((entry) => entry.id === categoryId)
+  if (!category) return false
+  return categoryMatchesProductGender(category, gender)
+}
+
 /** Legacy Georgian slugs / duplicate rows → primary DB slug (ids 1-23) */
 const CATEGORY_SLUG_ALIASES: Record<string, string> = {
   kabebi: 'dresses',
