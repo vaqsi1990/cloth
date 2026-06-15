@@ -110,6 +110,9 @@ const SupportProductsPage = () => {
   const [deletingReplyId, setDeletingReplyId] = useState<number | null>(null)
   const [approvalUpdatingId, setApprovalUpdatingId] = useState<number | null>(null)
   const [statusUpdatingId, setStatusUpdatingId] = useState<number | null>(null)
+  const [nextOffset, setNextOffset] = useState<number | null>(null)
+  const [hasMore, setHasMore] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -118,11 +121,23 @@ const SupportProductsPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status])
 
-  const fetchProducts = useCallback(async () => {
+  const fetchProducts = useCallback(async (offset = 0, append = false) => {
     try {
-      setLoading(true)
-      // Fetch all products, including unapproved ones, for SUPPORT role
-      const response = await fetch('/api/products?includeUnapproved=true&pendingFirst=true', {
+      if (append) {
+        setLoadingMore(true)
+      } else {
+        setLoading(true)
+      }
+
+      const params = new URLSearchParams({
+        includeUnapproved: 'true',
+        pendingFirst: 'true',
+      })
+      if (offset > 0) {
+        params.set('offset', String(offset))
+      }
+
+      const response = await fetch(`/api/products?${params}`, {
         cache: 'no-store',
         headers: { 'Cache-Control': 'no-cache' },
       })
@@ -130,14 +145,32 @@ const SupportProductsPage = () => {
       
       if (data.success) {
         const productsWithRentalStatus = await attachBatchRentalStatus(data.products)
-        setProducts(productsWithRentalStatus as Product[])
+        setProducts((prev) =>
+          (append
+            ? sortProductsByApprovalPriority<Product>([
+                ...prev,
+                ...(productsWithRentalStatus as Product[]),
+              ])
+            : productsWithRentalStatus) as Product[],
+        )
+        setNextOffset(
+          typeof data.nextOffset === 'number' ? data.nextOffset : null,
+        )
+        setHasMore(Boolean(data.hasMore))
       }
     } catch (error) {
       console.error('Error fetching products:', error)
     } finally {
       setLoading(false)
+      setLoadingMore(false)
     }
   }, [])
+
+  const loadMoreProducts = () => {
+    if (hasMore && nextOffset != null && !loadingMore) {
+      fetchProducts(nextOffset, true)
+    }
+  }
 
   useEffect(() => {
     if (status === 'authenticated' && isSupport(session?.user?.role)) {
@@ -967,6 +1000,22 @@ const SupportProductsPage = () => {
                ))}
              </div>
            )}
+
+          {hasMore && (
+            <div className="flex flex-col items-center gap-2 mt-6 pt-4 border-t border-gray-100">
+              <p className="text-xs sm:text-sm text-gray-600">
+                ჩატვირთულია {products.length} პროდუქტი — დააჭირეთ მეტის ჩასატვირთად
+              </p>
+              <button
+                type="button"
+                onClick={loadMoreProducts}
+                disabled={loadingMore}
+                className="px-6 py-3 bg-black text-white rounded-lg font-bold uppercase tracking-wide text-xs sm:text-sm md:text-[18px] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loadingMore ? 'იტვირთება...' : 'მეტის ჩატვირთვა'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

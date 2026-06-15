@@ -79,6 +79,20 @@ interface UserVoucherItem {
   receivedAt: string
 }
 
+interface AccountChatRoom {
+  id: number
+  userId: string | null
+  adminId?: string | null
+  productId?: number | null
+  product_name?: string | null
+  user_name?: string
+  user_email?: string
+  admin_name?: string
+  admin_email?: string
+  last_message?: string
+  is_unread?: boolean
+}
+
 type VerificationState = 'PENDING' | 'APPROVED' | 'REJECTED' | null
 
 const AccountPageContent = () => {
@@ -124,9 +138,9 @@ const AccountPageContent = () => {
   const [userIban, setUserIban] = useState<string | null>(null)
   const [hasActiveRentals, setHasActiveRentals] = useState(false)
   const [checkingRentals, setCheckingRentals] = useState(false)
-  const [chatRooms, setChatRooms] = useState<any[]>([])
+  const [chatRooms, setChatRooms] = useState<AccountChatRoom[]>([])
   const [loadingChats, setLoadingChats] = useState(false)
-  const [selectedChatRoom, setSelectedChatRoom] = useState<any | null>(null)
+  const [selectedChatRoom, setSelectedChatRoom] = useState<AccountChatRoom | null>(null)
   const [chatMessages, setChatMessages] = useState<any[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [sendingMessage, setSendingMessage] = useState(false)
@@ -443,10 +457,10 @@ const AccountPageContent = () => {
       const response = await fetch('/api/chat')
       const data = await response.json()
       if (data.success) {
-        const rooms = data.chatRooms || []
+        const rooms: AccountChatRoom[] = data.chatRooms || []
         setChatRooms(rooms)
         setSelectedChatRoom((current) =>
-          current && !rooms.some((room: { id: number }) => room.id === current.id)
+          current && !rooms.some((room) => room.id === current.id)
             ? null
             : current,
         )
