@@ -25,6 +25,10 @@ import {
   productPickupAddressField,
   refineProductPickupAddress,
 } from '@/lib/product-pickup'
+import {
+  productImageUrlsField,
+  refineProductImagesAndPricing,
+} from '@/lib/product-create-validation'
 import { canUserCreateProducts } from '@/lib/seller-eligibility'
 import {
   finalizeProductListResponse,
@@ -81,7 +85,7 @@ const productSchema = z.object({
   variants: z.array(z.object({
     price: z.number().min(0, 'ფასი უნდა იყოს დადებითი')
   })).default([]),
-  imageUrls: z.array(z.string().min(1, 'URL აუცილებელია')).default([]),
+  imageUrls: productImageUrlsField,
   rentalPriceTiers: z.preprocess(
     (val) => {
       // If it's an array with all pricePerDay = 0, convert to undefined
@@ -96,7 +100,10 @@ const productSchema = z.object({
       pricePerDay: z.number().min(0, 'ფასი დღეში უნდა იყოს დადებითი ან ნული')
     })).optional()
   )
-}).superRefine(refineProductPickupAddress)
+}).superRefine((data, ctx) => {
+  refineProductPickupAddress(data, ctx)
+  refineProductImagesAndPricing(data, ctx)
+})
 
 const PUBLIC_LIST_CACHE = { swr: 300, ttl: 300 }
 const FILTERED_LIST_CACHE = { swr: 60, ttl: 60 }

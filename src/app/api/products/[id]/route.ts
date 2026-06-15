@@ -22,6 +22,10 @@ import {
   productPickupAddressField,
   refineProductPickupAddress,
 } from '@/lib/product-pickup'
+import {
+  productImageUrlsField,
+  refineProductImagesAndPricing,
+} from '@/lib/product-create-validation'
 import { revalidateProductCaches } from '@/lib/product-cache-revalidation'
 import { resolveCategoryIdForWrite } from '@/lib/category-sync'
 import {
@@ -89,7 +93,7 @@ const productSchema = z.object({
   variants: z.array(z.object({
     price: z.number().min(0, 'ფასი უნდა იყოს დადებითი')
   })).default([]),
-  imageUrls: z.array(z.string().min(1, 'URL აუცილებელია')).default([]),
+  imageUrls: productImageUrlsField,
   rentalPriceTiers: z.preprocess(
     (val) => {
       // If it's an array with all pricePerDay = 0, convert to empty array (to clear tiers)
@@ -109,7 +113,10 @@ const productSchema = z.object({
       pricePerDay: z.number().min(0, 'ფასი დღეში უნდა იყოს დადებითი ან ნული')
     })).optional()
   )
-}).superRefine(refineProductPickupAddress)
+}).superRefine((data, ctx) => {
+  refineProductPickupAddress(data, ctx)
+  refineProductImagesAndPricing(data, ctx)
+})
 
 const buildPurposeRelation = (purposeId?: number, purposeSlug?: string) => {
   if (purposeId) {

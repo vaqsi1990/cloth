@@ -27,6 +27,11 @@ import {
   productPickupAddressField,
   refineProductPickupAddress,
 } from '@/lib/product-pickup'
+import {
+  productImageUrlsFieldWithUrlValidation,
+  refineProductImagesAndPricing,
+  getProductCreateFieldErrors,
+} from '@/lib/product-create-validation'
 import ProductDiscountFields from '@/components/ProductDiscountFields'
 import { getProductDiscountBasePrice } from '@/lib/discount-helpers'
 import { VIP_MONTHLY_PRICE_GEL } from '@/lib/product-vip'
@@ -81,7 +86,7 @@ const productSchema = z.object({
       sizeSystem: z.enum(['EU', 'US', 'UK', 'CN']).optional()
     })
   ).default([]),
-  imageUrls: z.array(z.string().url('არასწორი URL')).default([]),
+  imageUrls: productImageUrlsFieldWithUrlValidation,
   rentalPriceTiers: z.preprocess(
     (val) => {
       // If it's an array with all pricePerDay = 0, convert to undefined
@@ -96,7 +101,10 @@ const productSchema = z.object({
       pricePerDay: z.number().min(0, 'ფასი დღეში უნდა იყოს დადებითი ან ნული')
     })).optional()
   )
-}).superRefine(refineProductPickupAddress)
+}).superRefine((data, ctx) => {
+  refineProductPickupAddress(data, ctx)
+  refineProductImagesAndPricing(data, ctx)
+})
 
 type ProductFormData = z.infer<typeof productSchema>
 
@@ -451,9 +459,16 @@ const NewProductPage = () => {
     setIsSubmitting(true)
     setErrors({})
 
+    const fieldErrors = getProductCreateFieldErrors(formData)
+    if (Object.keys(fieldErrors).length > 0) {
+      setErrors(fieldErrors)
+      showToast(Object.values(fieldErrors).join('; '), 'error')
+      setIsSubmitting(false)
+      return
+    }
+
     try {
-      // Clean up rentalPriceTiers if all prices are 0 or if product has sale variants
-      const hasSalePrice = formData.variants && formData.variants.some(v => v.price > 0)
+      const hasSalePrice = formData.variants.some((variant) => (variant.price ?? 0) > 0)
       const hasRentalPrice = formData.rentalPriceTiers && formData.rentalPriceTiers.some(tier => tier.pricePerDay > 0)
       
       const dataToValidate = {
@@ -464,16 +479,19 @@ const NewProductPage = () => {
               minDays: tier.minDays < 1 ? 1 : tier.minDays,
             }))
           : undefined,
+        variants: hasSalePrice ? formData.variants : [],
         color: useCustomColor ? customColor.trim() : formData.color,
         ...(isSizeOptional
           ? {
               size: undefined,
               sizeSystem: undefined,
-              variants: formData.variants.map((variant) => ({
-                ...variant,
-                size: undefined,
-                sizeSystem: undefined,
-              })),
+              variants: hasSalePrice
+                ? formData.variants.map((variant) => ({
+                    ...variant,
+                    size: undefined,
+                    sizeSystem: undefined,
+                  }))
+                : [],
             }
           : {}),
       }
@@ -900,7 +918,9 @@ const NewProductPage = () => {
                     </div>
 
                     <div>
-                      <label className="block md:text-[18px] text-[16px] font-medium text-black mb-2">ფასი დღეში</label>
+                      <label className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
+                        ფასი დღეში <span className="text-red-600">*</span>
+                      </label>
                       <input
                         type="number"
                         step="0.01"
@@ -930,6 +950,9 @@ const NewProductPage = () => {
                   </div>
                 ))}
               </div>
+              {errors.rentalPriceTiers && (
+                <p className="text-red-500 md:text-[18px] text-[16px] mt-2">{errors.rentalPriceTiers}</p>
+              )}
 
               {/* Additional Rental Parameters */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1048,11 +1071,16 @@ const NewProductPage = () => {
           <div className="bg-white rounded-lg shadow-sm p-6 ">
             <div className="md:max-w-[60%] text-center w-full mx-auto">
 
-            <h2 className="text-[20px] text-black font-semibold mb-6">სურათები</h2>
+            <h2 className="text-[20px] text-black font-semibold mb-6">
+              სურათები <span className="text-red-600">*</span>
+            </h2>
             <ImageUploadForProduct
               value={formData.imageUrls}
               onChange={handleImageChange}
             />
+            {errors.imageUrls && (
+              <p className="text-red-500 md:text-[18px] text-[16px] mt-2">{errors.imageUrls}</p>
+            )}
             </div>
           </div>
 

@@ -26,6 +26,11 @@ import {
   productPickupAddressField,
   refineProductPickupAddress,
 } from '@/lib/product-pickup'
+import {
+  productImageUrlsField,
+  refineProductImagesAndPricing,
+  getProductCreateFieldErrors,
+} from '@/lib/product-create-validation'
 import ProductDiscountFields from '@/components/ProductDiscountFields'
 import { getProductDiscountBasePrice } from '@/lib/discount-helpers'
 import {
@@ -90,7 +95,7 @@ const productSchema = z.object({
     discount: z.number().min(0).optional(),
     sizeSystem: z.enum(['EU', 'US', 'UK', 'CN']).optional()
   })).default([]),
-  imageUrls: z.array(z.string().min(1, 'URL აუცილებელია')).default([]),
+  imageUrls: productImageUrlsField,
   rentalPriceTiers: z.preprocess(
     (val) => {
       // If it's an array with all pricePerDay = 0, convert to empty array
@@ -105,7 +110,10 @@ const productSchema = z.object({
       pricePerDay: z.number().min(0, 'ფასი დღეში უნდა იყოს დადებითი ან ნული')
     })).default([])
   )
-}).superRefine(refineProductPickupAddress)
+}).superRefine((data, ctx) => {
+  refineProductPickupAddress(data, ctx)
+  refineProductImagesAndPricing(data, ctx)
+})
 
 const purposes = PURPOSE_OPTIONS
 
@@ -501,14 +509,22 @@ const EditProductPage = () => {
     setIsSubmitting(true)
     setErrors({})
 
+    const fieldErrors = getProductCreateFieldErrors(formData)
+    if (Object.keys(fieldErrors).length > 0) {
+      setErrors(fieldErrors)
+      showToast(Object.values(fieldErrors).join('; '), 'error')
+      setIsSubmitting(false)
+      return
+    }
+
     try {
       console.log('About to validate form data...')
       console.log('Form data before validation:', JSON.stringify(formData, null, 2))
       console.log('Image URLs in form data:', formData.imageUrls)
       console.log('Rental price tiers:', formData.rentalPriceTiers)
       
-      // Clean up rentalPriceTiers if all prices are 0
       const hasRentalPrice = formData.rentalPriceTiers && formData.rentalPriceTiers.some(tier => tier.pricePerDay > 0)
+      const hasSalePrice = formData.variants.some((variant) => (variant.price ?? 0) > 0)
       
       // Ensure rentalPriceTiers is properly formatted and handle null values
       const dataToValidate = {
@@ -536,16 +552,19 @@ const EditProductPage = () => {
               minDays: tier.minDays < 1 ? 1 : tier.minDays,
             }))
           : [],
+        variants: hasSalePrice ? formData.variants : [],
         color: useCustomColor ? customColor.trim() : formData.color,
         ...(isSizeOptional
           ? {
               size: undefined,
               sizeSystem: undefined,
-              variants: formData.variants.map((variant) => ({
-                ...variant,
-                size: undefined,
-                sizeSystem: undefined,
-              })),
+              variants: hasSalePrice
+                ? formData.variants.map((variant) => ({
+                    ...variant,
+                    size: undefined,
+                    sizeSystem: undefined,
+                  }))
+                : [],
             }
           : {}),
       }
