@@ -6,7 +6,7 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { Search, Menu, User, LogOut, ShoppingCart, ChevronRight, Plus } from 'lucide-react'
 import Image from '@/component/AppImage'
 import { useSession, signOut } from 'next-auth/react'
-import { MEN_PRODUCT_CATEGORIES } from '@/lib/product-categories'
+import { MEN_PRODUCT_CATEGORIES, WOMEN_PRODUCT_CATEGORIES } from '@/lib/product-categories'
 
 const HeaderContent = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -456,48 +456,16 @@ const HeaderContent = () => {
                             <Link href="/shop?gender=women" onClick={closeMobileMenu} className="block px-4 py-2 text-black font-semibold hover:bg-gray-100 rounded-lg text-[16px]">
                               ყველა
                             </Link>
-                            <Link href="/shop?gender=women&category=პალტოები და მოსასხამი" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
-                              1. ქალების პალტოები & მოსასხამი
-                            </Link>
-                            <Link href="/shop?gender=women&category=კაბები" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
-                              2. ქალების კაბები
-                            </Link>
-                            <Link href="/shop?gender=women" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
-                              3. ქალების ორ ნაწილად შეკრული კომპლექტები
-                            </Link>
-                            <Link href="/shop?gender=women&category=შარვლები" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
-                              4. ქალების შარვლები
-                            </Link>
-                            <Link href="/shop?gender=women&category=ქვედაბოლოები" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
-                              5. ქალების ქვედაბოლოები
-                            </Link>
-                            <Link href="/shop?gender=women&category=ქალების კოსტუმი" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
-                              6. ქალების კოსტუმი
-                            </Link>
-                            <Link href="/shop?gender=women&category=საქორწინო კაბები" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
-                              7. ქალების საქორწინო & სადღესასწაულო ტანსაცმელი
-                            </Link>
-                            <Link href="/shop?gender=women&category=სათხილამურო ქურთუკი" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
-                              8. სათხილამურო ტანსაცმელი
-                            </Link>
-                            <Link href="/shop?gender=women&category=სათვალე" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
-                              9. სათხილამურო სათვალე
-                            </Link>
-                            <Link href="/shop?gender=women&category=ჩაფხუტი" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
-                              10. ჩაფხუტი
-                            </Link>
-                            <Link href="/shop?gender=women&category=ტრადიციული ტანსაცმელი" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
-                              11. ქალების ტრადიციული & კულტურული ტანსაცმელი
-                            </Link>
-                            <Link href="/shop?gender=women&category=ქოსფლეის კოსტუმები" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
-                              12. ქალების კოსფლეის კოსტიუმები
-                            </Link>
-                            <Link href="/shop?gender=women&category=ქალის ფეხსაცმელი" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
-                              13. ფეხსაცმელი
-                            </Link>
-                            <Link href="/shop?gender=women&category=ქალის ჩანთა" onClick={closeMobileMenu} className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]">
-                              14. ჩანთა
-                            </Link>
+                            {WOMEN_PRODUCT_CATEGORIES.map((category, index) => (
+                              <Link
+                                key={category.slug}
+                                href={`/shop?gender=women&category=${encodeURIComponent(category.slug)}`}
+                                onClick={closeMobileMenu}
+                                className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]"
+                              >
+                                {index + 1}. {category.name}
+                              </Link>
+                            ))}
                           </>
                         )}
                         {item === 'მამაკაცი' && (
@@ -616,57 +584,18 @@ const HeaderContent = () => {
                         <div className="py-2">
                           {category === 'ქალი' && (
                             <>
-                              <Link href="/shop?gender=women&category=პალტოები და მოსასხამი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                1. ქალების პალტოები & მოსასხამი
+                              <Link href="/shop?gender=women" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm font-semibold">
+                                ყველა
                               </Link>
-                              <Link href="/shop?gender=women&category=კაბები" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                2. ქალების კაბები
-                              </Link>
-                              <Link href="/shop?gender=women&category=ქალების ორ ნაწილად შეკრული კომპლექტები" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                3. ქალების ორ ნაწილად შეკრული კომპლექტები
-                              </Link>
-                              <Link href="/shop?gender=women&category=შარვლები" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                4. ქალების შარვლები
-                              </Link>
-                              <Link href="/shop?gender=women&category=ქვედაბოლოები" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                5. ქალების ქვედაბოლოები
-                              </Link>
-                              <Link href="/shop?gender=women&category=ქალების კოსტუმი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                6. ქალების კოსტუმი
-                              </Link>
-                              <Link href="/shop?gender=women&category=საქორწინო კაბები" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                7. ქალების საქორწინო & სადღესასწაულო ტანსაცმელი
-                              </Link>
-                              <Link href="/shop?gender=women&category=სათხილამურო ქურთუკი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                8. სათხილამურო ქურთუკი
-                              </Link>
-                              <Link href="/shop?gender=women&category=სათხილამურო ტანსაცმელი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                9. სათხილამურო ტანსაცმელი
-                              </Link>
-                              <Link href="/shop?gender=women&category=სათვალე" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                10. სათვალე
-                              </Link>
-                              <Link href="/shop?gender=women&category=სათხილამურო სათვალე" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                11. სათხილამურო სათვალე
-                              </Link>
-                              <Link href="/shop?gender=women&category=ჩაფხუტი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                12. ჩაფხუტი
-                              </Link>
-                              <Link href="/shop?gender=women&category=ტრადიციული ტანსაცმელი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                13. ტრადიციული ტანსაცმელი
-                              </Link>
-                              <Link href="/shop?gender=women&category=ტრადიციული და კულტურული ტანსაცმელი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                14. ტრადიციული და კულტურული ტანსაცმელი
-                              </Link>
-                              <Link href="/shop?gender=women&category=ქოსფლეის კოსტუმები" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                15. ქოსფლეის კოსტუმები
-                              </Link>
-                              <Link href="/shop?gender=women&category=ქალის ფეხსაცმელი" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                16. ფეხსაცმელი
-                              </Link>
-                              <Link href="/shop?gender=women&category=ქალის ჩანთა" className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm">
-                                17. ჩანთა
-                              </Link>
+                              {WOMEN_PRODUCT_CATEGORIES.map((womenCategory, index) => (
+                                <Link
+                                  key={womenCategory.slug}
+                                  href={`/shop?gender=women&category=${encodeURIComponent(womenCategory.slug)}`}
+                                  className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm"
+                                >
+                                  {index + 1}. {womenCategory.name}
+                                </Link>
+                              ))}
                             </>
                           )}
                           {category === 'მამაკაცი' && (
