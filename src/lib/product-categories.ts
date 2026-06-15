@@ -350,6 +350,24 @@ export function collectShopFilterCategoriesForGender(
   return all
 }
 
+/** Admin/support product list filters — MEN/WOMEN/CHILDREN/UNISEX/ALL */
+export function collectPanelFilterCategoriesForGender(
+  gender: 'ALL' | ProductGender,
+  apiCategories?: ProductCategory[],
+): ProductCategory[] {
+  const base = apiCategories?.length
+    ? sortProductCategories(dedupeProductCategories(apiCategories))
+    : collectShopFilterCategories()
+
+  if (gender === 'ALL' || gender === 'UNISEX') {
+    return base
+  }
+  if (gender === 'MEN') return mergeMenProductCategories(base)
+  if (gender === 'WOMEN') return mergeWomenProductCategories(base)
+  if (gender === 'CHILDREN') return mergeChildrenProductCategories(base)
+  return base
+}
+
 /** Map any DB/legacy category row to canonical primary slug (ids 1–23, 47–48). */
 export function resolveCanonicalCategorySlug(
   category:

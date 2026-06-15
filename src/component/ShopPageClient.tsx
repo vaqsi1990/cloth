@@ -534,6 +534,15 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         [genderParam, shopCategories],
     )
 
+    useEffect(() => {
+        if (!genderParam) return
+        const allowedNames = new Set(filterCategories.map((category) => category.name))
+        setSelectedCategories((prev) => {
+            const next = prev.filter((name) => allowedNames.has(name))
+            return next.length === prev.length ? prev : next
+        })
+    }, [genderParam, filterCategories])
+
     const locations = [
         { id: "თბილისი", label: "თბილისი" },
         { id: "ქუთაისი", label: "ქუთაისი" },

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -15,6 +15,11 @@ import {
 } from '@/lib/product-status-sync'
 import { broadcastHomepageFeaturedUpdate } from '@/lib/homepage-featured-sync'
 import { sortProductsByApprovalPriority } from '@/lib/admin-product-list-order'
+import {
+  collectPanelFilterCategoriesForGender,
+  resolveCanonicalCategorySlug,
+  type ProductGender,
+} from '@/lib/product-categories'
 interface RentalPeriod {
   startDate: string
   endDate: string
@@ -454,13 +459,30 @@ const AdminProductsPage = () => {
     return getRentalPrice(product)
   }
 
+  const panelFilterCategories = useMemo(
+    () =>
+      collectPanelFilterCategoriesForGender(
+        filterGender as 'ALL' | ProductGender,
+      ),
+    [filterGender],
+  )
+
+  useEffect(() => {
+    if (filterCategory === 'ALL') return
+    if (!panelFilterCategories.some((category) => category.slug === filterCategory)) {
+      setFilterCategory('ALL')
+    }
+  }, [filterGender, filterCategory, panelFilterCategories])
+
   const filteredProducts = sortProductsByApprovalPriority(
     products.filter((product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.sku?.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesGender = filterGender === 'ALL' || product.gender === filterGender
-    const matchesCategory = filterCategory === 'ALL' || product.category?.name === filterCategory
+    const productCategorySlug = resolveCanonicalCategorySlug(product.category ?? undefined)
+    const matchesCategory =
+      filterCategory === 'ALL' || productCategorySlug === filterCategory
     
     return matchesSearch && matchesGender && matchesCategory
     }),
@@ -568,11 +590,11 @@ const AdminProductsPage = () => {
                 className="w-full pl-10 pr-4 py-3 text-black  border placeholder:text-gray-500 border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent appearance-none"
               >
                 <option value="ALL">ყველა კატეგორია</option>
-                <option value="dresses">კაბები</option>
-                <option value="tops">ტოპები</option>
-                <option value="bottoms">ქვედა ნაწილი</option>
-                <option value="outerwear">ზედა ტანსაცმელი</option>
-                <option value="accessories">აქსესუარები</option>
+                {panelFilterCategories.map((category) => (
+                  <option key={category.slug} value={category.slug}>
+                    {category.name}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
