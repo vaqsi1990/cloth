@@ -20,7 +20,6 @@ const signupSchema = z.object({
     .min(2, "მისამართი აუცილებელია")
     .regex(PERSON_ADDRESS_REGEX, "მისამართი უნდა შეიცავდეს ქართულ ან ინგლისურ ასოებს, ციფრებს, №, N და სასვენი ნიშნებს")
     .refine((val) => /[0-9]/.test(val), "მისამართი უნდა შეიცავდეს ციფრებს"),
-  postalIndex: z.string().min(2, "საფოსტო ინდექსი აუცილებელია"),
   pickupAddress: z.string().optional(),
   gender: z.enum(["MALE", "FEMALE"], { message: "სქესი აუცილებელია" }),
   dateOfBirth: z.string()
@@ -88,7 +87,6 @@ export async function POST(request: NextRequest) {
         phone: validatedData.phone,
         location: validatedData.location,
         address: validatedData.address,
-        postalIndex: validatedData.postalIndex,
         pickupAddress: validatedData.pickupAddress || undefined,
         gender: validatedData.gender,
         dateOfBirth: new Date(validatedData.dateOfBirth),

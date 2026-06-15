@@ -22,7 +22,6 @@ const SignUpPage = () => {
     phone: '', // ტელეფონის ნომერი
     location: '', // ადგილმდებარეობა
     address: '', // მისამართი
-    postalIndex: '', // საფოსტო ინდექსი
     pickupAddress: '', // მისამართი ადგილზე მიტანისთვის
     gender: '', // სქესი
     dateOfBirth: '', // დაბადების თარიღი
@@ -47,7 +46,7 @@ const SignUpPage = () => {
 
   const router = useRouter()
 
-  const step1Fields = ['name', 'lastName', 'phone', 'location', 'address', 'postalIndex'] as const
+  const step1Fields = ['name', 'lastName', 'phone', 'location', 'address'] as const
 
   // Function to calculate age from date of birth
   const calculateAge = (dateOfBirth: string): number => {
@@ -314,7 +313,6 @@ const SignUpPage = () => {
           phone: formData.phone,
           location: formData.location,
           address: formData.address,
-          postalIndex: formData.postalIndex,
           pickupAddress: formData.pickupAddress || undefined,
           gender: formData.gender,
           dateOfBirth: formData.dateOfBirth,
@@ -479,25 +477,6 @@ const SignUpPage = () => {
                 />
               </div>
               {fieldErrors.address && <p className="text-red-500 md:text-[18px] text-[16px] mt-1">{fieldErrors.address}</p>}
-            </div>
-
-            {/* Postal Index */}
-            <div>
-              <label htmlFor="postalIndex" className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
-                საფოსტო ინდექსი
-              </label>
-              <div className="relative">
-                <input
-                  id="postalIndex"
-                  name="postalIndex"
-                  type="text"
-                  required
-                  value={formData.postalIndex}
-                  onChange={handleChange}
-                  className="w-full pl-4 pr-4 py-3 text-black placeholder:text-gray-500 border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
-                  placeholder="შეიყვანეთ საფოსტო ინდექსი"
-                />
-              </div>
             </div>
               </>
             )}
