@@ -36,6 +36,10 @@ import { parseShopListFilterParams } from '@/lib/shop-list-params'
 import { convertBuyerPriceFiltersToSeller } from '@/lib/platform-pricing'
 import { resolveCategoryIdForWrite } from '@/lib/category-sync'
 import { sortProductsByVipPriority } from '@/lib/product-vip'
+import {
+  fetchProductIdsByApprovalPriority,
+  orderProductsByIdList,
+} from '@/lib/admin-product-list-order'
 import { prismaCacheStrategy } from '@/lib/prisma-cache'
 import {
   optionalCategoryIdField,
@@ -155,6 +159,7 @@ export async function GET(request: NextRequest) {
       !useOffsetPagination && cursor ? parseInt(cursor, 10) : undefined
     const includeUnapproved = searchParams.get('includeUnapproved') === 'true'
     const forceFresh = searchParams.get('fresh') === '1'
+    const pendingFirstParam = searchParams.get('pendingFirst')
     const shopFilters = parseShopListFilterParams(searchParams)
     const sellerPriceFilters = convertBuyerPriceFiltersToSeller(shopFilters)
 
@@ -187,6 +192,12 @@ export async function GET(request: NextRequest) {
     const isAdminOrSupportRole =
       session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPPORT'
     const shouldIncludeUnapproved = includeUnapproved && isAdminOrSupportRole
+    const pendingFirst =
+      shouldIncludeUnapproved && pendingFirstParam !== 'false'
+    const adminOffset = Math.max(
+      0,
+      parseInt(searchParams.get('offset') || '0', 10) || 0,
+    )
     const needsFreshData = isAdminOrSupportRole || shouldIncludeUnapproved
     const useAccelerateCache = !needsFreshData
     const listCacheStrategy =
@@ -395,26 +406,43 @@ export async function GET(request: NextRequest) {
       orderBy: listOrderBy,
     }
 
-    const productsPromise = useOffsetPagination
-      ? listProducts(
-          {
-            ...listQueryBase,
-            skip: (page - 1) * pageLimit,
-          },
-          useAccelerateCache,
-          listCacheStrategy,
-        )
-      : cursorId
+    const useApprovalPriorityOrder =
+      pendingFirst && shouldIncludeUnapproved && !useOffsetPagination
+
+    const productsPromise = useApprovalPriorityOrder
+      ? (async () => {
+          const orderedIds = await fetchProductIdsByApprovalPriority(
+            listTake,
+            adminOffset,
+          )
+          if (orderedIds.length === 0) return []
+
+          const rows = await prisma.product.findMany({
+            where: { id: { in: orderedIds } },
+            select: baseSelect,
+          })
+          return orderProductsByIdList(rows, orderedIds)
+        })()
+      : useOffsetPagination
         ? listProducts(
             {
               ...listQueryBase,
-              cursor: { id: cursorId },
-              skip: 1,
+              skip: (page - 1) * pageLimit,
             },
             useAccelerateCache,
             listCacheStrategy,
           )
-        : listProducts(listQueryBase, useAccelerateCache, listCacheStrategy)
+        : cursorId
+          ? listProducts(
+              {
+                ...listQueryBase,
+                cursor: { id: cursorId },
+                skip: 1,
+              },
+              useAccelerateCache,
+              listCacheStrategy,
+            )
+          : listProducts(listQueryBase, useAccelerateCache, listCacheStrategy)
 
   
     const flatProducts = await productsPromise
@@ -450,7 +478,9 @@ export async function GET(request: NextRequest) {
     // Filter out products with blocked users (if not admin)
     // Optimized: Skip this check if products are already approved (blocked users can't have approved products)
     // This check is only needed if business logic allows blocked users to have approved products
-    let filteredProducts = sortProductsByVipPriority(flatProducts)
+    let filteredProducts = useApprovalPriorityOrder
+      ? flatProducts
+      : sortProductsByVipPriority(flatProducts)
     // Note: If blocked users cannot have approved products, we can skip this entire check
     // Uncomment below if you need to filter blocked users:
     /*
@@ -491,8 +521,16 @@ export async function GET(request: NextRequest) {
     }
 
     const nextCursor =
-      !useOffsetPagination && hasMore && productsToReturn.length > 0
+      !useOffsetPagination &&
+      !useApprovalPriorityOrder &&
+      hasMore &&
+      productsToReturn.length > 0
         ? productsToReturn[productsToReturn.length - 1].id.toString()
+        : null
+
+    const nextOffset =
+      useApprovalPriorityOrder && hasMore
+        ? adminOffset + pageSize
         : null
 
     const totalPages =
@@ -508,6 +546,7 @@ export async function GET(request: NextRequest) {
       success: true,
       products: productsToReturn,
       nextCursor,
+      nextOffset,
       hasMore: hasMore,
       ...(useOffsetPagination
         ? {

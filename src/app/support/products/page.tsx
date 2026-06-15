@@ -13,6 +13,7 @@ import {
   broadcastProductStatusUpdate,
   type ProductStatusValue,
 } from '@/lib/product-status-sync'
+import { sortProductsByApprovalPriority } from '@/lib/admin-product-list-order'
 
 interface RentalPeriod {
   startDate: string
@@ -121,7 +122,7 @@ const SupportProductsPage = () => {
     try {
       setLoading(true)
       // Fetch all products, including unapproved ones, for SUPPORT role
-      const response = await fetch('/api/products?includeUnapproved=true', {
+      const response = await fetch('/api/products?includeUnapproved=true&pendingFirst=true', {
         cache: 'no-store',
         headers: { 'Cache-Control': 'no-cache' },
       })
@@ -293,16 +294,18 @@ const SupportProductsPage = () => {
       const data = await response.json()
 
       if (response.ok && data.success) {
-        setProducts(prev =>
-          prev.map(product =>
-            product.id === productId
-              ? {
-                  ...product,
-                  approvalStatus: data.product.approvalStatus,
-                  rejectionReason: data.product.rejectionReason
-                }
-              : product
-          )
+        setProducts((prev) =>
+          sortProductsByApprovalPriority(
+            prev.map((product) =>
+              product.id === productId
+                ? {
+                    ...product,
+                    approvalStatus: data.product.approvalStatus,
+                    rejectionReason: data.product.rejectionReason,
+                  }
+                : product,
+            ),
+          ),
         )
         showToast(
           status === 'APPROVED'
@@ -353,7 +356,8 @@ const SupportProductsPage = () => {
     return getRentalPrice(product)
   }
 
-  const filteredProducts = products.filter(product => {
+  const filteredProducts = sortProductsByApprovalPriority(
+    products.filter((product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.sku?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -361,7 +365,8 @@ const SupportProductsPage = () => {
     const matchesCategory = filterCategory === 'ALL' || product.category?.name === filterCategory
     
     return matchesSearch && matchesGender && matchesCategory
-  })
+    }),
+  )
 
   const getPanelTitle = () => {
     return 'საფორთის პანელი'

@@ -13,6 +13,7 @@ import {
   broadcastProductStatusUpdate,
   type ProductStatusValue,
 } from '@/lib/product-status-sync'
+import { sortProductsByApprovalPriority } from '@/lib/admin-product-list-order'
 interface RentalPeriod {
   startDate: string
   endDate: string
@@ -75,7 +76,7 @@ const AdminProductsPage = () => {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
-  const [nextCursor, setNextCursor] = useState<string | null>(null)
+  const [nextOffset, setNextOffset] = useState<number | null>(null)
   const [hasMore, setHasMore] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterGender, setFilterGender] = useState('ALL')
@@ -94,7 +95,7 @@ const AdminProductsPage = () => {
     return attachBatchRentalStatus(productList)
   }, [])
 
-  const fetchProducts = useCallback(async (cursor?: string | null, append = false) => {
+  const fetchProducts = useCallback(async (offset = 0, append = false) => {
     try {
       if (append) {
         setLoadingMore(true)
@@ -102,9 +103,12 @@ const AdminProductsPage = () => {
         setLoading(true)
       }
 
-      const params = new URLSearchParams({ includeUnapproved: 'true' })
-      if (cursor) {
-        params.set('cursor', cursor)
+      const params = new URLSearchParams({
+        includeUnapproved: 'true',
+        pendingFirst: 'true',
+      })
+      if (offset > 0) {
+        params.set('offset', String(offset))
       }
 
       const response = await fetch(`/api/products?${params}`, {
@@ -115,8 +119,14 @@ const AdminProductsPage = () => {
 
       if (data.success) {
         const productsWithRentalStatus = await enrichWithRentalStatus(data.products)
-        setProducts((prev) => (append ? [...prev, ...productsWithRentalStatus] : productsWithRentalStatus))
-        setNextCursor(data.nextCursor ?? null)
+        setProducts((prev) =>
+          append
+            ? sortProductsByApprovalPriority([...prev, ...productsWithRentalStatus])
+            : productsWithRentalStatus,
+        )
+        setNextOffset(
+          typeof data.nextOffset === 'number' ? data.nextOffset : null,
+        )
         setHasMore(Boolean(data.hasMore))
       }
     } catch (error) {
@@ -128,8 +138,8 @@ const AdminProductsPage = () => {
   }, [enrichWithRentalStatus])
 
   const loadMoreProducts = () => {
-    if (hasMore && nextCursor && !loadingMore) {
-      fetchProducts(nextCursor, true)
+    if (hasMore && nextOffset != null && !loadingMore) {
+      fetchProducts(nextOffset, true)
     }
   }
 
@@ -331,16 +341,18 @@ const AdminProductsPage = () => {
       const data = await response.json()
 
       if (response.ok && data.success) {
-        setProducts(prev =>
-          prev.map(product =>
-            product.id === productId
-              ? {
-                  ...product,
-                  approvalStatus: data.product.approvalStatus,
-                  rejectionReason: data.product.rejectionReason
-                }
-              : product
-          )
+        setProducts((prev) =>
+          sortProductsByApprovalPriority(
+            prev.map((product) =>
+              product.id === productId
+                ? {
+                    ...product,
+                    approvalStatus: data.product.approvalStatus,
+                    rejectionReason: data.product.rejectionReason,
+                  }
+                : product,
+            ),
+          ),
         )
         showToast(
           status === 'APPROVED'
@@ -391,7 +403,8 @@ const AdminProductsPage = () => {
     return getRentalPrice(product)
   }
 
-  const filteredProducts = products.filter(product => {
+  const filteredProducts = sortProductsByApprovalPriority(
+    products.filter((product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.sku?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -399,7 +412,8 @@ const AdminProductsPage = () => {
     const matchesCategory = filterCategory === 'ALL' || product.category?.name === filterCategory
     
     return matchesSearch && matchesGender && matchesCategory
-  })
+    }),
+  )
 
   if (status === 'loading' || loading) {
     return (
