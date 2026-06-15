@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { checkAndBlockUser, reevaluateUserBlocking } from '@/utils/revenue'
 import { RentalStatus } from '@prisma/client'
 import { isRentalEndBeforeStart, minRentalEndDateStillBlocking } from '@/lib/rental-dates'
+import { markRentalProductsRented } from '@/lib/update-product-status'
 
 export async function POST(request: NextRequest) {
   try {
@@ -304,6 +305,8 @@ export async function POST(request: NextRequest) {
 
     // Check revenue and block user if needed
     await checkAndBlockUser(sellerId, 2)
+
+    await markRentalProductsRented([productId])
 
     return NextResponse.json({
       success: true,

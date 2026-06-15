@@ -52,6 +52,21 @@ export async function clearProductRentalBlocks(productId: number): Promise<void>
   ])
 }
 
+/** Mark products as RENTED when a rental order is placed (checkout or legacy orders API). */
+export async function markRentalProductsRented(productIds: number[]): Promise<void> {
+  const uniqueIds = [...new Set(productIds.filter((id) => Number.isFinite(id)))]
+  if (uniqueIds.length === 0) return
+
+  await Promise.all(
+    uniqueIds.map((productId) =>
+      updateProductStatus(productId, 'RENTED').catch((error) => {
+        console.error(`Error updating product ${productId} status to RENTED:`, error)
+        return null
+      }),
+    ),
+  )
+}
+
 export async function updateProductStatus(
   productId: number,
   status: ProductStatusInput,

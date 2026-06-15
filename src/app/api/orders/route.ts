@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { findRentalDateConflict } from '@/lib/rental-date-conflicts'
+import { markRentalProductsRented } from '@/lib/update-product-status'
 import { MAX_CART_ITEMS, MAX_CART_ITEM_QUANTITY, CART_SINGLE_ITEM_MESSAGE } from '@/lib/cart-limits'
 
 // Order validation schema
@@ -174,17 +175,7 @@ export async function POST(request: NextRequest) {
 
     // Update product status to RENTED for rental items
     if (rentalProductIds.length > 0) {
-      await Promise.all(
-        rentalProductIds.map(productId =>
-          prisma.product.update({
-            where: { id: productId },
-            data: { status: 'RENTED' }
-          }).catch(error => {
-            console.error(`Error updating product ${productId} status:`, error)
-            return null
-          })
-        )
-      )
+      await markRentalProductsRented(rentalProductIds)
     }
 
     // Note: Products will be hidden (marked as RESERVED) when order is paid, not when order is created

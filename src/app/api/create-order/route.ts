@@ -18,6 +18,8 @@ import { syncCartItemBuyerListPrices } from '@/lib/sync-cart-prices'
 import { z } from 'zod'
 import { MAX_CART_ITEMS, MAX_CART_ITEM_QUANTITY, CART_SINGLE_ITEM_MESSAGE } from '@/lib/cart-limits'
 import { toPrismaDeliverySpeed } from '@/lib/delivery'
+import { markRentalProductsRented } from '@/lib/update-product-status'
+import { findRentalDateConflict } from '@/lib/rental-date-conflicts'
 
 interface CartItemInput {
   productId: string | number
@@ -390,6 +392,24 @@ export async function POST(req: NextRequest) {
       }),
     }))
 
+    const rentalConflict = await findRentalDateConflict(
+      resolvedCartItems
+        .filter((item) => item.isRental && item.rentalStartDate && item.rentalEndDate && item.productId)
+        .map((item) => ({
+          productId: item.productId as number,
+          productName: item.productName,
+          size: item.size || 'default',
+          rentalStartDate: item.rentalStartDate!.toISOString(),
+          rentalEndDate: item.rentalEndDate!.toISOString(),
+        })),
+    )
+    if (rentalConflict) {
+      return NextResponse.json(
+        { success: false, error: rentalConflict },
+        { status: rentalConflict.includes('არასწორი') ? 400 : 409 },
+      )
+    }
+
     await syncCartItemBuyerListPrices(
       resolvedCartItems.map((item) => ({
         id: item.id,
@@ -489,6 +509,11 @@ export async function POST(req: NextRequest) {
         }
       }
     })
+
+    const rentalProductIds = resolvedCartItems
+      .filter((item) => item.isRental && item.productId)
+      .map((item) => item.productId as number)
+    await markRentalProductsRented(rentalProductIds)
 
     const productIds = cart.items.map(i => i.productId).filter((id): id is number => id !== null)
     const splitConfig = await buildSplitPaymentConfig(
