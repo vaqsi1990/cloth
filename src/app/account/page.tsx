@@ -113,9 +113,12 @@ const AccountPageContent = () => {
   const [orders, setOrders] = useState<Order[]>([])
   const [sales, setSales] = useState<SaleOrder[]>([])
   const [products, setProducts] = useState<ProductItem[]>([])
+  const [productsPage, setProductsPage] = useState(1)
+  const [productsHasMore, setProductsHasMore] = useState(false)
   const [loadingOrders, setLoadingOrders] = useState(false)
   const [loadingSales, setLoadingSales] = useState(false)
   const [loadingProducts, setLoadingProducts] = useState(false)
+  const [loadingMoreProducts, setLoadingMoreProducts] = useState(false)
   const [vouchers, setVouchers] = useState<UserVoucherItem[]>([])
   const [loadingVouchers, setLoadingVouchers] = useState(false)
   const [verification, setVerification] = useState<{
@@ -395,9 +398,11 @@ const AccountPageContent = () => {
         : 0
 
       // Fetch user products
-      const productsResponse = await fetch('/api/user/products')
+      const productsResponse = await fetch('/api/user/products?limit=1')
       const productsData = await productsResponse.json()
-      const productsCount = productsData.success ? productsData.products.length : 0
+      const productsCount = productsData.success
+        ? (productsData.totalCount ?? productsData.products.length)
+        : 0
 
       setUserStats({
         ordersCount,
@@ -865,18 +870,37 @@ const AccountPageContent = () => {
     showToast('კოდი დაკოპირდა', 'success')
   }
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (page = 1, append = false) => {
     try {
-      setLoadingProducts(true)
-      const response = await fetch('/api/user/products')
+      if (append) {
+        setLoadingMoreProducts(true)
+      } else {
+        setLoadingProducts(true)
+      }
+
+      const response = await fetch(`/api/user/products?page=${page}`)
       const data = await response.json()
       if (data.success) {
-        setProducts(data.products || [])
+        const nextProducts = data.products || []
+        setProducts((prev) => (append ? [...prev, ...nextProducts] : nextProducts))
+        setProductsPage(data.page ?? page)
+        setProductsHasMore(
+          typeof data.totalPages === 'number'
+            ? (data.page ?? page) < data.totalPages
+            : nextProducts.length >= (data.limit ?? 50),
+        )
       }
     } catch (error) {
       console.error('Error fetching products:', error)
     } finally {
       setLoadingProducts(false)
+      setLoadingMoreProducts(false)
+    }
+  }
+
+  const loadMoreProducts = () => {
+    if (productsHasMore && !loadingMoreProducts) {
+      fetchProducts(productsPage + 1, true)
     }
   }
 
@@ -1709,6 +1733,22 @@ const AccountPageContent = () => {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {productsHasMore && !loadingProducts && (
+          <div className="flex flex-col items-center gap-2 mt-6 pt-4 border-t border-gray-100">
+            <p className="text-sm text-gray-600">
+              ჩატვირთულია {products.length} პროდუქტი — დააჭირეთ მეტის ჩასატვირთად
+            </p>
+            <button
+              type="button"
+              onClick={loadMoreProducts}
+              disabled={loadingMoreProducts}
+              className="px-6 py-3 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loadingMoreProducts ? 'იტვირთება...' : 'მეტის ჩატვირთვა'}
+            </button>
           </div>
         )}
       </div>
