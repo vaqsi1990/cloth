@@ -27,18 +27,7 @@ export default function BuyerPriceBreakdown({
   const commissionPercent = Math.round(PLATFORM_COMMISSION_RATE * 100)
 
   return (
-    <div
-      className={`rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-black space-y-1 ${className}`}
-    >
-      <div className="flex justify-between gap-4">
-        <span>პროდუქტის ფასი</span>
-        <span>₾{sellerEffective.toFixed(2)}</span>
-      </div>
-      
-      <div className="flex justify-between gap-4 font-semibold border-t border-gray-200 pt-1">
-        <span>სულ</span>
-        <span>₾{total.toFixed(2)}</span>
-      </div>
-    </div>
+<>
+</>
   )
 }

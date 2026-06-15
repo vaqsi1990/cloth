@@ -218,8 +218,8 @@ const AdminProductsPage = () => {
     )
 
     try {
-      const response = await fetch(`/api/products/${productId}`, {
-        method: 'PATCH',
+      const response = await fetch(`/api/admin/products/${productId}/status`, {
+        method: 'PUT',
         credentials: 'same-origin',
         headers: {
           'Content-Type': 'application/json',
@@ -240,6 +240,7 @@ const AdminProductsPage = () => {
           productId,
           status: savedStatus as ProductStatusValue,
         })
+        void fetchProducts()
         router.refresh()
         showToast('სტატუსი წარმატებით განახლდა', 'success')
       } else {

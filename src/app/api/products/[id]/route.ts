@@ -24,6 +24,10 @@ import {
 } from '@/lib/product-pickup'
 import { revalidateProductCaches } from '@/lib/product-cache-revalidation'
 import { resolveCategoryIdForWrite } from '@/lib/category-sync'
+import {
+  isProductStatus,
+  updateProductStatus,
+} from '@/lib/update-product-status'
 
 const VALID_PRODUCT_STATUSES = new Set([
   'AVAILABLE',
@@ -34,7 +38,7 @@ const VALID_PRODUCT_STATUSES = new Set([
 ])
 
 function isValidProductStatus(value: unknown): value is 'AVAILABLE' | 'RENTED' | 'RESERVED' | 'MAINTENANCE' | 'DAMAGED' {
-  return typeof value === 'string' && VALID_PRODUCT_STATUSES.has(value)
+  return isProductStatus(value)
 }
 
 // Product validation schema
@@ -585,31 +589,14 @@ export async function PATCH(
       )
     }
 
-    // Update only the fields provided
-    const updateData: Prisma.ProductUpdateInput = {}
-
-    if (isValidProductStatus(body.status)) {
-      updateData.status = body.status
-    } else if (body.status != null && body.status !== '') {
+    if (!isValidProductStatus(body.status)) {
       return NextResponse.json({
         success: false,
         message: `Invalid status: ${body.status}. Allowed values: ${[...VALID_PRODUCT_STATUSES].join(', ')}`
       }, { status: 400 })
     }
 
-    if (Object.keys(updateData).length === 0) {
-      return NextResponse.json({
-        success: false,
-        message: 'No valid fields to update'
-      }, { status: 400 })
-    }
-
-    const updatedProduct = await prisma.product.update({
-      where: { id: productId },
-      data: updateData
-    })
-
-    revalidateProductCaches(productId, { authorId: updatedProduct.userId })
+    const updatedProduct = await updateProductStatus(productId, body.status)
 
     return NextResponse.json({
       success: true,
