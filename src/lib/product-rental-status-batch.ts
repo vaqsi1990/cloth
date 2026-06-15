@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { prismaCacheStrategy } from '@/lib/prisma-cache'
-import { dedupeRentalPeriods } from '@/lib/rental-dates'
+import { dedupeRentalPeriods, minRentalEndDateStillBlocking } from '@/lib/rental-dates'
 
 const RENTAL_STATUS_CACHE = { swr: 30, ttl: 30 }
 
@@ -53,13 +53,14 @@ export async function fetchActiveRentalPeriodsByProduct(
   if (productIds.length === 0) return {}
 
   const today = startOfToday()
+  const minBlockingEndDate = minRentalEndDateStillBlocking(today)
 
   const [activeRentals, activeOrders, activeInquiries] = await Promise.all([
     prisma.rental.findMany({
       where: {
         productId: { in: productIds },
         status: { in: ['RESERVED', 'ACTIVE'] },
-        endDate: { gte: today },
+        endDate: { gte: minBlockingEndDate },
       },
       select: {
         productId: true,
@@ -79,7 +80,7 @@ export async function fetchActiveRentalPeriodsByProduct(
           some: {
             productId: { in: productIds },
             isRental: true,
-            rentalEndDate: { gte: today },
+            rentalEndDate: { gte: minBlockingEndDate },
           },
         },
       },
@@ -89,7 +90,7 @@ export async function fetchActiveRentalPeriodsByProduct(
           where: {
             productId: { in: productIds },
             isRental: true,
-            rentalEndDate: { gte: today },
+            rentalEndDate: { gte: minBlockingEndDate },
           },
           select: {
             productId: true,
@@ -107,7 +108,7 @@ export async function fetchActiveRentalPeriodsByProduct(
       where: {
         productId: { in: productIds },
         status: { in: ['PENDING', 'APPROVED', 'BOOKED'] },
-        endDate: { gte: today },
+        endDate: { gte: minBlockingEndDate },
       },
       select: {
         productId: true,
@@ -226,6 +227,8 @@ export async function fetchProductRentalStatus(productId: number): Promise<{
   totalActiveOrders: number
   totalActiveInquiries: number
 }> {
+  const minBlockingEndDate = minRentalEndDateStillBlocking(startOfToday())
+
   const [periodsByProduct, variants, totalActiveRentals, totalActiveOrders, totalActiveInquiries] =
     await Promise.all([
       fetchActiveRentalPeriodsByProduct([productId]),
@@ -239,7 +242,7 @@ export async function fetchProductRentalStatus(productId: number): Promise<{
         where: {
           productId,
           status: { in: ['RESERVED', 'ACTIVE'] },
-          endDate: { gte: startOfToday() },
+          endDate: { gte: minBlockingEndDate },
         },
       }),
       prisma.order.count({
@@ -249,7 +252,7 @@ export async function fetchProductRentalStatus(productId: number): Promise<{
             some: {
               productId,
               isRental: true,
-              rentalEndDate: { gte: startOfToday() },
+              rentalEndDate: { gte: minBlockingEndDate },
             },
           },
         },
@@ -258,7 +261,7 @@ export async function fetchProductRentalStatus(productId: number): Promise<{
         where: {
           productId,
           status: { in: ['PENDING', 'APPROVED', 'BOOKED'] },
-          endDate: { gte: startOfToday() },
+          endDate: { gte: minBlockingEndDate },
         },
       }),
     ])

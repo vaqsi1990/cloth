@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { checkAndBlockUser, reevaluateUserBlocking } from '@/utils/revenue'
 import { RentalStatus } from '@prisma/client'
-import { isRentalEndBeforeStart } from '@/lib/rental-dates'
+import { isRentalEndBeforeStart, minRentalEndDateStillBlocking } from '@/lib/rental-dates'
 
 export async function POST(request: NextRequest) {
   try {
@@ -139,6 +139,8 @@ export async function POST(request: NextRequest) {
         }
       })
 
+      const minBlockingEndDate = minRentalEndDateStillBlocking(new Date())
+
       // 2. Check order items with active rentals for this product
       const existingOrders = await prisma.order.findMany({
         where: {
@@ -150,7 +152,7 @@ export async function POST(request: NextRequest) {
               productId: productId,
               isRental: true,
               rentalEndDate: {
-                gte: new Date()
+                gte: minBlockingEndDate
               }
             }
           }

@@ -59,6 +59,14 @@ export function getLastBlockedDayAfterRental(existingEnd: Date | string): Date {
   return addDaysToDateOnly(existingEnd, RENTAL_MAINTENANCE_DAYS_AFTER_END)
 }
 
+/**
+ * Minimum rental endDate (inclusive) to include when loading periods that still
+ * block the calendar on the reference day (accounts for post-rental maintenance).
+ */
+export function minRentalEndDateStillBlocking(referenceDate: Date | string = new Date()): Date {
+  return addDaysToDateOnly(referenceDate, -RENTAL_MAINTENANCE_DAYS_AFTER_END)
+}
+
 /** Maintenance period end shown in UI (day after rental end). */
 export function getMaintenanceEndDate(existingEnd: Date | string): Date {
   return getLastBlockedDayAfterRental(existingEnd)

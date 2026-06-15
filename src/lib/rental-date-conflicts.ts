@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { isRentalEndBeforeStart, hasRentalPeriodConflict } from '@/lib/rental-dates'
+import { isRentalEndBeforeStart, hasRentalPeriodConflict, minRentalEndDateStillBlocking } from '@/lib/rental-dates'
 
 export function hasRentalDateConflict(
   start: Date,
@@ -25,7 +25,7 @@ export async function findRentalDateConflict(
   if (items.length === 0) return null
 
   const productIds = [...new Set(items.map((i) => i.productId))]
-  const now = new Date()
+  const minBlockingEndDate = minRentalEndDateStillBlocking(new Date())
 
   const [existingRentals, existingOrders] = await Promise.all([
     prisma.rental.findMany({
@@ -46,7 +46,7 @@ export async function findRentalDateConflict(
           some: {
             productId: { in: productIds },
             isRental: true,
-            rentalEndDate: { gte: now },
+            rentalEndDate: { gte: minBlockingEndDate },
           },
         },
       },
@@ -55,7 +55,7 @@ export async function findRentalDateConflict(
           where: {
             productId: { in: productIds },
             isRental: true,
-            rentalEndDate: { gte: now },
+            rentalEndDate: { gte: minBlockingEndDate },
           },
           select: {
             productId: true,
