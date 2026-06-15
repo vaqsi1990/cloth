@@ -3,7 +3,7 @@ import axios from 'axios'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { reevaluateUserBlocking } from '@/utils/revenue'
+import { canUserMakePurchases } from '@/lib/seller-eligibility'
 import { bogTokenManager } from '@/lib/bog-token'
 import { computeUserCartSubtotal } from '@/lib/cart-totals'
 import { getCartItemPayablePrice } from '@/lib/cart-item-pricing'
@@ -341,15 +341,37 @@ export async function POST(req: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { blocked: true, iban: true }
+      select: {
+        iban: true,
+        verification: {
+          select: {
+            identityStatus: true,
+            status: true,
+          },
+        },
+      },
     })
 
-    if (user?.blocked) {
-      await reevaluateUserBlocking(session.user.id, 2)
-    }
+    if (
+      !canUserMakePurchases({
+        role: session.user.role,
+        iban: user?.iban,
+        verification: user?.verification,
+        sessionVerificationStatus: session.user.verificationStatus,
+      })
+    ) {
+      if (!user?.iban) {
+        return NextResponse.json({ missingIban: true, error: 'Missing IBAN' }, { status: 403 })
+      }
 
-    if (!user?.iban) {
-      return NextResponse.json({ missingIban: true, error: "Missing IBAN" }, { status: 403 })
+      return NextResponse.json(
+        {
+          success: false,
+          requiresVerification: true,
+          error: 'გთხოვთ დაადასტუროთ პირადობა პროფილის გვერდზე, რომ შეძლოთ ყიდვა ან ქირაობა.',
+        },
+        { status: 403 },
+      )
     }
 
     const cart = await prisma.cart.findFirst({

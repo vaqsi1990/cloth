@@ -33,9 +33,9 @@ export async function GET(
         userId: true,
         user: {
           select: {
-            blocked: true
-          }
-        }
+            banned: true,
+          },
+        },
       }
     })
 
@@ -53,7 +53,7 @@ export async function GET(
 
     if (
       !currentProduct ||
-      (!isAdmin && currentProduct.user?.blocked) ||
+      (!isAdmin && currentProduct.user?.banned) ||
       (!isAdmin && !isOwner && currentProduct.approvalStatus !== 'APPROVED')
     ) {
       return NextResponse.json({
@@ -73,8 +73,8 @@ export async function GET(
           status: 'AVAILABLE',
           approvalStatus: 'APPROVED',
           user: {
-            blocked: false
-          }
+            banned: false,
+          },
         })
       },
       select: {

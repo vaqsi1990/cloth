@@ -1,5 +1,4 @@
 import { prisma } from '@/lib/prisma'
-import { checkAndBlockUser, reevaluateUserBlocking } from '@/utils/revenue'
 import { getDiscountedPrice } from '@/lib/discount-helpers'
 import { getSellerPriceFromBuyer } from '@/lib/platform-pricing'
 import { processExpiredDiscount } from '@/utils/discountUtils'
@@ -44,7 +43,6 @@ export async function recordSellerTransactions(orderId: number) {
         userId: order.user.id,
       },
     })
-    await reevaluateUserBlocking(order.user.id)
   }
 
   const sellerTotals = new Map<string, { userId: string; type: TransactionType; total: number }>()
@@ -96,8 +94,6 @@ export async function recordSellerTransactions(orderId: number) {
         orderId: order.id,
       },
     })
-
-    await checkAndBlockUser(entry.userId)
   }
 
   // Hide sold products by marking them as RESERVED (they remain in database but are hidden from listings)

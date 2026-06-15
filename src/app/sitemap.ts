@@ -12,7 +12,7 @@ const getCachedSitemapEntries = unstable_cache(
         take: 5000,
       }),
       prisma.user.findMany({
-        where: { blocked: false },
+        where: { banned: false },
         select: { id: true, updatedAt: true },
         take: 2000,
       }),

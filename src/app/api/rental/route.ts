@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { checkAndBlockUser, reevaluateUserBlocking } from '@/utils/revenue'
-import { RentalStatus } from '@prisma/client'
 import { isRentalEndBeforeStart, minRentalEndDateStillBlocking } from '@/lib/rental-dates'
 import { markRentalProductsRented } from '@/lib/update-product-status'
+import { canUserMakePurchases } from '@/lib/seller-eligibility'
+import { RentalStatus } from '@prisma/client'
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,30 +15,44 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check if user is blocked
-    let user = await prisma.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { 
-        blocked: true 
-      }
+      select: {
+        iban: true,
+        verification: {
+          select: {
+            identityStatus: true,
+            status: true,
+          },
+        },
+      },
     })
 
-    if (user?.blocked) {
-      await reevaluateUserBlocking(session.user.id, 2)
-      user = await prisma.user.findUnique({
-        where: { id: session.user.id },
-        select: { blocked: true }
+    if (
+      !canUserMakePurchases({
+        role: session.user.role,
+        iban: user?.iban,
+        verification: user?.verification,
+        sessionVerificationStatus: session.user.verificationStatus,
       })
-
-      if (user?.blocked) {
+    ) {
+      if (!user?.iban) {
         return NextResponse.json(
-          { 
-            error: 'Your account requires identity verification. Please upload a document.',
-            blocked: true
+          {
+            error: 'გთხოვთ შეიყვანოთ ბანკის IBAN პროფილში.',
+            missingIban: true,
           },
-          { status: 403 }
+          { status: 403 },
         )
       }
+
+      return NextResponse.json(
+        {
+          error: 'გთხოვთ დაადასტუროთ პირადობა პროფილის გვერდზე, რომ შეძლოთ ქირაობა.',
+          requiresVerification: true,
+        },
+        { status: 403 },
+      )
     }
 
     const body = await request.json()
@@ -302,9 +316,6 @@ export async function POST(request: NextRequest) {
         rentalId: rental.id
       }
     })
-
-    // Check revenue and block user if needed
-    await checkAndBlockUser(sellerId, 2)
 
     await markRentalProductsRented([productId])
 

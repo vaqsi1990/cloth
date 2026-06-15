@@ -13,7 +13,7 @@ function buildAuthorProductWhere(userId: string, isAdmin: boolean): Prisma.Produ
   }
 
   if (!isAdmin) {
-    where.user = { blocked: false }
+    where.user = { banned: false }
     where.approvalStatus = 'APPROVED'
     where.status = { notIn: ['MAINTENANCE', 'DAMAGED', 'RESERVED'] }
   }
@@ -50,12 +50,13 @@ export async function GET(
           name: true,
           image: true,
           blocked: true,
+          banned: true,
         },
       }),
       Promise.resolve(session?.user?.role === 'ADMIN'),
     ])
 
-    if (!user || (!isAdmin && user.blocked)) {
+    if (!user || (!isAdmin && user.banned)) {
       return NextResponse.json(
         { success: false, message: 'ავტორი ვერ მოიძებნა' },
         { status: 404 },

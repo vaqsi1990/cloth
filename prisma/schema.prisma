@@ -48,6 +48,11 @@ enum UserRole {
   SUPPORT
 }
 
+enum BlacklistSource {
+  MANUAL_BAN
+  REVENUE_THRESHOLD
+}
+
 enum TransactionType {
   SALE
   RENT
@@ -155,8 +160,36 @@ model User {
   // Reviews
   reviews       Review[]
   reviewReplies ReviewReply[] @relation("ReviewReplies")
+
+  blacklistRecords  UserBlacklistRecord[] @relation("UserBlacklistRecords")
+  blacklistCreated  UserBlacklistRecord[] @relation("BlacklistCreatedBy")
+  blacklistResolved UserBlacklistRecord[] @relation("BlacklistResolvedBy")
   
   @@index([blocked])
+}
+
+model UserBlacklistRecord {
+  id           Int             @id @default(autoincrement())
+  userId       String
+  user         User            @relation("UserBlacklistRecords", fields: [userId], references: [id], onDelete: Cascade)
+  userName     String?
+  userEmail    String?
+  userPhone    String?
+  personalId   String?
+  reason       String
+  adminNotes   String?
+  source       BlacklistSource
+  isActive     Boolean         @default(true)
+  createdById  String?
+  createdBy    User?           @relation("BlacklistCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt    DateTime        @default(now())
+  resolvedAt   DateTime?
+  resolvedById String?
+  resolvedBy   User?           @relation("BlacklistResolvedBy", fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([isActive])
+  @@index([createdAt(sort: Desc)])
 }
 
 model Account {

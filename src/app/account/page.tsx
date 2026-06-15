@@ -1036,15 +1036,6 @@ const AccountPageContent = () => {
 
         </div>
 
-        {/* Blocked message */}
-        {userBlocked && !userVerified && (
-          <div className="mt-8 p-4 border-2 border-red-500 rounded-lg bg-red-50">
-            <p className="md:text-[20px] text-[16px] text-red-600 mt-2">
-              თქვენი შემოსავალი 100₾-ს აღემატება. გთხოვთ ატვირთოთ ინდმეწარმის დამადასტურებელი დოკუმენტი ქვემოთ
-            </p>
-          </div>
-        )}
-
         {/* პირადობის დამტკიცების სექცია - დამოუკიდებელი */}
         {shouldShowIdentityVerification && (
           <div className="mt-8 p-6 border-2 border-black rounded-lg bg-gray-50">
@@ -1166,68 +1157,6 @@ const AccountPageContent = () => {
           </div>
         )}
 
-
-        {/* ინდმეწარმის საბუთის სექცია - დამოუკიდებელი, მხოლოდ როცა blocked */}
-        {!isAdminOrSupport && userBlocked && !userVerified && (
-          <div className="mt-8 p-6 border-2 border-black rounded-lg bg-gray-50">
-            <div className="mb-4">
-              <h4 className="text-xl font-bold mb-2 text-black">ინდმეწარმის საბუთის ატვირთვა</h4>
-              <p className="text-[18px] text-black font-medium mb-2">
-                გთხოვთ ატვირთოთ ინდმეწარმის დამადასტურებელი დოკუმენტი
-              </p>
-            </div>
-            
-            {verifLoading ? (
-              <div className="text-center py-8">
-                <div className="w-8 h-8 border-4 border-gray-300 border-t-[#1B3729] rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-[16px] text-black">იტვირთება...</p>
-              </div>
-            ) : (
-              <>
-                {/* ინდმეწარმის საბუთის ატვირთვა */}
-                <div className="grid gap-6 mb-6 grid-cols-1">
-                  <div className="space-y-2">
-                    <label className="block text-[18px] font-semibold text-black mb-3">
-                      ინდმეწარმის საბუთი * 
-                    </label>
-                    <ImageUpload 
-                      value={entrepreneurCertificateUrl ? [entrepreneurCertificateUrl] : []} 
-                      onChange={handleEntrepreneurCertificateUpload} 
-                    />
-                    {entrepreneurCertificateUrl && (
-                      <p className="text-sm text-green-600 mt-2">✓ სურათი ატვირთულია</p>
-                    )}
-                    {!entrepreneurCertificateUrl && (
-                      <p className="text-[18px] text-black mt-2">აუცილებელია ატვირთვა</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Submit Button */}
-                <div className="flex items-center justify-between">
-                  <div className="text-[16px] text-black">
-                    {entrepreneurCertificateUrl ? (
-                      <span className="text-green-600 font-semibold">✓ ინდმეწარმის საბუთი მზადაა გასაგზავნად</span>
-                    ) : (
-                      <span className="text-black text-[18px]">გთხოვთ ატვირთოთ ინდმეწარმის საბუთი</span>
-                    )}
-                  </div>
-                  <button
-                    onClick={saveEntrepreneurCertificate}
-                    disabled={savingEntrepreneurCertificate || !entrepreneurCertificateUrl}
-                    className={`px-6 py-3 rounded-lg font-bold text-[18px] uppercase tracking-wide transition-colors ${
-                      entrepreneurCertificateUrl && !savingEntrepreneurCertificate
-                        ? 'bg-[#1B3729] text-white hover:bg-[#2a4d3a]'
-                        : 'bg-white text-black cursor-not-allowed'
-                    }`}
-                  >
-                    {savingEntrepreneurCertificate ? 'გაგზავნა...' : 'ინდმეწარმის საბუთის გაგზავნა'}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        )}
 
       </div>
       {!isAdminOrSupport && identityApproved && (

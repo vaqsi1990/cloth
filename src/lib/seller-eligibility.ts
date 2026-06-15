@@ -38,3 +38,13 @@ export function canUserCreateProducts(params: {
 
   return isIdentityApproved(params.verification, params.sessionVerificationStatus) && Boolean(params.iban)
 }
+
+/** Same rules as product creation — verified identity + IBAN required. */
+export function canUserMakePurchases(params: {
+  role: string | undefined | null
+  iban: string | null | undefined
+  verification?: VerificationRecord
+  sessionVerificationStatus?: string | null
+}): boolean {
+  return canUserCreateProducts(params)
+}

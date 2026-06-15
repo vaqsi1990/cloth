@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { findRentalDateConflict } from '@/lib/rental-date-conflicts'
 import { markRentalProductsRented } from '@/lib/update-product-status'
+import { canUserMakePurchases } from '@/lib/seller-eligibility'
 import { MAX_CART_ITEMS, MAX_CART_ITEM_QUANTITY, CART_SINGLE_ITEM_MESSAGE } from '@/lib/cart-limits'
 
 // Order validation schema
@@ -39,21 +40,47 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions)
     const isAdmin = session?.user?.role === 'ADMIN'
     
-    // Check if user has IBAN (required for purchases, except admins)
+    // Verified identity + IBAN required for purchases (except admins)
     if (session?.user?.id && !isAdmin) {
       const user = await prisma.user.findUnique({
         where: { id: session.user.id },
-        select: { iban: true }
-      })
-      
-      if (!user?.iban) {
-        return NextResponse.json(
-          { 
-            success: false,
-            message: 'გთხოვთ შეიყვანოთ ბანკის IBAN პროფილში. IBAN აუცილებელია ყიდვისთვის.',
-            missingIban: true
+        select: {
+          iban: true,
+          verification: {
+            select: {
+              identityStatus: true,
+              status: true,
+            },
           },
-          { status: 403 }
+        },
+      })
+
+      if (
+        !canUserMakePurchases({
+          role: session.user.role,
+          iban: user?.iban,
+          verification: user?.verification,
+          sessionVerificationStatus: session.user.verificationStatus,
+        })
+      ) {
+        if (!user?.iban) {
+          return NextResponse.json(
+            {
+              success: false,
+              message: 'გთხოვთ შეიყვანოთ ბანკის IBAN პროფილში. IBAN აუცილებელია ყიდვისთვის.',
+              missingIban: true,
+            },
+            { status: 403 },
+          )
+        }
+
+        return NextResponse.json(
+          {
+            success: false,
+            message: 'გთხოვთ დაადასტუროთ პირადობა პროფილის გვერდზე, რომ შეძლოთ ყიდვა ან ქირაობა.',
+            requiresVerification: true,
+          },
+          { status: 403 },
         )
       }
     }

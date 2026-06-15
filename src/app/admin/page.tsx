@@ -15,6 +15,7 @@ import {
   MapPin,
   Info,
   Ticket,
+  ShieldBan,
 } from 'lucide-react'
 
 // ---------------------
@@ -211,6 +212,13 @@ const AdminDashboard = () => {
       href: '/admin/users',
       icon: Users,
       color: 'bg-green-600',
+    },
+    {
+      title: 'შავი სია',
+      description: 'დაბლოკილი მომხმარებლების ინფორმაცია',
+      href: '/admin/blacklist',
+      icon: ShieldBan,
+      color: 'bg-red-700',
     },
     {
       title: 'შეკვეთების მართვა',

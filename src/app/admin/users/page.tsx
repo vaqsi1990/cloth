@@ -203,12 +203,8 @@ const AdminUsersPage = () => {
     }
   }
 
-  const blockedSellers = users.filter(
-    user => user.blocked && user._count.products > 0
-  )
-
-  const sellersNeedingVerification = blockedSellers.filter(
-    user => !user.verified
+  const unverifiedSellers = users.filter(
+    (user) => !user.verified && user._count.products > 0,
   )
 
   const filteredUsers = users.filter(user => {
@@ -316,31 +312,30 @@ const AdminUsersPage = () => {
             </div>
           </div>
 
-          {blockedSellers.length > 0 && (
-            <div className="border border-red-200 rounded-xl bg-red-50 p-3 sm:p-4">
+          {unverifiedSellers.length > 0 && (
+            <div className="border border-orange-200 rounded-xl bg-orange-50 p-3 sm:p-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-2">
                 <div>
-                  <h3 className="text-base sm:text-lg font-semibold text-red-900">
-                    დაბლოკილი პროდუქტის ავტორები ({blockedSellers.length})
+                  <h3 className="text-base sm:text-lg font-semibold text-orange-900">
+                    ვერიფიკაცია სჭირდება გამყიდველებს ({unverifiedSellers.length})
                   </h3>
-                  <p className="text-xs sm:text-sm text-red-700">
-                    ეს მომხმარებლები დაბლოკილნი არიან შემოსავლის ზღვრის გადაჭარბების გამო. ადმინისტრატორი ხედავს მათ მონაცემებს.
+                  <p className="text-xs sm:text-sm text-orange-700">
+                    ამ მომხმარებლებს აქვთ პროდუქტი, მაგრამ პირადობა ჯერ არ არის დამტკიცებული.
                   </p>
                 </div>
               </div>
-              <div className="overflow-x-auto rounded-lg border border-red-100 bg-white -mx-2 sm:mx-0">
-                <table className="min-w-full divide-y divide-red-100">
-                  <thead className="bg-red-50">
+              <div className="overflow-x-auto rounded-lg border border-orange-100 bg-white -mx-2 sm:mx-0">
+                <table className="min-w-full divide-y divide-orange-100">
+                  <thead className="bg-orange-50">
                     <tr>
-                      <th className="px-2 sm:px-4 py-2 text-left text-xs font-semibold text-red-800 uppercase tracking-wider">სახელი</th>
-                      <th className="px-2 sm:px-4 py-2 text-left text-xs font-semibold text-red-800 uppercase tracking-wider hidden sm:table-cell">ელფოსტა</th>
-                      <th className="px-2 sm:px-4 py-2 text-left text-xs font-semibold text-red-800 uppercase tracking-wider">პროდუქტები</th>
-                      <th className="px-2 sm:px-4 py-2 text-left text-xs font-semibold text-red-800 uppercase tracking-wider">სტატუსი</th>
+                      <th className="px-2 sm:px-4 py-2 text-left text-xs font-semibold text-orange-800 uppercase tracking-wider">სახელი</th>
+                      <th className="px-2 sm:px-4 py-2 text-left text-xs font-semibold text-orange-800 uppercase tracking-wider hidden sm:table-cell">ელფოსტა</th>
+                      <th className="px-2 sm:px-4 py-2 text-left text-xs font-semibold text-orange-800 uppercase tracking-wider">პროდუქტები</th>
                       <th className="px-2 sm:px-4 py-2"></th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-red-100">
-                    {blockedSellers.map((seller) => (
+                  <tbody className="divide-y divide-orange-100">
+                    {unverifiedSellers.map((seller) => (
                       <tr key={seller.id}>
                         <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-black">
                           <div className="sm:hidden font-semibold">{seller.name || 'უცნობი მომხმარებელი'}</div>
@@ -349,17 +344,10 @@ const AdminUsersPage = () => {
                         </td>
                         <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-black hidden sm:table-cell">{seller.email || '---'}</td>
                         <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-black">{seller._count.products}</td>
-                        <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm">
-                          {seller.verified ? (
-                            <span className="px-2 py-1 rounded-full text-green-800 text-xs font-semibold">დამოწმებული</span>
-                          ) : (
-                            <span className="px-2 py-1 rounded-full  text-yellow-800 text-xs font-semibold">ველოდებით დოკუმენტებს</span>
-                          )}
-                        </td>
                         <td className="px-2 sm:px-4 py-2 text-right">
                           <button
                             onClick={() => toggleUserExpansion(seller.id)}
-                            className="text-xs sm:text-sm text-red-600 hover:text-red-800 font-semibold whitespace-nowrap"
+                            className="text-xs sm:text-sm text-orange-700 hover:text-orange-900 font-semibold whitespace-nowrap"
                           >
                             დეტალები
                           </button>
@@ -368,40 +356,6 @@ const AdminUsersPage = () => {
                     ))}
                   </tbody>
                 </table>
-              </div>
-            </div>
-          )}
-
-          {sellersNeedingVerification.length > 0 && (
-            <div className="border border-orange-200 rounded-xl bg-orange-50 p-3 sm:p-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-2">
-                <div>
-                  <h3 className="text-base sm:text-lg font-semibold text-orange-900">
-                    ვერიფიკაცია სჭირდება გამყიდველებს ({sellersNeedingVerification.length})
-                  </h3>
-                  <p className="text-xs sm:text-sm text-orange-700">
-                    ამ მომხმარებლების შემოსავალი 2₾-ს აღემატება და საჭიროა დოკუმენტების გადამოწმება.
-                  </p>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {sellersNeedingVerification.map(seller => (
-                  <button
-                    key={seller.id}
-                    onClick={() => toggleUserExpansion(seller.id)}
-                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white border border-orange-200 rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-left hover:shadow-sm transition-shadow gap-2"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-black text-sm sm:text-base truncate">{seller.name || seller.email || 'უცნობი მომხმარებელი'}</p>
-                      <p className="text-xs sm:text-sm text-gray-600 truncate">
-                        {seller.email || 'ელფოსტა უცნობია'}
-                      </p>
-                    </div>
-                    <span className="px-2 sm:px-3 py-1 text-xs sm:text-sm bg-orange-100 text-orange-800 rounded-full whitespace-nowrap self-start sm:self-center">
-                      პროდუქტები: {seller._count.products}
-                    </span>
-                  </button>
-                ))}
               </div>
             </div>
           )}
@@ -530,10 +484,6 @@ const AdminUsersPage = () => {
                         {/* Ban status badge */}
                         {user.banned && (
                           <span className="px-2 py-1 bg-red-600 text-white rounded text-xs sm:text-sm md:text-[18px] text-center whitespace-nowrap">დაბლოკილი</span>
-                        )}
-                        {/* Blocked status badge (for revenue threshold) */}
-                        {user.blocked && !user.verified && user._count.products > 0 && (
-                          <span className="px-2 py-1 bg-orange-600 text-white rounded text-xs sm:text-sm md:text-[18px] text-center whitespace-nowrap">ვერიფიკაცია საჭიროა</span>
                         )}
                         {/* Ban/Unban buttons */}
                         <div className="flex items-center gap-2">

@@ -626,7 +626,6 @@ export async function POST(request: NextRequest) {
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { 
-        blocked: true,
         iban: true,
         verification: {
           select: {
@@ -636,7 +635,7 @@ export async function POST(request: NextRequest) {
         },
       }
     })
-    console.log('User data:', { blocked: user?.blocked, hasIban: !!user?.iban })
+    console.log('User data:', { hasIban: !!user?.iban })
 
     if (!canUserCreateProducts({
       role: session.user.role,
@@ -644,18 +643,6 @@ export async function POST(request: NextRequest) {
       verification: user?.verification,
       sessionVerificationStatus: session.user.verificationStatus,
     })) {
-      if (user?.blocked) {
-        console.log('ERROR: User is blocked')
-        return NextResponse.json(
-          { 
-            success: false, 
-            error: 'Your account requires identity verification. Please upload a document.',
-            blocked: true
-          },
-          { status: 403 }
-        )
-      }
-
       if (!user?.iban) {
         console.log('ERROR: User missing IBAN')
         return NextResponse.json(

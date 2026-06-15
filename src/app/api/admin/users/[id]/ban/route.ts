@@ -3,6 +3,10 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { isAdminOrSupport } from '@/lib/roles'
+import {
+  createBlacklistRecord,
+  resolveActiveBlacklistRecords,
+} from '@/lib/user-blacklist'
 
 export async function PUT(
   request: NextRequest,
@@ -39,6 +43,21 @@ export async function PUT(
         bannedAt: true,
       }
     })
+
+    if (banned) {
+      await createBlacklistRecord({
+        userId,
+        reason: reason || 'ადმინისტრატორის მიერ დაბლოკვა',
+        source: 'MANUAL_BAN',
+        createdById: session.user.id,
+      })
+    } else {
+      await resolveActiveBlacklistRecords({
+        userId,
+        resolvedById: session.user.id,
+        source: 'MANUAL_BAN',
+      })
+    }
 
     return NextResponse.json({ success: true, user: updated })
   } catch (error) {

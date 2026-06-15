@@ -174,9 +174,6 @@ export async function PATCH(request: NextRequest) {
       if (verificationType === 'identity') {
         // პირადობის დოკუმენტების დამტკიცება → verified = true
         userUpdateData.verified = true;
-      } else if (verificationType === 'entrepreneur') {
-        // ინდმეწარმის საბუთის დამტკიცება → blocked = false
-        userUpdateData.blocked = false;
       }
 
       if (Object.keys(userUpdateData).length > 0) {

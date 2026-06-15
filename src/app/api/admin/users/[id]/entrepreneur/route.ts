@@ -69,13 +69,6 @@ export async function PATCH(
       },
     })
 
-    if (status === 'APPROVED') {
-      await prisma.user.update({
-        where: { id: userId },
-        data: { blocked: false },
-      })
-    }
-
     return NextResponse.json({ success: true, verification: updated })
   } catch (error) {
     console.error('Error updating entrepreneur verification:', error)

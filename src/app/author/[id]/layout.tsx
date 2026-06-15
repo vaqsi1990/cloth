@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       },
     });
 
-    if (!author || author.blocked) {
+    if (!author || author.banned) {
       return {
         title: "ავტორი ვერ მოიძებნა",
       };

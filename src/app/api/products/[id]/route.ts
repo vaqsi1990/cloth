@@ -261,7 +261,7 @@ export async function GET(
     // Check access permissions
     if (
       !product ||
-      (!isAdminOrSupportRole && product.user?.blocked) ||
+      (!isAdminOrSupportRole && product.user?.banned) ||
       (!isAdminOrSupportRole && !isOwner && product.approvalStatus !== 'APPROVED')
     ) {
       return NextResponse.json({
