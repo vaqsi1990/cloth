@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { isAdminOrSupport } from '@/lib/roles'
-import { resolveActiveBlacklistRecords } from '@/lib/user-blacklist'
+import { unbanUser } from '@/lib/user-blacklist'
 
 export async function PATCH(
   request: NextRequest,
@@ -44,10 +44,9 @@ export async function PATCH(
     }
 
     if (resolve && existing.isActive) {
-      await resolveActiveBlacklistRecords({
+      await unbanUser({
         userId: existing.userId,
         resolvedById: session.user.id,
-        source: existing.source,
       })
     } else if (adminNotes !== undefined) {
       await prisma.userBlacklistRecord.update({

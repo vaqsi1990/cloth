@@ -375,18 +375,23 @@ const SupportUsersPage = () => {
                             <BanUserInline user={user} setUsers={setUsers} />
                           ) : (
                             <button
-                              className="px-3 py-2 bg-gray-200 text-black rounded text-xs sm:text-sm md:text-[18px] hover:bg-gray-300 whitespace-nowrap"
+                              className="px-3 py-2 bg-emerald-700 text-white rounded text-xs sm:text-sm md:text-[18px] hover:bg-emerald-800 whitespace-nowrap"
                               onClick={async () => {
+                                if (!confirm('ნამდვილად გსურთ მომხმარებლის ბლოკის მოხსნა?')) return
                                 const res = await fetch(`/api/admin/users/${user.id}/ban`, {
                                   method: 'PUT',
                                   headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify({ banned: false })
                                 })
-                                if (res.ok) {
+                                const data = await res.json()
+                                if (res.ok && data.success) {
                                   setUsers(prev => prev.map(u => u.id === user.id ? { ...u, banned: false, banReason: null, bannedAt: null } : u))
+                                  showToast('ბლოკი მოხსნილია', 'success')
+                                } else {
+                                  showToast(data.error || 'ბლოკის მოხსნა ვერ მოხერხდა', 'error')
                                 }
                               }}
-                            >გაუქმება</button>
+                            >ბლოკის მოხსნა</button>
                           )}
                         </div>
                         {user.banned && user.banReason && (

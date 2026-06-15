@@ -129,7 +129,7 @@ const AdminBlacklistPage = () => {
   }
 
   const resolveRecord = async (recordId: number) => {
-    if (!confirm('ნამდვილად გსურთ ჩანაწერის დახურვა?')) return
+    if (!confirm('ნამდვილად გსურთ მომხმარებლის ბლოკის მოხსნა?')) return
 
     try {
       const response = await fetch(`/api/admin/blacklist/${recordId}`, {
@@ -140,7 +140,7 @@ const AdminBlacklistPage = () => {
       const data = await response.json()
       if (response.ok && data.success) {
         await fetchRecords()
-        showToast('ჩანაწერი დაიხურა', 'success')
+        showToast('ბლოკი მოხსნილია', 'success')
       } else {
         showToast(data.error || 'შეცდომა', 'error')
       }
@@ -360,9 +360,9 @@ const AdminBlacklistPage = () => {
                       <button
                         type="button"
                         onClick={() => resolveRecord(record.id)}
-                        className="px-3 py-2 text-sm bg-gray-800 text-white rounded-lg hover:bg-gray-900"
+                        className="px-3 py-2 text-sm bg-emerald-700 text-white rounded-lg hover:bg-emerald-800"
                       >
-                        დახურვა
+                        ბლოკის მოხსნა
                       </button>
                     )}
                   </div>

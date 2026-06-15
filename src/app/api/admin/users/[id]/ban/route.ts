@@ -3,10 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { isAdminOrSupport } from '@/lib/roles'
-import {
-  createBlacklistRecord,
-  resolveActiveBlacklistRecords,
-} from '@/lib/user-blacklist'
+import { createBlacklistRecord, unbanUser } from '@/lib/user-blacklist'
 
 export async function PUT(
   request: NextRequest,
@@ -26,13 +23,42 @@ export async function PUT(
     const resolved = await params
     const userId = resolved.id
 
-    const updated = await prisma.user.update({
+    if (banned) {
+      const updated = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          banned: true,
+          banReason: reason || null,
+          bannedAt: new Date(),
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          banned: true,
+          banReason: true,
+          bannedAt: true,
+        },
+      })
+
+      await createBlacklistRecord({
+        userId,
+        reason: reason || 'ადმინისტრატორის მიერ დაბლოკვა',
+        source: 'MANUAL_BAN',
+        createdById: session.user.id,
+      })
+
+      return NextResponse.json({ success: true, user: updated })
+    }
+
+    await unbanUser({
+      userId,
+      resolvedById: session.user.id,
+    })
+
+    const updated = await prisma.user.findUnique({
       where: { id: userId },
-      data: {
-        banned,
-        banReason: banned ? (reason || null) : null,
-        bannedAt: banned ? new Date() : null,
-      },
       select: {
         id: true,
         name: true,
@@ -41,23 +67,8 @@ export async function PUT(
         banned: true,
         banReason: true,
         bannedAt: true,
-      }
+      },
     })
-
-    if (banned) {
-      await createBlacklistRecord({
-        userId,
-        reason: reason || 'ადმინისტრატორის მიერ დაბლოკვა',
-        source: 'MANUAL_BAN',
-        createdById: session.user.id,
-      })
-    } else {
-      await resolveActiveBlacklistRecords({
-        userId,
-        resolvedById: session.user.id,
-        source: 'MANUAL_BAN',
-      })
-    }
 
     return NextResponse.json({ success: true, user: updated })
   } catch (error) {

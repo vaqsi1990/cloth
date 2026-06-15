@@ -86,6 +86,26 @@ export async function resolveActiveBlacklistRecords(input: {
   })
 }
 
+/** Lift ban on user and close all active blacklist records. */
+export async function unbanUser(input: {
+  userId: string
+  resolvedById?: string | null
+}): Promise<void> {
+  await prisma.user.update({
+    where: { id: input.userId },
+    data: {
+      banned: false,
+      banReason: null,
+      bannedAt: null,
+    },
+  })
+
+  await resolveActiveBlacklistRecords({
+    userId: input.userId,
+    resolvedById: input.resolvedById ?? null,
+  })
+}
+
 /** Backfill records for users already banned before blacklist existed. */
 export async function syncMissingBlacklistRecords(): Promise<number> {
   const users = await prisma.user.findMany({
