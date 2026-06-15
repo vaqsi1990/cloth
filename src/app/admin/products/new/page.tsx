@@ -707,6 +707,7 @@ const NewProductPage = () => {
                 </label>
                 <ProductCategorySelect
                   categories={genderCategories}
+                  gender={formData.gender || null}
                   value={formData.categoryId || ''}
                   onChange={handleCategoryChange}
                   className="w-full pl-10 pr-4 py-3 placeholder:text-gray-500 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"

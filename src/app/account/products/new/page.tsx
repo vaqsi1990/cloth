@@ -724,6 +724,7 @@ const NewProductPage = () => {
                 </label>
                 <ProductCategorySelect
                   categories={genderCategories}
+                  gender={formData.gender || null}
                   value={formData.categoryId || ''}
                   onChange={handleCategoryChange}
                   className="w-full text-black px-4 py-3 border border-gray-300 rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-black"

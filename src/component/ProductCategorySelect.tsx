@@ -1,6 +1,11 @@
 'use client'
 
-import { groupProductCategories, ProductCategory } from '@/lib/product-categories'
+import {
+  groupProductCategories,
+  groupProductCategoriesForGender,
+  type ProductCategory,
+  type ProductGender,
+} from '@/lib/product-categories'
 
 type ProductCategorySelectProps = {
   categories: ProductCategory[]
@@ -8,6 +13,7 @@ type ProductCategorySelectProps = {
   onChange: (categoryId: number | undefined) => void
   className?: string
   placeholder?: string
+  gender?: ProductGender | null
 }
 
 export default function ProductCategorySelect({
@@ -16,8 +22,11 @@ export default function ProductCategorySelect({
   onChange,
   className,
   placeholder = 'აირჩიეთ კატეგორია',
+  gender,
 }: ProductCategorySelectProps) {
-  const groups = groupProductCategories(categories)
+  const groups = gender
+    ? groupProductCategoriesForGender(categories, gender)
+    : groupProductCategories(categories)
 
   return (
     <select

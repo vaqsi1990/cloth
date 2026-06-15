@@ -310,19 +310,22 @@ export const PRODUCT_GENDER_OPTIONS = [
 
 export type ProductGender = (typeof PRODUCT_GENDER_OPTIONS)[number]['value']
 
-const GENDER_CATEGORY_GROUP_INDICES: Record<ProductGender, number[]> = {
-  WOMEN: [0, 3],
-  MEN: [1, 3],
-  CHILDREN: [2, 3],
-  UNISEX: [0, 1, 2, 3, 4],
+function getGenderGroupIndex(gender: ProductGender): number {
+  if (gender === 'WOMEN') return 0
+  if (gender === 'MEN') return 1
+  if (gender === 'CHILDREN') return 2
+  return -1
 }
 
 export function categoryMatchesProductGender(
   category: ProductCategory,
   gender: ProductGender,
 ): boolean {
-  const allowedGroups = new Set(GENDER_CATEGORY_GROUP_INDICES[gender])
-  return getCategoryGroups(category).some((group) => allowedGroups.has(group))
+  if (gender === 'UNISEX') return true
+  if (isAccessoryCategory(category)) return true
+
+  const targetGroup = getGenderGroupIndex(gender)
+  return getCategoryGroups(category).includes(targetGroup)
 }
 
 export function filterProductCategoriesByGender<T extends ProductCategory>(
@@ -333,6 +336,45 @@ export function filterProductCategoriesByGender<T extends ProductCategory>(
   return sortProductCategories(
     categories.filter((category) => categoryMatchesProductGender(category, gender)),
   )
+}
+
+/** Single optgroup per gender in product forms — no duplicate rows under კაცი/ბავშვი. */
+export function groupProductCategoriesForGender<T extends ProductCategory>(
+  categories: T[],
+  gender?: ProductGender | null,
+): ProductCategoryGroup[] {
+  if (!gender || gender === 'UNISEX') {
+    return groupProductCategories(categories)
+  }
+
+  const primaryIndex = getGenderGroupIndex(gender)
+  const primary: T[] = []
+  const accessories: T[] = []
+
+  for (const category of sortProductCategories(categories)) {
+    if (isAccessoryCategory(category)) {
+      accessories.push(category)
+      continue
+    }
+    if (getCategoryGroups(category).includes(primaryIndex)) {
+      primary.push(category)
+    }
+  }
+
+  const groups: ProductCategoryGroup[] = []
+  if (primary.length > 0) {
+    groups.push({
+      label: CATEGORY_GROUP_LABELS[primaryIndex],
+      categories: primary,
+    })
+  }
+  if (accessories.length > 0) {
+    groups.push({
+      label: CATEGORY_GROUP_LABELS[3],
+      categories: accessories,
+    })
+  }
+  return groups
 }
 
 export function isCategoryValidForProductGender(
