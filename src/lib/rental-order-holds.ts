@@ -5,9 +5,9 @@ import { minRentalEndDateStillBlocking } from '@/lib/rental-dates'
 import { revalidateProductCaches } from '@/lib/product-cache-revalidation'
 import { markRentalProductsRented } from '@/lib/update-product-status'
 import { markInquiryBookedForRentalItem } from '@/lib/rental-inquiry-guard'
+import { RENTAL_BLOCKING_ORDER_STATUSES } from '@/lib/rental-blocking-orders'
 
-/** Only paid (or shipped) rentals block the calendar — not unpaid checkout attempts. */
-export const RENTAL_BLOCKING_ORDER_STATUSES = ['PAID', 'SHIPPED'] as const
+export { RENTAL_BLOCKING_ORDER_STATUSES } from '@/lib/rental-blocking-orders'
 
 export async function finalizeRentalOrderHolds(orderId: number): Promise<void> {
   const order = await prisma.order.findUnique({

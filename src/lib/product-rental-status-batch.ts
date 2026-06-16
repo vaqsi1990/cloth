@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { prismaCacheStrategy } from '@/lib/prisma-cache'
 import { dedupeRentalPeriods, minRentalEndDateStillBlocking } from '@/lib/rental-dates'
 import { isProductRentalBlockingSuspended } from '@/lib/update-product-status'
-import { RENTAL_BLOCKING_ORDER_STATUSES } from '@/lib/rental-order-holds'
+import { RENTAL_BLOCKING_ORDER_STATUSES } from '@/lib/rental-blocking-orders'
 
 const RENTAL_STATUS_CACHE = { swr: 30, ttl: 30 }
 

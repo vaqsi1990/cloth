@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { isRentalEndBeforeStart, hasRentalPeriodConflict, minRentalEndDateStillBlocking } from '@/lib/rental-dates'
 import { isProductRentalBlockingSuspended } from '@/lib/update-product-status'
-import { RENTAL_BLOCKING_ORDER_STATUSES } from '@/lib/rental-order-holds'
+import { RENTAL_BLOCKING_ORDER_STATUSES } from '@/lib/rental-blocking-orders'
 
 export function hasRentalDateConflict(
   start: Date,
