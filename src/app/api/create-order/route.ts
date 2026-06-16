@@ -5,7 +5,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { canUserMakePurchases } from '@/lib/seller-eligibility'
 import { bogTokenManager } from '@/lib/bog-token'
-import { computeUserCartSubtotal } from '@/lib/cart-totals'
+import { computeCartItemSubtotal } from '@/lib/cart-totals'
 import { getCartItemPayablePrice } from '@/lib/cart-item-pricing'
 import { validateVoucher } from '@/lib/voucher'
 import { processExpiredDiscount } from '@/utils/discountUtils'
@@ -16,10 +16,11 @@ import {
 } from '@/lib/resolve-cart-item-price'
 import { syncCartItemBuyerListPrices } from '@/lib/sync-cart-prices'
 import { z } from 'zod'
-import { MAX_CART_ITEMS, MAX_CART_ITEM_QUANTITY, CART_SINGLE_ITEM_MESSAGE } from '@/lib/cart-limits'
+import { MAX_CART_ITEM_QUANTITY, CHECKOUT_SINGLE_ITEM_MESSAGE } from '@/lib/cart-limits'
 import { toPrismaDeliverySpeed } from '@/lib/delivery'
 import { markRentalProductsRented } from '@/lib/update-product-status'
 import { findRentalDateConflict } from '@/lib/rental-date-conflicts'
+import { markInquiryBookedForRentalItem } from '@/lib/rental-inquiry-guard'
 
 interface CartItemInput {
   productId: string | number
@@ -113,6 +114,7 @@ const orderDataSchema = z.object({
     paymentMethod: z.enum(['google_pay', 'card', 'apple_pay']).optional(),
     googlePayToken: z.string().optional(),
     voucherCode: z.string().optional(),
+    cartItemId: z.union([z.string(), z.number()]),
     address: z.object({
       firstName: z.string(),
       lastName: z.string(),
@@ -394,17 +396,34 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    if (
-      cart.items.length > MAX_CART_ITEMS ||
-      cart.items.some((item) => item.quantity > MAX_CART_ITEM_QUANTITY)
-    ) {
+    const cartItemId =
+      typeof orderData.cartItemId === 'string'
+        ? parseInt(orderData.cartItemId, 10)
+        : orderData.cartItemId
+
+    if (!cartItemId || Number.isNaN(cartItemId)) {
       return NextResponse.json(
-        { success: false, error: CART_SINGLE_ITEM_MESSAGE },
+        { success: false, error: 'აირჩიეთ გადასახდელი ნივთი' },
         { status: 400 },
       )
     }
 
-    const resolvedCartItems = cart.items.map((item) => ({
+    const selectedCartItem = cart.items.find((item) => item.id === cartItemId)
+    if (!selectedCartItem) {
+      return NextResponse.json(
+        { success: false, error: 'არჩეული ნივთი კალათაში ვერ მოიძებნა' },
+        { status: 400 },
+      )
+    }
+
+    if (selectedCartItem.quantity > MAX_CART_ITEM_QUANTITY) {
+      return NextResponse.json(
+        { success: false, error: CHECKOUT_SINGLE_ITEM_MESSAGE },
+        { status: 400 },
+      )
+    }
+
+    const resolvedCartItems = [selectedCartItem].map((item) => ({
       ...item,
       buyerListPrice: resolveCartItemBuyerListPrice({
         storedPrice: item.price,
@@ -440,7 +459,7 @@ export async function POST(req: NextRequest) {
       })),
     )
 
-    const cartSubtotal = await computeUserCartSubtotal(session.user.id)
+    const cartSubtotal = await computeCartItemSubtotal(session.user.id, cartItemId)
 
     let voucherDiscount = 0
     let voucherId: number | null = null
@@ -537,7 +556,25 @@ export async function POST(req: NextRequest) {
       .map((item) => item.productId as number)
     await markRentalProductsRented(rentalProductIds)
 
-    const productIds = cart.items.map(i => i.productId).filter((id): id is number => id !== null)
+    for (const item of resolvedCartItems) {
+      if (
+        item.isRental &&
+        item.productId &&
+        item.rentalStartDate &&
+        item.rentalEndDate
+      ) {
+        await markInquiryBookedForRentalItem({
+          productId: item.productId,
+          buyerId: session.user.id,
+          startDate: item.rentalStartDate,
+          endDate: item.rentalEndDate,
+        })
+      }
+    }
+
+    const productIds = resolvedCartItems
+      .map((i) => i.productId)
+      .filter((id): id is number => id !== null)
     const splitConfig = await buildSplitPaymentConfig(
       orderData.paymentMethod || 'card',
       productIds,
@@ -688,7 +725,7 @@ export async function POST(req: NextRequest) {
 
     const redirect = extractRedirectUrl(response.data)
 
-    await prisma.cartItem.deleteMany({ where: { cartId: cart!.id } })
+    await prisma.cartItem.delete({ where: { id: cartItemId } })
 
     return NextResponse.json({
       success: true,

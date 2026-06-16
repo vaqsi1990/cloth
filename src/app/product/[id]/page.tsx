@@ -19,7 +19,6 @@ import {
     X,
 } from "lucide-react"
 import { useCart } from "@/hooks/useCart"
-import { CART_SINGLE_ITEM_MESSAGE } from "@/lib/cart-limits"
 import { useSession } from 'next-auth/react';
 
 import { Product, RentalPeriod } from "@/types/product"
@@ -65,7 +64,7 @@ const ProductPage = () => {
     const productId = params.id as string
 
 
-    const { addToCart, cartItems } = useCart()
+    const { addToCart } = useCart()
     const { data: session } = useSession();
 
     const [product, setProduct] = useState<Product | null>(null)
@@ -173,6 +172,22 @@ const ProductPage = () => {
                 setRequiresInquiry(Boolean(data.requiresInquiry))
                 setRentalInquiry(data.inquiry || null)
                 setCanBookFromInquiry(Boolean(data.canBook))
+
+                if (
+                    data.inquiry?.status === 'APPROVED' &&
+                    data.inquiry.startDate &&
+                    data.inquiry.endDate
+                ) {
+                    const approvedStart = formatDateInput(
+                        normalizeDateOnly(data.inquiry.startDate),
+                    )
+                    const approvedEnd = formatDateInput(
+                        normalizeDateOnly(data.inquiry.endDate),
+                    )
+                    setRentalStartDate((prev) => prev || approvedStart)
+                    setRentalEndDate((prev) => prev || approvedEnd)
+                }
+
                 if (data.inquiry?.chatRoomId) {
                     setChatRoomId(data.inquiry.chatRoomId)
                 }
@@ -824,19 +839,6 @@ const ProductPage = () => {
             return
         }
         
-        if (
-            cartItems.length > 0 &&
-            !cartItems.some(
-                (item) =>
-                    item.productId === product.id &&
-                    item.size === selectedSize &&
-                    !item.isRental
-            )
-        ) {
-            showToast(CART_SINGLE_ITEM_MESSAGE, "warning")
-            return
-        }
-
         setIsAdding(true)
 
         const result = await addToCart({
@@ -1124,21 +1126,6 @@ const ProductPage = () => {
 
         if (isAdding) return
 
-        if (
-            cartItems.length > 0 &&
-            !cartItems.some(
-                (item) =>
-                    item.productId === product.id &&
-                    item.size === sizeForCart &&
-                    item.isRental &&
-                    item.rentalStartDate === rentalStartDate &&
-                    item.rentalEndDate === rentalEndDate
-            )
-        ) {
-            showToast(CART_SINGLE_ITEM_MESSAGE, "warning")
-            return
-        }
-
         setIsAdding(true)
 
         const total = priceForDays(days)
@@ -1158,7 +1145,6 @@ const ProductPage = () => {
 
         if (result.success) {
             showToast("დაემატა კალათაში", "success")
-            setRentalInquiry((prev) => (prev ? { ...prev, status: 'BOOKED' } : prev))
         } else {
             showToast(result.message, "error")
         }

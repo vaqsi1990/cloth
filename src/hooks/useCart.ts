@@ -20,6 +20,7 @@ interface CartItem {
   discountDays?: number | null
   discountStartDate?: string | null
   sellerPickupAddress?: string | null
+  allowsPickup?: boolean
 }
 
 interface CartDelivery {

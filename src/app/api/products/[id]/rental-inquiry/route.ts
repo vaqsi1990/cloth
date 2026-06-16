@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { datesMatch, expireStaleInquiries, normalizeDateOnly } from '@/lib/rental-inquiry'
+import { resolveInquiryForDisplay } from '@/lib/rental-inquiry-guard'
 
 type ProductInquiryConfig = {
   isRentable: boolean
@@ -19,7 +20,7 @@ type InquiryRow = {
   chatRoomId: number | null
 }
 
-const ACTIVE_INQUIRY_STATUSES = ['PENDING', 'APPROVED', 'REJECTED'] as const
+const ACTIVE_INQUIRY_STATUSES = ['PENDING', 'APPROVED', 'REJECTED', 'BOOKED'] as const
 
 export async function GET(
   request: NextRequest,
@@ -74,7 +75,7 @@ export async function GET(
       },
     })) as InquiryRow[]
 
-    let matched: InquiryRow | null = inquiries[0] ?? null
+    let matched: InquiryRow | null = null
 
     if (startDate && endDate) {
       const start = normalizeDateOnly(startDate)
@@ -83,6 +84,26 @@ export async function GET(
         datesMatch(i.startDate, i.endDate, start, end),
       )
       matched = found ?? null
+    } else {
+      matched =
+        inquiries.find((i) => i.status === 'APPROVED') ??
+        inquiries.find((i) => i.status === 'BOOKED') ??
+        inquiries.find((i) => i.status === 'PENDING') ??
+        inquiries[0] ??
+        null
+    }
+
+    if (matched && (matched.status === 'APPROVED' || matched.status === 'BOOKED')) {
+      const fullInquiry = await prisma.rentalInquiry.findUnique({
+        where: { id: matched.id },
+      })
+      if (fullInquiry) {
+        const resolved = await resolveInquiryForDisplay(fullInquiry, session.user.id)
+        matched = {
+          ...matched,
+          status: resolved.status,
+        }
+      }
     }
 
     return NextResponse.json({

@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import Image from '@/component/AppImage'
 import { useCart } from '@/hooks/useCart'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { ArrowLeft, MapPin, Phone, Mail, User, ShoppingCart, Ticket, X } from 'lucide-react'
 import Link from 'next/link'
@@ -23,17 +23,28 @@ import {
 } from '@/lib/cart-item-pricing'
 import { getSellerPriceFromBuyer } from '@/lib/platform-pricing'
 
+function getItemLineTotal(
+  price: number,
+  quantity: number,
+  discount: number | null | undefined,
+) {
+  return getCartItemPayablePrice(price, discount || 0) * quantity
+}
+
 const CheckoutPage = () => {
     const {
         cart,
         cartItems,
-        getTotalPrice,
         getDeliveryPrice,
         updateCartDelivery,
         loading,
         initialized,
     } = useCart()
     const router = useRouter()
+    const searchParams = useSearchParams()
+    const checkoutItemId = Number(searchParams.get('item'))
+    const checkoutItem = cartItems.find((item) => item.id === checkoutItemId) ?? null
+    const checkoutItems = checkoutItem ? [checkoutItem] : []
     const { data: session, status: sessionStatus } = useSession()
     const hasPrefilledProfileRef = useRef(false)
     
@@ -68,9 +79,25 @@ const CheckoutPage = () => {
     const georgianAddressRegex = /^[\u10A0-\u10FF\s0-9№N.,\-'():;!?/\\"#]+$/
 
     const pickupAddress = resolveCartPickupAddress(
-        cartItems.map((item) => item.sellerPickupAddress),
+        checkoutItems.map((item) => item.sellerPickupAddress),
     )
-    const pickupAvailable = cart?.pickupAvailable ?? true
+    const pickupAvailable = checkoutItem?.allowsPickup ?? false
+
+    const getCheckoutSubtotal = () => {
+        if (!checkoutItem) return 0
+        return getItemLineTotal(
+            checkoutItem.price,
+            checkoutItem.quantity,
+            checkoutItem.discount,
+        )
+    }
+
+    useEffect(() => {
+        if (!initialized || loading) return
+        if (!checkoutItemId || Number.isNaN(checkoutItemId) || !checkoutItem) {
+            router.replace('/cart')
+        }
+    }, [initialized, loading, checkoutItemId, checkoutItem, router])
 
     const fetchDeliveryCities = useCallback(async () => {
         try {
@@ -176,7 +203,7 @@ const CheckoutPage = () => {
 
     // Calculate total with delivery and voucher
     const getTotalWithDelivery = () => {
-        const baseTotal = Math.max(0, getTotalPrice() - getVoucherDiscount())
+        const baseTotal = Math.max(0, getCheckoutSubtotal() - getVoucherDiscount())
         return effectiveDeliveryType === 'delivery' && selectedDeliveryCity ? baseTotal + deliveryPrice : baseTotal
     }
 
@@ -186,7 +213,10 @@ const CheckoutPage = () => {
         const response = await fetch('/api/vouchers/validate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ code: code.trim() }),
+            body: JSON.stringify({
+                code: code.trim(),
+                cartItemId: checkoutItemId,
+            }),
         })
         const data = await response.json()
 
@@ -423,9 +453,10 @@ const CheckoutPage = () => {
                 paymentMethod?: 'google_pay' | 'card'
                 googlePayToken?: string
                 voucherCode?: string
+                cartItemId: number
             } = {
                 cart: {
-                    items: cartItems.map(item => ({
+                    items: checkoutItems.map(item => ({
                         productId: String(item.productId),
                         qty: item.quantity,
                         price: item.price,
@@ -440,6 +471,7 @@ const CheckoutPage = () => {
                 deliveryCityId: effectiveDeliveryType === 'delivery' ? selectedDeliveryCityId : null,
                 deliverySpeed: effectiveDeliveryType === 'delivery' ? deliverySpeed : null,
                 deliveryPrice: effectiveDeliveryType === 'delivery' ? deliveryPrice : 0,
+                cartItemId: checkoutItemId,
                 address: {
                     firstName: formData.firstName,
                     lastName: formData.lastName,
@@ -458,7 +490,7 @@ const CheckoutPage = () => {
             }
 
             // Platform commission is 9% of seller price; delivery goes to admin
-            const baseAmount = getTotalPrice()
+            const baseAmount = getCheckoutSubtotal()
             const sellerAmount = getSellerPriceFromBuyer(baseAmount)
             const adminAmount =
               baseAmount - sellerAmount +
@@ -591,7 +623,7 @@ const CheckoutPage = () => {
     //     )
     // }
 
-    if (initialized && !loading && cartItems.length === 0) {
+    if (initialized && !loading && (!checkoutItem || cartItems.length === 0)) {
         return (
             <div className="min-h-screen  py-16">
                 <div className="container mx-auto px-4">
@@ -952,7 +984,7 @@ const CheckoutPage = () => {
                                 
                                 {/* Items */}
                                 <div className="space-y-4 mb-6">
-                                    {cartItems.map((item) => (
+                                    {checkoutItems.map((item) => (
                                         <div key={item.id} className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg">
                                             <div className="relative w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                                                 <Image
@@ -1014,15 +1046,15 @@ const CheckoutPage = () => {
                                 <div className="border-t border-gray-200 pt-4 space-y-4 mb-6">
                                     <div className="flex justify-between text-black md:text-[18px] text-[16px]">
                                         <span>ყიდვის ნივთები:</span>
-                                        <span className="font-medium">{cartItems.filter(item => !item.isRental).reduce((total, item) => total + item.quantity, 0)}</span>
+                                        <span className="font-medium">{checkoutItems.filter(item => !item.isRental).reduce((total, item) => total + item.quantity, 0)}</span>
                                     </div>
                                     <div className="flex justify-between text-black md:text-[18px] text-[16px]">
                                         <span>ქირაობის ნივთები:</span>
-                                        <span className="font-medium">{cartItems.filter(item => item.isRental).length}</span>
+                                        <span className="font-medium">{checkoutItems.filter(item => item.isRental).length}</span>
                                     </div>
                                     <div className="flex justify-between text-black md:text-[18px] text-[16px]">
                                         <span>ნივთების ჯამი:</span>
-                                        <span className="font-medium">₾{getTotalPrice().toFixed(2)}</span>
+                                        <span className="font-medium">₾{getCheckoutSubtotal().toFixed(2)}</span>
                                     </div>
                                     {appliedVoucher && (
                                         <div className="flex justify-between text-green-700 md:text-[18px] text-[16px]">

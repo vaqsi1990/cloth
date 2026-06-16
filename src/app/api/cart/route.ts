@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { prismaCacheStrategy } from '@/lib/prisma-cache'
 import { z } from 'zod'
 import { processExpiredDiscount } from '@/utils/discountUtils'
-import { assertRentalInquiryApproved, markInquiryBooked } from '@/lib/rental-inquiry-guard'
+import { assertRentalInquiryApproved } from '@/lib/rental-inquiry-guard'
 import {
   MAX_CART_ITEMS,
   MAX_CART_ITEM_QUANTITY,
@@ -179,6 +179,7 @@ function buildCartResponse(cart: {
       discountDays: product?.discountDays ?? null,
       discountStartDate: product?.discountStartDate?.toISOString() ?? null,
       sellerPickupAddress: item.product?.pickupAddress?.trim() || null,
+      allowsPickup: item.product?.allowsPickup ?? false,
     }
   })
 
@@ -310,7 +311,6 @@ export async function POST(request: NextRequest) {
       }, { status: 401 })
     }
 
-    let approvedInquiryId = 0
     if (
       validatedData.isRental &&
       validatedData.rentalStartDate &&
@@ -329,7 +329,6 @@ export async function POST(request: NextRequest) {
           message: inquiryCheck.message,
         }, { status: 403 })
       }
-      approvedInquiryId = inquiryCheck.inquiryId
     }
 
     // Find or create cart for user
@@ -420,10 +419,6 @@ export async function POST(request: NextRequest) {
           deliveryPrice: null,
         },
       })
-    }
-
-    if (approvedInquiryId) {
-      await markInquiryBooked(approvedInquiryId)
     }
 
     return NextResponse.json({

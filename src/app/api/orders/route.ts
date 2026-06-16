@@ -6,7 +6,7 @@ import { authOptions } from '@/lib/auth'
 import { findRentalDateConflict } from '@/lib/rental-date-conflicts'
 import { markRentalProductsRented } from '@/lib/update-product-status'
 import { canUserMakePurchases } from '@/lib/seller-eligibility'
-import { MAX_CART_ITEMS, MAX_CART_ITEM_QUANTITY, CART_SINGLE_ITEM_MESSAGE } from '@/lib/cart-limits'
+import { MAX_CHECKOUT_ITEMS, MAX_CART_ITEM_QUANTITY, CHECKOUT_SINGLE_ITEM_MESSAGE } from '@/lib/cart-limits'
 
 // Order validation schema
 const orderSchema = z.object({
@@ -91,12 +91,12 @@ export async function POST(request: NextRequest) {
     const validatedData = orderSchema.parse(body)
 
     if (
-      validatedData.items.length > MAX_CART_ITEMS ||
+      validatedData.items.length > MAX_CHECKOUT_ITEMS ||
       validatedData.items.some((item) => item.quantity > MAX_CART_ITEM_QUANTITY)
     ) {
       return NextResponse.json({
         success: false,
-        message: CART_SINGLE_ITEM_MESSAGE
+        message: CHECKOUT_SINGLE_ITEM_MESSAGE
       }, { status: 400 })
     }
     

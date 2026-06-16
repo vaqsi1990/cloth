@@ -58,7 +58,7 @@ const PaymentFailPage = () => {
                     <div className="bg-white rounded-2xl shadow-sm p-6">
                         <div className="space-y-4">
                             <Link
-                                href="/checkout"
+                                href="/cart"
                                 className="flex items-center justify-center w-full bg-[#1B3729] text-white px-8 py-4 rounded-lg font-bold uppercase tracking-wide transition-colors duration-300 hover:opacity-95"
                             >
                                 <CreditCard className="w-5 h-5 mr-2" />

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { computeUserCartSubtotal } from '@/lib/cart-totals'
+import { computeCartItemSubtotal, computeUserCartSubtotal } from '@/lib/cart-totals'
 import { validateVoucher } from '@/lib/voucher'
 
 export async function POST(request: NextRequest) {
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { code } = body
+    const { code, cartItemId } = body
 
     if (!code || typeof code !== 'string') {
       return NextResponse.json(
@@ -24,7 +24,24 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const cartSubtotal = await computeUserCartSubtotal(session.user.id)
+    const parsedCartItemId =
+      cartItemId !== undefined && cartItemId !== null
+        ? typeof cartItemId === 'string'
+          ? parseInt(cartItemId, 10)
+          : cartItemId
+        : null
+
+    const cartSubtotal =
+      parsedCartItemId && !Number.isNaN(parsedCartItemId)
+        ? await computeCartItemSubtotal(session.user.id, parsedCartItemId)
+        : await computeUserCartSubtotal(session.user.id)
+
+    if (parsedCartItemId && cartSubtotal <= 0) {
+      return NextResponse.json(
+        { success: false, message: 'არჩეული ნივთი კალათაში ვერ მოიძებნა' },
+        { status: 400 },
+      )
+    }
     const result = await validateVoucher(code, session.user.id, cartSubtotal)
 
     if (!result.valid) {

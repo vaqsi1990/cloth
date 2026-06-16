@@ -6,27 +6,22 @@ import {
 } from '@/lib/resolve-cart-item-price'
 import { processExpiredDiscount } from '@/utils/discountUtils'
 
-export async function computeUserCartSubtotal(userId: string): Promise<number> {
-  const cart = await prisma.cart.findUnique({
-    where: { userId },
-    select: {
-      items: {
-        select: {
-          price: true,
-          quantity: true,
-          isRental: true,
-          rentalDays: true,
-          product: {
-            select: cartProductPricingSelect,
-          },
-        },
-      },
-    },
-  })
-
-  if (!cart) return 0
-
-  return cart.items.reduce((sum, item) => {
+function sumCartLineItems(
+  items: Array<{
+    price: number
+    quantity: number
+    isRental: boolean | null
+    rentalDays: number | null
+    product: {
+      discount: number | null
+      discountDays: number | null
+      discountStartDate: Date | null
+      variants: Array<{ price: number }>
+      rentalPriceTiers: Array<{ minDays: number; pricePerDay: number }>
+    } | null
+  }>,
+): number {
+  return items.reduce((sum, item) => {
     const product = item.product ? processExpiredDiscount(item.product) : null
     const productDiscount =
       product?.discount && product.discount > 0 ? product.discount : 0
@@ -39,4 +34,47 @@ export async function computeUserCartSubtotal(userId: string): Promise<number> {
     const finalPrice = getCartItemPayablePrice(buyerListPrice, productDiscount)
     return sum + finalPrice * item.quantity
   }, 0)
+}
+
+const cartSubtotalSelect = {
+  items: {
+    select: {
+      id: true,
+      price: true,
+      quantity: true,
+      isRental: true,
+      rentalDays: true,
+      product: {
+        select: cartProductPricingSelect,
+      },
+    },
+  },
+} as const
+
+export async function computeUserCartSubtotal(userId: string): Promise<number> {
+  const cart = await prisma.cart.findUnique({
+    where: { userId },
+    select: cartSubtotalSelect,
+  })
+
+  if (!cart) return 0
+
+  return sumCartLineItems(cart.items)
+}
+
+export async function computeCartItemSubtotal(
+  userId: string,
+  cartItemId: number,
+): Promise<number> {
+  const cart = await prisma.cart.findUnique({
+    where: { userId },
+    select: cartSubtotalSelect,
+  })
+
+  if (!cart) return 0
+
+  const item = cart.items.find((entry) => entry.id === cartItemId)
+  if (!item) return 0
+
+  return sumCartLineItems([item])
 }
