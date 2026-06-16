@@ -16,7 +16,7 @@ import {
 
 export const INQUIRY_PENDING_HOURS = 48
 export const INQUIRY_APPROVED_HOURS = 48
-export const MAX_RENTAL_DAYS_DEFAULT = 60
+export const MAX_RENTAL_DAYS_DEFAULT = 10
 
 export type RentalPriceTierLike = { minDays: number; pricePerDay: number }
 

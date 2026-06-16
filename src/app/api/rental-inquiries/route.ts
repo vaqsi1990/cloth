@@ -16,6 +16,10 @@ import {
   normalizeDateOnly,
 } from '@/lib/rental-inquiry'
 import { getOrCreateProductChatRoom } from '@/lib/rental-inquiry-chat'
+import {
+  MAX_RENTAL_PERIOD_DAYS,
+  validateSelfServeRentalDates,
+} from '@/lib/rental-dates'
 
 const createSchema = z.object({
   productId: z.number().int().positive(),
@@ -184,7 +188,19 @@ export async function POST(request: NextRequest) {
     }
 
     const days = calcRentalDays(start, end)
-    const maxDays = product.maxRentalDays || MAX_RENTAL_DAYS_DEFAULT
+
+    const calendarCheck = validateSelfServeRentalDates(start, end)
+    if (!calendarCheck.ok) {
+      return NextResponse.json({
+        success: false,
+        message: calendarCheck.message,
+      }, { status: 400 })
+    }
+
+    const maxDays = Math.min(
+      product.maxRentalDays || MAX_RENTAL_DAYS_DEFAULT,
+      MAX_RENTAL_PERIOD_DAYS,
+    )
     if (days > maxDays) {
       return NextResponse.json({
         success: false,

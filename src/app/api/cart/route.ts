@@ -6,6 +6,7 @@ import { prismaCacheStrategy } from '@/lib/prisma-cache'
 import { z } from 'zod'
 import { processExpiredDiscount } from '@/utils/discountUtils'
 import { assertRentalInquiryApproved } from '@/lib/rental-inquiry-guard'
+import { validateSelfServeRentalDates } from '@/lib/rental-dates'
 import {
   MAX_CART_ITEMS,
   MAX_CART_ITEM_QUANTITY,
@@ -328,6 +329,17 @@ export async function POST(request: NextRequest) {
           success: false,
           message: inquiryCheck.message,
         }, { status: 403 })
+      }
+
+      const calendarCheck = validateSelfServeRentalDates(
+        validatedData.rentalStartDate,
+        validatedData.rentalEndDate,
+      )
+      if (!calendarCheck.ok) {
+        return NextResponse.json({
+          success: false,
+          message: calendarCheck.message,
+        }, { status: 400 })
       }
     }
 

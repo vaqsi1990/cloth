@@ -19,6 +19,7 @@ import { z } from 'zod'
 import { MAX_CART_ITEM_QUANTITY, CHECKOUT_SINGLE_ITEM_MESSAGE } from '@/lib/cart-limits'
 import { toPrismaDeliverySpeed } from '@/lib/delivery'
 import { findRentalDateConflict } from '@/lib/rental-date-conflicts'
+import { validateSelfServeRentalDates } from '@/lib/rental-dates'
 
 interface CartItemInput {
   productId: string | number
@@ -431,10 +432,29 @@ export async function POST(req: NextRequest) {
       }),
     }))
 
+    const rentalItems = resolvedCartItems.filter(
+      (item) =>
+        item.isRental &&
+        item.rentalStartDate &&
+        item.rentalEndDate &&
+        item.productId,
+    )
+
+    for (const item of rentalItems) {
+      const calendarCheck = validateSelfServeRentalDates(
+        item.rentalStartDate!,
+        item.rentalEndDate!,
+      )
+      if (!calendarCheck.ok) {
+        return NextResponse.json(
+          { success: false, error: calendarCheck.message },
+          { status: 400 },
+        )
+      }
+    }
+
     const rentalConflict = await findRentalDateConflict(
-      resolvedCartItems
-        .filter((item) => item.isRental && item.rentalStartDate && item.rentalEndDate && item.productId)
-        .map((item) => ({
+      rentalItems.map((item) => ({
           productId: item.productId as number,
           productName: item.productName,
           size: item.size || 'default',

@@ -151,3 +151,80 @@ export function isDateBlockedByRentalPeriods(
     isDateOccupiedByRental(date, period.startDate, period.endDate),
   )
 }
+
+/** Self-serve calendar: only the next N calendar days (inclusive of today). */
+export const RENTAL_CALENDAR_WINDOW_DAYS = 10
+
+/** Max rental length when booking through the calendar. */
+export const MAX_RENTAL_PERIOD_DAYS = 10
+
+export const RENTAL_CALENDAR_LIMIT_MESSAGE =
+  'კალენდრიდან ქირაობა მხოლოდ შემდეგ 10 დღეშია შესაძლებელი. გრძელი ვადისთვის დაუკავშირდით მიმწოდებელს ჩატში.'
+
+export function rentalPeriodLimitMessage(maxDays = MAX_RENTAL_PERIOD_DAYS): string {
+  return `ქირაობის პერიოდი კალენდრიდან მაქსიმუმ ${maxDays} დღეა. გრძელი ვადისთვის დაუკავშირდით მიმწოდებელს ჩატში.`
+}
+
+export function getRentalCalendarMinStartDate(from?: Date): Date {
+  return normalizeDateOnly(from ?? new Date())
+}
+
+/** Last selectable calendar day in the self-serve booking window. */
+export function getRentalCalendarMaxSelectableDate(from?: Date): Date {
+  const base = getRentalCalendarMinStartDate(from)
+  const max = new Date(base)
+  max.setDate(max.getDate() + RENTAL_CALENDAR_WINDOW_DAYS - 1)
+  return max
+}
+
+export function isDateInRentalCalendarWindow(
+  date: Date | string,
+  from?: Date,
+): boolean {
+  const d = normalizeDateOnly(date)
+  const min = getRentalCalendarMinStartDate(from)
+  const max = getRentalCalendarMaxSelectableDate(from)
+  return d.getTime() >= min.getTime() && d.getTime() <= max.getTime()
+}
+
+export function getRentalCalendarMaxEndDate(
+  startDate: Date | string,
+  from?: Date,
+): Date {
+  const start = normalizeDateOnly(startDate)
+  const windowEnd = getRentalCalendarMaxSelectableDate(from)
+  const periodEnd = new Date(start)
+  periodEnd.setDate(periodEnd.getDate() + MAX_RENTAL_PERIOD_DAYS - 1)
+  return periodEnd.getTime() <= windowEnd.getTime() ? periodEnd : windowEnd
+}
+
+export function validateSelfServeRentalDates(
+  startDate: Date | string,
+  endDate: Date | string,
+  from?: Date,
+): { ok: true } | { ok: false; message: string } {
+  const start = normalizeDateOnly(startDate)
+  const end = normalizeDateOnly(endDate)
+  const min = getRentalCalendarMinStartDate(from)
+
+  if (start.getTime() < min.getTime()) {
+    return { ok: false, message: 'დაწყების თარიღი ვერ იქნება წარსულში' }
+  }
+  if (!isDateInRentalCalendarWindow(start, from)) {
+    return { ok: false, message: RENTAL_CALENDAR_LIMIT_MESSAGE }
+  }
+  if (isRentalEndBeforeStart(start, end)) {
+    return {
+      ok: false,
+      message: 'დასრულების თარიღი არ შეიძლება იყოს დაწყების წინ',
+    }
+  }
+  if (!isDateInRentalCalendarWindow(end, from)) {
+    return { ok: false, message: RENTAL_CALENDAR_LIMIT_MESSAGE }
+  }
+  const days = calcRentalDays(start, end)
+  if (days > MAX_RENTAL_PERIOD_DAYS) {
+    return { ok: false, message: rentalPeriodLimitMessage() }
+  }
+  return { ok: true }
+}
