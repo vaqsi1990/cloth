@@ -214,11 +214,6 @@ const PopularProducts = () => {
                                                                     /დღე
                                                                 </span>
                                                             </div>
-                                                            <div className="text-right">
-                                                                <div className="text-xs text-black line-through">
-                                                                    {product.originalPrice} ლარი
-                                                                </div>
-                                                            </div>
                                                         </div>
 
                                                         {/* Rent Button */}

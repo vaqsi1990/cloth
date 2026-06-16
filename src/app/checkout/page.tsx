@@ -1021,14 +1021,9 @@ const CheckoutPage = () => {
                                                 
                                                 {item.discount && item.discount > 0 ? (
                                                     <div className="flex flex-col gap-1">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="md:text-[18px] text-[16px] font-bold text-red-600">
-                                                                ფასი: ₾{(getCartItemPayablePrice(item.price, item.discount) * item.quantity).toFixed(2)}
-                                                            </span>
-                                                            <span className="md:text-[16px] text-[14px] font-bold text-black line-through decoration-black opacity-60" style={{ textDecorationThickness: '2px' }}>
-                                                                ₾{(item.price * item.quantity).toFixed(2)}
-                                                            </span>
-                                                        </div>
+                                                        <span className="md:text-[18px] text-[16px] font-bold text-red-600">
+                                                            ფასი: ₾{(getCartItemPayablePrice(item.price, item.discount) * item.quantity).toFixed(2)}
+                                                        </span>
                                                         <div className="bg-[#1B3729] rounded-md text-[#FFFFFF] font-regular flex items-center px-2 py-1 w-fit">
                                                             <span className="text-xs whitespace-nowrap">დანაზოგი: ₾{(getCartItemBuyerSavings(item.price, item.discount) * item.quantity).toFixed(2)}</span>
                                                             {item.discountDays && (

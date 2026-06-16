@@ -27,8 +27,12 @@ export async function getChatRoomIfAllowed(
         id: chatRoomId,
         userId: { not: null },
         adminId: { not: null },
-        admin: { role: 'USER' },
-        OR: [{ userId: session.user.id }, { adminId: session.user.id }],
+        AND: [
+          { OR: [{ userId: session.user.id }, { adminId: session.user.id }] },
+          {
+            OR: [{ productId: { not: null } }, { admin: { role: 'USER' } }],
+          },
+        ],
       },
       select: { id: true, userId: true, adminId: true, guestEmail: true },
     })

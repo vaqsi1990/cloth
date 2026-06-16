@@ -495,6 +495,7 @@ model Order {
   items         OrderItem[]
   transactions  Transaction[]
   voucherRedemptions VoucherRedemption[]
+  chatRooms     ChatRoom[]
   
   @@index([status])
 }
@@ -607,6 +608,9 @@ model ChatRoom {
   productId Int?
   product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
 
+  orderId Int?
+  order   Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
   userTypingAt  DateTime?
   adminTypingAt DateTime?
   
@@ -617,6 +621,7 @@ model ChatRoom {
   @@index([userId])
   @@index([adminId])
   @@index([productId])
+  @@index([orderId])
 }
 
 model RentalInquiry {

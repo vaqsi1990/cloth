@@ -33,14 +33,9 @@ export default function RentalTierPrice({
   return (
     <>
       {hasDiscount ? (
-        <div className="flex items-center gap-2">
-          <p className="text-[16px] font-bold text-red-600">
-            ₾{displayDiscountedPerDay.toFixed(2)}/დღე
-          </p>
-          <p className="text-[16px] font-bold text-black line-through decoration-black opacity-60">
-            ₾{displayPricePerDay.toFixed(2)}/დღე
-          </p>
-        </div>
+        <p className="text-[16px] font-bold text-red-600">
+          ₾{displayDiscountedPerDay.toFixed(2)}/დღე
+        </p>
       ) : (
         <p className="text-[16px] font-bold text-black">₾{displayPricePerDay.toFixed(2)}/დღე</p>
       )}

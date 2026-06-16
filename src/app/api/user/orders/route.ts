@@ -20,11 +20,20 @@ export async function GET(request: NextRequest) {
         userId: session.user.id
       },
       include: {
+        deliveryCity: {
+          select: { name: true }
+        },
         items: {
           include: {
             product: {
               include: {
                 images: true,
+                user: {
+                  select: {
+                    id: true,
+                    name: true
+                  }
+                },
                 rentalPriceTiers: {
                   orderBy: { minDays: 'asc' }
                 }

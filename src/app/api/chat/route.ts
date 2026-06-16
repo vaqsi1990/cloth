@@ -34,6 +34,7 @@ export async function GET(request: NextRequest) {
       userId: string | null
       adminId: string | null
       productId: number | null
+      orderId: number | null
       product_name: string | null
       product_image: string | null
       guestName?: string
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
       last_message_userId?: string
     }>>`
       SELECT cr.id, cr."createdAt", cr."updatedAt", cr.status,
-             cr."userId", cr."adminId", cr."productId",
+             cr."userId", cr."adminId", cr."productId", cr."orderId",
              p.name as product_name,
              (SELECT pi.url FROM "ProductImage" pi WHERE pi."productId" = p.id ORDER BY pi.position ASC LIMIT 1) as product_image,
              cr."guestName", cr."guestEmail",

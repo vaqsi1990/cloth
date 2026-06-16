@@ -10,6 +10,16 @@ import ImageUpload from '@/component/CloudinaryUploader'
 import ContactForm from '@/component/ContactForm'
 import RentalInquiriesPanel from '@/components/RentalInquiriesPanel'
 import { showToast } from '@/utils/toast'
+import { formatDate } from '@/utils/dateUtils'
+import {
+  fromPrismaDeliverySpeed,
+  getDeliverySpeedLabel,
+} from '@/lib/delivery'
+import {
+  getCartItemBuyerSavings,
+  getCartItemPayablePrice,
+} from '@/lib/cart-item-pricing'
+import { processExpiredDiscount } from '@/lib/discount-helpers'
 import {
   broadcastProductStatusUpdate,
   type ProductStatusValue,
@@ -18,12 +28,43 @@ import ChatTypingIndicator from '@/components/ChatTypingIndicator'
 import ChatUnreadBadge from '@/components/ChatUnreadBadge'
 import { useChatTyping } from '@/hooks/useChatTyping'
 import { useUserChatUnreadCount } from '@/hooks/useUserChatUnreadCount'
+interface OrderItem {
+  id?: number
+  productId?: number | null
+  productName: string
+  image?: string | null
+  size: string | null
+  price: number
+  quantity: number
+  isRental?: boolean | null
+  rentalStartDate?: string | null
+  rentalEndDate?: string | null
+  rentalDays?: number | null
+  product?: {
+    id: number
+    userId?: string | null
+    user?: { id: string; name: string | null } | null
+    images?: Array<{ url: string }>
+    discount?: number | null
+    discountDays?: number | null
+    discountStartDate?: string | null
+  } | null
+}
+
 interface Order {
   id: number
   total: number
   status: string
   createdAt: string
-  items?: Array<{ productName: string; size: string; price: number }>
+  address?: string
+  city?: string | null
+  phone?: string
+  email?: string | null
+  paymentMethod?: string | null
+  deliveryPrice?: number | null
+  deliverySpeed?: string | null
+  deliveryCity?: { name: string } | null
+  items?: OrderItem[]
 }
 
 interface SaleOrderItem {
@@ -84,6 +125,7 @@ interface AccountChatRoom {
   userId: string | null
   adminId?: string | null
   productId?: number | null
+  orderId?: number | null
   product_name?: string | null
   user_name?: string
   user_email?: string
@@ -94,6 +136,39 @@ interface AccountChatRoom {
 }
 
 type VerificationState = 'PENDING' | 'APPROVED' | 'REJECTED' | null
+
+function getOrderStatusLabel(status: string) {
+  if (status === 'PAID') return 'გადახდილი'
+  if (status === 'SHIPPED') return 'გაგზავნილი'
+  if (status === 'CANCELED') return 'გაუქმებული'
+  if (status === 'REFUNDED') return 'დაბრუნებული'
+  return 'მოლოდინში'
+}
+
+function getOrderStatusClass(status: string) {
+  if (status === 'PAID') return 'text-green-500'
+  if (status === 'SHIPPED') return 'text-blue-500'
+  if (status === 'CANCELED') return 'text-red-500'
+  if (status === 'REFUNDED') return 'text-black'
+  return 'text-yellow-500'
+}
+
+function getOrderItemDiscount(item: OrderItem): number {
+  const product = item.product ? processExpiredDiscount(item.product) : null
+  return product?.discount && product.discount > 0 ? product.discount : 0
+}
+
+function getOrderItemPayablePrice(item: OrderItem): number {
+  return getCartItemPayablePrice(item.price, getOrderItemDiscount(item))
+}
+
+function getOrderItemBuyerSavings(item: OrderItem): number {
+  return getCartItemBuyerSavings(item.price, getOrderItemDiscount(item))
+}
+
+function getOrderChatKey(orderId: number, productId: number) {
+  return `${orderId}-${productId}`
+}
 
 const AccountPageContent = () => {
   const { data: session, status, update } = useSession()
@@ -116,6 +191,7 @@ const AccountPageContent = () => {
   const [productsPage, setProductsPage] = useState(1)
   const [productsHasMore, setProductsHasMore] = useState(false)
   const [loadingOrders, setLoadingOrders] = useState(false)
+  const [contactingChatKey, setContactingChatKey] = useState<string | null>(null)
   const [loadingSales, setLoadingSales] = useState(false)
   const [loadingProducts, setLoadingProducts] = useState(false)
   const [loadingMoreProducts, setLoadingMoreProducts] = useState(false)
@@ -149,6 +225,7 @@ const AccountPageContent = () => {
   const [sendingMessage, setSendingMessage] = useState(false)
   const [otherPartyTyping, setOtherPartyTyping] = useState(false)
   const selectedChatRoomIdRef = useRef<number | null>(null)
+  const preferredChatRoomIdRef = useRef<number | null>(null)
   const chatMessagesFetchIdRef = useRef(0)
   const { notifyTyping, stopTyping } = useChatTyping({
     chatRoomId: selectedChatRoom?.id,
@@ -255,23 +332,9 @@ const AccountPageContent = () => {
   // Check URL parameters on mount
   useEffect(() => {
     const tabParam = searchParams.get('tab')
-    const chatParam = searchParams.get('chat')
-    
+
     if (tabParam) {
       setActiveTab(tabParam)
-    }
-    
-    if (chatParam) {
-      const chatId = parseInt(chatParam)
-      if (!isNaN(chatId)) {
-        // Wait for chat rooms to load, then select the chat
-        setTimeout(() => {
-          const room = chatRooms.find(r => r.id === chatId)
-          if (room) {
-            setSelectedChatRoom(room)
-          }
-        }, 500)
-      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
@@ -323,14 +386,15 @@ const AccountPageContent = () => {
   // Select chat room when chatRooms are loaded and chat param exists
   useEffect(() => {
     const chatParam = searchParams.get('chat')
-    if (chatParam && chatRooms.length > 0) {
-      const chatId = parseInt(chatParam)
-      if (!isNaN(chatId)) {
-        const room = chatRooms.find(r => r.id === chatId)
-        if (room && !selectedChatRoom) {
-          setSelectedChatRoom(room)
-        }
-      }
+    if (!chatParam || chatRooms.length === 0) return
+
+    const chatId = parseInt(chatParam, 10)
+    if (isNaN(chatId)) return
+
+    const room = chatRooms.find((r) => r.id === chatId)
+    if (room && selectedChatRoom?.id !== chatId) {
+      setSelectedChatRoom(room)
+      preferredChatRoomIdRef.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatRooms, searchParams])
@@ -464,11 +528,29 @@ const AccountPageContent = () => {
       if (data.success) {
         const rooms: AccountChatRoom[] = data.chatRooms || []
         setChatRooms(rooms)
-        setSelectedChatRoom((current) =>
-          current && !rooms.some((room) => room.id === current.id)
-            ? null
-            : current,
-        )
+
+        const urlChatParam = searchParams.get('chat')
+        const urlChatId = urlChatParam ? parseInt(urlChatParam, 10) : NaN
+        const targetChatId =
+          preferredChatRoomIdRef.current ??
+          (!isNaN(urlChatId) ? urlChatId : null)
+
+        if (targetChatId != null) {
+          const room = rooms.find((r) => r.id === targetChatId)
+          if (room) {
+            setSelectedChatRoom(room)
+            preferredChatRoomIdRef.current = null
+          }
+        } else {
+          setSelectedChatRoom((current) => {
+            if (!current) return current
+            if (rooms.some((room) => room.id === current.id)) return current
+            const urlChatId = urlChatParam ? parseInt(urlChatParam, 10) : NaN
+            if (current.id === urlChatId) return current
+            return null
+          })
+        }
+
         void refreshChatUnread()
       }
     } catch (error) {
@@ -524,7 +606,11 @@ const AccountPageContent = () => {
         // Refresh chat rooms to update last message
         fetchChatRooms()
       } else {
-        showToast(data.error || 'შეცდომა შეტყობინების გაგზავნისას', 'error')
+        const errorMessage =
+          data.error === 'Chat room not found or access denied'
+            ? 'ჩათი ვერ მოიძებნა ან წვდომა შეზღუდულია'
+            : data.error || 'შეცდომა შეტყობინების გაგზავნისას'
+        showToast(errorMessage, 'error')
         setNewMessage(messageToSend) // Restore message on error
       }
     } catch (error) {
@@ -832,6 +918,67 @@ const AccountPageContent = () => {
       console.error('Error fetching orders:', error)
     } finally {
       setLoadingOrders(false)
+    }
+  }
+
+  const openSellerChat = async (
+    productId: number | null | undefined,
+    productName: string,
+    orderId: number,
+    sellerName?: string | null,
+  ) => {
+    if (!productId) {
+      showToast('პროდუქტი ვერ მოიძებნა', 'error')
+      return
+    }
+
+    if (!session?.user?.id) {
+      showToast('გთხოვთ შეხვიდეთ სისტემაში', 'warning')
+      return
+    }
+
+    setContactingChatKey(getOrderChatKey(orderId, productId))
+    try {
+      const response = await fetch(`/api/chat/order/${orderId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productId,
+          message: `გამარჯობა! მაქვს შეკვეთა #${orderId} პროდუქტზე „${productName}".`,
+        }),
+      })
+      const data = await response.json()
+
+      if (!data.success || !data.chatRoomId) {
+        showToast(data.error || 'შეცდომა ჩათის გახსნისას', 'error')
+        return
+      }
+
+      const chatRoomId = data.chatRoomId as number
+      preferredChatRoomIdRef.current = chatRoomId
+
+      setSelectedChatRoom({
+        id: chatRoomId,
+        userId: session.user.id,
+        admin_name: sellerName ?? undefined,
+        productId,
+        product_name: productName,
+        orderId,
+      })
+
+      setActiveTab('chats')
+      router.push(`/account?tab=chats&chat=${chatRoomId}`)
+
+      await fetchChatRooms()
+
+      if (sellerName) {
+        showToast(`ჩათი გაიხსნა: ${sellerName}`, 'success')
+      }
+    } catch (error) {
+      console.error('Error opening seller chat:', error)
+      showToast('შეცდომა ჩათის გახსნისას', 'error')
+    } finally {
+      setContactingChatKey(null)
     }
   }
 
@@ -1367,7 +1514,7 @@ const AccountPageContent = () => {
   const renderOrdersTab = () => (
     <div className="space-y-6">
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-        <h3 className="md:text-[20px]  text-[18px] font-bold text-black mb-6">შეკვეთების ისტორია</h3>
+        <h3 className="md:text-[20px] text-[18px] font-bold text-black mb-6">შეკვეთების ისტორია</h3>
 
         {loadingOrders ? (
           <div className="text-center py-12">
@@ -1380,52 +1527,215 @@ const AccountPageContent = () => {
             <p className="text-[18px] text-black">ჯერ არ გაქვთ შეკვეთები</p>
             <Link
               href="/shop"
-              className="inline-block md:text-[18px] text-[16px] mt-4 px-6 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide  transition-colors"
+              className="inline-block md:text-[18px] text-[16px] mt-4 px-6 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide transition-colors"
             >
               შეკვეთის დაწყება
             </Link>
           </div>
         ) : (
           <div className="space-y-4">
-            {orders.map((order) => (
-              <div key={order.id} className="border border-black rounded-lg p-4 hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <h4 className="font-semibold md:text-[18px] text-[16px] text-black">შეკვეთა #{order.id}</h4>
-                        <p className="text-[18px] text-black">{new Date(order.createdAt).toLocaleDateString('ka-GE')}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold md:text-[22px] text-[16px] text-black">ჯამი: ₾{order.total}</p>
-                    <span className={`inline-block px-2 py-1 md:text-[20px] text-[18px] font-bold rounded-full ${order.status === 'PAID' ? ' text-green-500' :
-                      order.status === 'SHIPPED' ? ' text-blue-500' :
-                        order.status === 'CANCELED' ? ' text-red-500' :
-                          order.status === 'REFUNDED' ? ' text-black' : ' text-yellow-500'
-                      }`}>
-                      {order.status === 'PAID'
-                        ? 'გადახდილი'
-                        : order.status === 'SHIPPED'
-                          ? 'გაგზავნილი'
-                          : order.status === 'CANCELED'
-                            ? 'გაუქმებული'
-                            : order.status === 'REFUNDED'
-                              ? 'დაბრუნებული'
-                              : 'მოლოდინში'}
-                    </span>
-                  </div>
-                </div>
+            {orders.map((order) => {
+              const orderDate = formatDate(order.createdAt)
+              const deliverySpeed = fromPrismaDeliverySpeed(
+                order.deliverySpeed as 'EXTRA' | 'STANDARD' | null,
+              )
+              const deliveryLabel = order.deliveryCity?.name
+                ? `მიტანა: ${order.deliveryCity.name}${
+                    deliverySpeed ? `, ${getDeliverySpeedLabel(deliverySpeed)}` : ''
+                  }${
+                    typeof order.deliveryPrice === 'number'
+                      ? `, ₾${order.deliveryPrice.toFixed(2)}`
+                      : ''
+                  }`
+                : 'ადგილიდან გატანა'
 
-                <div className="space-y-2">
-                  {order.items?.map((item: { productName: string; size: string; price: number }, index: number) => (
-                    <div key={index} className="flex items-center justify-between text-[16px]">
-                      <span className="text-black">{item.productName} ({item.size})</span>
-                      <span className="md:text-[18px] text-[16px] text-black">₾{item.price}</span>
+              return (
+                <div
+                  key={order.id}
+                  className="border border-black rounded-lg p-4 hover:shadow-md transition-shadow"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+                    <div>
+                      <h4 className="font-semibold md:text-[18px] text-[16px] text-black">
+                        შეკვეთა #{order.id}
+                      </h4>
+                      <p className="text-[16px] text-black">{orderDate}</p>
                     </div>
-                  ))}
-                </div>
+                    <div className="text-left sm:text-right">
+                      <p className="font-bold md:text-[22px] text-[16px] text-black">
+                        ჯამი: ₾{order.total.toFixed(2)}
+                      </p>
+                      <span
+                        className={`inline-block px-2 py-1 md:text-[20px] text-[18px] font-bold rounded-full ${getOrderStatusClass(order.status)}`}
+                      >
+                        {getOrderStatusLabel(order.status)}
+                      </span>
+                    </div>
+                  </div>
 
-               
-              </div>
-            ))}
+                  <div className="mb-4 rounded-lg bg-gray-50 p-3 text-[15px] text-black space-y-1">
+                    {order.address && (
+                      <p>
+                        <span className="font-medium">მისამართი:</span> {order.address}
+                        {order.city ? `, ${order.city}` : ''}
+                      </p>
+                    )}
+                    {order.phone && (
+                      <p>
+                        <span className="font-medium">ტელეფონი:</span> {order.phone}
+                      </p>
+                    )}
+                    {order.email && (
+                      <p>
+                        <span className="font-medium">ელფოსტა:</span> {order.email}
+                      </p>
+                    )}
+                    <p>
+                      <span className="font-medium">მიწოდება:</span> {deliveryLabel}
+                    </p>
+                    {order.paymentMethod && (
+                      <p>
+                        <span className="font-medium">გადახდა:</span> {order.paymentMethod}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-3">
+                    {order.items?.map((item, index) => {
+                      const imageUrl =
+                        item.image || item.product?.images?.[0]?.url || null
+                      const productId = item.productId ?? item.product?.id ?? null
+                      const sellerName = item.product?.user?.name || null
+                      const sellerId = item.product?.userId ?? item.product?.user?.id
+                      const canContactSeller =
+                        Boolean(productId) &&
+                        Boolean(sellerId) &&
+                        sellerId !== session?.user?.id
+                      const contactChatKey =
+                        productId != null
+                          ? getOrderChatKey(order.id, productId)
+                          : null
+                      const isContacting = contactChatKey === contactingChatKey
+                      const itemDiscount = getOrderItemDiscount(item)
+                      const hasItemDiscount = itemDiscount > 0
+                      const payableUnitPrice = getOrderItemPayablePrice(item)
+                      const savingsUnit = getOrderItemBuyerSavings(item)
+                      const itemQuantity = item.quantity ?? 1
+
+                      return (
+                        <div
+                          key={item.id ?? index}
+                          className="flex flex-col gap-3 border-t border-gray-200 pt-3 first:border-t-0 first:pt-0"
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                            <div className="flex items-start gap-3 text-black min-w-0">
+                              {imageUrl ? (
+                                <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 shrink-0">
+                                  <Image
+                                    src={imageUrl}
+                                    alt={item.productName}
+                                    width={64}
+                                    height={64}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="w-16 h-16 rounded-lg bg-gray-100 shrink-0 flex items-center justify-center">
+                                  <Package className="w-7 h-7 text-gray-400" />
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <div className="font-medium md:text-[18px] text-[16px]">
+                                  {productId ? (
+                                    <Link
+                                      href={`/product/${productId}`}
+                                      className="hover:underline"
+                                    >
+                                      {item.productName}
+                                    </Link>
+                                  ) : (
+                                    item.productName
+                                  )}
+                                </div>
+                                {item.size && (
+                                  <div className="text-[15px]">ზომა: {item.size}</div>
+                                )}
+                                <div className="text-[15px]">
+                                  რაოდენობა: {item.quantity ?? 1}
+                                </div>
+                                {item.isRental &&
+                                  item.rentalStartDate &&
+                                  item.rentalEndDate && (
+                                    <div className="text-[15px] text-[#1B3729] font-medium mt-1">
+                                      გაქირავება: {formatDate(item.rentalStartDate)} –{' '}
+                                      {formatDate(item.rentalEndDate)}
+                                      {item.rentalDays ? ` (${item.rentalDays} დღე)` : ''}
+                                    </div>
+                                  )}
+                                {sellerName && (
+                                  <div className="text-[15px] mt-1">
+                                    მიმწოდებელი: {sellerName}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <div className="text-left sm:text-right shrink-0">
+                              {hasItemDiscount ? (
+                                <div className="flex flex-col items-start sm:items-end gap-1">
+                                  <div className="md:text-[18px] text-[16px] font-semibold text-red-600">
+                                    ₾{(payableUnitPrice * itemQuantity).toFixed(2)}
+                                  </div>
+                                  <div className="bg-[#1B3729] rounded-md text-white text-xs flex items-center px-2 py-1">
+                                    <span className="whitespace-nowrap">
+                                      დანაზოგი: ₾{(savingsUnit * itemQuantity).toFixed(2)}
+                                    </span>
+                                    {item.product?.discountDays && (
+                                      <span className="bg-white text-black px-2 py-0.5 rounded ml-2 whitespace-nowrap">
+                                        {item.product.discountDays} დღე
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="md:text-[18px] text-[16px] font-semibold text-black">
+                                  ₾{(payableUnitPrice * itemQuantity).toFixed(2)}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {canContactSeller && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                openSellerChat(
+                                  productId,
+                                  item.productName,
+                                  order.id,
+                                  sellerName,
+                                )
+                              }
+                              disabled={isContacting}
+                              className="inline-flex items-center justify-center gap-2 self-start px-4 py-2 bg-[#1B3729] text-white rounded-lg text-[15px] font-semibold transition-colors hover:bg-[#164321] disabled:opacity-60"
+                            >
+                              <MessageCircle className="w-4 h-4" />
+                              {isContacting
+                                ? 'იხსნება...'
+                                : 'დაუკავშირდით მიმწოდებელს'}
+                            </button>
+                          )}
+                        </div>
+                      )
+                    })}
+                    {(!order.items || order.items.length === 0) && (
+                      <p className="text-[15px] text-gray-600 border-t border-gray-200 pt-3">
+                        ამ შეკვეთაზე პროდუქტის დეტალები ვერ ჩაიტვირთა.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
           </div>
         )}
       </div>
@@ -1880,7 +2190,11 @@ const AccountPageContent = () => {
                         }`}
                       >
                         <button
-                          onClick={() => setSelectedChatRoom(room)}
+                          onClick={() => {
+                            setSelectedChatRoom(room)
+                            preferredChatRoomIdRef.current = null
+                            router.push(`/account?tab=chats&chat=${room.id}`)
+                          }}
                           className={`flex-1 min-w-0 text-left p-3 sm:p-4 transition-colors ${
                             isSelected ? 'text-white' : ''
                           }`}
@@ -1897,6 +2211,7 @@ const AccountPageContent = () => {
                                   isSelected ? 'text-white/80' : 'text-[#1B3729]'
                                 }`}>
                                   {room.product_name}
+                                  {room.orderId ? ` • შეკვეთა #${room.orderId}` : ''}
                                 </p>
                               )}
                               {room.last_message && (
@@ -1969,6 +2284,9 @@ const AccountPageContent = () => {
                         ) : (
                           selectedChatRoom.product_name
                         )}
+                        {selectedChatRoom.orderId
+                          ? ` • შეკვეთა #${selectedChatRoom.orderId}`
+                          : ''}
                       </p>
                     )}
                   </div>

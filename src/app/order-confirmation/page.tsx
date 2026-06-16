@@ -381,9 +381,6 @@ const OrderConfirmationContent = () => {
                               <span className="text-lg font-bold text-red-600">
                                 ₾{(payable * item.quantity).toFixed(2)}
                               </span>
-                              <span className="text-base font-bold text-black line-through decoration-black opacity-60">
-                                ₾{(item.price * item.quantity).toFixed(2)}
-                              </span>
                               <span className="text-xs bg-[#1B3729] text-white px-2 py-1 rounded">
                                 დანაზოგი: ₾{(savings * item.quantity).toFixed(2)}
                               </span>
