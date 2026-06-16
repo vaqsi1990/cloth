@@ -383,6 +383,18 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         return getRentalPrice(product)
     }
 
+    const getProductPurchaseLabel = (product: Product): string | null => {
+        const canRent = Boolean(
+            product.isRentable && product.rentalPriceTiers && product.rentalPriceTiers.length > 0,
+        )
+        const canBuy = Boolean(product.variants?.some((variant) => (variant.price ?? 0) > 0))
+
+        if (canRent && canBuy) return 'ქირავდება და იყიდება'
+        if (canRent) return 'ქირავდება'
+        if (canBuy) return 'იყიდება'
+        return null
+    }
+
     const resolveCategoryApiSlug = useCallback(
         (param: string | null, selected: string[]) => {
             if (param) return resolveCategorySlugParam(param)
@@ -1569,7 +1581,9 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
                         {/* Products Grid */}
                         {currentProducts.length > 0 ? (
                             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 gap-y-16 mb-8">
-                                {currentProducts.map((product, index) => (
+                                {currentProducts.map((product, index) => {
+                                    const purchaseLabel = getProductPurchaseLabel(product)
+                                    return (
                                     <div
                                         key={product.id}
                                         className="group bg-white rounded-xl  overflow-hidden  transition-shadow"
@@ -1601,19 +1615,24 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
                                             </div>
                                         </div>
                                         <div className="mt-2 space-y-2">
-                                            <div className="flex items-center justify-between">
-
-                                                <h3 className="font-regular text-black md:text-[18px] text-[16px] leading-snug line-clamp-2">
-                                                    {product.name}
-                                                </h3>
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="min-w-0 flex-1">
+                                                    <h3 className="font-regular text-black md:text-[18px] text-[16px] leading-snug line-clamp-2">
+                                                        {product.name}
+                                                    </h3>
+                                                    {purchaseLabel && (
+                                                        <p className="text-[#1B3729] md:text-[18px] text-[14px] font-regular mt-0.5">
+                                                            {purchaseLabel}
+                                                        </p>
+                                                    )}
+                                                </div>
                                                 <Link
                                                     href={`/product/${product.id}`}
-                                                    className="w-9 h-9 rounded-xl bg-black text-white flex items-center justify-center hover:bg-gray-800 transition"
+                                                    className="w-9 h-9 shrink-0 rounded-xl bg-black text-white flex items-center justify-center hover:bg-gray-800 transition"
                                                     aria-label="დეტალები"
                                                 >
                                                     <Plus className="w-5 h-5" />
                                                 </Link>
-
                                             </div>
                                             <div className="flex items-center justify-between gap-2">
                                                 <ProductSalePrice
@@ -1654,7 +1673,8 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
                                             </div>
                                         </div>
                                     </div>
-                                ))}
+                                    )
+                                })}
                             </div>
                         ) : (
                             <div className="text-center py-16">
