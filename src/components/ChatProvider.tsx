@@ -1,6 +1,8 @@
 'use client'
 
 import React, { createContext, useContext, useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
+import { usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import ChatWidget from '@/components/ChatWidget'
 import ChatButton from '@/components/ChatButton'
@@ -33,6 +35,8 @@ const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const [chatRoomId, setChatRoomId] = useState<number | undefined>(undefined)
   const [unreadCount, setUnreadCount] = useState(0)
   const { data: session } = useSession()
+  const pathname = usePathname()
+  const showChatUi = isClient && !pathname.startsWith('/admin')
 
   useEffect(() => {
     setIsClient(true)
@@ -87,25 +91,30 @@ const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     unreadCount
   }
 
+  const chatUi = showChatUi ? (
+    <div
+      className="fixed bottom-0 right-0 z-[60] flex flex-col items-end justify-end p-4 sm:p-6 pointer-events-none"
+      aria-live="polite"
+    >
+      <div className="pointer-events-auto flex flex-col items-end gap-3">
+        {isChatOpen ? (
+          <ChatWidget
+            isOpen={isChatOpen}
+            onToggle={toggleChat}
+            chatRoomId={chatRoomId}
+            onChatRoomCreated={handleChatRoomCreated}
+          />
+        ) : (
+          <ChatButton onClick={toggleChat} unreadCount={unreadCount} />
+        )}
+      </div>
+    </div>
+  ) : null
+
   return (
     <ChatContext.Provider value={contextValue}>
       {children}
-      
-      {/* Chat Button - only show on main pages, not admin */}
-      {isClient && !window.location.pathname.startsWith('/admin') && (
-        <ChatButton 
-          onClick={toggleChat} 
-          unreadCount={unreadCount}
-        />
-      )}
-      
-      {/* Chat Widget */}
-      <ChatWidget
-        isOpen={isChatOpen}
-        onToggle={toggleChat}
-        chatRoomId={chatRoomId}
-        onChatRoomCreated={handleChatRoomCreated}
-      />
+      {isClient && chatUi ? createPortal(chatUi, document.body) : null}
     </ChatContext.Provider>
   )
 }

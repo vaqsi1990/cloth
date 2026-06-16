@@ -13,7 +13,7 @@ const ChatButton: React.FC<ChatButtonProps> = ({ onClick, unreadCount = 0 }) => 
   return (
     <button
       onClick={onClick}
-      className="fixed bottom-6 right-6 z-40 bg-[#1B3729] text-white p-4 rounded-full shadow-lg hover:bg-[#2a4d3a] transition-all duration-300 hover:scale-110 group relative"
+      className="bg-[#1B3729] text-white p-4 rounded-full shadow-lg hover:bg-[#2a4d3a] transition-all duration-300 hover:scale-110 group relative"
     >
       <MessageCircle className="w-6 h-6" />
       <ChatUnreadBadge count={unreadCount} className="absolute -top-1 -right-1" />

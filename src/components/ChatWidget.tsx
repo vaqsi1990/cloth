@@ -385,7 +385,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
   if (!isOpen) return null
 
   return (
-    <div className={`fixed bottom-[15px] right-4 z-50 bg-white shadow-2xl border border-gray-200 ${isMinimized ? 'w-80 h-16 rounded-xl' : 'w-96 h-[85vh] max-h-[85vh] rounded-xl overflow-hidden'
+    <div className={`bg-white shadow-2xl border border-gray-200 ${isMinimized ? 'w-80 h-16 rounded-xl' : 'w-[min(24rem,calc(100vw-2rem))] h-[min(85vh,calc(100dvh-6rem))] rounded-xl overflow-hidden'
       } transition-all duration-300 flex flex-col`}>
       {/* Header */}
       <div className={`bg-[#1B3729] text-white flex-shrink-0 ${isMinimized ? 'rounded-xl' : 'rounded-t-xl'}`}>
