@@ -9,6 +9,7 @@ import {
   isLetterSize,
   LETTER_SIZE_TO_SYSTEM_SIZES,
 } from '@/lib/shop-product-filters'
+import type { ShopPurchaseType, ShopSortBy } from '@/lib/shop-list-params'
 import {
   buildExcludeSoldProductsWhere,
   buildSaleStockAvailabilitySql,
