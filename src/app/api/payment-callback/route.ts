@@ -4,6 +4,10 @@ import { recordSellerTransactions } from '@/utils/sellerTransactions'
 import { redeemVoucher } from '@/lib/voucher'
 import { activateVipPayment } from '@/lib/product-vip-payment'
 import { sendOrderConfirmationEmail } from '@/lib/order-confirmation-email'
+import {
+  finalizeRentalOrderHolds,
+  releaseRentalOrderHolds,
+} from '@/lib/rental-order-holds'
 import crypto from 'crypto'
 
 const BOG_PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
@@ -51,6 +55,7 @@ async function updateOrderStatus(paymentId: string, status: string) {
 
   if (final === "PAID") {
     await recordSellerTransactions(order.id)
+    await finalizeRentalOrderHolds(order.id)
 
     if (order.voucherId && order.userId && order.voucherDiscount) {
       const existing = await prisma.voucherRedemption.findFirst({
@@ -71,6 +76,10 @@ async function updateOrderStatus(paymentId: string, status: string) {
         console.error(`[payment-callback] Order confirmation email failed for #${order.id}:`, error)
       })
     }
+  }
+
+  if (final === "CANCELED" || final === "REFUNDED") {
+    await releaseRentalOrderHolds(order.id)
   }
 
   return true

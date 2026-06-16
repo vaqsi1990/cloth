@@ -1,11 +1,30 @@
 "use client"
-import React from 'react'
+import React, { useEffect, Suspense } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { XCircle, ArrowLeft, Home, ShoppingBag, CreditCard } from 'lucide-react'
 
-const PaymentFailPage = () => {
+const PaymentFailContent = () => {
     const router = useRouter()
+    const searchParams = useSearchParams()
+    const orderId = searchParams.get('orderId')
+
+    useEffect(() => {
+        if (!orderId) return
+
+        const releaseHolds = async () => {
+            try {
+                await fetch(`/api/orders/${orderId}/abandon-payment`, {
+                    method: 'POST',
+                })
+            } catch {
+                // Best-effort: user can still retry from cart
+            }
+        }
+
+        void releaseHolds()
+    }, [orderId])
+
     return (
         <div className="min-h-screen  py-16">
             <div className="container mx-auto px-4">
@@ -20,6 +39,9 @@ const PaymentFailPage = () => {
                         </h1>
                         <p className="text-black text-lg">
                             სამწუხაროდ, თქვენი გადახდა ვერ განხორციელდა
+                        </p>
+                        <p className="text-black text-sm mt-2">
+                            თარიღები გათავისუფლდა — შეგიძლიათ თავიდან სცადოთ ქირაობა.
                         </p>
                     </div>
 
@@ -110,5 +132,17 @@ const PaymentFailPage = () => {
         </div>
     )
 }
+
+const PaymentFailPage = () => (
+    <Suspense
+        fallback={
+            <div className="min-h-screen flex items-center justify-center px-4">
+                <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin" />
+            </div>
+        }
+    >
+        <PaymentFailContent />
+    </Suspense>
+)
 
 export default PaymentFailPage

@@ -2,7 +2,9 @@ import { prisma } from '@/lib/prisma'
 import { RentalInquiry, RentalInquiryStatus } from '@prisma/client'
 import { datesMatch, expireStaleInquiries, normalizeDateOnly } from '@/lib/rental-inquiry'
 
-const ACTIVE_ORDER_STATUSES = ['PENDING', 'PAID', 'SHIPPED'] as const
+import { RENTAL_BLOCKING_ORDER_STATUSES } from '@/lib/rental-order-holds'
+
+const ACTIVE_ORDER_STATUSES = [...RENTAL_BLOCKING_ORDER_STATUSES] as const
 
 async function hasRentalOrderForInquiry(
   buyerId: string,

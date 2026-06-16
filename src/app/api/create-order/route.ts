@@ -18,9 +18,7 @@ import { syncCartItemBuyerListPrices } from '@/lib/sync-cart-prices'
 import { z } from 'zod'
 import { MAX_CART_ITEM_QUANTITY, CHECKOUT_SINGLE_ITEM_MESSAGE } from '@/lib/cart-limits'
 import { toPrismaDeliverySpeed } from '@/lib/delivery'
-import { markRentalProductsRented } from '@/lib/update-product-status'
 import { findRentalDateConflict } from '@/lib/rental-date-conflicts'
-import { markInquiryBookedForRentalItem } from '@/lib/rental-inquiry-guard'
 
 interface CartItemInput {
   productId: string | number
@@ -550,27 +548,6 @@ export async function POST(req: NextRequest) {
         }
       }
     })
-
-    const rentalProductIds = resolvedCartItems
-      .filter((item) => item.isRental && item.productId)
-      .map((item) => item.productId as number)
-    await markRentalProductsRented(rentalProductIds)
-
-    for (const item of resolvedCartItems) {
-      if (
-        item.isRental &&
-        item.productId &&
-        item.rentalStartDate &&
-        item.rentalEndDate
-      ) {
-        await markInquiryBookedForRentalItem({
-          productId: item.productId,
-          buyerId: session.user.id,
-          startDate: item.rentalStartDate,
-          endDate: item.rentalEndDate,
-        })
-      }
-    }
 
     const productIds = resolvedCartItems
       .map((i) => i.productId)

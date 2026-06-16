@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { isRentalEndBeforeStart, hasRentalPeriodConflict, minRentalEndDateStillBlocking } from '@/lib/rental-dates'
 import { isProductRentalBlockingSuspended } from '@/lib/update-product-status'
+import { RENTAL_BLOCKING_ORDER_STATUSES } from '@/lib/rental-order-holds'
 
 export function hasRentalDateConflict(
   start: Date,
@@ -57,7 +58,7 @@ export async function findRentalDateConflict(
     }),
     prisma.order.findMany({
       where: {
-        status: { in: ['PENDING', 'PAID', 'SHIPPED'] },
+        status: { in: [...RENTAL_BLOCKING_ORDER_STATUSES] },
         items: {
           some: {
             productId: { in: blockingIds },

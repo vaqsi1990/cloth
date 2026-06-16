@@ -4,7 +4,6 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { findRentalDateConflict } from '@/lib/rental-date-conflicts'
-import { markRentalProductsRented } from '@/lib/update-product-status'
 import { canUserMakePurchases } from '@/lib/seller-eligibility'
 import { MAX_CHECKOUT_ITEMS, MAX_CART_ITEM_QUANTITY, CHECKOUT_SINGLE_ITEM_MESSAGE } from '@/lib/cart-limits'
 
@@ -188,25 +187,7 @@ export async function POST(request: NextRequest) {
       }
     })
     
-    
-    // Update product status and handle sold products
-    const rentalProductIds = [...new Set(
-      newOrder.items
-        .filter(item => item.isRental && item.productId)
-        .map(item => item.productId as number)
-    )]
-    
-    const soldProductIds = newOrder.items
-      .filter(item => !item.isRental && typeof item.productId === 'number')
-      .map(item => item.productId as number)
-
-    // Update product status to RENTED for rental items
-    if (rentalProductIds.length > 0) {
-      await markRentalProductsRented(rentalProductIds)
-    }
-
-    // Note: Products will be hidden (marked as RESERVED) when order is paid, not when order is created
-    // This happens in recordSellerTransactions() which is called from payment-callback route
+    // Rental holds (product RENTED, inquiry BOOKED) are applied only after successful payment.
     
     return NextResponse.json({
       success: true,

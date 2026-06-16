@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
       const existingOrders = await prisma.order.findMany({
         where: {
           status: {
-            in: ['PENDING', 'PAID', 'SHIPPED']
+            in: ['PAID', 'SHIPPED']
           },
           items: {
             some: {

@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { datesMatch, expireStaleInquiries, normalizeDateOnly } from '@/lib/rental-inquiry'
 import { resolveInquiryForDisplay } from '@/lib/rental-inquiry-guard'
+import { recoverStaleUnpaidRentalState } from '@/lib/rental-order-holds'
 
 type ProductInquiryConfig = {
   isRentable: boolean
@@ -43,6 +44,10 @@ export async function GET(
     const endDate = searchParams.get('endDate')
 
     await expireStaleInquiries(prisma)
+    await recoverStaleUnpaidRentalState({
+      buyerId: session.user.id,
+      productId,
+    })
 
     const productRows = await prisma.$queryRaw<ProductInquiryConfig[]>`
       SELECT "isRentable", "requiresInquiryBeforeRent"

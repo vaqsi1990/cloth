@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { prismaCacheStrategy } from '@/lib/prisma-cache'
 import { dedupeRentalPeriods, minRentalEndDateStillBlocking } from '@/lib/rental-dates'
 import { isProductRentalBlockingSuspended } from '@/lib/update-product-status'
+import { RENTAL_BLOCKING_ORDER_STATUSES } from '@/lib/rental-order-holds'
 
 const RENTAL_STATUS_CACHE = { swr: 30, ttl: 30 }
 
@@ -95,7 +96,7 @@ export async function fetchActiveRentalPeriodsByProduct(
     }),
     prisma.order.findMany({
       where: {
-        status: { in: ['PENDING', 'PAID', 'SHIPPED'] },
+        status: { in: [...RENTAL_BLOCKING_ORDER_STATUSES] },
         items: {
           some: {
             productId: { in: blockingProductIds },
@@ -127,7 +128,7 @@ export async function fetchActiveRentalPeriodsByProduct(
     prisma.rentalInquiry.findMany({
       where: {
         productId: { in: blockingProductIds },
-        status: { in: ['PENDING', 'APPROVED', 'BOOKED'] },
+        status: { in: ['PENDING', 'APPROVED'] },
         endDate: { gte: minBlockingEndDate },
       },
       select: {
@@ -267,7 +268,7 @@ export async function fetchProductRentalStatus(productId: number): Promise<{
       }),
       prisma.order.count({
         where: {
-          status: { in: ['PENDING', 'PAID', 'SHIPPED'] },
+          status: { in: [...RENTAL_BLOCKING_ORDER_STATUSES] },
           items: {
             some: {
               productId,
@@ -280,7 +281,7 @@ export async function fetchProductRentalStatus(productId: number): Promise<{
       prisma.rentalInquiry.count({
         where: {
           productId,
-          status: { in: ['PENDING', 'APPROVED', 'BOOKED'] },
+          status: { in: ['PENDING', 'APPROVED'] },
           endDate: { gte: minBlockingEndDate },
         },
       }),
