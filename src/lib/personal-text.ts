@@ -2,7 +2,7 @@
 export const PERSON_NAME_REGEX = /^[\u10A0-\u10FFa-zA-Z\s'-]+$/
 
 /** Georgian + Latin letters, digits, address punctuation */
-export const PERSON_ADDRESS_REGEX = /^[\u10A0-\u10FFa-zA-Z\s0-9№N,.\-:;()\[\]{}/"]+$/
+export const PERSON_ADDRESS_REGEX = /^[\u10A0-\u10FFa-zA-Z\s0-9№N,.\-:;()\[\]{}/'"!?#\\]+$/
 
 export const PERSON_NAME_FIELD_ERROR =
   'უნდა შეიცავდეს ქართულ ან ინგლისურ ასოებს'

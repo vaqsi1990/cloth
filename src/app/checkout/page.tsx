@@ -22,6 +22,11 @@ import {
   getCartItemPayablePrice,
 } from '@/lib/cart-item-pricing'
 import { getSellerPriceFromBuyer } from '@/lib/platform-pricing'
+import {
+  isValidPersonAddress,
+  PERSON_ADDRESS_DIGIT_ERROR,
+  PERSON_ADDRESS_FIELD_ERROR,
+} from '@/lib/personal-text'
 
 function getItemLineTotal(
   price: number,
@@ -76,7 +81,6 @@ const CheckoutPage = () => {
 
     const georgianTextRegex = /^[\u10A0-\u10FF\s.,\-'():;!?/\\"]+$/
     const nameTextRegex = /^[a-zA-Z\u10A0-\u10FF\s.\-'():;!?/\\"]+$/
-    const georgianAddressRegex = /^[\u10A0-\u10FF\s0-9№N.,\-'():;!?/\\"#]+$/
 
     const pickupAddress = resolveCartPickupAddress(
         checkoutItems.map((item) => item.sellerPickupAddress),
@@ -322,15 +326,15 @@ const CheckoutPage = () => {
                 clearFieldError(name)
             }
         } else if (name === 'address') {
-            if (value && !georgianAddressRegex.test(value)) {
+            if (value && !isValidPersonAddress(value)) {
                 setFieldErrors(prev => ({
                     ...prev,
-                    address: 'მისამართი უნდა შეიცავდეს ქართულ სიმბოლოებს, ციფრებს და სასვენი ნიშნებს'
+                    address: `მისამართი ${PERSON_ADDRESS_FIELD_ERROR}`,
                 }))
             } else if (value && !/[0-9]/.test(value)) {
                 setFieldErrors(prev => ({
                     ...prev,
-                    address: 'მისამართი უნდა შეიცავდეს ციფრებს'
+                    address: PERSON_ADDRESS_DIGIT_ERROR,
                 }))
             } else {
                 clearFieldError('address')
@@ -369,10 +373,10 @@ const CheckoutPage = () => {
                 errors.city = 'ქალაქი უნდა შეიცავდეს ქართულ სიმბოლოებს'
             }
 
-            if (!formData.address || !georgianAddressRegex.test(formData.address.trim())) {
-                errors.address = 'მისამართი უნდა შეიცავდეს ქართულ სიმბოლოებს, ციფრებს და სასვენი ნიშნებს'
+            if (!formData.address || !isValidPersonAddress(formData.address.trim())) {
+                errors.address = `მისამართი ${PERSON_ADDRESS_FIELD_ERROR}`
             } else if (!/[0-9]/.test(formData.address)) {
-                errors.address = 'მისამართი უნდა შეიცავდეს ციფრებს'
+                errors.address = PERSON_ADDRESS_DIGIT_ERROR
             }
         }
 
