@@ -111,25 +111,30 @@ const CartPage = () => {
                                         return (
                                             <div
                                                 key={item.id}
-                                                className={`flex flex-col sm:flex-row text-center md:text-start items-center md:items-start gap-4 p-4 border rounded-lg cursor-pointer transition-colors ${
+                                                className={`relative flex flex-col sm:flex-row text-center md:text-start items-center md:items-start gap-4 p-4 pt-12 sm:pt-4 border rounded-lg cursor-pointer transition-colors ${
                                                     isSelected
                                                         ? 'border-[#1B3729] bg-[#1B3729]/5'
                                                         : 'border-gray-200'
                                                 }`}
                                                 onClick={() => setSelectedItemId(item.id)}
                                             >
-                                                <label
-                                                    className="flex items-center self-center md:self-start mt-0 md:mt-10 cursor-pointer"
+                                                <div
+                                                    className="absolute top-3 right-3 sm:top-3 sm:right-3"
                                                     onClick={(e) => e.stopPropagation()}
                                                 >
-                                                    <input
-                                                        type="radio"
-                                                        name="checkout-item"
-                                                        checked={isSelected}
-                                                        onChange={() => setSelectedItemId(item.id)}
-                                                        className="w-5 h-5 text-[#1B3729] focus:ring-[#1B3729]"
-                                                    />
-                                                </label>
+                                                    <label className="flex items-center gap-1.5 cursor-pointer">
+                                                        <input
+                                                            type="radio"
+                                                            name="checkout-item"
+                                                            checked={isSelected}
+                                                            onChange={() => setSelectedItemId(item.id)}
+                                                            className="w-5 h-5 text-[#1B3729] focus:ring-[#1B3729]"
+                                                        />
+                                                        <span className="text-sm text-black hidden sm:inline">
+                                                            არჩევა
+                                                        </span>
+                                                    </label>
+                                                </div>
 
                                                 <div className="relative w-full md:w-24 h-62 md:h-32 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                                                     <Image
@@ -191,11 +196,13 @@ const CartPage = () => {
                                                 </div>
 
                                                 <button
+                                                    type="button"
                                                     onClick={(e) => {
                                                         e.stopPropagation()
                                                         handleRemoveItem(item.id)
                                                     }}
-                                                    className="p-2 text-black mt-0 md:mt-10 hover:text-red-600 transition-colors"
+                                                    className="p-2 text-black mt-0 md:mt-10 hover:text-red-600 transition-colors self-center sm:self-auto"
+                                                    aria-label="წაშლა"
                                                 >
                                                     <Trash2 className="w-5 h-5" />
                                                 </button>
