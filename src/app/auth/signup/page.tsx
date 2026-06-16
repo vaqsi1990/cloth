@@ -342,7 +342,7 @@ const SignUpPage = () => {
 
   return (
     <div className="min-h-screen  flex  justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+      <div className="max-w-xl w-full space-y-8">
         <div>
           <h2 className="text-[16px] text-black text-center md:text-[20px] font-semibold uppercase tracking-widest">
             რეგისტრაცია
@@ -659,7 +659,7 @@ const SignUpPage = () => {
                   }`}
                 />
                 <span className="text-sm md:text-base text-black">
-                  <span className="text-red-600">*</span>ვეთანხმები წესებს და პირობებს
+                  <span className="text-red-600">*</span>ვეთანხმები Privacy Policy-ს და ვადასტურებ, რომ ჩემი ჩატები შეიძლება იყოს მონიტორინგის ქვეშ უსაფრთხოების მიზნით
                 </span>
               </label>
               <p className="mt-2 text-sm text-gray-600">
