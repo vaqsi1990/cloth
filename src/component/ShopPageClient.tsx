@@ -120,6 +120,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
     const shopInitializedRef = useRef(false)
     const prevCategoryParamRef = useRef(categoryParam)
     const filtersSnapshotRef = useRef<string | null>(null)
+    const allowFilterPageResetRef = useRef(false)
     const prevPriceCeilingKeyRef = useRef<string | null>(null)
     const [savedScrollY, setSavedScrollY] = useState<number | null>(null)
     const [hasRestoredState, setHasRestoredState] = useState(false)
@@ -158,7 +159,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
     }, [homepageMode])
 
     const saveState = useCallback(() => {
-        if (typeof window === 'undefined' || homepageMode) return
+        if (typeof window === 'undefined') return
         const state = {
             selectedCategories,
             priceRange,
@@ -175,7 +176,10 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
             currentPage,
             scrollY: scrollYRef.current,
         }
-        sessionStorage.setItem('shopPageState', JSON.stringify(state))
+        sessionStorage.setItem(
+            homepageMode ? 'homePageState' : 'shopPageState',
+            JSON.stringify(state),
+        )
     }, [
         selectedCategories,
         priceRange,
@@ -198,9 +202,33 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         if (typeof window === 'undefined') return
 
         if (homepageMode) {
+            let restoredPage = 1
+            let restoredScrollY: number | null = null
+
+            const urlPageRaw = new URLSearchParams(window.location.search).get('page')
+            if (urlPageRaw) {
+                const urlPage = parseInt(urlPageRaw, 10)
+                if (!Number.isNaN(urlPage) && urlPage > 0) {
+                    restoredPage = urlPage
+                }
+            } else {
+                const saved = sessionStorage.getItem('homePageState')
+                if (saved) {
+                    try {
+                        const parsed = JSON.parse(saved)
+                        restoredPage = parsed.currentPage || 1
+                        restoredScrollY =
+                            typeof parsed.scrollY === 'number' ? parsed.scrollY : null
+                    } catch (e) {
+                        console.warn('Failed to restore homepage state', e)
+                    }
+                }
+            }
+
             setOnlyDiscounted(discountParam === 'true')
             setOnlyVip(vipParam === 'true')
-            setCurrentPage(1)
+            setCurrentPage(restoredPage)
+            setSavedScrollY(restoredScrollY)
             shopInitializedRef.current = true
             setHasRestoredState(true)
             return
@@ -241,6 +269,14 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
                 restoredScrollY = typeof parsed.scrollY === 'number' ? parsed.scrollY : null
             } catch (e) {
                 console.warn('Failed to restore shop state', e)
+            }
+        }
+
+        const urlPageRaw = new URLSearchParams(window.location.search).get('page')
+        if (urlPageRaw) {
+            const urlPage = parseInt(urlPageRaw, 10)
+            if (!Number.isNaN(urlPage) && urlPage > 0) {
+                restoredPage = urlPage
             }
         }
 
@@ -332,6 +368,44 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
             setScrollRestored(true)
         }
     }, [loading, hasRestoredState, scrollRestored, savedScrollY])
+
+    const syncPageToUrl = useCallback(
+        (page: number) => {
+            if (typeof window === 'undefined') return
+            const params = new URLSearchParams(window.location.search)
+            if (page <= 1) {
+                params.delete('page')
+            } else {
+                params.set('page', String(page))
+            }
+            const query = params.toString()
+            const base = homepageMode ? '/' : '/shop'
+            router.replace(query ? `${base}?${query}` : base, { scroll: false })
+        },
+        [homepageMode, router],
+    )
+
+    // Keep pagination in sync when navigating with browser back/forward
+    useEffect(() => {
+        if (!hasRestoredState) return
+        const raw = searchParams.get('page')
+        if (!raw) return
+        const urlPage = Math.max(1, parseInt(raw, 10) || 1)
+        setCurrentPage((prev) => (prev === urlPage ? prev : urlPage))
+    }, [searchParams, hasRestoredState])
+
+    // Reflect restored page in URL so mobile back returns to the same page
+    useEffect(() => {
+        if (!hasRestoredState) return
+        if (currentPage > 1 && !searchParams.get('page')) {
+            syncPageToUrl(currentPage)
+        }
+    }, [hasRestoredState, currentPage, searchParams, syncPageToUrl])
+
+    useEffect(() => {
+        if (!hasRestoredState) return
+        allowFilterPageResetRef.current = !loading
+    }, [hasRestoredState, loading])
 
     const clearSearch = () => {
         const params = new URLSearchParams(Array.from(searchParams.entries()))
@@ -564,8 +638,14 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
 
     const goToPage = (page: number) => {
         setCurrentPage(page)
+        syncPageToUrl(page)
         window.scrollTo({ top: 0, behavior: 'smooth' })
     }
+
+    const handleProductNavigate = useCallback(() => {
+        scrollYRef.current = window.scrollY
+        saveState()
+    }, [saveState])
 
     // Single orchestrated fetch via /api/shop
     useEffect(() => {
@@ -697,6 +777,11 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
             vipParam,
         })
 
+        if (!allowFilterPageResetRef.current) {
+            filtersSnapshotRef.current = snapshot
+            return
+        }
+
         if (filtersSnapshotRef.current === null) {
             filtersSnapshotRef.current = snapshot
             return
@@ -705,6 +790,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         if (filtersSnapshotRef.current !== snapshot) {
             filtersSnapshotRef.current = snapshot
             setCurrentPage(1)
+            syncPageToUrl(1)
         }
     }, [
         hasRestoredState,
@@ -725,6 +811,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         searchParam,
         discountParam,
         vipParam,
+        syncPageToUrl,
     ])
 
     // Handle category selection
@@ -785,6 +872,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         // Clear sessionStorage first
         if (typeof window !== 'undefined') {
             sessionStorage.removeItem('shopPageState')
+            sessionStorage.removeItem('homePageState')
         }
         
         // Clear all state filters immediately
@@ -799,6 +887,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         setOnlyDiscounted(false)
         setOnlyVip(false)
         setCurrentPage(1)
+        syncPageToUrl(1)
         
         // Price range will be updated when products are fetched
         // Set to 0 initially, will be updated by useEffect when products load
@@ -1593,6 +1682,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
                                                 <Link
                                                     href={`/product/${product.id}`}
                                                     className="relative block w-full h-full"
+                                                    onClick={handleProductNavigate}
                                                 >
                                                 <Image
                                                     src={product.images?.[0]?.url || "/placeholder.jpg"}
@@ -1630,6 +1720,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
                                                     href={`/product/${product.id}`}
                                                     className="w-9 h-9 shrink-0 rounded-xl bg-black text-white flex items-center justify-center hover:bg-gray-800 transition"
                                                     aria-label="დეტალები"
+                                                    onClick={handleProductNavigate}
                                                 >
                                                     <Plus className="w-5 h-5" />
                                                 </Link>
