@@ -2,6 +2,11 @@ import { prisma } from '@/lib/prisma'
 import { getDiscountedPrice } from '@/lib/discount-helpers'
 import { getSellerPriceFromBuyer } from '@/lib/platform-pricing'
 import { processExpiredDiscount } from '@/utils/discountUtils'
+import { revalidateProductListCache } from '@/lib/product-list-query'
+import {
+  purgeSoldProductsStillInDatabase,
+  removePurchasedProducts,
+} from '@/utils/removePurchasedProducts'
 
 type TransactionType = 'SALE' | 'RENT'
 
@@ -96,24 +101,17 @@ export async function recordSellerTransactions(orderId: number) {
     })
   }
 
-  // Hide sold products by marking them as RESERVED (they remain in database but are hidden from listings)
   const soldProductIds = order.items
     .filter((item) => !item.isRental && typeof item.productId === 'number')
     .map((item) => item.productId as number)
 
   if (soldProductIds.length > 0) {
-    await Promise.all(
-      soldProductIds.map(productId =>
-        prisma.product.update({
-          where: { id: productId },
-          data: { status: 'RESERVED' } // Mark as RESERVED to hide from public listings
-        }).catch(error => {
-          console.error(`Error updating product ${productId} status to RESERVED:`, error)
-          return null
-        })
-      )
-    )
+    await removePurchasedProducts(soldProductIds, { orderId: order.id })
+    revalidateProductListCache()
   }
+
+  // Clean up legacy sold products that were only hidden, not deleted.
+  await purgeSoldProductsStillInDatabase()
 }
 
 

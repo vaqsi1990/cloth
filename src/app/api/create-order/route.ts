@@ -20,6 +20,10 @@ import { MAX_CART_ITEM_QUANTITY, CHECKOUT_SINGLE_ITEM_MESSAGE } from '@/lib/cart
 import { toPrismaDeliverySpeed } from '@/lib/delivery'
 import { findRentalDateConflict } from '@/lib/rental-date-conflicts'
 import { validateSelfServeRentalDates } from '@/lib/rental-dates'
+import {
+  buildOrderItemProductSnapshot,
+  orderItemSnapshotProductSelect,
+} from '@/lib/order-item-snapshot'
 
 interface CartItemInput {
   productId: string | number
@@ -381,7 +385,10 @@ export async function POST(req: NextRequest) {
         items: {
           include: {
             product: {
-              select: cartProductPricingSelect,
+              select: {
+                ...cartProductPricingSelect,
+                ...orderItemSnapshotProductSelect,
+              },
             },
           },
         },
@@ -553,18 +560,32 @@ export async function POST(req: NextRequest) {
         voucherId,
         status: "PENDING",
         items: {
-          create: resolvedCartItems.map((i) => ({
-            productId: i.productId,
-            productName: i.productName,
-            price: i.buyerListPrice,
-            quantity: i.quantity,
-            isRental: i.isRental ?? false,
-            rentalStartDate: i.rentalStartDate,
-            rentalEndDate: i.rentalEndDate,
-            rentalDays: i.rentalDays,
-            size: i.size,
-            image: i.image,
-          }))
+          create: resolvedCartItems.map((i) => {
+            const image = i.image || i.product?.images?.[0]?.url || null
+            const snapshot = buildOrderItemProductSnapshot({
+              productName: i.productName,
+              image,
+              size: i.size,
+              price: i.buyerListPrice,
+              quantity: i.quantity,
+              product: i.product,
+            })
+
+            return {
+              productId: i.productId,
+              productName: snapshot.name,
+              price: i.buyerListPrice,
+              quantity: i.quantity,
+              isRental: i.isRental ?? false,
+              rentalStartDate: i.rentalStartDate,
+              rentalEndDate: i.rentalEndDate,
+              rentalDays: i.rentalDays,
+              size: snapshot.size,
+              image: snapshot.image,
+              sellerUserId: i.product?.userId ?? null,
+              productSnapshot: snapshot,
+            }
+          }),
         }
       }
     })

@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { isAdminOrSupport } from '@/lib/roles'
+import { recordSellerTransactions } from '@/utils/sellerTransactions'
 
 const statusSchema = z.object({
   status: z.enum(['PENDING', 'PAID', 'SHIPPED', 'CANCELED', 'REFUNDED'])
@@ -48,6 +49,8 @@ export async function PUT(
       }, { status: 404 })
     }
 
+    const wasAlreadyPaid = existingOrder.status === 'PAID'
+
     // Update order status
     const updatedOrder = await prisma.order.update({
       where: { id: orderId },
@@ -74,6 +77,10 @@ export async function PUT(
         }
       }
     })
+
+    if (status === 'PAID' && !wasAlreadyPaid) {
+      await recordSellerTransactions(orderId)
+    }
 
     return NextResponse.json({
       success: true,

@@ -513,6 +513,8 @@ model OrderItem {
   size        String?
   price       Float
   quantity    Int
+  sellerUserId String?
+  productSnapshot Json?
   
   // Rental fields
   isRental        Boolean?
@@ -522,6 +524,7 @@ model OrderItem {
   
   @@index([isRental])
   @@index([rentalEndDate])
+  @@index([sellerUserId])
   // Composite index for common query pattern (productId + isRental + rentalEndDate)
   // This index can also be used for queries filtering only on productId (leftmost column)
   @@index([productId, isRental, rentalEndDate])

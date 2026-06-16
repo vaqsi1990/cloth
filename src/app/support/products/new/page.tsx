@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { z } from 'zod'
 
 import ImageUploadForProduct from '@/component/productimage'
+import { PRODUCT_PHOTO_BACKGROUND_CONSENT_ERROR } from '@/components/ProductPhotoBackgroundConsent'
 import ProductCategorySelect from '@/component/ProductCategorySelect'
 import { showToast } from '@/utils/toast'
 import { PRODUCT_FORM_COLORS } from '@/lib/product-colors'
@@ -152,6 +153,7 @@ const NewProductPage = () => {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [wantsVip, setWantsVip] = useState(false)
+  const [agreedToPhotoBackgroundChange, setAgreedToPhotoBackgroundChange] = useState(false)
   const [showPurchaseOptions, setShowPurchaseOptions] = useState(false)
   const [sizeSystem, setSizeSystem] = useState(formData.sizeSystem ?? '')
   const [selectedSize, setSelectedSize] = useState('')
@@ -413,6 +415,13 @@ const NewProductPage = () => {
     e.preventDefault()
     setIsSubmitting(true)
     setErrors({})
+
+    if (!agreedToPhotoBackgroundChange) {
+      setErrors({ photoBackgroundConsent: PRODUCT_PHOTO_BACKGROUND_CONSENT_ERROR })
+      showToast(PRODUCT_PHOTO_BACKGROUND_CONSENT_ERROR, 'error')
+      setIsSubmitting(false)
+      return
+    }
 
     const fieldErrors = getProductCreateFieldErrors(formData)
     if (Object.keys(fieldErrors).length > 0) {
@@ -1018,7 +1027,16 @@ const NewProductPage = () => {
             <ImageUploadForProduct
               value={formData.imageUrls}
               onChange={handleImageChange}
-              
+              photoBackgroundConsent={{
+                checked: agreedToPhotoBackgroundChange,
+                onChange: (checked) => {
+                  setAgreedToPhotoBackgroundChange(checked)
+                  if (checked && errors.photoBackgroundConsent) {
+                    setErrors((prev) => ({ ...prev, photoBackgroundConsent: '' }))
+                  }
+                },
+                error: errors.photoBackgroundConsent,
+              }}
             />
 
             {errors.imageUrls && (
@@ -1039,8 +1057,8 @@ const NewProductPage = () => {
             </Link>
             <button
               type="submit"
-              disabled={isSubmitting}
-              className="bg-black text-white px-6 py-3 rounded-lg text-[20px] text-black font-bold hover:bg-gray-800 transition-colors disabled:bg-gray-400"
+              disabled={isSubmitting || !agreedToPhotoBackgroundChange}
+              className="bg-black text-white px-6 py-3 rounded-lg text-[20px] text-black font-bold hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               {isSubmitting ? 'მუშავდება...' : 'პროდუქტის დამატება'}
             </button>

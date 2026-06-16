@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { checkAndClearExpiredDiscounts, processExpiredDiscount } from '@/utils/discountUtils'
 import { ownerProductListSelect, parseListPagination } from '@/lib/product-owner-query'
+import { buildExcludeSoldProductsWhere } from '@/lib/sold-products'
 import { revalidateProductListCache } from '@/lib/product-list-query'
 
 // GET - Fetch user's products
@@ -20,7 +21,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const { page, limit, skip } = parseListPagination(searchParams)
 
-    const where = { userId: session.user.id }
+    const where = {
+      userId: session.user.id,
+      ...buildExcludeSoldProductsWhere(),
+    }
 
     const [products, totalCount] = await Promise.all([
       prisma.product.findMany({

@@ -28,6 +28,11 @@ import ChatTypingIndicator from '@/components/ChatTypingIndicator'
 import ChatUnreadBadge from '@/components/ChatUnreadBadge'
 import { useChatTyping } from '@/hooks/useChatTyping'
 import { useUserChatUnreadCount } from '@/hooks/useUserChatUnreadCount'
+import {
+  formatSnapshotGender,
+  type OrderItemProductSnapshot,
+} from '@/lib/order-item-snapshot'
+
 interface OrderItem {
   id?: number
   productId?: number | null
@@ -72,10 +77,8 @@ interface SaleOrderItem {
   size: string | null
   price: number
   quantity: number
-  product?: {
-    id: number
-    images?: Array<{ url: string }>
-  }
+  image?: string | null
+  snapshot?: OrderItemProductSnapshot | null
 }
 
 interface SaleOrder {
@@ -1847,35 +1850,74 @@ const AccountPageContent = () => {
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      {order.items?.map((item, index) => (
+                    <div className="space-y-3">
+                      {order.items?.map((item, index) => {
+                        const snapshot = item.snapshot
+                        const itemImage = item.image || snapshot?.image || null
+                        const lineTotal = (item.price ?? 0) * (item.quantity ?? 1)
+                        const genderLabel = formatSnapshotGender(snapshot?.gender ?? null)
+
+                        return (
                         <div
                           key={index}
-                          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-[16px]"
+                          className="rounded-lg border border-gray-200 p-3 sm:p-4"
                         >
-                          <div className="flex items-center gap-3 text-black">
-                            {item.product?.images?.[0]?.url && (
-                              <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100">
+                          <div className="flex flex-col sm:flex-row gap-4">
+                            <div className="w-full sm:w-28 h-36 sm:h-32 rounded-lg overflow-hidden bg-gray-100 shrink-0">
+                              {itemImage ? (
                                 <Image
-                                  src={item.product.images[0].url}
+                                  src={itemImage}
                                   alt={item.productName}
-                                  width={48}
-                                  height={48}
+                                  width={160}
+                                  height={160}
                                   className="w-full h-full object-cover"
                                 />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-sm text-gray-500">
+                                  სურათი არ არის
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <h5 className="font-semibold md:text-[18px] text-[16px] text-black">
+                                {item.productName}
+                              </h5>
+
+                              <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-[15px] text-black">
+                                {snapshot?.brand && (
+                                  <p><span className="font-medium">ბრენდი:</span> {snapshot.brand}</p>
+                                )}
+                                {snapshot?.sku && (
+                                  <p><span className="font-medium">კოდი:</span> {snapshot.sku}</p>
+                                )}
+                                {snapshot?.categoryName && (
+                                  <p><span className="font-medium">კატეგორია:</span> {snapshot.categoryName}</p>
+                                )}
+                                {genderLabel && (
+                                  <p><span className="font-medium">სქესი:</span> {genderLabel}</p>
+                                )}
+                                {snapshot?.color && (
+                                  <p><span className="font-medium">ფერი:</span> {snapshot.color}</p>
+                                )}
+                                {item.size && (
+                                  <p>
+                                    <span className="font-medium">ზომა:</span>{' '}
+                                    {snapshot?.sizeSystem ? `${item.size} (${snapshot.sizeSystem})` : item.size}
+                                  </p>
+                                )}
                               </div>
-                            )}
-                            <div>
-                              <div className="font-medium">{item.productName}</div>
-                              {item.size && <div className="md:text-[18px] text-[16px] text-black">ზომა: {item.size}</div>}
+
+                              <div className="mt-3 flex flex-wrap items-center gap-4 text-[15px] text-black">
+                                <span><span className="font-medium">ფასი:</span> ₾{(item.price ?? 0).toFixed(2)}</span>
+                                <span><span className="font-medium">რაოდენობა:</span> {item.quantity ?? 1}</span>
+                                <span className="font-semibold text-[#1B3729]">ჯამი: ₾{lineTotal.toFixed(2)}</span>
+                              </div>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className="md:text-[18px] text-[16px] text-black">₾{(item.price ?? 0).toFixed(2)}</div>
-                            <div className="md:text-[18px] text-[16px] text-black">რაოდენობა: {item.quantity ?? 1}</div>
-                          </div>
                         </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   </div>
                 )

@@ -5,14 +5,20 @@ import { UploadButton } from "@/utils/uploadthing";
 import { useState, useEffect } from "react";
 import ImageModal from "@/component/ImageModal";
 import { X } from "lucide-react";
+import ProductPhotoBackgroundConsent from "@/components/ProductPhotoBackgroundConsent";
 
 
 type ImageUploadProps = {
   onChange: (urls: string[]) => void;
   value: string[];
+  photoBackgroundConsent?: {
+    checked: boolean;
+    onChange: (checked: boolean) => void;
+    error?: string;
+  };
 };
 
-const ImageUploadForProduct = ({ onChange, value }: ImageUploadProps): React.JSX.Element => {
+const ImageUploadForProduct = ({ onChange, value, photoBackgroundConsent }: ImageUploadProps): React.JSX.Element => {
   const [imageUrls, setImageUrls] = useState<string[]>(value || []);
  
   // Update local state when value prop changes
@@ -89,6 +95,14 @@ const ImageUploadForProduct = ({ onChange, value }: ImageUploadProps): React.JSX
         </div>
       ) : (
         <p className="mt-1 text-gray-400 text-sm text-center">სურათები ჯერ არ არის ატვირთული. შეგიძლიათ რამდენიმე სურათი ერთდროულად ატვირთოთ (Ctrl+Click ან Shift+Click).</p>
+      )}
+
+      {photoBackgroundConsent && (
+        <ProductPhotoBackgroundConsent
+          checked={photoBackgroundConsent.checked}
+          onChange={photoBackgroundConsent.onChange}
+          error={photoBackgroundConsent.error}
+        />
       )}
     </div>
   );

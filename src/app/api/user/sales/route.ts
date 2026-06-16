@@ -2,6 +2,39 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { COMPLETED_SALE_ORDER_STATUSES } from '@/lib/sold-products'
+import {
+  isSaleOrderItem,
+  parseOrderItemProductSnapshot,
+} from '@/lib/order-item-snapshot'
+
+function mapSaleItem(item: {
+  productName: string
+  size: string | null
+  price: number
+  quantity: number
+  image: string | null
+  productSnapshot: unknown
+  product: {
+    id: number
+    images: Array<{ url: string }>
+  } | null
+}) {
+  const snapshot = parseOrderItemProductSnapshot(item.productSnapshot)
+
+  return {
+    productName: snapshot?.name || item.productName,
+    size: snapshot?.size || item.size,
+    price: snapshot?.price ?? item.price,
+    quantity: snapshot?.quantity ?? item.quantity,
+    image:
+      snapshot?.image ||
+      item.image ||
+      item.product?.images?.[0]?.url ||
+      null,
+    snapshot,
+  }
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,15 +46,51 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const orders = await prisma.order.findMany({
+    const saleTransactions = await prisma.transaction.findMany({
       where: {
+        userId: session.user.id,
+        type: 'SALE',
+        orderId: { not: null },
+      },
+      select: { orderId: true },
+      orderBy: { createdAt: 'desc' },
+    })
+
+    const transactionOrderIds = saleTransactions
+      .map((transaction) => transaction.orderId)
+      .filter((id): id is number => typeof id === 'number')
+
+    const sellerItemOrders = await prisma.order.findMany({
+      where: {
+        status: { in: [...COMPLETED_SALE_ORDER_STATUSES] },
         items: {
           some: {
-            product: {
-              userId: session.user.id
-            }
-          }
-        }
+            sellerUserId: session.user.id,
+            isRental: { not: true },
+          },
+        },
+      },
+      select: { id: true },
+    })
+
+    const orderIds = [
+      ...new Set([
+        ...transactionOrderIds,
+        ...sellerItemOrders.map((order) => order.id),
+      ]),
+    ]
+
+    if (orderIds.length === 0) {
+      return NextResponse.json({
+        success: true,
+        orders: [],
+      })
+    }
+
+    const orders = await prisma.order.findMany({
+      where: {
+        id: { in: orderIds },
+        status: { in: [...COMPLETED_SALE_ORDER_STATUSES] },
       },
       include: {
         user: {
@@ -29,34 +98,45 @@ export async function GET(request: NextRequest) {
             id: true,
             name: true,
             email: true,
-            phone: true
-          }
+            phone: true,
+          },
         },
         items: {
-          where: {
-            product: {
-              userId: session.user.id
-            }
-          },
           include: {
             product: {
               select: {
                 id: true,
-                name: true,
-                images: true
-              }
-            }
-          }
-        }
+                images: {
+                  select: { url: true },
+                  take: 1,
+                  orderBy: { position: 'asc' },
+                },
+              },
+            },
+          },
+        },
       },
       orderBy: {
-        createdAt: 'desc'
-      }
+        createdAt: 'desc',
+      },
     })
 
     return NextResponse.json({
       success: true,
-      orders
+      orders: orders
+        .map((order) => ({
+          ...order,
+          buyer: order.user,
+          items: order.items
+            .filter((item) => isSaleOrderItem(item.isRental))
+            .filter(
+              (item) =>
+                item.sellerUserId === session.user.id ||
+                (!item.sellerUserId && transactionOrderIds.includes(order.id)),
+            )
+            .map(mapSaleItem),
+        }))
+        .filter((order) => (order.items?.length ?? 0) > 0),
     })
   } catch (error) {
     console.error('Error fetching sales:', error)
@@ -66,5 +146,3 @@ export async function GET(request: NextRequest) {
     )
   }
 }
-
-

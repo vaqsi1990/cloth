@@ -35,6 +35,10 @@ import {
 } from '@/lib/product-list-query'
 import { parseShopListFilterParams } from '@/lib/shop-list-params'
 import { convertBuyerPriceFiltersToSeller } from '@/lib/platform-pricing'
+import {
+  buildExcludeSoldProductsWhere,
+  buildSaleStockAvailabilityWhere,
+} from '@/lib/sold-products'
 import { resolveCategoryIdForWrite } from '@/lib/category-sync'
 import { sortProductsByVipPriority } from '@/lib/product-vip'
 import { fetchProductIdsByApprovalPriority } from '@/lib/admin-product-list-order.server'
@@ -335,6 +339,8 @@ export async function GET(request: NextRequest) {
             status: {
               notIn: ['MAINTENANCE', 'DAMAGED', 'RESERVED'],
             },
+            ...buildExcludeSoldProductsWhere(),
+            ...buildSaleStockAvailabilityWhere(),
           }),
       ...(shouldIncludeUnapproved || isAdminOrSupportRole
         ? {}

@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { checkAndClearExpiredDiscounts, processExpiredDiscount } from '@/utils/discountUtils'
 import { ownerProductListSelect, parseListPagination } from '@/lib/product-owner-query'
+import { buildExcludeSoldProductsWhere, buildSaleStockAvailabilityWhere } from '@/lib/sold-products'
 import { Prisma } from '@prisma/client'
 
 function buildAuthorProductWhere(userId: string, isAdmin: boolean): Prisma.ProductWhereInput {
@@ -16,6 +17,7 @@ function buildAuthorProductWhere(userId: string, isAdmin: boolean): Prisma.Produ
     where.user = { banned: false }
     where.approvalStatus = 'APPROVED'
     where.status = { notIn: ['MAINTENANCE', 'DAMAGED', 'RESERVED'] }
+    Object.assign(where, buildExcludeSoldProductsWhere(), buildSaleStockAvailabilityWhere())
   }
 
   return where

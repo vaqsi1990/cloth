@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
+import { revalidateProductListCache } from '@/lib/product-list-query'
 
 type RemovalContext = {
   orderId?: number
@@ -22,6 +23,25 @@ export async function removePurchasedProducts(
   for (const productId of uniqueIds) {
     try {
       await prisma.$transaction(async (tx) => {
+        const rentals = await tx.rental.findMany({
+          where: { productId },
+          select: { id: true },
+        })
+        const rentalIds = rentals.map((rental) => rental.id)
+
+        if (rentalIds.length > 0) {
+          await tx.transaction.deleteMany({
+            where: { rentalId: { in: rentalIds } },
+          })
+          await tx.rental.deleteMany({
+            where: { id: { in: rentalIds } },
+          })
+        }
+
+        await tx.rentalInquiry.deleteMany({
+          where: { productId },
+        })
+
         await tx.orderItem.updateMany({
           where: { productId },
           data: { productId: null },
@@ -56,6 +76,37 @@ export async function removePurchasedProducts(
       )
     }
   }
+}
+
+/** Remove products that were sold in completed orders but still exist in the database. */
+export async function purgeSoldProductsStillInDatabase() {
+  const soldItems = await prisma.orderItem.findMany({
+    where: {
+      isRental: false,
+      productId: { not: null },
+      order: {
+        status: { in: ['PAID', 'SHIPPED'] },
+      },
+    },
+    select: { productId: true },
+    distinct: ['productId'],
+  })
+
+  const productIds = soldItems
+    .map((item) => item.productId)
+    .filter((id): id is number => typeof id === 'number')
+
+  if (productIds.length === 0) {
+    return 0
+  }
+
+  await removePurchasedProducts(productIds)
+  try {
+    revalidateProductListCache()
+  } catch (error) {
+    console.warn('[purgeSoldProductsStillInDatabase] Cache revalidation skipped:', error)
+  }
+  return productIds.length
 }
 
 

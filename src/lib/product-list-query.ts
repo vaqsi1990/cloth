@@ -9,7 +9,11 @@ import {
   isLetterSize,
   LETTER_SIZE_TO_SYSTEM_SIZES,
 } from '@/lib/shop-product-filters'
-import type { ShopPurchaseType, ShopSortBy } from '@/lib/shop-list-params'
+import {
+  buildExcludeSoldProductsWhere,
+  buildSaleStockAvailabilitySql,
+  buildSoldProductSqlExclusion,
+} from '@/lib/sold-products'
 
 export const PRODUCT_LIST_CACHE_TAG = 'product-list'
 
@@ -223,6 +227,8 @@ function buildWhere(filters: PublicListFilters): Prisma.Sql {
     Prisma.sql`p.status NOT IN ('MAINTENANCE', 'DAMAGED', 'RESERVED')`,
     Prisma.sql`p."approvalStatus" = 'APPROVED'`,
     Prisma.sql`p."userId" IS NOT NULL`,
+    buildSoldProductSqlExclusion(),
+    buildSaleStockAvailabilitySql(),
   ]
 
   if (filters.categoryIds?.length) {
