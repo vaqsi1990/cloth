@@ -39,7 +39,6 @@ import {
   calcRentalDays,
   firstAvailableRentalStartAfter,
   getBlockedCalendarDates,
-  getMaintenanceEndDate,
   getRentalCalendarMaxEndDate,
   getRentalCalendarMaxSelectableDate,
   getRentalCalendarMinStartDate,
@@ -1684,16 +1683,13 @@ const ProductPage = () => {
 
                                             if (!lastPeriod) return null
 
-                                            // Blocked through maintenance; next rental starts 2 days after end
                                             const availableDate = firstAvailableRentalStartAfter(lastPeriod.endDate)
-                                            const maintenanceEndDate = getMaintenanceEndDate(lastPeriod.endDate)
 
                                             return (
                                                 <div className="text-[16px] bg-white border border-gray-200 rounded-lg p-3">
                                                     <div className="font-medium text-black mb-2">დაკავებული პერიოდი:</div>
                                                     <div className="p-2 border rounded">
                                                         <div className="text-black font-medium">ქირაობა: {formatDate(lastPeriod.startDate)} - {formatDate(lastPeriod.endDate)}</div>
-                                                        <div className="text-orange-600">რესტავრაცია: {formatDate(maintenanceEndDate.toISOString())}</div>
                                                         <div className="text-green-600 font-semibold">ხელმისაწვდომია {formatDate(availableDate.toISOString())}-იდან</div>
                                                     </div>
                                                 </div>

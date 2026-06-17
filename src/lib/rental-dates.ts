@@ -1,10 +1,7 @@
 /** Client-safe rental date helpers (no Prisma / Node-only deps). */
 
-/** Maintenance day(s) after rental end — blocked in calendar but not a rental day. */
-export const RENTAL_MAINTENANCE_DAYS_AFTER_END = 1
-
-/** Days after rental end before the next rental may start (return + maintenance). */
-export const RENTAL_DAYS_BEFORE_NEXT_START = 2
+/** Days after rental end before the next rental may start. */
+export const RENTAL_DAYS_BEFORE_NEXT_START = 1
 
 export function normalizeDateOnly(date: Date | string): Date {
   if (typeof date === 'string') {
@@ -54,22 +51,17 @@ export function addDaysToDateOnly(date: Date | string, days: number): Date {
   return next
 }
 
-/** Last calendar day blocked after a rental (rental end + maintenance). */
+/** Last calendar day blocked by an existing rental (inclusive rental end). */
 export function getLastBlockedDayAfterRental(existingEnd: Date | string): Date {
-  return addDaysToDateOnly(existingEnd, RENTAL_MAINTENANCE_DAYS_AFTER_END)
+  return normalizeDateOnly(existingEnd)
 }
 
 /**
  * Minimum rental endDate (inclusive) to include when loading periods that still
- * block the calendar on the reference day (accounts for post-rental maintenance).
+ * block the calendar on the reference day.
  */
 export function minRentalEndDateStillBlocking(referenceDate: Date | string = new Date()): Date {
-  return addDaysToDateOnly(referenceDate, -RENTAL_MAINTENANCE_DAYS_AFTER_END)
-}
-
-/** Maintenance period end shown in UI (day after rental end). */
-export function getMaintenanceEndDate(existingEnd: Date | string): Date {
-  return getLastBlockedDayAfterRental(existingEnd)
+  return normalizeDateOnly(referenceDate)
 }
 
 /** First calendar day a new rental may start after an existing period. */
@@ -77,7 +69,7 @@ export function firstAvailableRentalStartAfter(existingEnd: Date | string): Date
   return addDaysToDateOnly(existingEnd, RENTAL_DAYS_BEFORE_NEXT_START)
 }
 
-/** Whether a new rental range overlaps an existing rental or its post-rental buffer. */
+/** Whether a new rental range overlaps an existing rental period. */
 export function hasRentalPeriodConflict(
   startDate: Date | string,
   endDate: Date | string,
@@ -91,7 +83,7 @@ export function hasRentalPeriodConflict(
   return start.getTime() < firstAvailable.getTime() && end.getTime() >= periodStart.getTime()
 }
 
-/** Whether a calendar day is unavailable (rental days + maintenance buffer). */
+/** Whether a calendar day is unavailable for an existing rental period. */
 export function isDateOccupiedByRental(
   date: Date | string,
   existingStart: Date | string,

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { isRentalEndBeforeStart, minRentalEndDateStillBlocking } from '@/lib/rental-dates'
+import { isRentalEndBeforeStart, minRentalEndDateStillBlocking, hasRentalPeriodConflict } from '@/lib/rental-dates'
 import { markRentalProductsRented } from '@/lib/update-product-status'
 import { canUserMakePurchases } from '@/lib/seller-eligibility'
 import { RentalStatus } from '@prisma/client'
@@ -184,30 +184,31 @@ export async function POST(request: NextRequest) {
         }
       })
 
-      // Check for conflicts including maintenance buffer (1 day after rental ends)
       const hasConflict = () => {
-        // Check existing rentals from rental table
         for (const rental of existingRentals) {
-          const rentalStart = new Date(rental.startDate)
-          const rentalEnd = new Date(rental.endDate)
-          const rentalLastBlockedDate = new Date(rentalEnd.getTime() + 24 * 60 * 60 * 1000) // Add 1 day maintenance
-          
-          // Check if requested dates conflict with this rental period
-          if (start < rentalLastBlockedDate && end >= rentalStart) {
+          if (
+            hasRentalPeriodConflict(
+              start,
+              end,
+              rental.startDate,
+              rental.endDate,
+            )
+          ) {
             return true
           }
         }
 
-        // Check order items
         for (const order of existingOrders) {
           for (const item of order.items) {
             if (item.isRental && item.rentalStartDate && item.rentalEndDate) {
-              const itemStart = new Date(item.rentalStartDate)
-              const itemEnd = new Date(item.rentalEndDate)
-              const itemLastBlockedDate = new Date(itemEnd.getTime() + 24 * 60 * 60 * 1000) // Add 1 day maintenance
-              
-              // Check if requested dates conflict with this rental period
-              if (start < itemLastBlockedDate && end >= itemStart) {
+              if (
+                hasRentalPeriodConflict(
+                  start,
+                  end,
+                  item.rentalStartDate,
+                  item.rentalEndDate,
+                )
+              ) {
                 return true
               }
             }
