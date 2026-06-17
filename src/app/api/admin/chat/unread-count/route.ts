@@ -4,7 +4,6 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { isAdminOrSupport } from '@/lib/roles'
 
-// GET - Get unread chat count for admin
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -16,69 +15,64 @@ export async function GET(request: NextRequest) {
       }, { status: 401 })
     }
 
-    // Count unread chats:
-    // 1. Chat rooms with status PENDING (not yet assigned)
-    // 2. Chat rooms with status ACTIVE where the last message is from a user (not from admin)
-    
-    // First, get PENDING chats
-    const pendingCountResult = await prisma.$queryRaw<Array<{ count: bigint }>>`
-      SELECT COUNT(*)::int as count
+    const unreadResult = await prisma.$queryRaw<Array<{ count: number }>>`
+      SELECT COUNT(DISTINCT cr.id)::int AS count
       FROM "ChatRoom" cr
       LEFT JOIN "User" a ON cr."adminId" = a.id
-      WHERE (cr."adminId" IS NULL OR a.role = 'ADMIN')
-        AND cr.status = 'PENDING'
-    `
-    const pendingCount = Number(pendingCountResult[0]?.count || 0)
-
-    // Then, get ACTIVE chats where last message is from user (not admin)
-    const activeUnreadResult = await prisma.$queryRaw<Array<{ count: bigint }>>`
-      SELECT COUNT(DISTINCT cr.id)::int as count
-      FROM "ChatRoom" cr
-      LEFT JOIN "User" a ON cr."adminId" = a.id
-      WHERE (cr."adminId" IS NULL OR a.role = 'ADMIN')
-        AND cr.status = 'ACTIVE'
-        AND EXISTS (
-          SELECT 1
-          FROM "ChatMessage" cm
-          WHERE cm."chatRoomId" = cr.id
-            AND cm."isFromAdmin" = false
-            AND cm."createdAt" = (
-              SELECT MAX("createdAt")
-              FROM "ChatMessage"
-              WHERE "chatRoomId" = cr.id
+      LEFT JOIN LATERAL (
+        SELECT cm.id, cm."isFromAdmin"
+        FROM "ChatMessage" cm
+        WHERE cm."chatRoomId" = cr.id
+        ORDER BY cm."createdAt" DESC
+        LIMIT 1
+      ) last_msg ON true
+      WHERE (cr."adminId" IS NULL OR a.role IN ('ADMIN', 'SUPPORT'))
+        AND (
+          (cr.status = 'PENDING' AND cr."adminLastReadMessageId" IS NULL)
+          OR (
+            cr.status = 'ACTIVE'
+            AND last_msg.id IS NOT NULL
+            AND last_msg."isFromAdmin" = false
+            AND (
+              cr."adminLastReadMessageId" IS NULL
+              OR last_msg.id > cr."adminLastReadMessageId"
             )
+          )
         )
     `
-    const activeUnreadCount = Number(activeUnreadResult[0]?.count || 0)
 
-    const totalUnread = pendingCount + activeUnreadCount
+    const totalUnread = unreadResult[0]?.count ?? 0
 
     const latestUnreadMessageResult = await prisma.$queryRaw<Array<{
       latestUnreadMessageId: number | null
       latestUnreadChatRoomId: number | null
     }>>`
       SELECT
-        cm.id::int as "latestUnreadMessageId",
-        cm."chatRoomId"::int as "latestUnreadChatRoomId"
-      FROM "ChatMessage" cm
-      INNER JOIN "ChatRoom" cr ON cm."chatRoomId" = cr.id
+        last_msg.id::int AS "latestUnreadMessageId",
+        cr.id::int AS "latestUnreadChatRoomId"
+      FROM "ChatRoom" cr
       LEFT JOIN "User" a ON cr."adminId" = a.id
-      WHERE (cr."adminId" IS NULL OR a.role = 'ADMIN')
-        AND cm."isFromAdmin" = false
+      LEFT JOIN LATERAL (
+        SELECT cm.id, cm."isFromAdmin"
+        FROM "ChatMessage" cm
+        WHERE cm."chatRoomId" = cr.id
+        ORDER BY cm."createdAt" DESC
+        LIMIT 1
+      ) last_msg ON true
+      WHERE (cr."adminId" IS NULL OR a.role IN ('ADMIN', 'SUPPORT'))
         AND (
-          cr.status = 'PENDING'
+          (cr.status = 'PENDING' AND cr."adminLastReadMessageId" IS NULL)
           OR (
             cr.status = 'ACTIVE'
-            AND cm.id = (
-              SELECT id
-              FROM "ChatMessage"
-              WHERE "chatRoomId" = cr.id
-              ORDER BY "createdAt" DESC
-              LIMIT 1
+            AND last_msg.id IS NOT NULL
+            AND last_msg."isFromAdmin" = false
+            AND (
+              cr."adminLastReadMessageId" IS NULL
+              OR last_msg.id > cr."adminLastReadMessageId"
             )
           )
         )
-      ORDER BY cm.id DESC
+      ORDER BY last_msg.id DESC NULLS LAST, cr."updatedAt" DESC
       LIMIT 1
     `
 
@@ -88,8 +82,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       unreadCount: totalUnread,
-      pendingCount,
-      activeUnreadCount,
       latestUnreadMessageId,
       latestUnreadChatRoomId,
     })
@@ -106,4 +98,3 @@ export async function GET(request: NextRequest) {
     )
   }
 }
-

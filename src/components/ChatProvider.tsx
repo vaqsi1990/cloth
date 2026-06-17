@@ -43,9 +43,10 @@ const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   }, [])
 
   const toggleChat = () => {
-    setIsChatOpen(!isChatOpen)
-    if (!isChatOpen) {
-      setUnreadCount(0) // Reset unread count when opening chat
+    const willOpen = !isChatOpen
+    setIsChatOpen(willOpen)
+    if (willOpen) {
+      setUnreadCount(0)
     }
   }
 

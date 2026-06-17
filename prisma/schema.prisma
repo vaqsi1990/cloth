@@ -616,6 +616,9 @@ model ChatRoom {
 
   userTypingAt  DateTime?
   adminTypingAt DateTime?
+  userLastReadMessageId  Int?
+  adminLastReadMessageId Int?
+  guestLastReadMessageId Int?
   
   messages  ChatMessage[]
   rentalInquiries RentalInquiry[]

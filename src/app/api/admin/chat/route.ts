@@ -44,6 +44,8 @@ export async function GET(request: NextRequest) {
       admin_email: string | null
       message_count: number
       last_message_isFromAdmin: boolean | null
+      last_message_id: number | null
+      adminLastReadMessageId: number | null
       is_unread: boolean
     }>
 
@@ -73,18 +75,14 @@ export async function GET(request: NextRequest) {
             LIMIT 1
           ) as last_message_isFromAdmin,
           (
-            cr.status = 'PENDING'
-            OR (
-              cr.status = 'ACTIVE'
-              AND COALESCE((
-                SELECT cm."isFromAdmin"
-                FROM "ChatMessage" cm
-                WHERE cm."chatRoomId" = cr.id
-                ORDER BY cm."createdAt" DESC
-                LIMIT 1
-              ), false) = false
-            )
-          ) as is_unread
+            SELECT cm.id
+            FROM "ChatMessage" cm
+            WHERE cm."chatRoomId" = cr.id
+            ORDER BY cm."createdAt" DESC
+            LIMIT 1
+          ) as last_message_id,
+          cr."adminLastReadMessageId",
+          false as is_unread
         FROM "ChatRoom" cr
         LEFT JOIN "User" u ON cr."userId" = u.id
         LEFT JOIN "User" a ON cr."adminId" = a.id
@@ -93,7 +91,7 @@ export async function GET(request: NextRequest) {
           FROM "ChatMessage"
           GROUP BY "chatRoomId"
         ) mc ON mc."chatRoomId" = cr.id
-        WHERE (cr."adminId" IS NULL OR a.role = 'ADMIN')
+        WHERE (cr."adminId" IS NULL OR a.role IN ('ADMIN', 'SUPPORT'))
           AND cr.status = ${validStatus}
         ORDER BY cr."updatedAt" DESC
         LIMIT ${limit} OFFSET ${skip}
@@ -103,7 +101,7 @@ export async function GET(request: NextRequest) {
         SELECT COUNT(*)::int as count
         FROM "ChatRoom" cr
         LEFT JOIN "User" a ON cr."adminId" = a.id
-        WHERE (cr."adminId" IS NULL OR a.role = 'ADMIN')
+        WHERE (cr."adminId" IS NULL OR a.role IN ('ADMIN', 'SUPPORT'))
           AND cr.status = ${validStatus}
       `
     } else {
@@ -130,18 +128,14 @@ export async function GET(request: NextRequest) {
             LIMIT 1
           ) as last_message_isFromAdmin,
           (
-            cr.status = 'PENDING'
-            OR (
-              cr.status = 'ACTIVE'
-              AND COALESCE((
-                SELECT cm."isFromAdmin"
-                FROM "ChatMessage" cm
-                WHERE cm."chatRoomId" = cr.id
-                ORDER BY cm."createdAt" DESC
-                LIMIT 1
-              ), false) = false
-            )
-          ) as is_unread
+            SELECT cm.id
+            FROM "ChatMessage" cm
+            WHERE cm."chatRoomId" = cr.id
+            ORDER BY cm."createdAt" DESC
+            LIMIT 1
+          ) as last_message_id,
+          cr."adminLastReadMessageId",
+          false as is_unread
         FROM "ChatRoom" cr
         LEFT JOIN "User" u ON cr."userId" = u.id
         LEFT JOIN "User" a ON cr."adminId" = a.id
@@ -150,7 +144,7 @@ export async function GET(request: NextRequest) {
           FROM "ChatMessage"
           GROUP BY "chatRoomId"
         ) mc ON mc."chatRoomId" = cr.id
-        WHERE (cr."adminId" IS NULL OR a.role = 'ADMIN')
+        WHERE (cr."adminId" IS NULL OR a.role IN ('ADMIN', 'SUPPORT'))
         ORDER BY cr."updatedAt" DESC
         LIMIT ${limit} OFFSET ${skip}
       `
@@ -159,7 +153,7 @@ export async function GET(request: NextRequest) {
         SELECT COUNT(*)::int as count
         FROM "ChatRoom" cr
         LEFT JOIN "User" a ON cr."adminId" = a.id
-        WHERE (cr."adminId" IS NULL OR a.role = 'ADMIN')
+        WHERE (cr."adminId" IS NULL OR a.role IN ('ADMIN', 'SUPPORT'))
       `
     }
 
@@ -184,7 +178,12 @@ export async function GET(request: NextRequest) {
       _count: {
         messages: room.message_count
       },
-      is_unread: isStaffChatRoomUnread(room.status, room.last_message_isFromAdmin ?? false),
+      is_unread: isStaffChatRoomUnread(
+        room.status,
+        room.last_message_isFromAdmin ?? false,
+        room.last_message_id,
+        room.adminLastReadMessageId,
+      ),
       messages: []
     }))
 

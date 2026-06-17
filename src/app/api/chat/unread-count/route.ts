@@ -14,12 +14,12 @@ export async function GET() {
 
     const userId = session.user.id
 
-    const result = await prisma.$queryRaw<Array<{ count: number }>>`
+    const productChatResult = await prisma.$queryRaw<Array<{ count: number }>>`
       SELECT COUNT(DISTINCT cr.id)::int AS count
       FROM "ChatRoom" cr
       INNER JOIN "User" a ON cr."adminId" = a.id
       INNER JOIN LATERAL (
-        SELECT cm."isFromAdmin"
+        SELECT cm.id, cm."isFromAdmin"
         FROM "ChatMessage" cm
         WHERE cm."chatRoomId" = cr.id
         ORDER BY cm."createdAt" DESC
@@ -27,14 +27,37 @@ export async function GET() {
       ) last_msg ON true
       WHERE ${accountProductChatWhereForUser(userId)}
         AND (
-          (cr."userId" = ${userId} AND last_msg."isFromAdmin" = true)
-          OR (cr."adminId" = ${userId} AND last_msg."isFromAdmin" = false)
+          (cr."userId" = ${userId} AND last_msg."isFromAdmin" = true
+            AND (cr."userLastReadMessageId" IS NULL OR last_msg.id > cr."userLastReadMessageId"))
+          OR (cr."adminId" = ${userId} AND last_msg."isFromAdmin" = false
+            AND (cr."adminLastReadMessageId" IS NULL OR last_msg.id > cr."adminLastReadMessageId"))
         )
     `
 
+    const liveSupportResult = await prisma.$queryRaw<Array<{ count: number }>>`
+      SELECT COUNT(DISTINCT cr.id)::int AS count
+      FROM "ChatRoom" cr
+      LEFT JOIN "User" a ON cr."adminId" = a.id
+      INNER JOIN LATERAL (
+        SELECT cm.id, cm."isFromAdmin"
+        FROM "ChatMessage" cm
+        WHERE cm."chatRoomId" = cr.id
+        ORDER BY cm."createdAt" DESC
+        LIMIT 1
+      ) last_msg ON true
+      WHERE cr."userId" = ${userId}
+        AND cr."productId" IS NULL
+        AND (cr."adminId" IS NULL OR a.role IN ('ADMIN', 'SUPPORT'))
+        AND last_msg."isFromAdmin" = true
+        AND (cr."userLastReadMessageId" IS NULL OR last_msg.id > cr."userLastReadMessageId")
+    `
+
+    const unreadCount =
+      (productChatResult[0]?.count ?? 0) + (liveSupportResult[0]?.count ?? 0)
+
     return NextResponse.json({
       success: true,
-      unreadCount: result[0]?.count ?? 0,
+      unreadCount,
     })
   } catch (error) {
     console.error('GET chat unread-count:', error)

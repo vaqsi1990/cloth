@@ -47,9 +47,13 @@ export async function GET(request: NextRequest) {
       last_message?: string
       last_message_isFromAdmin?: boolean
       last_message_userId?: string
+      last_message_id?: number
+      userLastReadMessageId?: number | null
+      adminLastReadMessageId?: number | null
     }>>`
       SELECT cr.id, cr."createdAt", cr."updatedAt", cr.status,
              cr."userId", cr."adminId", cr."productId", cr."orderId",
+             cr."userLastReadMessageId", cr."adminLastReadMessageId",
              p.name as product_name,
              (SELECT pi.url FROM "ProductImage" pi WHERE pi."productId" = p.id ORDER BY pi.position ASC LIMIT 1) as product_image,
              cr."guestName", cr."guestEmail",
@@ -58,7 +62,8 @@ export async function GET(request: NextRequest) {
              (SELECT COUNT(*) FROM "ChatMessage" WHERE "chatRoomId" = cr.id)::int as message_count,
              (SELECT "content" FROM "ChatMessage" WHERE "chatRoomId" = cr.id ORDER BY "createdAt" DESC LIMIT 1) as last_message,
              (SELECT "isFromAdmin" FROM "ChatMessage" WHERE "chatRoomId" = cr.id ORDER BY "createdAt" DESC LIMIT 1) as last_message_isFromAdmin,
-             (SELECT "userId" FROM "ChatMessage" WHERE "chatRoomId" = cr.id ORDER BY "createdAt" DESC LIMIT 1) as last_message_userId
+             (SELECT "userId" FROM "ChatMessage" WHERE "chatRoomId" = cr.id ORDER BY "createdAt" DESC LIMIT 1) as last_message_userId,
+             (SELECT id FROM "ChatMessage" WHERE "chatRoomId" = cr.id ORDER BY "createdAt" DESC LIMIT 1) as last_message_id
       FROM "ChatRoom" cr
       LEFT JOIN "User" u ON cr."userId" = u.id
       LEFT JOIN "User" a ON cr."adminId" = a.id
@@ -75,9 +80,12 @@ export async function GET(request: NextRequest) {
       const isUnread = room.last_message
         ? isProductChatUnreadForUser(
             lastMessageIsFromAdmin,
+            room.last_message_id,
             room.userId,
             room.adminId,
             session.user.id,
+            room.userLastReadMessageId,
+            room.adminLastReadMessageId,
           )
         : false
 

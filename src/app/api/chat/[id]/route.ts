@@ -11,6 +11,10 @@ import {
   setChatTyping,
 } from '@/lib/chat-typing'
 import { accountProductChatRoomAccessForUser } from '@/lib/account-product-chat'
+import {
+  markChatRoomAsRead,
+  resolveViewerIsAdminSide,
+} from '@/lib/chat-mark-read'
 
 // Validation schema
 const sendMessageSchema = z.object({
@@ -118,6 +122,17 @@ export async function GET(
       ...msg,
       createdAt: msg.createdAt instanceof Date ? msg.createdAt.toISOString() : msg.createdAt
     }))
+
+    const latestMessageId =
+      messages.length > 0 ? messages[messages.length - 1].id : null
+
+    await markChatRoomAsRead(
+      chatRoomId,
+      chatRoomMeta,
+      session,
+      viewerIsAdminSide,
+      latestMessageId,
+    )
 
     return NextResponse.json({
       success: true,

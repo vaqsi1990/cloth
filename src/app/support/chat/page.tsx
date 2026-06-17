@@ -124,11 +124,12 @@ const SupportChatPage = () => {
         
         setMessages(uniqueMessages)
         setOtherPartyTyping(Boolean(data.otherPartyTyping))
+        acknowledgeActiveChat()
       }
     } catch (error) {
       console.error('Error fetching messages:', error)
     }
-  }, [selectedChatRoom])
+  }, [selectedChatRoom, acknowledgeActiveChat])
 
   useEffect(() => {
     if (status === 'loading') {
