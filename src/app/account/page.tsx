@@ -5,7 +5,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from '@/component/AppImage'
-import { User, Package, ShoppingCart, Settings, MapPin, Phone, Mail, Camera, MessageCircle, Search, Trash2, TrendingUp, ClipboardList, Ticket, Copy, ArrowLeft } from 'lucide-react'
+import { User, Package, ShoppingCart, Settings, MapPin, Phone, Mail, Camera, MessageCircle, Search, Trash2, TrendingUp, ClipboardList, Ticket, Copy, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react'
 import ImageUpload from '@/component/CloudinaryUploader'
 import ContactForm from '@/component/ContactForm'
 import RentalInquiriesPanel from '@/components/RentalInquiriesPanel'
@@ -173,6 +173,8 @@ function getOrderChatKey(orderId: number, productId: number) {
   return `${orderId}-${productId}`
 }
 
+const PRODUCTS_PER_PAGE = 16
+
 const AccountPageContent = () => {
   const { data: session, status, update } = useSession()
   const router = useRouter()
@@ -192,12 +194,12 @@ const AccountPageContent = () => {
   const [sales, setSales] = useState<SaleOrder[]>([])
   const [products, setProducts] = useState<ProductItem[]>([])
   const [productsPage, setProductsPage] = useState(1)
-  const [productsHasMore, setProductsHasMore] = useState(false)
+  const [productsTotalPages, setProductsTotalPages] = useState(1)
+  const [productsTotalCount, setProductsTotalCount] = useState(0)
   const [loadingOrders, setLoadingOrders] = useState(false)
   const [contactingChatKey, setContactingChatKey] = useState<string | null>(null)
   const [loadingSales, setLoadingSales] = useState(false)
   const [loadingProducts, setLoadingProducts] = useState(false)
-  const [loadingMoreProducts, setLoadingMoreProducts] = useState(false)
   const [vouchers, setVouchers] = useState<UserVoucherItem[]>([])
   const [loadingVouchers, setLoadingVouchers] = useState(false)
   const [verification, setVerification] = useState<{
@@ -230,6 +232,8 @@ const AccountPageContent = () => {
   const selectedChatRoomIdRef = useRef<number | null>(null)
   const preferredChatRoomIdRef = useRef<number | null>(null)
   const chatMessagesFetchIdRef = useRef(0)
+  const productsPageRef = useRef(1)
+  const productsFetchIdRef = useRef(0)
   const { notifyTyping, stopTyping } = useChatTyping({
     chatRoomId: selectedChatRoom?.id,
     enabled: !!selectedChatRoom,
@@ -301,10 +305,10 @@ const AccountPageContent = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab])
 
-  // Fetch products only when tab changes to products
+  // Fetch products when tab changes to products (preserve current page)
   useEffect(() => {
     if (activeTab === 'products' && session?.user?.id) {
-      fetchProducts()
+      fetchProducts(productsPageRef.current)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab])
@@ -1020,38 +1024,50 @@ const AccountPageContent = () => {
     showToast('კოდი დაკოპირდა', 'success')
   }
 
-  const fetchProducts = async (page = 1, append = false) => {
+  const fetchProducts = async (page = 1) => {
+    const fetchId = ++productsFetchIdRef.current
+
     try {
-      if (append) {
-        setLoadingMoreProducts(true)
-      } else {
-        setLoadingProducts(true)
+      setLoadingProducts(true)
+
+      const response = await fetch(
+        `/api/user/products?page=${page}&limit=${PRODUCTS_PER_PAGE}`,
+      )
+      const data = await response.json()
+
+      if (fetchId !== productsFetchIdRef.current) return
+
+      if (!data.success) return
+
+      const totalPages = Math.max(1, data.totalPages ?? 1)
+      const targetPage = Math.min(page, totalPages)
+
+      if (page > totalPages) {
+        await fetchProducts(targetPage)
+        return
       }
 
-      const response = await fetch(`/api/user/products?page=${page}`)
-      const data = await response.json()
-      if (data.success) {
-        const nextProducts = data.products || []
-        setProducts((prev) => (append ? [...prev, ...nextProducts] : nextProducts))
-        setProductsPage(data.page ?? page)
-        setProductsHasMore(
-          typeof data.totalPages === 'number'
-            ? (data.page ?? page) < data.totalPages
-            : nextProducts.length >= (data.limit ?? 50),
-        )
-      }
+      setProducts(data.products || [])
+      setProductsPage(targetPage)
+      productsPageRef.current = targetPage
+      setProductsTotalPages(totalPages)
+      setProductsTotalCount(data.totalCount ?? 0)
     } catch (error) {
-      console.error('Error fetching products:', error)
+      if (fetchId === productsFetchIdRef.current) {
+        console.error('Error fetching products:', error)
+      }
     } finally {
-      setLoadingProducts(false)
-      setLoadingMoreProducts(false)
+      if (fetchId === productsFetchIdRef.current) {
+        setLoadingProducts(false)
+      }
     }
   }
 
-  const loadMoreProducts = () => {
-    if (productsHasMore && !loadingMoreProducts) {
-      fetchProducts(productsPage + 1, true)
-    }
+  const goToProductsPage = (page: number) => {
+    const nextPage = Math.max(1, Math.min(page, productsTotalPages))
+    if (nextPage === productsPageRef.current) return
+    void fetchProducts(nextPage)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleDeleteProduct = async (productId: number) => {
@@ -1065,9 +1081,16 @@ const AccountPageContent = () => {
       })
 
       if (response.ok) {
-        // Remove product from list
-        setProducts(products.filter(p => p.id !== productId))
-        // Update stats
+        const remainingOnPage = products.filter((p) => p.id !== productId)
+        if (remainingOnPage.length === 0 && productsPage > 1) {
+          await fetchProducts(productsPage - 1)
+        } else {
+          setProducts(remainingOnPage)
+          setProductsTotalCount((prev) => Math.max(0, prev - 1))
+          setProductsTotalPages((prev) =>
+            Math.max(1, Math.ceil(Math.max(0, productsTotalCount - 1) / PRODUCTS_PER_PAGE)),
+          )
+        }
         fetchUserStats()
         showToast('პროდუქტი წარმატებით წაიშალა', 'success')
       } else {
@@ -2088,19 +2111,79 @@ const AccountPageContent = () => {
           </div>
         )}
 
-        {productsHasMore && !loadingProducts && (
-          <div className="flex flex-col items-center gap-2 mt-6 pt-4 border-t border-gray-100">
-            <p className="text-sm text-gray-600">
-              ჩატვირთულია {products.length} პროდუქტი — დააჭირეთ მეტის ჩასატვირთად
+        {productsTotalPages > 1 && (
+          <div className="flex flex-col items-center justify-center gap-4 mt-8 pt-4 border-t border-gray-100">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => goToProductsPage(productsPage - 1)}
+                disabled={productsPage === 1 || loadingProducts}
+                className={`px-4 py-2 rounded-lg border transition-colors md:text-[18px] text-[16px] flex items-center gap-2 ${
+                  productsPage === 1 || loadingProducts
+                    ? 'bg-gray-100 text-black cursor-not-allowed border-gray-300'
+                    : 'bg-white text-black border-gray-300 hover:bg-gray-50 hover:border-black'
+                }`}
+              >
+                <ChevronLeft className="w-5 h-5" />
+                წინა
+              </button>
+
+              <div className="flex items-center gap-1">
+                {Array.from({ length: productsTotalPages }, (_, i) => i + 1).map((page) => {
+                  if (
+                    page === 1 ||
+                    page === productsTotalPages ||
+                    (page >= productsPage - 1 && page <= productsPage + 1)
+                  ) {
+                    return (
+                      <button
+                        key={page}
+                        type="button"
+                        onClick={() => goToProductsPage(page)}
+                        disabled={loadingProducts}
+                        className={`px-4 py-2 rounded-lg border transition-colors md:text-[18px] text-[16px] ${
+                          productsPage === page
+                            ? 'bg-black text-white border-black'
+                            : loadingProducts
+                              ? 'bg-gray-100 text-black cursor-not-allowed border-gray-300'
+                              : 'bg-white text-black border-gray-300 hover:bg-gray-50 hover:border-black'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    )
+                  }
+
+                  if (page === productsPage - 2 || page === productsPage + 2) {
+                    return (
+                      <span key={page} className="px-2 text-black">
+                        ...
+                      </span>
+                    )
+                  }
+
+                  return null
+                })}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => goToProductsPage(productsPage + 1)}
+                disabled={productsPage === productsTotalPages || loadingProducts}
+                className={`px-4 py-2 rounded-lg border transition-colors md:text-[18px] text-[16px] flex items-center gap-2 ${
+                  productsPage === productsTotalPages || loadingProducts
+                    ? 'bg-gray-100 text-black cursor-not-allowed border-gray-300'
+                    : 'bg-white text-black border-gray-300 hover:bg-gray-50 hover:border-black'
+                }`}
+              >
+                შემდეგი
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-black md:text-[16px] text-[14px]">
+              გვერდი {productsPage} {productsTotalPages}-დან ({productsTotalCount} პროდუქტი)
             </p>
-            <button
-              type="button"
-              onClick={loadMoreProducts}
-              disabled={loadingMoreProducts}
-              className="px-6 py-3 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loadingMoreProducts ? 'იტვირთება...' : 'მეტის ჩატვირთვა'}
-            </button>
           </div>
         )}
       </div>
