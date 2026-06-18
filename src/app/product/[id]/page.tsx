@@ -1165,12 +1165,7 @@ const ProductPage = () => {
         })
 
         if (result.success) {
-            if (requiresInquiry) {
-                showToast('მოთხოვნა დადასტურებულია — გადადით გადახდაზე', 'success')
-                router.push(`/checkout?item=${result.itemId}`)
-            } else {
-                showToast("დაემატა კალათაში", "success")
-            }
+            router.push(`/checkout?item=${result.itemId}`)
         } else {
             showToast(result.message, "error")
         }
@@ -1851,7 +1846,7 @@ const ProductPage = () => {
                                                     {isAdding ? "მუშავდება..." : "კალათაში დამატება"}
                                                 </button>
                                             ) : purchaseMode === "rent" && canRent ? (
-                                                <>
+                                                <div className="space-y-2">
                                                     {requiresInquiry && !canBookFromInquiry ? (
                                                         <button
                                                             type="button"
@@ -1871,21 +1866,22 @@ const ProductPage = () => {
                                                                     ? 'მოთხოვნა გაგზავნილია'
                                                                     : 'მოთხოვნის გაგზავნა ავტორთან'}
                                                         </button>
-                                                    ) : (
-                                                        <button
-                                                            onClick={handleRental}
-                                                            disabled={Boolean(
-                                                                isAdding ||
-                                                                !rentalStartDate ||
-                                                                !rentalEndDate ||
-                                                                (rentalStartDate && rentalEndDate && !selfServeDatesValid)
-                                                            )}
-                                                            className="w-full py-4 rounded-xl md:text-[18px] text-[16px] text-white font-bold transition bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                        >
-                                                            {isAdding ? "მუშავდება..." : requiresInquiry ? "გადახდა" : "დაჯავშნა / კალათაში"}
-                                                        </button>
-                                                    )}
-                                                </>
+                                                    ) : null}
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleRental}
+                                                        disabled={Boolean(
+                                                            isAdding ||
+                                                            !rentalStartDate ||
+                                                            !rentalEndDate ||
+                                                            (rentalStartDate && rentalEndDate && !selfServeDatesValid) ||
+                                                            (requiresInquiry && !canBookFromInquiry)
+                                                        )}
+                                                        className="w-full py-4 rounded-xl md:text-[18px] text-[16px] text-white font-bold transition bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    >
+                                                        {isAdding ? 'მუშავდება...' : 'გადახდა'}
+                                                    </button>
+                                                </div>
                                             ) : null}
                                         </div>
                                     )}
