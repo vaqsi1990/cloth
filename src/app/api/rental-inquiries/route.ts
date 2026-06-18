@@ -279,11 +279,14 @@ export async function POST(request: NextRequest) {
       startDate: inquiry.startDate,
       endDate: inquiry.endDate,
       size: inquiry.size,
-      estimatedTotal: inquiry.estimatedTotal,
+      estimatedTotal: pricing.buyerPayable,
+      buyerListPrice: pricing.buyerListPrice,
+      hasDiscount: pricing.hasDiscount,
       buyerName: inquiry.buyer.name,
       buyerMessage: inquiry.buyerMessage,
       sellerName: inquiry.seller.name,
       sellerEmail: inquiry.seller.email ?? '',
+      sellerId: inquiry.sellerId,
     }).catch((error) => {
       console.error('[rental-inquiries] Seller notification email failed:', error)
     })

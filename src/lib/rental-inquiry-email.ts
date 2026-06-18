@@ -1,4 +1,8 @@
 import { isEmailConfigured, sendHtmlEmail } from '@/lib/email'
+import {
+  buildRentalInquiryActionUrl,
+  INQUIRY_EMAIL_ACTION_MINUTES,
+} from '@/lib/rental-inquiry-action-token'
 import { getSiteUrl } from '@/lib/site-url'
 import { formatDate } from '@/utils/dateUtils'
 
@@ -19,10 +23,13 @@ export type RentalInquiryEmailPayload = {
   endDate: Date
   size: string | null
   estimatedTotal: number
+  buyerListPrice?: number
+  hasDiscount?: boolean
   buyerName: string | null
   buyerMessage: string | null
   sellerName: string | null
   sellerEmail: string
+  sellerId: string
 }
 
 export function buildRentalInquirySellerEmailHtml(
@@ -30,6 +37,16 @@ export function buildRentalInquirySellerEmailHtml(
 ): string {
   const siteUrl = getSiteUrl()
   const confirmUrl = `${siteUrl}/account?tab=inquiries`
+  const approveUrl = buildRentalInquiryActionUrl(
+    payload.inquiryId,
+    payload.sellerId,
+    'approve',
+  )
+  const rejectUrl = buildRentalInquiryActionUrl(
+    payload.inquiryId,
+    payload.sellerId,
+    'reject',
+  )
   const sellerGreeting = payload.sellerName?.trim() || 'ავტორო'
 
   const skuRow = payload.productSku
@@ -53,6 +70,15 @@ export function buildRentalInquirySellerEmailHtml(
       </tr>`
     : ''
 
+  const priceCell =
+    payload.hasDiscount &&
+    payload.buyerListPrice != null &&
+    payload.buyerListPrice > payload.estimatedTotal
+      ? `<span style="text-decoration:line-through;color:#9ca3af;margin-right:8px;">₾${payload.buyerListPrice.toFixed(2)}</span><span style="color:#dc2626;font-weight:600;">₾${payload.estimatedTotal.toFixed(2)}</span>`
+      : `<span style="font-weight:600;">₾${payload.estimatedTotal.toFixed(2)}</span>`
+
+  const priceLabel = payload.hasDiscount ? 'სავარაუდო ფასი (ფასდაკლებით)' : 'სავარაუდო ფასი'
+
   const buyerMessageBlock = payload.buyerMessage?.trim()
     ? `<p style="margin:16px 0 0;padding:12px 16px;background:#f9fafb;border-radius:8px;color:#374151;">
         <strong>შენიშვნა:</strong> ${escapeHtml(payload.buyerMessage.trim())}
@@ -69,7 +95,8 @@ export function buildRentalInquirySellerEmailHtml(
       <div style="background:#fff;border:1px solid #eee;border-top:none;padding:24px;border-radius:0 0 12px 12px;">
         <p style="margin-top:0;">გამარჯობა, <strong>${escapeHtml(sellerGreeting)}</strong>!</p>
         <p>
-          კლიენტი აგზავნის ქირაობის მოთხოვნას თქვენს პროდუქტზე. გთხოვთ შეხვიდეთ საიტზე და დაადასტუროთ ან უარყოთ მოთხოვნა.
+          კლიენტი აგზავნის ქირაობის მოთხოვნას თქვენს პროდუქტზე. შეგიძლიათ მოთხოვნა მეილიდან დაადასტუროთ ან უარყოთ
+          (ბმული მოქმედებს ${INQUIRY_EMAIL_ACTION_MINUTES} წუთის განმავლობაში), ან შეხვიდეთ საიტზე.
         </p>
 
         <h2 style="font-size:18px;margin:24px 0 12px;">პროდუქტის ინფორმაცია</h2>
@@ -101,8 +128,8 @@ export function buildRentalInquirySellerEmailHtml(
           </tr>
           ${sizeRow}
           <tr>
-            <td style="padding:8px 0;color:#555;">სავარაუდო ფასი</td>
-            <td style="padding:8px 0;text-align:right;font-weight:600;">₾${payload.estimatedTotal.toFixed(2)}</td>
+            <td style="padding:8px 0;color:#555;">${priceLabel}</td>
+            <td style="padding:8px 0;text-align:right;">${priceCell}</td>
           </tr>
           ${buyerRow}
         </table>
@@ -110,8 +137,22 @@ export function buildRentalInquirySellerEmailHtml(
         ${buyerMessageBlock}
 
         <div style="text-align:center;margin:28px 0 8px;">
-          <a href="${confirmUrl}" style="display:inline-block;background:#1B3729;color:#fff;padding:14px 28px;text-decoration:none;border-radius:8px;font-weight:600;">
-            მოთხოვნის გადახენა და დადასტურება
+          <a href="${approveUrl}" style="display:inline-block;background:#166534;color:#fff;padding:14px 24px;text-decoration:none;border-radius:8px;font-weight:600;margin:0 6px 10px;">
+            ✓ დადასტურება
+          </a>
+          <a href="${rejectUrl}" style="display:inline-block;background:#b91c1c;color:#fff;padding:14px 24px;text-decoration:none;border-radius:8px;font-weight:600;margin:0 6px 10px;">
+            ✕ უარყოფა
+          </a>
+        </div>
+
+        <p style="color:#666;font-size:13px;text-align:center;margin:0 0 20px;">
+          დადასტურება ნიშნავს, რომ პროდუქტი ამ თარიღებზე ადგილზე ხელმისაწვდომია.
+          ბმულები ვადა გაუვა ${INQUIRY_EMAIL_ACTION_MINUTES} წუთში.
+        </p>
+
+        <div style="text-align:center;margin:8px 0;">
+          <a href="${confirmUrl}" style="display:inline-block;background:#1B3729;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:600;">
+            მოთხოვნის განხილვა საიტზე
           </a>
         </div>
 

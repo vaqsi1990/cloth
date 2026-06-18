@@ -5,7 +5,8 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { RentalInquiryStatus } from '@prisma/client'
 import { isAdminOrSupport } from '@/lib/roles'
-import { expireStaleInquiries, inquiryApprovedExpiresAt } from '@/lib/rental-inquiry'
+import { expireStaleInquiries } from '@/lib/rental-inquiry'
+import { applyRentalInquirySellerResponse } from '@/lib/rental-inquiry-status'
 
 const patchSchema = z.object({
   status: z.enum(['APPROVED', 'REJECTED', 'CANCELLED']),
@@ -137,60 +138,57 @@ export async function PATCH(
       }, { status: 400 })
     }
 
-    const now = new Date()
-    let updateData: {
-      status: RentalInquiryStatus
-      onSiteAvailable?: boolean | null
-      sellerNote?: string | null
-      approvedAt?: Date | null
-      rejectedAt?: Date | null
-      expiresAt?: Date
-    }
+    const sellerStatus =
+      data.status === 'APPROVED' ? 'APPROVED' : data.status === 'REJECTED' ? 'REJECTED' : null
 
-    if (data.status === 'APPROVED') {
-      updateData = {
-        status: RentalInquiryStatus.APPROVED,
-        onSiteAvailable: true,
-        sellerNote: data.sellerNote || null,
-        approvedAt: now,
-        rejectedAt: null,
-        expiresAt: inquiryApprovedExpiresAt(now),
+    if (sellerStatus) {
+      const result = await applyRentalInquirySellerResponse(
+        prisma,
+        inquiryId,
+        inquiry.sellerId,
+        sellerStatus,
+        { sellerNote: data.sellerNote },
+      )
+
+      if (!result.ok) {
+        const message =
+          result.code === 'NOT_FOUND'
+            ? 'მოთხოვნა ვერ მოიძებნა'
+            : result.code === 'ALREADY_PROCESSED'
+              ? 'მოთხოვნა უკვე დამუშავებულია'
+              : 'წვდომა აკრძალულია'
+        return NextResponse.json({ success: false, message }, { status: 400 })
       }
-    } else if (data.status === 'REJECTED') {
-      updateData = {
-        status: RentalInquiryStatus.REJECTED,
-        onSiteAvailable: data.onSiteAvailable ?? false,
-        sellerNote: data.sellerNote || null,
-        rejectedAt: now,
-        approvedAt: null,
-      }
-    } else {
-      updateData = {
-        status: RentalInquiryStatus.CANCELLED,
-        sellerNote: data.sellerNote || null,
-      }
+
+      const updated = await prisma.rentalInquiry.findUnique({
+        where: { id: inquiryId },
+        select: inquirySelect,
+      })
+
+      return NextResponse.json({
+        success: true,
+        message:
+          sellerStatus === 'APPROVED'
+            ? 'მოთხოვნა დადასტურდა'
+            : 'მოთხოვნა უარყოფილია',
+        inquiry: updated,
+      })
     }
 
     const updated = await prisma.rentalInquiry.update({
       where: { id: inquiryId },
-      data: updateData,
+      data: {
+        status: RentalInquiryStatus.CANCELLED,
+        sellerNote: data.sellerNote || null,
+      },
       select: inquirySelect,
     })
 
     if (inquiry.chatRoomId) {
-      const statusText =
-        data.status === 'APPROVED'
-          ? '✅ მოთხოვნა დადასტურებულია — გადახდისთვის გაქვთ 30 წუთი. დაჯავშნეთ პროდუქტის გვერდიდან.'
-          : data.status === 'REJECTED'
-            ? '❌ მოთხოვნა უარყოფილია — ამ თარიღებზე პროდუქტი ადგილზე არ არის ხელმისაწვდომი.'
-            : 'მოთხოვნა გაუქმებულია.'
-
-      const note = data.sellerNote?.trim() ? `\n${data.sellerNote.trim()}` : ''
-
       await prisma.chatMessage.create({
         data: {
           chatRoomId: inquiry.chatRoomId,
-          content: statusText + note,
+          content: 'მოთხოვნა გაუქმებულია.',
           adminId: inquiry.sellerId,
           isFromAdmin: true,
         },
@@ -199,12 +197,7 @@ export async function PATCH(
 
     return NextResponse.json({
       success: true,
-      message:
-        data.status === 'APPROVED'
-          ? 'მოთხოვნა დადასტურდა'
-          : data.status === 'REJECTED'
-            ? 'მოთხოვნა უარყოფილია'
-            : 'მოთხოვნა გაუქმდა',
+      message: 'მოთხოვნა გაუქმდა',
       inquiry: updated,
     })
   } catch (error) {
