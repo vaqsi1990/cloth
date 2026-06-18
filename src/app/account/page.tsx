@@ -7,6 +7,7 @@ import Link from 'next/link'
 import Image from '@/component/AppImage'
 import { User, Package, ShoppingCart, Settings, MapPin, Phone, Mail, Camera, MessageCircle, Search, Trash2, TrendingUp, ClipboardList, Ticket, Copy, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react'
 import ImageUpload from '@/component/CloudinaryUploader'
+import UploadLoadingIndicator from '@/component/UploadLoadingIndicator'
 import ContactForm from '@/component/ContactForm'
 import RentalInquiriesPanel from '@/components/RentalInquiriesPanel'
 import { showToast } from '@/utils/toast'
@@ -1202,7 +1203,7 @@ const AccountPageContent = () => {
               onChange={handleImageUpload}
             />
             {isUploadingImage && (
-              <p className="text-[16px] text-black mt-2">სურათი იტვირთება...</p>
+              <UploadLoadingIndicator className="mt-2" message="სურათი იტვირთება..." />
             )}
             <div className="mt-3 flex space-x-2">
               <button
@@ -1318,12 +1319,10 @@ const AccountPageContent = () => {
                       დოკუმენტის წინა მხარე *
                     </label>
                     <ImageUpload 
+                      variant="document"
                       value={idFrontUrl ? [idFrontUrl] : []} 
                       onChange={handleIdFrontUpload} 
                     />
-                    {idFrontUrl && (
-                      <p className="text-sm text-green-600 mt-2">✓ სურათი ატვირთულია</p>
-                    )}
                   </div>
                   
                   <div className="space-y-2">
@@ -1331,12 +1330,10 @@ const AccountPageContent = () => {
                       დოკუმენტის უკანა მხარე *
                     </label>
                     <ImageUpload 
+                      variant="document"
                       value={idBackUrl ? [idBackUrl] : []} 
                       onChange={handleIdBackUpload} 
                     />
-                    {idBackUrl && (
-                      <p className="text-sm text-green-600 mt-2">✓ სურათი ატვირთულია</p>
-                    )}
                   </div>
                 </div>
 

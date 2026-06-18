@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Save, User, Mail, Lock, AlertTriangle, Eye, EyeOff, Camera, Phone, MapPin, MessageCircle } from 'lucide-react'
 import ImageUpload from '@/component/CloudinaryUploader'
+import UploadLoadingIndicator from '@/component/UploadLoadingIndicator'
 import { showToast } from '@/utils/toast'
 import Image from '@/component/AppImage'
 import ChatUnreadBadge from '@/components/ChatUnreadBadge'
@@ -376,7 +377,7 @@ const AdminSettingsPage = () => {
                       onChange={handleImageUpload}
                     />
                     {isUploadingImage && (
-                      <p className="md:text-[18px] text-[16px] text-black mt-2">სურათი იტვირთება...</p>
+                      <UploadLoadingIndicator className="mt-2" message="სურათი იტვირთება..." />
                     )}
                     <div className="mt-3 flex space-x-2">
                       <button

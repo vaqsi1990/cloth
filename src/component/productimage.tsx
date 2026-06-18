@@ -4,8 +4,10 @@
 import { UploadButton } from "@/utils/uploadthing";
 import { useState, useEffect } from "react";
 import ImageModal from "@/component/ImageModal";
+import UploadLoadingIndicator from "@/component/UploadLoadingIndicator";
 import { X } from "lucide-react";
 import ProductPhotoBackgroundConsent from "@/components/ProductPhotoBackgroundConsent";
+import { showToast } from "@/utils/toast";
 
 
 type ImageUploadProps = {
@@ -20,8 +22,8 @@ type ImageUploadProps = {
 
 const ImageUploadForProduct = ({ onChange, value, photoBackgroundConsent }: ImageUploadProps): React.JSX.Element => {
   const [imageUrls, setImageUrls] = useState<string[]>(value || []);
- 
-  // Update local state when value prop changes
+  const [isUploading, setIsUploading] = useState(false);
+
   useEffect(() => {
     setImageUrls(value || []);
   }, [value]);
@@ -30,8 +32,17 @@ const ImageUploadForProduct = ({ onChange, value, photoBackgroundConsent }: Imag
     const urls = res.map((file) => file.url);
     const newUrls = [...imageUrls, ...urls];
     setImageUrls(newUrls);
-    onChange(newUrls); // ეს ატვირთული URL-ები გადავა form-ში
-   
+    onChange(newUrls);
+    setIsUploading(false);
+  };
+
+  const handleUploadError = (error: Error) => {
+    setIsUploading(false);
+    showToast(`შეცდომა ატვირთვისას: ${error.message}`, "error");
+  };
+
+  const handleUploadBegin = () => {
+    setIsUploading(true);
   };
 
   const handleDeleteImage = (indexToDelete: number) => {
@@ -51,26 +62,42 @@ const ImageUploadForProduct = ({ onChange, value, photoBackgroundConsent }: Imag
   });
 
   return (
-    <div className=" text-white p-2 rounded">
+    <div className="relative text-white p-2 rounded">
+      {isUploading && (
+        <div className="absolute inset-0 bg-white/80 rounded z-20 flex items-center justify-center">
+          <UploadLoadingIndicator message="სურათები იტვირთება..." />
+        </div>
+      )}
       <UploadButton
         className="text-white  font-bold py-1 px-3 rounded text-sm"
         endpoint="imageUploader"
         onClientUploadComplete={handleUploadComplete}
-      
+        onUploadError={handleUploadError}
+        onUploadBegin={handleUploadBegin}
+        disabled={isUploading}
         content={{
-          button: "სურათების ატვირთვა",
+          button: isUploading ? "იტვირთება..." : "სურათების ატვირთვა",
           allowedContent: "ყველა ტიპის სურათი (PNG, JPG, GIF, WebP) - შეგიძლიათ რამდენიმე ატვირთოთ",
         }}
         appearance={{
-          button: "bg-blue-600 md:w-[50%] w-full text-center hover:bg-blue-700 text-white font-bold py-2 px-4 rounded md:text-[18px] text-[16px]",
+          button: `bg-blue-600 md:w-[50%] w-full text-center hover:bg-blue-700 text-white font-bold py-2 px-4 rounded md:text-[18px] text-[16px] ${isUploading ? "opacity-60 cursor-not-allowed" : ""}`,
           allowedContent: "text-black text-[16px] text-black mt-1",
         }}
       />
 
-      {validImageUrls.length > 0 ? (
+      {isUploading && (
+        <UploadLoadingIndicator className="mt-3" message="სურათები იტვირთება..." />
+      )}
+
+      {validImageUrls.length > 0 || isUploading ? (
         <div className="mt-4 space-y-2">
-          <h2 className="text-sm font-semibold text-black">ატვირთული სურათები ({validImageUrls.length})</h2>
+          <h2 className="text-sm font-semibold text-black">
+            ატვირთული სურათები ({validImageUrls.length}{isUploading ? "+" : ""})
+          </h2>
           <div className="grid md:grid-cols-3 grid-cols-1 gap-3">
+            {isUploading && (
+              <UploadLoadingIndicator variant="card" message="იტვირთება..." />
+            )}
             {validImageUrls.map((url, displayIndex) => {
               const originalIndex = urlToIndexMap.get(url) ?? displayIndex;
               return (
