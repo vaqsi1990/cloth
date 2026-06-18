@@ -871,6 +871,40 @@ const ProductPage = () => {
         setIsAdding(false)
     }
 
+    const handleBuyCheckout = async () => {
+        if (!product || !selectedSize) return
+        if (isAdding) return
+
+        if (product.status === 'DAMAGED') {
+            showToast("პროდუქტი დაზიანებულია და ამჟამად ხელმისაწვდომი არ არის", "warning")
+            return
+        }
+
+        if (product.status === 'MAINTENANCE') {
+            showToast("პროდუქტი რესტავრაციაზეა და ამჟამად ხელმისაწვდომი არ არის", "warning")
+            return
+        }
+
+        setIsAdding(true)
+
+        const result = await addToCart({
+            productId: product.id,
+            productName: product.name,
+            image: getMainImage(),
+            size: selectedSize,
+            quantity: 1,
+            price: getBuyerPrice(selectedPrice),
+            isRental: false,
+        })
+
+        if (result.success) {
+            router.push(`/checkout?item=${result.itemId}`)
+        } else {
+            showToast(result.message, "error")
+        }
+        setIsAdding(false)
+    }
+
     const fetchChatMessages = async (roomId: number) => {
         try {
             setLoadingChatMessages(true)
@@ -1839,12 +1873,24 @@ const ProductPage = () => {
                                     {product.status !== 'MAINTENANCE' && product.status !== 'DAMAGED' && (
                                         <div className="space-y-2">
                                             {purchaseMode === "buy" && showBuyOption ? (
-                                                <button
-                                                    onClick={handleAddToCart}
-                                                    className="w-full py-4 rounded-xl md:text-[18px] text-[16px] text-white font-bold transition bg-black hover:opacity-95"
-                                                >
-                                                    {isAdding ? "მუშავდება..." : "კალათაში დამატება"}
-                                                </button>
+                                                <div className="space-y-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleBuyCheckout}
+                                                        disabled={Boolean(isAdding || !selectedSize)}
+                                                        className="w-full py-4 rounded-xl md:text-[18px] text-[16px] text-white font-bold transition bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    >
+                                                        {isAdding ? "მუშავდება..." : "გადახდა"}
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleAddToCart}
+                                                        disabled={Boolean(isAdding || !selectedSize)}
+                                                        className="w-full py-4 rounded-xl md:text-[18px] text-[16px] text-white font-bold transition bg-black hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    >
+                                                        {isAdding ? "მუშავდება..." : "კალათაში დამატება"}
+                                                    </button>
+                                                </div>
                                             ) : purchaseMode === "rent" && canRent ? (
                                                 <div className="space-y-2">
                                                     {requiresInquiry && !canBookFromInquiry ? (
