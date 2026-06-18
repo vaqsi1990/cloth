@@ -738,20 +738,30 @@ const AccountPageContent = () => {
   }
 
   const handleIdFrontUpload = async (urls: string[]) => {
-    if (!urls.length) return
+    if (!urls.length) {
+      setIdFrontUrl(null)
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('idFrontUrl')
+      }
+      return
+    }
     const url = urls[0]
     setIdFrontUrl(url)
-    // Save to localStorage to persist across refreshes
     if (typeof window !== 'undefined') {
       localStorage.setItem('idFrontUrl', url)
     }
   }
 
   const handleIdBackUpload = async (urls: string[]) => {
-    if (!urls.length) return
+    if (!urls.length) {
+      setIdBackUrl(null)
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('idBackUrl')
+      }
+      return
+    }
     const url = urls[0]
     setIdBackUrl(url)
-    // Save to localStorage to persist across refreshes
     if (typeof window !== 'undefined') {
       localStorage.setItem('idBackUrl', url)
     }
@@ -780,28 +790,7 @@ const AccountPageContent = () => {
       }
       
       setSavingVerification(true)
-      
-      // First save IBAN to user profile
-      const ibanRes = await fetch('/api/user/profile', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: session?.user?.name || '',
-          email: session?.user?.email || '',
-          phone: (session?.user as { phone?: string })?.phone || '',
-          location: (session?.user as { location?: string })?.location || '',
-          iban: userIban
-        })
-      })
-      
-      if (!ibanRes.ok) {
-        const ibanData = await ibanRes.json()
-        showToast(ibanData.error || 'შეცდომა IBAN-ის შენახვისას', 'error')
-        setSavingVerification(false)
-        return
-      }
-      
-      // Then save verification documents
+
       const res = await fetch('/api/user/verification', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },

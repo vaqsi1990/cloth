@@ -4,28 +4,33 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
-const normalizeIban = (value: unknown) => typeof value === 'string'
-  ? value.replace(/\s+/g, '').toUpperCase()
-  : value
+const emptyToUndefined = (value: unknown) =>
+  typeof value === 'string' && value.trim() === '' ? undefined : value
+
+const normalizeIban = (value: unknown) => {
+  if (typeof value !== 'string' || value.trim() === '') return undefined
+  return value.replace(/\s+/g, '').toUpperCase()
+}
 
 const profileSchema = z.object({
   name: z.string().min(1, 'სახელი აუცილებელია'),
   email: z.string().email('არასწორი ელფოსტა'),
-  image: z.string().nullable().optional(),
-  phone: z.string().min(6, 'ტელეფონის ნომერი არასწორია').optional(),
-  location: z.string().min(2, 'ადგილმდებარეობა არასწორია').optional(),
-  lastName: z.string().min(2, 'გვარი არასწორია').optional(),
-  address: z.string().min(2, 'მისამართი არასწორია').optional(),
-  postalIndex: z.string().min(2, 'საფოსტო ინდექსი არასწორია').optional(),
-  pickupAddress: z.string().min(2, 'ადგილზე მისამართვის მისამართი არასწორია').optional(),
+  image: z.preprocess(emptyToUndefined, z.string().nullable().optional()),
+  phone: z.preprocess(emptyToUndefined, z.string().min(6, 'ტელეფონის ნომერი არასწორია').optional()),
+  location: z.preprocess(emptyToUndefined, z.string().min(2, 'ადგილმდებარეობა არასწორია').optional()),
+  lastName: z.preprocess(emptyToUndefined, z.string().min(2, 'გვარი არასწორია').optional()),
+  address: z.preprocess(emptyToUndefined, z.string().min(2, 'მისამართი არასწორია').optional()),
+  postalIndex: z.preprocess(emptyToUndefined, z.string().min(2, 'საფოსტო ინდექსი არასწორია').optional()),
+  pickupAddress: z.preprocess(emptyToUndefined, z.string().min(2, 'ადგილზე მისამართვის მისამართი არასწორია').optional()),
   gender: z.enum(["MALE", "FEMALE", "OTHER"], { message: "სქესი არასწორია" }).optional(),
-  dateOfBirth: z.string().optional(),
+  dateOfBirth: z.preprocess(emptyToUndefined, z.string().optional()),
   iban: z.preprocess(
     normalizeIban,
     z.string()
       .min(22, 'IBAN აუცილებელია')
       .max(34, 'IBAN არასწორია')
       .regex(/^GE\d{2}[0-9A-Z]{16,}$/, 'გთხოვთ შეიყვანოთ ქართული ბანკის IBAN (GE...)')
+      .optional()
   ),
   // personalId is not included in schema - should not be updatable
 })
@@ -95,7 +100,7 @@ export async function PUT(request: NextRequest) {
         pickupAddress: pickupAddress ?? undefined,
         gender: gender ?? undefined,
         dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
-        iban,
+        ...(iban !== undefined ? { iban } : {}),
       },
       select: {
         id: true,

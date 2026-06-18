@@ -15,7 +15,7 @@ import {
 } from '@/lib/rental-dates'
 
 export const INQUIRY_PENDING_HOURS = 48
-export const INQUIRY_APPROVED_HOURS = 48
+export const INQUIRY_APPROVED_MINUTES = 30
 export const MAX_RENTAL_DAYS_DEFAULT = 10
 
 export type RentalPriceTierLike = { minDays: number; pricePerDay: number }
@@ -109,6 +109,10 @@ export function calcRentalBuyerPayableTotal(
 
 export function inquiryExpiresAt(from = new Date()): Date {
   return new Date(from.getTime() + INQUIRY_PENDING_HOURS * 60 * 60 * 1000)
+}
+
+export function inquiryApprovedExpiresAt(from = new Date()): Date {
+  return new Date(from.getTime() + INQUIRY_APPROVED_MINUTES * 60 * 1000)
 }
 
 export function buildInquiryChatMessage(params: {

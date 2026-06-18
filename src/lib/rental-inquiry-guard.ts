@@ -127,7 +127,7 @@ export async function assertRentalInquiryApproved(params: {
   if (inquiry.expiresAt < new Date()) {
     return {
       ok: false,
-      message: 'დადასტურების ვადა ამოიწურა — გაგზავნეთ ახალი მოთხოვნა',
+      message: 'გადახდის ვადა ამოიწურა (30 წუთი) — გაგზავნეთ ახალი მოთხოვნა',
     }
   }
 

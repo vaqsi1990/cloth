@@ -5,7 +5,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { RentalInquiryStatus } from '@prisma/client'
 import { isAdminOrSupport } from '@/lib/roles'
-import { expireStaleInquiries, INQUIRY_APPROVED_HOURS } from '@/lib/rental-inquiry'
+import { expireStaleInquiries, inquiryApprovedExpiresAt } from '@/lib/rental-inquiry'
 
 const patchSchema = z.object({
   status: z.enum(['APPROVED', 'REJECTED', 'CANCELLED']),
@@ -154,7 +154,7 @@ export async function PATCH(
         sellerNote: data.sellerNote || null,
         approvedAt: now,
         rejectedAt: null,
-        expiresAt: new Date(now.getTime() + INQUIRY_APPROVED_HOURS * 60 * 60 * 1000),
+        expiresAt: inquiryApprovedExpiresAt(now),
       }
     } else if (data.status === 'REJECTED') {
       updateData = {
@@ -180,7 +180,7 @@ export async function PATCH(
     if (inquiry.chatRoomId) {
       const statusText =
         data.status === 'APPROVED'
-          ? '✅ მოთხოვნა დადასტურებულია — შეგიძლიათ დაჯავშნოთ პროდუქტის გვერდიდან.'
+          ? '✅ მოთხოვნა დადასტურებულია — გადახდისთვის გაქვთ 30 წუთი. დაჯავშნეთ პროდუქტის გვერდიდან.'
           : data.status === 'REJECTED'
             ? '❌ მოთხოვნა უარყოფილია — ამ თარიღებზე პროდუქტი ადგილზე არ არის ხელმისაწვდომი.'
             : 'მოთხოვნა გაუქმებულია.'

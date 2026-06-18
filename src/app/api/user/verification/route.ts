@@ -91,6 +91,12 @@ export async function PUT(request: NextRequest) {
         idFrontUrl: idFrontUrl ?? null,
         idBackUrl: idBackUrl ?? null,
         entrepreneurCertificateUrl: entrepreneurCertificateUrl ?? null,
+        ...(idFrontUrl || idBackUrl
+          ? { identityStatus: 'PENDING' as const, identityComment: null }
+          : {}),
+        ...(entrepreneurCertificateUrl
+          ? { entrepreneurStatus: 'PENDING' as const, entrepreneurComment: null }
+          : {}),
         status: 'PENDING',
         comment: null,
       },

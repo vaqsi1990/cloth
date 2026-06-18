@@ -2,7 +2,7 @@
 "use client";
 
 import { UploadButton } from "@/utils/uploadthing";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "@/component/AppImage";
 import { showToast } from "@/utils/toast";
 
@@ -14,6 +14,10 @@ type ImageUploadProps = {
 const ImageUpload = ({ onChange, value }: ImageUploadProps): React.JSX.Element => {
   const [imageUrls, setImageUrls] = useState<string[]>(value || []);
   const [isUploading, setIsUploading] = useState(false);
+
+  useEffect(() => {
+    setImageUrls(value || []);
+  }, [value]);
 
   const handleUploadComplete = (res: { url: string }[]) => {
     console.log("Upload complete:", res);
@@ -28,7 +32,7 @@ const ImageUpload = ({ onChange, value }: ImageUploadProps): React.JSX.Element =
   const handleUploadError = (error: Error) => {
     console.error("Upload error:", error);
     setIsUploading(false);
-    showToast(`Upload error: ${error.message}`, "error");
+    showToast(`შეცდომა ატვირთვისას: ${error.message}`, "error");
   };
 
   const handleUploadBegin = () => {

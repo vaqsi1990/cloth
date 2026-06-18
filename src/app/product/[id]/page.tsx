@@ -144,6 +144,7 @@ const ProductPage = () => {
         status: string
         onSiteAvailable: boolean | null
         chatRoomId: number | null
+        expiresAt?: string | null
     } | null
     const [rentalInquiry, setRentalInquiry] = useState<InquirySnapshot>(null)
     const [requiresInquiry, setRequiresInquiry] = useState(true)
@@ -1856,9 +1857,25 @@ const ProductPage = () => {
                                                         : 'bg-gray-50 text-gray-700 border border-gray-200'
                                         }`}>
                                             {rentalInquiry.status === 'PENDING' && 'ავტორი ამოწმებს, ადგილზე ხელმისაწვდომია თუ არა'}
-                                            {rentalInquiry.status === 'APPROVED' && 'დადასტურებულია — შეგიძლიათ დაჯავშნოთ'}
+                                            {rentalInquiry.status === 'APPROVED' && (
+                                                <>
+                                                    დადასტურებულია — გადახდისთვის გაქვთ 30 წუთი
+                                                    {rentalInquiry.expiresAt ? (
+                                                        <span className="block mt-1 text-xs font-normal">
+                                                            ბოლო ვადა:{' '}
+                                                            {new Date(rentalInquiry.expiresAt).toLocaleString('ka-GE', {
+                                                                day: '2-digit',
+                                                                month: '2-digit',
+                                                                year: 'numeric',
+                                                                hour: '2-digit',
+                                                                minute: '2-digit',
+                                                            })}
+                                                        </span>
+                                                    ) : null}
+                                                </>
+                                            )}
                                             {rentalInquiry.status === 'REJECTED' && 'ამ თარიღებზე პროდუქტი ადგილზე არ არის'}
-                                            {rentalInquiry.status === 'EXPIRED' && 'მოთხოვნის ვადა ამოიწურა — გაგზავნეთ ახალი'}
+                                            {rentalInquiry.status === 'EXPIRED' && 'გადახდის ვადა ამოიწურა (30 წუთი) — გაგზავნეთ ახალი მოთხოვნა'}
                                             {rentalInquiry.status === 'BOOKED' && 'უკვე დაჯავშნილია'}
                                             <button
                                                 type="button"
