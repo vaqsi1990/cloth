@@ -70,7 +70,7 @@ const Footer = () => {
                 <div className="flex items-center justify-start space-x-3">
                   <Image src="/Frame2.png" alt="phone" width={60} height={60} />
                   <span className="text-white font-normal text-[16px] md:text-[18px]">
-                    (+995)599 55 53 95</span>
+                  +995599556395</span>
                 </div>
                 <div className="flex items-center justify-start space-x-3">
                   <Image src="/Frame3.png" alt="email" width={60} height={60} />
