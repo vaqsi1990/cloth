@@ -35,6 +35,7 @@ import {
   getProductCreateFieldErrors,
 } from '@/lib/product-create-validation'
 import ProductDiscountFields from '@/components/ProductDiscountFields'
+import ProductMinPriceNotice from '@/components/ProductMinPriceNotice'
 import { PRODUCT_PHOTO_BACKGROUND_CONSENT_ERROR } from '@/components/ProductPhotoBackgroundConsent'
 import { getProductDiscountBasePrice } from '@/lib/discount-helpers'
 import { VIP_MONTHLY_PRICE_GEL } from '@/lib/product-vip'
@@ -882,7 +883,6 @@ const NewProductPage = () => {
               {errors.description && <p className="text-red-500 md:text-[16px] text-[14px] mt-1">{errors.description}</p>}
             </div>
 
-
           </div>
 
           {/* Variants */}
@@ -890,6 +890,7 @@ const NewProductPage = () => {
 
           {/* Rental Options */}
           <div className="bg-white rounded-lg shadow-sm p-6">
+            <ProductMinPriceNotice className="mb-4" />
             <h2 className="md:text-[20px] text-[18px] text-black font-semibold mb-6">გაქირავება</h2>
 
 

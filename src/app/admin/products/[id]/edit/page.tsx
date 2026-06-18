@@ -33,6 +33,7 @@ import {
   getProductCreateFieldErrors,
 } from '@/lib/product-create-validation'
 import ProductDiscountFields from '@/components/ProductDiscountFields'
+import ProductMinPriceNotice from '@/components/ProductMinPriceNotice'
 import { getProductDiscountBasePrice } from '@/lib/discount-helpers'
 import {
   optionalCategoryIdField,
@@ -934,6 +935,7 @@ const EditProductPage = () => {
 
           {/* Rental Options */}
           <div className="bg-white rounded-lg shadow-sm p-6">
+            <ProductMinPriceNotice className="mb-4" />
             <h2 className="text-[20px] text-black font-semibold mb-6">გაქირავება</h2>
 
             <div className="space-y-6">

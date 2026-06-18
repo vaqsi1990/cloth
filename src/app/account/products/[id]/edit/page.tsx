@@ -25,6 +25,7 @@ import {
   getProductCreateFieldErrors,
 } from '@/lib/product-create-validation'
 import ProductDiscountFields from '@/components/ProductDiscountFields'
+import ProductMinPriceNotice from '@/components/ProductMinPriceNotice'
 import { getProductDiscountBasePrice } from '@/lib/discount-helpers'
 import { isProductVipActive, VIP_MONTHLY_PRICE_GEL } from '@/lib/product-vip'
 import {
@@ -935,7 +936,6 @@ const EditProductPage = () => {
                 className="w-full text-black px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
               />
             </div>
-
            
           </div>
 
@@ -1001,6 +1001,7 @@ const EditProductPage = () => {
 
           {/* Rental Options */}
           <div className="bg-white rounded-lg shadow-sm p-6">
+            <ProductMinPriceNotice className="mb-4" />
             <h2 className="text-[20px] text-black font-semibold mb-6">გაქირავება</h2>
 
             <div className="space-y-6">
