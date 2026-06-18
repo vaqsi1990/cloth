@@ -5,6 +5,7 @@ import { z } from "zod"
 import { Prisma } from "@prisma/client"
 import { PERSON_ADDRESS_REGEX, PERSON_NAME_REGEX } from "@/lib/personal-text"
 import { isValidPhone, normalizePhone, phoneLookupVariants } from "@/lib/phone"
+import { normalizeEmail } from "@/lib/email-address"
 
 const signupSchema = z.object({
   name: z.string()
@@ -48,11 +49,12 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const validatedData = signupSchema.parse(body)
+    const email = normalizeEmail(validatedData.email)
 
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await prisma.user.findFirst({
       where: {
-        email: validatedData.email
+        email: { equals: email, mode: 'insensitive' },
       }
     })
 
@@ -79,7 +81,7 @@ export async function POST(request: NextRequest) {
     // Verify registration code (6-character alphanumeric)
     const regCode = await prisma.registrationCode.findFirst({
       where: {
-        email: validatedData.email,
+        email: { equals: email, mode: 'insensitive' },
         code: validatedData.code,
         expiresAt: { gt: new Date() },
         usedAt: null,
@@ -108,7 +110,7 @@ export async function POST(request: NextRequest) {
         gender: validatedData.gender,
         dateOfBirth: new Date(validatedData.dateOfBirth),
         personalId: validatedData.personalId,
-        email: validatedData.email,
+        email,
         password: hashedPassword,
         code: validatedData.code,
         role: "USER"
@@ -121,7 +123,7 @@ export async function POST(request: NextRequest) {
   })
   // Optionally remove other unused codes for this email
   await prisma.registrationCode.deleteMany({
-    where: { email: validatedData.email, usedAt: null, expiresAt: { lt: new Date() } }
+    where: { email: { equals: email, mode: 'insensitive' }, usedAt: null, expiresAt: { lt: new Date() } }
   })
     return NextResponse.json({
       success: true,

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { isEmailConfigured, sendVerificationEmail } from '@/lib/email'
+import { normalizeEmail } from '@/lib/email-address'
 
 const schema = z.object({
   email: z.string().email('გთხოვთ შეიყვანოთ სწორი ელ-ფოსტა'),
@@ -26,10 +27,13 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { email } = schema.parse(body)
+    const { email: rawEmail } = schema.parse(body)
+    const email = normalizeEmail(rawEmail)
 
     // Optional: block if user already exists
-    const existing = await prisma.user.findUnique({ where: { email } })
+    const existing = await prisma.user.findFirst({
+      where: { email: { equals: email, mode: 'insensitive' } },
+    })
     if (existing) {
       return NextResponse.json(
         { error: 'ამ ელ-ფოსტით მომხმარებელი უკვე არსებობს' },
@@ -38,7 +42,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Invalidate previous codes for this email (cleanup)
-    await prisma.registrationCode.deleteMany({ where: { email } })
+    await prisma.registrationCode.deleteMany({
+      where: { email: { equals: email, mode: 'insensitive' } },
+    })
 
     const code = generateCode()
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes

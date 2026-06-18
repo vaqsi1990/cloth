@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import GoogleProvider from "next-auth/providers/google"
 import { prisma } from "@/lib/prisma"
 import { prismaCacheStrategy } from "@/lib/prisma-cache"
+import { normalizeEmail } from "@/lib/email-address"
 import bcrypt from "bcryptjs"
 
 // Validate required environment variables
@@ -24,9 +25,11 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
-        const user = await prisma.user.findUnique({
+        const email = normalizeEmail(credentials.email)
+
+        const user = await prisma.user.findFirst({
           where: {
-            email: credentials.email
+            email: { equals: email, mode: 'insensitive' },
           },
           ...prismaCacheStrategy({ swr: 60, ttl: 60 }),
           select: {
@@ -92,17 +95,17 @@ export const authOptions: NextAuthOptions = {
       if (account?.provider === "google") {
         try {
           // Normalize email for consistent lookups
-          const email = user.email?.trim().toLowerCase()
+          const email = normalizeEmail(user.email ?? '')
 
           if (!email) {
             console.error("Google OAuth: No email provided")
             return false
           }
 
-          // Check if user is banned
-          const existingUser = await prisma.user.findUnique({
-            where: { email },
-            select: { banned: true, banReason: true }
+          // Check if user is banned (case-insensitive email match)
+          const existingUser = await prisma.user.findFirst({
+            where: { email: { equals: email, mode: 'insensitive' } },
+            select: { id: true, banned: true, banReason: true, email: true }
           })
 
           if (existingUser?.banned) {
@@ -110,53 +113,28 @@ export const authOptions: NextAuthOptions = {
             return false
           }
 
-          // Create or update user account
+          // Link to existing account or create a new one
           if (account && email) {
-            const dbUser = await prisma.user.upsert({
-              where: { email },
-              update: {
-                name: user.name || undefined,
-                image: user.image || undefined,
-                emailVerified: new Date(),
-              },
-              create: {
-                email,
-                name: user.name || undefined,
-                image: user.image || undefined,
-                emailVerified: new Date(),
-                code: Math.random().toString(36).substring(2, 8).toUpperCase(),
-                role: "USER",
-              },
-            })
+            const dbUser = existingUser
+              ? await prisma.user.update({
+                  where: { id: existingUser.id },
+                  data: {
+                    email,
+                    emailVerified: new Date(),
+                    ...(user.image ? { image: user.image } : {}),
+                  },
+                })
+              : await prisma.user.create({
+                  data: {
+                    email,
+                    name: user.name || undefined,
+                    image: user.image || undefined,
+                    emailVerified: new Date(),
+                    code: Math.random().toString(36).substring(2, 8).toUpperCase(),
+                    role: "USER",
+                  },
+                })
 
-            const existingAccount = await prisma.account.findFirst({
-              where: {
-                provider: "google",
-                user: { email },
-              },
-            })
-            
-            if (!existingAccount) {
-              await prisma.account.create({
-                data: {
-                  userId: dbUser.id,
-                  type: account.type,
-                  provider: account.provider,
-                  providerAccountId: account.providerAccountId,
-            
-                  // OAuth tokens
-                  access_token: account.access_token,
-                  refresh_token: account.refresh_token,
-                  expires_at: account.expires_at,
-                  token_type: account.token_type,
-                  scope: account.scope,
-                  id_token: account.id_token,
-                  session_state: account.session_state,
-                },
-              })
-            }
-            
-            // Link Google account if not already linked
             await prisma.account.upsert({
               where: {
                 provider_providerAccountId: {
@@ -165,6 +143,7 @@ export const authOptions: NextAuthOptions = {
                 },
               },
               update: {
+                userId: dbUser.id,
                 refresh_token: account.refresh_token || undefined,
                 access_token: account.access_token || undefined,
                 expires_at: account.expires_at || undefined,
@@ -187,6 +166,9 @@ export const authOptions: NextAuthOptions = {
                 session_state: account.session_state,
               },
             })
+
+            // Ensure JWT/session use the database user id, not Google's provider id
+            user.id = dbUser.id
           }
         } catch (error: any) {
           if (error.message?.startsWith("BANNED:")) {
@@ -222,6 +204,8 @@ export const authOptions: NextAuthOptions = {
 
       if (user) {
         const u = user as AuthorizedUser
+        if (u.id) token.sub = u.id
+        if (typeof u.email === 'string') token.email = normalizeEmail(u.email)
         if (typeof u.role === 'string') token.role = u.role
         if (typeof u.image === 'string' || u.image === null) token.image = u.image
         if (typeof u.phone === 'string' || u.phone === null) token.phone = u.phone
@@ -232,37 +216,73 @@ export const authOptions: NextAuthOptions = {
         if (typeof u.verificationStatus === 'string' || u.verificationStatus === null) token.verificationStatus = u.verificationStatus
       }
 
-      // For OAuth providers on first sign in, fetch user data from database
-      if (account?.provider === "google" && token.sub) {
-        try {
-          const dbUser = await prisma.user.findUnique({
+      const userDataSelect = {
+        id: true,
+        name: true,
+        role: true,
+        image: true,
+        phone: true,
+        location: true,
+        address: true,
+        personalId: true,
+        iban: true,
+        verification: {
+          select: {
+            status: true
+          }
+        }
+      } as const
+
+      const applyDbUserToToken = (dbUser: {
+        id: string
+        name: string | null
+        role: string
+        image: string | null
+        phone: string | null
+        location: string | null
+        address: string | null
+        personalId: string | null
+        iban: string | null
+        verification: { status: string } | null
+      }) => {
+        token.sub = dbUser.id
+        token.name = dbUser.name
+        token.role = dbUser.role
+        token.image = dbUser.image
+        token.phone = dbUser.phone
+        token.location = dbUser.location
+        token.address = dbUser.address
+        token.personalId = dbUser.personalId
+        token.iban = dbUser.iban
+        token.verificationStatus = dbUser.verification?.status || null
+      }
+
+      const findDbUserForToken = async () => {
+        if (token.sub) {
+          const byId = await prisma.user.findUnique({
             ...prismaCacheStrategy({ swr: 60, ttl: 60 }),
             where: { id: token.sub },
-            select: {
-              role: true,
-              image: true,
-              phone: true,
-              location: true,
-              address: true,
-              personalId: true,
-              iban: true,
-              verification: {
-                select: {
-                  status: true
-                }
-              }
-            }
+            select: userDataSelect,
           })
+          if (byId) return byId
+        }
 
+        const email = typeof token.email === 'string' ? normalizeEmail(token.email) : null
+        if (!email) return null
+
+        return prisma.user.findFirst({
+          ...prismaCacheStrategy({ swr: 60, ttl: 60 }),
+          where: { email: { equals: email, mode: 'insensitive' } },
+          select: userDataSelect,
+        })
+      }
+
+      // For OAuth providers on first sign in, fetch user data from database
+      if (account?.provider === "google") {
+        try {
+          const dbUser = await findDbUserForToken()
           if (dbUser) {
-            token.role = dbUser.role
-            token.image = dbUser.image
-            token.phone = dbUser.phone
-            token.location = dbUser.location
-            token.address = dbUser.address
-            token.personalId = dbUser.personalId
-            token.iban = dbUser.iban
-            token.verificationStatus = dbUser.verification?.status || null
+            applyDbUserToToken(dbUser)
           }
         } catch (error) {
           console.error('Error fetching user data in jwt callback:', error)
@@ -272,34 +292,19 @@ export const authOptions: NextAuthOptions = {
       // Refresh user data from database on each request (for OAuth users or when user data might have changed)
       if (token.sub && !account) {
         try {
-          const dbUser = await prisma.user.findUnique({
-            ...prismaCacheStrategy({ swr: 60, ttl: 60 }),
-            where: { id: token.sub },
-            select: {
-              role: true,
-              image: true,
-              phone: true,
-              location: true,
-              address: true,
-              personalId: true,
-              iban: true,
-              verification: {
-                select: {
-                  status: true
-                }
-              }
-            }
-          })
+          const dbUser = await findDbUserForToken()
 
           if (dbUser) {
+            token.sub = dbUser.id
+            token.name = dbUser.name ?? token.name
             // Always update role from database to ensure it's current
             token.role = dbUser.role
             if (!token.image && dbUser.image) token.image = dbUser.image
-            if (!token.phone && dbUser.phone) token.phone = dbUser.phone
-            if (!token.location && dbUser.location) token.location = dbUser.location
+            token.phone = dbUser.phone ?? token.phone
+            token.location = dbUser.location ?? token.location
             token.address = dbUser.address ?? token.address
-            if (!token.personalId && dbUser.personalId) token.personalId = dbUser.personalId
-            if (!token.iban && dbUser.iban) token.iban = dbUser.iban
+            token.personalId = dbUser.personalId ?? token.personalId
+            token.iban = dbUser.iban ?? token.iban
             token.verificationStatus = dbUser.verification?.status || null
           }
         } catch (error) {
