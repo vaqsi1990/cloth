@@ -1165,7 +1165,12 @@ const ProductPage = () => {
         })
 
         if (result.success) {
-            showToast("დაემატა კალათაში", "success")
+            if (requiresInquiry) {
+                showToast('მოთხოვნა დადასტურებულია — გადადით გადახდაზე', 'success')
+                router.push(`/checkout?item=${result.itemId}`)
+            } else {
+                showToast("დაემატა კალათაში", "success")
+            }
         } else {
             showToast(result.message, "error")
         }
@@ -1877,7 +1882,7 @@ const ProductPage = () => {
                                                             )}
                                                             className="w-full py-4 rounded-xl md:text-[18px] text-[16px] text-white font-bold transition bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
                                                         >
-                                                            {isAdding ? "მუშავდება..." : "დაჯავშნა / კალათაში"}
+                                                            {isAdding ? "მუშავდება..." : requiresInquiry ? "გადახდა" : "დაჯავშნა / კალათაში"}
                                                         </button>
                                                     )}
                                                 </>

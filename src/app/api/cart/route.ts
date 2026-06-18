@@ -375,7 +375,8 @@ export async function POST(request: NextRequest) {
     if (existingItem) {
       return NextResponse.json({
         success: true,
-        message: 'Item already in cart'
+        message: 'Item already in cart',
+        itemId: existingItem.id,
       })
     }
 
@@ -405,7 +406,7 @@ export async function POST(request: NextRequest) {
       product,
     })
 
-    await prisma.cartItem.create({
+    const cartItem = await prisma.cartItem.create({
       data: {
         cartId: cart.id,
         productId: validatedData.productId,
@@ -435,7 +436,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Item added to cart'
+      message: 'Item added to cart',
+      itemId: cartItem.id,
     })
 
   } catch (error) {

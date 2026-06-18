@@ -74,7 +74,9 @@ export const useCart = () => {
   // Add item to cart
   const addToCart = async (
     item: Omit<CartItem, 'id'>
-  ): Promise<{ success: true } | { success: false; message: string }> => {
+  ): Promise<
+    { success: true; itemId: number } | { success: false; message: string }
+  > => {
     if (!session?.user?.id) {
       return { success: false, message: 'ავტორიზაცია საჭიროა' }
     }
@@ -94,7 +96,10 @@ export const useCart = () => {
         await fetchCart() // Refresh cart
         // Trigger cart update notification for other components
         localStorage.setItem('cart-updated', Date.now().toString())
-        return { success: true }
+        if (typeof data.itemId !== 'number') {
+          return { success: false, message: 'შეცდომა კალათაში დამატებისას' }
+        }
+        return { success: true, itemId: data.itemId }
       }
       return {
         success: false,
