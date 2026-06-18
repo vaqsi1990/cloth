@@ -493,7 +493,7 @@ const CheckoutPage = () => {
                 orderData.voucherCode = appliedVoucher.code
             }
 
-            // Platform commission is 9% of seller price; delivery goes to admin
+            // Platform commission is 10% of seller price; delivery goes to admin
             const baseAmount = getCheckoutSubtotal()
             const sellerAmount = getSellerPriceFromBuyer(baseAmount)
             const adminAmount =

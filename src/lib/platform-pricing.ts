@@ -1,12 +1,12 @@
 import { getDiscountedPrice } from '@/lib/discount-helpers'
 
-export const PLATFORM_COMMISSION_RATE = 0.09
+export const PLATFORM_COMMISSION_RATE = 0.1
 
 export function roundMoney(amount: number): number {
   return Math.round(amount * 100) / 100
 }
 
-/** Seller-listed price X → buyer pays X × 1.09 */
+/** Seller-listed price X → buyer pays X × 1.10 */
 export function getBuyerPrice(sellerPrice: number): number {
   if (!Number.isFinite(sellerPrice) || sellerPrice <= 0) return 0
   return roundMoney(sellerPrice * (1 + PLATFORM_COMMISSION_RATE))
@@ -18,7 +18,7 @@ export function getSellerPriceFromBuyer(buyerPrice: number): number {
   return roundMoney(buyerPrice / (1 + PLATFORM_COMMISSION_RATE))
 }
 
-/** Commission on seller price: X × 9% */
+/** Commission on seller price: X × 10% */
 export function getCommissionFromSellerPrice(sellerPrice: number): number {
   if (!Number.isFinite(sellerPrice) || sellerPrice <= 0) return 0
   return roundMoney(sellerPrice * PLATFORM_COMMISSION_RATE)
