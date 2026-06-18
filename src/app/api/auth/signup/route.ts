@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 import { Prisma } from "@prisma/client"
 import { PERSON_ADDRESS_REGEX, PERSON_NAME_REGEX } from "@/lib/personal-text"
+import { isValidPhone, normalizePhone, phoneLookupVariants } from "@/lib/phone"
 
 const signupSchema = z.object({
   name: z.string()
@@ -12,7 +13,10 @@ const signupSchema = z.object({
   lastName: z.string()
     .min(2, "გვარი უნდა იყოს მინიმუმ 2 სიმბოლო")
     .regex(PERSON_NAME_REGEX, "გვარი უნდა შეიცავდეს ქართულ ან ინგლისურ ასოებს"),
-  phone: z.string().min(6, "ტელეფონის ნომერი საჭიროა"),
+  phone: z.string()
+    .min(1, "ტელეფონის ნომერი საჭიროა")
+    .transform(normalizePhone)
+    .refine(isValidPhone, "ტელეფონის ნომერი არასწორია. მაგ: 555123456 ან +995555123456"),
   location: z.string()
     .min(2, "ადგილმდებარეობა აუცილებელია")
     .regex(PERSON_NAME_REGEX, "ადგილმდებარეობა უნდა შეიცავდეს ქართულ ან ინგლისურ ასოებს"),
@@ -55,6 +59,19 @@ export async function POST(request: NextRequest) {
     if (existingUser) {
       return NextResponse.json(
         { success: false, error: "მომხმარებელი ამ ელფოსტით უკვე არსებობს" },
+        { status: 400 }
+      )
+    }
+
+    const existingPhone = await prisma.user.findFirst({
+      where: {
+        phone: { in: phoneLookupVariants(validatedData.phone) },
+      },
+    })
+
+    if (existingPhone) {
+      return NextResponse.json(
+        { success: false, error: "ტელეფონის ნომერი უკვე გამოყენებულია" },
         { status: 400 }
       )
     }

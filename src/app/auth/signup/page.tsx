@@ -14,6 +14,7 @@ import {
   PERSON_ADDRESS_FIELD_ERROR,
   PERSON_NAME_FIELD_ERROR,
 } from '@/lib/personal-text'
+import { isValidPhone } from '@/lib/phone'
 
 const SignUpPage = () => {
   const [formData, setFormData] = useState({
@@ -118,6 +119,19 @@ const SignUpPage = () => {
           return newErrors
         })
       }
+    } else if (name === 'phone') {
+      if (value && !isValidPhone(value)) {
+        setFieldErrors(prev => ({
+          ...prev,
+          [name]: 'ტელეფონის ნომერი არასწორია. მაგ: 555123456 ან +995555123456',
+        }))
+      } else {
+        setFieldErrors(prev => {
+          const newErrors = { ...prev }
+          delete newErrors[name]
+          return newErrors
+        })
+      }
     } else if (name === 'pickupAddress') {
       if (value && !isValidPersonAddress(value)) {
         setFieldErrors(prev => ({
@@ -162,6 +176,10 @@ const SignUpPage = () => {
     }
     if (!/[0-9]/.test(formData.address)) {
       showToast(PERSON_ADDRESS_DIGIT_ERROR, 'error')
+      return false
+    }
+    if (!isValidPhone(formData.phone)) {
+      showToast('ტელეფონის ნომერი არასწორია. მაგ: 555123456 ან +995555123456', 'error')
       return false
     }
     return true
@@ -424,20 +442,21 @@ const SignUpPage = () => {
             {/* Phone */}
             <div>
               <label htmlFor="phone" className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
-                ტელეფონის ნომერი
+                ტელეფონის ნომერი <span className="text-red-600">*</span>
               </label>
               <div className="relative">
                 <input
                   id="phone"
                   name="phone"
-                  type="text"
+                  type="tel"
                   required
                   value={formData.phone}
                   onChange={handleChange}
-                  className="w-full pl-4 pr-4 text-black py-3 placeholder:text-gray-500 border border-black rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300"
-                  placeholder="შეიყვანეთ ტელეფონის ნომერი"
+                  className={`w-full pl-4 pr-4 text-black py-3 placeholder:text-gray-500 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-300 ${fieldErrors.phone ? 'border-red-500' : 'border-black'}`}
+                  placeholder="მაგ: 555123456"
                 />
               </div>
+              {fieldErrors.phone && <p className="text-red-500 md:text-[18px] text-[16px] mt-1">{fieldErrors.phone}</p>}
             </div>
             {/* Location */}
             <div>

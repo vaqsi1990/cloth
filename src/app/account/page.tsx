@@ -28,6 +28,7 @@ import ChatTypingIndicator from '@/components/ChatTypingIndicator'
 import ChatUnreadBadge from '@/components/ChatUnreadBadge'
 import { useChatTyping } from '@/hooks/useChatTyping'
 import { useUserChatUnreadCount } from '@/hooks/useUserChatUnreadCount'
+import { isValidPhone } from '@/lib/phone'
 import {
   formatSnapshotGender,
   type OrderItemProductSnapshot,
@@ -674,9 +675,7 @@ const AccountPageContent = () => {
         body: JSON.stringify({
           name: session?.user?.name || '',
           email: session?.user?.email || '',
-          phone: (session?.user as { phone?: string })?.phone || '',
-          location: (session?.user as { location?: string })?.location || '',
-          image: urls[0] || null
+          image: urls[0] || null,
         }),
       })
 
@@ -2636,6 +2635,18 @@ function ProfileSettingsForm({ hasActiveRentals, checkingRentals }: { hasActiveR
     setSaving(true)
     setError(null)
     setSuccess(null)
+
+    if (!form.phone.trim()) {
+      setError('ტელეფონის ნომერი საჭიროა')
+      setSaving(false)
+      return
+    }
+    if (!isValidPhone(form.phone)) {
+      setError('ტელეფონის ნომერი არასწორია. მაგ: 555123456 ან +995555123456')
+      setSaving(false)
+      return
+    }
+
     try {
       const res = await fetch('/api/user/profile', {
         method: 'PUT',
@@ -2752,8 +2763,17 @@ function ProfileSettingsForm({ hasActiveRentals, checkingRentals }: { hasActiveR
       </div>
 
       <div>
-        <label className="block md:text-[18px] text-[16px] font-medium text-black mb-2">ტელეფონი</label>
-        <input name="phone" value={form.phone} onChange={onChange} className="w-full px-4 py-3 border text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent" />
+        <label className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
+          ტელეფონი <span className="text-red-600">*</span>
+        </label>
+        <input
+          name="phone"
+          value={form.phone}
+          onChange={onChange}
+          required
+          placeholder="მაგ: 555123456"
+          className="w-full px-4 py-3 border text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+        />
       </div>
 
       <div>

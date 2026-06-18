@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { isValidPhone, normalizePhone, phoneLookupVariants } from '@/lib/phone'
 
 const emptyToUndefined = (value: unknown) =>
   typeof value === 'string' && value.trim() === '' ? undefined : value
@@ -16,7 +17,13 @@ const profileSchema = z.object({
   name: z.string().min(1, 'სახელი აუცილებელია'),
   email: z.string().email('არასწორი ელფოსტა'),
   image: z.preprocess(emptyToUndefined, z.string().nullable().optional()),
-  phone: z.preprocess(emptyToUndefined, z.string().min(6, 'ტელეფონის ნომერი არასწორია').optional()),
+  phone: z.preprocess(
+    emptyToUndefined,
+    z.string()
+      .transform(normalizePhone)
+      .refine(isValidPhone, 'ტელეფონის ნომერი არასწორია. მაგ: 555123456 ან +995555123456')
+      .optional()
+  ),
   location: z.preprocess(emptyToUndefined, z.string().min(2, 'ადგილმდებარეობა არასწორია').optional()),
   lastName: z.preprocess(emptyToUndefined, z.string().min(2, 'გვარი არასწორია').optional()),
   address: z.preprocess(emptyToUndefined, z.string().min(2, 'მისამართი არასწორია').optional()),
@@ -50,6 +57,25 @@ export async function PUT(request: NextRequest) {
     const body = await request.json()
     const { name, email, image, phone, location, lastName, address, postalIndex, pickupAddress, gender, dateOfBirth, iban } = profileSchema.parse(body)
 
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { phone: true },
+    })
+
+    const phoneWasCleared = typeof body.phone === 'string' && body.phone.trim() === ''
+    let phoneToSave: string
+
+    if (phone) {
+      phoneToSave = phone
+    } else if (phoneWasCleared || !currentUser?.phone) {
+      return NextResponse.json(
+        { success: false, error: 'ტელეფონის ნომერი საჭიროა' },
+        { status: 400 }
+      )
+    } else {
+      phoneToSave = currentUser.phone
+    }
+
     // Check if email is already taken by another user
     const existingUser = await prisma.user.findFirst({
       where: {
@@ -66,19 +92,17 @@ export async function PUT(request: NextRequest) {
     }
 
     // Check if phone is already taken by another user
-    if (phone) {
-      const existingPhone = await prisma.user.findFirst({
-        where: {
-          phone: phone,
-          id: { not: session.user.id }
-        }
-      })
-      if (existingPhone) {
-        return NextResponse.json(
-          { success: false, error: 'ტელეფონი უკვე გამოიყენება' },
-          { status: 409 }
-        )
-      }
+    const existingPhone = await prisma.user.findFirst({
+      where: {
+        phone: { in: phoneLookupVariants(phoneToSave) },
+        id: { not: session.user.id },
+      },
+    })
+    if (existingPhone) {
+      return NextResponse.json(
+        { success: false, error: 'ტელეფონის ნომერი უკვე გამოყენებულია' },
+        { status: 409 }
+      )
     }
 
     // Check if personalId is already taken by another user
@@ -92,7 +116,7 @@ export async function PUT(request: NextRequest) {
         name,
         email,
         image: image || null,
-        phone: phone ?? undefined,
+        phone: phoneToSave,
         location: location ?? undefined,
         lastName: lastName ?? undefined,
         address: address ?? undefined,
