@@ -16,6 +16,7 @@ import {
   normalizeDateOnly,
 } from '@/lib/rental-inquiry'
 import { getOrCreateProductChatRoom } from '@/lib/rental-inquiry-chat'
+import { sendRentalInquirySellerEmail } from '@/lib/rental-inquiry-email'
 import {
   MAX_RENTAL_PERIOD_DAYS,
   validateSelfServeRentalDates,
@@ -268,6 +269,23 @@ export async function POST(request: NextRequest) {
         status: RentalInquiryStatus.PENDING,
       },
       select: inquirySelect,
+    })
+
+    void sendRentalInquirySellerEmail({
+      inquiryId: inquiry.id,
+      productId: inquiry.product.id,
+      productName: inquiry.product.name,
+      productSku: inquiry.product.sku,
+      startDate: inquiry.startDate,
+      endDate: inquiry.endDate,
+      size: inquiry.size,
+      estimatedTotal: inquiry.estimatedTotal,
+      buyerName: inquiry.buyer.name,
+      buyerMessage: inquiry.buyerMessage,
+      sellerName: inquiry.seller.name,
+      sellerEmail: inquiry.seller.email ?? '',
+    }).catch((error) => {
+      console.error('[rental-inquiries] Seller notification email failed:', error)
     })
 
     return NextResponse.json({
