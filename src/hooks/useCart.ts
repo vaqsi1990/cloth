@@ -16,6 +16,8 @@ interface CartItem {
   rentalStartDate?: string
   rentalEndDate?: string
   rentalDays?: number
+  rentalPriceTiers?: Array<{ minDays: number; pricePerDay: number }>
+  pricePerDay?: number | null
   discount?: number | null
   discountDays?: number | null
   discountStartDate?: string | null

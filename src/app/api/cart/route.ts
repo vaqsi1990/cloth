@@ -17,7 +17,7 @@ import {
   getDeliveryPriceForCity,
   toPrismaDeliverySpeed,
 } from '@/lib/delivery'
-import { getCartItemPayablePrice } from '@/lib/cart-item-pricing'
+import { getCartItemPayablePrice, getRentalCartDiscountContext } from '@/lib/cart-item-pricing'
 import {
   cartProductPricingSelect,
   resolveCartItemBuyerListPrice,
@@ -150,6 +150,7 @@ function buildCartResponse(cart: {
         minDays: number
         pricePerDay: number
       }>
+      pricePerDay: number | null
       user: { id: string; pickupAddress: string | null } | null
     } | null
   }>
@@ -179,13 +180,26 @@ function buildCartResponse(cart: {
       discount,
       discountDays: product?.discountDays ?? null,
       discountStartDate: product?.discountStartDate?.toISOString() ?? null,
+      rentalPriceTiers: product?.rentalPriceTiers ?? [],
+      pricePerDay: product?.pricePerDay ?? null,
       sellerPickupAddress: item.product?.pickupAddress?.trim() || null,
       allowsPickup: item.product?.allowsPickup ?? false,
     }
   })
 
   const itemsTotal = processedItems.reduce((sum, item) => {
-    const payable = getCartItemPayablePrice(item.price, item.discount || 0)
+    const payable = getCartItemPayablePrice(
+      item.price,
+      item.discount || 0,
+      getRentalCartDiscountContext({
+        isRental: item.isRental,
+        rentalDays: item.rentalDays,
+        product: {
+          rentalPriceTiers: item.rentalPriceTiers,
+          pricePerDay: item.pricePerDay,
+        },
+      }),
+    )
     return sum + payable * item.quantity
   }, 0)
 

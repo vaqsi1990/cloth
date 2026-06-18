@@ -5,7 +5,8 @@ import {
   productHasActiveDiscount,
   type DiscountFields,
 } from '@/lib/discount-helpers'
-import { getBuyerPrice, getBuyerPriceAfterSellerDiscount } from '@/lib/platform-pricing'
+import { getBuyerPrice, roundMoney } from '@/lib/platform-pricing'
+import { getDiscountedPrice } from '@/lib/discount-helpers'
 import { computeRentalSellerTotal } from '@/lib/resolve-cart-item-price'
 import {
   calcRentalDays,
@@ -79,12 +80,38 @@ export function calcEstimatedTotal(
   return calcRentalSellerTotalForDays(days, tiers, fallbackPricePerDay)
 }
 
+/**
+ * Rental discount is defined on the first tier's minimum bundle (minDays × pricePerDay).
+ * Scale it by rental length so e.g. 300 off a 2-day bundle → 150/day effective discount.
+ */
+export function applyRentalDiscountToSellerTotal(
+  sellerTotal: number,
+  days: number,
+  tiers: RentalPriceTierLike[],
+  discount: number | null | undefined,
+  fallbackPricePerDay?: number | null,
+): number {
+  if (!discount || discount <= 0 || days <= 0 || sellerTotal <= 0) {
+    return sellerTotal
+  }
+
+  const resolved = resolveRentalPriceTiers(tiers, fallbackPricePerDay)
+  const baseTier = [...resolved].sort((a, b) => a.minDays - b.minDays)[0]
+  if (!baseTier || baseTier.minDays <= 0) {
+    return getDiscountedPrice(sellerTotal, discount)
+  }
+
+  const scaledDiscount = (discount / baseTier.minDays) * days
+  return Math.max(0, roundMoney(sellerTotal - scaledDiscount))
+}
+
 /** Buyer payable total (platform fee + active seller discount), same as cart/checkout. */
 export function calcRentalBuyerPayableTotal(
   days: number,
   product: RentalInquiryPricingProduct,
 ): {
   sellerTotal: number
+  sellerTotalAfterDiscount: number
   buyerListPrice: number
   buyerPayable: number
   hasDiscount: boolean
@@ -96,11 +123,19 @@ export function calcRentalBuyerPayableTotal(
     product.pricePerDay,
   )
   const discount = productHasActiveDiscount(processed) ? processed.discount : null
+  const sellerTotalAfterDiscount = applyRentalDiscountToSellerTotal(
+    sellerTotal,
+    days,
+    product.rentalPriceTiers,
+    discount,
+    product.pricePerDay,
+  )
   const buyerListPrice = getBuyerPrice(sellerTotal)
-  const buyerPayable = getBuyerPriceAfterSellerDiscount(sellerTotal, discount)
+  const buyerPayable = getBuyerPrice(sellerTotalAfterDiscount)
 
   return {
     sellerTotal,
+    sellerTotalAfterDiscount,
     buyerListPrice,
     buyerPayable,
     hasDiscount: typeof discount === 'number' && discount > 0,

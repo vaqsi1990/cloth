@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { canUserMakePurchases } from '@/lib/seller-eligibility'
 import { bogTokenManager } from '@/lib/bog-token'
 import { computeCartItemSubtotal } from '@/lib/cart-totals'
-import { getCartItemPayablePrice } from '@/lib/cart-item-pricing'
+import { getCartItemPayablePrice, getRentalCartDiscountContext } from '@/lib/cart-item-pricing'
 import { validateVoucher } from '@/lib/voucher'
 import { processExpiredDiscount } from '@/utils/discountUtils'
 import { computePaymentSplitPercents } from '@/lib/platform-pricing'
@@ -282,17 +282,29 @@ function buildBasketFromResolvedCartItems(
     productId: number | null
     quantity: number
     buyerListPrice: number
+    isRental?: boolean | null
+    rentalDays?: number | null
     product: {
       discount: number | null
       discountDays: number | null
       discountStartDate: Date | null
+      pricePerDay?: number | null
+      rentalPriceTiers?: Array<{ minDays: number; pricePerDay: number }>
     } | null
   }>,
 ): BOGBasketItem[] {
   return items.map((item) => {
     const product = item.product ? processExpiredDiscount(item.product) : null
     const discount = product?.discount && product.discount > 0 ? product.discount : 0
-    const unitPrice = getCartItemPayablePrice(item.buyerListPrice, discount)
+    const unitPrice = getCartItemPayablePrice(
+      item.buyerListPrice,
+      discount,
+      getRentalCartDiscountContext({
+        isRental: item.isRental,
+        rentalDays: item.rentalDays,
+        product,
+      }),
+    )
 
     return {
       quantity: Number(item.quantity),

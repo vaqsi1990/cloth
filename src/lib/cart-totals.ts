@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { getCartItemPayablePrice } from '@/lib/cart-item-pricing'
+import { getCartItemPayablePrice, type RentalCartDiscountContext } from '@/lib/cart-item-pricing'
 import {
   cartProductPricingSelect,
   resolveCartItemBuyerListPrice,
@@ -16,6 +16,7 @@ function sumCartLineItems(
       discount: number | null
       discountDays: number | null
       discountStartDate: Date | null
+      pricePerDay: number | null
       variants: Array<{ price: number }>
       rentalPriceTiers: Array<{ minDays: number; pricePerDay: number }>
     } | null
@@ -31,7 +32,19 @@ function sumCartLineItems(
       rentalDays: item.rentalDays,
       product,
     })
-    const finalPrice = getCartItemPayablePrice(buyerListPrice, productDiscount)
+    const rentalContext: RentalCartDiscountContext | null =
+      item.isRental && item.rentalDays && item.rentalDays > 0
+        ? {
+            rentalDays: item.rentalDays,
+            rentalPriceTiers: product?.rentalPriceTiers ?? [],
+            pricePerDay: product?.pricePerDay ?? null,
+          }
+        : null
+    const finalPrice = getCartItemPayablePrice(
+      buyerListPrice,
+      productDiscount,
+      rentalContext,
+    )
     return sum + finalPrice * item.quantity
   }, 0)
 }

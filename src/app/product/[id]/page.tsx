@@ -28,6 +28,7 @@ import ProductSalePrice from "@/components/ProductSalePrice"
 import RentalTierPrice from "@/components/RentalTierPrice"
 import BuyerPriceBreakdown from "@/components/BuyerPriceBreakdown"
 import { getBuyerPrice, getBuyerSavingsFromSellerDiscount } from "@/lib/platform-pricing"
+import { calcRentalBuyerPayableTotal } from "@/lib/rental-inquiry"
 import StarRating from "@/components/StarRating"
 import { showToast } from "@/utils/toast"
 import ChatTypingIndicator from "@/components/ChatTypingIndicator"
@@ -822,6 +823,24 @@ const ProductPage = () => {
         if (!rentalStartDate || !rentalEndDate) return 0
         return calcRentalDays(rentalStartDate, rentalEndDate)
     }
+
+    const rentalQuote = useMemo(() => {
+        const days = calcDays()
+        if (!days || !product || tiers.length === 0) return null
+
+        return calcRentalBuyerPayableTotal(days, {
+            rentalPriceTiers: tiers,
+            pricePerDay: product.pricePerDay,
+            discount: product.discount,
+            discountDays: product.discountDays,
+            discountStartDate: product.discountStartDate,
+        })
+    }, [
+        rentalStartDate,
+        rentalEndDate,
+        product,
+        tiers,
+    ])
 
     // price from tiers by days
     const priceForDays = (days: number) => {
@@ -1752,23 +1771,33 @@ const ProductPage = () => {
                                             ) : null
                                         })()}
 
-                                        {!!calcDays() && (
+                                        {!!calcDays() && rentalQuote && (
                                             <div className="text-center bg-white rounded-lg border p-3">
                                                 <div className="text-lg font-semibold flex items-center justify-center gap-2 flex-wrap">
                                                     <span>ჯამური ფასი:</span>
-                                                    {product.discount && product.discount > 0 ? (
-                                                        <ProductSalePrice
-                                                            originalPrice={priceForDays(calcDays())}
-                                                            discount={product.discount}
-                                                            size="sm"
-                                                            pricingMode={pricingMode}
-                                                        />
+                                                    {rentalQuote.hasDiscount ? (
+                                                        <>
+                                                            <span className="text-gray-400 line-through text-base">
+                                                                ₾
+                                                                {(pricingMode === 'buyer'
+                                                                    ? rentalQuote.buyerListPrice
+                                                                    : rentalQuote.sellerTotal
+                                                                ).toFixed(2)}
+                                                            </span>
+                                                            <span className="text-red-600 font-semibold">
+                                                                ₾
+                                                                {(pricingMode === 'buyer'
+                                                                    ? rentalQuote.buyerPayable
+                                                                    : rentalQuote.sellerTotalAfterDiscount
+                                                                ).toFixed(2)}
+                                                            </span>
+                                                        </>
                                                     ) : (
                                                         <span>
                                                             ₾
                                                             {(pricingMode === 'buyer'
-                                                                ? getBuyerPrice(priceForDays(calcDays()))
-                                                                : priceForDays(calcDays())
+                                                                ? rentalQuote.buyerPayable
+                                                                : rentalQuote.sellerTotal
                                                             ).toFixed(2)}
                                                         </span>
                                                     )}

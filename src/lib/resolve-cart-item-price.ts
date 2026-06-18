@@ -81,6 +81,7 @@ export const cartProductPricingSelect = {
   discount: true,
   discountDays: true,
   discountStartDate: true,
+  pricePerDay: true,
   variants: {
     select: { price: true },
     orderBy: { id: 'asc' as const },

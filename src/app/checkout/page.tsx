@@ -20,6 +20,7 @@ import { resolveCartPickupAddress } from '@/lib/product-pickup'
 import {
   getCartItemBuyerSavings,
   getCartItemPayablePrice,
+  getRentalCartDiscountContext,
 } from '@/lib/cart-item-pricing'
 import { getSellerPriceFromBuyer } from '@/lib/platform-pricing'
 import {
@@ -28,12 +29,22 @@ import {
   PERSON_ADDRESS_FIELD_ERROR,
 } from '@/lib/personal-text'
 
-function getItemLineTotal(
-  price: number,
-  quantity: number,
-  discount: number | null | undefined,
-) {
-  return getCartItemPayablePrice(price, discount || 0) * quantity
+function getItemLineTotal(item: {
+  price: number
+  quantity: number
+  discount?: number | null
+  isRental?: boolean
+  rentalDays?: number
+  rentalPriceTiers?: Array<{ minDays: number; pricePerDay: number }>
+  pricePerDay?: number | null
+}) {
+  return (
+    getCartItemPayablePrice(
+      item.price,
+      item.discount || 0,
+      getRentalCartDiscountContext(item),
+    ) * item.quantity
+  )
 }
 
 const CheckoutPage = () => {
@@ -89,11 +100,7 @@ const CheckoutPage = () => {
 
     const getCheckoutSubtotal = () => {
         if (!checkoutItem) return 0
-        return getItemLineTotal(
-            checkoutItem.price,
-            checkoutItem.quantity,
-            checkoutItem.discount,
-        )
+        return getItemLineTotal(checkoutItem)
     }
 
     useEffect(() => {
@@ -1022,10 +1029,18 @@ const CheckoutPage = () => {
                                                 {item.discount && item.discount > 0 ? (
                                                     <div className="flex flex-col gap-1">
                                                         <span className="md:text-[18px] text-[16px] font-bold text-red-600">
-                                                            ფასი: ₾{(getCartItemPayablePrice(item.price, item.discount) * item.quantity).toFixed(2)}
+                                                            ფასი: ₾{(getCartItemPayablePrice(
+                                                                item.price,
+                                                                item.discount,
+                                                                getRentalCartDiscountContext(item),
+                                                            ) * item.quantity).toFixed(2)}
                                                         </span>
                                                         <div className="bg-[#1B3729] rounded-md text-[#FFFFFF] font-regular flex items-center px-2 py-1 w-fit">
-                                                            <span className="text-xs whitespace-nowrap">დანაზოგი: ₾{(getCartItemBuyerSavings(item.price, item.discount) * item.quantity).toFixed(2)}</span>
+                                                            <span className="text-xs whitespace-nowrap">დანაზოგი: ₾{(getCartItemBuyerSavings(
+                                                                item.price,
+                                                                item.discount,
+                                                                getRentalCartDiscountContext(item),
+                                                            ) * item.quantity).toFixed(2)}</span>
                                                             {item.discountDays && (
                                                                 <span className="bg-white text-black px-2 py-1 rounded ml-2 text-xs whitespace-nowrap">{item.discountDays} დღე</span>
                                                             )}
