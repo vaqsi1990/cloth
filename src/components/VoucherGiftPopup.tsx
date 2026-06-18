@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
-import Image from 'next/image'
+import Image from '@/component/AppImage'
 import { X, Copy } from 'lucide-react'
 import { showToast } from '@/utils/toast'
 
