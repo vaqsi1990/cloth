@@ -21,6 +21,10 @@ import {
   refineProductPickupAddress,
 } from '@/lib/product-pickup'
 import {
+  applyDisplayableUrlMap,
+  buildDisplayableUrlMap,
+} from '@/lib/ensure-displayable-image-url'
+import {
   deriveProductFieldsFromVariants,
   getVariantImageUrls,
   mapVariantInputForCreate,
@@ -409,9 +413,17 @@ export async function PUT(
     })
 
     const isSkuProduct = productHasSkuVariants({ variants: validatedData.variants })
+    const displayableUrlMap = await buildDisplayableUrlMap([
+      ...validatedData.imageUrls,
+      ...validatedData.variants.map((variant) => variant.imageUrl),
+    ])
+    const normalizedVariants = validatedData.variants.map((variant) => ({
+      ...variant,
+      imageUrl: applyDisplayableUrlMap(variant.imageUrl, displayableUrlMap) ?? undefined,
+    }))
     const resolvedImageUrls = isSkuProduct
-      ? getVariantImageUrls(validatedData.variants)
-      : validatedData.imageUrls
+      ? getVariantImageUrls(normalizedVariants)
+      : validatedData.imageUrls.map((url) => applyDisplayableUrlMap(url, displayableUrlMap) ?? url)
 
     const updateData: Prisma.ProductUpdateInput = {
       name: validatedData.name,
@@ -452,7 +464,7 @@ export async function PUT(
       },
       // Create new variants
       variants: {
-        create: validatedData.variants.map((variant) => mapVariantInputForCreate(variant))
+        create: normalizedVariants.map((variant) => mapVariantInputForCreate(variant))
       },
       // Update rental price tiers if provided
       // undefined = don't update, [] = clear all, [tiers] = replace with new tiers

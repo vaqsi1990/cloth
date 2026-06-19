@@ -47,6 +47,7 @@ export const ownerProductListSelect = {
     select: {
       id: true,
       price: true,
+      imageUrl: true,
     },
   },
   rentalPriceTiers: {

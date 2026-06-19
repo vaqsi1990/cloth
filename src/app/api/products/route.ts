@@ -49,6 +49,10 @@ import {
 } from '@/lib/sold-products'
 import { resolveCategoryIdForWrite } from '@/lib/category-sync'
 import { sortProductsByVipPriority } from '@/lib/product-vip'
+import {
+  applyDisplayableUrlMap,
+  buildDisplayableUrlMap,
+} from '@/lib/ensure-displayable-image-url'
 import { fetchProductIdsByApprovalPriority } from '@/lib/admin-product-list-order.server'
 import { orderProductsByIdList } from '@/lib/admin-product-list-order'
 import { prismaCacheStrategy } from '@/lib/prisma-cache'
@@ -689,9 +693,17 @@ export async function POST(request: NextRequest) {
     })
 
     const isSkuProduct = productHasSkuVariants({ variants: validatedData.variants })
+    const displayableUrlMap = await buildDisplayableUrlMap([
+      ...validatedData.imageUrls,
+      ...validatedData.variants.map((variant) => variant.imageUrl),
+    ])
+    const normalizedVariants = validatedData.variants.map((variant) => ({
+      ...variant,
+      imageUrl: applyDisplayableUrlMap(variant.imageUrl, displayableUrlMap) ?? undefined,
+    }))
     const resolvedImageUrls = isSkuProduct
-      ? getVariantImageUrls(validatedData.variants)
-      : validatedData.imageUrls
+      ? getVariantImageUrls(normalizedVariants)
+      : validatedData.imageUrls.map((url) => applyDisplayableUrlMap(url, displayableUrlMap) ?? url)
 
     // Create product in database using Prisma (approval fields rely on DB defaults)
     const productData: Prisma.ProductCreateInput = {
@@ -732,7 +744,7 @@ export async function POST(request: NextRequest) {
         }))
       },
       variants: {
-        create: validatedData.variants.map((variant) => mapVariantInputForCreate(variant))
+        create: normalizedVariants.map((variant) => mapVariantInputForCreate(variant))
       },
       rentalPriceTiers: validatedData.rentalPriceTiers ? {
         create: validatedData.rentalPriceTiers.map(tier => ({

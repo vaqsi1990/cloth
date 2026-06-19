@@ -35,6 +35,7 @@ import {
   formatSnapshotGender,
   type OrderItemProductSnapshot,
 } from '@/lib/order-item-snapshot'
+import { getProductThumbnailUrl } from '@/lib/product-image-url'
 
 interface OrderItem {
   id?: number
@@ -107,7 +108,7 @@ interface ProductItem {
   isNew?: boolean
   isSecondHand?: boolean
   images?: Array<{ url: string }>
-  variants?: Array<{ price: number; size: string; id: number }>
+  variants?: Array<{ price: number; size: string; id: number; imageUrl?: string | null }>
   approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED'
   rejectionReason?: string | null
 }
@@ -1842,11 +1843,14 @@ const AccountPageContent = () => {
               <div key={product.id} className="border border-black rounded-lg overflow-hidden hover:shadow-md transition-shadow">
                 <div className="aspect-[3/4] bg-gray-200 relative">
                   <Image
-                    src={product.images?.[0]?.url || '/placeholder.jpg'}
+                    src={getProductThumbnailUrl(product)}
                     alt={product.name}
                     width={400}
                     height={533}
                     className="w-full h-full object-cover"
+                    onError={(event) => {
+                      event.currentTarget.src = '/placeholder.jpg'
+                    }}
                   />
               
                 </div>

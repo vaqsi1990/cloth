@@ -12,6 +12,22 @@ const auth = (req: Request) => {
   return { id: "dev-user" };
 };
 
+async function finalizeUploadedImage(file: {
+  name: string
+  key: string
+  url: string
+  ufsUrl: string
+}) {
+  const fileUrl = file.ufsUrl || file.url
+  try {
+    const displayUrl = await ensureDisplayableImageUrl(fileUrl, file.name, file.key)
+    return { url: displayUrl }
+  } catch (error) {
+    console.error('Upload image normalization failed:', error)
+    throw error
+  }
+}
+
 export const ourFileRouter = {
   imageUploader: f(
     { image: { maxFileSize: "16MB", maxFileCount: 10 } },
@@ -24,14 +40,8 @@ export const ourFileRouter = {
       return { userId: user.id };
     })
     .onUploadComplete(async ({ metadata, file }) => {
-      const fileUrl = file.ufsUrl ?? file.url
-      const displayUrl = await ensureDisplayableImageUrl(
-        fileUrl,
-        file.name,
-        file.key,
-      )
-
-      return { uploadedBy: metadata.userId, url: displayUrl };
+      const normalized = await finalizeUploadedImage(file)
+      return { uploadedBy: metadata.userId, ...normalized };
     }),
 } satisfies FileRouter;
 
