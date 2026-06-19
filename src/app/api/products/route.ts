@@ -636,11 +636,12 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      console.log('ERROR: User identity not approved')
+      console.log('ERROR: User IBAN not approved')
       return NextResponse.json(
         { 
           success: false, 
-          error: 'გთხოვთ შეიყვანოთ ბანკის IBAN პროფილში, რომ შეძლოთ პროდუქტის დამატება.',
+          error: 'თქვენი IBAN ელოდება ადმინისტრატორის დადასტურებას.',
+          requiresVerification: true,
         },
         { status: 403 }
       )

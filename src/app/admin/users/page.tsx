@@ -7,6 +7,7 @@ import Link from 'next/link'
 import Image from '@/component/AppImage'
 import { ArrowLeft, Search, Filter, Users, Mail, Calendar, Package, ShoppingCart, Trash2, UserCheck, UserX, Phone, User, Pencil } from 'lucide-react'
 import { showToast } from '@/utils/toast'
+import { needsIbanIdentityReview } from '@/lib/seller-eligibility'
 
 interface User {
   personalId: string | null
@@ -534,7 +535,69 @@ const AdminUsersPage = () => {
                     )}
                   </div>
 
-                  {/* პირადობის დოკუმენტების გადამოწმების სექცია - დამოუკიდებელი */}
+                  {/* IBAN ვერიფიკაციის გადამოწმება */}
+                  {needsIbanIdentityReview({ iban: user.iban, verification: user.verification }) && (
+                    <div className="px-3 sm:px-4 pb-3 sm:pb-4 border-t border-gray-50">
+                      <div className="mb-3 sm:mb-4 pt-3 sm:pt-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-2">
+                          <div>
+                            <h2 className="text-base sm:text-[18px] font-bold text-blue-800">
+                              IBAN ვერიფიკაცია
+                            </h2>
+                            <p className="text-xs sm:text-sm text-blue-700">
+                              გთხოვთ გადაამოწმოთ მომხმარებლის ბანკის IBAN
+                            </p>
+                          </div>
+                        </div>
+                        {user.iban && (
+                          <div className="mb-3 sm:mb-4 p-3 sm:p-4 border border-blue-200 rounded-lg bg-blue-50">
+                            <h5 className="text-sm sm:text-[18px] font-semibold text-black mb-2">ბანკის IBAN:</h5>
+                            <p className="text-base sm:text-[20px] font-mono text-blue-800 break-all">{user.iban}</p>
+                          </div>
+                        )}
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3">
+                          <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm md:text-[16px] font-semibold text-white whitespace-nowrap ${
+                            (user.verification!.identityStatus === 'REJECTED' || (!user.verification!.identityStatus && user.verification!.status === 'REJECTED')) ? 'bg-red-600' : 'bg-yellow-500'
+                          }`}>
+                            {(user.verification!.identityStatus === 'PENDING' || (!user.verification!.identityStatus && user.verification!.status === 'PENDING')) && 'მიმდინარეობს გადამოწმება'}
+                            {(user.verification!.identityStatus === 'REJECTED' || (!user.verification!.identityStatus && user.verification!.status === 'REJECTED')) && 'უარყოფილია'}
+                          </span>
+                          {user.verification!.updatedAt && (
+                            <span className="text-xs sm:text-sm md:text-[16px] text-black">განახლებულია: {new Date(user.verification!.updatedAt).toLocaleDateString('ka-GE')}</span>
+                          )}
+                        </div>
+                        {(user.verification!.identityComment || (!user.verification!.identityComment && user.verification!.comment)) && (
+                          <div className="bg-red-50 text-red-800 p-2 sm:p-3 rounded mb-3 text-xs sm:text-sm md:text-[16px] border border-red-200">
+                            <strong>კომენტარი:</strong> {user.verification!.identityComment || user.verification!.comment}
+                          </div>
+                        )}
+                        {session.user.role === 'ADMIN' && user.verification && (
+                          <div className="flex flex-col sm:flex-row items-stretch gap-2 sm:gap-3">
+                            <button
+                              className="px-4 sm:px-6 py-2 sm:py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm sm:text-base md:text-[18px] font-semibold shadow-md transition-colors"
+                              onClick={async () => {
+                                const res = await fetch(`/api/admin/users/${user.id}/identity`, {
+                                  method: 'PATCH',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ status: 'APPROVED' })
+                                });
+                                if (res.ok) {
+                                  const data = await res.json();
+                                  setUsers((users: User[]) => users.map((u: User) => u.id === user.id ? { ...u, verification: data.verification, verified: true } : u));
+                                  showToast('IBAN დამტკიცებულია', 'success');
+                                }
+                              }}
+                            >
+                              ✓ IBAN დამტკიცება
+                            </button>
+                            <RejectVerificationButton user={user} setUsers={setUsers} verificationType="identity" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Legacy: პირადობის დოკუმენტები (ძველი მომხმარებლები) */}
                   {user.verification && (user.verification.idFrontUrl || user.verification.idBackUrl) && 
                    (user.verification.identityStatus === 'PENDING' || user.verification.identityStatus === 'REJECTED' || 
                     (!user.verification.identityStatus && (user.verification.status === 'PENDING' || user.verification.status === 'REJECTED'))) && (
@@ -787,10 +850,10 @@ const AdminUsersPage = () => {
                             </div>
                           )}
                           <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
-                            {/* Identity Status */}
-                            {user.verification.idFrontUrl && user.verification.idBackUrl && (
+                            {/* Identity / IBAN Status */}
+                            {(user.iban || (user.verification.idFrontUrl && user.verification.idBackUrl)) && (
                               <div className="flex flex-wrap items-center gap-2">
-                                <span className="text-xs sm:text-sm md:text-[18px] font-semibold text-black">პირადობის ნომერი:</span>
+                                <span className="text-xs sm:text-sm md:text-[18px] font-semibold text-black">IBAN:</span>
                                 <span className={`px-2 py-1 rounded-full text-xs sm:text-sm md:text-[18px] font-semibold text-white whitespace-nowrap ${
                                   (user.verification.identityStatus === 'APPROVED' || (!user.verification.identityStatus && user.verification.status === 'APPROVED')) ? 'bg-green-600' : 
                                   (user.verification.identityStatus === 'REJECTED' || (!user.verification.identityStatus && user.verification.status === 'REJECTED')) ? 'bg-red-600' : 'bg-yellow-500'
@@ -838,7 +901,8 @@ const AdminUsersPage = () => {
                           {session.user.role === 'ADMIN' && user.verification && (
                             <div className="flex flex-col sm:flex-row items-stretch gap-2 mb-2">
                               {/* Determine verification type: if identity docs exist and not verified, it's identity; otherwise check if blocked */}
-                              {user.verification.idFrontUrl && user.verification.idBackUrl && 
+                              {(needsIbanIdentityReview({ iban: user.iban, verification: user.verification }) ||
+                                (user.verification.idFrontUrl && user.verification.idBackUrl)) && 
                                (user.verification.identityStatus === 'PENDING' || user.verification.identityStatus === 'REJECTED' || 
                                 (!user.verification.identityStatus && !user.verified)) && (
                                 <>
@@ -856,7 +920,7 @@ const AdminUsersPage = () => {
                                       }
                                     }}
                                     disabled={user.verified}
-                                  >პირადობის დამტკიცება</button>
+                                  >{user.iban ? 'IBAN დამტკიცება' : 'პირადობის დამტკიცება'}</button>
                                   <RejectVerificationButton user={user} setUsers={setUsers} verificationType="identity" />
                                 </>
                               )}

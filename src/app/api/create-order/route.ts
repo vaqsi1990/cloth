@@ -385,7 +385,7 @@ export async function POST(req: NextRequest) {
         {
           success: false,
           requiresVerification: true,
-          error: 'გთხოვთ შეიყვანოთ ბანკის IBAN პროფილში, რომ შეძლოთ ყიდვა ან ქირაობა.',
+          error: 'თქვენი IBAN ელოდება ადმინისტრატორის დადასტურებას.',
         },
         { status: 403 },
       )

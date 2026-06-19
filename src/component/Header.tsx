@@ -515,9 +515,7 @@ const HeaderContent = () => {
               <Link href="/rules" onClick={closeMobileMenu} className="block px-4 py-3 text-black hover:bg-gray-100 rounded-lg text-[18px]">
                 წესები
               </Link>
-              <Link href="/politics" onClick={closeMobileMenu} className="block px-4 py-3 text-black hover:bg-gray-100 rounded-lg text-[18px]">
-                საიტის პოლიტიკა
-              </Link>
+             
             </nav>
           </div>
         </div>

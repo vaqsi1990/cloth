@@ -126,7 +126,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: iban
-        ? 'IBAN წარმატებით შენახულია'
+        ? 'IBAN გაგზავნილია ადმინისტრატორთან დასადასტურებლად'
         : 'ინდმეწარმის საბუთი ატვირთულია და ელოდება ადმინისტრატორის დამოწმებას',
       verification: {
         ...upserted,

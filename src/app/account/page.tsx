@@ -745,8 +745,8 @@ const AccountPageContent = () => {
       const data = await res.json()
       if (res.ok && data.success) {
         setVerification(data.verification)
-        setUserVerified(true)
-        showToast('IBAN წარმატებით შენახულია', 'success')
+        setUserVerified(false)
+        showToast('IBAN გაგზავნილია ადმინისტრატორთან დასადასტურებლად', 'success')
         await update({ iban: userIban })
       } else {
         showToast(data.error || 'შეცდომა IBAN-ის შენახვისას', 'error')
@@ -805,10 +805,17 @@ const AccountPageContent = () => {
     return null
   }
 
+  const identityStatus: VerificationState =
+    verification?.identityStatus ??
+    verification?.status ??
+    (session.user.verificationStatus as 'PENDING' | 'APPROVED' | 'REJECTED' | null) ??
+    null
+  const identityComment = verification?.identityComment ?? verification?.comment ?? null
+  const identityApproved = identityStatus === 'APPROVED'
   const hasIban = isValidGeorgianIban(userIban)
   const isAdminOrSupport = session.user.role === 'ADMIN' || session.user.role === 'SUPPORT'
-  const canCreateProducts = isAdminOrSupport || hasIban
-  const shouldShowIbanVerification = !isAdminOrSupport && sellerNeedsVerification && !hasIban
+  const canCreateProducts = isAdminOrSupport || (identityApproved && hasIban)
+  const shouldShowIbanVerification = !isAdminOrSupport && !identityApproved
 
   const tabs = [
     { id: 'profile', label: 'პროფილი', icon: User },
@@ -1198,8 +1205,19 @@ const AccountPageContent = () => {
             <div className="mb-4">
               <h2 className="text-xl font-bold mb-2 text-black">ბანკის ანგარიში</h2>
               <p className="text-[18px] text-black">
-                IBAN აუცილებელია პროდუქტის დასამატებლად, ყიდვისა და გაქირავებისთვის.
+                IBAN აუცილებელია პროდუქტის დასამატებლად, ყიდვისა და გაქირავებისთვის. შენახვის შემდეგ ადმინისტრატორი დაადასტურებს.
               </p>
+              {identityStatus === 'PENDING' && hasIban && (
+                <p className="text-[18px] text-yellow-600 font-medium mt-2">
+                  თქვენი IBAN გადაგზავნილია და ელოდება ადმინისტრატორის დადასტურებას.
+                </p>
+              )}
+              {identityStatus === 'REJECTED' && (
+                <p className="text-[18px] text-red-600 font-medium mt-2">
+                  IBAN უარყოფილია. გთხოვთ შეამოწმოთ და ხელახლა გაგზავნოთ.
+                  {identityComment ? ` მიზეზი: ${identityComment}` : ''}
+                </p>
+              )}
             </div>
             
             {verifLoading ? (
@@ -1246,7 +1264,7 @@ const AccountPageContent = () => {
                         : 'bg-white text-black cursor-not-allowed'
                     }`}
                   >
-                    {savingVerification ? 'შენახვა...' : 'IBAN შენახვა'}
+                    {savingVerification ? 'გაგზავნა...' : identityStatus === 'PENDING' && hasIban ? 'ხელახლა გაგზავნა' : 'IBAN გაგზავნა'}
                   </button>
                 </div>
               </>
@@ -1256,8 +1274,8 @@ const AccountPageContent = () => {
 
 
       </div>
-      {!isAdminOrSupport && hasIban && (
-        <h1 className="text-green-500 text-[20px] font-bold ">IBAN დამატებულია</h1>
+      {!isAdminOrSupport && identityApproved && hasIban && (
+        <h1 className="text-green-500 text-[20px] font-bold ">IBAN დადასტურებულია</h1>
       )}
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <h4 className="md:text-[20px] text-[18px] font-bold text-black mb-4">ანგარიშის სტატისტიკა</h4>
@@ -1835,9 +1853,11 @@ const AccountPageContent = () => {
             )}
           </div>
         </div>
-        {!isAdminOrSupport && !hasIban && (
+        {!isAdminOrSupport && !canCreateProducts && (
           <div className="mb-4 p-3 border border-yellow-400 bg-yellow-50 text-yellow-800 rounded md:text-[18px] text-[16px]">
-            გთხოვთ მიუთითოთ ბანკის IBAN პროფილის გვერდზე, რომ შეძლოთ პროდუქტის დამატება.
+            {hasIban && identityStatus === 'PENDING'
+              ? 'თქვენი IBAN ელოდება ადმინისტრატორის დადასტურებას. დადასტურების შემდეგ შეძლებთ პროდუქტის დამატებას.'
+              : 'გთხოვთ მიუთითოთ ბანკის IBAN პროფილის გვერდზე, რომ შეძლოთ პროდუქტის დამატება.'}
           </div>
         )}
 
