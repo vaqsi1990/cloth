@@ -1,13 +1,16 @@
 import type { SizeSystem } from '@prisma/client'
 import { z } from 'zod'
 
-export type ProductVariantRecord = {
-  id: number
+export type ProductVariantSkuLike = {
   color?: string | null
   size?: string | null
+  imageUrl?: string | null
+}
+
+export type ProductVariantRecord = ProductVariantSkuLike & {
+  id: number
   sizeSystem?: SizeSystem | null
   stock?: number | null
-  imageUrl?: string | null
   price: number
   sku?: string | null
 }
@@ -43,11 +46,11 @@ export const productVariantInputSchema = z.object({
 
 export type ProductVariantInput = z.infer<typeof productVariantInputSchema>
 
-export function variantHasSkuFields(variant: ProductVariantRecord): boolean {
+export function variantHasSkuFields(variant: ProductVariantSkuLike): boolean {
   return Boolean(variant.color?.trim() || variant.size?.trim() || variant.imageUrl?.trim())
 }
 
-export function productHasSkuVariants(product: ProductWithVariants): boolean {
+export function productHasSkuVariants(product: { variants?: ProductVariantSkuLike[] | null }): boolean {
   const variants = product.variants || []
   return variants.some(variantHasSkuFields)
 }
@@ -155,7 +158,7 @@ export function getVariantImageUrls(variants: Array<{ imageUrl?: string | null }
 }
 
 export function validateSkuVariantRows(
-  variants: ProductVariantFormRow[],
+  variants: ProductVariantSkuLike[],
 ): Record<string, string> {
   const errors: Record<string, string> = {}
 
