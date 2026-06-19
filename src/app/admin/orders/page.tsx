@@ -7,6 +7,7 @@ import { formatDate } from '@/utils/dateUtils'
 import Link from 'next/link'
 import { ArrowLeft, Search, Filter, ShoppingCart, Package, User, MapPin, Phone, Mail, CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
 import { showToast } from '@/utils/toast'
+import { markAdminSectionSeen } from '@/lib/admin-dashboard-seen'
 
 interface OrderItem {
   id: number
@@ -74,6 +75,12 @@ const AdminOrdersPage = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status])
+
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.role === 'ADMIN') {
+      markAdminSectionSeen('orders')
+    }
+  }, [status, session?.user?.role])
 
   const fetchOrders = useCallback(async (page = 1, append = false) => {
     try {

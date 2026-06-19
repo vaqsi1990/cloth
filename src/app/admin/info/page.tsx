@@ -11,6 +11,7 @@ import {
   fromPrismaDeliverySpeed,
   getDeliverySpeedLabel,
 } from '@/lib/delivery'
+import { markAdminSectionSeen } from '@/lib/admin-dashboard-seen'
 
 interface OrderItemProduct {
   id: number
@@ -352,6 +353,12 @@ const AdminInfoPage = () => {
       router.push('/auth/signin')
     }
   }, [status, router])
+
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.role === 'ADMIN') {
+      markAdminSectionSeen('salesInfo')
+    }
+  }, [status, session?.user?.role])
 
   useEffect(() => {
     void loadOrders()

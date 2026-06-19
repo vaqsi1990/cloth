@@ -19,10 +19,23 @@ import {
 } from 'lucide-react'
 import ChatUnreadBadge from '@/components/ChatUnreadBadge'
 import { useSupportChatNotification } from '@/components/SupportChatNotificationProvider'
+import {
+  buildAdminAlertsQuery,
+  type AdminDashboardSection,
+} from '@/lib/admin-dashboard-seen'
 
 // ---------------------
 // Types
 // ---------------------
+interface AdminAlerts {
+  pendingUserVerifications: number
+  pendingProductApprovals: number
+  newUsers: number
+  newOrders: number
+  newPaidSales: number
+  productsSince: number
+}
+
 interface AdminStats {
   totalProducts: number
   totalUsers: number
@@ -43,6 +56,14 @@ const AdminDashboard = () => {
     totalRevenue: 0,
   })
   const [statsLoading, setStatsLoading] = useState(false)
+  const [alerts, setAlerts] = useState<AdminAlerts>({
+    pendingUserVerifications: 0,
+    pendingProductApprovals: 0,
+    newUsers: 0,
+    newOrders: 0,
+    newPaidSales: 0,
+    productsSince: 0,
+  })
   const { unreadCount: unreadChatCount } = useSupportChatNotification()
   const hasFetchedRef = useRef(false)
 
@@ -88,6 +109,47 @@ const AdminDashboard = () => {
     }
     // SUPPORT doesn't need stats, only ADMIN does
   }, [status, session?.user?.role])
+
+  useEffect(() => {
+    const fetchAdminAlerts = async () => {
+      try {
+        const query = buildAdminAlertsQuery(['users', 'products', 'orders', 'salesInfo'])
+        const response = await fetch(
+          `/api/admin/alerts${query ? `?${query}` : ''}`,
+          { cache: 'no-store' },
+        )
+        const result = await response.json()
+        if (result.success && result.alerts) {
+          setAlerts(result.alerts)
+        }
+      } catch (error) {
+        console.error('Error fetching admin alerts:', error)
+      }
+    }
+
+    if (status === 'authenticated' && session?.user?.role === 'ADMIN') {
+      void fetchAdminAlerts()
+      const interval = setInterval(() => {
+        void fetchAdminAlerts()
+      }, 30000)
+      return () => clearInterval(interval)
+    }
+  }, [status, session?.user?.role])
+
+  const getActionAlertCount = (title: string): number => {
+    switch (title) {
+      case 'მომხმარებლების მართვა':
+        return alerts.pendingUserVerifications + alerts.newUsers
+      case 'პროდუქტების მართვა':
+        return alerts.productsSince || alerts.pendingProductApprovals
+      case 'შეკვეთების მართვა':
+        return alerts.newOrders
+      case 'შეკვეთების ინფორმაცია':
+        return alerts.newPaidSales
+      default:
+        return 0
+    }
+  }
 
   // ---------------------
   // Loading states
@@ -309,7 +371,9 @@ const AdminDashboard = () => {
        
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
-            {quickActions.map((action, index) => (
+            {quickActions.map((action, index) => {
+              const alertCount = getActionAlertCount(action.title)
+              return (
               <Link
                 key={index}
                 href={action.href}
@@ -325,9 +389,14 @@ const AdminDashboard = () => {
                     {action.title === 'Live Chat' && (
                       <ChatUnreadBadge count={unreadChatCount} className="absolute -top-2 -right-2" />
                     )}
+                    {alertCount > 0 && action.title !== 'Live Chat' && (
+                      <ChatUnreadBadge count={alertCount} className="absolute -top-2 -right-2" />
+                    )}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-black md:text-[20px] text-[18px] group-hover:text-black transition-colors">
+                    <h3 className={`font-semibold md:text-[20px] text-[18px] group-hover:text-black transition-colors ${
+                      alertCount > 0 ? 'text-red-600' : 'text-black'
+                    }`}>
                       {action.title}
                     </h3>
                     <p className="md:text-[18px] text-[16px] text-black mt-1">
@@ -336,7 +405,7 @@ const AdminDashboard = () => {
                   </div>
                 </div>
               </Link>
-            ))}
+            )})}
           </div>
         </div>
       </div>

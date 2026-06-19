@@ -27,17 +27,12 @@ export async function GET(request: NextRequest) {
         LIMIT 1
       ) last_msg ON true
       WHERE (cr."adminId" IS NULL OR a.role IN ('ADMIN', 'SUPPORT'))
+        AND cr.status IN ('PENDING', 'ACTIVE')
+        AND last_msg.id IS NOT NULL
+        AND last_msg."isFromAdmin" = false
         AND (
-          (cr.status = 'PENDING' AND cr."adminLastReadMessageId" IS NULL)
-          OR (
-            cr.status = 'ACTIVE'
-            AND last_msg.id IS NOT NULL
-            AND last_msg."isFromAdmin" = false
-            AND (
-              cr."adminLastReadMessageId" IS NULL
-              OR last_msg.id > cr."adminLastReadMessageId"
-            )
-          )
+          cr."adminLastReadMessageId" IS NULL
+          OR last_msg.id > cr."adminLastReadMessageId"
         )
     `
 
@@ -60,17 +55,12 @@ export async function GET(request: NextRequest) {
         LIMIT 1
       ) last_msg ON true
       WHERE (cr."adminId" IS NULL OR a.role IN ('ADMIN', 'SUPPORT'))
+        AND cr.status IN ('PENDING', 'ACTIVE')
+        AND last_msg.id IS NOT NULL
+        AND last_msg."isFromAdmin" = false
         AND (
-          (cr.status = 'PENDING' AND cr."adminLastReadMessageId" IS NULL)
-          OR (
-            cr.status = 'ACTIVE'
-            AND last_msg.id IS NOT NULL
-            AND last_msg."isFromAdmin" = false
-            AND (
-              cr."adminLastReadMessageId" IS NULL
-              OR last_msg.id > cr."adminLastReadMessageId"
-            )
-          )
+          cr."adminLastReadMessageId" IS NULL
+          OR last_msg.id > cr."adminLastReadMessageId"
         )
       ORDER BY last_msg.id DESC NULLS LAST, cr."updatedAt" DESC
       LIMIT 1

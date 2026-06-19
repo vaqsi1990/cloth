@@ -2182,6 +2182,11 @@ const AccountPageContent = () => {
                         <button
                           onClick={() => {
                             setSelectedChatRoom(room)
+                            setChatRooms((prev) =>
+                              prev.map((entry) =>
+                                entry.id === room.id ? { ...entry, is_unread: false } : entry,
+                              ),
+                            )
                             preferredChatRoomIdRef.current = null
                             router.push(`/account?tab=chats&chat=${room.id}`)
                           }}

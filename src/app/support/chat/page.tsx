@@ -73,12 +73,24 @@ const SupportChatPage = () => {
       const data = await response.json()
       
       if (data.success) {
-        setChatRooms(data.chatRooms)
+        setChatRooms((prev) => {
+          const activeRoomId = selectedChatRoom?.id
+          return data.chatRooms.map((entry: ChatRoom) => {
+            if (activeRoomId && entry.id === activeRoomId) {
+              return { ...entry, is_unread: false }
+            }
+            const previous = prev.find((room) => room.id === entry.id)
+            if (previous && !previous.is_unread) {
+              return { ...entry, is_unread: false }
+            }
+            return entry
+          })
+        })
       }
     } catch (error) {
       console.error('Error fetching chat rooms:', error)
     }
-  }, [filterStatus])
+  }, [filterStatus, selectedChatRoom?.id])
 
   const fetchMessages = useCallback(async () => {
     if (!selectedChatRoom) return
@@ -124,6 +136,11 @@ const SupportChatPage = () => {
         
         setMessages(uniqueMessages)
         setOtherPartyTyping(Boolean(data.otherPartyTyping))
+        setChatRooms((prev) =>
+          prev.map((entry) =>
+            entry.id === selectedChatRoom.id ? { ...entry, is_unread: false } : entry,
+          ),
+        )
         acknowledgeActiveChat()
       }
     } catch (error) {

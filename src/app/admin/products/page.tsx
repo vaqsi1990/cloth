@@ -20,6 +20,7 @@ import {
   resolveCanonicalCategorySlug,
   type ProductGender,
 } from '@/lib/product-categories'
+import { markAdminSectionSeen } from '@/lib/admin-dashboard-seen'
 interface RentalPeriod {
   startDate: string
   endDate: string
@@ -99,6 +100,12 @@ const AdminProductsPage = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status])
+
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.role === 'ADMIN') {
+      markAdminSectionSeen('products')
+    }
+  }, [status, session?.user?.role])
 
   const enrichWithRentalStatus = useCallback(async (productList: Product[]) => {
     return attachBatchRentalStatus(productList)

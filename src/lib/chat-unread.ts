@@ -27,27 +27,24 @@ export function isProductChatUnreadForUser(
   return false
 }
 
-/** Live support chat (admin/support inbox): unread until staff opens the room or new user messages arrive. */
+/** Live support chat (admin/support inbox): unread when the last message is from the user/guest and not yet read. */
 export function isStaffChatRoomUnread(
   status: string,
   lastMessageIsFromAdmin: boolean,
   lastMessageId: number | null | undefined,
   adminLastReadMessageId: number | null | undefined,
 ): boolean {
-  if (status === 'PENDING') {
-    if (adminLastReadMessageId == null) return true
-    if (!lastMessageId) return false
-    if (lastMessageIsFromAdmin) return false
-    return lastMessageId > adminLastReadMessageId
+  if (status !== 'PENDING' && status !== 'ACTIVE') {
+    return false
   }
 
-  if (status === 'ACTIVE' && !lastMessageIsFromAdmin && lastMessageId) {
-    return (
-      adminLastReadMessageId == null || lastMessageId > adminLastReadMessageId
-    )
+  if (!lastMessageId || lastMessageIsFromAdmin) {
+    return false
   }
 
-  return false
+  return (
+    adminLastReadMessageId == null || lastMessageId > adminLastReadMessageId
+  )
 }
 
 /** Live support widget for logged-in user: unread when admin replied and user has not read yet. */

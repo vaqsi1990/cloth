@@ -8,6 +8,7 @@ import Image from '@/component/AppImage'
 import { ArrowLeft, Search, Filter, Users, Mail, Calendar, Package, ShoppingCart, Trash2, UserCheck, UserX, Phone, User, Pencil } from 'lucide-react'
 import { showToast } from '@/utils/toast'
 import { needsIbanIdentityReview } from '@/lib/seller-eligibility'
+import { markAdminSectionSeen } from '@/lib/admin-dashboard-seen'
 
 interface User {
   personalId: string | null
@@ -79,6 +80,12 @@ const AdminUsersPage = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status])
+
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.role === 'ADMIN') {
+      markAdminSectionSeen('users')
+    }
+  }, [status, session?.user?.role])
 
   const fetchUsers = useCallback(async (page = 1, append = false) => {
     try {
