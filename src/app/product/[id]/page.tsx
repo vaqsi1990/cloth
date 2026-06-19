@@ -40,6 +40,7 @@ import {
   findVariantBySelection,
   formatVariantPriceRange,
   getVariantColors,
+  getVariantImagesForSelection,
   getVariantSalePrices,
   getVariantSizes,
   productHasSkuVariants,
@@ -676,9 +677,15 @@ const ProductPage = () => {
           })
         : null
 
-    const selectedVariantImageUrl = selectedVariantMatch?.imageUrl?.trim() || null
-    const displayImages = hasSkuVariants && selectedVariantImageUrl
-        ? [{ url: selectedVariantImageUrl }]
+    const variantGalleryUrls = product && hasSkuVariants
+        ? getVariantImagesForSelection(product, {
+            color: selectedColor || null,
+            size: selectedSize || null,
+          })
+        : []
+
+    const displayImages = variantGalleryUrls.length > 0
+        ? variantGalleryUrls.map((url) => ({ url }))
         : (product?.images || [])
 
     const getMainImage = () =>
@@ -712,7 +719,7 @@ const ProductPage = () => {
 
     useEffect(() => {
         setActiveImage(0)
-    }, [selectedVariantImageUrl])
+    }, [selectedColor, selectedSize])
 
     const getAvailableSizes = () => {
         if (!product) return []
@@ -1377,6 +1384,7 @@ const ProductPage = () => {
                 order-1 lg:order-2 cursor-pointer group"
                             >
                                 <Image
+                                    key={getMainImage()}
                                     src={getMainImage()}
                                     alt={product.name}
                                     fill
@@ -1394,7 +1402,7 @@ const ProductPage = () => {
                             <div className="flex flex-row lg:flex-col gap-3 order-2 lg:order-1 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0">
                                 {displayImages.map((img, i) => (
                                     <button
-                                        key={i}
+                                        key={img.url}
                                         onClick={() => setActiveImage(i)}
                                         className={`relative w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden border-2 transition group ${activeImage === i
                                             ? "border-black"
@@ -1455,6 +1463,7 @@ const ProductPage = () => {
                                     onClick={(e) => e.stopPropagation()}
                                 >
                                     <Image
+                                        key={getMainImage()}
                                         width={1600}
                                         height={1600}
                                         src={getMainImage()}

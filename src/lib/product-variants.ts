@@ -157,6 +157,29 @@ export function getVariantImageUrls(variants: Array<{ imageUrl?: string | null }
     .filter((url): url is string => Boolean(url))
 }
 
+/** Unique variant image URLs for the current color/size selection (color alone is enough to switch gallery). */
+export function getVariantImagesForSelection(
+  product: ProductWithVariants,
+  selection: { color?: string | null; size?: string | null },
+): string[] {
+  const color = selection.color?.trim() || null
+  const size = selection.size?.trim() || null
+  const urls: string[] = []
+  const seen = new Set<string>()
+
+  for (const variant of getNormalizedVariants(product)) {
+    if (color && variant.color !== color) continue
+    if (size && variant.size !== size) continue
+    const url = variant.imageUrl?.trim()
+    if (url && !seen.has(url)) {
+      seen.add(url)
+      urls.push(url)
+    }
+  }
+
+  return urls
+}
+
 export type ProductVariantSkuFormRow = ProductVariantSkuLike & {
   price?: number | null
 }
