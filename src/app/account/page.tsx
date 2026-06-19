@@ -28,6 +28,7 @@ import {
 import ChatTypingIndicator from '@/components/ChatTypingIndicator'
 import ChatUnreadBadge from '@/components/ChatUnreadBadge'
 import { useChatTyping } from '@/hooks/useChatTyping'
+import { isValidGeorgianIban } from '@/lib/iban'
 import { useUserChatUnreadCount } from '@/hooks/useUserChatUnreadCount'
 import { isValidPhone } from '@/lib/phone'
 import {
@@ -250,19 +251,6 @@ const AccountPageContent = () => {
   const isSeller = userStats.productsCount > 0
   // Show verification for all non-admin users who haven't been approved yet
   const sellerNeedsVerification = true // Always show for non-admin users
-  // Load uploaded images from localStorage on mount
-  const [idFrontUrl, setIdFrontUrl] = useState<string | null>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('idFrontUrl') || null
-    }
-    return null
-  })
-  const [idBackUrl, setIdBackUrl] = useState<string | null>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('idBackUrl') || null
-    }
-    return null
-  })
   const [entrepreneurCertificateUrl, setEntrepreneurCertificateUrl] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('entrepreneurCertificateUrl') || null
@@ -716,17 +704,10 @@ const AccountPageContent = () => {
       const data = await res.json()
       if (data.success) {
         setVerification(data.verification)
-        // Only set from API if not already in localStorage (preserve user's uploaded images)
         if (typeof window !== 'undefined') {
-          const savedFront = localStorage.getItem('idFrontUrl')
-          const savedBack = localStorage.getItem('idBackUrl')
           const savedEntrepreneur = localStorage.getItem('entrepreneurCertificateUrl')
-          setIdFrontUrl(savedFront || data.verification?.idFrontUrl || null)
-          setIdBackUrl(savedBack || data.verification?.idBackUrl || null)
           setEntrepreneurCertificateUrl(savedEntrepreneur || data.verification?.entrepreneurCertificateUrl || null)
         } else {
-          setIdFrontUrl(data.verification?.idFrontUrl || null)
-          setIdBackUrl(data.verification?.idBackUrl || null)
           setEntrepreneurCertificateUrl(data.verification?.entrepreneurCertificateUrl || null)
         }
       }
@@ -737,35 +718,6 @@ const AccountPageContent = () => {
     }
   }
 
-  const handleIdFrontUpload = async (urls: string[]) => {
-    if (!urls.length) {
-      setIdFrontUrl(null)
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('idFrontUrl')
-      }
-      return
-    }
-    const url = urls[0]
-    setIdFrontUrl(url)
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('idFrontUrl', url)
-    }
-  }
-
-  const handleIdBackUpload = async (urls: string[]) => {
-    if (!urls.length) {
-      setIdBackUrl(null)
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('idBackUrl')
-      }
-      return
-    }
-    const url = urls[0]
-    setIdBackUrl(url)
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('idBackUrl', url)
-    }
-  }
   const handleEntrepreneurCertificateUpload = async (urls: string[]) => {
     if (!urls.length) return
     const url = urls[0]
@@ -776,15 +728,9 @@ const AccountPageContent = () => {
     }
   }
 
-  // პირადობის დამტკიცების ფუნქცია - დამოუკიდებელი
-  const saveIdentityVerification = async () => {
+  const saveIbanVerification = async () => {
     try {
-      if (!idFrontUrl || !idBackUrl) {
-        showToast('გთხოვთ ატვირთოთ პირადობის დოკუმენტის წინა და უკანა მხარე', 'warning')
-        return
-      }
-      
-      if (!userIban || !userIban.startsWith('GE') || userIban.length < 22) {
+      if (!isValidGeorgianIban(userIban)) {
         showToast('გთხოვთ შეიყვანოთ სწორი IBAN', 'warning')
         return
       }
@@ -794,34 +740,20 @@ const AccountPageContent = () => {
       const res = await fetch('/api/user/verification', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          idFrontUrl, 
-          idBackUrl, 
-          entrepreneurCertificateUrl: verification?.entrepreneurCertificateUrl || null, // შევინარჩუნოთ არსებული ინდმეწარმის საბუთი
-          iban: userIban
-        })
+        body: JSON.stringify({ iban: userIban })
       })
       const data = await res.json()
       if (res.ok && data.success) {
         setVerification(data.verification)
-        showToast('პირადობის დოკუმენტები და IBAN წარმატებით გაიგზავნა ვალიდაციაზე', 'success')
-        setIdFrontUrl(null)
-        setIdBackUrl(null)
-        // Clear localStorage after successful save
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('idFrontUrl')
-          localStorage.removeItem('idBackUrl')
-        }
-        // Update session with IBAN
-        await update({
-          iban: userIban
-        })
+        setUserVerified(true)
+        showToast('IBAN წარმატებით შენახულია', 'success')
+        await update({ iban: userIban })
       } else {
-        showToast(data.error || 'შეცდომა გაგზავნისას', 'error')
+        showToast(data.error || 'შეცდომა IBAN-ის შენახვისას', 'error')
       }
     } catch (e) {
-      console.error('Error saving identity verification:', e)
-      showToast('შეცდომა ვერიფიკაციის შენახვისას', 'error')
+      console.error('Error saving IBAN verification:', e)
+      showToast('შეცდომა IBAN-ის შენახვისას', 'error')
     } finally {
       setSavingVerification(false)
     }
@@ -839,11 +771,7 @@ const AccountPageContent = () => {
       const res = await fetch('/api/user/verification', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          idFrontUrl: verification?.idFrontUrl || null, // შევინარჩუნოთ არსებული პირადობის დოკუმენტები
-          idBackUrl: verification?.idBackUrl || null,
-          entrepreneurCertificateUrl
-        })
+        body: JSON.stringify({ entrepreneurCertificateUrl })
       })
       const data = await res.json()
       if (res.ok && data.success) {
@@ -877,18 +805,10 @@ const AccountPageContent = () => {
     return null
   }
 
-  const identityStatus: VerificationState =
-    verification?.identityStatus ??
-    verification?.status ??
-    (session.user.verificationStatus as 'PENDING' | 'APPROVED' | 'REJECTED' | null) ??
-    null
-  const identityComment = verification?.identityComment ?? verification?.comment ?? null
-  const identityApproved = identityStatus === 'APPROVED'
-  const hasIban = Boolean(userIban)
+  const hasIban = isValidGeorgianIban(userIban)
   const isAdminOrSupport = session.user.role === 'ADMIN' || session.user.role === 'SUPPORT'
-  const canCreateProducts = isAdminOrSupport || (identityApproved && hasIban)
-  const shouldShowIdentityVerification = !isAdminOrSupport && sellerNeedsVerification && !identityApproved
-  const shouldShowIbanVerification = !isAdminOrSupport && sellerNeedsVerification && !userIban
+  const canCreateProducts = isAdminOrSupport || hasIban
+  const shouldShowIbanVerification = !isAdminOrSupport && sellerNeedsVerification && !hasIban
 
   const tabs = [
     { id: 'profile', label: 'პროფილი', icon: User },
@@ -1272,21 +1192,14 @@ const AccountPageContent = () => {
 
         </div>
 
-        {/* პირადობის დამტკიცების სექცია - დამოუკიდებელი */}
-        {shouldShowIdentityVerification && (
+        {/* IBAN ვერიფიკაცია */}
+        {shouldShowIbanVerification && (
           <div className="mt-8 p-6 border-2 border-black rounded-lg bg-gray-50">
             <div className="mb-4">
-              <h2 className="text-xl font-bold mb-2 text-black">პირადობის ვერიფიკაცია</h2>
-              {identityStatus !== 'REJECTED' && (
-                <p className="text-[18px] text-black">
-                  პირადობის სურათებით მოხდება თქვენი ვერიფიცირება, თუ არ ატვირთავთ სურათებს ვერ შეძლებთ ახალი პროდუქტის დამატებას ან ყიდვას და ქირაობას
-                </p>
-              )}
-              {identityStatus === 'REJECTED' && (
-                <p className="text-[18px] text-black">
-                  თქვენი პირადობის დოკუმენტები უარყოფილია. გთხოვთ ატვირთოთ სურათები თავიდან
-                </p>
-              )}
+              <h2 className="text-xl font-bold mb-2 text-black">ბანკის ანგარიში</h2>
+              <p className="text-[18px] text-black">
+                IBAN აუცილებელია პროდუქტის დასამატებლად, ყიდვისა და გაქირავებისთვის.
+              </p>
             </div>
             
             {verifLoading ? (
@@ -1296,48 +1209,6 @@ const AccountPageContent = () => {
               </div>
             ) : (
               <>
-                {/* Status Badge */}
-                {identityStatus && (
-                  <div className="mb-4">
-                    <span className={`inline-block px-4 py-2 text-[16px] font-semibold rounded-full ${
-                      identityStatus === 'REJECTED'
-                        ? ' text-red-500'
-                        : ' text-yellow-500'
-                    }`}>
-                      სტატუსი: {getVerificationStatusLabel(identityStatus as 'PENDING' | 'APPROVED' | 'REJECTED')}
-                    </span>
-                    {identityStatus === 'REJECTED' && identityComment && (
-                      <p className="mt-2 text-[16px] font-medium text-red-700">მიზეზი: {identityComment}</p>
-                    )}
-                  </div>
-                )}
-
-                {/* პირადობის დოკუმენტების ატვირთვა */}
-                <div className="grid gap-6 mb-6 grid-cols-1 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <label className="block text-[18px] font-semibold text-black mb-3">
-                      დოკუმენტის წინა მხარე *
-                    </label>
-                    <ImageUpload 
-                      variant="document"
-                      value={idFrontUrl ? [idFrontUrl] : []} 
-                      onChange={handleIdFrontUpload} 
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <label className="block text-[18px] font-semibold text-black mb-3">
-                      დოკუმენტის უკანა მხარე *
-                    </label>
-                    <ImageUpload 
-                      variant="document"
-                      value={idBackUrl ? [idBackUrl] : []} 
-                      onChange={handleIdBackUpload} 
-                    />
-                  </div>
-                </div>
-
-                {/* IBAN Input - inside identity verification section */}
                 <div className="mb-6">
                   <label className="block text-[18px] font-semibold text-black mb-2">
                     ბანკის IBAN <span className="text-red-600">*</span>
@@ -1353,35 +1224,29 @@ const AccountPageContent = () => {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                   />
                   <p className="text-sm text-black mt-1">IBAN უნდა იწყებოდეს GE-ით და შეიცავდეს 22 სიმბოლოს</p>
-                  {userIban && userIban.startsWith('GE') && userIban.length >= 22 && (
+                  {isValidGeorgianIban(userIban) && (
                     <p className="text-sm text-green-600 mt-1">✓ IBAN სწორია</p>
                   )}
                 </div>
 
-                {/* Submit Button */}
                 <div className="flex items-center justify-between">
                   <div className="text-[16px] text-black">
-                    {idFrontUrl && idBackUrl && userIban && userIban.startsWith('GE') && userIban.length >= 22 ? (
-                      <span className="text-green-600 font-semibold">✓ ორივე სურათი და IBAN მზადაა გასაგზავნად</span>
+                    {isValidGeorgianIban(userIban) ? (
+                      <span className="text-green-600 font-semibold">✓ IBAN მზადაა შესანახად</span>
                     ) : (
-                      <span className="text-red-500">
-                        {!idFrontUrl || !idBackUrl 
-                          ? 'გთხოვთ ატვირთოთ პირადობის დოკუმენტის ორივე მხარე'
-                          : 'გთხოვთ შეიყვანოთ სწორი IBAN'
-                        }
-                      </span>
+                      <span className="text-red-500">გთხოვთ შეიყვანოთ სწორი IBAN</span>
                     )}
                   </div>
                   <button
-                    onClick={saveIdentityVerification}
-                    disabled={savingVerification || !idFrontUrl || !idBackUrl || !userIban || !userIban.startsWith('GE') || userIban.length < 22}
+                    onClick={saveIbanVerification}
+                    disabled={savingVerification || !isValidGeorgianIban(userIban)}
                     className={`px-6 py-3 rounded-lg font-bold text-[18px] uppercase tracking-wide transition-colors ${
-                      idFrontUrl && idBackUrl && userIban && userIban.startsWith('GE') && userIban.length >= 22 && !savingVerification
+                      isValidGeorgianIban(userIban) && !savingVerification
                         ? 'bg-[#1B3729] text-white hover:bg-[#2a4d3a]'
                         : 'bg-white text-black cursor-not-allowed'
                     }`}
                   >
-                    {savingVerification ? 'გაგზავნა...' : 'პირადობის დამტკიცება'}
+                    {savingVerification ? 'შენახვა...' : 'IBAN შენახვა'}
                   </button>
                 </div>
               </>
@@ -1391,8 +1256,8 @@ const AccountPageContent = () => {
 
 
       </div>
-      {!isAdminOrSupport && identityApproved && (
-        <h1 className="text-green-500 text-[20px] font-bold ">პირადობა დამტკიცებულია</h1>
+      {!isAdminOrSupport && hasIban && (
+        <h1 className="text-green-500 text-[20px] font-bold ">IBAN დამატებულია</h1>
       )}
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <h4 className="md:text-[20px] text-[18px] font-bold text-black mb-4">ანგარიშის სტატისტიკა</h4>
@@ -1962,7 +1827,7 @@ const AccountPageContent = () => {
               <button
                 disabled
                 className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-gray-200 text-black rounded-lg font-semibold uppercase tracking-wide cursor-not-allowed"
-                title="ახალი პროდუქტის დამატება შესაძლებელია მხოლოდ ვერიფიცირებული და IBAN-ს მქონე ანგარიშებისთვის"
+                title="ახალი პროდუქტის დამატება შესაძლებელია მხოლოდ IBAN-ს მქონე ანგარიშებისთვის"
               >
                 <Package className="w-4 h-4" />
                 <span className="md:text-[18px] text-[16px]">ახალი პროდუქტი</span>
@@ -1970,14 +1835,9 @@ const AccountPageContent = () => {
             )}
           </div>
         </div>
-        {!isAdminOrSupport && !identityApproved && (
+        {!isAdminOrSupport && !hasIban && (
           <div className="mb-4 p-3 border border-yellow-400 bg-yellow-50 text-yellow-800 rounded md:text-[18px] text-[16px]">
-            გთხოვთ დაადასტუროთ პირადობა პროფილის გვერდზე, რომ შეძლოთ პროდუქტის დამატება.
-          </div>
-        )}
-        {!isAdminOrSupport && identityApproved && !hasIban && (
-          <div className="mb-4 p-3 border border-yellow-400 bg-yellow-50 text-yellow-800 rounded md:text-[18px] text-[16px]">
-            გთხოვთ მიუთითოთ ბანკის IBAN პროფილში, რომ შეძლოთ ახალი პროდუქტის დამატება.
+            გთხოვთ მიუთითოთ ბანკის IBAN პროფილის გვერდზე, რომ შეძლოთ პროდუქტის დამატება.
           </div>
         )}
 

@@ -385,7 +385,7 @@ export async function POST(req: NextRequest) {
         {
           success: false,
           requiresVerification: true,
-          error: 'გთხოვთ დაადასტუროთ პირადობა პროფილის გვერდზე, რომ შეძლოთ ყიდვა ან ქირაობა.',
+          error: 'გთხოვთ შეიყვანოთ ბანკის IBAN პროფილში, რომ შეძლოთ ყიდვა ან ქირაობა.',
         },
         { status: 403 },
       )

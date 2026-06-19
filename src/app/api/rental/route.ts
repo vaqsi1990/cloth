@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json(
         {
-          error: 'გთხოვთ დაადასტუროთ პირადობა პროფილის გვერდზე, რომ შეძლოთ ქირაობა.',
+          error: 'გთხოვთ შეიყვანოთ ბანკის IBAN პროფილში, რომ შეძლოთ ქირაობა.',
           requiresVerification: true,
         },
         { status: 403 },

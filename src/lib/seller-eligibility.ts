@@ -1,4 +1,5 @@
 import { isAdminOrSupport } from '@/lib/roles'
+import { isValidGeorgianIban } from '@/lib/iban'
 
 export type VerificationState = 'PENDING' | 'APPROVED' | 'REJECTED' | null
 
@@ -36,10 +37,10 @@ export function canUserCreateProducts(params: {
     return true
   }
 
-  return isIdentityApproved(params.verification, params.sessionVerificationStatus) && Boolean(params.iban)
+  return isValidGeorgianIban(params.iban)
 }
 
-/** Same rules as product creation — verified identity + IBAN required. */
+/** Same rules as product creation — valid IBAN required. */
 export function canUserMakePurchases(params: {
   role: string | undefined | null
   iban: string | null | undefined

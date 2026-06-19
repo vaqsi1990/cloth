@@ -640,8 +640,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { 
           success: false, 
-          error: 'გთხოვთ დაადასტუროთ პირადობა პროფილის გვერდზე, რომ შეძლოთ პროდუქტის დამატება.',
-          requiresVerification: true
+          error: 'გთხოვთ შეიყვანოთ ბანკის IBAN პროფილში, რომ შეძლოთ პროდუქტის დამატება.',
         },
         { status: 403 }
       )

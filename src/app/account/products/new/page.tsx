@@ -251,7 +251,7 @@ const NewProductPage = () => {
         })
 
         if (!allowed) {
-          showToast('პროდუქტის დამატება შესაძლებელია მხოლოდ ვერიფიცირებული და IBAN-ს მქონე ანგარიშებისთვის', 'error')
+          showToast('პროდუქტის დამატება შესაძლებელია მხოლოდ IBAN-ს მქონე ანგარიშებისთვის', 'error')
           router.push('/account?tab=products')
           return
         }

@@ -3,13 +3,28 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { saveUserIbanVerification } from '@/lib/user-iban-verification'
 
 const verificationSchema = z.object({
-  idFrontUrl: z.string().url().optional().nullable(),
-  idBackUrl: z.string().url().optional().nullable(),
   entrepreneurCertificateUrl: z.string().url().optional().nullable(),
   iban: z.string().optional().nullable(),
 })
+
+const verificationSelect = {
+  id: true,
+  userId: true,
+  idFrontUrl: true,
+  idBackUrl: true,
+  entrepreneurCertificateUrl: true,
+  identityStatus: true,
+  entrepreneurStatus: true,
+  identityComment: true,
+  entrepreneurComment: true,
+  status: true,
+  comment: true,
+  createdAt: true,
+  updatedAt: true,
+} as const
 
 // GET - Get current user's verification
 export async function GET() {
@@ -24,24 +39,9 @@ export async function GET() {
 
     const verification = await prisma.userVerification.findUnique({
       where: { userId: session.user.id },
-      select: {
-        id: true,
-        userId: true,
-        idFrontUrl: true,
-        idBackUrl: true,
-        entrepreneurCertificateUrl: true,
-        identityStatus: true,
-        entrepreneurStatus: true,
-        identityComment: true,
-        entrepreneurComment: true,
-        status: true,
-        comment: true,
-        createdAt: true,
-        updatedAt: true,
-      }
+      select: verificationSelect,
     })
 
-    // Get user's IBAN to include in response for admin review
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { iban: true }
@@ -52,7 +52,7 @@ export async function GET() {
       verification: verification ? {
         ...verification,
         userIban: user?.iban || null
-      } : null
+      } : { userIban: user?.iban || null }
     })
   } catch (error) {
     console.error('Error fetching verification:', error)
@@ -63,7 +63,7 @@ export async function GET() {
   }
 }
 
-// PUT - Create/update current user's verification (resets to PENDING)
+// PUT - Save IBAN verification or entrepreneur certificate
 export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -75,56 +75,49 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { idFrontUrl, idBackUrl, entrepreneurCertificateUrl, iban } = verificationSchema.parse(body)
+    const { entrepreneurCertificateUrl, iban } = verificationSchema.parse(body)
 
-    // Save IBAN to user profile if provided
+    if (!iban && !entrepreneurCertificateUrl) {
+      return NextResponse.json(
+        { success: false, error: 'IBAN ან ინდმეწარმის საბუთი საჭიროა' },
+        { status: 400 }
+      )
+    }
+
     if (iban) {
-      await prisma.user.update({
-        where: { id: session.user.id },
-        data: { iban: iban }
+      try {
+        await saveUserIbanVerification(session.user.id, iban)
+      } catch (error) {
+        return NextResponse.json(
+          { success: false, error: error instanceof Error ? error.message : 'IBAN არასწორია' },
+          { status: 400 }
+        )
+      }
+    }
+
+    if (entrepreneurCertificateUrl) {
+      await prisma.userVerification.upsert({
+        where: { userId: session.user.id },
+        update: {
+          entrepreneurCertificateUrl,
+          entrepreneurStatus: 'PENDING',
+          entrepreneurComment: null,
+        },
+        create: {
+          userId: session.user.id,
+          entrepreneurCertificateUrl,
+          entrepreneurStatus: 'PENDING',
+          identityStatus: iban ? 'APPROVED' : 'PENDING',
+          status: iban ? 'APPROVED' : 'PENDING',
+        },
       })
     }
 
-    const upserted = await prisma.userVerification.upsert({
+    const upserted = await prisma.userVerification.findUnique({
       where: { userId: session.user.id },
-      update: {
-        idFrontUrl: idFrontUrl ?? null,
-        idBackUrl: idBackUrl ?? null,
-        entrepreneurCertificateUrl: entrepreneurCertificateUrl ?? null,
-        ...(idFrontUrl || idBackUrl
-          ? { identityStatus: 'PENDING' as const, identityComment: null }
-          : {}),
-        ...(entrepreneurCertificateUrl
-          ? { entrepreneurStatus: 'PENDING' as const, entrepreneurComment: null }
-          : {}),
-        status: 'PENDING',
-        comment: null,
-      },
-      create: {
-        userId: session.user.id,
-        idFrontUrl: idFrontUrl ?? null,
-        idBackUrl: idBackUrl ?? null,
-        entrepreneurCertificateUrl: entrepreneurCertificateUrl ?? null,
-        status: 'PENDING',
-      },
-      select: {
-        id: true,
-        userId: true,
-        idFrontUrl: true,
-        idBackUrl: true,
-        entrepreneurCertificateUrl: true,
-        identityStatus: true,
-        entrepreneurStatus: true,
-        identityComment: true,
-        entrepreneurComment: true,
-        status: true,
-        comment: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: verificationSelect,
     })
 
-    // Get user's IBAN to include in response for admin review
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { iban: true }
@@ -132,7 +125,9 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'დოკუმენტები ატვირთულია და ელოდება ადმინისტრატორის დამოწმებას',
+      message: iban
+        ? 'IBAN წარმატებით შენახულია'
+        : 'ინდმეწარმის საბუთი ატვირთულია და ელოდება ადმინისტრატორის დამოწმებას',
       verification: {
         ...upserted,
         userIban: user?.iban || null
@@ -153,5 +148,3 @@ export async function PUT(request: NextRequest) {
     )
   }
 }
-
-

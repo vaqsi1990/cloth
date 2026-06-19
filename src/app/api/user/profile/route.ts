@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { isValidPhone, normalizePhone, phoneLookupVariants } from '@/lib/phone'
+import { saveUserIbanVerification } from '@/lib/user-iban-verification'
 
 const emptyToUndefined = (value: unknown) =>
   typeof value === 'string' && value.trim() === '' ? undefined : value
@@ -109,7 +110,35 @@ export async function PUT(request: NextRequest) {
     // Note: personalId cannot be updated through this endpoint
     // It's only set during registration
 
-    // Update user profile
+    const userSelect = {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      image: true,
+      phone: true,
+      location: true,
+      personalId: true,
+      lastName: true,
+      address: true,
+      postalIndex: true,
+      pickupAddress: true,
+      gender: true,
+      dateOfBirth: true,
+      iban: true,
+    } as const
+
+    if (iban !== undefined) {
+      try {
+        await saveUserIbanVerification(session.user.id, iban)
+      } catch (error) {
+        return NextResponse.json(
+          { success: false, error: error instanceof Error ? error.message : 'IBAN არასწორია' },
+          { status: 400 }
+        )
+      }
+    }
+
     const updatedUser = await prisma.user.update({
       where: { id: session.user.id },
       data: {
@@ -124,31 +153,14 @@ export async function PUT(request: NextRequest) {
         pickupAddress: pickupAddress ?? undefined,
         gender: gender ?? undefined,
         dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
-        ...(iban !== undefined ? { iban } : {}),
       },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        image: true,
-        phone: true,
-        location: true,
-        personalId: true,
-        lastName: true,
-        address: true,
-        postalIndex: true,
-        pickupAddress: true,
-        gender: true,
-        dateOfBirth: true,
-        iban: true,
-      }
+      select: userSelect,
     })
 
     return NextResponse.json({
       success: true,
       message: 'პროფილი წარმატებით განახლდა',
-      user: updatedUser
+      user: updatedUser,
     })
 
   } catch (error) {

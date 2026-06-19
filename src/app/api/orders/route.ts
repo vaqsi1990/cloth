@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           {
             success: false,
-            message: 'გთხოვთ დაადასტუროთ პირადობა პროფილის გვერდზე, რომ შეძლოთ ყიდვა ან ქირაობა.',
+            message: 'გთხოვთ შეიყვანოთ ბანკის IBAN პროფილში, რომ შეძლოთ ყიდვა ან ქირაობა.',
             requiresVerification: true,
           },
           { status: 403 },
