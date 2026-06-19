@@ -3,8 +3,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { isProductChatUnreadForUser } from '@/lib/chat-unread'
-import { accountProductChatWhereForUser } from '@/lib/account-product-chat'
+import { isLiveSupportUnreadForUser, isProductChatUnreadForUser } from '@/lib/chat-unread'
+import { accountChatListWhereForUser } from '@/lib/account-product-chat'
 
 // Validation schemas
 const createChatRoomSchema = z.object({
@@ -43,6 +43,7 @@ export async function GET(request: NextRequest) {
       user_email?: string
       admin_name?: string
       admin_email?: string
+      admin_role?: string | null
       message_count: number
       last_message?: string
       last_message_isFromAdmin?: boolean
@@ -58,7 +59,7 @@ export async function GET(request: NextRequest) {
              (SELECT pi.url FROM "ProductImage" pi WHERE pi."productId" = p.id ORDER BY pi.position ASC LIMIT 1) as product_image,
              cr."guestName", cr."guestEmail",
              u.name as user_name, u.email as user_email,
-             a.name as admin_name, a.email as admin_email,
+             a.name as admin_name, a.email as admin_email, a.role as admin_role,
              (SELECT COUNT(*) FROM "ChatMessage" WHERE "chatRoomId" = cr.id)::int as message_count,
              (SELECT "content" FROM "ChatMessage" WHERE "chatRoomId" = cr.id ORDER BY "createdAt" DESC LIMIT 1) as last_message,
              (SELECT "isFromAdmin" FROM "ChatMessage" WHERE "chatRoomId" = cr.id ORDER BY "createdAt" DESC LIMIT 1) as last_message_isFromAdmin,
@@ -68,29 +69,42 @@ export async function GET(request: NextRequest) {
       LEFT JOIN "User" u ON cr."userId" = u.id
       LEFT JOIN "User" a ON cr."adminId" = a.id
       LEFT JOIN "Product" p ON cr."productId" = p.id
-      WHERE ${accountProductChatWhereForUser(session.user.id)}
+      WHERE ${accountChatListWhereForUser(session.user.id)}
       ORDER BY cr."updatedAt" DESC
     `
     
-    // Note: adminId is used to store product author/seller ID for product-related chats
-
     // Transform the data to include messages array for compatibility
     const transformedChatRooms = chatRooms.map((room) => {
       const lastMessageIsFromAdmin = room.last_message_isFromAdmin || false
+      const isLiveSupport =
+        room.productId == null &&
+        (room.adminId == null ||
+          room.admin_role === 'ADMIN' ||
+          room.admin_role === 'SUPPORT')
       const isUnread = room.last_message
-        ? isProductChatUnreadForUser(
-            lastMessageIsFromAdmin,
-            room.last_message_id,
-            room.userId,
-            room.adminId,
-            session.user.id,
-            room.userLastReadMessageId,
-            room.adminLastReadMessageId,
-          )
+        ? isLiveSupport && room.userId === session.user.id
+          ? isLiveSupportUnreadForUser(
+              lastMessageIsFromAdmin,
+              room.last_message_id,
+              room.userLastReadMessageId,
+            )
+          : isProductChatUnreadForUser(
+              lastMessageIsFromAdmin,
+              room.last_message_id,
+              room.userId,
+              room.adminId,
+              session.user.id,
+              room.userLastReadMessageId,
+              room.adminLastReadMessageId,
+            )
         : false
 
       return {
         ...room,
+        chatKind: isLiveSupport ? 'live_support' : 'product',
+        product_name: isLiveSupport
+          ? 'საფორთის მხარდაჭერა'
+          : room.product_name,
         is_unread: isUnread,
         messages: room.last_message
           ? [{

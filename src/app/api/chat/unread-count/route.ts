@@ -52,25 +52,54 @@ export async function GET() {
         AND (cr."userLastReadMessageId" IS NULL OR last_msg.id > cr."userLastReadMessageId")
     `
 
-    const unreadCount =
-      (productChatResult[0]?.count ?? 0) + (liveSupportResult[0]?.count ?? 0)
+    const liveSupportUnreadCount = liveSupportResult[0]?.count ?? 0
+    const productChatUnreadCount = productChatResult[0]?.count ?? 0
+    const unreadCount = productChatUnreadCount + liveSupportUnreadCount
 
     const liveSupportRoomResult = await prisma.$queryRaw<Array<{ id: number }>>`
       SELECT cr.id
       FROM "ChatRoom" cr
       LEFT JOIN "User" a ON cr."adminId" = a.id
+      INNER JOIN LATERAL (
+        SELECT cm.id, cm."isFromAdmin"
+        FROM "ChatMessage" cm
+        WHERE cm."chatRoomId" = cr.id
+        ORDER BY cm."createdAt" DESC
+        LIMIT 1
+      ) last_msg ON true
       WHERE cr."userId" = ${userId}
         AND cr."productId" IS NULL
         AND (cr."adminId" IS NULL OR a.role IN ('ADMIN', 'SUPPORT'))
         AND cr.status IN ('PENDING', 'ACTIVE')
-      ORDER BY cr."updatedAt" DESC
+        AND (
+          last_msg."isFromAdmin" = true
+          AND (cr."userLastReadMessageId" IS NULL OR last_msg.id > cr."userLastReadMessageId")
+        )
+      ORDER BY last_msg.id DESC
       LIMIT 1
     `
+
+    const fallbackLiveSupportRoomResult =
+      liveSupportRoomResult.length > 0
+        ? liveSupportRoomResult
+        : await prisma.$queryRaw<Array<{ id: number }>>`
+            SELECT cr.id
+            FROM "ChatRoom" cr
+            LEFT JOIN "User" a ON cr."adminId" = a.id
+            WHERE cr."userId" = ${userId}
+              AND cr."productId" IS NULL
+              AND (cr."adminId" IS NULL OR a.role IN ('ADMIN', 'SUPPORT'))
+              AND cr.status IN ('PENDING', 'ACTIVE')
+            ORDER BY cr."updatedAt" DESC
+            LIMIT 1
+          `
 
     return NextResponse.json({
       success: true,
       unreadCount,
-      liveSupportChatRoomId: liveSupportRoomResult[0]?.id ?? null,
+      liveSupportUnreadCount,
+      productChatUnreadCount,
+      liveSupportChatRoomId: fallbackLiveSupportRoomResult[0]?.id ?? null,
     })
   } catch (error) {
     console.error('GET chat unread-count:', error)

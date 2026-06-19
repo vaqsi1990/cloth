@@ -10,7 +10,7 @@ import {
   getTypingLabel,
   setChatTyping,
 } from '@/lib/chat-typing'
-import { accountProductChatRoomAccessForUser } from '@/lib/account-product-chat'
+import { userChatRoomAccessForUser } from '@/lib/account-product-chat'
 import {
   markChatRoomAsRead,
   resolveViewerIsAdminSide,
@@ -64,7 +64,7 @@ export async function GET(
         SELECT "userId", "adminId", "userTypingAt", "adminTypingAt"
         FROM "ChatRoom"
         WHERE id = ${chatRoomId}
-        AND ${accountProductChatRoomAccessForUser(session.user.id)}
+        AND ${userChatRoomAccessForUser(session.user.id)}
         LIMIT 1
       `
     } else {
@@ -202,7 +202,7 @@ export async function POST(
         chatRoom = await prisma.$queryRaw<Array<{ id: number }>>`
           SELECT id FROM "ChatRoom" 
           WHERE id = ${chatRoomId}
-          AND ${accountProductChatRoomAccessForUser(session.user.id)}
+          AND ${userChatRoomAccessForUser(session.user.id)}
           LIMIT 1
         `
       } else {
@@ -419,7 +419,7 @@ export async function DELETE(
         chatRoom = await prisma.$queryRaw<Array<{ id: number }>>`
           SELECT id FROM "ChatRoom" 
           WHERE id = ${chatRoomId}
-          AND ${accountProductChatRoomAccessForUser(session.user.id)}
+          AND ${userChatRoomAccessForUser(session.user.id)}
           LIMIT 1
         `
       } else {

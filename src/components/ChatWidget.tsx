@@ -120,9 +120,9 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
           console.log(`Chat room ${chatRoomId} not found, resetting...`)
           onChatRoomCreated(0)
           setMessages([])
-          // Clear invalid chat room ID from localStorage
           if (typeof window !== 'undefined') {
             localStorage.removeItem('chatRoomId')
+            localStorage.removeItem('liveSupportChatRoomId')
           }
           return
         }

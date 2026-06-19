@@ -133,6 +133,7 @@ interface AccountChatRoom {
   productId?: number | null
   orderId?: number | null
   product_name?: string | null
+  chatKind?: 'product' | 'live_support'
   user_name?: string
   user_email?: string
   admin_name?: string
@@ -170,6 +171,21 @@ function getOrderItemPayablePrice(item: OrderItem): number {
 
 function getOrderItemBuyerSavings(item: OrderItem): number {
   return getCartItemBuyerSavings(item.price, getOrderItemDiscount(item))
+}
+
+function getAccountChatDisplayName(
+  room: AccountChatRoom,
+  viewerUserId: string | undefined,
+): string {
+  if (room.chatKind === 'live_support') {
+    return room.admin_name || 'საფორთის მხარდაჭერა'
+  }
+
+  if (viewerUserId === room.userId) {
+    return room.admin_name || room.admin_email || 'ავტორი'
+  }
+
+  return room.user_name || room.user_email || 'მომხმარებელი'
 }
 
 function getOrderChatKey(orderId: number, productId: number) {
@@ -548,7 +564,10 @@ const AccountPageContent = () => {
           }
         } else {
           setSelectedChatRoom((current) => {
-            if (!current) return current
+            if (!current) {
+              const unreadRoom = rooms.find((room) => room.is_unread)
+              return unreadRoom ?? null
+            }
             if (rooms.some((room) => room.id === current.id)) return current
             const urlChatId = urlChatParam ? parseInt(urlChatParam, 10) : NaN
             if (current.id === urlChatId) return current
@@ -571,7 +590,24 @@ const AccountPageContent = () => {
       const response = await fetch(`/api/chat/${chatRoomId}`)
       const data = await response.json()
       if (
-        data.success &&
+        !response.ok ||
+        !data.success
+      ) {
+        if (
+          fetchId === chatMessagesFetchIdRef.current &&
+          selectedChatRoomIdRef.current === chatRoomId
+        ) {
+          showToast(
+            data.error === 'Chat room not found or access denied'
+              ? 'ჩათი ვერ მოიძებნა ან წვდომა შეზღუდულია'
+              : data.message || 'შეტყობინებების ჩატვირთვა ვერ მოხერხდა',
+            'error',
+          )
+        }
+        return
+      }
+
+      if (
         fetchId === chatMessagesFetchIdRef.current &&
         selectedChatRoomIdRef.current === chatRoomId
       ) {
@@ -2095,8 +2131,7 @@ const AccountPageContent = () => {
               ) : (
                 <div className="divide-y divide-gray-200">
                   {chatRooms.map((room) => {
-                    const otherUser = session?.user?.id === room.userId ? room.admin_name : room.user_name
-                    const otherUserEmail = session?.user?.id === room.userId ? room.admin_email : room.user_email
+                    const displayName = getAccountChatDisplayName(room, session?.user?.id)
                     const isSelected = selectedChatRoom?.id === room.id
 
                     return (
@@ -2126,13 +2161,15 @@ const AccountPageContent = () => {
                               <p className={`font-semibold md:text-[16px] text-[14px] truncate ${
                                 isSelected ? 'text-white' : 'text-black'
                               }`}>
-                                {otherUser || otherUserEmail || 'უცნობი მომხმარებელი'}
+                                {displayName}
                               </p>
                               {room.product_name && (
                                 <p className={`mt-0.5 truncate text-xs font-medium ${
                                   isSelected ? 'text-white/80' : 'text-[#1B3729]'
                                 }`}>
-                                  {room.product_name}
+                                  {room.chatKind === 'live_support'
+                                    ? 'Live Chat'
+                                    : room.product_name}
                                   {room.orderId ? ` • შეკვეთა #${room.orderId}` : ''}
                                 </p>
                               )}
@@ -2190,13 +2227,13 @@ const AccountPageContent = () => {
                   </button>
                   <div className="min-w-0 flex-1">
                     <h3 className="md:text-[18px] text-[16px] font-semibold text-black truncate">
-                      {session?.user?.id === selectedChatRoom.userId
-                        ? selectedChatRoom.admin_name || selectedChatRoom.admin_email || 'ავტორი'
-                        : selectedChatRoom.user_name || selectedChatRoom.user_email || 'მომხმარებელი'}
+                      {getAccountChatDisplayName(selectedChatRoom, session?.user?.id)}
                     </h3>
                     {selectedChatRoom.product_name && (
                       <p className="text-sm text-[#1B3729] truncate">
-                        {selectedChatRoom.productId ? (
+                        {selectedChatRoom.chatKind === 'live_support' ? (
+                          'Live Chat'
+                        ) : selectedChatRoom.productId ? (
                           <Link
                             href={`/product/${selectedChatRoom.productId}`}
                             className="hover:underline"
@@ -2206,7 +2243,7 @@ const AccountPageContent = () => {
                         ) : (
                           selectedChatRoom.product_name
                         )}
-                        {selectedChatRoom.orderId
+                        {selectedChatRoom.chatKind !== 'live_support' && selectedChatRoom.orderId
                           ? ` • შეკვეთა #${selectedChatRoom.orderId}`
                           : ''}
                       </p>

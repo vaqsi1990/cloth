@@ -73,7 +73,7 @@ const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       if (!data.success) return
 
       if (!isChatOpen) {
-        setUnreadCount(data.unreadCount || 0)
+        setUnreadCount(data.liveSupportUnreadCount ?? data.unreadCount ?? 0)
       }
 
       if (data.liveSupportChatRoomId) {

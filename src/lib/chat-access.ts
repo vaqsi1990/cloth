@@ -25,12 +25,32 @@ export async function getChatRoomIfAllowed(
     const room = await prisma.chatRoom.findFirst({
       where: {
         id: chatRoomId,
-        userId: { not: null },
-        adminId: { not: null },
-        AND: [
-          { OR: [{ userId: session.user.id }, { adminId: session.user.id }] },
+        OR: [
           {
-            OR: [{ productId: { not: null } }, { admin: { role: 'USER' } }],
+            userId: { not: null },
+            adminId: { not: null },
+            AND: [
+              {
+                OR: [
+                  { userId: session.user.id },
+                  { adminId: session.user.id },
+                ],
+              },
+              {
+                OR: [
+                  { productId: { not: null } },
+                  { admin: { role: 'USER' } },
+                ],
+              },
+            ],
+          },
+          {
+            userId: session.user.id,
+            productId: null,
+            OR: [
+              { adminId: null },
+              { admin: { role: { in: ['ADMIN', 'SUPPORT'] } } },
+            ],
           },
         ],
       },
