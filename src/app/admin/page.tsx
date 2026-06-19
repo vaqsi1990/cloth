@@ -28,7 +28,6 @@ import {
 // Types
 // ---------------------
 interface AdminAlerts {
-  pendingUserVerifications: number
   pendingProductApprovals: number
   newUsers: number
   newOrders: number
@@ -57,7 +56,6 @@ const AdminDashboard = () => {
   })
   const [statsLoading, setStatsLoading] = useState(false)
   const [alerts, setAlerts] = useState<AdminAlerts>({
-    pendingUserVerifications: 0,
     pendingProductApprovals: 0,
     newUsers: 0,
     newOrders: 0,
@@ -139,7 +137,7 @@ const AdminDashboard = () => {
   const getActionAlertCount = (title: string): number => {
     switch (title) {
       case 'მომხმარებლების მართვა':
-        return alerts.pendingUserVerifications + alerts.newUsers
+        return alerts.newUsers
       case 'პროდუქტების მართვა':
         return alerts.productsSince || alerts.pendingProductApprovals
       case 'შეკვეთების მართვა':

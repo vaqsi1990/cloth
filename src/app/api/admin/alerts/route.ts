@@ -26,15 +26,11 @@ export async function GET(request: NextRequest) {
     const salesInfoSince = parseSince(searchParams.get('salesInfo'))
 
     const [
-      pendingUserVerifications,
       pendingProductApprovals,
       newUsers,
       newOrders,
       newPaidSales,
     ] = await Promise.all([
-      prisma.userVerification.count({
-        where: { entrepreneurStatus: 'PENDING' },
-      }),
       prisma.product.count({
         where: { approvalStatus: 'PENDING' },
       }),
@@ -67,7 +63,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       alerts: {
-        pendingUserVerifications,
         pendingProductApprovals,
         newUsers,
         newOrders,
