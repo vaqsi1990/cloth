@@ -355,6 +355,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
     }
 
+    const cart = await prisma.cart.findFirst({
       where: { userId: session.user.id },
       include: {
         items: {
