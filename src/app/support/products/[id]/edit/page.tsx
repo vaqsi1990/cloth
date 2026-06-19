@@ -38,11 +38,11 @@ import {
 import ProductDiscountFields from '@/components/ProductDiscountFields'
 import ProductMinPriceNotice from '@/components/ProductMinPriceNotice'
 import ProductVariantEditor from '@/components/ProductVariantEditor'
+import ProductTypeSelector, { type ProductListingType } from '@/components/ProductTypeSelector'
 import { getProductDiscountBasePrice } from '@/lib/discount-helpers'
 import {
   mapProductVariantsToFormRows,
   productHasSkuVariants,
-  seedVariantRowsFromLegacyProduct,
   getVariantImageUrls,
   getOrderedProductImageUrls,
   type ProductVariantFormRow,
@@ -63,6 +63,7 @@ import {
   isChildrenAgeSize,
   parseProductFormSizeSelection,
 } from '@/lib/shop-product-filters'
+import { applyProductListingTypeChange } from '@/lib/product-listing-type-change'
 import { isSupport } from '@/lib/roles'
 
 const productSchema = z.object({
@@ -205,6 +206,25 @@ const EditProductPage = () => {
   const [showVariantOptions, setShowVariantOptions] = useState(false)
   const [showPurchaseOptions, setShowPurchaseOptions] = useState(false)
   const [showRentalOptions, setShowRentalOptions] = useState(false)
+  const productListingType: ProductListingType = showVariantOptions ? 'multi' : 'simple'
+
+  const handleProductListingTypeChange = (type: ProductListingType) => {
+    const result = applyProductListingTypeChange({
+      type,
+      formData,
+      color: useCustomColor ? customColor.trim() : formData.color || '',
+      showPurchaseOptions,
+      showRentalOptions,
+    })
+
+    setShowVariantOptions(result.showVariantOptions)
+    setShowPurchaseOptions(result.showPurchaseOptions)
+    setShowRentalOptions(result.showRentalOptions)
+    setFormData((prev) => ({
+      ...prev,
+      ...result.formData,
+    }))
+  }
 
   type SizeSystem = NonNullable<ProductFormData['sizeSystem']>
 
@@ -1027,6 +1047,11 @@ const EditProductPage = () => {
 
           </div>
 
+          <ProductTypeSelector
+            value={productListingType}
+            onChange={handleProductListingTypeChange}
+          />
+
           {showVariantOptions && (
             <ProductMultiPricingSelector
               showPurchaseOptions={showPurchaseOptions}
@@ -1037,42 +1062,9 @@ const EditProductPage = () => {
             />
           )}
 
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <label className="flex items-center gap-3 text-[20px] text-black font-semibold cursor-pointer select-none mb-6">
-              <input
-                type="checkbox"
-                checked={showVariantOptions}
-                onChange={(e) => {
-                  const checked = e.target.checked
-                  setShowVariantOptions(checked)
-                  if (!checked) {
-                    setFormData((prev) => ({ ...prev, variants: [] }))
-                    setShowPurchaseOptions(false)
-                    setShowRentalOptions(false)
-                    return
-                  }
-
-                  setShowPurchaseOptions(false)
-                  setShowRentalOptions(false)
-                  setFormData((prev) => ({
-                    ...prev,
-                    variants: seedVariantRowsFromLegacyProduct({
-                      color: useCustomColor ? customColor.trim() : prev.color,
-                      size: prev.size,
-                      sizeSystem: prev.sizeSystem,
-                      stock: prev.stock,
-                      variants: prev.variants.length > 0
-                        ? prev.variants
-                        : [{ price: 0, stock: prev.stock || 1 }],
-                    }),
-                  }))
-                }}
-                className="h-5 w-5"
-              />
-              <span>რამდენიმე ფერი / ზომა</span>
-            </label>
-
-            {showVariantOptions && (
+          {showVariantOptions && (
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h2 className="text-[20px] text-black font-semibold mb-4">ვარიანტები</h2>
               <ProductVariantEditor
                 variants={formData.variants}
                 gender={formData.gender}
@@ -1086,8 +1078,8 @@ const EditProductPage = () => {
                 onRemove={removeVariant}
                 onUpdate={updateVariant}
               />
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Rental Options */}
           {(!showVariantOptions || showRentalOptions) && (

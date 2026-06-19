@@ -425,7 +425,90 @@ export function seedVariantRowsFromLegacyProduct(input: {
     sizeSystem: input.sizeSystem,
     price: base?.price ?? 0,
     stock: input.stock ?? base?.stock ?? 1,
+    imageUrl: base?.imageUrl,
   }]
+}
+
+/** Convert simple-product form state into the first multi-variant row (keeps price, stock, image). */
+export function convertSimpleToMultiVariantRows(input: {
+  color?: string
+  size?: string
+  sizeSystem?: SizeSystem
+  stock?: number
+  imageUrls?: string[]
+  variants: ProductVariantFormRow[]
+}): ProductVariantFormRow[] {
+  const seeded = seedVariantRowsFromLegacyProduct({
+    color: input.color,
+    size: input.size,
+    sizeSystem: input.sizeSystem,
+    stock: input.stock,
+    variants:
+      input.variants.length > 0
+        ? input.variants
+        : [{ price: 0, stock: input.stock || 1 }],
+  })
+
+  const fallbackImage = input.imageUrls?.map((url) => url.trim()).find(Boolean)
+
+  return seeded.map((variant, index) => ({
+    ...variant,
+    imageUrl:
+      variant.imageUrl?.trim() ||
+      (index === 0 ? fallbackImage : undefined) ||
+      undefined,
+  }))
+}
+
+/** Convert multi-variant form state back to a simple single-color product. */
+export function convertMultiToSimpleFormState(input: {
+  variants: ProductVariantFormRow[]
+  imageUrls: string[]
+  color?: string
+  size?: string
+  sizeSystem?: SizeSystem
+  stock?: number
+}): {
+  color?: string
+  size?: string
+  sizeSystem?: SizeSystem
+  stock: number
+  imageUrls: string[]
+  variants: ProductVariantFormRow[]
+} {
+  if (input.variants.length === 0) {
+    return {
+      color: input.color,
+      size: input.size,
+      sizeSystem: input.sizeSystem,
+      stock: input.stock ?? 0,
+      imageUrls: input.imageUrls,
+      variants: [{ price: 0, stock: input.stock ?? 0 }],
+    }
+  }
+
+  const first = input.variants[0]
+  const mergedImageUrls = Array.from(
+    new Set([
+      ...input.imageUrls.map((url) => url.trim()).filter(Boolean),
+      ...getVariantImageUrls(input.variants),
+    ]),
+  )
+  const totalStock = sumVariantStock(input.variants) || input.stock || 0
+  const salePrice =
+    input.variants.find((variant) => (variant.price ?? 0) > 0)?.price ?? 0
+
+  return {
+    color: first.color?.trim() || input.color,
+    size: first.size?.trim() || input.size,
+    sizeSystem: first.sizeSystem || input.sizeSystem,
+    stock: totalStock,
+    imageUrls: mergedImageUrls,
+    variants: [{
+      price: salePrice,
+      stock: totalStock,
+    }],
+  }
 }
 
 export function mapVariantInputForCreate(variant: ProductVariantInput) {

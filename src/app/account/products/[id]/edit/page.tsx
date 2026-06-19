@@ -45,7 +45,6 @@ import { optionalCategoryIdField } from '@/lib/product-schema-fields'
 import {
   mapProductVariantsToFormRows,
   productHasSkuVariants,
-  seedVariantRowsFromLegacyProduct,
   getVariantImageUrls,
   getOrderedProductImageUrls,
   type ProductVariantFormRow,
@@ -61,6 +60,7 @@ import {
   isChildrenAgeSize,
   parseProductFormSizeSelection,
 } from '@/lib/shop-product-filters'
+import { applyProductListingTypeChange } from '@/lib/product-listing-type-change'
 
 const productSchema = z.object({
   name: z.string()
@@ -207,29 +207,20 @@ const EditProductPage = () => {
   const productListingType: ProductListingType = showVariantOptions ? 'multi' : 'simple'
 
   const handleProductListingTypeChange = (type: ProductListingType) => {
-    const isMulti = type === 'multi'
-    setShowVariantOptions(isMulti)
+    const result = applyProductListingTypeChange({
+      type,
+      formData,
+      color: useCustomColor ? customColor.trim() : formData.color || '',
+      showPurchaseOptions,
+      showRentalOptions,
+    })
 
-    if (!isMulti) {
-      setFormData((prev) => ({ ...prev, variants: [] }))
-      setShowPurchaseOptions(false)
-      setShowRentalOptions(false)
-      return
-    }
-
-    setShowPurchaseOptions(false)
-    setShowRentalOptions(false)
+    setShowVariantOptions(result.showVariantOptions)
+    setShowPurchaseOptions(result.showPurchaseOptions)
+    setShowRentalOptions(result.showRentalOptions)
     setFormData((prev) => ({
       ...prev,
-      variants: seedVariantRowsFromLegacyProduct({
-        color: useCustomColor ? customColor.trim() : prev.color,
-        size: prev.size,
-        sizeSystem: prev.sizeSystem,
-        stock: prev.stock,
-        variants: prev.variants.length > 0
-          ? prev.variants
-          : [{ price: 0, stock: prev.stock || 1 }],
-      }),
+      ...result.formData,
     }))
   }
 
