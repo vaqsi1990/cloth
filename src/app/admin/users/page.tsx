@@ -588,7 +588,7 @@ const AdminUsersPage = () => {
                                 }
                               }}
                             >
-                              ✓ IBAN დამტკიცება
+                              ✓ დამტკიცება
                             </button>
                             <RejectVerificationButton user={user} setUsers={setUsers} verificationType="identity" />
                           </div>
@@ -920,7 +920,7 @@ const AdminUsersPage = () => {
                                       }
                                     }}
                                     disabled={user.verified}
-                                  >{user.iban ? 'IBAN დამტკიცება' : 'პირადობის დამტკიცება'}</button>
+                                  >{user.iban ? 'დამტკიცება' : 'პირადობის დამტკიცება'}</button>
                                   <RejectVerificationButton user={user} setUsers={setUsers} verificationType="identity" />
                                 </>
                               )}

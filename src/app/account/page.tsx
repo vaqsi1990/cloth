@@ -1856,7 +1856,7 @@ const AccountPageContent = () => {
         {!isAdminOrSupport && !canCreateProducts && (
           <div className="mb-4 p-3 border border-yellow-400 bg-yellow-50 text-yellow-800 rounded md:text-[18px] text-[16px]">
             {hasIban && identityStatus === 'PENDING'
-              ? 'თქვენი IBAN ელოდება ადმინისტრატორის დადასტურებას. დადასტურების შემდეგ შეძლებთ პროდუქტის დამატებას.'
+              ? 'თქვენი ანგარიშის ნომერი ელოდება ადმინისტრატორის დადასტურებას. დადასტურების შემდეგ შეძლებთ პროდუქტის დამატებას.'
               : 'გთხოვთ მიუთითოთ ბანკის IBAN პროფილის გვერდზე, რომ შეძლოთ პროდუქტის დამატება.'}
           </div>
         )}

@@ -640,7 +640,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { 
           success: false, 
-          error: 'თქვენი IBAN ელოდება ადმინისტრატორის დადასტურებას.',
+          error: 'თქვენი ანგარიშის ნომერი ელოდება ადმინისტრატორის დადასტურებას.',
           requiresVerification: true,
         },
         { status: 403 }

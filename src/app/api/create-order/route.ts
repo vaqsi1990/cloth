@@ -385,7 +385,7 @@ export async function POST(req: NextRequest) {
         {
           success: false,
           requiresVerification: true,
-          error: 'თქვენი IBAN ელოდება ადმინისტრატორის დადასტურებას.',
+          error: 'თქვენი ანგარიშის ნომერი ელოდება ადმინისტრატორის დადასტურებას.',
         },
         { status: 403 },
       )

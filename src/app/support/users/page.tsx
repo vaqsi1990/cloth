@@ -472,7 +472,7 @@ const SupportUsersPage = () => {
                                 }
                               }}
                             >
-                              ✓ IBAN დამტკიცება
+                              ✓ დამტკიცება
                             </button>
                             <RejectVerificationButton user={user} setUsers={setUsers} verificationType="identity" />
                           </div>
