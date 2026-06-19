@@ -7,6 +7,9 @@ export const PRODUCT_IMAGE_REQUIRED_MESSAGE =
 export const PRODUCT_PRICE_REQUIRED_MESSAGE =
   'მინიმუმ ერთი ფასი უნდა იყოს მითითებული — ქირაობის (დღეში) ან გაყიდვის'
 
+export const PRODUCT_PRICING_MODE_REQUIRED_MESSAGE =
+  'აირჩიეთ გაქირავება ან გაყიდვა (ან ორივე)'
+
 export const MIN_PRODUCT_PRICE = 15
 
 export const PRODUCT_MIN_PRICE_MESSAGE = `პროდუქტის მინიმალური ფასი უნდა იყოს ${MIN_PRODUCT_PRICE} ₾`
@@ -74,30 +77,61 @@ export function getProductCreateFieldErrors(data: {
   imageUrls?: string[]
   variants?: Array<{ size?: string; imageUrl?: string; price?: number | null }>
   isSkuVariantProduct?: boolean
+  requireVariantSalePrices?: boolean
+  showPurchaseOptions?: boolean
+  showRentalOptions?: boolean
 } & ProductPricingInput): Record<string, string> {
   const errors: Record<string, string> = {}
 
   if (data.isSkuVariantProduct) {
-    Object.assign(errors, validateSkuVariantRows(data.variants || []))
+    if (!data.showPurchaseOptions && !data.showRentalOptions) {
+      errors.pricingMode = PRODUCT_PRICING_MODE_REQUIRED_MESSAGE
+    }
+
+    Object.assign(
+      errors,
+      validateSkuVariantRows(data.variants || [], {
+        requireSalePrices: data.requireVariantSalePrices,
+      }),
+    )
   } else if (!data.imageUrls || data.imageUrls.length === 0) {
     errors.imageUrls = PRODUCT_IMAGE_REQUIRED_MESSAGE
   }
 
-  if (!hasProductPricing(data)) {
+  const pricingCheckData: ProductPricingInput = { ...data }
+  if (data.isSkuVariantProduct && !data.showPurchaseOptions) {
+    pricingCheckData.variants = (data.variants || []).map((variant) => ({
+      ...variant,
+      price: 0,
+    }))
+  }
+  if (data.isSkuVariantProduct && !data.showRentalOptions) {
+    pricingCheckData.rentalPriceTiers = []
+    pricingCheckData.pricePerDay = 0
+  }
+
+  if (!errors.pricingMode && !hasProductPricing(pricingCheckData)) {
     errors.rentalPriceTiers = PRODUCT_PRICE_REQUIRED_MESSAGE
-  } else {
-    Object.assign(errors, collectMinPriceFieldErrors(data))
+  } else if (!errors.pricingMode) {
+    Object.assign(errors, collectMinPriceFieldErrors(pricingCheckData))
   }
 
   return errors
 }
 
 export function refineProductImagesAndPricing(
-  data: { imageUrls?: string[]; variants?: Array<{ size?: string; imageUrl?: string }>; isSkuVariantProduct?: boolean } & ProductPricingInput,
+  data: {
+    imageUrls?: string[]
+    variants?: Array<{ size?: string; imageUrl?: string; price?: number | null }>
+    isSkuVariantProduct?: boolean
+    requireVariantSalePrices?: boolean
+  } & ProductPricingInput,
   ctx: z.RefinementCtx,
 ) {
   if (data.isSkuVariantProduct) {
-    const skuErrors = validateSkuVariantRows(data.variants || [])
+    const skuErrors = validateSkuVariantRows(data.variants || [], {
+      requireSalePrices: data.requireVariantSalePrices,
+    })
     for (const [pathKey, message] of Object.entries(skuErrors)) {
       const path = pathKey.split('.')
       const numericIndex = path.findIndex((segment) => /^\d+$/.test(segment))

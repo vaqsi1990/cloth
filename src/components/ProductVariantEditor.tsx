@@ -50,7 +50,7 @@ export default function ProductVariantEditor({
         <div>
           <h3 className="text-[20px] text-black font-semibold">ვარიანტები (ფერი / ზომა)</h3>
           <p className="text-sm text-gray-600 mt-1">
-            თითოეულ ვარიანტს დაამატეთ ზომა და სურათი.
+            თითოეულ ვარიანტს დაამატეთ ზომა, სურათი და გაყიდვის ფასი.
           </p>
         </div>
         <button
@@ -151,13 +151,19 @@ export default function ProductVariantEditor({
                 <input
                   type="number"
                   step="0.01"
+                  min="0"
                   value={variant.price === 0 ? '' : variant.price || ''}
                   onChange={(e) => {
                     const val = e.target.value === '' ? 0 : parseFloat(e.target.value)
                     onUpdate(index, 'price', Number.isFinite(val) ? val : 0)
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[18px] text-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  className={`w-full px-3 py-2 border rounded-lg text-[18px] text-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+                    errors[`variants.${index}.price`] ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 />
+                {errors[`variants.${index}.price`] && (
+                  <p className="text-red-500 text-sm mt-1">{errors[`variants.${index}.price`]}</p>
+                )}
               </div>
             )}
 

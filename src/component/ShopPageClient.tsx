@@ -31,6 +31,8 @@ import {
 import { isProductVipActive } from '@/lib/product-vip'
 import { getBuyerSavingsFromSellerDiscount } from '@/lib/platform-pricing'
 import ProductSalePrice from '@/components/ProductSalePrice'
+import { formatVariantPriceRange, getVariantSalePrices } from '@/lib/product-variants'
+import { getBuyerPrice } from '@/lib/platform-pricing'
 import {
     fetchShopData,
     getShopFilterKey,
@@ -455,6 +457,16 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         }
         // If no variants, check if it's rentable
         return getRentalPrice(product)
+    }
+
+    const getProductListPriceLabel = (product: Product): string | null => {
+        const salePrices = getVariantSalePrices(product)
+        if (salePrices.length === 0) {
+            const rentalPrice = getRentalPrice(product)
+            return rentalPrice > 0 ? `₾${getBuyerPrice(rentalPrice).toFixed(2)}` : null
+        }
+
+        return formatVariantPriceRange(salePrices, getBuyerPrice)
     }
 
     const getProductPurchaseLabel = (product: Product): string | null => {
@@ -1726,10 +1738,28 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
                                                 </Link>
                                             </div>
                                             <div className="flex items-center justify-between gap-2">
-                                                <ProductSalePrice
-                                                    originalPrice={getDisplayPrice(product)}
-                                                    discount={product.discount}
-                                                />
+                                                {(() => {
+                                                    const priceLabel = getProductListPriceLabel(product)
+                                                    const salePrices = getVariantSalePrices(product)
+                                                    const hasVariablePrices =
+                                                        salePrices.length > 1 &&
+                                                        Math.min(...salePrices) !== Math.max(...salePrices)
+
+                                                    if (priceLabel && (hasVariablePrices || !product.discount)) {
+                                                        return (
+                                                            <span className="font-regular text-black md:text-[18px] text-[16px]">
+                                                                {priceLabel}
+                                                            </span>
+                                                        )
+                                                    }
+
+                                                    return (
+                                                        <ProductSalePrice
+                                                            originalPrice={getDisplayPrice(product)}
+                                                            discount={product.discount}
+                                                        />
+                                                    )
+                                                })()}
                                             </div>
 
                                             {product.discount && product.discount > 0 && (

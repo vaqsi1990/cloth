@@ -157,8 +157,38 @@ export function getVariantImageUrls(variants: Array<{ imageUrl?: string | null }
     .filter((url): url is string => Boolean(url))
 }
 
+export type ProductVariantSkuFormRow = ProductVariantSkuLike & {
+  price?: number | null
+}
+
+export function getVariantSalePrices(
+  product: { variants?: Array<{ price?: number | null }> | null },
+): number[] {
+  return (product.variants || [])
+    .map((variant) => variant.price ?? 0)
+    .filter((price) => price > 0)
+}
+
+export function formatVariantPriceRange(
+  prices: number[],
+  formatPrice: (price: number) => number = (price) => price,
+): string | null {
+  if (prices.length === 0) return null
+
+  const formatted = prices.map((price) => formatPrice(price))
+  const min = Math.min(...formatted)
+  const max = Math.max(...formatted)
+
+  if (min === max) {
+    return `₾${min.toFixed(2)}`
+  }
+
+  return `₾${min.toFixed(2)} - ₾${max.toFixed(2)}`
+}
+
 export function validateSkuVariantRows(
-  variants: ProductVariantSkuLike[],
+  variants: ProductVariantSkuFormRow[],
+  options?: { requireSalePrices?: boolean },
 ): Record<string, string> {
   const errors: Record<string, string> = {}
 
@@ -167,12 +197,19 @@ export function validateSkuVariantRows(
     return errors
   }
 
+  const requireSalePrices =
+    options?.requireSalePrices ??
+    variants.some((variant) => (variant.price ?? 0) > 0)
+
   variants.forEach((variant, index) => {
     if (!variant.size?.trim()) {
       errors[`variants.${index}.size`] = 'ზომა აუცილებელია'
     }
     if (!variant.imageUrl?.trim()) {
       errors[`variants.${index}.imageUrl`] = 'სურათი აუცილებელია'
+    }
+    if (requireSalePrices && (variant.price ?? 0) <= 0) {
+      errors[`variants.${index}.price`] = 'ფასი აუცილებელია'
     }
   })
 

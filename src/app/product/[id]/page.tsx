@@ -38,7 +38,9 @@ import { PRODUCT_IMAGE_QUALITY } from "@/lib/image-config"
 import { useProductStatusSync } from "@/hooks/useProductStatusSync"
 import {
   findVariantBySelection,
+  formatVariantPriceRange,
   getVariantColors,
+  getVariantSalePrices,
   getVariantSizes,
   productHasSkuVariants,
 } from '@/lib/product-variants'
@@ -302,37 +304,6 @@ const ProductPage = () => {
         }
         return product.variants.some(variant => (variant.price ?? 0) > 0)
     }, [product])
-
-    // Auto-switch to rent mode if product is rented or if buy price is 0
-    useEffect(() => {
-        if (!product) return
-
-        if (purchaseMode === 'rent' && !canRent) {
-            if (canBuyProduct) {
-                setPurchaseMode('buy')
-            }
-            return
-        }
-
-        if (product.status === 'RENTED' && purchaseMode === 'buy' && canRent) {
-            setPurchaseMode('rent')
-            return
-        }
-
-        if (purchaseMode === 'buy') {
-            if (!canBuyProduct && canRent) {
-                setPurchaseMode('rent')
-                return
-            }
-            if (selectedSize && product.variants && product.variants.length > 0) {
-                const variant = product.variants[0] // Use first variant since they're just different prices
-                const price = variant?.price ?? 0
-                if (price === 0 && canRent) {
-                    setPurchaseMode('rent')
-                }
-            }
-        }
-    }, [product, purchaseMode, selectedSize, canRent, canBuyProduct])
 
     // Active rental periods for calendar blocking
     const [activeRentalPeriods, setActiveRentalPeriods] = useState<RentalPeriod[]>([])
@@ -801,6 +772,11 @@ const ProductPage = () => {
         : Boolean(selectedSize)
     const isProductOwner = session?.user?.id === product?.user?.id
     const pricingMode = isProductOwner ? 'seller' : 'buyer'
+    const variantSalePrices = product ? getVariantSalePrices(product) : []
+    const variantPriceRangeLabel = formatVariantPriceRange(
+        variantSalePrices,
+        pricingMode === 'buyer' ? getBuyerPrice : (price) => price,
+    )
     const showBuyOption = Boolean(canBuyProduct && selectionComplete && selectedPrice > 0)
     const rentStatusAllowed =
         product?.status === 'AVAILABLE' ||
@@ -811,6 +787,42 @@ const ProductPage = () => {
     const selectedStock = hasSkuVariants
         ? (selectedVariantMatch?.stock ?? 0)
         : (product?.stock ?? 0)
+
+    useEffect(() => {
+        if (!product) return
+
+        if (purchaseMode === 'rent' && !canRent) {
+            if (canBuyProduct) {
+                setPurchaseMode('buy')
+            }
+            return
+        }
+
+        if (product.status === 'RENTED' && purchaseMode === 'buy' && canRent) {
+            setPurchaseMode('rent')
+            return
+        }
+
+        if (purchaseMode === 'buy') {
+            if (!canBuyProduct && canRent) {
+                setPurchaseMode('rent')
+                return
+            }
+            if (hasSkuVariants) {
+                if (selectionComplete && selectedPrice === 0 && canRent) {
+                    setPurchaseMode('rent')
+                }
+                return
+            }
+            if (selectedSize && product.variants && product.variants.length > 0) {
+                const variant = product.variants[0]
+                const price = variant?.price ?? 0
+                if (price === 0 && canRent) {
+                    setPurchaseMode('rent')
+                }
+            }
+        }
+    }, [product, purchaseMode, selectedSize, selectedColor, selectionComplete, selectedPrice, hasSkuVariants, canRent, canBuyProduct])
 
     const handleColorClick = (color: string) => {
         if (product?.status !== 'MAINTENANCE' && product?.status !== 'DAMAGED') {
@@ -1536,9 +1548,15 @@ const ProductPage = () => {
                                         <div>
                                             <p className="text-black md:text-[18px] text-[16px] uppercase tracking-wide">გაყიდვის ფასი</p>
                                             <p className="md:text-[18px] text-[16px] text-black">
-                                                {selectedSize
-                                                    ? 'ფასი არჩეული ზომისთვის'
-                                                    : 'აირჩიეთ ზომა ფასის სანახავად'}
+                                                {showBuyOption
+                                                    ? hasSkuVariants
+                                                        ? 'ფასი არჩეული ვარიანტისთვის'
+                                                        : 'ფასი არჩეული ზომისთვის'
+                                                    : hasSkuVariants
+                                                        ? 'აირჩიეთ ფერი და ზომა ფასის სანახავად'
+                                                        : selectedSize
+                                                            ? 'ფასი არჩეული ზომისთვის'
+                                                            : 'აირჩიეთ ზომა ფასის სანახავად'}
                                             </p>
                                         </div>
                                         {showBuyOption ? (
@@ -1580,6 +1598,10 @@ const ProductPage = () => {
                                                         className="w-full max-w-xs"
                                                     />
                                                 )}
+                                            </div>
+                                        ) : variantPriceRangeLabel ? (
+                                            <div className="text-3xl font-bold text-black">
+                                                {variantPriceRangeLabel}
                                             </div>
                                         ) : (
                                             <div className="md:text-[18px] text-[16px] font-semibold text-black">

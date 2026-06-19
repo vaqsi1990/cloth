@@ -37,6 +37,7 @@ import ProductDiscountFields from '@/components/ProductDiscountFields'
 import ProductMinPriceNotice from '@/components/ProductMinPriceNotice'
 import ProductVariantEditor from '@/components/ProductVariantEditor'
 import ProductTypeSelector, { type ProductListingType } from '@/components/ProductTypeSelector'
+import ProductMultiPricingSelector from '@/components/ProductMultiPricingSelector'
 import ProductColorPicker from '@/components/ProductColorPicker'
 import { VIP_MONTHLY_PRICE_GEL } from '@/lib/product-vip'
 import { getProductDiscountBasePrice } from '@/lib/discount-helpers'
@@ -46,6 +47,7 @@ import {
   getVariantImageUrls,
   type ProductVariantFormRow,
 } from '@/lib/product-variants'
+import { prepareProductPricingSubmit } from '@/lib/product-form-pricing'
 import ProductPhotoBackgroundConsent from '@/components/ProductPhotoBackgroundConsent'
 import {
   buildProductFormSizeOptions,
@@ -180,6 +182,7 @@ const NewProductPage = () => {
   const [wantsVip, setWantsVip] = useState(false)
   const [agreedToPhotoBackgroundChange, setAgreedToPhotoBackgroundChange] = useState(false)
   const [showPurchaseOptions, setShowPurchaseOptions] = useState(false)
+  const [showRentalOptions, setShowRentalOptions] = useState(false)
   const [showVariantOptions, setShowVariantOptions] = useState(false)
   const productListingType: ProductListingType = showVariantOptions ? 'multi' : 'simple'
   const [sizeSystem, setSizeSystem] = useState(formData.sizeSystem ?? '')
@@ -193,9 +196,12 @@ const NewProductPage = () => {
 
     if (!isMulti) {
       setFormData((prev) => ({ ...prev, variants: [] }))
+      setShowRentalOptions(false)
       return
     }
 
+    setShowPurchaseOptions(false)
+    setShowRentalOptions(false)
     setFormData((prev) => ({
       ...prev,
       variants: seedVariantRowsFromLegacyProduct({
@@ -402,6 +408,28 @@ const NewProductPage = () => {
     }))
   }
 
+  const handlePurchaseOptionsChange = (checked: boolean) => {
+    setShowPurchaseOptions(checked)
+    if (showVariantOptions) {
+      if (!checked) {
+        setFormData((prev) => ({
+          ...prev,
+          variants: prev.variants.map((variant) => ({ ...variant, price: 0 })),
+        }))
+      }
+      return
+    }
+    if (!checked) {
+      setFormData((prev) => ({ ...prev, variants: [] }))
+    } else if (formData.variants.length === 0) {
+      addVariant()
+    }
+  }
+
+  const handleRentalOptionsChange = (checked: boolean) => {
+    setShowRentalOptions(checked)
+  }
+
   const removeVariant = (index: number) => {
     setFormData(prev => ({
       ...prev,
@@ -469,6 +497,9 @@ const NewProductPage = () => {
     const fieldErrors = getProductCreateFieldErrors({
       ...formData,
       isSkuVariantProduct: showVariantOptions,
+      requireVariantSalePrices: showPurchaseOptions && showVariantOptions,
+      showPurchaseOptions,
+      showRentalOptions,
     })
     if (Object.keys(fieldErrors).length > 0) {
       setErrors(fieldErrors)
@@ -478,20 +509,21 @@ const NewProductPage = () => {
     }
 
     try {
-      const hasRentalPrice = formData.rentalPriceTiers && formData.rentalPriceTiers.length > 0 && formData.rentalPriceTiers.some(tier => tier.pricePerDay > 0)
-      const hasSalePrice = formData.variants.some((variant) => (variant.price ?? 0) > 0)
-      const variantsToSubmit = showVariantOptions ? formData.variants : (hasSalePrice ? formData.variants : [])
+      const pricing = prepareProductPricingSubmit({
+        showVariantOptions,
+        showPurchaseOptions,
+        showRentalOptions,
+        variants: formData.variants,
+        rentalPriceTiers: formData.rentalPriceTiers,
+      })
+      const variantsToSubmit = pricing.variantsToSubmit
       
       const dataToValidate: any = {
         ...formData,
         isSkuVariantProduct: showVariantOptions,
+        isRentable: pricing.isRentable,
         imageUrls: showVariantOptions ? getVariantImageUrls(variantsToSubmit) : formData.imageUrls,
-        rentalPriceTiers: hasRentalPrice
-          ? (formData.rentalPriceTiers || []).map((tier) => ({
-              ...tier,
-              minDays: tier.minDays < 1 ? 1 : tier.minDays,
-            }))
-          : undefined,
+        rentalPriceTiers: pricing.rentalPriceTiers,
         variants: variantsToSubmit.map(({ discount: _discount, ...variant }) => variant),
         color: useCustomColor ? customColor.trim() : formData.color,
         ...(showVariantOptions || isSizeOptional
@@ -853,6 +885,16 @@ const NewProductPage = () => {
           />
 
           {showVariantOptions && (
+            <ProductMultiPricingSelector
+              showPurchaseOptions={showPurchaseOptions}
+              showRentalOptions={showRentalOptions}
+              onPurchaseChange={handlePurchaseOptionsChange}
+              onRentalChange={handleRentalOptionsChange}
+              error={errors.pricingMode}
+            />
+          )}
+
+          {showVariantOptions && (
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h2 className="text-[20px] text-black font-semibold mb-4">ვარიანტები</h2>
               <ProductVariantEditor
@@ -882,6 +924,7 @@ const NewProductPage = () => {
           )}
 
           {/* Rental Options */}
+          {(!showVariantOptions || showRentalOptions) && (
           <div className="bg-white rounded-lg shadow-sm p-6">
             <ProductMinPriceNotice className="mb-4" />
             <h2 className="text-[20px] text-black font-semibold mb-6">გაქირავება</h2>
@@ -980,19 +1023,21 @@ const NewProductPage = () => {
             {/* {formData.isRentable && (
             )} */}
           </div>
+          )}
 
+          {!showVariantOptions && (
           <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex justify-between items-center mb-6">
               <label className="flex items-center gap-3 text-[20px] text-black font-semibold cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={showPurchaseOptions}
-                  onChange={(e) => setShowPurchaseOptions(e.target.checked)}
+                  onChange={(e) => handlePurchaseOptionsChange(e.target.checked)}
                   className="h-5 w-5"
                 />
                 <span>გაყიდვა</span>
               </label>
-              {showPurchaseOptions && !showVariantOptions && (
+              {showPurchaseOptions && (
                 <button
                   type="button"
                   onClick={addVariant}
@@ -1004,7 +1049,7 @@ const NewProductPage = () => {
               )}
             </div>
 
-            {showPurchaseOptions && !showVariantOptions && formData.variants.map((variant, index) => (
+            {showPurchaseOptions && formData.variants.map((variant, index) => (
               <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border border-gray-200 rounded-lg mb-4">
                 <div>
                   <label className="block text-[20px] text-black font-medium mb-2">ფასი </label>
@@ -1032,11 +1077,12 @@ const NewProductPage = () => {
               </div>
             ))}
 
-            {showPurchaseOptions && !showVariantOptions && formData.variants.length === 0 && (
+            {showPurchaseOptions && formData.variants.length === 0 && (
               <p className="md:text-[18px] text-[16px] text-black">თქვენ შეგიძლიათ დაამატოთ ზომები და საწყობის რაოდენობა.</p>
             )}
 
           </div>
+          )}
 
           {getProductDiscountBasePrice(formData.variants, formData.rentalPriceTiers).basePrice > 0 && (
             <div className="bg-white rounded-lg shadow-sm p-6">
