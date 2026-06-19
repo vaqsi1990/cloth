@@ -195,6 +195,7 @@ const EditProductPage = () => {
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isImageUploading, setIsImageUploading] = useState(false)
   const [wantsVip, setWantsVip] = useState(false)
   const [wantsRenewal, setWantsRenewal] = useState(false)
   const [vipWasActiveOnLoad, setVipWasActiveOnLoad] = useState(false)
@@ -644,6 +645,12 @@ const EditProductPage = () => {
     e.preventDefault()
     setIsSubmitting(true)
     setErrors({})
+
+    if (isImageUploading) {
+      showToast('დაელოდეთ სურათის ატვირთვის დასრულებას', 'error')
+      setIsSubmitting(false)
+      return
+    }
 
     const fieldErrors = getProductCreateFieldErrors({
       ...formData,
@@ -1315,6 +1322,7 @@ const EditProductPage = () => {
             <ImageUploadForProduct
               value={formData.imageUrls}
               onChange={handleImageChange}
+              onUploadingChange={setIsImageUploading}
             />
           </div>
           )}
@@ -1329,7 +1337,7 @@ const EditProductPage = () => {
             </Link>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isImageUploading}
               className="bg-black text-white px-6 py-3 rounded-lg text-[20px] text-black hover:bg-gray-800 transition-colors disabled:bg-gray-400"
             >
               {isSubmitting ? 'მუშავდება...' : 'პროდუქტის განახლება'}

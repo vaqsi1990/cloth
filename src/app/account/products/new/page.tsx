@@ -180,6 +180,7 @@ const NewProductPage = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isImageUploading, setIsImageUploading] = useState(false)
   const [wantsVip, setWantsVip] = useState(false)
   const [agreedToPhotoBackgroundChange, setAgreedToPhotoBackgroundChange] = useState(false)
   const [showPurchaseOptions, setShowPurchaseOptions] = useState(false)
@@ -558,6 +559,12 @@ const NewProductPage = () => {
     if (!agreedToPhotoBackgroundChange) {
       setErrors({ photoBackgroundConsent: PRODUCT_PHOTO_BACKGROUND_CONSENT_ERROR })
       showToast(PRODUCT_PHOTO_BACKGROUND_CONSENT_ERROR, 'error')
+      setIsSubmitting(false)
+      return
+    }
+
+    if (isImageUploading) {
+      showToast('დაელოდეთ სურათის ატვირთვის დასრულებას', 'error')
       setIsSubmitting(false)
       return
     }
@@ -1161,6 +1168,7 @@ const NewProductPage = () => {
             <ImageUploadForProduct
               value={formData.imageUrls}
               onChange={handleImageChange}
+              onUploadingChange={setIsImageUploading}
             />
             {errors.imageUrls && (
               <p className="text-red-500 md:text-[18px] text-[16px] mt-2">{errors.imageUrls}</p>
@@ -1192,7 +1200,7 @@ const NewProductPage = () => {
             </Link>
             <button
               type="submit"
-              disabled={isSubmitting || !agreedToPhotoBackgroundChange}
+              disabled={isSubmitting || isImageUploading || !agreedToPhotoBackgroundChange}
               className="bg-black text-white px-6 py-3 rounded-lg text-[20px] text-black hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               {isSubmitting ? 'მუშავდება...' : 'პროდუქტის დამატება'}

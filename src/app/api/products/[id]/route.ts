@@ -30,6 +30,7 @@ import {
   mapVariantInputForCreate,
   productHasSkuVariants,
   productVariantInputSchema,
+  resolveProductImagesForWrite,
 } from '@/lib/product-variants'
 import {
   refineProductImagesAndPricing,
@@ -412,7 +413,6 @@ export async function PUT(
       stock: validatedData.stock,
     })
 
-    const isSkuProduct = productHasSkuVariants({ variants: validatedData.variants })
     const displayableUrlMap = await buildDisplayableUrlMap([
       ...validatedData.imageUrls,
       ...validatedData.variants.map((variant) => variant.imageUrl),
@@ -421,9 +421,16 @@ export async function PUT(
       ...variant,
       imageUrl: applyDisplayableUrlMap(variant.imageUrl, displayableUrlMap) ?? undefined,
     }))
-    const resolvedImageUrls = isSkuProduct
-      ? getVariantImageUrls(normalizedVariants)
-      : validatedData.imageUrls.map((url) => applyDisplayableUrlMap(url, displayableUrlMap) ?? url)
+    const normalizedImageUrls = validatedData.imageUrls.map(
+      (url) => applyDisplayableUrlMap(url, displayableUrlMap) ?? url,
+    )
+    const resolvedMedia = resolveProductImagesForWrite({
+      isSkuVariantProduct: validatedData.isSkuVariantProduct,
+      imageUrls: normalizedImageUrls,
+      variants: normalizedVariants,
+    })
+    const resolvedImageUrls = resolvedMedia.imageUrls
+    const variantsForUpdate = resolvedMedia.variants
 
     const updateData: Prisma.ProductUpdateInput = {
       name: validatedData.name,
@@ -464,7 +471,7 @@ export async function PUT(
       },
       // Create new variants
       variants: {
-        create: normalizedVariants.map((variant) => mapVariantInputForCreate(variant))
+        create: variantsForUpdate.map((variant) => mapVariantInputForCreate(variant))
       },
       // Update rental price tiers if provided
       // undefined = don't update, [] = clear all, [tiers] = replace with new tiers

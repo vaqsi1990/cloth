@@ -187,6 +187,46 @@ export function getVariantImageUrls(variants: Array<{ imageUrl?: string | null }
     .filter((url): url is string => Boolean(url))
 }
 
+type VariantImageWriteRow = { imageUrl?: string | null }
+
+export function isSkuVariantProductForWrite(input: {
+  isSkuVariantProduct?: boolean
+  variants?: VariantImageWriteRow[] | null
+}): boolean {
+  return input.isSkuVariantProduct ?? productHasSkuVariants({ variants: input.variants })
+}
+
+export function resolveProductImagesForWrite<T extends VariantImageWriteRow>(input: {
+  isSkuVariantProduct?: boolean
+  imageUrls: string[]
+  variants: T[]
+}): { imageUrls: string[]; variants: T[] } {
+  const isSkuProduct = isSkuVariantProductForWrite(input)
+
+  if (isSkuProduct) {
+    return {
+      imageUrls: getVariantImageUrls(input.variants),
+      variants: input.variants,
+    }
+  }
+
+  const imageUrls = input.imageUrls
+    .map((url) => url.trim())
+    .filter(Boolean)
+
+  if (imageUrls.length === 0) {
+    return { imageUrls, variants: input.variants }
+  }
+
+  const primaryImage = imageUrls[0]
+  const variants = input.variants.map((variant) => ({
+    ...variant,
+    imageUrl: variant.imageUrl?.trim() || primaryImage,
+  }))
+
+  return { imageUrls, variants }
+}
+
 /** Unique variant image URLs for the current color/size selection (color alone is enough to switch gallery). */
 export function getVariantImagesForSelection(
   product: ProductWithVariants,

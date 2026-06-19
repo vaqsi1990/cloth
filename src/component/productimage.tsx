@@ -2,7 +2,7 @@
 "use client";
 
 import HeicAwareUploadButton from "@/components/HeicAwareUploadButton";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import ImageModal from "@/component/ImageModal";
 import UploadLoadingIndicator from "@/component/UploadLoadingIndicator";
 import { X } from "lucide-react";
@@ -12,8 +12,9 @@ import { getUploadResultUrls } from "@/lib/upload-result-url";
 
 
 type ImageUploadProps = {
-  onChange: (urls: string[]) => void;
-  value: string[];
+  onChange: (urls: string[]) => void
+  value: string[]
+  onUploadingChange?: (isUploading: boolean) => void
   photoBackgroundConsent?: {
     checked: boolean;
     onChange: (checked: boolean) => void;
@@ -21,35 +22,45 @@ type ImageUploadProps = {
   };
 };
 
-const ImageUploadForProduct = ({ onChange, value, photoBackgroundConsent }: ImageUploadProps): React.JSX.Element => {
+const ImageUploadForProduct = ({ onChange, value, onUploadingChange, photoBackgroundConsent }: ImageUploadProps): React.JSX.Element => {
   const [imageUrls, setImageUrls] = useState<string[]>(value || []);
   const [isUploading, setIsUploading] = useState(false);
+  const imageUrlsRef = useRef(imageUrls);
 
   useEffect(() => {
     setImageUrls(value || []);
   }, [value]);
 
+  imageUrlsRef.current = imageUrls;
+
+  const updateImageUrls = useCallback((nextUrls: string[]) => {
+    imageUrlsRef.current = nextUrls;
+    setImageUrls(nextUrls);
+    onChange(nextUrls);
+  }, [onChange]);
+
+  const setUploading = useCallback((uploading: boolean) => {
+    setIsUploading(uploading);
+    onUploadingChange?.(uploading);
+  }, [onUploadingChange]);
+
   const handleUploadComplete = (res: Parameters<typeof getUploadResultUrls>[0]) => {
     const urls = getUploadResultUrls(res);
-    const newUrls = [...imageUrls, ...urls];
-    setImageUrls(newUrls);
-    onChange(newUrls);
-    setIsUploading(false);
+    updateImageUrls([...imageUrlsRef.current, ...urls]);
+    setUploading(false);
   };
 
   const handleUploadError = (error: Error) => {
-    setIsUploading(false);
+    setUploading(false);
     showToast(`შეცდომა ატვირთვისას: ${error.message}`, "error");
   };
 
   const handleUploadBegin = () => {
-    setIsUploading(true);
+    setUploading(true);
   };
 
   const handleDeleteImage = (indexToDelete: number) => {
-    const filteredUrls = imageUrls.filter((_, index) => index !== indexToDelete);
-    setImageUrls(filteredUrls);
-    onChange(filteredUrls);
+    updateImageUrls(imageUrlsRef.current.filter((_, index) => index !== indexToDelete));
   };
 
   const validImageUrls = imageUrls.filter(url => url && typeof url === 'string' && url.trim() !== '');
