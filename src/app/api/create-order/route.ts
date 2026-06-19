@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { canUserMakePurchases } from '@/lib/seller-eligibility'
+import { userNeedsPhoneNumber } from '@/lib/user-phone-required'
 import { bogTokenManager } from '@/lib/bog-token'
 import { computeCartItemSubtotal } from '@/lib/cart-totals'
 import { getCartItemPayablePrice, getRentalCartDiscountContext } from '@/lib/cart-item-pricing'
@@ -354,6 +355,17 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
+    }
+
+    if (userNeedsPhoneNumber({ role: session.user.role, phone: session.user.phone })) {
+      return NextResponse.json(
+        {
+          success: false,
+          missingPhone: true,
+          error: 'გთხოვთ მიუთითოთ ტელეფონის ნომერი.',
+        },
+        { status: 403 },
+      )
     }
 
     const user = await prisma.user.findUnique({

@@ -34,6 +34,7 @@ import {
   refineProductImagesAndPricing,
 } from '@/lib/product-create-validation'
 import { canUserCreateProducts } from '@/lib/seller-eligibility'
+import { userNeedsPhoneNumber } from '@/lib/user-phone-required'
 import {
   finalizeProductListResponse,
   getHttpCacheControl,
@@ -598,6 +599,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
         { status: 401 }
+      )
+    }
+
+    if (userNeedsPhoneNumber({ role: session.user.role, phone: session.user.phone })) {
+      return NextResponse.json(
+        {
+          success: false,
+          missingPhone: true,
+          error: 'გთხოვთ მიუთითოთ ტელეფონის ნომერი.',
+        },
+        { status: 403 },
       )
     }
 

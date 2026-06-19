@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { isRentalEndBeforeStart, minRentalEndDateStillBlocking, hasRentalPeriodConflict } from '@/lib/rental-dates'
 import { markRentalProductsRented } from '@/lib/update-product-status'
 import { canUserMakePurchases } from '@/lib/seller-eligibility'
+import { userNeedsPhoneNumber } from '@/lib/user-phone-required'
 import { RentalStatus } from '@prisma/client'
 
 export async function POST(request: NextRequest) {
@@ -13,6 +14,16 @@ export async function POST(request: NextRequest) {
     
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    if (userNeedsPhoneNumber({ role: session.user.role, phone: session.user.phone })) {
+      return NextResponse.json(
+        {
+          error: 'გთხოვთ მიუთითოთ ტელეფონის ნომერი.',
+          missingPhone: true,
+        },
+        { status: 403 },
+      )
     }
 
     const user = await prisma.user.findUnique({
