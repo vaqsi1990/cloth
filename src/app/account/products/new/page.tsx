@@ -979,16 +979,6 @@ const NewProductPage = () => {
                 onRemove={removeVariant}
                 onUpdate={updateVariant}
               />
-              <ProductPhotoBackgroundConsent
-                checked={agreedToPhotoBackgroundChange}
-                onChange={(checked) => {
-                  setAgreedToPhotoBackgroundChange(checked)
-                  if (checked && errors.photoBackgroundConsent) {
-                    setErrors((prev) => ({ ...prev, photoBackgroundConsent: '' }))
-                  }
-                }}
-                error={errors.photoBackgroundConsent}
-              />
             </div>
           )}
 
@@ -1204,16 +1194,6 @@ const NewProductPage = () => {
             <ImageUploadForProduct
               value={formData.imageUrls}
               onChange={handleImageChange}
-              photoBackgroundConsent={{
-                checked: agreedToPhotoBackgroundChange,
-                onChange: (checked) => {
-                  setAgreedToPhotoBackgroundChange(checked)
-                  if (checked && errors.photoBackgroundConsent) {
-                    setErrors((prev) => ({ ...prev, photoBackgroundConsent: '' }))
-                  }
-                },
-                error: errors.photoBackgroundConsent,
-              }}
             />
             {errors.imageUrls && (
               <p className="text-red-500 md:text-[18px] text-[16px] mt-2">{errors.imageUrls}</p>
@@ -1221,6 +1201,19 @@ const NewProductPage = () => {
             </div>
           </div>
           )}
+
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <ProductPhotoBackgroundConsent
+              checked={agreedToPhotoBackgroundChange}
+              onChange={(checked) => {
+                setAgreedToPhotoBackgroundChange(checked)
+                if (checked && errors.photoBackgroundConsent) {
+                  setErrors((prev) => ({ ...prev, photoBackgroundConsent: '' }))
+                }
+              }}
+              error={errors.photoBackgroundConsent}
+            />
+          </div>
 
           {/* Submit Button */}
           <div className="flex justify-end space-x-4">
