@@ -28,57 +28,87 @@ type SizePillSelectorMultipleProps = SizePillSelectorBaseProps & {
 
 export type SizePillSelectorProps = SizePillSelectorSingleProps | SizePillSelectorMultipleProps
 
-function isSelected(
-  mode: 'single' | 'multiple',
-  optionValue: string,
-  value: string,
-  values: string[],
-): boolean {
-  if (mode === 'multiple') {
-    const upper = optionValue.toUpperCase()
-    return values.some((entry) => entry === optionValue || entry.toUpperCase() === upper)
-  }
-  return value === optionValue
+function isMultipleMode(
+  props: SizePillSelectorProps,
+): props is SizePillSelectorMultipleProps {
+  return props.mode === 'multiple'
 }
 
-export default function SizePillSelector(props: SizePillSelectorProps) {
-  const { options, className = '', error, compact = false } = props
-  const mode = props.mode ?? 'single'
-  const value = mode === 'single' ? props.value : ''
-  const values = mode === 'multiple' ? props.values : []
+function isOptionSelected(optionValue: string, selectedValues: string[]): boolean {
+  const upper = optionValue.toUpperCase()
+  return selectedValues.some(
+    (entry) => entry === optionValue || entry.toUpperCase() === upper,
+  )
+}
 
+type SizePillButtonsProps = {
+  options: SizePillOption[]
+  compact: boolean
+  isSelected: (optionValue: string) => boolean
+  onSelect: (optionValue: string, currentlySelected: boolean) => void
+}
+
+function SizePillButtons({
+  options,
+  compact,
+  isSelected,
+  onSelect,
+}: SizePillButtonsProps) {
   const pillSizeClass = compact
     ? 'px-3 py-1.5 text-xs sm:text-sm'
     : 'px-5 py-2 text-sm sm:text-base'
 
   return (
-    <div className={className}>
-      <div className="flex flex-wrap gap-2">
-        {options.map((option) => {
-          const selected = isSelected(mode, option.value, value, values)
+    <div className="flex flex-wrap gap-2">
+      {options.map((option) => {
+        const selected = isSelected(option.value)
 
-          return (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => {
-                if (mode === 'multiple') {
-                  props.onToggle(option.value)
-                  return
-                }
-                props.onChange(selected ? '' : option.value)
-              }}
-              className={`rounded-full border-2 font-medium text-black transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-1 ${pillSizeClass} ${
-                selected
-                  ? 'border-black'
-                  : 'border-gray-300 hover:border-gray-400'
-              }`}
-            >
-              {option.label}
-            </button>
-          )
-        })}
+        return (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => onSelect(option.value, selected)}
+            className={`rounded-full border-2 font-medium text-black transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-1 ${pillSizeClass} ${
+              selected
+                ? 'border-black'
+                : 'border-gray-300 hover:border-gray-400'
+            }`}
+          >
+            {option.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+export default function SizePillSelector(props: SizePillSelectorProps) {
+  const { options, className = '', error, compact = false } = props
+
+  if (isMultipleMode(props)) {
+    return (
+      <div className={className}>
+        <SizePillButtons
+          options={options}
+          compact={compact}
+          isSelected={(optionValue) => isOptionSelected(optionValue, props.values)}
+          onSelect={(optionValue) => props.onToggle(optionValue)}
+        />
+        {error ? <p className="text-red-500 text-sm mt-2">{error}</p> : null}
       </div>
+    )
+  }
+
+  return (
+    <div className={className}>
+      <SizePillButtons
+        options={options}
+        compact={compact}
+        isSelected={(optionValue) => props.value === optionValue}
+        onSelect={(optionValue, currentlySelected) => {
+          props.onChange(currentlySelected ? '' : optionValue)
+        }}
+      />
       {error ? <p className="text-red-500 text-sm mt-2">{error}</p> : null}
     </div>
   )
