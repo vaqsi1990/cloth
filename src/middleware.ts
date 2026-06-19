@@ -17,6 +17,17 @@ export default withAuth(
     ) {
       return NextResponse.redirect(new URL("/auth/complete-phone", req.url))
     }
+
+    if (
+      path.startsWith("/auth/complete-phone") &&
+      token &&
+      !userNeedsPhoneNumber({
+        role: typeof token.role === "string" ? token.role : null,
+        phone: typeof token.phone === "string" ? token.phone : null,
+      })
+    ) {
+      return NextResponse.redirect(new URL("/", req.url))
+    }
   },
   {
     callbacks: {

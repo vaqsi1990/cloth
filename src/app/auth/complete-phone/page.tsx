@@ -1,11 +1,18 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { useSession } from 'next-auth/react'
+import { getSession, useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Phone } from 'lucide-react'
 import { showToast } from '@/utils/toast'
 import { isValidPhone } from '@/lib/phone'
+import { userHasRequiredPhone } from '@/lib/user-phone-required'
+
+function getRedirectPath(role?: string | null): string {
+  if (role === 'ADMIN') return '/admin'
+  if (role === 'SUPPORT') return '/support'
+  return '/'
+}
 
 export default function CompletePhonePage() {
   const { data: session, status, update } = useSession()
@@ -19,6 +26,18 @@ export default function CompletePhonePage() {
       router.replace('/auth/signin')
     }
   }, [status, router])
+
+  useEffect(() => {
+    if (
+      status === 'authenticated' &&
+      userHasRequiredPhone({
+        role: session?.user?.role,
+        phone: session?.user?.phone,
+      })
+    ) {
+      window.location.replace(getRedirectPath(session?.user?.role))
+    }
+  }, [status, session?.user?.phone, session?.user?.role])
 
   if (status === 'loading') {
     return (
@@ -52,22 +71,30 @@ export default function CompletePhonePage() {
 
       if (!response.ok || !data.success) {
         setError(data.error || 'შეცდომა ტელეფონის შენახვისას')
+        setIsSaving(false)
         return
       }
 
       await update({ phone: data.phone })
-      showToast('ტელეფონის ნომერი წარმატებით შენახულია', 'success')
 
-      if (session?.user?.role === 'ADMIN') {
-        router.push('/admin')
-      } else if (session?.user?.role === 'SUPPORT') {
-        router.push('/support')
-      } else {
-        router.push('/')
+      const freshSession = await getSession()
+      const savedPhone = freshSession?.user?.phone ?? data.phone
+
+      if (
+        !userHasRequiredPhone({
+          role: freshSession?.user?.role ?? session?.user?.role,
+          phone: savedPhone,
+        })
+      ) {
+        setError('ტელეფონის ნომერი შენახულია, მაგრამ სესია ვერ განახლდა. სცადეთ ხელახლა.')
+        setIsSaving(false)
+        return
       }
+
+      showToast('ტელეფონის ნომერი წარმატებით შენახულია', 'success')
+      window.location.replace(getRedirectPath(freshSession?.user?.role ?? session?.user?.role))
     } catch {
       setError('შეცდომა ტელეფონის შენახვისას')
-    } finally {
       setIsSaving(false)
     }
   }

@@ -249,7 +249,7 @@ export const authOptions: NextAuthOptions = {
         token.name = dbUser.name
         token.role = dbUser.role
         token.image = dbUser.image
-        token.phone = dbUser.phone
+        token.phone = dbUser.phone ?? token.phone
         token.location = dbUser.location
         token.address = dbUser.address
         token.personalId = dbUser.personalId
@@ -257,10 +257,49 @@ export const authOptions: NextAuthOptions = {
         token.verificationStatus = dbUser.verification?.status || null
       }
 
-      const findDbUserForToken = async () => {
+      const applySessionUpdateToToken = (
+        updateSession: unknown,
+      ) => {
+        type UpdatePayload = Partial<{
+          image: string | null
+          name: string | null
+          email: string
+          phone: string | null
+          location: string | null
+          address: string | null
+          personalId: string | null
+          iban: string | null
+        }> & {
+          user?: Partial<{
+            phone: string | null
+            iban: string | null
+            image: string | null
+            name: string | null
+          }>
+        }
+
+        const s = updateSession as UpdatePayload
+        const phone = s.phone ?? s.user?.phone
+        const iban = s.iban ?? s.user?.iban
+        const image = s.image ?? s.user?.image
+        const name = s.name ?? s.user?.name
+
+        if (image !== undefined) token.image = image
+        if (name !== undefined) token.name = name
+        if (s.email !== undefined) token.email = s.email
+        if (phone !== undefined) token.phone = phone
+        if (s.location !== undefined) token.location = s.location
+        if (s.address !== undefined) token.address = s.address
+        if (s.personalId !== undefined) token.personalId = s.personalId
+        if (iban !== undefined) token.iban = iban
+      }
+
+      const findDbUserForToken = async (fresh = false) => {
+        const cacheOptions = fresh ? {} : prismaCacheStrategy({ swr: 60, ttl: 60 })
+
         if (token.sub) {
           const byId = await prisma.user.findUnique({
-            ...prismaCacheStrategy({ swr: 60, ttl: 60 }),
+            ...cacheOptions,
             where: { id: token.sub },
             select: userDataSelect,
           })
@@ -271,7 +310,7 @@ export const authOptions: NextAuthOptions = {
         if (!email) return null
 
         return prisma.user.findFirst({
-          ...prismaCacheStrategy({ swr: 60, ttl: 60 }),
+          ...cacheOptions,
           where: { email: { equals: email, mode: 'insensitive' } },
           select: userDataSelect,
         })
@@ -292,7 +331,7 @@ export const authOptions: NextAuthOptions = {
       // Refresh user data from database on each request (for OAuth users or when user data might have changed)
       if (token.sub && !account) {
         try {
-          const dbUser = await findDbUserForToken()
+          const dbUser = await findDbUserForToken(trigger === 'update')
 
           if (dbUser) {
             token.sub = dbUser.id
@@ -312,27 +351,9 @@ export const authOptions: NextAuthOptions = {
         }
       }
 
-      // Update token when profile is updated
-      if (trigger === "update" && session) {
-        type UpdatePayload = Partial<{
-          image: string | null
-          name: string | null
-          email: string
-          phone: string | null
-          location: string | null
-          address: string | null
-          personalId: string | null
-          iban: string | null
-        }>
-        const s = session as UpdatePayload
-        token.image = s.image ?? token.image
-        token.name = s.name ?? token.name
-        token.email = s.email ?? token.email
-        token.phone = s.phone ?? token.phone
-        token.location = s.location ?? token.location
-        token.address = s.address ?? token.address
-        token.personalId = s.personalId ?? token.personalId
-        token.iban = s.iban ?? token.iban
+      // Client session updates must run last so they are not overwritten.
+      if (trigger === 'update' && session) {
+        applySessionUpdateToToken(session)
       }
 
       return token
