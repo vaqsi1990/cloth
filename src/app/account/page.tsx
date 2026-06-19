@@ -1275,7 +1275,7 @@ const AccountPageContent = () => {
 
       </div>
       {!isAdminOrSupport && identityApproved && hasIban && (
-        <h1 className="text-green-500 text-[20px] font-bold ">IBAN დადასტურებულია</h1>
+        <h1 className="text-green-500 text-[20px] font-bold ">დადასტურებულია</h1>
       )}
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <h4 className="md:text-[20px] text-[18px] font-bold text-black mb-4">ანგარიშის სტატისტიკა</h4>
@@ -2409,6 +2409,9 @@ const AccountPageContent = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-black">ჩემი ანგარიში</h1>
+              <p className="text-red-600 font-semibold md:text-[22px] text-[20px] mt-2">
+                ადმინისტრაციის სამუშაო საათები 08:00 - 22:00
+              </p>
               <p className="text-black md:text-[18px] text-[16px] mt-1">მოგესალმებით, {session.user.name}</p>
             </div>
             <Link
