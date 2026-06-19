@@ -56,6 +56,7 @@ import {
   isChildrenAgeSize,
   parseProductFormSizeSelection,
 } from '@/lib/shop-product-filters'
+import SizePillSelector from '@/components/SizePillSelector'
 
 const categories = DEFAULT_PRODUCT_CATEGORIES
 type Category = {
@@ -796,20 +797,15 @@ const NewProductPage = () => {
                   <label className="block text-[20px] text-black font-medium mb-2">
                     {formData.gender === 'CHILDREN' ? 'ასაკი (არასავალდებულო)' : 'ზომა (არასავალდებულო)'}
                   </label>
-                  <select
+                  <SizePillSelector
                     value={getProductFormSizeSelectValue(formData.gender, sizeSystem, selectedSize)}
-                    onChange={(e) => handleCombinedSizeSelect(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 placeholder:text-gray-500 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                  >
-                    <option value="">
-                      {formData.gender === 'CHILDREN' ? 'აირჩიეთ ასაკი' : 'აირჩიეთ ზომა'}
-                    </option>
-                    {combinedSizeOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={handleCombinedSizeSelect}
+                    options={combinedSizeOptions.map((option) => ({
+                      value: option.value,
+                      label: option.label,
+                    }))}
+                    compact={formData.gender === 'CHILDREN'}
+                  />
                 </div>
               )}
 

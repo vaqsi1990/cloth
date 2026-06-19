@@ -41,6 +41,7 @@ import ProductVariantEditor from '@/components/ProductVariantEditor'
 import ProductTypeSelector, { type ProductListingType } from '@/components/ProductTypeSelector'
 import ProductMultiPricingSelector from '@/components/ProductMultiPricingSelector'
 import ProductColorPicker from '@/components/ProductColorPicker'
+import SizePillSelector from '@/components/SizePillSelector'
 import {
   seedVariantRowsFromLegacyProduct,
   getVariantImageUrls,
@@ -883,20 +884,15 @@ const NewProductPage = () => {
                   <label className="block md:text-[18px] text-[16px] text-black font-medium mb-2">
                     {formData.gender === 'CHILDREN' ? 'ასაკი (არასავალდებულო)' : 'ზომა (არასავალდებულო)'}
                   </label>
-                  <select
+                  <SizePillSelector
                     value={getProductFormSizeSelectValue(formData.gender, sizeSystem, selectedSize)}
-                    onChange={(e) => handleCombinedSizeSelect(e.target.value)}
-                    className="w-full text-black px-4 py-3 border border-gray-300 rounded-lg md:text-[18px] text-[16px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                  >
-                    <option value="">
-                      {formData.gender === 'CHILDREN' ? 'აირჩიეთ ასაკი' : 'აირჩიეთ ზომა'}
-                    </option>
-                    {combinedSizeOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={handleCombinedSizeSelect}
+                    options={combinedSizeOptions.map((option) => ({
+                      value: option.value,
+                      label: option.label,
+                    }))}
+                    compact={formData.gender === 'CHILDREN'}
+                  />
                 </div>
               )}
 

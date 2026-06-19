@@ -5,7 +5,7 @@ import {
 } from '@/lib/product-categories'
 import { resolveProductColorFilterId } from '@/lib/product-colors'
 
-export const PREDEFINED_LETTER_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL']
+export const PREDEFINED_LETTER_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXXL']
 
 /** Child age/size ranges — only for CHILDREN gender in forms and shop filter. */
 export const CHILDREN_AGE_SIZES = [
@@ -91,44 +91,16 @@ export function resolveShopDisplaySizes(
     ])
   }
 
-  const fallback = apiSizes.length > 0 ? apiSizes : [...PREDEFINED_LETTER_SIZES]
-  return sortShopFilterSizes(fallback.filter((size) => !isChildrenAgeSize(size)))
+  return [...PREDEFINED_LETTER_SIZES]
 }
 
 export function buildAdultProductFormSizeOptions(): ProductFormSizeOption[] {
-  const options: ProductFormSizeOption[] = []
-  const measurementSystems: ProductFormSizeSystem[] = ['EU', 'US', 'UK']
-
-  measurementSystems.forEach((system) => {
-    const sizes = Array.from(
-      new Set(
-        Object.values(LETTER_SIZE_TO_SYSTEM_SIZES)
-          .map((entry) => entry[system]?.map((value) => String(value)) ?? [])
-          .flat()
-          .filter(Boolean),
-      ),
-    )
-
-    sizes.forEach((size) => {
-      options.push({
-        value: `${system}:${size}`,
-        label: `${system} - ${size}`,
-        system,
-        size,
-      })
-    })
-  })
-
-  PREDEFINED_LETTER_SIZES.forEach((sizeKey) => {
-    options.push({
-      value: `CN:${sizeKey}`,
-      label: `CN - ${sizeKey}`,
-      system: 'CN',
-      size: sizeKey,
-    })
-  })
-
-  return options
+  return PREDEFINED_LETTER_SIZES.map((size) => ({
+    value: `CN:${size}`,
+    label: size,
+    system: 'CN' as const,
+    size,
+  }))
 }
 
 export function buildProductFormSizeOptions(
@@ -179,18 +151,17 @@ export function getProductFormSizeSelectValue(
   return ''
 }
 
-/** Letter size → numeric (or CN letter) values per measurement system — matches product form. */
+/** Letter size → stored size values per measurement system (shop filter matching). */
 export const LETTER_SIZE_TO_SYSTEM_SIZES: Record<
   string,
   Partial<Record<'EU' | 'US' | 'UK' | 'CN', string[]>>
 > = {
-  XS: { EU: ['32', '34'], UK: ['4', '6'], US: ['0', '2'], CN: ['XS'] },
-  S: { EU: ['36', '38'], UK: ['8', '10'], US: ['4', '6'], CN: ['S'] },
-  M: { EU: ['40'], UK: ['12'], US: ['8'], CN: ['M'] },
-  L: { EU: ['42'], UK: ['14'], US: ['10'], CN: ['L'] },
-  XL: { EU: ['44'], UK: ['16'], US: ['12'], CN: ['XL'] },
-  XXL: { EU: ['46'], UK: ['18'], US: ['14'], CN: ['XXL'] },
-  XXXL: { EU: ['48'], UK: ['20'], US: ['16'], CN: ['XXXL'] },
+  XS: { CN: ['XS'] },
+  S: { CN: ['S'] },
+  M: { CN: ['M'] },
+  L: { CN: ['L'] },
+  XL: { CN: ['XL'] },
+  XXXL: { CN: ['XXXL'] },
 }
 
 export function isLetterSize(size: string): boolean {
@@ -255,17 +226,7 @@ export function collectAvailableSizes(
     return sortChildrenAgeSizes(Array.from(sizes))
   }
 
-  const sizes = new Set<string>(PREDEFINED_LETTER_SIZES)
-
-  for (const product of products) {
-    if (!product.size?.trim()) continue
-    const normalized = product.size.trim()
-    if (isChildrenAgeSize(normalized)) continue
-    const upper = normalized.toUpperCase()
-    sizes.add(PREDEFINED_LETTER_SIZES.includes(upper) ? upper : normalized)
-  }
-
-  return sortShopFilterSizes(Array.from(sizes))
+  return [...PREDEFINED_LETTER_SIZES]
 }
 
 export function buildShopFilterSizeOptions(
@@ -285,18 +246,7 @@ export function buildShopFilterSizeOptions(
     return sortChildrenAgeSizes(Array.from(sizes))
   }
 
-  const sizes = new Set<string>(PREDEFINED_LETTER_SIZES)
-
-  for (const row of rows) {
-    const raw = row.sizeValue.trim()
-    if (!raw) continue
-    if (isChildrenAgeSize(raw)) continue
-    const upper = raw.toUpperCase()
-    if (PREDEFINED_LETTER_SIZES.includes(upper)) continue
-    sizes.add(raw)
-  }
-
-  return sortShopFilterSizes(Array.from(sizes))
+  return [...PREDEFINED_LETTER_SIZES]
 }
 
 function sortChildrenAgeSizes(sizes: string[]): string[] {
@@ -308,17 +258,6 @@ function sortChildrenAgeSizes(sizes: string[]): string[] {
     const bIndex = order.get(b) ?? Number.MAX_SAFE_INTEGER
     if (aIndex !== bIndex) return aIndex - bIndex
     return a.localeCompare(b, 'ka')
-  })
-}
-
-function sortShopFilterSizes(sizes: string[]): string[] {
-  return sizes.sort((a, b) => {
-    const aIndex = PREDEFINED_LETTER_SIZES.indexOf(a.toUpperCase())
-    const bIndex = PREDEFINED_LETTER_SIZES.indexOf(b.toUpperCase())
-    if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex
-    if (aIndex !== -1) return -1
-    if (bIndex !== -1) return 1
-    return a.localeCompare(b, undefined, { numeric: true })
   })
 }
 

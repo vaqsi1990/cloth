@@ -47,6 +47,7 @@ import {
 } from '@/lib/product-status-sync'
 import { HOMEPAGE_FEATURED_UPDATED_EVENT } from '@/lib/homepage-featured-sync'
 import PriceRangeFilter from '@/component/PriceRangeFilter'
+import SizePillSelector from '@/components/SizePillSelector'
 
 type PurchaseType = 'all' | 'rent-only' | 'sale-only' | 'rent-and-sale'
 
@@ -100,7 +101,6 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
     const [onlyVip, setOnlyVip] = useState(false)
     const [productRentalStatus, setProductRentalStatus] = useState<BatchRentalStatusMap>({})
     const [isCategoryOpen, setIsCategoryOpen] = useState(false)
-    const [isSizeOpen, setIsSizeOpen] = useState(false)
 
     const [currentPage, setCurrentPage] = useState(1)
     const [itemsPerPage] = useState(16)
@@ -616,13 +616,6 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         void loadCategories()
     }, [])
 
-    const sizeSystems = [
-        { id: "EU", label: "EU" },
-        { id: "US", label: "US" },
-        { id: "UK", label: "UK" },
-        { id: "CN", label: "CN" }
-    ]
-
     const filterCategories = React.useMemo(
         () =>
             collectShopFilterCategoriesForGender(
@@ -835,16 +828,6 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         )
     }
 
-    // Handle size system selection
-    const toggleSizeSystem = (sizeSystem: string) => {
-        setSelectedSizeSystems(prev =>
-            prev.includes(sizeSystem)
-                ? prev.filter(s => s !== sizeSystem)
-                : [...prev, sizeSystem]
-        )
-    }
-
-    // Handle size selection (case-insensitive)
     const toggleSize = (size: string) => {
         setSelectedSizes(prev => {
             // Check if size already exists (case-insensitive)
@@ -1079,56 +1062,20 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
                                 )}
 
                                 {activeMobileFilter === 'size' && (
-                                    <div className="space-y-6">
-                                        {!isChildrenShop && (
-                                        <div className="space-y-3">
-                                            <h3 className="text-lg font-semibold text-black mb-4">ზომის სისტემა</h3>
-                                            {sizeSystems.map((sizeSystem) => (
-                                                <label
-                                                    key={sizeSystem.id}
-                                                    className="flex items-center gap-3 p-3 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100"
-                                                >
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={selectedSizeSystems.includes(sizeSystem.id)}
-                                                        onChange={() => toggleSizeSystem(sizeSystem.id)}
-                                                        className="w-4 h-4"
-                                                    />
-                                                    <span className="text-[16px] text-black">{sizeSystem.label}</span>
-                                                </label>
-                                            ))}
-                                        </div>
-                                        )}
-                                        <div className="space-y-3">
-                                                <h3 className="text-lg font-semibold text-black mb-4">
-                                                    {isChildrenShop ? 'ასაკი' : 'ზომა'}
-                                                </h3>
-                                                <div className="space-y-2">
-                                                    {availableSizes.map((size) => {
-                                                        const isSelected = selectedSizes.some(selectedSize => {
-                                                            const selectedSizeUpper = selectedSize.toUpperCase()
-                                                            const sizeUpper = size.toUpperCase()
-                                                            return selectedSize === size || selectedSizeUpper === sizeUpper
-                                                        })
-                                                        return (
-                                                            <label
-                                                                key={size}
-                                                                className="flex items-center justify-between text-[16px] text-black cursor-pointer py-1"
-                                                            >
-                                                                <span className="flex items-center gap-3">
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        checked={isSelected}
-                                                                        onChange={() => toggleSize(size)}
-                                                                        className="w-4 h-4"
-                                                                    />
-                                                                    <span>{size}</span>
-                                                                </span>
-                                                            </label>
-                                                        )
-                                                    })}
-                                                </div>
-                                            </div>
+                                    <div className="space-y-3">
+                                        <h3 className="text-lg font-semibold text-black mb-4">
+                                            {isChildrenShop ? 'ასაკი' : 'ზომა'}
+                                        </h3>
+                                        <SizePillSelector
+                                            mode="multiple"
+                                            options={availableSizes.map((size) => ({
+                                                value: size,
+                                                label: size,
+                                            }))}
+                                            values={selectedSizes}
+                                            onToggle={toggleSize}
+                                            compact={isChildrenShop}
+                                        />
                                     </div>
                                 )}
 
@@ -1519,69 +1466,22 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
                             {/* Purchase Type Filter */}
 
 
-                            {/* Size System Filter */}
-                            {!isChildrenShop && (
-                            <div className="border-b border-gray-200 pb-6">
-                                <h2 className="font-medium text-black md:text-[18px] text-[16px] mb-3">ზომის სისტემა</h2>
-                                <div className="space-y-2">
-                                    {sizeSystems.map((sizeSystem) => (
-                                        <label
-                                            key={sizeSystem.id}
-                                            className="flex items-center gap-2 text-[15px] text-black cursor-pointer"
-                                        >
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedSizeSystems.includes(sizeSystem.id)}
-                                                onChange={() => toggleSizeSystem(sizeSystem.id)}
-                                                className="w-4 h-4"
-                                            />
-                                            {sizeSystem.label}
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-                            )}
-
                             {/* Size Filter */}
                             <div className="border-b border-gray-200 pb-6">
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsSizeOpen(!isSizeOpen)}
-                                        className="w-full flex items-center justify-between mb-3"
-                                    >
-                                        <h4 className="font-medium text-black md:text-[18px] text-[16px]">
-                                            {isChildrenShop ? 'ასაკი' : 'ზომა'}
-                                        </h4>
-                                        <ChevronDown className={`w-5 h-5 text-black transition-transform ${isSizeOpen ? "rotate-180" : "rotate-0"}`} />
-                                    </button>
-                                    {isSizeOpen && (
-                                        <div className="space-y-2 overflow-hidden">
-                                            {availableSizes.map((size) => {
-                                                const isSelected = selectedSizes.some(selectedSize => {
-                                                    const selectedSizeUpper = selectedSize.toUpperCase()
-                                                    const sizeUpper = size.toUpperCase()
-                                                    return selectedSize === size || selectedSizeUpper === sizeUpper
-                                                })
-                                                return (
-                                                    <label
-                                                        key={size}
-                                                        className="flex items-center justify-between text-[15px] text-black cursor-pointer py-1"
-                                                    >
-                                                        <span className="flex items-center gap-2">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={isSelected}
-                                                                onChange={() => toggleSize(size)}
-                                                                className="w-4 h-4"
-                                                            />
-                                                            {size}
-                                                        </span>
-                                                    </label>
-                                                )
-                                            })}
-                                        </div>
-                                    )}
-                                </div>
+                                <h4 className="font-medium text-black md:text-[18px] text-[16px] mb-3">
+                                    {isChildrenShop ? 'ასაკი' : 'ზომა'}
+                                </h4>
+                                <SizePillSelector
+                                    mode="multiple"
+                                    options={availableSizes.map((size) => ({
+                                        value: size,
+                                        label: size,
+                                    }))}
+                                    values={selectedSizes}
+                                    onToggle={toggleSize}
+                                    compact={isChildrenShop}
+                                />
+                            </div>
 
                             {/* Location Filter (styled like type) */}
                             <div className="mb-6  pb-6">

@@ -34,6 +34,7 @@ import { showToast } from "@/utils/toast"
 import ChatTypingIndicator from "@/components/ChatTypingIndicator"
 import { useChatTyping } from "@/hooks/useChatTyping"
 import StructuredData from "@/components/StructuredData"
+import SizePillSelector from "@/components/SizePillSelector"
 import { PRODUCT_IMAGE_QUALITY } from "@/lib/image-config"
 import { useProductStatusSync } from "@/hooks/useProductStatusSync"
 import {
@@ -846,13 +847,6 @@ const ProductPage = () => {
         if (product?.status !== 'MAINTENANCE' && product?.status !== 'DAMAGED') {
             setSelectedColor(color)
             setSelectedSize('')
-        }
-    }
-
-    const handleSizeClick = (size: string) => {
-        // Allow size selection in both buy and rent modes, as long as product is not in maintenance or damaged
-        if (product?.status !== 'MAINTENANCE' && product?.status !== 'DAMAGED') {
-            setSelectedSize(size)
         }
     }
 
@@ -1763,28 +1757,25 @@ const ProductPage = () => {
                                     <h3 className="md:text-[18px] text-[16px] font-semibold text-black">ზომა:</h3>
 
                                     {hasSkuVariants ? (
-                                        <div className="flex flex-wrap gap-3">
-                                            {getAvailableSizes().map((size) => (
-                                                <button
-                                                    key={size}
-                                                    type="button"
-                                                    onClick={() => handleSizeClick(size)}
-                                                    className={`rounded-xl border-2 px-6 py-4 text-center transition ${
-                                                        selectedSize === size
-                                                            ? 'border-black bg-black text-white'
-                                                            : 'border-gray-300 text-black hover:border-black'
-                                                    }`}
-                                                >
-                                                    <div className="text-xl font-bold">{size}</div>
-                                                </button>
-                                            ))}
-                                        </div>
+                                        <SizePillSelector
+                                            value={selectedSize}
+                                            onChange={(value) => {
+                                                if (
+                                                    product?.status !== 'MAINTENANCE' &&
+                                                    product?.status !== 'DAMAGED'
+                                                ) {
+                                                    setSelectedSize(value)
+                                                }
+                                            }}
+                                            options={getAvailableSizes().map((size) => ({
+                                                value: size,
+                                                label: size,
+                                            }))}
+                                        />
                                     ) : product.size ? (
-                                        <div className="inline-block">
-                                            <div className="rounded-xl border-2 border-gray-300 bg-black px-6 py-4 text-center transition hover:border-black">
-                                                <div className="text-xl font-bold text-white">{product.size}</div>
-                                            </div>
-                                        </div>
+                                        <span className="inline-flex rounded-full border-2 border-black px-5 py-2 text-sm sm:text-base font-medium text-black">
+                                            {product.size}
+                                        </span>
                                     ) : null}
                                 </div>
                             </div>

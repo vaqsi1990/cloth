@@ -62,6 +62,7 @@ import {
   isChildrenAgeSize,
   parseProductFormSizeSelection,
 } from '@/lib/shop-product-filters'
+import SizePillSelector from '@/components/SizePillSelector'
 import { applyProductListingTypeChange } from '@/lib/product-listing-type-change'
 
 const productSchema = z.object({
@@ -994,24 +995,19 @@ const EditProductPage = () => {
                   <label className="block text-[20px] text-black font-medium mb-2">
                     {formData.gender === 'CHILDREN' ? 'ასაკი (არასავალდებულო)' : 'ზომა (არასავალდებულო)'}
                   </label>
-                  <select
+                  <SizePillSelector
                     value={getProductFormSizeSelectValue(
                       formData.gender,
                       selectedSizeSystem || undefined,
                       selectedSizeValue || undefined,
                     )}
-                    onChange={(e) => handleCombinedSizeSelect(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                  >
-                    <option value="">
-                      {formData.gender === 'CHILDREN' ? 'აირჩიეთ ასაკი' : 'აირჩიეთ ზომა'}
-                    </option>
-                    {combinedSizeOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={handleCombinedSizeSelect}
+                    options={combinedSizeOptions.map((option) => ({
+                      value: option.value,
+                      label: option.label,
+                    }))}
+                    compact={formData.gender === 'CHILDREN'}
+                  />
                 </div>
               )}
             

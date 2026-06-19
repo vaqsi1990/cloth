@@ -11,6 +11,7 @@ import {
 } from '@/lib/shop-product-filters'
 import type { ProductGender } from '@/lib/product-categories'
 import VariantImageUpload from '@/components/VariantImageUpload'
+import SizePillSelector from '@/components/SizePillSelector'
 
 export type { ProductVariantFormRow } from '@/lib/product-variants'
 
@@ -98,29 +99,20 @@ export default function ProductVariantEditor({
                   {gender === 'CHILDREN' ? 'ასაკი' : 'ზომა'}
                   {requireSize && <span className="text-red-600"> *</span>}
                 </label>
-                <select
+                <SizePillSelector
                   value={sizeValue}
-                  onChange={(e) => {
-                    const parsed = parseProductFormSizeSelection(e.target.value, gender)
+                  onChange={(nextValue) => {
+                    const parsed = parseProductFormSizeSelection(nextValue, gender)
                     onUpdate(index, 'size', parsed.size || undefined)
                     onUpdate(index, 'sizeSystem', parsed.sizeSystem || sizeSystem)
                   }}
-                  className={`w-full px-3 py-2 border rounded-lg text-[18px] text-black ${
-                    errors[`variants.${index}.size`] ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                >
-                  <option value="">
-                    {gender === 'CHILDREN' ? 'აირჩიეთ ასაკი' : 'აირჩიეთ ზომა'}
-                  </option>
-                  {combinedSizeOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-                {errors[`variants.${index}.size`] && (
-                  <p className="text-red-500 text-sm mt-1">{errors[`variants.${index}.size`]}</p>
-                )}
+                  options={combinedSizeOptions.map((option) => ({
+                    value: option.value,
+                    label: option.label,
+                  }))}
+                  compact={gender === 'CHILDREN'}
+                  error={errors[`variants.${index}.size`]}
+                />
               </div>
             )}
 
