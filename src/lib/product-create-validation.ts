@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { validateSkuVariantRows } from '@/lib/product-variants'
 
 export const PRODUCT_IMAGE_REQUIRED_MESSAGE =
   'სურათის ატვირთვა აუცილებელია'
@@ -71,10 +72,14 @@ export function hasProductPricing(data: ProductPricingInput): boolean {
 
 export function getProductCreateFieldErrors(data: {
   imageUrls?: string[]
+  variants?: Array<{ size?: string; imageUrl?: string; price?: number | null }>
+  isSkuVariantProduct?: boolean
 } & ProductPricingInput): Record<string, string> {
   const errors: Record<string, string> = {}
 
-  if (!data.imageUrls || data.imageUrls.length === 0) {
+  if (data.isSkuVariantProduct) {
+    Object.assign(errors, validateSkuVariantRows(data.variants || []))
+  } else if (!data.imageUrls || data.imageUrls.length === 0) {
     errors.imageUrls = PRODUCT_IMAGE_REQUIRED_MESSAGE
   }
 
@@ -88,10 +93,30 @@ export function getProductCreateFieldErrors(data: {
 }
 
 export function refineProductImagesAndPricing(
-  data: { imageUrls?: string[] } & ProductPricingInput,
+  data: { imageUrls?: string[]; variants?: Array<{ size?: string; imageUrl?: string }>; isSkuVariantProduct?: boolean } & ProductPricingInput,
   ctx: z.RefinementCtx,
 ) {
-  if (!data.imageUrls || data.imageUrls.length === 0) {
+  if (data.isSkuVariantProduct) {
+    const skuErrors = validateSkuVariantRows(data.variants || [])
+    for (const [pathKey, message] of Object.entries(skuErrors)) {
+      const path = pathKey.split('.')
+      const numericIndex = path.findIndex((segment) => /^\d+$/.test(segment))
+      const zodPath =
+        numericIndex >= 0
+          ? [
+              ...path.slice(0, numericIndex),
+              Number(path[numericIndex]),
+              ...path.slice(numericIndex + 1),
+            ]
+          : path
+
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message,
+        path: zodPath,
+      })
+    }
+  } else if (!data.imageUrls || data.imageUrls.length === 0) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: PRODUCT_IMAGE_REQUIRED_MESSAGE,

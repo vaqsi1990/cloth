@@ -9,6 +9,8 @@ interface CartItem {
   productId: number
   productName: string
   image?: string
+  color?: string
+  variantId?: number
   size: string
   price: number
   quantity: number

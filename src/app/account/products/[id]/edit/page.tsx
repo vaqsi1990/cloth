@@ -26,6 +26,8 @@ import {
 } from '@/lib/product-create-validation'
 import ProductDiscountFields from '@/components/ProductDiscountFields'
 import ProductMinPriceNotice from '@/components/ProductMinPriceNotice'
+import ProductVariantEditor from '@/components/ProductVariantEditor'
+import ProductTypeSelector, { type ProductListingType } from '@/components/ProductTypeSelector'
 import { getProductDiscountBasePrice } from '@/lib/discount-helpers'
 import { isProductVipActive, VIP_MONTHLY_PRICE_GEL } from '@/lib/product-vip'
 import {
@@ -37,6 +39,13 @@ import {
   PRODUCT_GENDER_OPTIONS,
 } from '@/lib/product-categories'
 import { optionalCategoryIdField } from '@/lib/product-schema-fields'
+import {
+  mapProductVariantsToFormRows,
+  productHasSkuVariants,
+  seedVariantRowsFromLegacyProduct,
+  getVariantImageUrls,
+  type ProductVariantFormRow,
+} from '@/lib/product-variants'
 import {
   buildProductFormSizeOptions,
   getProductFormSizeSelectValue,
@@ -86,16 +95,28 @@ const productSchema = z.object({
   pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').nullable().optional(),
   maxRentalDays: z.number().nullable().optional(),
   status: z.enum(['AVAILABLE', 'RENTED', 'RESERVED', 'MAINTENANCE', 'DAMAGED']).default('AVAILABLE'),
-  variants: z.array(z.object({
-    size: z.preprocess(
-      (val) => (val === '' || val === null ? undefined : val),
-      z.string().optional()
-    ),
-    price: z.number().min(0, 'ფასი უნდა იყოს დადებითი'),
-    discount: z.number().min(0).max(100).optional(),
-    sizeSystem: z.enum(['EU', 'US', 'UK', 'CN']).optional()
-  })).default([]),
-  imageUrls: productImageUrlsField,
+  variants: z.array(
+    z.object({
+      color: z.preprocess(
+        (val) => (val === '' || val === null ? undefined : val),
+        z.string().optional()
+      ),
+      size: z.preprocess(
+        (val) => (val === '' || val === null ? undefined : val),
+        z.string().optional()
+      ),
+      price: z.number().min(0, 'ფასი უნდა იყოს დადებითი'),
+      stock: z.number().int().min(0).default(0),
+      imageUrl: z.preprocess(
+        (val) => (val === '' || val === null ? undefined : val),
+        z.string().url('არასწორი URL').optional()
+      ),
+      discount: z.number().min(0).max(100).optional(),
+      sizeSystem: z.enum(['EU', 'US', 'UK', 'CN']).optional()
+    })
+  ).default([]),
+  imageUrls: z.array(z.string().min(1, 'არასწორი URL')).default([]),
+  isSkuVariantProduct: z.boolean().optional(),
   rentalPriceTiers: z.preprocess(
     (val) => {
       // If it's an array with all pricePerDay = 0, convert to empty array
@@ -112,7 +133,13 @@ const productSchema = z.object({
   )
 }).superRefine((data, ctx) => {
   refineProductPickupAddress(data, ctx)
-  refineProductImagesAndPricing(data, ctx)
+  refineProductImagesAndPricing(
+    {
+      ...data,
+      isSkuVariantProduct: data.isSkuVariantProduct ?? false,
+    },
+    ctx,
+  )
 })
 
 type ProductFormData = z.infer<typeof productSchema>
@@ -161,6 +188,31 @@ const EditProductPage = () => {
   const [isResumingVipPayment, setIsResumingVipPayment] = useState(false)
   const [customColor, setCustomColor] = useState('')
   const [useCustomColor, setUseCustomColor] = useState(false)
+  const [showVariantOptions, setShowVariantOptions] = useState(false)
+  const productListingType: ProductListingType = showVariantOptions ? 'multi' : 'simple'
+
+  const handleProductListingTypeChange = (type: ProductListingType) => {
+    const isMulti = type === 'multi'
+    setShowVariantOptions(isMulti)
+
+    if (!isMulti) {
+      setFormData((prev) => ({ ...prev, variants: [] }))
+      return
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      variants: seedVariantRowsFromLegacyProduct({
+        color: useCustomColor ? customColor.trim() : prev.color,
+        size: prev.size,
+        sizeSystem: prev.sizeSystem,
+        stock: prev.stock,
+        variants: prev.variants.length > 0
+          ? prev.variants
+          : [{ price: 0, stock: prev.stock || 1 }],
+      }),
+    }))
+  }
 
   type SizeSystem = NonNullable<ProductFormData['sizeSystem']>
 
@@ -345,14 +397,13 @@ const EditProductPage = () => {
             pricePerDay: product.pricePerDay || undefined,
             maxRentalDays: product.maxRentalDays || undefined,
             status: product.status || 'AVAILABLE',
-            variants: (product.variants || []).map((variant: ProductVariant) => ({
-              price: variant.price
-            })),
+            variants: mapProductVariantsToFormRows(product),
             imageUrls: imageUrls,
             rentalPriceTiers: product.rentalPriceTiers && product.rentalPriceTiers.length > 0 
               ? product.rentalPriceTiers 
               : [{ minDays: 1, pricePerDay: 0 }]
           })
+          setShowVariantOptions(productHasSkuVariants(product))
         }
       } catch (error) {
         console.error('Error fetching product:', error)
@@ -480,8 +531,15 @@ const EditProductPage = () => {
       ...prev,
       variants: [
         ...prev.variants,
-        { price: 0 }
-      ]
+        {
+          color: useCustomColor ? customColor.trim() : formData.color || undefined,
+          size: isSizeOptional ? undefined : formData.size || undefined,
+          price: 0,
+          stock: 1,
+          imageUrl: undefined,
+          sizeSystem: isSizeOptional ? undefined : formData.sizeSystem,
+        },
+      ],
     }))
   }
 
@@ -548,7 +606,10 @@ const EditProductPage = () => {
     setIsSubmitting(true)
     setErrors({})
 
-    const fieldErrors = getProductCreateFieldErrors(formData)
+    const fieldErrors = getProductCreateFieldErrors({
+      ...formData,
+      isSkuVariantProduct: showVariantOptions,
+    })
     if (Object.keys(fieldErrors).length > 0) {
       setErrors(fieldErrors)
       showToast(Object.values(fieldErrors).join('; '), 'error')
@@ -559,9 +620,12 @@ const EditProductPage = () => {
     try {
       const hasRentalPrice = formData.rentalPriceTiers && formData.rentalPriceTiers.some(tier => tier.pricePerDay > 0)
       const hasSalePrice = formData.variants.some((variant) => (variant.price ?? 0) > 0)
+      const variantsToSubmit = showVariantOptions ? formData.variants : (hasSalePrice ? formData.variants : [])
       
       const dataToValidate = {
         ...formData,
+        isSkuVariantProduct: showVariantOptions,
+        imageUrls: showVariantOptions ? getVariantImageUrls(variantsToSubmit) : formData.imageUrls,
         // Convert empty string to undefined for sizeSystem
         sizeSystem: formData.sizeSystem && formData.sizeSystem.trim() !== '' 
           ? formData.sizeSystem 
@@ -585,19 +649,12 @@ const EditProductPage = () => {
               minDays: tier.minDays < 1 ? 1 : tier.minDays,
             }))
           : [],
-        variants: hasSalePrice ? formData.variants : [],
+        variants: variantsToSubmit.map(({ discount: _discount, ...variant }) => variant),
         color: useCustomColor ? customColor.trim() : formData.color,
-        ...(isSizeOptional
+        ...(showVariantOptions || isSizeOptional
           ? {
-              size: undefined,
-              sizeSystem: undefined,
-              variants: hasSalePrice
-                ? formData.variants.map((variant) => ({
-                    ...variant,
-                    size: undefined,
-                    sizeSystem: undefined,
-                  }))
-                : [],
+              size: showVariantOptions ? undefined : formData.size,
+              sizeSystem: showVariantOptions ? undefined : formData.sizeSystem,
             }
           : {}),
       }
@@ -732,7 +789,7 @@ const EditProductPage = () => {
                 {errors.name && <p className="text-red-500 md:text-[18px] text-[16px] mt-1">{errors.name}</p>}
               </div>
 
-              <div>
+              <div className={showVariantOptions ? 'hidden' : ''}>
                 <label className="block text-[20px] text-black font-medium mb-2">
                   საწყობში რაოდენობა *
                 </label>
@@ -748,6 +805,12 @@ const EditProductPage = () => {
                 />
                 {errors.stock && <p className="text-red-500 md:text-[18px] text-[16px] mt-1">{errors.stock}</p>}
               </div>
+
+              {showVariantOptions && (
+                <div className="md:col-span-2 rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-600">
+                  რაოდენობა მიეთითება ქვემოთ, თითოეული ვარიანტისთვის ცალ-ცალკე.
+                </div>
+              )}
 
               <div>
                 <label className="block text-[20px] text-black font-medium mb-2">
@@ -791,6 +854,7 @@ const EditProductPage = () => {
                 />
               </div>
 
+              {!showVariantOptions && (
               <div>
                 <label className="block text-[20px] text-black font-medium mb-2">
                   ფერი
@@ -831,8 +895,9 @@ const EditProductPage = () => {
                   />
                 )}
               </div>
+              )}
 
-              {!isSizeOptional && (
+              {!showVariantOptions && !isSizeOptional && (
                 <div>
                   <label className="block text-[20px] text-black font-medium mb-2">
                     {formData.gender === 'CHILDREN' ? 'ასაკი (არასავალდებულო)' : 'ზომა (არასავალდებულო)'}
@@ -939,12 +1004,36 @@ const EditProductPage = () => {
            
           </div>
 
+          <ProductTypeSelector
+            value={productListingType}
+            onChange={handleProductListingTypeChange}
+          />
+
+          {showVariantOptions && (
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h2 className="text-[20px] text-black font-semibold mb-4">ვარიანტები</h2>
+              <ProductVariantEditor
+                variants={formData.variants}
+                gender={formData.gender}
+                sizeSystem={(formData.sizeSystem || 'EU') as 'EU' | 'US' | 'UK' | 'CN'}
+                isSizeOptional={isSizeOptional}
+                requireSize
+                requireImage
+                showPrice={formData.variants.some((variant) => (variant.price ?? 0) > 0) || true}
+                errors={errors}
+                onAdd={addVariant}
+                onRemove={removeVariant}
+                onUpdate={updateVariant}
+              />
+            </div>
+          )}
+
           <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex justify-between items-center mb-6">
               <label className="flex items-center gap-3 text-[20px] text-black font-semibold cursor-pointer select-none">
                 <input
                   type="checkbox"
-                  checked={formData.variants.length > 0}
+                  checked={formData.variants.length > 0 && !showVariantOptions}
                   onChange={(e) => {
                     if (!e.target.checked) {
                       setFormData(prev => ({ ...prev, variants: [] }))
@@ -953,10 +1042,11 @@ const EditProductPage = () => {
                     }
                   }}
                   className="h-5 w-5"
+                  disabled={showVariantOptions}
                 />
                 <span>გაყიდვა</span>
               </label>
-              {formData.variants.length > 0 && (
+              {formData.variants.length > 0 && !showVariantOptions && (
                 <button
                   type="button"
                   onClick={addVariant}
@@ -968,7 +1058,7 @@ const EditProductPage = () => {
               )}
             </div>
 
-            {formData.variants.length > 0 && formData.variants.map((variant, index) => (
+            {!showVariantOptions && formData.variants.length > 0 && formData.variants.map((variant, index) => (
               <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border border-gray-200 rounded-lg mb-4">
                 <div>
                   <label className="block text-[20px] text-black font-medium mb-2">ფასი </label>
@@ -993,8 +1083,8 @@ const EditProductPage = () => {
               </div>
             ))}
 
-            {formData.variants.length === 0 && (
-              <p className="text-sm text-gray-500">თქვენ შეგიძლიათ დაამატოთ ზომები და საწყობის რაოდენობა.</p>
+            {!showVariantOptions && formData.variants.length === 0 && (
+              <p className="text-sm text-gray-500">თქვენ შეგიძლიათ დაამატოთ განსხვავებული გაყიდვის ფასები.</p>
             )}
 
           </div>
@@ -1175,6 +1265,7 @@ const EditProductPage = () => {
           </div>
 
           {/* Images */}
+          {!showVariantOptions && (
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h2 className="text-[20px] text-black font-semibold mb-6">სურათები</h2>
             <ImageUploadForProduct
@@ -1182,6 +1273,7 @@ const EditProductPage = () => {
               onChange={handleImageChange}
             />
           </div>
+          )}
 
           {/* Submit Button */}
           <div className="flex justify-end space-x-4">

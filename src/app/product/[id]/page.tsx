@@ -37,6 +37,12 @@ import StructuredData from "@/components/StructuredData"
 import { PRODUCT_IMAGE_QUALITY } from "@/lib/image-config"
 import { useProductStatusSync } from "@/hooks/useProductStatusSync"
 import {
+  findVariantBySelection,
+  getVariantColors,
+  getVariantSizes,
+  productHasSkuVariants,
+} from '@/lib/product-variants'
+import {
   calcRentalDays,
   firstAvailableRentalStartAfter,
   getBlockedCalendarDates,
@@ -52,8 +58,8 @@ import {
   RENTAL_CALENDAR_LIMIT_MESSAGE,
   validateSelfServeRentalDates,
 } from "@/lib/rental-dates"
-type Tier = { minDays: number; pricePerDay: number }
 
+type Tier = { minDays: number; pricePerDay: number }
 function formatDateInput(date: Date): string {
     const year = date.getFullYear()
     const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -81,6 +87,7 @@ const ProductPage = () => {
     const [isGalleryOpen, setIsGalleryOpen] = useState(false)
 
     const [selectedSize, setSelectedSize] = useState<string>("")
+    const [selectedColor, setSelectedColor] = useState<string>("")
     const [quantity, setQuantity] = useState(1)
 
     const [purchaseMode, setPurchaseMode] = useState<"buy" | "rent">("buy")
@@ -688,10 +695,25 @@ const ProductPage = () => {
     }, [rentalStartDate, rentalEndDate])
     const selfServeDatesValid = selfServeRentalValidation?.ok ?? false
 
-    const getMainImage = () =>
-        product?.images?.[activeImage]?.url || product?.images?.[0]?.url || "/placeholder.jpg"
+    const hasSkuVariants = product ? productHasSkuVariants(product) : false
+    const availableColors = product ? getVariantColors(product) : []
+    const availableSizes = product ? getVariantSizes(product, selectedColor || null) : []
+    const selectedVariantMatch = product
+        ? findVariantBySelection(product, {
+            color: selectedColor || null,
+            size: selectedSize || null,
+          })
+        : null
 
-    const imageCount = product?.images?.length ?? 0
+    const selectedVariantImageUrl = selectedVariantMatch?.imageUrl?.trim() || null
+    const displayImages = hasSkuVariants && selectedVariantImageUrl
+        ? [{ url: selectedVariantImageUrl }]
+        : (product?.images || [])
+
+    const getMainImage = () =>
+        displayImages[activeImage]?.url || displayImages[0]?.url || "/placeholder.jpg"
+
+    const imageCount = displayImages.length ?? 0
 
     const showPrevImage = () => {
         if (imageCount <= 1) return
@@ -717,8 +739,15 @@ const ProductPage = () => {
         return () => document.removeEventListener("keydown", onKeyDown)
     }, [isGalleryOpen, imageCount])
 
-    // Since variants no longer have size, use product size
-    const getAvailableSizes = () => product?.size ? [product.size] : []
+    useEffect(() => {
+        setActiveImage(0)
+    }, [selectedVariantImageUrl])
+
+    const getAvailableSizes = () => {
+        if (!product) return []
+        if (hasSkuVariants) return availableSizes
+        return product.size ? [product.size] : []
+    }
 
     const effectiveRentalPeriods =
         product?.status === 'AVAILABLE' ? [] : activeRentalPeriods
@@ -737,30 +766,58 @@ const ProductPage = () => {
     }
 
     useEffect(() => {
-        if (product && !selectedSize) {
-            // Use product size if available
-            const sz = product.size || 'default'
-            if (sz) {
-                setSelectedSize(sz)
-            }
-        }
-    }, [product, activeRentalPeriods, selectedSize])
+        if (!product) return
 
-    // Select variant by index (since variants are just different prices now)
+        if (hasSkuVariants) {
+            if (!selectedColor && availableColors.length === 1) {
+                setSelectedColor(availableColors[0])
+            }
+            if (!selectedSize && availableSizes.length === 1) {
+                setSelectedSize(availableSizes[0])
+            }
+            return
+        }
+
+        if (!selectedSize) {
+            const sz = product.size || 'default'
+            if (sz) setSelectedSize(sz)
+        }
+    }, [product, activeRentalPeriods, selectedSize, selectedColor, hasSkuVariants, availableColors, availableSizes])
+
     const hasVariants = product?.variants && Array.isArray(product.variants) && product.variants.length > 0
-    const selectedVariantIndex = hasVariants ? 0 : -1
-    const selectedVariant = hasVariants ? product.variants[0] : undefined
+    const selectedVariant = hasSkuVariants
+        ? selectedVariantMatch && selectedVariantMatch.id > 0
+            ? product?.variants.find((variant) => variant.id === selectedVariantMatch.id)
+            : undefined
+        : hasVariants
+            ? product?.variants[0]
+            : undefined
     const selectedPrice = selectedVariant?.price ?? 0
+    const selectionComplete = hasSkuVariants
+        ? Boolean(
+            (availableColors.length === 0 || selectedColor) &&
+            (availableSizes.length === 0 || selectedSize),
+          )
+        : Boolean(selectedSize)
     const isProductOwner = session?.user?.id === product?.user?.id
     const pricingMode = isProductOwner ? 'seller' : 'buyer'
-    const showBuyOption = Boolean(canBuyProduct && selectedSize && selectedPrice > 0)
+    const showBuyOption = Boolean(canBuyProduct && selectionComplete && selectedPrice > 0)
     const rentStatusAllowed =
         product?.status === 'AVAILABLE' ||
         product?.status === 'RENTED' ||
         product?.status === 'RESERVED' ||
         typeof product?.status === 'undefined'
     const showRentOption = Boolean(canRent && rentStatusAllowed)
-    const selectedStock = product?.stock ?? 0
+    const selectedStock = hasSkuVariants
+        ? (selectedVariantMatch?.stock ?? 0)
+        : (product?.stock ?? 0)
+
+    const handleColorClick = (color: string) => {
+        if (product?.status !== 'MAINTENANCE' && product?.status !== 'DAMAGED') {
+            setSelectedColor(color)
+            setSelectedSize('')
+        }
+    }
 
     const handleSizeClick = (size: string) => {
         // Allow size selection in both buy and rent modes, as long as product is not in maintenance or damaged
@@ -857,8 +914,16 @@ const ProductPage = () => {
     // -------------------------
     // Cart actions
     // -------------------------
+    const getSelectedCartFields = () => {
+        const color = selectedColor || product?.color || undefined
+        const size = selectedSize || product?.size || 'default'
+        const variantId =
+            selectedVariant?.id && selectedVariant.id > 0 ? selectedVariant.id : undefined
+        return { color, size, variantId }
+    }
+
     const handleAddToCart = async () => {
-        if (!product || !selectedSize) return
+        if (!product || !selectionComplete) return
         if (isAdding) return
         
         if (product.status === 'DAMAGED') {
@@ -873,11 +938,15 @@ const ProductPage = () => {
         
         setIsAdding(true)
 
+        const { color, size, variantId } = getSelectedCartFields()
+
         const result = await addToCart({
             productId: product.id,
             productName: product.name,
             image: getMainImage(),
-            size: selectedSize,
+            size,
+            color,
+            variantId,
             quantity: 1,
             price: getBuyerPrice(selectedPrice),
             isRental: false,
@@ -892,7 +961,7 @@ const ProductPage = () => {
     }
 
     const handleBuyCheckout = async () => {
-        if (!product || !selectedSize) return
+        if (!product || !selectionComplete) return
         if (isAdding) return
 
         if (product.status === 'DAMAGED') {
@@ -907,11 +976,15 @@ const ProductPage = () => {
 
         setIsAdding(true)
 
+        const { color, size, variantId } = getSelectedCartFields()
+
         const result = await addToCart({
             productId: product.id,
             productName: product.name,
             image: getMainImage(),
-            size: selectedSize,
+            size,
+            color,
+            variantId,
             quantity: 1,
             price: getBuyerPrice(selectedPrice),
             isRental: false,
@@ -1151,9 +1224,9 @@ const ProductPage = () => {
     }
 
     const handleRental = async () => {
-        if (!product) return
+        if (!product || !selectionComplete) return
 
-        const sizeForCart = selectedSize || product.size || 'default'
+        const { color, size, variantId } = getSelectedCartFields()
 
         if (requiresInquiry && !canBookFromInquiry) {
             showToast('ჯერ გაგზავნეთ მოთხოვნა და დაელოდეთ ავტორის დადასტურებას', 'warning')
@@ -1209,7 +1282,9 @@ const ProductPage = () => {
             productId: product.id,
             productName: product.name,
             image: getMainImage(),
-            size: sizeForCart,
+            size,
+            color,
+            variantId,
             quantity: 1,
             isRental: true,
             rentalStartDate,
@@ -1305,7 +1380,7 @@ const ProductPage = () => {
 
                             {/* Small images - Below on mobile, left on desktop */}
                             <div className="flex flex-row lg:flex-col gap-3 order-2 lg:order-1 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0">
-                                {product.images?.map((img, i) => (
+                                {displayImages.map((img, i) => (
                                     <button
                                         key={i}
                                         onClick={() => setActiveImage(i)}
@@ -1570,17 +1645,58 @@ const ProductPage = () => {
                                 </div>
                             )}
 
-                            {/* Size selector */}
-                            <div className="p-6 space-y-3">
-                                <h3 className="md:text-[18px] text-[16px] font-semibold text-black">ზომა:</h3>
-
-                                {product.size && (
-                                    <div className="inline-block">
-                                        <div className="rounded-xl border-2 border-gray-300 bg-black  px-6 py-4 text-center transition hover:border-black">
-                                            <div className="text-xl font-bold text-white">{product.size}</div>
+                            {/* Color / size selector */}
+                            <div className="p-6 space-y-4">
+                                {hasSkuVariants && availableColors.length > 0 && (
+                                    <div className="space-y-3">
+                                        <h3 className="md:text-[18px] text-[16px] font-semibold text-black">ფერი:</h3>
+                                        <div className="flex flex-wrap gap-3">
+                                            {availableColors.map((color) => (
+                                                <button
+                                                    key={color}
+                                                    type="button"
+                                                    onClick={() => handleColorClick(color)}
+                                                    className={`rounded-xl border-2 px-5 py-3 text-center transition ${
+                                                        selectedColor === color
+                                                            ? 'border-black bg-black text-white'
+                                                            : 'border-gray-300 text-black hover:border-black'
+                                                    }`}
+                                                >
+                                                    {color}
+                                                </button>
+                                            ))}
                                         </div>
                                     </div>
                                 )}
+
+                                <div className="space-y-3">
+                                    <h3 className="md:text-[18px] text-[16px] font-semibold text-black">ზომა:</h3>
+
+                                    {hasSkuVariants ? (
+                                        <div className="flex flex-wrap gap-3">
+                                            {getAvailableSizes().map((size) => (
+                                                <button
+                                                    key={size}
+                                                    type="button"
+                                                    onClick={() => handleSizeClick(size)}
+                                                    className={`rounded-xl border-2 px-6 py-4 text-center transition ${
+                                                        selectedSize === size
+                                                            ? 'border-black bg-black text-white'
+                                                            : 'border-gray-300 text-black hover:border-black'
+                                                    }`}
+                                                >
+                                                    <div className="text-xl font-bold">{size}</div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    ) : product.size ? (
+                                        <div className="inline-block">
+                                            <div className="rounded-xl border-2 border-gray-300 bg-black px-6 py-4 text-center transition hover:border-black">
+                                                <div className="text-xl font-bold text-white">{product.size}</div>
+                                            </div>
+                                        </div>
+                                    ) : null}
+                                </div>
                             </div>
 
                             {/* Purchase / Rent toggle + calendars */}
@@ -1923,7 +2039,7 @@ const ProductPage = () => {
                                                     <button
                                                         type="button"
                                                         onClick={handleBuyCheckout}
-                                                        disabled={Boolean(isAdding || !selectedSize)}
+                                                        disabled={Boolean(isAdding || !selectionComplete)}
                                                         className="w-full py-4 rounded-xl md:text-[18px] text-[16px] text-white font-bold transition bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
                                                     >
                                                         {isAdding ? "მუშავდება..." : "გადახდა"}
@@ -1931,7 +2047,7 @@ const ProductPage = () => {
                                                     <button
                                                         type="button"
                                                         onClick={handleAddToCart}
-                                                        disabled={Boolean(isAdding || !selectedSize)}
+                                                        disabled={Boolean(isAdding || !selectionComplete)}
                                                         className="w-full py-4 rounded-xl md:text-[18px] text-[16px] text-white font-bold transition bg-black hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed"
                                                     >
                                                         {isAdding ? "მუშავდება..." : "კალათაში დამატება"}

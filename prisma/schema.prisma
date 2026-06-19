@@ -397,16 +397,24 @@ model ProductImage {
 }
 
 model ProductVariant {
-  id        Int     @id @default(autoincrement())
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  productId Int
-  sku       String? 
-  price     Float   // required price for this variant
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         Int         @id @default(autoincrement())
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId  Int
+  color      String?
+  size       String?
+  sizeSystem SizeSystem?
+  stock      Int         @default(0)
+  imageUrl   String?
+  sku        String?
+  price      Float       // sale price for this variant (0 if rental-only SKU)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
 
-  rentals   Rental[]
+  rentals    Rental[]
+  cartItems  CartItem[]
+  orderItems OrderItem[]
 
+  @@unique([productId, color, size])
   @@index([productId])
 }
 
@@ -438,8 +446,11 @@ model CartItem {
   // Product information
   productId Int?
   product   Product? @relation(fields: [productId], references: [id])
+  variantId Int?
+  variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
   productName String
   image     String?
+  color     String?
   size      String?
   price     Float
   quantity  Int
@@ -453,7 +464,7 @@ model CartItem {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
-  @@unique([cartId, productId, size, isRental, rentalStartDate, rentalEndDate])
+  @@unique([cartId, productId, variantId, size, isRental, rentalStartDate, rentalEndDate])
 }
 
 model Order {
@@ -508,8 +519,11 @@ model OrderItem {
   // Denormalized snapshot of product at time of order
   productId   Int?
   product     Product? @relation(fields: [productId], references: [id])
+  variantId   Int?
+  variant     ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
   productName String
   image       String?
+  color       String?
   size        String?
   price       Float
   quantity    Int

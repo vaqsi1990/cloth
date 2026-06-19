@@ -1,7 +1,7 @@
 import { getBuyerPrice, getSellerPriceFromBuyer, roundMoney } from '@/lib/platform-pricing'
 
 export type CartPricingProduct = {
-  variants?: Array<{ price: number }> | null
+  variants?: Array<{ id?: number; price: number }> | null
   rentalPriceTiers?: Array<{ minDays: number; pricePerDay: number }> | null
 }
 
@@ -22,7 +22,7 @@ export function computeRentalSellerTotal(
 /** Current seller list price (X) from live product data. */
 export function resolveSellerListPriceFromProduct(
   product: CartPricingProduct | null | undefined,
-  options: { isRental: boolean; rentalDays: number | null },
+  options: { isRental: boolean; rentalDays: number | null; variantId?: number | null },
 ): number | null {
   if (!product) return null
 
@@ -36,7 +36,12 @@ export function resolveSellerListPriceFromProduct(
   const variants = product.variants || []
   if (variants.length === 0) return null
 
-  const price = variants[0]?.price
+  const selected =
+    options.variantId != null
+      ? variants.find((variant) => variant.id === options.variantId)
+      : variants[0]
+
+  const price = selected?.price ?? variants[0]?.price
   return price != null && price > 0 ? roundMoney(price) : null
 }
 
@@ -59,11 +64,13 @@ export function resolveCartItemBuyerListPrice(input: {
   storedPrice: number
   isRental: boolean
   rentalDays: number | null
+  variantId?: number | null
   product: CartPricingProduct | null | undefined
 }): number {
   const sellerFromProduct = resolveSellerListPriceFromProduct(input.product, {
     isRental: input.isRental,
     rentalDays: input.rentalDays,
+    variantId: input.variantId,
   })
 
   if (sellerFromProduct != null && sellerFromProduct > 0) {
@@ -83,7 +90,7 @@ export const cartProductPricingSelect = {
   discountStartDate: true,
   pricePerDay: true,
   variants: {
-    select: { price: true },
+    select: { id: true, price: true },
     orderBy: { id: 'asc' as const },
   },
   rentalPriceTiers: {

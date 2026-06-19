@@ -32,7 +32,9 @@ const cartItemSchema = z.object({
   productId: z.number(),
   productName: z.string(),
   image: z.string().optional(),
+  color: z.string().optional(),
   size: z.string(),
+  variantId: z.number().optional(),
   price: z.number(),
   quantity: z.number().min(1).max(MAX_CART_ITEM_QUANTITY),
   // Rental fields
@@ -66,8 +68,10 @@ const cartSelect = {
     select: {
       id: true,
       productId: true,
+      variantId: true,
       productName: true,
       image: true,
+      color: true,
       size: true,
       price: true,
       quantity: true,
@@ -127,8 +131,10 @@ function buildCartResponse(cart: {
   items: Array<{
     id: number
     productId: number | null
+    variantId: number | null
     productName: string
     image: string | null
+    color: string | null
     size: string | null
     price: number
     quantity: number
@@ -145,7 +151,7 @@ function buildCartResponse(cart: {
       discountDays: number | null
       discountStartDate: Date | null
       images: Array<{ url: string; alt: string | null }>
-      variants: Array<{ price: number }>
+      variants: Array<{ id: number; price: number }>
       rentalPriceTiers: Array<{
         minDays: number
         pricePerDay: number
@@ -168,8 +174,10 @@ function buildCartResponse(cart: {
     return {
       id: item.id,
       productId: item.productId,
+      variantId: item.variantId,
       productName: item.productName,
       image: item.image || item.product?.images?.[0]?.url,
+      color: item.color,
       size: item.size,
       price: buyerListPrice,
       quantity: item.quantity,
@@ -378,6 +386,7 @@ export async function POST(request: NextRequest) {
       where: {
         cartId: cart.id,
         productId: validatedData.productId,
+        variantId: validatedData.variantId ?? null,
         size: validatedData.size,
         isRental: validatedData.isRental || false,
         rentalStartDate: validatedData.rentalStartDate ? new Date(validatedData.rentalStartDate) : null,
@@ -417,6 +426,7 @@ export async function POST(request: NextRequest) {
       storedPrice: validatedData.price,
       isRental: validatedData.isRental || false,
       rentalDays: validatedData.rentalDays ?? null,
+      variantId: validatedData.variantId ?? null,
       product,
     })
 
@@ -424,8 +434,10 @@ export async function POST(request: NextRequest) {
       data: {
         cartId: cart.id,
         productId: validatedData.productId,
+        variantId: validatedData.variantId,
         productName: validatedData.productName,
         image: validatedData.image,
+        color: validatedData.color,
         size: validatedData.size,
         price: buyerListPrice,
         quantity: MAX_CART_ITEM_QUANTITY,

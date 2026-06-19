@@ -165,6 +165,12 @@ const CartPage = () => {
                                                         {item.productName}
                                                     </h3>
                                                     <p className="text-black md:text-[18px] text-[16px]">
+                                                        {item.color && (
+                                                            <>
+                                                                ფერი: <span className="font-medium">{item.color}</span>
+                                                                {' · '}
+                                                            </>
+                                                        )}
                                                         ზომა: <span className="font-medium">{item.size}</span>
                                                     </p>
 
@@ -232,7 +238,10 @@ const CartPage = () => {
                                 {selectedItem ? (
                                     <div className="mb-6 p-4 border border-gray-200 rounded-lg">
                                         <p className="font-medium text-black truncate">{selectedItem.productName}</p>
-                                        <p className="text-black text-sm mt-1">ზომა: {selectedItem.size}</p>
+                                        <p className="text-black text-sm mt-1">
+                                            {selectedItem.color && <>ფერი: {selectedItem.color} · </>}
+                                            ზომა: {selectedItem.size}
+                                        </p>
                                     </div>
                                 ) : (
                                     <p className="text-black mb-6">აირჩიეთ ნივთი გადასახდელად</p>

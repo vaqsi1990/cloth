@@ -7,8 +7,13 @@ export interface ProductImage {
 
 export interface ProductVariant {
   id: number
-  price: number  // required price for this variant
-  sku?: string
+  color?: string | null
+  size?: string | null
+  sizeSystem?: 'EU' | 'US' | 'UK' | 'CN' | null
+  stock?: number | null
+  imageUrl?: string | null
+  price: number
+  sku?: string | null
   activeRentals?: RentalPeriod[]
   isAvailable?: boolean
 }
@@ -86,6 +91,8 @@ export interface CartItem {
   image: string
   price: number
   size: string
+  color?: string
+  variantId?: number
   quantity: number
   maxStock: number
   // Rental specific fields

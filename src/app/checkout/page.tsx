@@ -1015,6 +1015,12 @@ const CheckoutPage = () => {
                                             <div className="flex-1 min-w-0">
                                                 <h3 className="md:text-[18px] text-[16px] font-medium text-black truncate">{item.productName}</h3>
                                                 <p className="text-black md:text-[18px] text-[16px]">
+                                                    {item.color && (
+                                                        <>
+                                                            ფერი: <span className="font-medium">{item.color}</span>
+                                                            {' · '}
+                                                        </>
+                                                    )}
                                                     ზომა: <span className="font-medium">{item.size}</span>
                                                 </p>
                                                 

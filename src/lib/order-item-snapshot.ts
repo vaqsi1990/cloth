@@ -34,17 +34,19 @@ export function buildOrderItemProductSnapshot(input: {
   productName: string
   image: string | null
   size: string | null
+  color?: string | null
+  variantId?: number | null
   price: number
   quantity: number
   product: SnapshotProduct | null | undefined
-}): OrderItemProductSnapshot {
+}): OrderItemProductSnapshot & { variantId?: number | null } {
   const product = input.product
 
   return {
     name: product?.name || input.productName,
     image: input.image || product?.images?.[0]?.url || null,
     brand: product?.brand ?? null,
-    color: product?.color ?? null,
+    color: input.color || product?.color || null,
     sku: product?.sku ?? null,
     size: input.size || product?.size || null,
     sizeSystem: product?.sizeSystem ?? null,
@@ -53,6 +55,7 @@ export function buildOrderItemProductSnapshot(input: {
     price: input.price,
     quantity: input.quantity,
     isRentable: product?.isRentable ?? false,
+    variantId: input.variantId ?? null,
   }
 }
 

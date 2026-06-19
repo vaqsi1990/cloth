@@ -10,6 +10,7 @@ type CartItemForPricing = {
   price: number
   isRental: boolean | null
   rentalDays: number | null
+  variantId?: number | null
   product: CartPricingProduct | null
 }
 
@@ -21,6 +22,7 @@ export function resolveCartItemsBuyerListPrices(
       storedPrice: item.price,
       isRental: item.isRental ?? false,
       rentalDays: item.rentalDays,
+      variantId: item.variantId ?? null,
       product: item.product,
     })
 

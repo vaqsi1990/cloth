@@ -447,6 +447,7 @@ export async function POST(req: NextRequest) {
         storedPrice: item.price,
         isRental: item.isRental ?? false,
         rentalDays: item.rentalDays,
+        variantId: item.variantId,
         product: item.product,
       }),
     }))
@@ -578,6 +579,8 @@ export async function POST(req: NextRequest) {
               productName: i.productName,
               image,
               size: i.size,
+              color: i.color,
+              variantId: i.variantId,
               price: i.buyerListPrice,
               quantity: i.quantity,
               product: i.product,
@@ -585,6 +588,7 @@ export async function POST(req: NextRequest) {
 
             return {
               productId: i.productId,
+              variantId: i.variantId,
               productName: snapshot.name,
               price: i.buyerListPrice,
               quantity: i.quantity,
@@ -592,6 +596,7 @@ export async function POST(req: NextRequest) {
               rentalStartDate: i.rentalStartDate,
               rentalEndDate: i.rentalEndDate,
               rentalDays: i.rentalDays,
+              color: snapshot.color,
               size: snapshot.size,
               image: snapshot.image,
               sellerUserId: i.product?.userId ?? null,

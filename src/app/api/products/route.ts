@@ -23,6 +23,13 @@ import {
   refineProductPickupAddress,
 } from '@/lib/product-pickup'
 import {
+  deriveProductFieldsFromVariants,
+  getVariantImageUrls,
+  mapVariantInputForCreate,
+  productHasSkuVariants,
+  productVariantInputSchema,
+} from '@/lib/product-variants'
+import {
   productImageUrlsField,
   refineProductImagesAndPricing,
 } from '@/lib/product-create-validation'
@@ -78,10 +85,8 @@ const productSchema = z.object({
   pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional(),
   maxRentalDays: z.number().optional(),
   status: z.enum(['AVAILABLE', 'RENTED', 'RESERVED', 'MAINTENANCE', 'DAMAGED']).default('AVAILABLE'),
-  variants: z.array(z.object({
-    price: z.number().min(0, 'ფასი უნდა იყოს დადებითი')
-  })).default([]),
-  imageUrls: productImageUrlsField,
+  variants: z.array(productVariantInputSchema).default([]),
+  imageUrls: z.array(z.string().min(1, 'არასწორი URL')).default([]),
   rentalPriceTiers: z.preprocess(
     (val) => {
       // If it's an array with all pricePerDay = 0, convert to undefined
@@ -98,7 +103,13 @@ const productSchema = z.object({
   )
 }).superRefine((data, ctx) => {
   refineProductPickupAddress(data, ctx)
-  refineProductImagesAndPricing(data, ctx)
+  refineProductImagesAndPricing(
+    {
+      ...data,
+      isSkuVariantProduct: productHasSkuVariants({ variants: data.variants }),
+    },
+    ctx,
+  )
 })
 
 const PUBLIC_LIST_CACHE = { swr: 300, ttl: 300 }
@@ -674,23 +685,35 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const derivedFields = deriveProductFieldsFromVariants(validatedData.variants, {
+      color: validatedData.color,
+      size: validatedData.size,
+      sizeSystem: validatedData.sizeSystem,
+      stock: validatedData.stock,
+    })
+
+    const isSkuProduct = productHasSkuVariants({ variants: validatedData.variants })
+    const resolvedImageUrls = isSkuProduct
+      ? getVariantImageUrls(validatedData.variants)
+      : validatedData.imageUrls
+
     // Create product in database using Prisma (approval fields rely on DB defaults)
     const productData: Prisma.ProductCreateInput = {
       name: validatedData.name,
       slug: uniqueSlug,
       brand: validatedData.brand,
       description: validatedData.description,
-      stock: validatedData.stock,
+      stock: derivedFields.stock ?? validatedData.stock,
       sku: uniqueSKU, // Auto-generated unique SKU
       gender: validatedData.gender,
-      color: validatedData.color,
+      color: derivedFields.color ?? validatedData.color,
       location: validatedData.location,
       allowsPickup: validatedData.allowsPickup,
       pickupAddress: validatedData.allowsPickup
         ? validatedData.pickupAddress?.trim()
         : null,
-      sizeSystem: validatedData.sizeSystem,
-      size: validatedData.size,
+      sizeSystem: derivedFields.sizeSystem ?? validatedData.sizeSystem,
+      size: derivedFields.size ?? validatedData.size,
       isNew: validatedData.isNew,
       isSecondHand: validatedData.isSecondHand,
       discount: validatedData.discount,
@@ -706,16 +729,14 @@ export async function POST(request: NextRequest) {
       status: validatedData.status,
       user: { connect: { id: session.user.id } },
       images: {
-        create: validatedData.imageUrls.map((url, index) => ({
+        create: resolvedImageUrls.map((url, index) => ({
           url: url,
           alt: `${validatedData.name} - სურათი ${index + 1}`,
           position: index
         }))
       },
       variants: {
-        create: validatedData.variants.map(variant => ({
-          price: variant.price
-        }))
+        create: validatedData.variants.map((variant) => mapVariantInputForCreate(variant))
       },
       rentalPriceTiers: validatedData.rentalPriceTiers ? {
         create: validatedData.rentalPriceTiers.map(tier => ({
