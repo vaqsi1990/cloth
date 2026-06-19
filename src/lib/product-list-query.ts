@@ -2,7 +2,10 @@ import { Prisma } from '@prisma/client'
 import { unstable_cache } from 'next/cache'
 import { revalidateTag } from 'next/cache'
 import { prisma } from '@/lib/prisma'
-import { isProductVipActive } from '@/lib/product-vip'
+import {
+  compareVipProductPriority,
+  isProductVipActive,
+} from '@/lib/product-vip'
 import { resolveCanonicalCategory } from '@/lib/product-categories'
 import { getDbColorMatchValues } from '@/lib/product-colors'
 import {
@@ -470,44 +473,30 @@ function mergeHomepageFirstPageProducts<T extends HomepageMergeProduct>(
 ): T[] {
   const standard = dedupeProductsById(standardProducts)
   const featured = dedupeProductsById(featuredProducts)
-  if (featured.length === 0) return standard.slice(0, pageSize)
-
-  const byId = new Map<number, T>()
-  for (const product of standard) byId.set(product.id, product)
-  for (const product of featured) byId.set(product.id, product)
 
   const result: T[] = []
   const used = new Set<number>()
 
-  const push = (id: number) => {
-    if (used.has(id) || result.length >= pageSize) return
-    const product = byId.get(id)
-    if (!product) return
-    used.add(id)
+  const push = (product: T) => {
+    if (used.has(product.id) || result.length >= pageSize) return
+    used.add(product.id)
     result.push(product)
   }
 
-  for (const product of standard) {
-    if (isProductVipActive(product)) push(product.id)
-  }
-
-  const featuredToAdd = featured.filter((product) => !used.has(product.id))
-  while (
-    featuredToAdd.length > 0 &&
-    result.length + featuredToAdd.length > pageSize &&
-    result.length > 0 &&
-    isProductVipActive(result[result.length - 1])
-  ) {
-    const removed = result.pop()
-    if (removed) used.delete(removed.id)
+  const vipProducts = dedupeProductsById([...standard, ...featured]).filter(
+    isProductVipActive,
+  )
+  vipProducts.sort(compareVipProductPriority)
+  for (const product of vipProducts) {
+    push(product)
   }
 
   for (const product of featured) {
-    push(product.id)
+    push(product)
   }
 
   for (const product of standard) {
-    push(product.id)
+    push(product)
   }
 
   return result
@@ -829,13 +818,7 @@ async function buildListPayload(filters: PublicListFilters): Promise<CachedListP
   if (filters.featuredFirst && filters.skip === 0) {
     const featuredRows = await fetchHomepageFeaturedProducts(filters)
     const featuredMapped = dedupeProductsById(mapCombinedRowsToProducts(featuredRows))
-    if (featuredMapped.length > 0) {
-      const firstPageIds = new Set(mapped.slice(0, pageSize).map((product) => product.id))
-      const needsMerge = featuredMapped.some((product) => !firstPageIds.has(product.id))
-      if (needsMerge) {
-        mapped = mergeHomepageFirstPageProducts(mapped, featuredMapped, pageSize)
-      }
-    }
+    mapped = mergeHomepageFirstPageProducts(mapped, featuredMapped, pageSize)
   }
 
   const hasMore = rows.length > pageSize || mapped.length > pageSize
@@ -850,7 +833,7 @@ const getCachedProductList = unstable_cache(
     const filters = JSON.parse(filtersKey) as PublicListFilters
     return buildListPayload(filters)
   },
-  ['public-product-list-v8'],
+  ['public-product-list-v9'],
   {
     revalidate: 120,
     tags: [PRODUCT_LIST_CACHE_TAG],
