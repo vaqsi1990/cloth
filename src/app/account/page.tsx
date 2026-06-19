@@ -1264,7 +1264,7 @@ const AccountPageContent = () => {
                         : 'bg-white text-black cursor-not-allowed'
                     }`}
                   >
-                    {savingVerification ? 'გაგზავნა...' : identityStatus === 'PENDING' && hasIban ? 'ხელახლა გაგზავნა' : 'IBAN გაგზავნა'}
+                    {savingVerification ? 'გაგზავნა...' : identityStatus === 'PENDING' && hasIban ? 'ხელახლა გაგზავნა' : ' გაგზავნა'}
                   </button>
                 </div>
               </>
