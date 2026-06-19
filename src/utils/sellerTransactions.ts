@@ -5,7 +5,7 @@ import { processExpiredDiscount } from '@/utils/discountUtils'
 import { revalidateProductListCache } from '@/lib/product-list-query'
 import {
   purgeSoldProductsStillInDatabase,
-  removePurchasedProducts,
+  fulfillSoldSaleItems,
 } from '@/utils/removePurchasedProducts'
 
 type TransactionType = 'SALE' | 'RENT'
@@ -101,12 +101,18 @@ export async function recordSellerTransactions(orderId: number) {
     })
   }
 
-  const soldProductIds = order.items
+  const soldSaleItems = order.items
     .filter((item) => !item.isRental && typeof item.productId === 'number')
-    .map((item) => item.productId as number)
+    .map((item) => ({
+      productId: item.productId as number,
+      variantId: item.variantId,
+      quantity: item.quantity ?? 1,
+      color: item.color,
+      size: item.size,
+    }))
 
-  if (soldProductIds.length > 0) {
-    await removePurchasedProducts(soldProductIds, { orderId: order.id })
+  if (soldSaleItems.length > 0) {
+    await fulfillSoldSaleItems(soldSaleItems, { orderId: order.id })
     revalidateProductListCache()
   }
 

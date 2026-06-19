@@ -1,4 +1,4 @@
-import type { SizeSystem } from '@prisma/client'
+import type { Prisma, SizeSystem } from '@prisma/client'
 import { z } from 'zod'
 
 export type ProductVariantSkuLike = {
@@ -53,6 +53,33 @@ export function variantHasSkuFields(variant: ProductVariantSkuLike): boolean {
 export function productHasSkuVariants(product: { variants?: ProductVariantSkuLike[] | null }): boolean {
   const variants = product.variants || []
   return variants.some(variantHasSkuFields)
+}
+
+/** Prisma filter for products with color/size/image SKU variants. */
+export function buildProductHasSkuVariantsWhere(): Prisma.ProductWhereInput {
+  return {
+    variants: {
+      some: {
+        OR: [
+          { AND: [{ color: { not: null } }, { NOT: { color: '' } }] },
+          { AND: [{ size: { not: null } }, { NOT: { size: '' } }] },
+          { AND: [{ imageUrl: { not: null } }, { NOT: { imageUrl: '' } }] },
+        ],
+      },
+    },
+  }
+}
+
+export function hasPurchasableSaleVariants(
+  variants: Array<{ stock?: number | null; price?: number | null }>,
+): boolean {
+  return variants.some((variant) => (variant.stock ?? 0) > 0 && (variant.price ?? 0) > 0)
+}
+
+export function sumVariantStock(
+  variants: Array<{ stock?: number | null }>,
+): number {
+  return variants.reduce((total, variant) => total + (variant.stock ?? 0), 0)
 }
 
 export function normalizeVariantRecord(
