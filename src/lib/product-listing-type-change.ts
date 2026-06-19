@@ -14,7 +14,7 @@ export type ProductListingFormSlice = {
   imageUrls: string[]
   variants: ProductVariantFormRow[]
   isRentable?: boolean
-  rentalPriceTiers?: Array<{ minDays: number; pricePerDay: number }> | null
+  rentalPriceTiers?: Array<{ minDays: number; pricePerDay: number }>
 }
 
 function hasSalePricing(variants: ProductVariantFormRow[]): boolean {
