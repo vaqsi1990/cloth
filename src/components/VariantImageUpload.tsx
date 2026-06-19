@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import Image from '@/component/AppImage'
 import { X } from 'lucide-react'
-import { UploadButton } from '@/utils/uploadthing'
+import HeicAwareUploadButton from '@/components/HeicAwareUploadButton'
 import UploadLoadingIndicator from '@/component/UploadLoadingIndicator'
 import { showToast } from '@/utils/toast'
 
@@ -69,7 +69,7 @@ export default function VariantImageUpload({ value, onChange, error }: VariantIm
         </div>
       )}
 
-      <UploadButton
+      <HeicAwareUploadButton
         className="text-white font-bold py-1 px-3 rounded text-sm"
         endpoint="imageUploader"
         onClientUploadComplete={handleUploadComplete}

@@ -1,7 +1,7 @@
 
 "use client";
 
-import { UploadButton } from "@/utils/uploadthing";
+import HeicAwareUploadButton from "@/components/HeicAwareUploadButton";
 import { useState, useEffect } from "react";
 import ImageModal from "@/component/ImageModal";
 import UploadLoadingIndicator from "@/component/UploadLoadingIndicator";
@@ -68,7 +68,7 @@ const ImageUploadForProduct = ({ onChange, value, photoBackgroundConsent }: Imag
           <UploadLoadingIndicator message="სურათები იტვირთება..." />
         </div>
       )}
-      <UploadButton
+      <HeicAwareUploadButton
         className="text-white  font-bold py-1 px-3 rounded text-sm"
         endpoint="imageUploader"
         onClientUploadComplete={handleUploadComplete}

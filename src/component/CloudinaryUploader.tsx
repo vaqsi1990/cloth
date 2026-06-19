@@ -1,7 +1,7 @@
 
 "use client";
 
-import { UploadButton } from "@/utils/uploadthing";
+import HeicAwareUploadButton from "@/components/HeicAwareUploadButton";
 import { useEffect, useState } from "react";
 import Image from "@/component/AppImage";
 import UploadLoadingIndicator from "@/component/UploadLoadingIndicator";
@@ -91,7 +91,7 @@ const ImageUpload = ({ onChange, value, variant = "default" }: ImageUploadProps)
 
         {imageUrls.length === 0 && (
           <div className="flex justify-center">
-            <UploadButton
+            <HeicAwareUploadButton
               className="text-white font-medium py-2 px-5 rounded-xl transition-colors disabled:opacity-50"
               endpoint="imageUploader"
               onClientUploadComplete={handleUploadComplete}
@@ -115,7 +115,7 @@ const ImageUpload = ({ onChange, value, variant = "default" }: ImageUploadProps)
       <div className="mb-4">
         {imageUrls.length === 0 ? (
           <div>
-            <UploadButton
+            <HeicAwareUploadButton
               className=" text-white font-medium py-3 px-6 rounded-xl transition-colors flex items-center space-x-2 disabled:opacity-50"
               endpoint="imageUploader"
               onClientUploadComplete={handleUploadComplete}
