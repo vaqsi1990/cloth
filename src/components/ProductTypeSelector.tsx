@@ -14,7 +14,7 @@ export default function ProductTypeSelector({ value, onChange }: ProductTypeSele
     <div className="bg-white rounded-lg shadow-sm p-6">
       <h2 className="md:text-[20px] text-[18px] text-black font-semibold mb-2">პროდუქტის ტიპი</h2>
       <p className="text-sm text-gray-600 mb-4">
-        აირჩიეთ მარტივი პროდუქტი ერთი ფერით/ზომით, ან რამდენიმე ვარიანტი სხვადასხვა ფერისა და ზომისთვის.
+        აირჩიეთ მხოლოდ 1 ფერში პროდუქცია  ერთი ფერით/ზომით, ან რამდენიმე ფერიანი ვარიანტი სხვადასხვა ფერისა და ზომისთვის.
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -31,7 +31,7 @@ export default function ProductTypeSelector({ value, onChange }: ProductTypeSele
             className="mt-1 h-5 w-5"
           />
           <span>
-            <span className="block md:text-[18px] text-[16px] font-semibold text-black">მარტივი პროდუქტი</span>
+            <span className="block md:text-[18px] text-[16px] font-semibold text-black">ერთი ფერის პროდუქცია</span>
             <span className="block text-sm text-gray-600 mt-1">
               ერთი ფერი, ერთი ზომა და ერთი რაოდენობა
             </span>
@@ -51,7 +51,7 @@ export default function ProductTypeSelector({ value, onChange }: ProductTypeSele
             className="mt-1 h-5 w-5"
           />
           <span>
-            <span className="block md:text-[18px] text-[16px] font-semibold text-black">რამდენიმე ვარიანტი</span>
+            <span className="block md:text-[18px] text-[16px] font-semibold text-black">რამდენიმე ფერიანი პროდუქცია</span>
             <span className="block text-sm text-gray-600 mt-1">
               სხვადასხვა ფერი, ზომა, ფასი და რაოდენობა თითო ვარიანტზე
             </span>

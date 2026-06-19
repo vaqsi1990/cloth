@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { Plus, X } from 'lucide-react'
-import { PRODUCT_FORM_COLORS } from '@/lib/product-colors'
+import ProductColorPicker, { getProductColorPickerState } from '@/components/ProductColorPicker'
 import type { ProductVariantFormRow } from '@/lib/product-variants'
 import {
   buildProductFormSizeOptions,
@@ -67,23 +67,26 @@ export default function ProductVariantEditor({
         const sizeValue =
           getProductFormSizeSelectValue(gender, variant.sizeSystem || sizeSystem, variant.size || '') ||
           ''
+        const { value: colorPickerValue, customColor } = getProductColorPickerState(variant.color)
 
         return (
           <div key={index} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4 border border-gray-200 rounded-lg">
-            <div>
-              <label className="block text-[18px] text-black font-medium mb-2">ფერი</label>
-              <select
-                value={variant.color || ''}
-                onChange={(e) => onUpdate(index, 'color', e.target.value || undefined)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[18px] text-black"
-              >
-                <option value="">აირჩიეთ ფერი</option>
-                {PRODUCT_FORM_COLORS.map((colorOption) => (
-                  <option key={colorOption.id} value={colorOption.label}>
-                    {colorOption.label}
-                  </option>
-                ))}
-              </select>
+            <div className="md:col-span-2 lg:col-span-3">
+              <ProductColorPicker
+                value={colorPickerValue}
+                customColor={customColor}
+                labelClassName="block text-[18px] text-black font-medium mb-2"
+                inputClassName="w-full mt-2 px-3 py-2 placeholder:text-gray-500 border border-gray-300 rounded-lg text-[16px] text-black focus:ring-2 focus:ring-black focus:border-transparent"
+                onSelect={(selectedValue) => {
+                  if (selectedValue === 'სხვა ფერი') {
+                    onUpdate(index, 'color', customColor || undefined)
+                    return
+                  }
+
+                  onUpdate(index, 'color', selectedValue || undefined)
+                }}
+                onCustomColorChange={(value) => onUpdate(index, 'color', value || undefined)}
+              />
             </div>
 
             {showSizeField && (
@@ -118,6 +121,20 @@ export default function ProductVariantEditor({
               </div>
             )}
 
+            <div>
+              <label className="block text-[18px] text-black font-medium mb-2">რაოდენობა</label>
+              <input
+                type="number"
+                min={0}
+                value={variant.stock === 0 ? '' : variant.stock}
+                onChange={(e) => {
+                  const val = e.target.value === '' ? 0 : parseInt(e.target.value, 10)
+                  onUpdate(index, 'stock', Number.isFinite(val) ? val : 0)
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[18px] text-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+            </div>
+
             {requireImage && (
               <div className="md:col-span-2 lg:col-span-1">
                 <VariantImageUpload
@@ -143,20 +160,6 @@ export default function ProductVariantEditor({
                 />
               </div>
             )}
-
-            <div>
-              <label className="block text-[18px] text-black font-medium mb-2">რაოდენობა</label>
-              <input
-                type="number"
-                min={0}
-                value={variant.stock === 0 ? '' : variant.stock}
-                onChange={(e) => {
-                  const val = e.target.value === '' ? 0 : parseInt(e.target.value, 10)
-                  onUpdate(index, 'stock', Number.isFinite(val) ? val : 0)
-                }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-[18px] text-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              />
-            </div>
 
             <div className="flex items-end">
               <button

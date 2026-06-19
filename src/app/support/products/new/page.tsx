@@ -10,7 +10,6 @@ import ImageUploadForProduct from '@/component/productimage'
 import { PRODUCT_PHOTO_BACKGROUND_CONSENT_ERROR } from '@/components/ProductPhotoBackgroundConsent'
 import ProductCategorySelect from '@/component/ProductCategorySelect'
 import { showToast } from '@/utils/toast'
-import { PRODUCT_FORM_COLORS } from '@/lib/product-colors'
 import {
   isValidProductText,
   PRODUCT_DESCRIPTION_ERROR_MESSAGE,
@@ -38,6 +37,7 @@ import ProductDiscountFields from '@/components/ProductDiscountFields'
 import ProductMinPriceNotice from '@/components/ProductMinPriceNotice'
 import ProductVariantEditor from '@/components/ProductVariantEditor'
 import ProductTypeSelector, { type ProductListingType } from '@/components/ProductTypeSelector'
+import ProductColorPicker from '@/components/ProductColorPicker'
 import { VIP_MONTHLY_PRICE_GEL } from '@/lib/product-vip'
 import { getProductDiscountBasePrice } from '@/lib/discount-helpers'
 import { optionalCategoryIdField } from '@/lib/product-schema-fields'
@@ -274,8 +274,6 @@ const NewProductPage = () => {
       handleCombinedSizeSelect('')
     }
   }, [formData.gender, selectedSize])
-
-  const colors = PRODUCT_FORM_COLORS
 
   const isSizeOptional = useMemo(
     () => isSizeOptionalCategoryId(formData.categoryId, categories),
@@ -788,44 +786,24 @@ const NewProductPage = () => {
               )}
 
               {!showVariantOptions && (
-              <div>
-                <label className="block text-[20px] text-black font-medium mb-2">ფერი</label>
-                <select
-                  value={useCustomColor ? 'სხვა ფერი' : (formData.color || '')}
-                  onChange={(e) => {
-                    const selectedValue = e.target.value
-                    if (selectedValue === 'სხვა ფერი') {
-                      setUseCustomColor(true)
-                      handleInputChange('color', customColor)
-                    } else {
-                      setUseCustomColor(false)
-                      handleInputChange('color', selectedValue)
-                      setCustomColor('')
-                    }
-                  }}
-                  className="w-full pl-10 pr-4 py-3 placeholder:text-gray-500 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                >
-                  <option value="">აირჩიეთ ფერი</option>
-                  {colors.map((color) => (
-                    <option key={color.id} value={color.label}>
-                      {color.label}
-                    </option>
-                  ))}
-                </select>
-                {useCustomColor && (
-                  <input
-                    type="text"
-                    value={customColor}
-                    onChange={(e) => {
-                      const value = e.target.value
-                      setCustomColor(value)
-                      handleInputChange('color', value)
-                    }}
-                    placeholder="შეიყვანეთ ფერი"
-                    className="w-full mt-2 pl-10 pr-4 py-3 placeholder:text-gray-500 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                  />
-                )}
-              </div>
+              <ProductColorPicker
+                value={useCustomColor ? 'სხვა ფერი' : (formData.color || '')}
+                customColor={customColor}
+                onSelect={(selectedValue) => {
+                  if (selectedValue === 'სხვა ფერი') {
+                    setUseCustomColor(true)
+                    handleInputChange('color', customColor)
+                  } else {
+                    setUseCustomColor(false)
+                    handleInputChange('color', selectedValue)
+                    setCustomColor('')
+                  }
+                }}
+                onCustomColorChange={(value) => {
+                  setCustomColor(value)
+                  handleInputChange('color', value)
+                }}
+              />
               )}
 
               {!showVariantOptions && hasSelectedGender && !isSizeOptional && (
