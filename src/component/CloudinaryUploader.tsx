@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import Image from "@/component/AppImage";
 import UploadLoadingIndicator from "@/component/UploadLoadingIndicator";
 import { showToast } from "@/utils/toast";
+import { getUploadResultUrls } from "@/lib/upload-result-url";
 
 type ImageUploadProps = {
   onChange: (urls: string[]) => void;
@@ -22,8 +23,8 @@ const ImageUpload = ({ onChange, value, variant = "default" }: ImageUploadProps)
     setImageUrls(value || []);
   }, [value]);
 
-  const handleUploadComplete = (res: { url: string }[]) => {
-    const urls = res.map((file) => file.url);
+  const handleUploadComplete = (res: Parameters<typeof getUploadResultUrls>[0]) => {
+    const urls = getUploadResultUrls(res);
     const newUrls = isDocument ? urls.slice(0, 1) : [...imageUrls, ...urls];
     setImageUrls(newUrls);
     onChange(newUrls);

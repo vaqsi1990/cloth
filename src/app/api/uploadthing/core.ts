@@ -1,6 +1,7 @@
 
 import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { UploadThingError } from "uploadthing/server";
+import { ensureDisplayableImageUrl } from "@/lib/ensure-displayable-image-url";
 
 const f = createUploadthing();
 
@@ -12,7 +13,10 @@ const auth = (req: Request) => {
 };
 
 export const ourFileRouter = {
-  imageUploader: f({ image: { maxFileSize: "16MB", maxFileCount: 10 } })
+  imageUploader: f(
+    { image: { maxFileSize: "16MB", maxFileCount: 10 } },
+    { awaitServerData: true },
+  )
     .middleware(async ({ req }) => {
       // For development, we'll skip auth check
       // In production, implement proper authentication here
@@ -20,9 +24,14 @@ export const ourFileRouter = {
       return { userId: user.id };
     })
     .onUploadComplete(async ({ metadata, file }) => {
-      console.log("Upload complete for userId:", metadata.userId);
-      console.log("File URL:", file.url);
-      return { uploadedBy: metadata.userId };
+      const fileUrl = file.ufsUrl ?? file.url
+      const displayUrl = await ensureDisplayableImageUrl(
+        fileUrl,
+        file.name,
+        file.key,
+      )
+
+      return { uploadedBy: metadata.userId, url: displayUrl };
     }),
 } satisfies FileRouter;
 

@@ -6,6 +6,7 @@ import { X } from 'lucide-react'
 import HeicAwareUploadButton from '@/components/HeicAwareUploadButton'
 import UploadLoadingIndicator from '@/component/UploadLoadingIndicator'
 import { showToast } from '@/utils/toast'
+import { getUploadResultUrl } from '@/lib/upload-result-url'
 
 type VariantImageUploadProps = {
   value?: string
@@ -21,8 +22,8 @@ export default function VariantImageUpload({ value, onChange, error }: VariantIm
     setImageUrl(value || '')
   }, [value])
 
-  const handleUploadComplete = (res: { url: string }[]) => {
-    const url = res[0]?.url
+  const handleUploadComplete = (res: Parameters<typeof getUploadResultUrl>[0][]) => {
+    const url = res[0] ? getUploadResultUrl(res[0]) : undefined
     if (!url) {
       setIsUploading(false)
       return

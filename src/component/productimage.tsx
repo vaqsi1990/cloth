@@ -8,6 +8,7 @@ import UploadLoadingIndicator from "@/component/UploadLoadingIndicator";
 import { X } from "lucide-react";
 import ProductPhotoBackgroundConsent from "@/components/ProductPhotoBackgroundConsent";
 import { showToast } from "@/utils/toast";
+import { getUploadResultUrls } from "@/lib/upload-result-url";
 
 
 type ImageUploadProps = {
@@ -28,8 +29,8 @@ const ImageUploadForProduct = ({ onChange, value, photoBackgroundConsent }: Imag
     setImageUrls(value || []);
   }, [value]);
 
-  const handleUploadComplete = (res: { url: string }[]) => {
-    const urls = res.map((file) => file.url);
+  const handleUploadComplete = (res: Parameters<typeof getUploadResultUrls>[0]) => {
+    const urls = getUploadResultUrls(res);
     const newUrls = [...imageUrls, ...urls];
     setImageUrls(newUrls);
     onChange(newUrls);

@@ -44,29 +44,58 @@ const uniqueUrls = [...new Set([
   ...variantImages.map((row) => row.imageUrl).filter(Boolean),
 ])]
 
+console.log(`Scanning ${uniqueUrls.length} unique image URLs...`)
+
 const urlMap = new Map()
 let convertedCount = 0
 let skippedCount = 0
 let failedCount = 0
+const total = uniqueUrls.length
 
-for (const url of uniqueUrls) {
+async function fetchFileHeader(url) {
+  const response = await fetch(url, { headers: { Range: 'bytes=0-11' } })
+  if (response.status === 206 || response.ok) {
+    return new Uint8Array(await response.arrayBuffer())
+  }
+  return null
+}
+
+async function fetchFullFile(url) {
+  const response = await fetch(url)
+  if (!response.ok) return null
+  return new Uint8Array(await response.arrayBuffer())
+}
+
+for (let index = 0; index < uniqueUrls.length; index += 1) {
+  const url = uniqueUrls[index]
+  const progress = `[${index + 1}/${total}]`
+
   try {
-    const response = await fetch(url)
-    if (!response.ok) {
-      console.log(`SKIP fetch failed (${response.status}): ${url}`)
+    const header = await fetchFileHeader(url)
+    if (!header) {
+      console.log(`${progress} SKIP fetch failed: ${url}`)
       skippedCount += 1
       continue
     }
 
-    const buffer = new Uint8Array(await response.arrayBuffer())
-    if (!isHeicBuffer(buffer)) {
+    if (!isHeicBuffer(header)) {
+      if ((index + 1) % 25 === 0 || index + 1 === total) {
+        console.log(`${progress} checked (${skippedCount + convertedCount + failedCount} done, no HEIC yet)`)
+      }
       skippedCount += 1
       continue
     }
 
-    console.log(`HEIC found: ${url}`)
+    console.log(`${progress} HEIC found: ${url}`)
     if (dryRun) {
       convertedCount += 1
+      continue
+    }
+
+    const buffer = await fetchFullFile(url)
+    if (!buffer) {
+      console.log(`${progress} SKIP full fetch failed: ${url}`)
+      failedCount += 1
       continue
     }
 
@@ -84,9 +113,9 @@ for (const url of uniqueUrls) {
     const newUrl = result.data.ufsUrl
     urlMap.set(url, newUrl)
     convertedCount += 1
-    console.log(`Converted: ${url} -> ${newUrl}`)
+    console.log(`${progress} Converted: ${url} -> ${newUrl}`)
   } catch (error) {
-    console.error(`ERROR for ${url}:`, error.message)
+    console.error(`${progress} ERROR for ${url}:`, error.message)
     failedCount += 1
   }
 }
