@@ -33,13 +33,7 @@ export async function GET(request: NextRequest) {
       newPaidSales,
     ] = await Promise.all([
       prisma.userVerification.count({
-        where: {
-          OR: [
-            { identityStatus: 'PENDING' },
-            { entrepreneurStatus: 'PENDING' },
-            { status: 'PENDING' },
-          ],
-        },
+        where: { entrepreneurStatus: 'PENDING' },
       }),
       prisma.product.count({
         where: { approvalStatus: 'PENDING' },

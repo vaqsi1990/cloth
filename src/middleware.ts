@@ -13,7 +13,11 @@ export default withAuth(
         role: typeof token.role === "string" ? token.role : null,
         phone: typeof token.phone === "string" ? token.phone : null,
       }) &&
-      !path.startsWith("/auth/complete-phone")
+      !path.startsWith("/auth/complete-phone") &&
+      !path.startsWith("/shop") &&
+      !path.startsWith("/product/") &&
+      !path.startsWith("/cart") &&
+      !path.startsWith("/checkout")
     ) {
       return NextResponse.redirect(new URL("/auth/complete-phone", req.url))
     }

@@ -37,30 +37,22 @@ export function canUserCreateProducts(params: {
     return true
   }
 
-  return (
-    isValidGeorgianIban(params.iban) &&
-    isIdentityApproved(params.verification, params.sessionVerificationStatus)
-  )
+  return isValidGeorgianIban(params.iban)
 }
 
-/** Same rules as product creation — approved IBAN verification required. */
-export function canUserMakePurchases(params: {
-  role: string | undefined | null
-  iban: string | null | undefined
+/** Purchases and rentals do not require IBAN — only product listing does. */
+export function canUserMakePurchases(_params: {
+  role?: string | undefined | null
+  iban?: string | null | undefined
   verification?: VerificationRecord
   sessionVerificationStatus?: string | null
 }): boolean {
-  return canUserCreateProducts(params)
+  return true
 }
 
-export function needsIbanIdentityReview(params: {
+export function needsIbanIdentityReview(_params: {
   iban?: string | null
   verification?: VerificationRecord
 }): boolean {
-  if (!params.iban || !isValidGeorgianIban(params.iban) || !params.verification) {
-    return false
-  }
-
-  const status = getIdentityStatus(params.verification)
-  return status === 'PENDING' || status === 'REJECTED'
+  return false
 }

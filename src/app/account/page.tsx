@@ -299,6 +299,14 @@ const AccountPageContent = () => {
   useEffect(() => {
     if (activeTab === 'products' && session?.user?.id) {
       fetchProducts(productsPageRef.current)
+      fetch('/api/user/profile')
+        .then((r) => r.json())
+        .then((d) => {
+          if (d?.success && d?.user) {
+            setUserIban(d.user.iban || null)
+          }
+        })
+        .catch(() => {})
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab])
@@ -746,7 +754,7 @@ const AccountPageContent = () => {
       if (res.ok && data.success) {
         setVerification(data.verification)
         setUserVerified(false)
-        showToast('IBAN გაგზავნილია ადმინისტრატორთან დასადასტურებლად', 'success')
+        showToast('IBAN წარმატებით შეინახა', 'success')
         await update({ iban: userIban })
       } else {
         showToast(data.error || 'შეცდომა IBAN-ის შენახვისას', 'error')
@@ -805,17 +813,11 @@ const AccountPageContent = () => {
     return null
   }
 
-  const identityStatus: VerificationState =
-    verification?.identityStatus ??
-    verification?.status ??
-    (session.user.verificationStatus as 'PENDING' | 'APPROVED' | 'REJECTED' | null) ??
-    null
-  const identityComment = verification?.identityComment ?? verification?.comment ?? null
-  const identityApproved = identityStatus === 'APPROVED'
-  const hasIban = isValidGeorgianIban(userIban)
+  const ibanForEligibility =
+    userIban ?? (session.user as { iban?: string | null }).iban ?? null
+  const hasIban = isValidGeorgianIban(ibanForEligibility)
   const isAdminOrSupport = session.user.role === 'ADMIN' || session.user.role === 'SUPPORT'
-  const canCreateProducts = isAdminOrSupport || (identityApproved && hasIban)
-  const shouldShowIbanVerification = !isAdminOrSupport && !identityApproved
+  const canCreateProducts = isAdminOrSupport || hasIban
 
   const tabs = [
     { id: 'profile', label: 'პროფილი', icon: User },
@@ -1199,84 +1201,7 @@ const AccountPageContent = () => {
 
         </div>
 
-        {/* IBAN ვერიფიკაცია */}
-        {shouldShowIbanVerification && (
-          <div className="mt-8 p-6 border-2 border-black rounded-lg bg-gray-50">
-            <div className="mb-4">
-              <h2 className="text-xl font-bold mb-2 text-black">ბანკის ანგარიში</h2>
-              <p className="text-[18px] text-black">
-                IBAN აუცილებელია პროდუქტის დასამატებლად, ყიდვისა და გაქირავებისთვის. შენახვის შემდეგ ადმინისტრატორი დაადასტურებს.
-              </p>
-              {identityStatus === 'PENDING' && hasIban && (
-                <p className="text-[18px] text-yellow-600 font-medium mt-2">
-                  თქვენი ანგარიშის ნომერი გადაგზავნილია და ელოდება ადმინისტრატორის დადასტურებას.
-                </p>
-              )}
-              {identityStatus === 'REJECTED' && (
-                <p className="text-[18px] text-red-600 font-medium mt-2">
-                  IBAN უარყოფილია. გთხოვთ შეამოწმოთ და ხელახლა გაგზავნოთ.
-                  {identityComment ? ` მიზეზი: ${identityComment}` : ''}
-                </p>
-              )}
-            </div>
-            
-            {verifLoading ? (
-              <div className="text-center py-8">
-                <div className="w-8 h-8 border-4 border-gray-300 border-t-[#1B3729] rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-[16px] text-black">იტვირთება...</p>
-              </div>
-            ) : (
-              <>
-                <div className="mb-6">
-                  <label className="block text-[18px] font-semibold text-black mb-2">
-                    ბანკის IBAN <span className="text-red-600">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={userIban || ''}
-                    onChange={(e) => {
-                      const value = e.target.value.toUpperCase().replace(/\s/g, '')
-                      setUserIban(value)
-                    }}
-                    placeholder="მაგ: GE00TB0000000000000000"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                  />
-                  <p className="text-sm text-black mt-1">IBAN უნდა იწყებოდეს GE-ით და შეიცავდეს 22 სიმბოლოს</p>
-                  {isValidGeorgianIban(userIban) && (
-                    <p className="text-sm text-green-600 mt-1">✓ IBAN სწორია</p>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="text-[16px] text-black">
-                    {isValidGeorgianIban(userIban) ? (
-                      <span className="text-green-600 font-semibold">✓ IBAN მზადაა შესანახად</span>
-                    ) : (
-                      <span className="text-red-500">გთხოვთ შეიყვანოთ სწორი IBAN</span>
-                    )}
-                  </div>
-                  <button
-                    onClick={saveIbanVerification}
-                    disabled={savingVerification || !isValidGeorgianIban(userIban)}
-                    className={`px-6 py-3 rounded-lg font-bold text-[18px] uppercase tracking-wide transition-colors ${
-                      isValidGeorgianIban(userIban) && !savingVerification
-                        ? 'bg-[#1B3729] text-white hover:bg-[#2a4d3a]'
-                        : 'bg-white text-black cursor-not-allowed'
-                    }`}
-                  >
-                    {savingVerification ? 'გაგზავნა...' : identityStatus === 'PENDING' && hasIban ? 'ხელახლა გაგზავნა' : ' გაგზავნა'}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
-
       </div>
-      {!isAdminOrSupport && identityApproved && hasIban && (
-        <h1 className="text-green-500 text-[20px] font-bold ">დადასტურებულია</h1>
-      )}
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <h4 className="md:text-[20px] text-[18px] font-bold text-black mb-4">ანგარიშის სტატისტიკა</h4>
         {loading ? (
@@ -1855,9 +1780,11 @@ const AccountPageContent = () => {
         </div>
         {!isAdminOrSupport && !canCreateProducts && (
           <div className="mb-4 p-3 border border-yellow-400 bg-yellow-50 text-yellow-800 rounded md:text-[18px] text-[16px]">
-            {hasIban && identityStatus === 'PENDING'
-              ? 'თქვენი ანგარიშის ნომერი ელოდება ადმინისტრატორის დადასტურებას. დადასტურების შემდეგ შეძლებთ პროდუქტის დამატებას.'
-              : 'გთხოვთ მიუთითოთ ბანკის IBAN პროფილის გვერდზე, რომ შეძლოთ პროდუქტის დამატება.'}
+            პროდუქტის დასამატებლად სავალდებულოა ბანკის IBAN.{' '}
+            <Link href="/account?tab=settings" className="underline font-semibold hover:opacity-80">
+              მიუთითეთ პარამეტრებში
+            </Link>
+            .
           </div>
         )}
 
@@ -2664,6 +2591,7 @@ function ProfileSettingsForm({ hasActiveRentals, checkingRentals }: { hasActiveR
       <div>
         <label className="block md:text-[18px] text-[16px] font-medium text-black mb-2">
           ბანკის IBAN <span className="text-red-600">*</span>
+          <span className="text-sm font-normal text-gray-600"> (პროდუქტის დასამატებლად)</span>
         </label>
         <input
           name="iban"
@@ -2674,12 +2602,11 @@ function ProfileSettingsForm({ hasActiveRentals, checkingRentals }: { hasActiveR
             setError(null)
             setSuccess(null)
           }}
-          required
           placeholder="მაგ: GE00TB0000000000000000"
           className="w-full uppercase px-4 py-3 border text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
         />
         <p className="text-black md:text-[18px] text-[16px] mt-1">
-          IBAN აუცილებელია გაყიდვებიდან თანხის მისაღებად. გამოიყენეთ მხოლოდ ქართული (GE) IBAN.
+          IBAN საჭიროა მხოლოდ პროდუქტის დასამატებლად და გაყიდვებიდან თანხის მისაღებად.
         </p>
       </div>
 

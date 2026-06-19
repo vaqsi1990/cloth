@@ -3,8 +3,6 @@ import axios from 'axios'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { canUserMakePurchases } from '@/lib/seller-eligibility'
-import { userNeedsPhoneNumber } from '@/lib/user-phone-required'
 import { bogTokenManager } from '@/lib/bog-token'
 import { computeCartItemSubtotal } from '@/lib/cart-totals'
 import { getCartItemPayablePrice, getRentalCartDiscountContext } from '@/lib/cart-item-pricing'
@@ -357,53 +355,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
     }
 
-    if (userNeedsPhoneNumber({ role: session.user.role, phone: session.user.phone })) {
-      return NextResponse.json(
-        {
-          success: false,
-          missingPhone: true,
-          error: 'გთხოვთ მიუთითოთ ტელეფონის ნომერი.',
-        },
-        { status: 403 },
-      )
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: {
-        iban: true,
-        verification: {
-          select: {
-            identityStatus: true,
-            status: true,
-          },
-        },
-      },
-    })
-
-    if (
-      !canUserMakePurchases({
-        role: session.user.role,
-        iban: user?.iban,
-        verification: user?.verification,
-        sessionVerificationStatus: session.user.verificationStatus,
-      })
-    ) {
-      if (!user?.iban) {
-        return NextResponse.json({ missingIban: true, error: 'Missing IBAN' }, { status: 403 })
-      }
-
-      return NextResponse.json(
-        {
-          success: false,
-          requiresVerification: true,
-          error: 'თქვენი ანგარიშის ნომერი ელოდება ადმინისტრატორის დადასტურებას.',
-        },
-        { status: 403 },
-      )
-    }
-
-    const cart = await prisma.cart.findFirst({
       where: { userId: session.user.id },
       include: {
         items: {

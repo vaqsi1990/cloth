@@ -4,7 +4,6 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { findRentalDateConflict } from '@/lib/rental-date-conflicts'
-import { canUserMakePurchases } from '@/lib/seller-eligibility'
 import { MAX_CHECKOUT_ITEMS, MAX_CART_ITEM_QUANTITY, CHECKOUT_SINGLE_ITEM_MESSAGE } from '@/lib/cart-limits'
 
 // Order validation schema
@@ -38,51 +37,6 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     const isAdmin = session?.user?.role === 'ADMIN'
-    
-    // Verified identity + IBAN required for purchases (except admins)
-    if (session?.user?.id && !isAdmin) {
-      const user = await prisma.user.findUnique({
-        where: { id: session.user.id },
-        select: {
-          iban: true,
-          verification: {
-            select: {
-              identityStatus: true,
-              status: true,
-            },
-          },
-        },
-      })
-
-      if (
-        !canUserMakePurchases({
-          role: session.user.role,
-          iban: user?.iban,
-          verification: user?.verification,
-          sessionVerificationStatus: session.user.verificationStatus,
-        })
-      ) {
-        if (!user?.iban) {
-          return NextResponse.json(
-            {
-              success: false,
-              message: 'გთხოვთ შეიყვანოთ ბანკის IBAN პროფილში. IBAN აუცილებელია ყიდვისთვის.',
-              missingIban: true,
-            },
-            { status: 403 },
-          )
-        }
-
-        return NextResponse.json(
-          {
-            success: false,
-            message: 'თქვენი ანგარიშის ნომერი ელოდება ადმინისტრატორის დადასტურებას.',
-            requiresVerification: true,
-          },
-          { status: 403 },
-        )
-      }
-    }
     
     const body = await request.json()
     

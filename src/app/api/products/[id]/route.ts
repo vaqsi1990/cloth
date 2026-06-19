@@ -357,7 +357,7 @@ export async function PUT(
       )
     }
 
-    const shouldResetApproval = !isAdminOrSupportRole
+    const shouldResetApproval = false
 
     let resolvedCategoryId: number | null = null
     if (validatedData.categoryId) {

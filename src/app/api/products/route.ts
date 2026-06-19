@@ -624,44 +624,22 @@ export async function POST(request: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { 
-        iban: true,
-        verification: {
-          select: {
-            identityStatus: true,
-            status: true,
-          },
-        },
-      }
+      select: { iban: true },
     })
     console.log('User data:', { hasIban: !!user?.iban })
 
     if (!canUserCreateProducts({
       role: session.user.role,
       iban: user?.iban,
-      verification: user?.verification,
-      sessionVerificationStatus: session.user.verificationStatus,
     })) {
-      if (!user?.iban) {
-        console.log('ERROR: User missing IBAN')
-        return NextResponse.json(
-          { 
-            success: false, 
-            error: 'გთხოვთ შეიყვანოთ ბანკის IBAN პროფილში. IBAN აუცილებელია პროდუქტის დასამატებლად.',
-            missingIban: true
-          },
-          { status: 403 }
-        )
-      }
-
-      console.log('ERROR: User IBAN not approved')
+      console.log('ERROR: User missing IBAN')
       return NextResponse.json(
-        { 
-          success: false, 
-          error: 'თქვენი ანგარიშის ნომერი ელოდება ადმინისტრატორის დადასტურებას.',
-          requiresVerification: true,
+        {
+          success: false,
+          error: 'გთხოვთ შეიყვანოთ ბანკის IBAN პროფილში. IBAN აუცილებელია პროდუქტის დასამატებლად.',
+          missingIban: true,
         },
-        { status: 403 }
+        { status: 403 },
       )
     }
 
@@ -679,7 +657,7 @@ export async function POST(request: NextRequest) {
     // Generate unique SKU for the product
     const uniqueSKU = await generateUniqueSKU()
     
-    const shouldAutoApprove = session.user.role === 'ADMIN'
+    const shouldAutoApprove = true
 
     const productInclude = {
       images: true,

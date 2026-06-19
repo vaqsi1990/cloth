@@ -242,23 +242,17 @@ const NewProductPage = () => {
 
     const checkEligibility = async () => {
       try {
-        const [verificationRes, profileRes] = await Promise.all([
-          fetch('/api/user/verification'),
-          fetch('/api/user/profile'),
-        ])
-        const verificationData = await verificationRes.json()
+        const profileRes = await fetch('/api/user/profile')
         const profileData = await profileRes.json()
 
         const allowed = canUserCreateProducts({
           role: session.user.role,
           iban: profileData?.user?.iban,
-          verification: verificationData?.verification,
-          sessionVerificationStatus: session.user.verificationStatus,
         })
 
         if (!allowed) {
-          showToast('პროდუქტის დამატება შესაძლებელია მხოლოდ ადმინისტრატორის მიერ დადასტურებული IBAN-ის შემდეგ', 'error')
-          router.push('/account?tab=products')
+          showToast('პროდუქტის დასამატებლად სავალდებულოა ბანკის IBAN. მიუთითეთ პარამეტრებში.', 'error')
+          router.push('/account?tab=settings')
           return
         }
 
@@ -649,6 +643,14 @@ const NewProductPage = () => {
         showToast('პროდუქტი წარმატებით შეიქმნა!', 'success')
         router.push('/account')
       } else {
+        if (result.missingIban) {
+          showToast(
+            result.error || 'პროდუქტის დასამატებლად სავალდებულოა ბანკის IBAN. მიუთითეთ პარამეტრებში.',
+            'error',
+          )
+          router.push('/account?tab=settings')
+          return
+        }
         if (result.errors) {
           const newErrors = mapZodIssuesToProductFormErrors(result.errors)
           setErrors(newErrors)
@@ -656,7 +658,7 @@ const NewProductPage = () => {
             showToast(formatProductFormFieldErrors(newErrors), 'error')
           }
         } else {
-          showToast(result.message || 'შეცდომა პროდუქტის შექმნისას', 'error')
+          showToast(result.error || result.message || 'შეცდომა პროდუქტის შექმნისას', 'error')
         }
       }
 

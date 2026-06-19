@@ -98,7 +98,6 @@ const ProductPage = () => {
     const [rentalStartDate, setRentalStartDate] = useState("")
     const [rentalEndDate, setRentalEndDate] = useState("")
     const [isAdding, setIsAdding] = useState(false)
-    const [userVerification, setUserVerification] = useState<{ status?: 'PENDING' | 'APPROVED' | 'REJECTED' } | null>(null);
 
     // Reviews state
     const [reviews, setReviews] = useState<Array<{
@@ -382,16 +381,6 @@ const ProductPage = () => {
         setProduct((prev) => (prev ? { ...prev, status } : prev))
         void reloadProduct()
     })
-
-    useEffect(() => {
-        if (session?.user?.id) {
-            fetch('/api/user/verification')
-                .then((r) => r.json())
-                .then((d) => setUserVerification(d.verification || null));
-        } else {
-            setUserVerification(null);
-        }
-    }, [session?.user?.id, session?.user?.email, session?.user?.name]);
 
     // Fetch reviews
     useEffect(() => {
@@ -2042,21 +2031,6 @@ const ProductPage = () => {
                                         >
                                             შესვლა
                                         </Link>
-                                    </div>
-                                </div>
-                            ) : purchaseMode === "rent" && userVerification?.status !== 'APPROVED' ? (
-                                <div className="space-y-2">
-                                    <div className="p-4 text-center border-2 border-amber-500 text-amber-700 rounded-lg font-bold">
-                                        <div className="space-y-1">
-                                            <p>პროდუქტის ქირაობა შესაძლებელია მხოლოდ ვერიფიცირებული მომხმარებლებისთვის.</p>
-                                            <p>
-                                                გთხოვთ, გაიაროთ{' '}
-                                                <Link href="/account" className="underline hover:opacity-80">
-                                                    ვერიფიკაცია
-                                                </Link>
-                                                !
-                                            </p>
-                                        </div>
                                     </div>
                                 </div>
                             ) : (

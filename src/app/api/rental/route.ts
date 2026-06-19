@@ -4,8 +4,6 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { isRentalEndBeforeStart, minRentalEndDateStillBlocking, hasRentalPeriodConflict } from '@/lib/rental-dates'
 import { markRentalProductsRented } from '@/lib/update-product-status'
-import { canUserMakePurchases } from '@/lib/seller-eligibility'
-import { userNeedsPhoneNumber } from '@/lib/user-phone-required'
 import { RentalStatus } from '@prisma/client'
 
 export async function POST(request: NextRequest) {
@@ -16,57 +14,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (userNeedsPhoneNumber({ role: session.user.role, phone: session.user.phone })) {
-      return NextResponse.json(
-        {
-          error: 'გთხოვთ მიუთითოთ ტელეფონის ნომერი.',
-          missingPhone: true,
-        },
-        { status: 403 },
-      )
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: {
-        iban: true,
-        verification: {
-          select: {
-            identityStatus: true,
-            status: true,
-          },
-        },
-      },
-    })
-
-    if (
-      !canUserMakePurchases({
-        role: session.user.role,
-        iban: user?.iban,
-        verification: user?.verification,
-        sessionVerificationStatus: session.user.verificationStatus,
-      })
-    ) {
-      if (!user?.iban) {
-        return NextResponse.json(
-          {
-            error: 'გთხოვთ შეიყვანოთ ბანკის IBAN პროფილში.',
-            missingIban: true,
-          },
-          { status: 403 },
-        )
-      }
-
-      return NextResponse.json(
-        {
-          error: 'თქვენი ანგარიშის ნომერი ელოდება ადმინისტრატორის დადასტურებას.',
-          requiresVerification: true,
-        },
-        { status: 403 },
-      )
-    }
-
-    const body = await request.json()
     const { 
       productId, 
       variantId, 
