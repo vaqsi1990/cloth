@@ -266,6 +266,9 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
             localStorage.setItem('chatGuestName', guestName)
             localStorage.setItem('chatGuestEmail', guestEmail)
             localStorage.setItem('chatRoomId', data.chatRoomId.toString())
+            if (session?.user?.id) {
+              localStorage.setItem('liveSupportChatRoomId', data.chatRoomId.toString())
+            }
           }
           // Clear messages and let the useEffect handle fetching
           setMessages([])
@@ -357,6 +360,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
             localStorage.removeItem('chatGuestName')
             localStorage.removeItem('chatGuestEmail')
             localStorage.removeItem('chatRoomId')
+            localStorage.removeItem('liveSupportChatRoomId')
           } catch (error) {
             console.error('Error clearing localStorage:', error)
           }

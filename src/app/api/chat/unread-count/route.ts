@@ -55,9 +55,22 @@ export async function GET() {
     const unreadCount =
       (productChatResult[0]?.count ?? 0) + (liveSupportResult[0]?.count ?? 0)
 
+    const liveSupportRoomResult = await prisma.$queryRaw<Array<{ id: number }>>`
+      SELECT cr.id
+      FROM "ChatRoom" cr
+      LEFT JOIN "User" a ON cr."adminId" = a.id
+      WHERE cr."userId" = ${userId}
+        AND cr."productId" IS NULL
+        AND (cr."adminId" IS NULL OR a.role IN ('ADMIN', 'SUPPORT'))
+        AND cr.status IN ('PENDING', 'ACTIVE')
+      ORDER BY cr."updatedAt" DESC
+      LIMIT 1
+    `
+
     return NextResponse.json({
       success: true,
       unreadCount,
+      liveSupportChatRoomId: liveSupportRoomResult[0]?.id ?? null,
     })
   } catch (error) {
     console.error('GET chat unread-count:', error)

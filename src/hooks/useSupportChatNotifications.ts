@@ -14,6 +14,7 @@ interface UnreadChatResponse {
 export function useSupportChatNotifications(enabled: boolean) {
   const [soundEnabled, setSoundEnabled] = useState(true)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [latestUnreadChatRoomId, setLatestUnreadChatRoomId] = useState<number | null>(null)
   const soundEnabledRef = useRef(true)
   const activeChatRoomIdRef = useRef<number | null>(null)
   const latestUnreadMessageIdRef = useRef<number | null>(null)
@@ -65,6 +66,7 @@ export function useSupportChatNotifications(enabled: boolean) {
       const nextLatestUnreadChatRoomId = data.latestUnreadChatRoomId ?? null
 
       setUnreadCount(nextUnreadCount)
+      setLatestUnreadChatRoomId(nextLatestUnreadChatRoomId)
 
       if (isInitialLoadRef.current) {
         latestUnreadMessageIdRef.current = nextLatestUnreadMessageId
@@ -116,6 +118,7 @@ export function useSupportChatNotifications(enabled: boolean) {
   useEffect(() => {
     if (!enabled) {
       setUnreadCount(0)
+      setLatestUnreadChatRoomId(null)
       activeChatRoomIdRef.current = null
       latestUnreadMessageIdRef.current = null
       isInitialLoadRef.current = true
@@ -132,6 +135,7 @@ export function useSupportChatNotifications(enabled: boolean) {
 
   return {
     unreadCount,
+    latestUnreadChatRoomId,
     soundEnabled,
     toggleSound,
     setActiveChatRoomId,

@@ -53,7 +53,7 @@ const AdminChatPage = () => {
     chatRoomId: selectedChatRoom?.id,
     enabled: !!selectedChatRoom,
   })
-  const { unreadCount, setActiveChatRoomId, acknowledgeActiveChat } = useSupportChatNotification()
+  const { unreadCount, latestUnreadChatRoomId, setActiveChatRoomId, acknowledgeActiveChat } = useSupportChatNotification()
 
  
   const fetchChatRooms = useCallback(async () => {
@@ -169,8 +169,33 @@ const AdminChatPage = () => {
     }
 
     fetchChatRooms()
+    const interval = setInterval(() => {
+      fetchChatRooms()
+    }, 10000)
+    return () => clearInterval(interval)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, session?.user?.role, fetchChatRooms])
+
+  useEffect(() => {
+    if (selectedChatRoom || chatRooms.length === 0) return
+
+    const preferredRoomId = latestUnreadChatRoomId
+    const roomToOpen =
+      (preferredRoomId ? chatRooms.find((room) => room.id === preferredRoomId) : undefined) ??
+      chatRooms.find((room) => room.is_unread)
+
+    if (!roomToOpen) return
+
+    setSelectedChatRoom(roomToOpen)
+    setChatRooms((prev) =>
+      prev.map((entry) =>
+        entry.id === roomToOpen.id ? { ...entry, is_unread: false } : entry,
+      ),
+    )
+    if (window.innerWidth < 1024) {
+      setShowChatList(false)
+    }
+  }, [chatRooms, selectedChatRoom, latestUnreadChatRoomId])
 
   useEffect(() => {
     if (selectedChatRoom) {

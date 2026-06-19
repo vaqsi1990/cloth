@@ -7,6 +7,7 @@ import { useSupportChatNotifications } from '@/hooks/useSupportChatNotifications
 
 interface SupportChatNotificationContextValue {
   unreadCount: number
+  latestUnreadChatRoomId: number | null
   soundEnabled: boolean
   toggleSound: () => void
   setActiveChatRoomId: (chatRoomId: number | null) => void
@@ -15,6 +16,7 @@ interface SupportChatNotificationContextValue {
 
 const SupportChatNotificationContext = createContext<SupportChatNotificationContextValue>({
   unreadCount: 0,
+  latestUnreadChatRoomId: null,
   soundEnabled: true,
   toggleSound: () => {},
   setActiveChatRoomId: () => {},
@@ -35,6 +37,7 @@ export default function SupportChatNotificationProvider({
     status === 'authenticated' && isAdminOrSupport(session?.user?.role)
   const {
     unreadCount,
+    latestUnreadChatRoomId,
     soundEnabled,
     toggleSound,
     setActiveChatRoomId,
@@ -45,6 +48,7 @@ export default function SupportChatNotificationProvider({
     <SupportChatNotificationContext.Provider
       value={{
         unreadCount,
+        latestUnreadChatRoomId,
         soundEnabled,
         toggleSound,
         setActiveChatRoomId,

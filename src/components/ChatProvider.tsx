@@ -1,11 +1,12 @@
 'use client'
 
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import ChatWidget from '@/components/ChatWidget'
 import ChatButton from '@/components/ChatButton'
+import { isAdminOrSupport } from '@/lib/roles'
 
 interface ChatContextType {
   isChatOpen: boolean
@@ -29,6 +30,8 @@ interface ChatProviderProps {
   children: React.ReactNode
 }
 
+const LIVE_SUPPORT_ROOM_STORAGE_KEY = 'liveSupportChatRoomId'
+
 const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const [isClient, setIsClient] = useState(false)
   const [isChatOpen, setIsChatOpen] = useState(false)
@@ -36,53 +39,92 @@ const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const [unreadCount, setUnreadCount] = useState(0)
   const { data: session } = useSession()
   const pathname = usePathname()
-  const showChatUi = isClient && !pathname.startsWith('/admin')
+  const isStaffUser =
+    !!session?.user?.role && isAdminOrSupport(session.user.role)
+  const showChatUi =
+    isClient &&
+    !pathname.startsWith('/admin') &&
+    !pathname.startsWith('/support') &&
+    !isStaffUser
 
   useEffect(() => {
     setIsClient(true)
   }, [])
+
+  const restoreLiveSupportRoomId = useCallback((roomId: number) => {
+    setChatRoomId(roomId)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(LIVE_SUPPORT_ROOM_STORAGE_KEY, String(roomId))
+    }
+  }, [])
+
+  const syncChatState = useCallback(async () => {
+    if (!session?.user?.id) return
+
+    try {
+      const response = await fetch('/api/chat/unread-count', {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' },
+      })
+
+      if (!response.ok) return
+
+      const data = await response.json()
+      if (!data.success) return
+
+      if (!isChatOpen) {
+        setUnreadCount(data.unreadCount || 0)
+      }
+
+      if (data.liveSupportChatRoomId) {
+        restoreLiveSupportRoomId(data.liveSupportChatRoomId)
+      }
+    } catch (error) {
+      console.error('Error checking unread messages:', error)
+    }
+  }, [session?.user?.id, isChatOpen, restoreLiveSupportRoomId])
+
+  useEffect(() => {
+    if (!session?.user?.id) {
+      setUnreadCount(0)
+      return
+    }
+
+    const savedRoomId = localStorage.getItem(LIVE_SUPPORT_ROOM_STORAGE_KEY)
+    if (savedRoomId) {
+      const parsed = parseInt(savedRoomId, 10)
+      if (!Number.isNaN(parsed) && parsed > 0) {
+        setChatRoomId(parsed)
+      }
+    }
+
+    void syncChatState()
+    const interval = setInterval(() => {
+      void syncChatState()
+    }, 15000)
+
+    return () => clearInterval(interval)
+  }, [session?.user?.id, syncChatState])
 
   const toggleChat = () => {
     const willOpen = !isChatOpen
     setIsChatOpen(willOpen)
     if (willOpen) {
       setUnreadCount(0)
+      void syncChatState()
     }
   }
 
   const handleChatRoomCreated = (id: number) => {
-    setChatRoomId(id)
-  }
-
-  // Check for unread messages periodically
-  useEffect(() => {
-    if (!session?.user?.id || isChatOpen) return
-
-    const checkUnreadMessages = async () => {
-      try {
-        const response = await fetch('/api/chat/unread-count', {
-          cache: 'no-store',
-          headers: { 'Cache-Control': 'no-cache' },
-        })
-
-        if (!response.ok) return
-
-        const data = await response.json()
-        if (data.success) {
-          setUnreadCount(data.unreadCount || 0)
-        }
-      } catch (error) {
-        console.error('Error checking unread messages:', error)
-      }
+    if (id > 0) {
+      restoreLiveSupportRoomId(id)
+      return
     }
-
-    // Check immediately
-    checkUnreadMessages()
-    
-    // Then check every 15 seconds (reduced frequency)
-    const interval = setInterval(checkUnreadMessages, 15000)
-    return () => clearInterval(interval)
-  }, [session?.user?.id, isChatOpen])
+    setChatRoomId(undefined)
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(LIVE_SUPPORT_ROOM_STORAGE_KEY)
+    }
+  }
 
   const contextValue: ChatContextType = {
     isChatOpen,
