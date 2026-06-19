@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import Image from 'next/image'
+import Image from '@/component/AppImage'
 import { X } from 'lucide-react'
 import { UploadButton } from '@/utils/uploadthing'
 import UploadLoadingIndicator from '@/component/UploadLoadingIndicator'
@@ -49,8 +49,8 @@ export default function VariantImageUpload({ value, onChange, error }: VariantIm
         </div>
       )}
 
-      {imageUrl ? (
-        <div className="relative inline-block">
+      {imageUrl && (
+        <div className="relative mb-2 inline-block">
           <Image
             src={imageUrl}
             alt="ვარიანტის სურათი"
@@ -67,23 +67,27 @@ export default function VariantImageUpload({ value, onChange, error }: VariantIm
             <X className="h-4 w-4" />
           </button>
         </div>
-      ) : (
-        <UploadButton
-          className="text-white font-bold py-1 px-3 rounded text-sm"
-          endpoint="imageUploader"
-          onClientUploadComplete={handleUploadComplete}
-          onUploadError={(uploadError: Error) => {
-            setIsUploading(false)
-            showToast(`შეცდომა ატვირთვისას: ${uploadError.message}`, 'error')
-          }}
-          onUploadBegin={() => setIsUploading(true)}
-          disabled={isUploading}
-          content={{
-            button: isUploading ? 'იტვირთება...' : 'სურათის ატვირთვა',
-            allowedContent: 'PNG, JPG, GIF, WebP',
-          }}
-        />
       )}
+
+      <UploadButton
+        className="text-white font-bold py-1 px-3 rounded text-sm"
+        endpoint="imageUploader"
+        onClientUploadComplete={handleUploadComplete}
+        onUploadError={(uploadError: Error) => {
+          setIsUploading(false)
+          showToast(`შეცდომა ატვირთვისას: ${uploadError.message}`, 'error')
+        }}
+        onUploadBegin={() => setIsUploading(true)}
+        disabled={isUploading}
+        content={{
+          button: isUploading
+            ? 'იტვირთება...'
+            : imageUrl
+              ? 'სურათის შეცვლა'
+              : 'სურათის ატვირთვა',
+          allowedContent: imageUrl ? '' : 'PNG, JPG, GIF, WebP',
+        }}
+      />
 
       {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
     </div>

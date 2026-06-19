@@ -23,6 +23,10 @@ export type ProductWithVariants = {
   variants?: ProductVariantRecord[] | null
 }
 
+export type ProductWithVariantsAndImages = ProductWithVariants & {
+  images?: Array<{ url: string; position?: number | null }> | null
+}
+
 export const productVariantInputSchema = z.object({
   color: z.preprocess(
     (val) => (val === '' || val === null ? undefined : val),
@@ -47,7 +51,7 @@ export const productVariantInputSchema = z.object({
 export type ProductVariantInput = z.infer<typeof productVariantInputSchema>
 
 export function variantHasSkuFields(variant: ProductVariantSkuLike): boolean {
-  return Boolean(variant.color?.trim() || variant.size?.trim() || variant.imageUrl?.trim())
+  return Boolean(variant.color?.trim() || variant.size?.trim())
 }
 
 export function productHasSkuVariants(product: { variants?: ProductVariantSkuLike[] | null }): boolean {
@@ -55,7 +59,7 @@ export function productHasSkuVariants(product: { variants?: ProductVariantSkuLik
   return variants.some(variantHasSkuFields)
 }
 
-/** Prisma filter for products with color/size/image SKU variants. */
+/** Prisma filter for products with color/size SKU variants. */
 export function buildProductHasSkuVariantsWhere(): Prisma.ProductWhereInput {
   return {
     variants: {
@@ -63,7 +67,6 @@ export function buildProductHasSkuVariantsWhere(): Prisma.ProductWhereInput {
         OR: [
           { AND: [{ color: { not: null } }, { NOT: { color: '' } }] },
           { AND: [{ size: { not: null } }, { NOT: { size: '' } }] },
-          { AND: [{ imageUrl: { not: null } }, { NOT: { imageUrl: '' } }] },
         ],
       },
     },
@@ -294,42 +297,100 @@ export function validateSkuVariantRows(
   return errors
 }
 
+export function getOrderedProductImageUrls(
+  product: ProductWithVariantsAndImages,
+): string[] {
+  const images = product.images || []
+  return [...images]
+    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+    .map((image) => image.url.trim())
+    .filter(Boolean)
+}
+
+/** Fill missing variant imageUrl values from product-level images (edit form / legacy rows). */
+export function hydrateVariantRowsWithProductImages(
+  rows: ProductVariantFormRow[],
+  productImageUrls: string[],
+): ProductVariantFormRow[] {
+  if (productImageUrls.length === 0) {
+    return rows
+  }
+
+  const imageByColor = new Map<string, string>()
+  let nextImageIndex = 0
+
+  return rows.map((row) => {
+    const existingUrl = row.imageUrl?.trim()
+    if (existingUrl) {
+      return row
+    }
+
+    const color = row.color?.trim()
+    if (color && imageByColor.has(color)) {
+      return { ...row, imageUrl: imageByColor.get(color) }
+    }
+
+    const url =
+      productImageUrls[nextImageIndex] ??
+      productImageUrls[productImageUrls.length - 1]
+    nextImageIndex += 1
+
+    if (color) {
+      imageByColor.set(color, url)
+    }
+
+    return { ...row, imageUrl: url }
+  })
+}
+
 export function mapProductVariantsToFormRows(
-  product: ProductWithVariants,
+  product: ProductWithVariantsAndImages,
 ): ProductVariantFormRow[] {
   const variants = product.variants || []
+  const productImageUrls = getOrderedProductImageUrls(product)
 
   if (productHasSkuVariants(product)) {
-    return variants.map((variant) => ({
-      color: variant.color?.trim() || undefined,
-      size: variant.size?.trim() || undefined,
-      sizeSystem: variant.sizeSystem || undefined,
-      price: variant.price ?? 0,
-      stock: variant.stock ?? 0,
-      imageUrl: variant.imageUrl?.trim() || undefined,
-    }))
+    return hydrateVariantRowsWithProductImages(
+      variants.map((variant) => ({
+        color: variant.color?.trim() || undefined,
+        size: variant.size?.trim() || undefined,
+        sizeSystem: variant.sizeSystem || undefined,
+        price: variant.price ?? 0,
+        stock: variant.stock ?? 0,
+        imageUrl: variant.imageUrl?.trim() || undefined,
+      })),
+      productImageUrls,
+    )
   }
 
   const pricedVariants = variants.filter((variant) => (variant.price ?? 0) > 0)
   if (pricedVariants.length > 1) {
-    return pricedVariants.map((variant, index) => ({
-      color: index === 0 ? product.color?.trim() || undefined : undefined,
-      size: index === 0 ? product.size?.trim() || undefined : undefined,
-      sizeSystem: index === 0 ? product.sizeSystem || undefined : undefined,
-      price: variant.price ?? 0,
-      stock: index === 0 ? (product.stock ?? 0) : 0,
-    }))
+    return hydrateVariantRowsWithProductImages(
+      pricedVariants.map((variant, index) => ({
+        color: index === 0 ? product.color?.trim() || undefined : undefined,
+        size: index === 0 ? product.size?.trim() || undefined : undefined,
+        sizeSystem: index === 0 ? product.sizeSystem || undefined : undefined,
+        price: variant.price ?? 0,
+        stock: index === 0 ? (product.stock ?? 0) : 0,
+        imageUrl: variant.imageUrl?.trim() || undefined,
+      })),
+      productImageUrls,
+    )
   }
 
   const basePrice = pricedVariants[0]?.price ?? variants[0]?.price ?? 0
   if (product.color || product.size || basePrice > 0) {
-    return [{
-      color: product.color?.trim() || undefined,
-      size: product.size?.trim() || undefined,
-      sizeSystem: product.sizeSystem || undefined,
-      price: basePrice,
-      stock: product.stock ?? 0,
-    }]
+    return hydrateVariantRowsWithProductImages(
+      [{
+        color: product.color?.trim() || undefined,
+        size: product.size?.trim() || undefined,
+        sizeSystem: product.sizeSystem || undefined,
+        price: basePrice,
+        stock: product.stock ?? 0,
+        imageUrl: variants[0]?.imageUrl?.trim() || undefined,
+      }],
+      productImageUrls,
+    )
   }
 
   return []

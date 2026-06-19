@@ -44,6 +44,7 @@ import {
   productHasSkuVariants,
   seedVariantRowsFromLegacyProduct,
   getVariantImageUrls,
+  getOrderedProductImageUrls,
   type ProductVariantFormRow,
 } from '@/lib/product-variants'
 import {
@@ -324,7 +325,7 @@ const EditProductPage = () => {
           const product = data.product
           console.log('Product data:', product)
           console.log('Product images:', product.images)
-          const imageUrls = product.images?.map((img: { url: string }) => img.url) || []
+          const imageUrls = getOrderedProductImageUrls(product)
           console.log('Mapped image URLs:', imageUrls)
           setProduct(product)
           const vipActive = isProductVipActive(product)
