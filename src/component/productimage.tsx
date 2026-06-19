@@ -97,19 +97,12 @@ const ImageUploadForProduct = ({ onChange, value, onUploadingChange, photoBackgr
         }}
       />
 
-      {isUploading && (
-        <UploadLoadingIndicator className="mt-3" message="სურათები იტვირთება..." />
-      )}
-
-      {validImageUrls.length > 0 || isUploading ? (
+      {validImageUrls.length > 0 ? (
         <div className="mt-4 space-y-2">
           <h2 className="text-sm font-semibold text-black">
             ატვირთული სურათები ({validImageUrls.length}{isUploading ? "+" : ""})
           </h2>
           <div className="grid md:grid-cols-3 grid-cols-1 gap-3">
-            {isUploading && (
-              <UploadLoadingIndicator variant="card" message="იტვირთება..." />
-            )}
             {validImageUrls.map((url, displayIndex) => {
               const originalIndex = urlToIndexMap.get(url) ?? displayIndex;
               return (
