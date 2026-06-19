@@ -180,6 +180,25 @@ export function getVariantImagesForSelection(
   return urls
 }
 
+/** Sale prices for variants matching the current color/size selection. */
+export function getVariantSalePricesForSelection(
+  product: ProductWithVariants,
+  selection: { color?: string | null; size?: string | null },
+): number[] {
+  const color = selection.color?.trim() || null
+  const size = selection.size?.trim() || null
+  const prices = new Set<number>()
+
+  for (const variant of getNormalizedVariants(product)) {
+    if (color && variant.color !== color) continue
+    if (size && variant.size !== size) continue
+    const price = variant.price ?? 0
+    if (price > 0) prices.add(price)
+  }
+
+  return Array.from(prices)
+}
+
 export type ProductVariantSkuFormRow = ProductVariantSkuLike & {
   price?: number | null
 }

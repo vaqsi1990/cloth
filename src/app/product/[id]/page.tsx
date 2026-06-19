@@ -42,6 +42,7 @@ import {
   getVariantColors,
   getVariantImagesForSelection,
   getVariantSalePrices,
+  getVariantSalePricesForSelection,
   getVariantSizes,
   productHasSkuVariants,
 } from '@/lib/product-variants'
@@ -780,11 +781,32 @@ const ProductPage = () => {
     const isProductOwner = session?.user?.id === product?.user?.id
     const pricingMode = isProductOwner ? 'seller' : 'buyer'
     const variantSalePrices = product ? getVariantSalePrices(product) : []
+    const selectionSalePrices = product && hasSkuVariants
+        ? getVariantSalePricesForSelection(product, {
+            color: selectedColor || null,
+            size: selectedSize || null,
+          })
+        : variantSalePrices
     const variantPriceRangeLabel = formatVariantPriceRange(
         variantSalePrices,
         pricingMode === 'buyer' ? getBuyerPrice : (price) => price,
     )
-    const showBuyOption = Boolean(canBuyProduct && selectionComplete && selectedPrice > 0)
+    const selectionPriceRangeLabel = formatVariantPriceRange(
+        selectionSalePrices,
+        pricingMode === 'buyer' ? getBuyerPrice : (price) => price,
+    )
+    const partialSelectionPrice =
+        selectionSalePrices.length === 1 ? selectionSalePrices[0] : null
+    const showExactVariantPrice = Boolean(canBuyProduct && selectionComplete && selectedPrice > 0)
+    const showPartialVariantPrice = Boolean(
+        canBuyProduct &&
+        !showExactVariantPrice &&
+        partialSelectionPrice &&
+        hasSkuVariants &&
+        (selectedColor || selectedSize),
+    )
+    const displayPartialPrice = partialSelectionPrice ?? 0
+    const showBuyOption = showExactVariantPrice
     const rentStatusAllowed =
         product?.status === 'AVAILABLE' ||
         product?.status === 'RENTED' ||
@@ -1557,10 +1579,14 @@ const ProductPage = () => {
                                         <div>
                                             <p className="text-black md:text-[18px] text-[16px] uppercase tracking-wide">გაყიდვის ფასი</p>
                                             <p className="md:text-[18px] text-[16px] text-black">
-                                                {showBuyOption
+                                                {showExactVariantPrice
                                                     ? hasSkuVariants
                                                         ? 'ფასი არჩეული ვარიანტისთვის'
                                                         : 'ფასი არჩეული ზომისთვის'
+                                                    : showPartialVariantPrice
+                                                        ? hasSkuVariants && !selectedSize && availableSizes.length > 0
+                                                            ? 'აირჩიეთ ზომა საბოლოო ფასისთვის'
+                                                            : 'ფასი არჩეული ვარიანტისთვის'
                                                     : hasSkuVariants
                                                         ? 'აირჩიეთ ფერი და ზომა ფასის სანახავად'
                                                         : selectedSize
@@ -1568,7 +1594,7 @@ const ProductPage = () => {
                                                             : 'აირჩიეთ ზომა ფასის სანახავად'}
                                             </p>
                                         </div>
-                                        {showBuyOption ? (
+                                        {showExactVariantPrice ? (
                                             <div className="flex flex-col items-end gap-2">
                                                 {product.discount && product.discount > 0 ? (
                                                     <>
@@ -1607,6 +1633,50 @@ const ProductPage = () => {
                                                         className="w-full max-w-xs"
                                                     />
                                                 )}
+                                            </div>
+                                        ) : showPartialVariantPrice ? (
+                                            <div className="flex flex-col items-end gap-2">
+                                                {product.discount && product.discount > 0 ? (
+                                                    <>
+                                                        <ProductSalePrice
+                                                            originalPrice={displayPartialPrice}
+                                                            discount={product.discount}
+                                                            size="lg"
+                                                            pricingMode={pricingMode}
+                                                        />
+                                                        <div className="bg-[#1B3729] rounded-md text-[#FFFFFF] font-regular flex items-center px-2 py-1">
+                                                            <span className="text-sm whitespace-nowrap">
+                                                                დანაზოგი: ₾
+                                                                {(pricingMode === 'buyer'
+                                                                    ? getBuyerSavingsFromSellerDiscount(product.discount)
+                                                                    : product.discount
+                                                                ).toFixed(2)}
+                                                            </span>
+                                                            {product.discountDays && (
+                                                                <span className="bg-white text-black px-2 py-1 rounded ml-2 text-sm whitespace-nowrap">{product.discountDays} დღე</span>
+                                                            )}
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <div className="text-3xl font-bold text-black">
+                                                        ₾
+                                                        {(pricingMode === 'buyer'
+                                                            ? getBuyerPrice(displayPartialPrice)
+                                                            : displayPartialPrice
+                                                        ).toFixed(2)}
+                                                    </div>
+                                                )}
+                                                {pricingMode === 'buyer' && (
+                                                    <BuyerPriceBreakdown
+                                                        sellerPrice={displayPartialPrice}
+                                                        discount={product.discount}
+                                                        className="w-full max-w-xs"
+                                                    />
+                                                )}
+                                            </div>
+                                        ) : selectionPriceRangeLabel && hasSkuVariants && (selectedColor || selectedSize) ? (
+                                            <div className="text-3xl font-bold text-black">
+                                                {selectionPriceRangeLabel}
                                             </div>
                                         ) : variantPriceRangeLabel ? (
                                             <div className="text-3xl font-bold text-black">
