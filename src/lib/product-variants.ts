@@ -211,7 +211,11 @@ export function formatVariantPriceRange(
 
 export function validateSkuVariantRows(
   variants: ProductVariantSkuFormRow[],
-  options?: { requireSalePrices?: boolean },
+  options?: {
+    requireSalePrices?: boolean
+    requireSize?: boolean
+    requireColor?: boolean
+  },
 ): Record<string, string> {
   const errors: Record<string, string> = {}
 
@@ -223,9 +227,14 @@ export function validateSkuVariantRows(
   const requireSalePrices =
     options?.requireSalePrices ??
     variants.some((variant) => (variant.price ?? 0) > 0)
+  const requireSize = options?.requireSize !== false
+  const requireColor = options?.requireColor !== false
 
   variants.forEach((variant, index) => {
-    if (!variant.size?.trim()) {
+    if (requireColor && !variant.color?.trim()) {
+      errors[`variants.${index}.color`] = 'ფერი აუცილებელია'
+    }
+    if (requireSize && !variant.size?.trim()) {
       errors[`variants.${index}.size`] = 'ზომა აუცილებელია'
     }
     if (!variant.imageUrl?.trim()) {

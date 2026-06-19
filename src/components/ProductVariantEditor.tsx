@@ -87,6 +87,9 @@ export default function ProductVariantEditor({
                 }}
                 onCustomColorChange={(value) => onUpdate(index, 'color', value || undefined)}
               />
+              {errors[`variants.${index}.color`] && (
+                <p className="text-red-500 text-sm mt-1">{errors[`variants.${index}.color`]}</p>
+              )}
             </div>
 
             {showSizeField && (

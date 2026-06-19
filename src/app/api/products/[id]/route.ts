@@ -94,6 +94,9 @@ const productSchema = z.object({
   status: z.enum(['AVAILABLE', 'RENTED', 'RESERVED', 'MAINTENANCE', 'DAMAGED']).default('AVAILABLE'),
   variants: z.array(productVariantInputSchema).default([]),
   imageUrls: z.array(z.string().min(1, 'არასწორი URL')).default([]),
+  isSkuVariantProduct: z.boolean().optional(),
+  requireVariantSalePrices: z.boolean().optional(),
+  requireVariantSize: z.boolean().optional(),
   rentalPriceTiers: z.preprocess(
     (val) => {
       // If it's an array with all pricePerDay = 0, convert to empty array (to clear tiers)
@@ -118,7 +121,10 @@ const productSchema = z.object({
   refineProductImagesAndPricing(
     {
       ...data,
-      isSkuVariantProduct: productHasSkuVariants({ variants: data.variants }),
+      isSkuVariantProduct:
+        data.isSkuVariantProduct ?? productHasSkuVariants({ variants: data.variants }),
+      requireVariantSalePrices: data.requireVariantSalePrices,
+      requireVariantSize: data.requireVariantSize,
     },
     ctx,
   )

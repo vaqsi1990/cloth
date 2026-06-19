@@ -31,6 +31,8 @@ import {
   productImageUrlsField,
   refineProductImagesAndPricing,
   getProductCreateFieldErrors,
+  formatProductFormFieldErrors,
+  mapZodIssuesToProductFormErrors,
 } from '@/lib/product-create-validation'
 import ProductDiscountFields from '@/components/ProductDiscountFields'
 import ProductMinPriceNotice from '@/components/ProductMinPriceNotice'
@@ -123,6 +125,8 @@ const productSchema = z.object({
   ).default([]),
   imageUrls: z.array(z.string().min(1, 'არასწორი URL')).default([]),
   isSkuVariantProduct: z.boolean().optional(),
+  requireVariantSalePrices: z.boolean().optional(),
+  requireVariantSize: z.boolean().optional(),
   rentalPriceTiers: z.preprocess(
     (val) => {
       // If it's an array with all pricePerDay = 0, convert to empty array
@@ -143,6 +147,8 @@ const productSchema = z.object({
     {
       ...data,
       isSkuVariantProduct: data.isSkuVariantProduct ?? false,
+      requireVariantSalePrices: data.requireVariantSalePrices,
+      requireVariantSize: data.requireVariantSize,
     },
     ctx,
   )
@@ -600,12 +606,13 @@ const EditProductPage = () => {
       ...formData,
       isSkuVariantProduct: showVariantOptions,
       requireVariantSalePrices: showPurchaseOptions && showVariantOptions,
+      requireVariantSize: !isSizeOptional,
       showPurchaseOptions,
       showRentalOptions,
     })
     if (Object.keys(fieldErrors).length > 0) {
       setErrors(fieldErrors)
-      showToast(Object.values(fieldErrors).join('; '), 'error')
+      showToast(formatProductFormFieldErrors(fieldErrors), 'error')
       setIsSubmitting(false)
       return
     }
@@ -628,6 +635,8 @@ const EditProductPage = () => {
       const dataToValidate = {
         ...formData,
         isSkuVariantProduct: showVariantOptions,
+        requireVariantSalePrices: showPurchaseOptions && showVariantOptions,
+        requireVariantSize: !isSizeOptional,
         isRentable: pricing.isRentable,
         imageUrls: showVariantOptions ? getVariantImageUrls(variantsToSubmit) : formData.imageUrls,
         // Convert empty string to undefined for sizeSystem
@@ -702,13 +711,11 @@ const EditProductPage = () => {
         console.log('=== API ERROR ===')
         console.log('Error result:', result)
         if (result.errors) {
-          const newErrors: Record<string, string> = {}
-           result.errors.forEach((err: { path: string[]; message: string }) => {
-            if (err.path.length > 0) {
-              newErrors[err.path.join('.')] = err.message
-            }
-          })
+          const newErrors = mapZodIssuesToProductFormErrors(result.errors)
           setErrors(newErrors)
+          if (Object.keys(newErrors).length > 0) {
+            showToast(formatProductFormFieldErrors(newErrors), 'error')
+          }
         } else {
           showToast(result.message || 'შეცდომა პროდუქტის განახლებისას', 'error')
         }
@@ -718,13 +725,11 @@ const EditProductPage = () => {
       console.error('Error updating product:', error)
       if (error instanceof z.ZodError) {
         console.log('Zod validation error:', error.issues)
-        const newErrors: Record<string, string> = {}
-        error.issues.forEach(err => {
-          if (err.path.length > 0) {
-            newErrors[err.path.join('.')] = err.message
-          }
-        })
+        const newErrors = mapZodIssuesToProductFormErrors(error.issues)
         setErrors(newErrors)
+        if (Object.keys(newErrors).length > 0) {
+          showToast(formatProductFormFieldErrors(newErrors), 'error')
+        }
       } else {
         console.error('General error:', error)
         showToast('შეცდომა პროდუქტის განახლებისას', 'error')
@@ -1057,7 +1062,7 @@ const EditProductPage = () => {
                 gender={formData.gender}
                 sizeSystem={(formData.sizeSystem || 'EU') as 'EU' | 'US' | 'UK' | 'CN'}
                 isSizeOptional={isSizeOptional}
-                requireSize
+                requireSize={!isSizeOptional}
                 requireImage
                 showPrice={showPurchaseOptions}
                 errors={errors}

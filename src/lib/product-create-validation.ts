@@ -16,6 +16,68 @@ export const PRODUCT_MIN_PRICE_MESSAGE = `პროდუქტის მინ�
 
 export const RENTAL_MIN_PRICE_PER_DAY_MESSAGE = `დღის ფასი არ უნდა იყოს ${MIN_PRODUCT_PRICE} ₾-ზე ნაკლები`
 
+const PRODUCT_FORM_FIELD_LABELS: Record<string, string> = {
+  name: 'სახელი',
+  description: 'აღწერა',
+  slug: 'Slug',
+  imageUrls: 'სურათები',
+  rentalPriceTiers: 'ფასის გეგმა',
+  pricingMode: 'ფასდაკლება',
+  photoBackgroundConsent: 'თანხმობა',
+  variants: 'ვარიანტები',
+}
+
+export function formatProductFormFieldError(fieldPath: string, message: string): string {
+  const variantMatch = fieldPath.match(/^variants\.(\d+)\./)
+  if (variantMatch) {
+    return `ვარიანტი ${Number(variantMatch[1]) + 1}: ${message}`
+  }
+
+  const tierMatch = fieldPath.match(/^rentalPriceTiers\.(\d+)\./)
+  if (tierMatch) {
+    return `ფასის გეგმა ${Number(tierMatch[1]) + 1}: ${message}`
+  }
+
+  const label = PRODUCT_FORM_FIELD_LABELS[fieldPath] ?? fieldPath
+  return `${label}: ${message}`
+}
+
+export function formatProductFormFieldErrors(errors: Record<string, string>): string {
+  return Object.entries(errors)
+    .map(([path, message]) => formatProductFormFieldError(path, message))
+    .join('; ')
+}
+
+export function mapZodIssuesToProductFormErrors(
+  issues: Array<{ path: PropertyKey[]; message: string }>,
+): Record<string, string> {
+  const errors: Record<string, string> = {}
+
+  for (const issue of issues) {
+    if (issue.path.length === 0) {
+      continue
+    }
+    const fieldPath = issue.path.map(String).join('.')
+    errors[fieldPath] = issue.message
+  }
+
+  return errors
+}
+
+type SkuVariantValidationOptions = {
+  requireVariantSalePrices?: boolean
+  requireVariantSize?: boolean
+}
+
+function buildSkuVariantValidationOptions(
+  data: SkuVariantValidationOptions,
+): Parameters<typeof validateSkuVariantRows>[1] {
+  return {
+    requireSalePrices: data.requireVariantSalePrices,
+    requireSize: data.requireVariantSize !== false,
+  }
+}
+
 export const productImageUrlsField = z
   .array(z.string().min(1, 'არასწორი URL'))
   .min(1, PRODUCT_IMAGE_REQUIRED_MESSAGE)
@@ -75,9 +137,10 @@ export function hasProductPricing(data: ProductPricingInput): boolean {
 
 export function getProductCreateFieldErrors(data: {
   imageUrls?: string[]
-  variants?: Array<{ size?: string; imageUrl?: string; price?: number | null }>
+  variants?: Array<{ color?: string; size?: string; imageUrl?: string; price?: number | null }>
   isSkuVariantProduct?: boolean
   requireVariantSalePrices?: boolean
+  requireVariantSize?: boolean
   showPurchaseOptions?: boolean
   showRentalOptions?: boolean
 } & ProductPricingInput): Record<string, string> {
@@ -90,9 +153,7 @@ export function getProductCreateFieldErrors(data: {
 
     Object.assign(
       errors,
-      validateSkuVariantRows(data.variants || [], {
-        requireSalePrices: data.requireVariantSalePrices,
-      }),
+      validateSkuVariantRows(data.variants || [], buildSkuVariantValidationOptions(data)),
     )
   } else if (!data.imageUrls || data.imageUrls.length === 0) {
     errors.imageUrls = PRODUCT_IMAGE_REQUIRED_MESSAGE
@@ -122,16 +183,18 @@ export function getProductCreateFieldErrors(data: {
 export function refineProductImagesAndPricing(
   data: {
     imageUrls?: string[]
-    variants?: Array<{ size?: string; imageUrl?: string; price?: number | null }>
+    variants?: Array<{ color?: string; size?: string; imageUrl?: string; price?: number | null }>
     isSkuVariantProduct?: boolean
     requireVariantSalePrices?: boolean
+    requireVariantSize?: boolean
   } & ProductPricingInput,
   ctx: z.RefinementCtx,
 ) {
   if (data.isSkuVariantProduct) {
-    const skuErrors = validateSkuVariantRows(data.variants || [], {
-      requireSalePrices: data.requireVariantSalePrices,
-    })
+    const skuErrors = validateSkuVariantRows(
+      data.variants || [],
+      buildSkuVariantValidationOptions(data),
+    )
     for (const [pathKey, message] of Object.entries(skuErrors)) {
       const path = pathKey.split('.')
       const numericIndex = path.findIndex((segment) => /^\d+$/.test(segment))

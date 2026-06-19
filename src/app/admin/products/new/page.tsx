@@ -31,6 +31,8 @@ import {
   productImageUrlsFieldWithUrlValidation,
   refineProductImagesAndPricing,
   getProductCreateFieldErrors,
+  formatProductFormFieldErrors,
+  mapZodIssuesToProductFormErrors,
 } from '@/lib/product-create-validation'
 import ProductDiscountFields from '@/components/ProductDiscountFields'
 import ProductMinPriceNotice from '@/components/ProductMinPriceNotice'
@@ -114,6 +116,8 @@ const productSchema = z.object({
   ).default([]),
   imageUrls: z.array(z.string().url('არასწორი URL')).default([]),
   isSkuVariantProduct: z.boolean().optional(),
+  requireVariantSalePrices: z.boolean().optional(),
+  requireVariantSize: z.boolean().optional(),
   rentalPriceTiers: z.preprocess(
     (val) => {
       // If it's an array with all pricePerDay = 0, convert to undefined
@@ -134,6 +138,8 @@ const productSchema = z.object({
     {
       ...data,
       isSkuVariantProduct: data.isSkuVariantProduct ?? false,
+      requireVariantSalePrices: data.requireVariantSalePrices,
+      requireVariantSize: data.requireVariantSize,
     },
     ctx,
   )
@@ -487,12 +493,13 @@ const NewProductPage = () => {
       ...formData,
       isSkuVariantProduct: showVariantOptions,
       requireVariantSalePrices: showPurchaseOptions && showVariantOptions,
+      requireVariantSize: !isSizeOptional,
       showPurchaseOptions,
       showRentalOptions,
     })
     if (Object.keys(fieldErrors).length > 0) {
       setErrors(fieldErrors)
-      showToast(Object.values(fieldErrors).join('; '), 'error')
+      showToast(formatProductFormFieldErrors(fieldErrors), 'error')
       setIsSubmitting(false)
       return
     }
@@ -510,6 +517,8 @@ const NewProductPage = () => {
       const dataToValidate: any = {
         ...formData,
         isSkuVariantProduct: showVariantOptions,
+        requireVariantSalePrices: showPurchaseOptions && showVariantOptions,
+        requireVariantSize: !isSizeOptional,
         isRentable: pricing.isRentable,
         imageUrls: showVariantOptions ? getVariantImageUrls(variantsToSubmit) : formData.imageUrls,
         rentalPriceTiers: pricing.rentalPriceTiers,
@@ -563,30 +572,10 @@ const NewProductPage = () => {
         router.push('/admin/products')
       } else {
         if (result.errors) {
-          const newErrors: Record<string, string> = {}
-          const errorMessages: string[] = []
-          result.errors.forEach((err: { path: string[]; message: string }) => {
-            if (err.path.length > 0) {
-              const fieldPath = err.path.join('.')
-              newErrors[fieldPath] = err.message
-              // Add to error messages for toaster
-              const fieldName = fieldPath === 'name' ? 'სახელი' : 
-                               fieldPath === 'description' ? 'აღწერა' :
-                               fieldPath === 'slug' ? 'Slug' :
-                               fieldPath === 'imageUrls' ? 'სურათები' :
-                               fieldPath === 'rentalPriceTiers' ? 'ფასის გეგმა' :
-                               fieldPath.startsWith('rentalPriceTiers.') ? 'ფასის გეგმა' :
-                               fieldPath.startsWith('variants.') ? 'ვარიანტი' :
-                               fieldPath
-              errorMessages.push(`${fieldName}: ${err.message}`)
-            } else {
-              errorMessages.push(err.message)
-            }
-          })
+          const newErrors = mapZodIssuesToProductFormErrors(result.errors)
           setErrors(newErrors)
-          // Show all errors in toaster
-          if (errorMessages.length > 0) {
-            showToast(errorMessages.join('; '), 'error')
+          if (Object.keys(newErrors).length > 0) {
+            showToast(formatProductFormFieldErrors(newErrors), 'error')
           }
         } else {
           showToast(result.message || 'შეცდომა პროდუქტის შექმნისას', 'error')
@@ -596,30 +585,10 @@ const NewProductPage = () => {
     } catch (error) {
       console.error('Error:', error)
       if (error instanceof z.ZodError) {
-        const newErrors: Record<string, string> = {}
-        const errorMessages: string[] = []
-        error.issues.forEach(err => {
-          if (err.path.length > 0) {
-            const fieldPath = err.path.join('.')
-            newErrors[fieldPath] = err.message
-            // Add to error messages for toaster
-            const fieldName = fieldPath === 'name' ? 'სახელი' : 
-                             fieldPath === 'description' ? 'აღწერა' :
-                             fieldPath === 'slug' ? 'Slug' :
-                             fieldPath === 'imageUrls' ? 'სურათები' :
-                             fieldPath === 'rentalPriceTiers' ? 'ფასის გეგმა' :
-                             fieldPath.startsWith('rentalPriceTiers.') ? 'ფასის გეგმა' :
-                             fieldPath.startsWith('variants.') ? 'ვარიანტი' :
-                             fieldPath
-            errorMessages.push(`${fieldName}: ${err.message}`)
-          } else {
-            errorMessages.push(err.message)
-          }
-        })
+        const newErrors = mapZodIssuesToProductFormErrors(error.issues)
         setErrors(newErrors)
-        // Show all errors in toaster
-        if (errorMessages.length > 0) {
-          showToast(errorMessages.join('; '), 'error')
+        if (Object.keys(newErrors).length > 0) {
+          showToast(formatProductFormFieldErrors(newErrors), 'error')
         }
       } else {
         showToast('მოულოდნელი შეცდომა', 'error')
@@ -886,7 +855,7 @@ const NewProductPage = () => {
                 gender={formData.gender}
                 sizeSystem={(formData.sizeSystem || 'EU') as 'EU' | 'US' | 'UK' | 'CN'}
                 isSizeOptional={isSizeOptional}
-                requireSize
+                requireSize={!isSizeOptional}
                 requireImage
                 showPrice={showPurchaseOptions}
                 errors={errors}
