@@ -1209,7 +1209,7 @@ const AccountPageContent = () => {
               </p>
               {identityStatus === 'PENDING' && hasIban && (
                 <p className="text-[18px] text-yellow-600 font-medium mt-2">
-                  თქვენი IBAN გადაგზავნილია და ელოდება ადმინისტრატორის დადასტურებას.
+                  თქვენი ანგარიშის ნომერი გადაგზავნილია და ელოდება ადმინისტრატორის დადასტურებას.
                 </p>
               )}
               {identityStatus === 'REJECTED' && (
