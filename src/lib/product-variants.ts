@@ -223,6 +223,25 @@ export function findVariantBySelection(
   return variants[0] || null
 }
 
+export function getDefaultVariantSelection(
+  product: ProductWithVariants,
+): { color: string; size: string } {
+  const variants = getNormalizedVariants(product)
+  if (variants.length === 0) {
+    return { color: '', size: '' }
+  }
+
+  const preferred =
+    variants.find((variant) => (variant.stock ?? 0) > 0 && (variant.price ?? 0) > 0) ??
+    variants.find((variant) => (variant.price ?? 0) > 0) ??
+    variants[0]
+
+  return {
+    color: preferred.color?.trim() || '',
+    size: preferred.size?.trim() || '',
+  }
+}
+
 export type ProductVariantFormRow = {
   color?: string
   size?: string

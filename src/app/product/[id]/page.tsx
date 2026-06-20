@@ -44,6 +44,7 @@ import { useProductStatusSync } from "@/hooks/useProductStatusSync"
 import {
   findVariantBySelection,
   formatVariantPriceRange,
+  getDefaultVariantSelection,
   getVariantColors,
   getVariantImagesForSelection,
   getVariantSalePrices,
@@ -748,23 +749,22 @@ const ProductPage = () => {
     }
 
     useEffect(() => {
-        if (!product) return
-
-        if (hasSkuVariants) {
-            if (!selectedColor && availableColors.length === 1) {
-                setSelectedColor(availableColors[0])
-            }
-            if (!selectedSize && inStockSizes.length === 1) {
-                setSelectedSize(inStockSizes[0])
-            }
+        if (!product) {
+            setSelectedColor('')
+            setSelectedSize('')
             return
         }
 
-        if (!selectedSize) {
-            const sz = product.size || 'default'
-            if (sz) setSelectedSize(sz)
+        if (hasSkuVariants) {
+            const { color, size } = getDefaultVariantSelection(product)
+            setSelectedColor(color)
+            setSelectedSize(size)
+            return
         }
-    }, [product, activeRentalPeriods, selectedSize, selectedColor, hasSkuVariants, availableColors, inStockSizes])
+
+        setSelectedColor('')
+        setSelectedSize(product.size?.trim() || 'default')
+    }, [product?.id, hasSkuVariants])
 
     useEffect(() => {
         if (!selectedSize || !selectedSizeOption?.disabled) return
@@ -777,7 +777,8 @@ const ProductPage = () => {
             ? product?.variants.find((variant) => variant.id === selectedVariantMatch.id)
             : undefined
         : hasVariants
-            ? product?.variants[0]
+            ? findVariantBySelection(product, { size: selectedSize || null }) ??
+              product?.variants[0]
             : undefined
     const selectedPrice = selectedVariant?.price ?? 0
     const selectionComplete = hasSkuVariants
@@ -1698,15 +1699,15 @@ const ProductPage = () => {
                                             <div className="text-3xl font-bold text-black">
                                                 {selectionPriceRangeLabel}
                                             </div>
-                                        ) : variantPriceRangeLabel ? (
+                                        ) : variantPriceRangeLabel && !hasSkuVariants ? (
                                             <div className="text-3xl font-bold text-black">
                                                 {variantPriceRangeLabel}
                                             </div>
-                                        ) : (
+                                        ) : !hasSkuVariants ? (
                                             <div className="md:text-[18px] text-[16px] font-semibold text-black">
                                                 ფასის გარეშე
                                             </div>
-                                        )}
+                                        ) : null}
                                     </div>
                                     {selectedSize && !showBuyOption && (
                                         <p className="md:text-[18px] text-[16px] text-red-600 mt-2">
