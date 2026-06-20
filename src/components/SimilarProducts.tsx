@@ -139,7 +139,7 @@ const SimilarProducts: React.FC<SimilarProductsProps> = ({ productId, categoryNa
                   <div className='px-2 py-1 w-full md:w-[220px] text-[15px] flex flex-col md:flex-row items-center gap-2 flex-1'>
                     <span className='whitespace-nowrap'>დანაზოგი: ₾{getBuyerSavingsFromSellerDiscount(product.discount).toFixed(2)}</span>
                     {product.discountDays && (
-                      <span className="bg-white text-black px-3 py-1 rounded whitespace-nowrap">{product.discountDays} დღე</span>
+                      <span className="bg-white text-black px-2 py-1 rounded whitespace-nowrap">{product.discountDays} დღე</span>
                     )}
                   </div>
                 </div>
