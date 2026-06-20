@@ -62,18 +62,20 @@ export async function getVisitAnalyticsSummary() {
   const monthStart = new Date(now)
   monthStart.setDate(monthStart.getDate() - 30)
 
+  const trackedVisit = { visitorId: { not: null } }
+
   const [todayVisits, weekVisits, monthVisits, recentVisitors] =
     await Promise.all([
       prisma.siteVisit.findMany({
-        where: { createdAt: { gte: todayStart } },
+        where: { createdAt: { gte: todayStart }, ...trackedVisit },
         select: { visitorId: true },
       }),
       prisma.siteVisit.findMany({
-        where: { createdAt: { gte: weekStart } },
+        where: { createdAt: { gte: weekStart }, ...trackedVisit },
         select: { visitorId: true },
       }),
       prisma.siteVisit.findMany({
-        where: { createdAt: { gte: monthStart } },
+        where: { createdAt: { gte: monthStart }, ...trackedVisit },
         select: { visitorId: true },
       }),
       prisma.$queryRaw<

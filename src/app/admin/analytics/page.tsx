@@ -133,29 +133,37 @@ export default function AdminAnalyticsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <div className="rounded-xl border border-gray-100 p-4">
                   <p className="text-sm text-gray-600">Visitors დღეს</p>
+                  <p className="text-xs text-gray-500 mt-1">უნიკალური ვიზიტორი</p>
                   <p className="text-2xl font-bold text-black mt-1">
                     {visitAnalytics.visitorsToday}
                   </p>
                 </div>
                 <div className="rounded-xl border border-gray-100 p-4">
                   <p className="text-sm text-gray-600">Visitors (7 დღე)</p>
+                  <p className="text-xs text-gray-500 mt-1">უნიკალური ვიზიტორი</p>
                   <p className="text-2xl font-bold text-black mt-1">
                     {visitAnalytics.visitorsWeek}
                   </p>
                 </div>
                 <div className="rounded-xl border border-gray-100 p-4">
-                  <p className="text-sm text-gray-600"> ვიზიტორები  დღეს</p>
+                  <p className="text-sm text-gray-600">Page Views დღეს</p>
+                  <p className="text-xs text-gray-500 mt-1">გვერდის ნახვა</p>
                   <p className="text-2xl font-bold text-black mt-1">
                     {visitAnalytics.pageViewsToday}
                   </p>
                 </div>
-                  <div className="rounded-xl border border-gray-100 p-4">
-                    <p className="text-sm text-gray-600">გვერდების ვიზიტორები  (7 დღე)</p>
-                    <p className="text-2xl font-bold text-black mt-1">
-                      {visitAnalytics.pageViewsWeek}
-                    </p>
-                  </div>
+                <div className="rounded-xl border border-gray-100 p-4">
+                  <p className="text-sm text-gray-600">Page Views (7 დღე)</p>
+                  <p className="text-xs text-gray-500 mt-1">გვერდის ნახვა</p>
+                  <p className="text-2xl font-bold text-black mt-1">
+                    {visitAnalytics.pageViewsWeek}
+                  </p>
+                </div>
               </div>
+
+              <p className="text-sm text-gray-600 mb-4">
+                ცხრილში თითო ვიზიტორის Page Views ჩანს 7 დღეში. ზემოთ Page Views — ყველა ვიზიტორის ჯამია.
+              </p>
 
               <div className="overflow-x-auto">
                 <table className="min-w-full text-sm">
@@ -163,7 +171,7 @@ export default function AdminAnalyticsPage() {
                     <tr className="border-b border-gray-200 text-left text-black">
                       <th className="py-2 pr-4">Visitor ID</th>
                       <th className="py-2 pr-4">ქვეყანა</th>
-                      <th className="py-2 pr-4">გვერდების ვიზიტორები  (7 დღე)</th>
+                      <th className="py-2 pr-4">Page Views (7 დღე)</th>
                       <th className="py-2">ბოლო ვიზიტი</th>
                     </tr>
                   </thead>
