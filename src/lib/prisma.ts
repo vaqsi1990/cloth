@@ -4,8 +4,12 @@ import { withAccelerate } from "@prisma/extension-accelerate";
 import { generateUniqueSKU } from "@/utils/skuUtils";
 import { isAccelerateEnabled } from "@/lib/prisma-cache";
 
-function createBasePrismaClient() {
-  return new PrismaClient({
+const globalForPrisma = global as unknown as { prisma: PrismaClient };
+
+// Create base Prisma client with connection pooling optimization
+const basePrisma =
+  globalForPrisma.prisma ||
+  new PrismaClient({
     // Query logging adds noticeable overhead in dev; enable only when debugging.
     log: process.env.PRISMA_LOG_QUERIES === "true" ? ["query"] : [],
     datasources: {
@@ -14,32 +18,28 @@ function createBasePrismaClient() {
       },
     },
   });
+
+const useOptimize =
+  process.env.NODE_ENV === "production" &&
+  Boolean(process.env.OPTIMIZE_API_KEY?.trim());
+
+// Prisma Optimize is sunset (HTTP 410) — only attach when explicitly enabled in production.
+let client: PrismaClient = basePrisma;
+if (useOptimize) {
+  client = client.$extends(
+    withOptimize({
+      apiKey: process.env.OPTIMIZE_API_KEY || "",
+    }),
+  ) as unknown as PrismaClient;
 }
 
-type BasePrismaClient = ReturnType<typeof createBasePrismaClient>;
+if (isAccelerateEnabled) {
+  client = client.$extends(withAccelerate()) as unknown as PrismaClient;
+}
 
-const globalForPrisma = global as unknown as { prisma: BasePrismaClient | undefined };
-
-function createExtendedPrismaClient(base: BasePrismaClient) {
-  const useOptimize =
-    process.env.NODE_ENV === "production" &&
-    Boolean(process.env.OPTIMIZE_API_KEY?.trim());
-
-  // Prisma Optimize is sunset (HTTP 410) — only attach when explicitly enabled in production.
-  let client = base;
-  if (useOptimize) {
-    client = client.$extends(
-      withOptimize({
-        apiKey: process.env.OPTIMIZE_API_KEY || "",
-      }),
-    ) as typeof client;
-  }
-
-  if (isAccelerateEnabled) {
-    client = client.$extends(withAccelerate()) as typeof client;
-  }
-
-  return client.$extends({
+// Custom SKU generation extension
+export const prisma = client
+  .$extends({
     query: {
       product: {
         async create({ args, query }) {
@@ -60,15 +60,6 @@ function createExtendedPrismaClient(base: BasePrismaClient) {
         },
       },
     },
-  });
-}
-
-const basePrisma = globalForPrisma.prisma ?? createBasePrismaClient();
-
-export const prisma = createExtendedPrismaClient(
-  basePrisma,
-) as unknown as PrismaClient;
-
-export type ExtendedPrismaClient = typeof prisma;
+  }) as unknown as PrismaClient;
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = basePrisma;

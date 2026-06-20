@@ -153,9 +153,31 @@ function buildPurchaseTypeWhere(purchaseType: ShopPurchaseType): Prisma.Sql {
   }
 }
 
+const ACTIVE_PRODUCT_DISCOUNT = Prisma.sql`(
+  p.discount IS NOT NULL AND p.discount > 0 AND (
+    p."discountStartDate" IS NULL OR p."discountDays" IS NULL OR
+    (p."discountStartDate" + (p."discountDays" || ' days')::interval) > NOW()
+  )
+)`
+
+function effectiveVariantPriceSql(): Prisma.Sql {
+  return Prisma.sql`GREATEST(
+    pv.price::float8 - CASE WHEN ${ACTIVE_PRODUCT_DISCOUNT} THEN COALESCE(p.discount, 0)::float8 ELSE 0::float8 END,
+    0::float8
+  )`
+}
+
+function effectiveRentalTotalSql(rptAlias: string): Prisma.Sql {
+  return Prisma.sql`GREATEST(
+    (${Prisma.raw(`"${rptAlias}"`)}."pricePerDay" * ${Prisma.raw(`"${rptAlias}"`)}."minDays")::float8
+    - CASE WHEN ${ACTIVE_PRODUCT_DISCOUNT} THEN COALESCE(p.discount, 0)::float8 ELSE 0::float8 END,
+    0::float8
+  )`
+}
+
 function buildPriceRangeWhere(priceMin: number, priceMax: number): Prisma.Sql {
   const rentalTotal = Prisma.sql`(
-    SELECT (rpt."pricePerDay" * rpt."minDays")::float8
+    SELECT ${effectiveRentalTotalSql('rpt')}
     FROM "RentalPriceTier" rpt
     WHERE rpt."productId" = p.id
     ORDER BY rpt."minDays" ASC
@@ -163,29 +185,30 @@ function buildPriceRangeWhere(priceMin: number, priceMax: number): Prisma.Sql {
   )`
 
   const minBuyPrice = Prisma.sql`(
-    SELECT MIN(pv.price)::float8
+    SELECT MIN(${effectiveVariantPriceSql()})::float8
     FROM "ProductVariant" pv
     WHERE pv."productId" = p.id AND pv.price > 0
   )`
 
   const maxBuyPrice = Prisma.sql`(
-    SELECT MAX(pv.price)::float8
+    SELECT MAX(${effectiveVariantPriceSql()})::float8
     FROM "ProductVariant" pv
-    WHERE pv."productId" = p.id
+    WHERE pv."productId" = p.id AND pv.price > 0
   )`
 
   return Prisma.sql`(
     EXISTS (
       SELECT 1 FROM "ProductVariant" pv
       WHERE pv."productId" = p.id
-        AND pv.price >= ${priceMin}
-        AND pv.price <= ${priceMax}
+        AND pv.price > 0
+        AND ${effectiveVariantPriceSql()} >= ${priceMin}
+        AND ${effectiveVariantPriceSql()} <= ${priceMax}
     )
     OR EXISTS (
       SELECT 1 FROM "RentalPriceTier" rpt
       WHERE rpt."productId" = p.id
-        AND (rpt."pricePerDay" * rpt."minDays") >= ${priceMin}
-        AND (rpt."pricePerDay" * rpt."minDays") <= ${priceMax}
+        AND ${effectiveRentalTotalSql('rpt')} >= ${priceMin}
+        AND ${effectiveRentalTotalSql('rpt')} <= ${priceMax}
     )
     OR (
       COALESCE(${minBuyPrice}, ${rentalTotal}, 0) >= ${priceMin}
@@ -210,13 +233,13 @@ function buildOrderByClause(
   switch (sort) {
     case 'price-low':
       return Prisma.sql`${vipOrder}, ${featuredOrder} (
-        SELECT MIN(pv.price) FROM "ProductVariant" pv
+        SELECT MIN(${effectiveVariantPriceSql()}) FROM "ProductVariant" pv
         WHERE pv."productId" = p.id AND pv.price > 0
       ) ASC NULLS LAST, p."createdAt" DESC, p.id DESC`
     case 'price-high':
       return Prisma.sql`${vipOrder}, ${featuredOrder} (
-        SELECT MAX(pv.price) FROM "ProductVariant" pv
-        WHERE pv."productId" = p.id
+        SELECT MAX(${effectiveVariantPriceSql()}) FROM "ProductVariant" pv
+        WHERE pv."productId" = p.id AND pv.price > 0
       ) DESC NULLS LAST, p."createdAt" DESC, p.id DESC`
     case 'rating':
       return Prisma.sql`${vipOrder}, ${featuredOrder} COALESCE(p.rating, 0) DESC, p."createdAt" DESC, p.id DESC`
@@ -342,11 +365,22 @@ export async function getShopCatalogPriceMax(
       WHERE ${where}
     ),
     all_prices AS (
-      SELECT pv.price::float8 AS price
+      SELECT ${effectiveVariantPriceSql()}::float8 AS price
       FROM "ProductVariant" pv
+      INNER JOIN "Product" p ON p.id = pv."productId"
       WHERE pv."productId" IN (SELECT id FROM filtered)
+        AND pv.price > 0
       UNION ALL
-      SELECT (rpt."pricePerDay" * rpt."minDays")::float8 AS price
+      SELECT GREATEST(
+        (rpt."pricePerDay" * rpt."minDays")::float8
+        - CASE WHEN (
+          p.discount IS NOT NULL AND p.discount > 0 AND (
+            p."discountStartDate" IS NULL OR p."discountDays" IS NULL OR
+            (p."discountStartDate" + (p."discountDays" || ' days')::interval) > NOW()
+          )
+        ) THEN COALESCE(p.discount, 0)::float8 ELSE 0::float8 END,
+        0::float8
+      ) AS price
       FROM (
         SELECT DISTINCT ON (rpt."productId")
           rpt."productId",
@@ -356,6 +390,7 @@ export async function getShopCatalogPriceMax(
         WHERE rpt."productId" IN (SELECT id FROM filtered)
         ORDER BY rpt."productId", rpt."minDays" ASC
       ) rpt
+      INNER JOIN "Product" p ON p.id = rpt."productId"
     )
     SELECT MAX(price)::float8 AS max_price
     FROM all_prices

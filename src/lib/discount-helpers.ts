@@ -1,3 +1,6 @@
+import { formatVariantPriceRange } from '@/lib/product-variants'
+import { getBuyerPrice } from '@/lib/platform-pricing'
+
 export type DiscountFields = {
   discount?: number | null
   discountDays?: number | null
@@ -155,4 +158,33 @@ export function salePriceFromDiscount(
   }
 
   return Math.round((basePrice - discount) * 100) / 100
+}
+
+export function getActiveProductDiscount(
+  product: DiscountFields,
+): number | null {
+  return productHasActiveDiscount(product) ? (product.discount ?? null) : null
+}
+
+export function getBuyerDisplayPrice(
+  sellerPrice: number,
+  product: DiscountFields,
+): number {
+  return getBuyerPrice(
+    getDiscountedPrice(sellerPrice, getActiveProductDiscount(product)),
+  )
+}
+
+/** Buyer-facing min–max label; applies active product discount to each seller price. */
+export function formatBuyerProductPriceRange(
+  sellerPrices: number[],
+  product: DiscountFields,
+): string | null {
+  if (sellerPrices.length === 0) return null
+
+  const discount = getActiveProductDiscount(product)
+  const buyerPrices = sellerPrices.map((price) =>
+    getBuyerPrice(getDiscountedPrice(price, discount)),
+  )
+  return formatVariantPriceRange(buyerPrices)
 }

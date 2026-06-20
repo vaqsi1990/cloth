@@ -35,7 +35,11 @@ import { isProductVipActive } from '@/lib/product-vip'
 import { getBuyerSavingsFromSellerDiscount } from '@/lib/platform-pricing'
 import ProductSalePrice from '@/components/ProductSalePrice'
 import { formatVariantPriceRange, getVariantSalePrices } from '@/lib/product-variants'
-import { getBuyerPrice } from '@/lib/platform-pricing'
+import {
+  formatBuyerProductPriceRange,
+  getBuyerDisplayPrice,
+  productHasActiveDiscount,
+} from '@/lib/discount-helpers'
 import {
     fetchShopData,
     getShopFilterKey,
@@ -521,10 +525,12 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         const salePrices = getVariantSalePrices(product)
         if (salePrices.length === 0) {
             const rentalPrice = getRentalPrice(product)
-            return rentalPrice > 0 ? `₾${getBuyerPrice(rentalPrice).toFixed(2)}` : null
+            return rentalPrice > 0
+                ? `₾${getBuyerDisplayPrice(rentalPrice, product).toFixed(2)}`
+                : null
         }
 
-        return formatVariantPriceRange(salePrices, getBuyerPrice)
+        return formatBuyerProductPriceRange(salePrices, product)
     }
 
     const getProductPurchaseLabel = (product: Product): string | null => {
@@ -1704,8 +1710,9 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
                                                     const hasVariablePrices =
                                                         salePrices.length > 1 &&
                                                         Math.min(...salePrices) !== Math.max(...salePrices)
+                                                    const hasDiscount = productHasActiveDiscount(product)
 
-                                                    if (priceLabel && (hasVariablePrices || !product.discount)) {
+                                                    if (priceLabel && (hasVariablePrices || !hasDiscount)) {
                                                         return (
                                                             <span className="font-regular text-black md:text-[18px] text-[16px]">
                                                                 {priceLabel}
