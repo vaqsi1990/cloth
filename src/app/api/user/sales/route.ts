@@ -8,6 +8,7 @@ import {
   isSaleOrderItem,
   parseOrderItemProductSnapshot,
 } from '@/lib/order-item-snapshot'
+import { computeSellerSaleLineAmount } from '@/lib/seller-sale-amounts'
 
 function mapSaleItem(item: {
   productName: string
@@ -18,22 +19,89 @@ function mapSaleItem(item: {
   productSnapshot: Prisma.JsonValue | null
   product: {
     id: number
+    discount: number | null
+    discountDays: number | null
+    discountStartDate: Date | null
     images: Array<{ url: string }>
   } | null
 }) {
   const snapshot = parseOrderItemProductSnapshot(item.productSnapshot)
+  const buyerUnitPrice = snapshot?.price ?? item.price
+  const quantity = snapshot?.quantity ?? item.quantity
+  const { sellerUnitPrice, sellerLineTotal } = computeSellerSaleLineAmount(
+    buyerUnitPrice,
+    quantity,
+    item.product,
+  )
 
   return {
     productName: snapshot?.name || item.productName,
     size: snapshot?.size || item.size,
-    price: snapshot?.price ?? item.price,
-    quantity: snapshot?.quantity ?? item.quantity,
+    price: buyerUnitPrice,
+    sellerUnitPrice,
+    sellerLineTotal,
+    quantity,
     image:
       snapshot?.image ||
       item.image ||
       item.product?.images?.[0]?.url ||
       null,
     snapshot,
+  }
+}
+
+function mapSellerOrder(
+  order: {
+    id: number
+    items: Array<{
+      isRental: boolean | null
+      sellerUserId: string | null
+      productName: string
+      size: string | null
+      price: number
+      quantity: number
+      image: string | null
+      productSnapshot: Prisma.JsonValue | null
+      product: {
+        id: number
+        discount: number | null
+        discountDays: number | null
+        discountStartDate: Date | null
+        images: Array<{ url: string }>
+      } | null
+    }>
+    user: {
+      id: string
+      name: string | null
+      email: string | null
+      phone: string | null
+    } | null
+  } & Record<string, unknown>,
+  sellerUserId: string,
+  transactionOrderIds: number[],
+  transactionTotalByOrderId: Map<number, number>,
+) {
+  const items = order.items
+    .filter((item) => isSaleOrderItem(item.isRental))
+    .filter(
+      (item) =>
+        item.sellerUserId === sellerUserId ||
+        (!item.sellerUserId && transactionOrderIds.includes(order.id)),
+    )
+    .map(mapSaleItem)
+
+  const computedSellerTotal = items.reduce(
+    (sum, item) => sum + item.sellerLineTotal,
+    0,
+  )
+  const sellerTotal =
+    transactionTotalByOrderId.get(order.id) ?? computedSellerTotal
+
+  return {
+    ...order,
+    buyer: order.user,
+    sellerTotal,
+    items,
   }
 }
 
@@ -53,13 +121,23 @@ export async function GET(request: NextRequest) {
         type: 'SALE',
         orderId: { not: null },
       },
-      select: { orderId: true },
+      select: { orderId: true, total: true },
       orderBy: { createdAt: 'desc' },
     })
 
     const transactionOrderIds = saleTransactions
       .map((transaction) => transaction.orderId)
       .filter((id): id is number => typeof id === 'number')
+
+    const transactionTotalByOrderId = new Map<number, number>()
+    for (const transaction of saleTransactions) {
+      if (typeof transaction.orderId !== 'number') continue
+      transactionTotalByOrderId.set(
+        transaction.orderId,
+        (transactionTotalByOrderId.get(transaction.orderId) ?? 0) +
+          transaction.total,
+      )
+    }
 
     const sellerItemOrders = await prisma.order.findMany({
       where: {
@@ -85,6 +163,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         success: true,
         orders: [],
+        totalSellerIncome: 0,
       })
     }
 
@@ -107,6 +186,9 @@ export async function GET(request: NextRequest) {
             product: {
               select: {
                 id: true,
+                discount: true,
+                discountDays: true,
+                discountStartDate: true,
                 images: {
                   select: { url: true },
                   take: 1,
@@ -122,22 +204,26 @@ export async function GET(request: NextRequest) {
       },
     })
 
+    const mappedOrders = orders
+      .map((order) =>
+        mapSellerOrder(
+          order,
+          session.user.id,
+          transactionOrderIds,
+          transactionTotalByOrderId,
+        ),
+      )
+      .filter((order) => (order.items?.length ?? 0) > 0)
+
+    const totalSellerIncome = mappedOrders.reduce(
+      (sum, order) => sum + order.sellerTotal,
+      0,
+    )
+
     return NextResponse.json({
       success: true,
-      orders: orders
-        .map((order) => ({
-          ...order,
-          buyer: order.user,
-          items: order.items
-            .filter((item) => isSaleOrderItem(item.isRental))
-            .filter(
-              (item) =>
-                item.sellerUserId === session.user.id ||
-                (!item.sellerUserId && transactionOrderIds.includes(order.id)),
-            )
-            .map(mapSaleItem),
-        }))
-        .filter((order) => (order.items?.length ?? 0) > 0),
+      totalSellerIncome,
+      orders: mappedOrders,
     })
   } catch (error) {
     console.error('Error fetching sales:', error)

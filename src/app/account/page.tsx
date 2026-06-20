@@ -85,6 +85,8 @@ interface SaleOrderItem {
   productName: string
   size: string | null
   price: number
+  sellerUnitPrice?: number
+  sellerLineTotal?: number
   quantity: number
   image?: string | null
   snapshot?: OrderItemProductSnapshot | null
@@ -93,6 +95,7 @@ interface SaleOrderItem {
 interface SaleOrder {
   id: number
   total: number
+  sellerTotal?: number
   status: string
   createdAt: string
   buyer?: {
@@ -218,6 +221,7 @@ const AccountPageContent = () => {
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   const [orders, setOrders] = useState<Order[]>([])
   const [sales, setSales] = useState<SaleOrder[]>([])
+  const [totalSellerIncome, setTotalSellerIncome] = useState(0)
   const [products, setProducts] = useState<ProductItem[]>([])
   const [productsPage, setProductsPage] = useState(1)
   const [productsTotalPages, setProductsTotalPages] = useState(1)
@@ -969,6 +973,7 @@ const AccountPageContent = () => {
       const data = await response.json()
       if (data.success) {
         setSales(data.orders || [])
+        setTotalSellerIncome(data.totalSellerIncome ?? 0)
       }
     } catch (error) {
       console.error('Error fetching sales:', error)
@@ -1658,16 +1663,7 @@ const AccountPageContent = () => {
       0
     )
 
-    const totalSalesAmount = sales.reduce(
-      (sum, order) =>
-        sum +
-        (order.items?.reduce(
-          (itemSum, item) =>
-            itemSum + (item.price ?? 0) * (item.quantity ?? 1),
-          0
-        ) || 0),
-      0
-    )
+    const totalSalesAmount = totalSellerIncome
 
     return (
       <div className="space-y-6">
@@ -1709,10 +1705,14 @@ const AccountPageContent = () => {
                   minute: '2-digit'
                 })
                 const sellerTotal =
-                  order.items?.reduce(
-                    (sum, item) => sum + (item.price ?? 0) * (item.quantity ?? 1),
-                    0
-                  ) || 0
+                  order.sellerTotal ??
+                  (order.items?.reduce(
+                    (sum, item) =>
+                      sum +
+                      (item.sellerLineTotal ??
+                        (item.sellerUnitPrice ?? 0) * (item.quantity ?? 1)),
+                    0,
+                  ) ?? 0)
                 return (
                   <div key={order.id} className="border border-black rounded-lg p-4 hover:shadow-md transition-shadow">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-3">
@@ -1759,7 +1759,9 @@ const AccountPageContent = () => {
                       {order.items?.map((item, index) => {
                         const snapshot = item.snapshot
                         const itemImage = item.image || snapshot?.image || null
-                        const lineTotal = (item.price ?? 0) * (item.quantity ?? 1)
+                        const lineTotal =
+                          item.sellerLineTotal ??
+                          (item.sellerUnitPrice ?? 0) * (item.quantity ?? 1)
                         const genderLabel = formatSnapshotGender(snapshot?.gender ?? null)
 
                         return (
@@ -1814,7 +1816,10 @@ const AccountPageContent = () => {
                               </div>
 
                               <div className="mt-3 flex flex-wrap items-center gap-4 text-[15px] text-black">
-                                <span><span className="font-medium">ფასი:</span> ₾{(item.price ?? 0).toFixed(2)}</span>
+                                <span>
+                                  <span className="font-medium">ფასი:</span>{' '}
+                                  ₾{(item.sellerUnitPrice ?? 0).toFixed(2)}
+                                </span>
                                 <span><span className="font-medium">რაოდენობა:</span> {item.quantity ?? 1}</span>
                                 <span className="font-semibold text-[#1B3729]">ჯამი: ₾{lineTotal.toFixed(2)}</span>
                               </div>

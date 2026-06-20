@@ -2,11 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import {
+  calculatePlatformRevenue,
+  countCompletedOrders,
+} from '@/lib/platform-revenue'
 
 // GET - Fetch admin dashboard stats (admin only) - OPTIMIZED FOR SPEED
 export async function GET(request: NextRequest) {
   try {
-    // Check authentication and admin role
     const session = await getServerSession(authOptions)
     if (!session || session.user.role !== 'ADMIN') {
       return NextResponse.json(
@@ -15,14 +18,11 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Use Promise.all to fetch only essential counts in parallel
     const [productsCount, usersCount, ordersCount, totalRevenue] = await Promise.all([
       prisma.product.count(),
       prisma.user.count({ where: { role: 'USER' } }),
-      prisma.order.count(),
-      prisma.order.aggregate({
-        _sum: { total: true }
-      }).then(result => result._sum.total || 0)
+      countCompletedOrders(),
+      calculatePlatformRevenue(),
     ])
 
     return NextResponse.json({
