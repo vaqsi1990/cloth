@@ -9,6 +9,7 @@ import { showToast } from '@/utils/toast'
 import ChatTypingIndicator from '@/components/ChatTypingIndicator'
 import ChatUnreadBadge from '@/components/ChatUnreadBadge'
 import { useChatTyping } from '@/hooks/useChatTyping'
+import { useChatAutoScroll } from '@/hooks/useChatAutoScroll'
 import { useSupportChatNotification } from '@/components/SupportChatNotificationProvider'
 import ChatMessageContent from '@/components/ChatMessageContent'
 import ChatImageUploadButton from '@/components/ChatImageUploadButton'
@@ -47,8 +48,10 @@ const AdminChatPage = () => {
   const [chatRoomToDelete, setChatRoomToDelete] = useState<ChatRoom | null>(null)
   const [showChatList, setShowChatList] = useState(true)
   const [otherPartyTyping, setOtherPartyTyping] = useState(false)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesFetchIdRef = useRef(0)
+  const messagesContainerRef = useChatAutoScroll(messages, {
+    roomKey: selectedChatRoom?.id ?? null,
+  })
   const selectedChatRoomIdRef = useRef<number | null>(null)
   const { notifyTyping, stopTyping } = useChatTyping({
     chatRoomId: selectedChatRoom?.id,
@@ -144,11 +147,6 @@ const AdminChatPage = () => {
     setMessages([])
     messagesFetchIdRef.current += 1
   }, [selectedChatRoom?.id])
-
-  useEffect(() => {
-    if (messages.length === 0) return
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
 
   useEffect(() => {
     setActiveChatRoomId(selectedChatRoom?.id ?? null)
@@ -556,7 +554,10 @@ const AdminChatPage = () => {
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 min-h-0 overflow-y-auto bg-gray-50 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                <div
+                  ref={messagesContainerRef}
+                  className="flex-1 min-h-0 overflow-y-auto bg-gray-50 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+                >
                   <div className="p-3 sm:p-4 lg:p-6">
                     {messages.length === 0 ? (
                       <div className="text-center text-gray-500 py-12 flex flex-col items-center justify-center">
@@ -602,7 +603,6 @@ const AdminChatPage = () => {
                           </div>
                         ))}
                         <ChatTypingIndicator show={otherPartyTyping} align="start" />
-                        <div ref={messagesEndRef} />
                       </div>
                     )}
                   </div>

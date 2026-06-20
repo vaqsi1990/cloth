@@ -7,6 +7,7 @@ import { useSession } from 'next-auth/react'
 import { showToast } from '@/utils/toast'
 import ChatTypingIndicator from '@/components/ChatTypingIndicator'
 import { useChatTyping } from '@/hooks/useChatTyping'
+import { useChatAutoScroll } from '@/hooks/useChatAutoScroll'
 import ChatMessageContent from '@/components/ChatMessageContent'
 import ChatImageUploadButton from '@/components/ChatImageUploadButton'
 import ChatPendingImagePreview from '@/components/ChatPendingImagePreview'
@@ -41,7 +42,10 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
   const [isLoading, setIsLoading] = useState(false)
   const [isFetchingMessages, setIsFetchingMessages] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useChatAutoScroll(messages, {
+    enabled: isOpen && !isMinimized,
+    roomKey: chatRoomId ?? null,
+  })
   const fetchingRef = useRef(false)
   const [guestName, setGuestName] = useState('')
   const [guestEmail, setGuestEmail] = useState('')
@@ -86,13 +90,6 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
 
 
 
-
-  // Auto-scroll to bottom when new messages arrive
-  useEffect(() => {
-    if (messagesEndRef.current && !isMinimized) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
-    }
-  }, [messages, isMinimized])
 
   const fetchMessages = useCallback(async () => {
     if (!chatRoomId || chatRoomId === 0) {
@@ -208,13 +205,6 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
       setMessages([])
     }
   }, [chatRoomId, isOpen, fetchMessages])
-
-  // Auto-scroll to bottom when new messages arrive
-  useEffect(() => {
-    if (messagesEndRef.current && !isMinimized) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
-    }
-  }, [messages, isMinimized])
 
   const sendMessage = async () => {
     if (!canSendChatMessage(newMessage, pendingImageUrl)) return
@@ -441,7 +431,10 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
       {!isMinimized && (
         <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
           {/* Messages */}
-          <div className="flex-1 p-4 overflow-y-auto bg-gray-50 min-h-0">
+          <div
+            ref={messagesContainerRef}
+            className="flex-1 p-4 overflow-y-auto bg-gray-50 min-h-0"
+          >
             {isFetchingMessages && messages.length === 0 ? (
               <div className="text-center md:text-[18px] text-[16px] py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B3729] mx-auto mb-4"></div>
@@ -493,7 +486,6 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
                   </div>
                 ))}
                 <ChatTypingIndicator show={otherPartyTyping} align="start" />
-                <div ref={messagesEndRef} />
               </div>
             )}
           </div>

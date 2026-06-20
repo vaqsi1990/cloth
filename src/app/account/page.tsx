@@ -32,6 +32,7 @@ import ChatImageUploadButton from '@/components/ChatImageUploadButton'
 import ChatPendingImagePreview from '@/components/ChatPendingImagePreview'
 import { canSendChatMessage } from '@/lib/chat-message'
 import { useChatTyping } from '@/hooks/useChatTyping'
+import { useChatAutoScroll } from '@/hooks/useChatAutoScroll'
 import { isValidGeorgianIban } from '@/lib/iban'
 import { useUserChatUnreadCount } from '@/hooks/useUserChatUnreadCount'
 import { isValidPhone } from '@/lib/phone'
@@ -259,6 +260,9 @@ const AccountPageContent = () => {
   const selectedChatRoomIdRef = useRef<number | null>(null)
   const preferredChatRoomIdRef = useRef<number | null>(null)
   const chatMessagesFetchIdRef = useRef(0)
+  const chatMessagesContainerRef = useChatAutoScroll(chatMessages, {
+    roomKey: selectedChatRoom?.id ?? null,
+  })
   const productsPageRef = useRef(1)
   const productsFetchIdRef = useRef(0)
   const { notifyTyping, stopTyping } = useChatTyping({
@@ -2305,7 +2309,10 @@ const AccountPageContent = () => {
                     )}
                   </div>
                 </div>
-                <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 min-h-0">
+                <div
+                  ref={chatMessagesContainerRef}
+                  className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 min-h-0"
+                >
                   {chatMessages.map((message) => {
                     const viewerIsSeller =
                       session?.user?.id === selectedChatRoom?.adminId
