@@ -47,7 +47,7 @@ import {
   getVariantSizes,
   productHasSkuVariants,
 } from '@/lib/product-variants'
-import { isFootwearCategory } from '@/lib/product-categories'
+import { isFootwearCategory, isSizeOptionalCategory } from '@/lib/product-categories'
 import {
   calcRentalDays,
   firstAvailableRentalStartAfter,
@@ -660,6 +660,7 @@ const ProductPage = () => {
     const selfServeDatesValid = selfServeRentalValidation?.ok ?? false
 
     const hasSkuVariants = product ? productHasSkuVariants(product) : false
+    const isSizeOptionalProduct = product ? isSizeOptionalCategory(product.category) : false
     const availableColors = product ? getVariantColors(product) : []
     const availableSizes = product ? getVariantSizes(product, selectedColor || null) : []
     const selectedVariantMatch = product
@@ -766,9 +767,9 @@ const ProductPage = () => {
     const selectionComplete = hasSkuVariants
         ? Boolean(
             (availableColors.length === 0 || selectedColor) &&
-            (availableSizes.length === 0 || selectedSize),
+            (isSizeOptionalProduct || availableSizes.length === 0 || selectedSize),
           )
-        : Boolean(selectedSize)
+        : Boolean(isSizeOptionalProduct || selectedSize)
     const isProductOwner = session?.user?.id === product?.user?.id
     const pricingMode = isProductOwner ? 'seller' : 'buyer'
     const variantSalePrices = product ? getVariantSalePrices(product) : []
@@ -1756,6 +1757,7 @@ const ProductPage = () => {
                                     </div>
                                 )}
 
+                                {!isSizeOptionalProduct && (
                                 <div className="space-y-3">
                                     <h3 className="md:text-[18px] text-[16px] font-semibold text-black">
                                         {isFootwearCategory(product.category) ? 'ზომა (EU):' : 'ზომა:'}
@@ -1783,6 +1785,7 @@ const ProductPage = () => {
                                         </span>
                                     ) : null}
                                 </div>
+                                )}
                             </div>
 
                             {/* Purchase / Rent toggle + calendars */}

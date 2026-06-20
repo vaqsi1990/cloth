@@ -20,6 +20,7 @@ import {
   filterProductCategoriesByGender,
   isCategoryValidForProductGender,
   isSizeOptionalCategoryId,
+  clearVariantSizes,
   PRODUCT_GENDER_OPTIONS,
   type ProductGender,
 } from '@/lib/product-categories'
@@ -303,12 +304,22 @@ const NewProductPage = () => {
 
   const handleCategoryChange = (categoryId: number | undefined) => {
     handleInputChange('categoryId', categoryId)
+    if (isSizeOptionalCategoryId(categoryId, categories)) {
+      clearSizeFields()
+      setFormData((prev) => ({
+        ...prev,
+        size: undefined,
+        sizeSystem: undefined,
+        variants: clearVariantSizes(prev.variants),
+      }))
+      return
+    }
     if (
-      isSizeOptionalCategoryId(categoryId, categories) ||
-      (selectedSize && !isValidProductFormSize(selectedSize, formData.gender, {
+      selectedSize &&
+      !isValidProductFormSize(selectedSize, formData.gender, {
         categoryId,
         categories,
-      }))
+      })
     ) {
       clearSizeFields()
     }

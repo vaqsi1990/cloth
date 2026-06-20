@@ -26,6 +26,7 @@ import {
   collectShopFilterCategoriesForGender,
   dedupeProductCategories,
   findCategoryByParam,
+  isSizeOptionalShopContext,
   resolveCategorySlugParam,
   sortProductCategories,
   type ProductCategory,
@@ -120,6 +121,15 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
             footwearGender,
         }),
         [isChildrenShop, isFootwearShop, footwearGender],
+    )
+    const isSizeOptionalShop = React.useMemo(
+        () =>
+            isSizeOptionalShopContext({
+                categoryParam,
+                selectedCategories,
+                categories: shopCategories,
+            }),
+        [categoryParam, selectedCategories, shopCategories],
     )
     const [categoryCountsBySlug, setCategoryCountsBySlug] = useState<Record<string, number>>({})
     const [selectedLocations, setSelectedLocations] = useState<string[]>([])
@@ -363,6 +373,12 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
             return
         }
 
+        if (isSizeOptionalShop) {
+            setSelectedSizeSystems([])
+            setSelectedSizes([])
+            return
+        }
+
         if (isChildrenShop) {
             setSelectedSizeSystems([])
             setSelectedSizes((prev) => prev.filter((size) => isChildrenAgeSize(size)))
@@ -371,7 +387,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         }
 
         setSelectedSizes((prev) => prev.filter((size) => !isChildrenAgeSize(size)))
-    }, [hasRestoredState, isChildrenShop, isFootwearShop, footwearGender])
+    }, [hasRestoredState, isChildrenShop, isFootwearShop, isSizeOptionalShop, footwearGender])
 
     // Save when key filters/page change (skip until restore completes)
     useEffect(() => {
@@ -956,7 +972,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
                             <button
                                 onClick={() => {
                                     setIsMobileFilterOverlayOpen(true)
-                                    setActiveMobileFilter('size')
+                                    setActiveMobileFilter(isSizeOptionalShop ? 'gender' : 'size')
                                 }}
                                 className="flex items-center gap-1 px-3 py-2 text-[16px] font-medium text-black whitespace-nowrap hover:bg-gray-50 rounded"
                             >
@@ -993,6 +1009,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
                                     >
                                         სქესი
                                     </button>
+                                    {!isSizeOptionalShop && (
                                     <button
                                         onClick={() => setActiveMobileFilter('size')}
                                         className={`w-full text-left px-3 py-2 text-[16px] font-medium rounded mb-1 ${activeMobileFilter === 'size'
@@ -1002,6 +1019,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
                                     >
                                         {isChildrenShop ? 'ასაკი' : 'ზომა'}
                                     </button>
+                                    )}
                                     <button
                                         onClick={() => setActiveMobileFilter('color')}
                                         className={`w-full text-left px-3 py-2 text-[16px] font-medium rounded mb-1 ${activeMobileFilter === 'color'
@@ -1102,7 +1120,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
                                     </div>
                                 )}
 
-                                {activeMobileFilter === 'size' && (
+                                {activeMobileFilter === 'size' && !isSizeOptionalShop && (
                                     <div className="space-y-3">
                                         <h3 className="text-lg font-semibold text-black mb-4">
                                             {isChildrenShop ? 'ასაკი' : 'ზომა'}
@@ -1507,7 +1525,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
                             {/* Purchase Type Filter */}
 
 
-                            {/* Size Filter */}
+                            {!isSizeOptionalShop && (
                             <div className="border-b border-gray-200 pb-6">
                                 <h4 className="font-medium text-black md:text-[18px] text-[16px] mb-3">
                                     {isChildrenShop ? 'ასაკი' : 'ზომა'}
@@ -1523,6 +1541,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
                                     compact={isChildrenShop}
                                 />
                             </div>
+                            )}
 
                             {/* Location Filter (styled like type) */}
                             <div className="mb-6  pb-6">

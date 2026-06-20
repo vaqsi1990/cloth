@@ -198,8 +198,40 @@ export function isSizeOptionalCategory(category: ProductCategory | undefined | n
   if (isAccessoryCategory(category)) return true
   if (SIZE_OPTIONAL_CATEGORY_IDS.has(category.id)) return true
   if (SIZE_OPTIONAL_CATEGORY_SLUGS.has(category.slug)) return true
-  const name = category.name.toLowerCase()
-  return name.includes('კალიასკ') || name.includes('სათამაშო') || name.includes('ჩანთ')
+  const name = category.name.trim().toLowerCase()
+  if (name.includes('კალიასკ') || name.includes('სათამაშო') || name.includes('ჩანთ')) {
+    return true
+  }
+  if (name.includes('სათვალ')) return true
+  if (name.includes('აქსესუარ')) return true
+  return false
+}
+
+export function isSizeOptionalShopContext(input: {
+  categoryParam?: string | null
+  selectedCategories?: string[]
+  categories?: ProductCategory[]
+}): boolean {
+  const categories = input.categories ?? DEFAULT_PRODUCT_CATEGORIES
+
+  if (input.categoryParam) {
+    const category = findCategoryByParam(input.categoryParam, categories)
+    if (category && isSizeOptionalCategory(category)) return true
+  }
+
+  return (input.selectedCategories ?? []).some((selectedCategory) => {
+    const category =
+      categories.find((entry) => entry.name === selectedCategory) ??
+      findCategoryByParam(selectedCategory, categories)
+    if (category) return isSizeOptionalCategory(category)
+
+    const normalized = selectedCategory.trim().toLowerCase()
+    return (
+      normalized.includes('ჩანთ') ||
+      normalized.includes('სათვალ') ||
+      normalized.includes('აქსესუარ')
+    )
+  })
 }
 
 export function isSizeOptionalCategoryId(
@@ -208,6 +240,16 @@ export function isSizeOptionalCategoryId(
 ): boolean {
   if (!categoryId) return false
   return isSizeOptionalCategory(categories.find((c) => c.id === categoryId))
+}
+
+export function clearVariantSizes<T extends { size?: string | null; sizeSystem?: string | null }>(
+  variants: T[],
+): T[] {
+  return variants.map((variant) => ({
+    ...variant,
+    size: undefined,
+    sizeSystem: undefined,
+  }))
 }
 
 export function isChildrenProductCategory(

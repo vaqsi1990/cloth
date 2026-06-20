@@ -39,6 +39,7 @@ import {
   isCategoryValidForProductGender,
   isFootwearCategoryId,
   isSizeOptionalCategoryId,
+  clearVariantSizes,
   mergeProductCategoriesWithDefaults,
   PRODUCT_GENDER_OPTIONS,
 } from '@/lib/product-categories'
@@ -537,12 +538,22 @@ const EditProductPage = () => {
 
   const handleCategoryChange = (categoryId: number | undefined) => {
     handleInputChange('categoryId', categoryId)
+    if (isSizeOptionalCategoryId(categoryId, categories)) {
+      clearSizeFields()
+      setFormData((prev) => ({
+        ...prev,
+        size: undefined,
+        sizeSystem: undefined,
+        variants: clearVariantSizes(prev.variants),
+      }))
+      return
+    }
     if (
-      isSizeOptionalCategoryId(categoryId, categories) ||
-      (selectedSizeValue && !isValidProductFormSize(selectedSizeValue, formData.gender, {
+      selectedSizeValue &&
+      !isValidProductFormSize(selectedSizeValue, formData.gender, {
         categoryId,
         categories,
-      }))
+      })
     ) {
       clearSizeFields()
     }
