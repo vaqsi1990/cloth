@@ -1,6 +1,13 @@
 import type { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+const VISITOR_ID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+export function isValidVisitorId(value: string): boolean {
+  return VISITOR_ID_RE.test(value)
+}
+
 export function getClientIp(request: NextRequest): string | null {
   const forwarded = request.headers.get('x-forwarded-for')
   if (forwarded) {
@@ -16,12 +23,14 @@ export function getClientCountry(request: NextRequest): string | null {
 }
 
 export async function recordSiteVisit(input: {
+  visitorId: string
   ip: string
   path: string
   country?: string | null
 }) {
   await prisma.siteVisit.create({
     data: {
+      visitorId: input.visitorId,
       ip: input.ip,
       path: input.path.slice(0, 500),
       country: input.country ?? null,
@@ -33,6 +42,16 @@ function startOfDay(date = new Date()) {
   const d = new Date(date)
   d.setHours(0, 0, 0, 0)
   return d
+}
+
+function countUniqueVisitors(
+  rows: Array<{ visitorId: string | null }>,
+): number {
+  return new Set(
+    rows
+      .map((row) => row.visitorId)
+      .filter((id): id is string => typeof id === 'string' && id.length > 0),
+  ).size
 }
 
 export async function getVisitAnalyticsSummary() {
@@ -47,50 +66,48 @@ export async function getVisitAnalyticsSummary() {
     await Promise.all([
       prisma.siteVisit.findMany({
         where: { createdAt: { gte: todayStart } },
-        select: { ip: true },
+        select: { visitorId: true },
       }),
       prisma.siteVisit.findMany({
         where: { createdAt: { gte: weekStart } },
-        select: { ip: true },
+        select: { visitorId: true },
       }),
       prisma.siteVisit.findMany({
         where: { createdAt: { gte: monthStart } },
-        select: { ip: true },
+        select: { visitorId: true },
       }),
       prisma.$queryRaw<
         Array<{
-          ip: string
+          visitorId: string
           country: string | null
-          visits: number
+          pageViews: number
           lastSeen: Date
         }>
       >`
         SELECT
-          ip,
+          "visitorId",
           MAX(country) as country,
-          COUNT(*)::int as visits,
+          COUNT(*)::int as "pageViews",
           MAX("createdAt") as "lastSeen"
         FROM "SiteVisit"
         WHERE "createdAt" >= ${weekStart}
-        GROUP BY ip
+          AND "visitorId" IS NOT NULL
+        GROUP BY "visitorId"
         ORDER BY MAX("createdAt") DESC
         LIMIT 50
       `,
     ])
 
-  const uniqueIpsToday = new Set(todayVisits.map((row) => row.ip)).size
-  const uniqueIpsWeek = new Set(weekVisits.map((row) => row.ip)).size
-  const uniqueIpsMonth = new Set(monthVisits.map((row) => row.ip)).size
-
   return {
+    visitorsToday: countUniqueVisitors(todayVisits),
+    visitorsWeek: countUniqueVisitors(weekVisits),
+    visitorsMonth: countUniqueVisitors(monthVisits),
     pageViewsToday: todayVisits.length,
     pageViewsWeek: weekVisits.length,
-    uniqueIpsToday,
-    uniqueIpsWeek,
-    uniqueIpsMonth,
+    pageViewsMonth: monthVisits.length,
     recentVisitors: recentVisitors.map((row) => ({
-      ip: row.ip,
-      visits: row.visits,
+      visitorId: row.visitorId,
+      pageViews: row.pageViews,
       lastSeen: row.lastSeen,
       country: row.country,
     })),

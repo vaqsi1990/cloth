@@ -794,11 +794,13 @@ model VoucherRedemption {
 model SiteVisit {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
+  visitorId String?
   ip        String
   path      String
   country   String?
 
+  @@index([visitorId])
   @@index([ip])
   @@index([createdAt])
-  @@index([ip, createdAt])
+  @@index([visitorId, createdAt])
 }

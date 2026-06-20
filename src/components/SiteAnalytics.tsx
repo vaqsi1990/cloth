@@ -1,13 +1,25 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { Analytics } from '@vercel/analytics/react'
 import { isCookieCategoryAllowed } from '@/utils/cookieConsent'
 
-const VISIT_SESSION_KEY = 'dressla_visit_recorded'
+const VISITOR_ID_KEY = 'dressla_analytics_visitor_id'
+
+function getOrCreateVisitorId(): string {
+  const existing = localStorage.getItem(VISITOR_ID_KEY)
+  if (existing) return existing
+
+  const id = crypto.randomUUID()
+  localStorage.setItem(VISITOR_ID_KEY, id)
+  return id
+}
 
 export default function SiteAnalytics() {
+  const pathname = usePathname()
   const [analyticsEnabled, setAnalyticsEnabled] = useState(false)
+  const lastTrackedPathRef = useRef<string | null>(null)
 
   useEffect(() => {
     const syncConsent = () => {
@@ -31,21 +43,21 @@ export default function SiteAnalytics() {
   }, [])
 
   useEffect(() => {
-    if (!analyticsEnabled) return
-    if (typeof window === 'undefined') return
-    if (sessionStorage.getItem(VISIT_SESSION_KEY)) return
+    if (!analyticsEnabled || !pathname) return
+    if (lastTrackedPathRef.current === pathname) return
 
-    sessionStorage.setItem(VISIT_SESSION_KEY, '1')
+    lastTrackedPathRef.current = pathname
+    const visitorId = getOrCreateVisitorId()
 
     void fetch('/api/analytics/visit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: window.location.pathname }),
+      body: JSON.stringify({ path: pathname, visitorId }),
       keepalive: true,
     }).catch(() => {
-      sessionStorage.removeItem(VISIT_SESSION_KEY)
+      lastTrackedPathRef.current = null
     })
-  }, [analyticsEnabled])
+  }, [analyticsEnabled, pathname])
 
   if (!analyticsEnabled) return null
 

@@ -7,17 +7,22 @@ import Link from 'next/link'
 import { ArrowLeft, Activity } from 'lucide-react'
 
 interface VisitAnalytics {
+  visitorsToday: number
+  visitorsWeek: number
+  visitorsMonth: number
   pageViewsToday: number
   pageViewsWeek: number
-  uniqueIpsToday: number
-  uniqueIpsWeek: number
-  uniqueIpsMonth: number
+  pageViewsMonth: number
   recentVisitors: Array<{
-    ip: string
-    visits: number
+    visitorId: string
+    pageViews: number
     lastSeen: string
     country: string | null
   }>
+}
+
+function formatVisitorId(visitorId: string) {
+  return `${visitorId.slice(0, 8)}…`
 }
 
 export default function AdminAnalyticsPage() {
@@ -113,8 +118,7 @@ export default function AdminAnalyticsPage() {
             <div>
               <h1 className="text-lg sm:text-xl font-bold text-black">ანალიტიკა</h1>
               <p className="text-sm sm:text-base text-gray-600 mt-1">
-                უნიკალური IP-ები და ვიზიტები (cookie თანხმობის შემდეგ). დეტალური სტატისტიკა ასევე ჩანს Vercel Dashboard-ში.
-              </p>
+               ვიზიტორები </p>
             </div>
           </div>
 
@@ -128,38 +132,38 @@ export default function AdminAnalyticsPage() {
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <div className="rounded-xl border border-gray-100 p-4">
-                  <p className="text-sm text-gray-600">უნიკალური IP დღეს</p>
+                  <p className="text-sm text-gray-600">Visitors დღეს</p>
                   <p className="text-2xl font-bold text-black mt-1">
-                    {visitAnalytics.uniqueIpsToday}
+                    {visitAnalytics.visitorsToday}
                   </p>
                 </div>
                 <div className="rounded-xl border border-gray-100 p-4">
-                  <p className="text-sm text-gray-600">უნიკალური IP 7 დღეში</p>
+                  <p className="text-sm text-gray-600">Visitors (7 დღე)</p>
                   <p className="text-2xl font-bold text-black mt-1">
-                    {visitAnalytics.uniqueIpsWeek}
+                    {visitAnalytics.visitorsWeek}
                   </p>
                 </div>
                 <div className="rounded-xl border border-gray-100 p-4">
-                  <p className="text-sm text-gray-600">უნიკალური IP 30 დღეში</p>
-                  <p className="text-2xl font-bold text-black mt-1">
-                    {visitAnalytics.uniqueIpsMonth}
-                  </p>
-                </div>
-                <div className="rounded-xl border border-gray-100 p-4">
-                  <p className="text-sm text-gray-600">ნახვები დღეს</p>
+                  <p className="text-sm text-gray-600"> ვიზიტორები  დღეს</p>
                   <p className="text-2xl font-bold text-black mt-1">
                     {visitAnalytics.pageViewsToday}
                   </p>
                 </div>
+                  <div className="rounded-xl border border-gray-100 p-4">
+                    <p className="text-sm text-gray-600">გვერდების ვიზიტორები  (7 დღე)</p>
+                    <p className="text-2xl font-bold text-black mt-1">
+                      {visitAnalytics.pageViewsWeek}
+                    </p>
+                  </div>
               </div>
 
               <div className="overflow-x-auto">
                 <table className="min-w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-200 text-left text-black">
-                      <th className="py-2 pr-4">IP</th>
+                      <th className="py-2 pr-4">Visitor ID</th>
                       <th className="py-2 pr-4">ქვეყანა</th>
-                      <th className="py-2 pr-4">ნახვები (7 დღე)</th>
+                      <th className="py-2 pr-4">გვერდების ვიზიტორები  (7 დღე)</th>
                       <th className="py-2">ბოლო ვიზიტი</th>
                     </tr>
                   </thead>
@@ -172,10 +176,12 @@ export default function AdminAnalyticsPage() {
                       </tr>
                     ) : (
                       visitAnalytics.recentVisitors.map((visitor) => (
-                        <tr key={visitor.ip} className="border-b border-gray-100">
-                          <td className="py-2 pr-4 font-mono text-black">{visitor.ip}</td>
+                        <tr key={visitor.visitorId} className="border-b border-gray-100">
+                          <td className="py-2 pr-4 font-mono text-black" title={visitor.visitorId}>
+                            {formatVisitorId(visitor.visitorId)}
+                          </td>
                           <td className="py-2 pr-4 text-black">{visitor.country || '—'}</td>
-                          <td className="py-2 pr-4 text-black">{visitor.visits}</td>
+                          <td className="py-2 pr-4 text-black">{visitor.pageViews}</td>
                           <td className="py-2 text-black">
                             {new Date(visitor.lastSeen).toLocaleString('ka-GE')}
                           </td>
