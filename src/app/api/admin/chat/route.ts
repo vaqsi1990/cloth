@@ -45,6 +45,7 @@ export async function GET(request: NextRequest) {
       message_count: number
       last_message_isFromAdmin: boolean | null
       last_message_id: number | null
+      last_message_at: Date | null
       adminLastReadMessageId: number | null
       is_unread: boolean
     }>
@@ -81,6 +82,13 @@ export async function GET(request: NextRequest) {
             ORDER BY cm."createdAt" DESC
             LIMIT 1
           ) as last_message_id,
+          (
+            SELECT cm."createdAt"
+            FROM "ChatMessage" cm
+            WHERE cm."chatRoomId" = cr.id
+            ORDER BY cm.id DESC
+            LIMIT 1
+          ) as last_message_at,
           cr."adminLastReadMessageId",
           false as is_unread
         FROM "ChatRoom" cr
@@ -93,7 +101,7 @@ export async function GET(request: NextRequest) {
         ) mc ON mc."chatRoomId" = cr.id
         WHERE (cr."adminId" IS NULL OR a.role IN ('ADMIN', 'SUPPORT'))
           AND cr.status = ${validStatus}
-        ORDER BY cr."updatedAt" DESC
+        ORDER BY last_message_id DESC NULLS LAST, cr.id DESC
         LIMIT ${limit} OFFSET ${skip}
       `
 
@@ -134,6 +142,13 @@ export async function GET(request: NextRequest) {
             ORDER BY cm."createdAt" DESC
             LIMIT 1
           ) as last_message_id,
+          (
+            SELECT cm."createdAt"
+            FROM "ChatMessage" cm
+            WHERE cm."chatRoomId" = cr.id
+            ORDER BY cm.id DESC
+            LIMIT 1
+          ) as last_message_at,
           cr."adminLastReadMessageId",
           false as is_unread
         FROM "ChatRoom" cr
@@ -145,7 +160,7 @@ export async function GET(request: NextRequest) {
           GROUP BY "chatRoomId"
         ) mc ON mc."chatRoomId" = cr.id
         WHERE (cr."adminId" IS NULL OR a.role IN ('ADMIN', 'SUPPORT'))
-        ORDER BY cr."updatedAt" DESC
+        ORDER BY last_message_id DESC NULLS LAST, cr.id DESC
         LIMIT ${limit} OFFSET ${skip}
       `
 
@@ -164,6 +179,7 @@ export async function GET(request: NextRequest) {
       id: room.id,
       createdAt: room.createdAt,
       updatedAt: room.updatedAt,
+      lastMessageAt: room.last_message_at,
       status: room.status,
       guestName: room.guestName,
       guestEmail: room.guestEmail,

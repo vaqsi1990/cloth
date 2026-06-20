@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
       LEFT JOIN "User" a ON cr."adminId" = a.id
       LEFT JOIN "Product" p ON cr."productId" = p.id
       WHERE ${accountChatListWhereForUser(session.user.id)}
-      ORDER BY cr."updatedAt" DESC
+      ORDER BY last_message_id DESC NULLS LAST, cr.id DESC
     `
     
     // Transform the data to include messages array for compatibility

@@ -16,28 +16,41 @@ export async function markChatRoomAsRead(
   latestMessageId: number | null,
 ) {
   const readCursor = latestMessageId ?? 0
-  const data: {
-    userLastReadMessageId?: number
-    adminLastReadMessageId?: number
-    guestLastReadMessageId?: number
-  } = {}
 
   if (isAdminOrSupport(session?.user?.role) || viewerIsAdminSide) {
-    data.adminLastReadMessageId = readCursor
-  } else if (session?.user?.id && session.user.id === chatRoom.userId) {
-    data.userLastReadMessageId = readCursor
-  } else if (session?.user?.id && session.user.id === chatRoom.adminId) {
-    data.adminLastReadMessageId = readCursor
-  } else if (!session?.user?.id) {
-    data.guestLastReadMessageId = readCursor
-  } else {
+    await prisma.$executeRaw`
+      UPDATE "ChatRoom"
+      SET "adminLastReadMessageId" = ${readCursor}
+      WHERE id = ${chatRoomId}
+    `
     return
   }
 
-  await prisma.chatRoom.update({
-    where: { id: chatRoomId },
-    data,
-  })
+  if (session?.user?.id && session.user.id === chatRoom.userId) {
+    await prisma.$executeRaw`
+      UPDATE "ChatRoom"
+      SET "userLastReadMessageId" = ${readCursor}
+      WHERE id = ${chatRoomId}
+    `
+    return
+  }
+
+  if (session?.user?.id && session.user.id === chatRoom.adminId) {
+    await prisma.$executeRaw`
+      UPDATE "ChatRoom"
+      SET "adminLastReadMessageId" = ${readCursor}
+      WHERE id = ${chatRoomId}
+    `
+    return
+  }
+
+  if (!session?.user?.id) {
+    await prisma.$executeRaw`
+      UPDATE "ChatRoom"
+      SET "guestLastReadMessageId" = ${readCursor}
+      WHERE id = ${chatRoomId}
+    `
+  }
 }
 
 export function resolveViewerIsAdminSide(

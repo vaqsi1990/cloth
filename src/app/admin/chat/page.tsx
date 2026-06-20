@@ -23,6 +23,7 @@ interface ChatRoom {
   id: number
   createdAt: string
   updatedAt: string
+  lastMessageAt?: string | Date | null
   status: 'PENDING' | 'ACTIVE' | 'CLOSED'
   guestName?: string
   guestEmail?: string
@@ -476,7 +477,7 @@ const AdminChatPage = () => {
                           {room.user?.email || room.guestEmail}
                         </p>
                         <p className="text-xs sm:text-sm md:text-[16px] opacity-75 mt-1">
-                          {formatDateTime(room.updatedAt)}
+                          {formatDateTime(room.lastMessageAt || room.updatedAt)}
                         </p>
                         <div className="mt-1 sm:mt-2 flex justify-end">
                           <button
