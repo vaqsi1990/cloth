@@ -48,7 +48,8 @@ import {
   getVariantImagesForSelection,
   getVariantSalePrices,
   getVariantSalePricesForSelection,
-  getVariantSizes,
+  getVariantSizeOptions,
+  getInStockVariantSizes,
   productHasSkuVariants,
 } from '@/lib/product-variants'
 import { isFootwearCategory, isSizeOptionalCategory } from '@/lib/product-categories'
@@ -668,7 +669,9 @@ const ProductPage = () => {
     const hasSkuVariants = product ? productHasSkuVariants(product) : false
     const isSizeOptionalProduct = product ? isSizeOptionalCategory(product.category) : false
     const availableColors = product ? getVariantColors(product) : []
-    const availableSizes = product ? getVariantSizes(product, selectedColor || null) : []
+    const sizeOptions = product ? getVariantSizeOptions(product, selectedColor || null) : []
+    const inStockSizes = product ? getInStockVariantSizes(product, selectedColor || null) : []
+    const selectedSizeOption = sizeOptions.find((option) => option.value === selectedSize)
     const selectedVariantMatch = product
         ? findVariantBySelection(product, {
             color: selectedColor || null,
@@ -720,10 +723,12 @@ const ProductPage = () => {
         setActiveImage(0)
     }, [selectedColor, selectedSize])
 
-    const getAvailableSizes = () => {
+    const getAvailableSizeOptions = () => {
         if (!product) return []
-        if (hasSkuVariants) return availableSizes
-        return product.size ? [product.size] : []
+        if (hasSkuVariants) return sizeOptions
+        return product.size
+            ? [{ value: product.size, label: product.size, disabled: (product.stock ?? 0) <= 0, inStock: (product.stock ?? 0) > 0 }]
+            : []
     }
 
     const effectiveRentalPeriods =
@@ -749,8 +754,8 @@ const ProductPage = () => {
             if (!selectedColor && availableColors.length === 1) {
                 setSelectedColor(availableColors[0])
             }
-            if (!selectedSize && availableSizes.length === 1) {
-                setSelectedSize(availableSizes[0])
+            if (!selectedSize && inStockSizes.length === 1) {
+                setSelectedSize(inStockSizes[0])
             }
             return
         }
@@ -759,7 +764,12 @@ const ProductPage = () => {
             const sz = product.size || 'default'
             if (sz) setSelectedSize(sz)
         }
-    }, [product, activeRentalPeriods, selectedSize, selectedColor, hasSkuVariants, availableColors, availableSizes])
+    }, [product, activeRentalPeriods, selectedSize, selectedColor, hasSkuVariants, availableColors, inStockSizes])
+
+    useEffect(() => {
+        if (!selectedSize || !selectedSizeOption?.disabled) return
+        setSelectedSize('')
+    }, [selectedSize, selectedSizeOption?.disabled])
 
     const hasVariants = product?.variants && Array.isArray(product.variants) && product.variants.length > 0
     const selectedVariant = hasSkuVariants
@@ -773,7 +783,7 @@ const ProductPage = () => {
     const selectionComplete = hasSkuVariants
         ? Boolean(
             (availableColors.length === 0 || selectedColor) &&
-            (isSizeOptionalProduct || availableSizes.length === 0 || selectedSize),
+            (isSizeOptionalProduct || sizeOptions.length === 0 || (selectedSize && !selectedSizeOption?.disabled)),
           )
         : Boolean(isSizeOptionalProduct || selectedSize)
     const isProductOwner = session?.user?.id === product?.user?.id
@@ -959,6 +969,11 @@ const ProductPage = () => {
     const handleAddToCart = async () => {
         if (!product || !selectionComplete) return
         if (isAdding) return
+
+        if (selectedStock <= 0) {
+            showToast("ეს ზომა უკვე გაყიდულია", "warning")
+            return
+        }
         
         if (product.status === 'DAMAGED') {
             showToast("პროდუქტი დაზიანებულია და ამჟამად ხელმისაწვდომი არ არის", "warning")
@@ -997,6 +1012,11 @@ const ProductPage = () => {
     const handleBuyCheckout = async () => {
         if (!product || !selectionComplete) return
         if (isAdding) return
+
+        if (selectedStock <= 0) {
+            showToast("ეს ზომა უკვე გაყიდულია", "warning")
+            return
+        }
 
         if (product.status === 'DAMAGED') {
             showToast("პროდუქტი დაზიანებულია და ამჟამად ხელმისაწვდომი არ არის", "warning")
@@ -1584,7 +1604,7 @@ const ProductPage = () => {
                                                         ? 'ფასი არჩეული ვარიანტისთვის'
                                                         : 'ფასი არჩეული ზომისთვის'
                                                     : showPartialVariantPrice
-                                                        ? hasSkuVariants && !selectedSize && availableSizes.length > 0
+                                                        ? hasSkuVariants && !selectedSize && inStockSizes.length > 0
                                                             ? 'აირჩიეთ ზომა საბოლოო ფასისთვის'
                                                             : 'ფასი არჩეული ვარიანტისთვის'
                                                     : hasSkuVariants
@@ -1787,10 +1807,7 @@ const ProductPage = () => {
                                                     setSelectedSize(value)
                                                 }
                                             }}
-                                            options={getAvailableSizes().map((size) => ({
-                                                value: size,
-                                                label: size,
-                                            }))}
+                                            options={getAvailableSizeOptions()}
                                         />
                                     ) : product.size ? (
                                         <span className="inline-flex rounded-full border-2 border-black px-5 py-2 text-sm sm:text-base font-medium text-black">

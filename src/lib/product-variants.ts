@@ -138,16 +138,63 @@ export function getVariantColors(product: ProductWithVariants): string[] {
 }
 
 export function getVariantSizes(product: ProductWithVariants, color?: string | null): string[] {
-  const sizes = new Set<string>()
+  return getVariantSizeOptions(product, color).map((option) => option.value)
+}
+
+export type VariantSizeOption = {
+  value: string
+  label: string
+  disabled: boolean
+  inStock: boolean
+}
+
+const SIZE_OPTION_ORDER = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL']
+
+function compareVariantSizeOptions(a: VariantSizeOption, b: VariantSizeOption): number {
+  const rank = (size: string) => {
+    const index = SIZE_OPTION_ORDER.indexOf(size.trim().toUpperCase())
+    return index === -1 ? SIZE_OPTION_ORDER.length : index
+  }
+
+  const rankDiff = rank(a.value) - rank(b.value)
+  if (rankDiff !== 0) return rankDiff
+  return a.value.localeCompare(b.value, 'ka')
+}
+
+export function getVariantSizeOptions(
+  product: ProductWithVariants,
+  color?: string | null,
+): VariantSizeOption[] {
   const normalizedColor = color?.trim() || null
+  const sizeStock = new Map<string, number>()
 
   for (const variant of getNormalizedVariants(product)) {
     if (!variant.size) continue
     if (normalizedColor && variant.color !== normalizedColor) continue
-    sizes.add(variant.size)
+
+    const currentStock = sizeStock.get(variant.size) ?? 0
+    if ((variant.stock ?? 0) > currentStock) {
+      sizeStock.set(variant.size, variant.stock ?? 0)
+    }
   }
 
-  return Array.from(sizes)
+  return Array.from(sizeStock.entries())
+    .map(([size, stock]) => ({
+      value: size,
+      label: size,
+      disabled: stock <= 0,
+      inStock: stock > 0,
+    }))
+    .sort(compareVariantSizeOptions)
+}
+
+export function getInStockVariantSizes(
+  product: ProductWithVariants,
+  color?: string | null,
+): string[] {
+  return getVariantSizeOptions(product, color)
+    .filter((option) => option.inStock)
+    .map((option) => option.value)
 }
 
 export function findVariantBySelection(

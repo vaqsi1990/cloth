@@ -56,9 +56,9 @@ async function deleteEntireProductInTx(tx: TransactionClient, productId: number)
 }
 
 /**
- * Removes a single sold SKU variant and keeps the product when others remain.
+ * Marks a sold SKU variant as out of stock and keeps the row so the shop can show it disabled.
  */
-async function removeSoldSkuVariantInTx(
+async function markSoldSkuVariantInTx(
   tx: TransactionClient,
   productId: number,
   variantId: number,
@@ -67,19 +67,15 @@ async function removeSoldSkuVariantInTx(
     where: { variantId },
   })
 
-  await tx.productVariant.delete({
+  await tx.productVariant.update({
     where: { id: variantId },
+    data: { stock: 0 },
   })
 
   const remainingVariants = await tx.productVariant.findMany({
     where: { productId },
     select: { stock: true },
   })
-
-  if (remainingVariants.length === 0) {
-    await deleteEntireProductInTx(tx, productId)
-    return { deletedProduct: true as const, productId }
-  }
 
   await tx.product.update({
     where: { id: productId },
@@ -154,13 +150,11 @@ async function fulfillSoldSaleItem(item: SoldSaleItem, context: RemovalContext =
         return
       }
 
-      const result = await prisma.$transaction(async (tx) =>
-        removeSoldSkuVariantInTx(tx, item.productId, variantId),
+      await prisma.$transaction(async (tx) =>
+        markSoldSkuVariantInTx(tx, item.productId, variantId),
       )
 
-      if (!result.deletedProduct) {
-        revalidateProductCaches(item.productId, { authorId: product.userId ?? undefined })
-      }
+      revalidateProductCaches(item.productId, { authorId: product.userId ?? undefined })
       return
     }
 

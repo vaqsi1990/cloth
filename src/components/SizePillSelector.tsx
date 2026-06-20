@@ -5,6 +5,7 @@ import React from 'react'
 export type SizePillOption = {
   value: string
   label: string
+  disabled?: boolean
 }
 
 type SizePillSelectorBaseProps = {
@@ -62,16 +63,24 @@ function SizePillButtons({
     <div className="flex flex-wrap gap-2">
       {options.map((option) => {
         const selected = isSelected(option.value)
+        const isDisabled = Boolean(option.disabled)
 
         return (
           <button
             key={option.value}
             type="button"
-            onClick={() => onSelect(option.value, selected)}
-            className={`rounded-full border-2 font-medium text-black transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-1 ${pillSizeClass} ${
-              selected
-                ? 'border-black'
-                : 'border-gray-300 hover:border-gray-400'
+            disabled={isDisabled}
+            aria-disabled={isDisabled}
+            onClick={() => {
+              if (isDisabled) return
+              onSelect(option.value, selected)
+            }}
+            className={`rounded-full border-2 font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-1 ${pillSizeClass} ${
+              isDisabled
+                ? 'cursor-not-allowed border-dashed border-gray-300 text-gray-400'
+                : selected
+                  ? 'border-black text-black'
+                  : 'border-gray-300 text-black hover:border-gray-400'
             }`}
           >
             {option.label}

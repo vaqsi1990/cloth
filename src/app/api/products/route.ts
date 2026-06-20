@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { isAdminOrSupport } from '@/lib/roles'
 import { generateUniqueSKU } from '@/utils/skuUtils'
 import { ensureUniqueProductSlug } from '@/lib/productSlug'
 import {
@@ -662,7 +663,7 @@ export async function POST(request: NextRequest) {
     // Generate unique SKU for the product
     const uniqueSKU = await generateUniqueSKU()
     
-    const shouldAutoApprove = true
+    const shouldAutoApprove = isAdminOrSupport(session.user.role)
 
     const productInclude = {
       images: true,
