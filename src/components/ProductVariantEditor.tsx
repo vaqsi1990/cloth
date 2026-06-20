@@ -178,16 +178,6 @@ export default function ProductVariantEditor({
               />
             </div>
 
-            {requireImage && (
-              <div className="md:col-span-2 lg:col-span-1">
-                <VariantImageUpload
-                  value={variant.imageUrl}
-                  onChange={(url) => onUpdate(index, 'imageUrl', url)}
-                  error={errors[`variants.${index}.imageUrl`]}
-                />
-              </div>
-            )}
-
             {showPrice && (
               <div>
                 <label className="block text-[18px] text-black font-medium mb-2">ფასი (₾)</label>
@@ -207,6 +197,16 @@ export default function ProductVariantEditor({
                 {errors[`variants.${index}.price`] && (
                   <p className="text-red-500 text-sm mt-1">{errors[`variants.${index}.price`]}</p>
                 )}
+              </div>
+            )}
+
+            {requireImage && (
+              <div className="md:col-span-2 lg:col-span-1">
+                <VariantImageUpload
+                  value={variant.imageUrl}
+                  onChange={(url) => onUpdate(index, 'imageUrl', url)}
+                  error={errors[`variants.${index}.imageUrl`]}
+                />
               </div>
             )}
 
