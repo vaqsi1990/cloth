@@ -7,10 +7,15 @@ import { useSession } from 'next-auth/react'
 import { showToast } from '@/utils/toast'
 import ChatTypingIndicator from '@/components/ChatTypingIndicator'
 import { useChatTyping } from '@/hooks/useChatTyping'
+import ChatMessageContent from '@/components/ChatMessageContent'
+import ChatImageUploadButton from '@/components/ChatImageUploadButton'
+import ChatPendingImagePreview from '@/components/ChatPendingImagePreview'
+import { canSendChatMessage } from '@/lib/chat-message'
 
 interface ChatMessage {
   id: number
   content: string
+  imageUrl?: string | null
   createdAt: string
   isFromAdmin: boolean
   user?: { name: string; email: string }
@@ -32,6 +37,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
 }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [newMessage, setNewMessage] = useState('')
+  const [pendingImageUrl, setPendingImageUrl] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isFetchingMessages, setIsFetchingMessages] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
@@ -145,6 +151,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
         const transformedMessages = data.messages.map((msg: {
           id: number
           content: string
+          imageUrl?: string | null
           createdAt: string | Date
           isFromAdmin: boolean
           user_name?: string
@@ -155,6 +162,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
         }) => ({
           id: msg.id,
           content: msg.content,
+          imageUrl: msg.imageUrl ?? null,
           createdAt: typeof msg.createdAt === 'string' ? msg.createdAt : (msg.createdAt instanceof Date ? msg.createdAt.toISOString() : String(msg.createdAt)),
           isFromAdmin: msg.isFromAdmin,
           user: msg.user_name ? { name: msg.user_name, email: msg.user_email } : undefined,
@@ -209,7 +217,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
   }, [messages, isMinimized])
 
   const sendMessage = async () => {
-    if (!newMessage.trim()) return
+    if (!canSendChatMessage(newMessage, pendingImageUrl)) return
 
     // Client-side validation
     if (newMessage.trim().length > 1000) {
@@ -232,7 +240,9 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
 
     setIsLoading(true)
     const messageToSend = newMessage.trim()
+    const imageToSend = pendingImageUrl
     setNewMessage('')
+    setPendingImageUrl(null)
     stopTyping()
 
     try {
@@ -240,6 +250,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
         // Create new chat room
         const requestBody = {
           message: messageToSend,
+          imageUrl: imageToSend || undefined,
           guestName: guestName || undefined,
           guestEmail: guestEmail || undefined
         }
@@ -277,7 +288,10 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
         }
       } else {
         // Send message to existing chat room
-        const requestBody = { content: messageToSend }
+        const requestBody = {
+          content: messageToSend,
+          ...(imageToSend ? { imageUrl: imageToSend } : {}),
+        }
 
         const response = await fetch(`/api/chat/${chatRoomId}`, {
           method: 'POST',
@@ -298,6 +312,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
           const transformedMessage = {
             id: data.message.id,
             content: data.message.content,
+            imageUrl: data.message.imageUrl ?? null,
             createdAt: data.message.createdAt,
             isFromAdmin: data.message.isFromAdmin,
             user: data.message.user_name ? { name: data.message.user_name, email: data.message.user_email } : undefined,
@@ -320,6 +335,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
       console.error('Error sending message:', error)
       // Restore message if sending failed
       setNewMessage(messageToSend)
+      setPendingImageUrl(imageToSend)
 
       // Show more specific error message
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
@@ -464,7 +480,11 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
                           }
                         </p>
                       </div>
-                      <p className="text-[16px] break-words">{message.content}</p>
+                      <ChatMessageContent
+                        content={message.content}
+                        imageUrl={message.imageUrl}
+                        textClassName="text-[16px] break-words"
+                      />
                       <p className={`text-[12px] mt-2 ${message.isFromAdmin ? 'text-gray-500' : 'text-gray-300'
                         }`}>
                         {formatDateTime(message.createdAt)}
@@ -512,7 +532,17 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
 
           {/* Input */}
           <div className="flex-shrink-0 p-4 border-t border-gray-200 bg-white rounded-b-xl">
-            <div className="flex space-x-2">
+            {pendingImageUrl ? (
+              <ChatPendingImagePreview
+                imageUrl={pendingImageUrl}
+                onRemove={() => setPendingImageUrl(null)}
+              />
+            ) : null}
+            <div className="flex items-end gap-2">
+              <ChatImageUploadButton
+                onImageReady={setPendingImageUrl}
+                disabled={isLoading || Boolean(pendingImageUrl)}
+              />
               <textarea
                 value={newMessage}
                 onChange={(e) => {
@@ -528,8 +558,8 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
               />
               <button
                 onClick={sendMessage}
-                disabled={isLoading || !newMessage.trim()}
-                className="bg-[#1B3729] text-white p-2 rounded-md hover:bg-[#2a4d3a] disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+                disabled={isLoading || !canSendChatMessage(newMessage, pendingImageUrl)}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[#1B3729] text-white hover:bg-[#2a4d3a] disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                 aria-label="გაგზავნა"
               >
                 <Send className="w-4 h-4" />

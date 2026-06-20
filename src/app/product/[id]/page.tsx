@@ -32,6 +32,10 @@ import { calcRentalBuyerPayableTotal } from "@/lib/rental-inquiry"
 import StarRating from "@/components/StarRating"
 import { showToast } from "@/utils/toast"
 import ChatTypingIndicator from "@/components/ChatTypingIndicator"
+import ChatMessageContent from "@/components/ChatMessageContent"
+import ChatImageUploadButton from "@/components/ChatImageUploadButton"
+import ChatPendingImagePreview from "@/components/ChatPendingImagePreview"
+import { canSendChatMessage } from "@/lib/chat-message"
 import { useChatTyping } from "@/hooks/useChatTyping"
 import StructuredData from "@/components/StructuredData"
 import SizePillSelector from "@/components/SizePillSelector"
@@ -137,6 +141,7 @@ const ProductPage = () => {
     const [chatMessages, setChatMessages] = useState<Array<{
         id: number
         content: string
+        imageUrl?: string | null
         createdAt: string
         isFromAdmin: boolean
         userId?: string | null
@@ -146,6 +151,7 @@ const ProductPage = () => {
         admin_email?: string | null
     }>>([])
     const [newChatMessage, setNewChatMessage] = useState('')
+    const [pendingChatImageUrl, setPendingChatImageUrl] = useState<string | null>(null)
     const [sendingChatMessage, setSendingChatMessage] = useState(false)
     const [loadingChatMessages, setLoadingChatMessages] = useState(false)
     const [buyerInfo, setBuyerInfo] = useState<{ name?: string | null; email?: string | null; image?: string | null } | null>(null)
@@ -1075,18 +1081,23 @@ const ProductPage = () => {
     }
 
     const sendChatMessage = async () => {
-        if (!newChatMessage.trim() || !chatRoomId) return
+        if (!canSendChatMessage(newChatMessage, pendingChatImageUrl) || !chatRoomId) return
 
         setSendingChatMessage(true)
         const messageToSend = newChatMessage.trim()
+        const imageToSend = pendingChatImageUrl
         setNewChatMessage('')
+        setPendingChatImageUrl(null)
         stopTyping()
 
         try {
             const response = await fetch(`/api/chat/${chatRoomId}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content: messageToSend })
+                body: JSON.stringify({
+                    content: messageToSend,
+                    ...(imageToSend ? { imageUrl: imageToSend } : {}),
+                })
             })
 
             const data = await response.json()
@@ -1096,11 +1107,13 @@ const ProductPage = () => {
             } else {
                 showToast(data.error || 'შეცდომა შეტყობინების გაგზავნისას', 'error')
                 setNewChatMessage(messageToSend) // Restore message on error
+                setPendingChatImageUrl(imageToSend)
             }
         } catch (error) {
             console.error('Error sending message:', error)
             showToast('შეცდომა შეტყობინების გაგზავნისას', 'error')
             setNewChatMessage(messageToSend) // Restore message on error
+            setPendingChatImageUrl(imageToSend)
         } finally {
             setSendingChatMessage(false)
         }
@@ -2630,7 +2643,11 @@ const ProductPage = () => {
                                                         : 'bg-white text-black border border-gray-200'
                                                     }`}
                                             >
-                                                <p className="md:text-[14px] text-[12px] break-words">{message.content}</p>
+                                                <ChatMessageContent
+                                                    content={message.content}
+                                                    imageUrl={message.imageUrl}
+                                                    textClassName="md:text-[14px] text-[12px] break-words"
+                                                />
                                                 <p className={`text-xs mt-1 ${isFromAuthor ? 'text-gray-300' : 'text-gray-500'
                                                     }`}>
                                                     {new Date(message.createdAt).toLocaleTimeString('ka-GE', {
@@ -2648,7 +2665,17 @@ const ProductPage = () => {
 
                         {/* Message Input */}
                         <div className="p-4 border-t border-gray-200 bg-white rounded-b-lg">
-                            <div className="flex space-x-2">
+                            {pendingChatImageUrl ? (
+                                <ChatPendingImagePreview
+                                    imageUrl={pendingChatImageUrl}
+                                    onRemove={() => setPendingChatImageUrl(null)}
+                                />
+                            ) : null}
+                            <div className="flex items-end gap-2">
+                                <ChatImageUploadButton
+                                    onImageReady={setPendingChatImageUrl}
+                                    disabled={sendingChatMessage || Boolean(pendingChatImageUrl)}
+                                />
                                 <input
                                     type="text"
                                     value={newChatMessage}
@@ -2668,7 +2695,7 @@ const ProductPage = () => {
                                 />
                                 <button
                                     onClick={sendChatMessage}
-                                    disabled={!newChatMessage.trim() || sendingChatMessage}
+                                    disabled={!canSendChatMessage(newChatMessage, pendingChatImageUrl) || sendingChatMessage}
                                     className="px-4 py-2 bg-[#1B3729] text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity md:text-[14px] text-[12px] font-medium"
                                 >
                                     {sendingChatMessage ? '...' : 'გაგზავნა'}

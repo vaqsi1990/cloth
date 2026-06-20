@@ -15,11 +15,13 @@ import {
   markChatRoomAsRead,
   resolveViewerIsAdminSide,
 } from '@/lib/chat-mark-read'
+import {
+  normalizeChatMessageContent,
+  sendChatMessageSchema,
+} from '@/lib/chat-message'
 
 // Validation schema
-const sendMessageSchema = z.object({
-  content: z.string().min(1).max(1000)
-})
+const sendMessageSchema = sendChatMessageSchema
 
 // GET - Get messages for a chat room
 export async function GET(
@@ -96,6 +98,7 @@ export async function GET(
     const messages = await prisma.$queryRaw<Array<{
       id: number
       content: string
+      imageUrl: string | null
       createdAt: Date
       isFromAdmin: boolean
       userId: string | null
@@ -106,7 +109,7 @@ export async function GET(
       admin_email?: string
       admin_role?: string
     }>>`
-      SELECT cm.id, cm.content, cm."createdAt", cm."isFromAdmin",
+      SELECT cm.id, cm.content, cm."imageUrl", cm."createdAt", cm."isFromAdmin",
              cm."userId", cm."adminId",
              u.name as user_name, u.email as user_email,
              a.name as admin_name, a.email as admin_email, a.role as admin_role
@@ -183,6 +186,8 @@ export async function POST(
     const session = await getServerSession(authOptions)
     const body = await request.json()
     const validatedData = sendMessageSchema.parse(body)
+    const messageContent = normalizeChatMessageContent(validatedData.content)
+    const messageImageUrl = validatedData.imageUrl ?? null
 
     // Check if chat room exists and user has access
     // Admin/Support users can access any chat room
@@ -254,6 +259,7 @@ export async function POST(
     let newMessage: Array<{
       id: number
       content: string
+      imageUrl: string | null
       createdAt: Date
       isFromAdmin: boolean
       admin_name?: string
@@ -264,12 +270,13 @@ export async function POST(
       const insertedMessage = await prisma.$queryRaw<Array<{
         id: number
         content: string
+        imageUrl: string | null
         createdAt: Date
         isFromAdmin: boolean
       }>>`
-        INSERT INTO "ChatMessage" ("content", "chatRoomId", "adminId", "isFromAdmin", "createdAt")
-        VALUES (${validatedData.content}, ${chatRoomId}, ${adminId}, true, NOW())
-        RETURNING id, content, "createdAt", "isFromAdmin"
+        INSERT INTO "ChatMessage" ("content", "imageUrl", "chatRoomId", "adminId", "isFromAdmin", "createdAt")
+        VALUES (${messageContent}, ${messageImageUrl}, ${chatRoomId}, ${adminId}, true, NOW())
+        RETURNING id, content, "imageUrl", "createdAt", "isFromAdmin"
       `
       
       // Fetch admin details including role
@@ -305,12 +312,13 @@ export async function POST(
       newMessage = await prisma.$queryRaw<Array<{
         id: number
         content: string
+        imageUrl: string | null
         createdAt: Date
         isFromAdmin: boolean
       }>>`
-        INSERT INTO "ChatMessage" ("content", "chatRoomId", "userId", "isFromAdmin", "createdAt")
-        VALUES (${validatedData.content}, ${chatRoomId}, ${session?.user?.id}, false, NOW())
-        RETURNING id, content, "createdAt", "isFromAdmin"
+        INSERT INTO "ChatMessage" ("content", "imageUrl", "chatRoomId", "userId", "isFromAdmin", "createdAt")
+        VALUES (${messageContent}, ${messageImageUrl}, ${chatRoomId}, ${session?.user?.id}, false, NOW())
+        RETURNING id, content, "imageUrl", "createdAt", "isFromAdmin"
       `
     }
 
@@ -330,6 +338,7 @@ export async function POST(
     const responseMessage: {
       id: number
       content: string
+      imageUrl: string | null
       createdAt: string
       isFromAdmin: boolean
       admin_name?: string
@@ -338,6 +347,7 @@ export async function POST(
     } = {
       id: message.id,
       content: message.content,
+      imageUrl: message.imageUrl ?? null,
       createdAt: message.createdAt instanceof Date ? message.createdAt.toISOString() : String(message.createdAt),
       isFromAdmin: message.isFromAdmin
     }

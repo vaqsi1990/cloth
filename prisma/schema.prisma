@@ -678,6 +678,7 @@ model ChatMessage {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
   content   String
+  imageUrl  String?
   isFromAdmin Boolean @default(false)
   
   // Chat room this message belongs to

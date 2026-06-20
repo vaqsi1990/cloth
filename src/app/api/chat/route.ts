@@ -5,13 +5,13 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { isLiveSupportUnreadForUser, isProductChatUnreadForUser } from '@/lib/chat-unread'
 import { accountChatListWhereForUser } from '@/lib/account-product-chat'
+import {
+  createChatRoomMessageSchema,
+  normalizeChatMessageContent,
+} from '@/lib/chat-message'
 
 // Validation schemas
-const createChatRoomSchema = z.object({
-  guestName: z.string().optional(),
-  guestEmail: z.string().email().optional(),
-  message: z.string().min(1)
-})
+const createChatRoomSchema = createChatRoomMessageSchema
 
 // GET - Get user's chat rooms
 export async function GET(request: NextRequest) {
@@ -61,7 +61,12 @@ export async function GET(request: NextRequest) {
              u.name as user_name, u.email as user_email,
              a.name as admin_name, a.email as admin_email, a.role as admin_role,
              (SELECT COUNT(*) FROM "ChatMessage" WHERE "chatRoomId" = cr.id)::int as message_count,
-             (SELECT "content" FROM "ChatMessage" WHERE "chatRoomId" = cr.id ORDER BY "createdAt" DESC LIMIT 1) as last_message,
+             (SELECT CASE
+                WHEN TRIM(cm.content) <> '' THEN cm.content
+                WHEN cm."imageUrl" IS NOT NULL THEN '📷 ფოტო'
+                ELSE cm.content
+              END
+              FROM "ChatMessage" cm WHERE cm."chatRoomId" = cr.id ORDER BY cm."createdAt" DESC LIMIT 1) as last_message,
              (SELECT "isFromAdmin" FROM "ChatMessage" WHERE "chatRoomId" = cr.id ORDER BY "createdAt" DESC LIMIT 1) as last_message_isFromAdmin,
              (SELECT "userId" FROM "ChatMessage" WHERE "chatRoomId" = cr.id ORDER BY "createdAt" DESC LIMIT 1) as last_message_userId,
              (SELECT id FROM "ChatMessage" WHERE "chatRoomId" = cr.id ORDER BY "createdAt" DESC LIMIT 1) as last_message_id
@@ -149,6 +154,8 @@ export async function POST(request: NextRequest) {
     }
 
     const validatedData = createChatRoomSchema.parse(body)
+    const messageContent = normalizeChatMessageContent(validatedData.message)
+    const messageImageUrl = validatedData.imageUrl ?? null
 
     // If we have a valid user, try to reuse/create a chat room with userId
     if (userId) {
@@ -164,8 +171,8 @@ export async function POST(request: NextRequest) {
         const roomId = existingChatRoom[0].id
         
         await prisma.$executeRaw`
-          INSERT INTO "ChatMessage" ("content", "chatRoomId", "userId", "isFromAdmin", "createdAt")
-          VALUES (${validatedData.message}, ${roomId}, ${userId}, false, NOW())
+          INSERT INTO "ChatMessage" ("content", "imageUrl", "chatRoomId", "userId", "isFromAdmin", "createdAt")
+          VALUES (${messageContent}, ${messageImageUrl}, ${roomId}, ${userId}, false, NOW())
         `
 
         await prisma.$executeRaw`
@@ -192,8 +199,8 @@ export async function POST(request: NextRequest) {
       const roomId = newRoom[0].id
 
       await prisma.$executeRaw`
-        INSERT INTO "ChatMessage" ("content", "chatRoomId", "userId", "isFromAdmin", "createdAt")
-        VALUES (${validatedData.message}, ${roomId}, ${userId}, false, NOW())
+        INSERT INTO "ChatMessage" ("content", "imageUrl", "chatRoomId", "userId", "isFromAdmin", "createdAt")
+        VALUES (${messageContent}, ${messageImageUrl}, ${roomId}, ${userId}, false, NOW())
       `
 
       console.log(`✅ Created new chat room ${roomId} for user ${userId}`)
@@ -215,8 +222,8 @@ export async function POST(request: NextRequest) {
     const roomId = newRoom[0].id
 
     await prisma.$executeRaw`
-      INSERT INTO "ChatMessage" ("content", "chatRoomId", "isFromAdmin", "createdAt")
-      VALUES (${validatedData.message}, ${roomId}, false, NOW())
+      INSERT INTO "ChatMessage" ("content", "imageUrl", "chatRoomId", "isFromAdmin", "createdAt")
+      VALUES (${messageContent}, ${messageImageUrl}, ${roomId}, false, NOW())
     `
 
     return NextResponse.json({

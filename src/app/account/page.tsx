@@ -27,6 +27,10 @@ import {
 } from '@/lib/product-status-sync'
 import ChatTypingIndicator from '@/components/ChatTypingIndicator'
 import ChatUnreadBadge from '@/components/ChatUnreadBadge'
+import ChatMessageContent from '@/components/ChatMessageContent'
+import ChatImageUploadButton from '@/components/ChatImageUploadButton'
+import ChatPendingImagePreview from '@/components/ChatPendingImagePreview'
+import { canSendChatMessage } from '@/lib/chat-message'
 import { useChatTyping } from '@/hooks/useChatTyping'
 import { isValidGeorgianIban } from '@/lib/iban'
 import { useUserChatUnreadCount } from '@/hooks/useUserChatUnreadCount'
@@ -247,6 +251,7 @@ const AccountPageContent = () => {
   const [selectedChatRoom, setSelectedChatRoom] = useState<AccountChatRoom | null>(null)
   const [chatMessages, setChatMessages] = useState<any[]>([])
   const [newMessage, setNewMessage] = useState('')
+  const [pendingChatImageUrl, setPendingChatImageUrl] = useState<string | null>(null)
   const [sendingMessage, setSendingMessage] = useState(false)
   const [otherPartyTyping, setOtherPartyTyping] = useState(false)
   const selectedChatRoomIdRef = useRef<number | null>(null)
@@ -627,18 +632,23 @@ const AccountPageContent = () => {
   }
 
   const sendChatMessage = async () => {
-    if (!newMessage.trim() || !selectedChatRoom) return
+    if (!canSendChatMessage(newMessage, pendingChatImageUrl) || !selectedChatRoom) return
 
     setSendingMessage(true)
     const messageToSend = newMessage.trim()
+    const imageToSend = pendingChatImageUrl
     setNewMessage('')
+    setPendingChatImageUrl(null)
     stopTyping()
 
     try {
       const response = await fetch(`/api/chat/${selectedChatRoom.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: messageToSend })
+        body: JSON.stringify({
+          content: messageToSend,
+          ...(imageToSend ? { imageUrl: imageToSend } : {}),
+        })
       })
 
       const data = await response.json()
@@ -654,11 +664,13 @@ const AccountPageContent = () => {
             : data.error || 'შეცდომა შეტყობინების გაგზავნისას'
         showToast(errorMessage, 'error')
         setNewMessage(messageToSend) // Restore message on error
+        setPendingChatImageUrl(imageToSend)
       }
     } catch (error) {
       console.error('Error sending message:', error)
       showToast('შეცდომა შეტყობინების გაგზავნისას', 'error')
       setNewMessage(messageToSend) // Restore message on error
+      setPendingChatImageUrl(imageToSend)
     } finally {
       setSendingMessage(false)
     }
@@ -2277,7 +2289,11 @@ const AccountPageContent = () => {
                               : 'bg-gray-200 text-black'
                           }`}
                         >
-                          <p className="md:text-[16px] text-[14px] break-words">{message.content}</p>
+                          <ChatMessageContent
+                            content={message.content}
+                            imageUrl={message.imageUrl}
+                            textClassName="md:text-[16px] text-[14px] break-words"
+                          />
                           <p className={`text-xs mt-1 ${
                             isFromMe ? 'text-white/70' : 'text-gray-600'
                           }`}>
@@ -2290,7 +2306,17 @@ const AccountPageContent = () => {
                   <ChatTypingIndicator show={otherPartyTyping} align="start" />
                 </div>
                 <div className="p-3 sm:p-4 border-t border-gray-200 shrink-0">
-                  <div className="flex gap-2">
+                  {pendingChatImageUrl ? (
+                    <ChatPendingImagePreview
+                      imageUrl={pendingChatImageUrl}
+                      onRemove={() => setPendingChatImageUrl(null)}
+                    />
+                  ) : null}
+                  <div className="flex items-end gap-2">
+                    <ChatImageUploadButton
+                      onImageReady={setPendingChatImageUrl}
+                      disabled={sendingMessage || Boolean(pendingChatImageUrl)}
+                    />
                     <input
                       type="text"
                       value={newMessage}
@@ -2310,7 +2336,7 @@ const AccountPageContent = () => {
                     />
                     <button
                       onClick={sendChatMessage}
-                      disabled={!newMessage.trim() || sendingMessage}
+                      disabled={!canSendChatMessage(newMessage, pendingChatImageUrl) || sendingMessage}
                       className="shrink-0 px-4 sm:px-6 py-2 bg-[#1B3729] text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity md:text-[16px] text-[14px] font-medium"
                     >
                       {sendingMessage ? '...' : 'გაგზავნა'}

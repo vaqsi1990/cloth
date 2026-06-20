@@ -10,10 +10,15 @@ import ChatTypingIndicator from '@/components/ChatTypingIndicator'
 import ChatUnreadBadge from '@/components/ChatUnreadBadge'
 import { useChatTyping } from '@/hooks/useChatTyping'
 import { useSupportChatNotification } from '@/components/SupportChatNotificationProvider'
+import ChatMessageContent from '@/components/ChatMessageContent'
+import ChatImageUploadButton from '@/components/ChatImageUploadButton'
+import ChatPendingImagePreview from '@/components/ChatPendingImagePreview'
+import { canSendChatMessage } from '@/lib/chat-message'
 
 interface ChatMessage {
   id: number
   content: string
+  imageUrl?: string | null
   createdAt: string
   isFromAdmin: boolean
   user?: { name: string; email: string }
@@ -41,6 +46,7 @@ const AdminChatPage = () => {
   const [selectedChatRoom, setSelectedChatRoom] = useState<ChatRoom | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [newMessage, setNewMessage] = useState('')
+  const [pendingImageUrl, setPendingImageUrl] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [filterStatus, setFilterStatus] = useState<string>('')
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -114,6 +120,7 @@ const AdminChatPage = () => {
         const transformedMessages = data.messages.map((msg: {
           id: number
           content: string
+          imageUrl?: string | null
           createdAt: string
           isFromAdmin: boolean
           user_name?: string
@@ -123,6 +130,7 @@ const AdminChatPage = () => {
         }) => ({
           id: msg.id,
           content: msg.content,
+          imageUrl: msg.imageUrl ?? null,
           createdAt: msg.createdAt,
           isFromAdmin: msg.isFromAdmin,
           user: msg.user_name ? { name: msg.user_name, email: msg.user_email } : undefined,
@@ -227,18 +235,23 @@ const AdminChatPage = () => {
 
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedChatRoom) return
+    if (!canSendChatMessage(newMessage, pendingImageUrl) || !selectedChatRoom) return
 
     setIsLoading(true)
     const messageToSend = newMessage.trim()
+    const imageToSend = pendingImageUrl
     setNewMessage('')
+    setPendingImageUrl(null)
     stopTyping()
     
     try {
       const response = await fetch(`/api/chat/${selectedChatRoom.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: messageToSend })
+        body: JSON.stringify({
+          content: messageToSend,
+          ...(imageToSend ? { imageUrl: imageToSend } : {}),
+        })
       })
       
       if (!response.ok) {
@@ -251,6 +264,7 @@ const AdminChatPage = () => {
         const transformedMessage = {
           id: data.message.id,
           content: data.message.content,
+          imageUrl: data.message.imageUrl ?? null,
           createdAt: data.message.createdAt,
           isFromAdmin: data.message.isFromAdmin,
           user: data.message.user_name ? { name: data.message.user_name, email: data.message.user_email } : undefined,
@@ -273,6 +287,7 @@ const AdminChatPage = () => {
       console.error('Error sending message:', error)
       // Restore message if sending failed
       setNewMessage(messageToSend)
+      setPendingImageUrl(imageToSend)
       showToast('შეცდომა მესიჯის გაგზავნისას. სცადეთ კვლავ.', 'error')
     } finally {
       setIsLoading(false)
@@ -578,7 +593,11 @@ const AdminChatPage = () => {
                                   }
                                 </p>
                               </div>
-                              <p className="text-xs sm:text-sm md:text-[18px] break-words">{message.content}</p>
+                              <ChatMessageContent
+                                content={message.content}
+                                imageUrl={message.imageUrl}
+                                textClassName="text-xs sm:text-sm md:text-[18px] break-words"
+                              />
                               <p className={`text-xs sm:text-sm md:text-[18px] mt-1 ${
                                 message.isFromAdmin ? 'text-white' : 'text-black'
                               }`}>
@@ -596,7 +615,17 @@ const AdminChatPage = () => {
 
                 {/* Message Input */}
                 <div className="flex-shrink-0 p-3 sm:p-4 lg:p-5 border-t border-gray-200 bg-white">
-                  <div className="flex gap-2 lg:gap-3">
+                  {pendingImageUrl ? (
+                    <ChatPendingImagePreview
+                      imageUrl={pendingImageUrl}
+                      onRemove={() => setPendingImageUrl(null)}
+                    />
+                  ) : null}
+                  <div className="flex items-end gap-2 lg:gap-3">
+                    <ChatImageUploadButton
+                      onImageReady={setPendingImageUrl}
+                      disabled={isLoading || Boolean(pendingImageUrl)}
+                    />
                     <textarea
                       value={newMessage}
                       onChange={(e) => {
@@ -612,7 +641,7 @@ const AdminChatPage = () => {
                     />
                     <button
                       onClick={sendMessage}
-                      disabled={isLoading || !newMessage.trim()}
+                      disabled={isLoading || !canSendChatMessage(newMessage, pendingImageUrl)}
                       className="bg-[#1B3729] text-white px-4 sm:px-5 lg:px-6 py-3 sm:py-3.5 lg:py-4 rounded-lg hover:bg-[#2a4d3a] disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex-shrink-0 flex items-center justify-center"
                     >
                       <Send className="w-4 h-4 sm:w-5 sm:h-5" />
