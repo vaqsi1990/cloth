@@ -158,7 +158,7 @@ const NewProductPage = () => {
     stock: 0,
     gender: '',
     color: '',
-    location: '',
+    location: 'თბილისი',
     allowsPickup: false,
     pickupAddress: undefined,
     sizeSystem: undefined,

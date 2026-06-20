@@ -45,3 +45,11 @@ export function getDeliverySpeedLabel(speed: DeliverySpeedOption): string {
   const option = DELIVERY_SPEED_OPTIONS.find((item) => item.value === speed)
   return option ? `${option.label} (${option.daysLabel})` : ''
 }
+
+export const DEFAULT_DELIVERY_CITY_NAME = 'თბილისი'
+
+export function findDefaultDeliveryCity<T extends { id: number; name: string }>(
+  cities: T[],
+): T | null {
+  return cities.find((city) => city.name === DEFAULT_DELIVERY_CITY_NAME) ?? null
+}

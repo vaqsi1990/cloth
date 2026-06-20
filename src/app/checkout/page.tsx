@@ -13,6 +13,7 @@ import DeliveryOptions, { DeliveryCityOption } from '@/components/DeliveryOption
 import {
     DeliverySpeedOption,
     DeliveryType,
+    findDefaultDeliveryCity,
     getDeliveryPriceForCity,
     getDeliverySpeedLabel,
 } from '@/lib/delivery'
@@ -70,7 +71,7 @@ const CheckoutPage = () => {
         email: '',
         phone: '',
         address: '',
-        city: ''
+        city: 'თბილისი'
     })
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
     
@@ -159,10 +160,39 @@ const CheckoutPage = () => {
     useEffect(() => {
         if (!pickupAvailable && deliveryType === 'pickup') {
             setDeliveryType('delivery')
-            setSelectedDeliveryCityId(null)
-            setDeliverySpeed(null)
         }
     }, [pickupAvailable, deliveryType])
+
+    useEffect(() => {
+        if (cart?.delivery?.cityId) return
+        if (selectedDeliveryCityId !== null) return
+        if (deliveryCities.length === 0) return
+
+        const needsDelivery = !pickupAvailable || deliveryType === 'delivery'
+        if (!needsDelivery) return
+
+        const defaultCity = findDefaultDeliveryCity(deliveryCities)
+        if (!defaultCity) return
+
+        const nextSpeed: DeliverySpeedOption = deliverySpeed || 'standard'
+        setSelectedDeliveryCityId(defaultCity.id)
+        setFormData((prev) => ({ ...prev, city: defaultCity.name }))
+        setDeliverySpeed(nextSpeed)
+
+        void updateCartDelivery({
+            deliveryType: 'delivery',
+            deliveryCityId: defaultCity.id,
+            deliverySpeed: nextSpeed,
+        })
+    }, [
+        cart?.delivery?.cityId,
+        selectedDeliveryCityId,
+        deliveryCities,
+        pickupAvailable,
+        deliveryType,
+        deliverySpeed,
+        updateCartDelivery,
+    ])
 
     // Pre-fill checkout from authenticated user's profile
     useEffect(() => {
