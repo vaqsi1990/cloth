@@ -8,7 +8,10 @@ export const PRODUCT_PRICE_REQUIRED_MESSAGE =
   'მინიმუმ ერთი ფასი უნდა იყოს მითითებული — ქირაობის (დღეში) ან გაყიდვის'
 
 export const PRODUCT_PRICING_MODE_REQUIRED_MESSAGE =
-  'აირჩიეთ გაქირავება ან გაყიდვა (ან ორივე)'
+  'აირჩიეთ გაქირავება ან გაყიდვა'
+
+export const PRODUCT_PRICING_MODE_EXCLUSIVE_MESSAGE =
+  'პროდუქტი ან იყიდება, ან იქირავება — ორივე ერთდროულად არ შეიძლება'
 
 export const MIN_PRODUCT_PRICE = 15
 
@@ -120,6 +123,17 @@ function collectMinPriceFieldErrors(data: ProductPricingInput): Record<string, s
   return errors
 }
 
+export function hasBothProductPricingModes(data: ProductPricingInput): boolean {
+  const hasRentalPrice =
+    Array.isArray(data.rentalPriceTiers) &&
+    data.rentalPriceTiers.some((tier) => (tier.pricePerDay ?? 0) > 0)
+  const hasSalePrice =
+    Array.isArray(data.variants) &&
+    data.variants.some((variant) => (variant.price ?? 0) > 0)
+
+  return hasRentalPrice && hasSalePrice
+}
+
 export function hasProductPricing(data: ProductPricingInput): boolean {
   if ((data.pricePerDay ?? 0) > 0) {
     return true
@@ -149,6 +163,8 @@ export function getProductCreateFieldErrors(data: {
   if (data.isSkuVariantProduct) {
     if (!data.showPurchaseOptions && !data.showRentalOptions) {
       errors.pricingMode = PRODUCT_PRICING_MODE_REQUIRED_MESSAGE
+    } else if (data.showPurchaseOptions && data.showRentalOptions) {
+      errors.pricingMode = PRODUCT_PRICING_MODE_EXCLUSIVE_MESSAGE
     }
 
     Object.assign(
@@ -157,6 +173,10 @@ export function getProductCreateFieldErrors(data: {
     )
   } else if (!data.imageUrls || data.imageUrls.length === 0) {
     errors.imageUrls = PRODUCT_IMAGE_REQUIRED_MESSAGE
+  } else if (data.showPurchaseOptions && data.showRentalOptions) {
+    errors.pricingMode = PRODUCT_PRICING_MODE_EXCLUSIVE_MESSAGE
+  } else if (!data.showPurchaseOptions && !data.showRentalOptions) {
+    errors.pricingMode = PRODUCT_PRICING_MODE_REQUIRED_MESSAGE
   }
 
   const pricingCheckData: ProductPricingInput = { ...data }
@@ -225,6 +245,15 @@ export function refineProductImagesAndPricing(
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: PRODUCT_PRICE_REQUIRED_MESSAGE,
+      path: ['rentalPriceTiers'],
+    })
+    return
+  }
+
+  if (hasBothProductPricingModes(data)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: PRODUCT_PRICING_MODE_EXCLUSIVE_MESSAGE,
       path: ['rentalPriceTiers'],
     })
     return

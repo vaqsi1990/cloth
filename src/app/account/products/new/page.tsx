@@ -47,7 +47,13 @@ import {
   getVariantImageUrls,
   type ProductVariantFormRow,
 } from '@/lib/product-variants'
-import { prepareProductPricingSubmit } from '@/lib/product-form-pricing'
+import {
+  buildPricingModeFormPatch,
+  flagsToProductPricingMode,
+  prepareProductPricingSubmit,
+  productPricingModeToFlags,
+  type ProductPricingMode,
+} from '@/lib/product-form-pricing'
 import ProductPhotoBackgroundConsent from '@/components/ProductPhotoBackgroundConsent'
 import { PRODUCT_PHOTO_BACKGROUND_CONSENT_ERROR } from '@/components/ProductPhotoBackgroundConsent'
 import { getProductDiscountBasePrice } from '@/lib/discount-helpers'
@@ -185,7 +191,7 @@ const NewProductPage = () => {
   const [wantsVip, setWantsVip] = useState(false)
   const [agreedToPhotoBackgroundChange, setAgreedToPhotoBackgroundChange] = useState(false)
   const [showPurchaseOptions, setShowPurchaseOptions] = useState(false)
-  const [showRentalOptions, setShowRentalOptions] = useState(false)
+  const [showRentalOptions, setShowRentalOptions] = useState(true)
   const [showVariantOptions, setShowVariantOptions] = useState(false)
   const productListingType: ProductListingType = showVariantOptions ? 'multi' : 'simple'
 
@@ -195,7 +201,8 @@ const NewProductPage = () => {
 
     if (!isMulti) {
       setFormData((prev) => ({ ...prev, variants: [] }))
-      setShowRentalOptions(false)
+      setShowPurchaseOptions(false)
+      setShowRentalOptions(true)
       return
     }
 
@@ -482,26 +489,29 @@ const NewProductPage = () => {
     }))
   }
 
-  const handlePurchaseOptionsChange = (checked: boolean) => {
-    setShowPurchaseOptions(checked)
-    if (showVariantOptions) {
-      if (!checked) {
-        setFormData((prev) => ({
-          ...prev,
-          variants: prev.variants.map((variant) => ({ ...variant, price: 0 })),
-        }))
-      }
-      return
-    }
-    if (!checked) {
-      setFormData((prev) => ({ ...prev, variants: [] }))
-    } else if (formData.variants.length === 0) {
-      addVariant()
-    }
-  }
+  const pricingMode = flagsToProductPricingMode(showPurchaseOptions, showRentalOptions)
 
-  const handleRentalOptionsChange = (checked: boolean) => {
-    setShowRentalOptions(checked)
+  const handlePricingModeChange = (mode: ProductPricingMode) => {
+    const flags = productPricingModeToFlags(mode)
+    setShowPurchaseOptions(flags.showPurchaseOptions)
+    setShowRentalOptions(flags.showRentalOptions)
+
+    setFormData((prev) => {
+      const patch = buildPricingModeFormPatch(mode, {
+        variants: prev.variants,
+        rentalPriceTiers: prev.rentalPriceTiers,
+      })
+      const nextVariants =
+        mode === 'purchase' && !showVariantOptions && prev.variants.length === 0
+          ? [{ price: 0, stock: prev.stock || 1 }]
+          : patch.variants
+
+      return {
+        ...prev,
+        ...patch,
+        variants: nextVariants,
+      }
+    })
   }
 
   const removeVariant = (index: number) => {
@@ -938,15 +948,11 @@ const NewProductPage = () => {
             onChange={handleProductListingTypeChange}
           />
 
-          {showVariantOptions && (
-            <ProductMultiPricingSelector
-              showPurchaseOptions={showPurchaseOptions}
-              showRentalOptions={showRentalOptions}
-              onPurchaseChange={handlePurchaseOptionsChange}
-              onRentalChange={handleRentalOptionsChange}
-              error={errors.pricingMode}
-            />
-          )}
+          <ProductMultiPricingSelector
+            pricingMode={pricingMode}
+            onPricingModeChange={handlePricingModeChange}
+            error={errors.pricingMode}
+          />
 
           {showVariantOptions && (
             <div className="bg-white rounded-lg shadow-sm p-6">
@@ -970,9 +976,9 @@ const NewProductPage = () => {
           )}
 
           {/* Rental Options */}
-          {(!showVariantOptions || showRentalOptions) && (
+          {showRentalOptions && (
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <ProductMinPriceNotice className="mb-4" />
+            <ProductMinPriceNotice mode="rental" className="mb-4" />
             <h2 className="md:text-[20px] text-[18px] text-black font-semibold mb-6">გაქირავება</h2>
 
 
@@ -1072,31 +1078,23 @@ const NewProductPage = () => {
           </div>
           )}
 
-          {!showVariantOptions && (
+          {!showVariantOptions && showPurchaseOptions && (
           <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex justify-between items-center mb-6">
-              <label className="flex items-center gap-3 text-[20px] text-black font-semibold cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={showPurchaseOptions}
-                  onChange={(e) => handlePurchaseOptionsChange(e.target.checked)}
-                  className="h-5 w-5"
-                />
-                <span>გაყიდვა</span>
-              </label>
-              {showPurchaseOptions && (
-                <button
-                  type="button"
-                  onClick={addVariant}
-                  className="bg-black text-white px-4 font-bold py-2 rounded-lg text-[20px] text-black flex items-center space-x-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>დამატება</span>
-                </button>
-              )}
+              <h2 className="text-[20px] text-black font-semibold">გაყიდვა</h2>
+              <button
+                type="button"
+                onClick={addVariant}
+                className="bg-black text-white px-4 font-bold py-2 rounded-lg text-[20px] text-black flex items-center space-x-2"
+              >
+                <Plus className="w-4 h-4" />
+                <span>დამატება</span>
+              </button>
             </div>
 
-            {showPurchaseOptions && formData.variants.map((variant, index) => (
+            <ProductMinPriceNotice mode="purchase" className="mb-4" />
+
+            {formData.variants.map((variant, index) => (
               <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border border-gray-200 rounded-lg mb-4">
                 <div>
                   <label className="block text-[20px] text-black font-medium mb-2">ფასი</label>
@@ -1124,7 +1122,7 @@ const NewProductPage = () => {
               </div>
             ))}
 
-            {showPurchaseOptions && formData.variants.length === 0 && (
+            {formData.variants.length === 0 && (
               <p className="text-sm text-gray-500">თქვენ შეგიძლიათ დაამატოთ განსხვავებული გაყიდვის ფასები.</p>
             )}
 

@@ -517,9 +517,8 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         )
         const canBuy = Boolean(product.variants?.some((variant) => (variant.price ?? 0) > 0))
 
-        if (canRent && canBuy) return 'ქირავდება და იყიდება'
-        if (canRent) return 'ქირავდება'
         if (canBuy) return 'იყიდება'
+        if (canRent) return 'ქირავდება'
         return null
     }
 

@@ -788,9 +788,11 @@ const ProductPage = () => {
     )
     const partialSelectionPrice =
         selectionSalePrices.length === 1 ? selectionSalePrices[0] : null
-    const showExactVariantPrice = Boolean(canBuyProduct && selectionComplete && selectedPrice > 0)
+    const productIsForSale = canBuyProduct
+    const productIsForRent = Boolean(canRent && !canBuyProduct)
+    const showExactVariantPrice = Boolean(productIsForSale && selectionComplete && selectedPrice > 0)
     const showPartialVariantPrice = Boolean(
-        canBuyProduct &&
+        productIsForSale &&
         !showExactVariantPrice &&
         partialSelectionPrice &&
         hasSkuVariants &&
@@ -803,7 +805,7 @@ const ProductPage = () => {
         product?.status === 'RENTED' ||
         product?.status === 'RESERVED' ||
         typeof product?.status === 'undefined'
-    const showRentOption = Boolean(canRent && rentStatusAllowed)
+    const showRentOption = Boolean(productIsForRent && rentStatusAllowed)
     const selectedStock = hasSkuVariants
         ? (selectedVariantMatch?.stock ?? 0)
         : (product?.stock ?? 0)
@@ -811,25 +813,25 @@ const ProductPage = () => {
     useEffect(() => {
         if (!product) return
 
-        if (purchaseMode === 'rent' && !canRent) {
-            if (canBuyProduct) {
+        if (purchaseMode === 'rent' && !productIsForRent) {
+            if (productIsForSale) {
                 setPurchaseMode('buy')
             }
             return
         }
 
-        if (product.status === 'RENTED' && purchaseMode === 'buy' && canRent) {
+        if (product.status === 'RENTED' && purchaseMode === 'buy' && productIsForRent) {
             setPurchaseMode('rent')
             return
         }
 
         if (purchaseMode === 'buy') {
-            if (!canBuyProduct && canRent) {
+            if (!productIsForSale && productIsForRent) {
                 setPurchaseMode('rent')
                 return
             }
             if (hasSkuVariants) {
-                if (selectionComplete && selectedPrice === 0 && canRent) {
+                if (selectionComplete && selectedPrice === 0 && productIsForRent) {
                     setPurchaseMode('rent')
                 }
                 return
@@ -837,12 +839,12 @@ const ProductPage = () => {
             if (selectedSize && product.variants && product.variants.length > 0) {
                 const variant = product.variants[0]
                 const price = variant?.price ?? 0
-                if (price === 0 && canRent) {
+                if (price === 0 && productIsForRent) {
                     setPurchaseMode('rent')
                 }
             }
         }
-    }, [product, purchaseMode, selectedSize, selectedColor, selectionComplete, selectedPrice, hasSkuVariants, canRent, canBuyProduct])
+    }, [product, purchaseMode, selectedSize, selectedColor, selectionComplete, selectedPrice, hasSkuVariants, productIsForRent, productIsForSale])
 
     const handleColorClick = (color: string) => {
         if (product?.status !== 'MAINTENANCE' && product?.status !== 'DAMAGED') {

@@ -1,20 +1,18 @@
 'use client'
 
 import React from 'react'
+import type { ProductPricingMode } from '@/lib/product-form-pricing'
+import { MIN_PRODUCT_PRICE } from '@/lib/product-create-validation'
 
 type ProductMultiPricingSelectorProps = {
-  showPurchaseOptions: boolean
-  showRentalOptions: boolean
-  onPurchaseChange: (checked: boolean) => void
-  onRentalChange: (checked: boolean) => void
+  pricingMode: ProductPricingMode | null
+  onPricingModeChange: (mode: ProductPricingMode) => void
   error?: string
 }
 
 export default function ProductMultiPricingSelector({
-  showPurchaseOptions,
-  showRentalOptions,
-  onPurchaseChange,
-  onRentalChange,
+  pricingMode,
+  onPricingModeChange,
   error,
 }: ProductMultiPricingSelectorProps) {
   return (
@@ -23,52 +21,58 @@ export default function ProductMultiPricingSelector({
         გაქირავება თუ გაყიდვა
       </h2>
       <p className="text-sm text-gray-600 mb-4">
-        აირჩიეთ მინიმუმ ერთი — შეგიძლიათ ორივეც ერთდროულად.
+        აირჩიეთ ერთ-ერთი — პროდუქტი ან იყიდება, ან იქირავება.
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <label
           className={`flex items-start gap-3 rounded-xl border-2 p-4 cursor-pointer transition ${
-            showRentalOptions ? 'border-[#1B3729] bg-emerald-50' : 'border-gray-200 hover:border-gray-300'
+            pricingMode === 'rental'
+              ? 'border-[#1B3729] bg-emerald-50'
+              : 'border-gray-200 hover:border-gray-300'
           }`}
         >
           <input
-            type="checkbox"
-            checked={showRentalOptions}
-            onChange={(e) => onRentalChange(e.target.checked)}
+            type="radio"
+            name="product-pricing-mode"
+            checked={pricingMode === 'rental'}
+            onChange={() => onPricingModeChange('rental')}
             className="mt-1 h-5 w-5"
           />
           <span>
             <span className="block md:text-[18px] text-[16px] font-semibold text-black">გაქირავება</span>
             <span className="block text-sm text-gray-600 mt-1">
-              ფასის გეგმა ქვემოთ — ყველა ვარიანტისთვის
+              ფასის გეგმა ქვემოთ — მინ. {MIN_PRODUCT_PRICE} ₾/დღე
             </span>
           </span>
         </label>
 
         <label
           className={`flex items-start gap-3 rounded-xl border-2 p-4 cursor-pointer transition ${
-            showPurchaseOptions ? 'border-[#1B3729] bg-emerald-50' : 'border-gray-200 hover:border-gray-300'
+            pricingMode === 'purchase'
+              ? 'border-[#1B3729] bg-emerald-50'
+              : 'border-gray-200 hover:border-gray-300'
           }`}
         >
           <input
-            type="checkbox"
-            checked={showPurchaseOptions}
-            onChange={(e) => onPurchaseChange(e.target.checked)}
+            type="radio"
+            name="product-pricing-mode"
+            checked={pricingMode === 'purchase'}
+            onChange={() => onPricingModeChange('purchase')}
             className="mt-1 h-5 w-5"
           />
           <span>
             <span className="block md:text-[18px] text-[16px] font-semibold text-black">გაყიდვა</span>
             <span className="block text-sm text-gray-600 mt-1">
-              თითოეულ ვარიანტს ცალკე გაყიდვის ფასი
+              გაყიდვის ფასი ქვემოთ (მინ. {MIN_PRODUCT_PRICE} ₾)
             </span>
           </span>
         </label>
       </div>
 
-      {showPurchaseOptions && (
+      {pricingMode === 'purchase' && (
         <p className="text-sm text-[#1B3729] font-medium mt-4">
-          გაყიდვის ფასის ველი გამოჩნდება თითოეულ ვარიანტზე ქვემოთ.
+          გაყიდვის ფასის ველი გამოჩნდება ქვემოთ.
         </p>
       )}
 

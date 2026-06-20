@@ -13,6 +13,7 @@ import {
 import type { ProductCategory, ProductGender } from '@/lib/product-categories'
 import VariantImageUpload from '@/components/VariantImageUpload'
 import SizePillSelector from '@/components/SizePillSelector'
+import ProductMinPriceNotice from '@/components/ProductMinPriceNotice'
 
 export type { ProductVariantFormRow } from '@/lib/product-variants'
 
@@ -54,6 +55,7 @@ export default function ProductVariantEditor({
 
   return (
     <div className="space-y-4">
+      {showPrice && <ProductMinPriceNotice mode="purchase" className="mb-2" />}
       <div className="flex justify-between items-center">
         <div>
           <h3 className="text-[20px] text-black font-semibold">ვარიანტები (ფერი / ზომა)</h3>

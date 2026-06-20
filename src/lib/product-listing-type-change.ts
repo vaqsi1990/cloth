@@ -58,9 +58,13 @@ export function applyProductListingTypeChange(input: {
     return {
       showVariantOptions: false,
       showPurchaseOptions:
-        input.showPurchaseOptions || hasSalePricing(simple.variants),
+        input.showPurchaseOptions && !input.showRentalOptions
+          ? true
+          : hasSalePricing(simple.variants) && !hasRentalPricing(input.formData),
       showRentalOptions:
-        input.showRentalOptions || hasRentalPricing(input.formData),
+        input.showRentalOptions && !input.showPurchaseOptions
+          ? true
+          : hasRentalPricing(input.formData) && !hasSalePricing(simple.variants),
       formData: {
         ...input.formData,
         color: simple.color ?? input.color,
@@ -85,9 +89,13 @@ export function applyProductListingTypeChange(input: {
   return {
     showVariantOptions: true,
     showPurchaseOptions:
-      input.showPurchaseOptions || hasSalePricing(multiVariants),
+      input.showPurchaseOptions && !input.showRentalOptions
+        ? true
+        : hasSalePricing(multiVariants) && !hasRentalPricing(input.formData),
     showRentalOptions:
-      input.showRentalOptions || hasRentalPricing(input.formData),
+      input.showRentalOptions && !input.showPurchaseOptions
+        ? true
+        : hasRentalPricing(input.formData) && !hasSalePricing(multiVariants),
     formData: {
       ...input.formData,
       variants: multiVariants,

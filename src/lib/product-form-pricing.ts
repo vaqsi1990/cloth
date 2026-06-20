@@ -5,6 +5,8 @@ export type RentalPriceTierFormRow = {
   pricePerDay: number
 }
 
+export type ProductPricingMode = 'purchase' | 'rental'
+
 export function productVariantsHaveSalePrice(
   variants: Array<{ price?: number | null }>,
 ): boolean {
@@ -30,6 +32,69 @@ export function deriveShowRentalOptionsFromProduct(input: {
   return Boolean(input.isRentable && productHasRentalPricing(input.rentalPriceTiers))
 }
 
+export function productPricingModeToFlags(mode: ProductPricingMode): {
+  showPurchaseOptions: boolean
+  showRentalOptions: boolean
+} {
+  return {
+    showPurchaseOptions: mode === 'purchase',
+    showRentalOptions: mode === 'rental',
+  }
+}
+
+export function flagsToProductPricingMode(
+  showPurchaseOptions: boolean,
+  showRentalOptions: boolean,
+): ProductPricingMode | null {
+  if (showPurchaseOptions && showRentalOptions) return 'purchase'
+  if (showPurchaseOptions) return 'purchase'
+  if (showRentalOptions) return 'rental'
+  return null
+}
+
+export function resolveExclusivePricingFlagsFromProduct(input: {
+  variants: Array<{ price?: number | null }>
+  isRentable?: boolean
+  rentalPriceTiers?: Array<{ pricePerDay?: number | null }> | null
+}): { showPurchaseOptions: boolean; showRentalOptions: boolean } {
+  const showPurchaseOptions = deriveShowPurchaseOptionsFromVariants(input.variants)
+  const showRentalOptions = deriveShowRentalOptionsFromProduct(input)
+
+  if (showPurchaseOptions && showRentalOptions) {
+    return { showPurchaseOptions: true, showRentalOptions: false }
+  }
+
+  return { showPurchaseOptions, showRentalOptions }
+}
+
+export function buildPricingModeFormPatch(
+  mode: ProductPricingMode,
+  input: {
+    variants: ProductVariantFormRow[]
+    rentalPriceTiers?: RentalPriceTierFormRow[] | null
+  },
+): {
+  isRentable: boolean
+  rentalPriceTiers: RentalPriceTierFormRow[]
+  variants: ProductVariantFormRow[]
+} {
+  if (mode === 'purchase') {
+    return {
+      isRentable: false,
+      rentalPriceTiers: [{ minDays: 1, pricePerDay: 0 }],
+      variants: input.variants.map((variant) => ({ ...variant })),
+    }
+  }
+
+  return {
+    isRentable: true,
+    rentalPriceTiers: productHasRentalPricing(input.rentalPriceTiers)
+      ? (input.rentalPriceTiers || [{ minDays: 1, pricePerDay: 0 }])
+      : [{ minDays: 1, pricePerDay: 0 }],
+    variants: input.variants.map((variant) => ({ ...variant, price: 0 })),
+  }
+}
+
 export function prepareProductPricingSubmit(input: {
   showVariantOptions: boolean
   showPurchaseOptions: boolean
@@ -37,10 +102,12 @@ export function prepareProductPricingSubmit(input: {
   variants: Array<ProductVariantFormRow & { discount?: number }>
   rentalPriceTiers?: RentalPriceTierFormRow[] | null
 }) {
-  const rentalEnabled = !input.showVariantOptions || Boolean(input.showRentalOptions)
+  const saleEnabled = Boolean(input.showPurchaseOptions && !input.showRentalOptions)
+  const rentalEnabled = input.showVariantOptions
+    ? Boolean(input.showRentalOptions && !input.showPurchaseOptions)
+    : Boolean(input.showRentalOptions && !input.showPurchaseOptions)
   const hasRentalPrice =
     rentalEnabled && productHasRentalPricing(input.rentalPriceTiers)
-  const saleEnabled = input.showPurchaseOptions
 
   let variantsToSubmit: Array<ProductVariantFormRow & { discount?: number }>
   if (input.showVariantOptions) {
@@ -55,7 +122,7 @@ export function prepareProductPricingSubmit(input: {
         : []
   }
 
-  const hasSalePrice = productVariantsHaveSalePrice(variantsToSubmit)
+  const hasSalePrice = saleEnabled && productVariantsHaveSalePrice(variantsToSubmit)
 
   return {
     hasRentalPrice,
