@@ -26,7 +26,7 @@ const RulesPage = () => {
         },
         { 
             id: 'terms', 
-            label: 'ვადები და პირობები', 
+            label: 'წესები და პირობები', 
             icon: FileText 
         },
         { 

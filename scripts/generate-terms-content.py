@@ -101,7 +101,7 @@ def main() -> None:
         "export default function TermsContent() {",
         "    return (",
         '                        <div className="space-y-6">',
-        '                            <h2 className="text-2xl font-bold mb-6">ვადები და პირობები</h2>',
+        '                            <h2 className="text-2xl font-bold mb-6">წესები და პირობები</h2>',
         "",
         section_open(),
         *paras(lines[1:8]),
