@@ -17,9 +17,11 @@ interface ProductSalePriceProps {
 
 const sizeClasses = {
   sm: {
+    original: 'font-regular text-gray-500 md:text-[16px] text-[14px]',
     sale: 'font-regular text-red-600 md:text-[18px] text-[16px]',
   },
   lg: {
+    original: 'text-xl font-medium text-gray-500',
     sale: 'text-3xl font-bold text-red-600',
   },
 }
@@ -67,6 +69,11 @@ export default function ProductSalePrice({
   }
 
   return (
-    <span className={`${classes.sale} ${className}`}>₾{sale.toFixed(2)}</span>
+    <span className={`inline-flex flex-wrap items-baseline gap-x-2 ${className}`}>
+      <span className={`${classes.original} line-through`}>
+        ₾{original.toFixed(2)}
+      </span>
+      <span className={classes.sale}>₾{sale.toFixed(2)}</span>
+    </span>
   )
 }

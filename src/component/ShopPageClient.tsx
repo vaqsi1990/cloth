@@ -32,7 +32,7 @@ import {
   type ProductCategory,
 } from '@/lib/product-categories'
 import { isProductVipActive } from '@/lib/product-vip'
-import { getBuyerSavingsFromSellerDiscount } from '@/lib/platform-pricing'
+import { getBuyerPrice, getBuyerSavingsFromSellerDiscount } from '@/lib/platform-pricing'
 import ProductSalePrice from '@/components/ProductSalePrice'
 import { formatVariantPriceRange, getVariantSalePrices } from '@/lib/product-variants'
 import {
@@ -531,6 +531,16 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         }
 
         return formatBuyerProductPriceRange(salePrices, product)
+    }
+
+    const getProductListOriginalPriceLabel = (product: Product): string | null => {
+        const salePrices = getVariantSalePrices(product)
+        if (salePrices.length === 0) {
+            const rentalPrice = getRentalPrice(product)
+            return rentalPrice > 0 ? `₾${getBuyerPrice(rentalPrice).toFixed(2)}` : null
+        }
+
+        return formatVariantPriceRange(salePrices, getBuyerPrice)
     }
 
     const getProductPurchaseLabel = (product: Product): string | null => {
@@ -1706,11 +1716,26 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
                                             <div className="flex items-center justify-between gap-2">
                                                 {(() => {
                                                     const priceLabel = getProductListPriceLabel(product)
+                                                    const originalPriceLabel =
+                                                        getProductListOriginalPriceLabel(product)
                                                     const salePrices = getVariantSalePrices(product)
                                                     const hasVariablePrices =
                                                         salePrices.length > 1 &&
                                                         Math.min(...salePrices) !== Math.max(...salePrices)
                                                     const hasDiscount = productHasActiveDiscount(product)
+
+                                                    if (hasDiscount && priceLabel && originalPriceLabel) {
+                                                        return (
+                                                            <span className="inline-flex flex-wrap items-baseline gap-x-2">
+                                                                <span className="font-regular text-gray-500 line-through md:text-[16px] text-[14px]">
+                                                                    {originalPriceLabel}
+                                                                </span>
+                                                                <span className="font-regular text-red-600 md:text-[18px] text-[16px]">
+                                                                    {priceLabel}
+                                                                </span>
+                                                            </span>
+                                                        )
+                                                    }
 
                                                     if (priceLabel && (hasVariablePrices || !hasDiscount)) {
                                                         return (

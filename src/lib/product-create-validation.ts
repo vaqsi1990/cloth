@@ -1,5 +1,9 @@
 import { z } from 'zod'
 import { validateSkuVariantRows } from '@/lib/product-variants'
+import {
+  getProductDiscountBasePrice,
+  salePriceFromDiscount,
+} from '@/lib/discount-helpers'
 
 export const PRODUCT_IMAGE_REQUIRED_MESSAGE =
   'სურათის ატვირთვა აუცილებელია'
@@ -19,6 +23,14 @@ export const PRODUCT_MIN_PRICE_MESSAGE = `პროდუქტის მინ�
 
 export const RENTAL_MIN_PRICE_PER_DAY_MESSAGE = `დღის ფასი არ უნდა იყოს ${MIN_PRODUCT_PRICE} ₾-ზე ნაკლები`
 
+export const PRODUCT_DISCOUNT_NOT_ALLOWED_MESSAGE = `₾${MIN_PRODUCT_PRICE}-იან ან მასზე ნაკლები ფასის პროდუქტზე ფასდაკლების დაყენება შეუძლებელია`
+
+export const PRODUCT_DISCOUNT_MIN_SALE_PRICE_MESSAGE = `ახალი ფასი არ უნდა იყოს ₾${MIN_PRODUCT_PRICE}-ზე ნაკლები`
+
+export function canApplyProductDiscount(basePrice: number): boolean {
+  return basePrice > MIN_PRODUCT_PRICE
+}
+
 const PRODUCT_FORM_FIELD_LABELS: Record<string, string> = {
   name: 'სახელი',
   description: 'აღწერა',
@@ -26,6 +38,7 @@ const PRODUCT_FORM_FIELD_LABELS: Record<string, string> = {
   imageUrls: 'სურათები',
   rentalPriceTiers: 'ფასის გეგმა',
   pricingMode: 'ფასდაკლება',
+  discount: 'ფასდაკლება',
   photoBackgroundConsent: 'თანხმობა',
   variants: 'ვარიანტები',
 }
@@ -93,6 +106,34 @@ type ProductPricingInput = {
   pricePerDay?: number | null
   variants?: Array<{ price?: number | null }>
   rentalPriceTiers?: Array<{ minDays?: number; pricePerDay?: number | null }> | null
+  discount?: number | null
+  discountDays?: number | null
+}
+
+function collectDiscountFieldErrors(data: ProductPricingInput): Record<string, string> {
+  const errors: Record<string, string> = {}
+  const hasDiscount = typeof data.discount === 'number' && data.discount > 0
+
+  if (!hasDiscount) {
+    return errors
+  }
+
+  const { basePrice } = getProductDiscountBasePrice(
+    data.variants || [],
+    (data.rentalPriceTiers || []) as Array<{ minDays: number; pricePerDay: number }>,
+  )
+
+  if (!canApplyProductDiscount(basePrice)) {
+    errors.discount = PRODUCT_DISCOUNT_NOT_ALLOWED_MESSAGE
+    return errors
+  }
+
+  const salePrice = salePriceFromDiscount(basePrice, data.discount)
+  if (salePrice !== undefined && salePrice < MIN_PRODUCT_PRICE) {
+    errors.discount = PRODUCT_DISCOUNT_MIN_SALE_PRICE_MESSAGE
+  }
+
+  return errors
 }
 
 function collectMinPriceFieldErrors(data: ProductPricingInput): Record<string, string> {
@@ -197,6 +238,8 @@ export function getProductCreateFieldErrors(data: {
     Object.assign(errors, collectMinPriceFieldErrors(pricingCheckData))
   }
 
+  Object.assign(errors, collectDiscountFieldErrors(data))
+
   return errors
 }
 
@@ -276,6 +319,14 @@ export function refineProductImagesAndPricing(
       code: z.ZodIssueCode.custom,
       message,
       path: zodPath,
+    })
+  }
+
+  for (const [pathKey, message] of Object.entries(collectDiscountFieldErrors(data))) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message,
+      path: pathKey === 'discount' ? ['discount'] : [pathKey],
     })
   }
 }

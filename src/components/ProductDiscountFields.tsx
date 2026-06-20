@@ -6,6 +6,12 @@ import {
   getProductDiscountBasePrice,
   salePriceFromDiscount,
 } from '@/lib/discount-helpers'
+import {
+  canApplyProductDiscount,
+  MIN_PRODUCT_PRICE,
+  PRODUCT_DISCOUNT_MIN_SALE_PRICE_MESSAGE,
+  PRODUCT_DISCOUNT_NOT_ALLOWED_MESSAGE,
+} from '@/lib/product-create-validation'
 
 interface ProductDiscountFieldsProps {
   variants: Array<{ price?: number | null }>
@@ -33,10 +39,30 @@ export default function ProductDiscountFields({
   inputClassName = 'w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none',
 }: ProductDiscountFieldsProps) {
   const { basePrice, priceType } = getProductDiscountBasePrice(variants, rentalPriceTiers)
+  const discountAllowed = canApplyProductDiscount(basePrice)
+  const maxSalePrice = discountAllowed
+    ? Math.max(MIN_PRODUCT_PRICE, basePrice - 0.01)
+    : basePrice
   const [salePriceInput, setSalePriceInput] = useState('')
+  const [localError, setLocalError] = useState('')
   const prevBasePriceRef = useRef<number | null>(null)
   const prevDiscountRef = useRef<number | null | undefined>(undefined)
   const hasSyncedDiscountRef = useRef(false)
+
+  useEffect(() => {
+    if (!discountAllowed && (discount || discountDays)) {
+      onDiscountChange(undefined)
+      onDiscountDaysChange(undefined)
+      setSalePriceInput('')
+      setLocalError('')
+    }
+  }, [
+    discountAllowed,
+    discount,
+    discountDays,
+    onDiscountChange,
+    onDiscountDaysChange,
+  ])
 
   // Sync sale input when discount changes externally (load, clear, manual % field elsewhere).
   useEffect(() => {
@@ -46,14 +72,14 @@ export default function ProductDiscountFields({
     hasSyncedDiscountRef.current = true
     prevDiscountRef.current = discount
 
-    if (!discount || discount <= 0) {
+    if (!discount || discount <= 0 || !discountAllowed) {
       setSalePriceInput('')
       return
     }
 
     const salePrice = salePriceFromDiscount(basePrice, discount)
     setSalePriceInput(salePrice !== undefined ? String(salePrice) : '')
-  }, [discount, basePrice])
+  }, [discount, basePrice, discountAllowed])
 
   // When base (old) price changes, keep the sale price fixed and update discount amount only.
   useEffect(() => {
@@ -69,12 +95,12 @@ export default function ProductDiscountFields({
     prevBasePriceRef.current = basePrice
 
     const trimmed = salePriceInput.trim()
-    if (!trimmed) {
+    if (!trimmed || !discountAllowed) {
       return
     }
 
     const parsed = parseFloat(trimmed)
-    if (Number.isNaN(parsed) || parsed <= 0) {
+    if (Number.isNaN(parsed) || parsed < MIN_PRODUCT_PRICE) {
       return
     }
 
@@ -82,12 +108,30 @@ export default function ProductDiscountFields({
     if (nextDiscount !== discount) {
       onDiscountChange(nextDiscount)
     }
-  }, [basePrice, salePriceInput, discount, onDiscountChange])
+  }, [basePrice, salePriceInput, discount, discountAllowed, onDiscountChange])
+
+  const applySalePrice = (parsed: number) => {
+    if (parsed < MIN_PRODUCT_PRICE) {
+      setLocalError(PRODUCT_DISCOUNT_MIN_SALE_PRICE_MESSAGE)
+      onDiscountChange(undefined)
+      return
+    }
+
+    if (parsed >= basePrice) {
+      setLocalError('ახალი ფასი უნდა იყოს მიმდინარე ფასზე ნაკლები')
+      onDiscountChange(undefined)
+      return
+    }
+
+    setLocalError('')
+    onDiscountChange(discountFromSalePrice(basePrice, parsed))
+  }
 
   const handleSalePriceChange = (value: string) => {
     setSalePriceInput(value)
 
     if (!value.trim()) {
+      setLocalError('')
       onDiscountChange(undefined)
       return
     }
@@ -97,7 +141,7 @@ export default function ProductDiscountFields({
       return
     }
 
-    onDiscountChange(discountFromSalePrice(basePrice, parsed))
+    applySalePrice(parsed)
   }
 
   const savings =
@@ -113,12 +157,21 @@ export default function ProductDiscountFields({
       ? 'ჯერ მიუთითეთ გაყიდვის ან გაქირავების ფასი, შემდეგ შეძლებთ ახალი ფასის დაყენებას.'
       : ''
 
+  const displayError = localError || discountError
+
   return (
     <div className="space-y-4">
       <h3 className="text-[20px] text-black font-semibold">ფასდაკლება</h3>
 
       {basePrice <= 0 ? (
         <p className="text-sm text-gray-600">{emptyPriceMessage}</p>
+      ) : !discountAllowed ? (
+        <>
+          <p className="text-sm text-gray-600">
+            {currentPriceLabel}: <span className="font-medium text-black">₾{basePrice.toFixed(2)}</span>
+          </p>
+          <p className="text-sm text-amber-700">{PRODUCT_DISCOUNT_NOT_ALLOWED_MESSAGE}</p>
+        </>
       ) : (
         <>
           <p className="text-sm text-gray-600">
@@ -135,16 +188,19 @@ export default function ProductDiscountFields({
               <label className={labelClassName}>ახალი ფასი (₾)</label>
               <input
                 type="number"
-                min="0"
+                min={MIN_PRODUCT_PRICE}
                 step="0.01"
-                max={basePrice - 0.01}
+                max={maxSalePrice}
                 value={salePriceInput}
                 onChange={(e) => handleSalePriceChange(e.target.value)}
-                placeholder={`მაგ: ${(basePrice * 0.8).toFixed(2)}`}
+                placeholder={`მაგ: ${Math.max(MIN_PRODUCT_PRICE, basePrice - 1).toFixed(2)}`}
                 className={inputClassName}
               />
-              {discountError && (
-                <p className="text-red-500 text-sm mt-1">{discountError}</p>
+              <p className="text-xs text-gray-500 mt-1">
+                მინიმუმ ₾{MIN_PRODUCT_PRICE.toFixed(2)}
+              </p>
+              {displayError && (
+                <p className="text-red-500 text-sm mt-1">{displayError}</p>
               )}
             </div>
 
@@ -169,7 +225,7 @@ export default function ProductDiscountFields({
             </div>
           </div>
 
-          {savings && savings > 0 && salePriceInput && (
+          {savings && savings > 0 && salePriceInput && !displayError && (
             <p className="text-sm text-gray-600">
               დანაზოგი: <span className="font-medium text-red-600">₾{savings.toFixed(2)}</span>
               {salePriceInput && (
