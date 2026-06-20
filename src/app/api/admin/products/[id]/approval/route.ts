@@ -46,7 +46,7 @@ export async function PUT(
 
     const product = await prisma.product.findUnique({
       where: { id: productId },
-      select: { id: true }
+      select: { id: true, approvalStatus: true },
     })
 
     if (!product) {
@@ -61,7 +61,13 @@ export async function PUT(
       data: {
         approvalStatus: status,
         approvedAt: status === 'APPROVED' ? new Date() : null,
-        rejectionReason: status === 'REJECTED' ? reason : null
+        rejectionReason: status === 'REJECTED' ? reason.trim() : null,
+        ...(status === 'REJECTED'
+          ? {
+              featuredOnHomepage: false,
+              homepageFeaturedAt: null,
+            }
+          : {}),
       },
       include: {
         images: true,
@@ -74,7 +80,8 @@ export async function PUT(
 
     return NextResponse.json({
       success: true,
-      product: updatedProduct
+      product: updatedProduct,
+      previousApprovalStatus: product.approvalStatus,
     })
   } catch (error) {
     console.error('Error updating product approval status:', error)

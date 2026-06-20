@@ -21,6 +21,11 @@ import {
   type ProductGender,
 } from '@/lib/product-categories'
 import { markAdminSectionSeen } from '@/lib/admin-dashboard-seen'
+import {
+  getAdminApprovalLabel,
+  PRODUCT_REJECT_REASON_PROMPT,
+  PRODUCT_SEND_BACK_REASON_PROMPT,
+} from '@/lib/product-approval'
 interface RentalPeriod {
   startDate: string
   endDate: string
@@ -321,25 +326,25 @@ const AdminProductsPage = () => {
     return statusMap[status || ''] || 'თავისუფალია'
   }
 
-  const getApprovalStatusLabel = (status?: 'PENDING' | 'APPROVED' | 'REJECTED') => {
-    const map = {
-      PENDING: 'ველოდებით დამტკიცებას',
-      APPROVED: 'დამტკიცებულია',
-      REJECTED: 'უარყოფილია'
-    } as const
-    return map[status || 'PENDING']
-  }
+  const getApprovalStatusLabel = (status?: 'PENDING' | 'APPROVED' | 'REJECTED') =>
+    getAdminApprovalLabel(status)
 
   const handleApprovalAction = async (
     productId: number,
-    status: 'APPROVED' | 'REJECTED'
+    status: 'APPROVED' | 'REJECTED',
+    options?: {
+      reasonPrompt?: string
+      successMessage?: string
+    },
   ) => {
     let reason: string | undefined
 
     if (status === 'REJECTED') {
-      const rejectionInput = prompt('გთხოვთ მიუთითოთ უარყოფის მიზეზი:')?.trim()
+      const rejectionInput = prompt(
+        options?.reasonPrompt ?? PRODUCT_REJECT_REASON_PROMPT,
+      )?.trim()
       if (!rejectionInput) {
-        showToast('უარყოფის მიზეზი სავალდებულოა', 'warning')
+        showToast('კომენტარი სავალდებულოა', 'warning')
         return
       }
       reason = rejectionInput
@@ -365,15 +370,20 @@ const AdminProductsPage = () => {
                     ...product,
                     approvalStatus: data.product.approvalStatus,
                     rejectionReason: data.product.rejectionReason,
+                    featuredOnHomepage:
+                      data.product.approvalStatus === 'REJECTED'
+                        ? false
+                        : product.featuredOnHomepage,
                   }
                 : product,
             ),
           ),
         )
         showToast(
-          status === 'APPROVED'
-            ? 'პროდუქტი წარმატებით დამტკიცდა'
-            : 'პროდუქტი უარყოფილია',
+          options?.successMessage ??
+            (status === 'APPROVED'
+              ? 'პროდუქტი წარმატებით დამტკიცდა'
+              : 'პროდუქტი უარყოფილია'),
           'success'
         )
       } else {
@@ -385,6 +395,13 @@ const AdminProductsPage = () => {
     } finally {
       setApprovalUpdatingId(null)
     }
+  }
+
+  const handleSendBackToAuthor = (productId: number) => {
+    handleApprovalAction(productId, 'REJECTED', {
+      reasonPrompt: PRODUCT_SEND_BACK_REASON_PROMPT,
+      successMessage: 'პროდუქტი ავტორთან დაბრუნდა',
+    })
   }
 
   const handleHomepageFeaturedToggle = async (
@@ -723,7 +740,7 @@ const AdminProductsPage = () => {
                           </span>
                           {product.approvalStatus === 'REJECTED' && product.rejectionReason && (
                             <span className="text-xs sm:text-sm md:text-[16px] text-red-700 break-words">
-                              მიზეზი: {product.rejectionReason}
+                              კომენტარი: {product.rejectionReason}
                             </span>
                           )}
                           {product.discount && product.discount > 0 && (
@@ -790,27 +807,39 @@ const AdminProductsPage = () => {
                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2 sm:ml-4">
                         <div className="flex flex-row sm:flex-col sm:space-y-2 gap-2 sm:mr-4">
                           {product.approvalStatus === 'APPROVED' && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleHomepageFeaturedToggle(
-                                  product.id,
-                                  !product.featuredOnHomepage,
-                                )
-                              }
-                              disabled={homepageFeaturedUpdatingId === product.id}
-                              className={`px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm md:text-[18px] disabled:opacity-50 whitespace-nowrap ${
-                                product.featuredOnHomepage
-                                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                                  : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                              }`}
-                            >
-                              {homepageFeaturedUpdatingId === product.id
-                                ? 'ინახება...'
-                                : product.featuredOnHomepage
-                                  ? 'მთავრიდან მოხსნა'
-                                  : 'მთავარ გვერდზე'}
-                            </button>
+                            <>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleHomepageFeaturedToggle(
+                                    product.id,
+                                    !product.featuredOnHomepage,
+                                  )
+                                }
+                                disabled={homepageFeaturedUpdatingId === product.id}
+                                className={`px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm md:text-[18px] disabled:opacity-50 whitespace-nowrap ${
+                                  product.featuredOnHomepage
+                                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                    : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                                }`}
+                              >
+                                {homepageFeaturedUpdatingId === product.id
+                                  ? 'ინახება...'
+                                  : product.featuredOnHomepage
+                                    ? 'მთავრიდან მოხსნა'
+                                    : 'მთავარ გვერდზე'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleSendBackToAuthor(product.id)}
+                                disabled={approvalUpdatingId === product.id}
+                                className="px-3 py-2 bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 transition-colors text-xs sm:text-sm md:text-[18px] disabled:opacity-50 whitespace-nowrap"
+                              >
+                                {approvalUpdatingId === product.id
+                                  ? 'იგზავნება...'
+                                  : 'ავტორთან დაბრუნება'}
+                              </button>
+                            </>
                           )}
                           {product.approvalStatus !== 'APPROVED' && (
                             <>

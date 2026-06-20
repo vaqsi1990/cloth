@@ -21,6 +21,7 @@ import {
   getCartItemPayablePrice,
 } from '@/lib/cart-item-pricing'
 import { formatOwnerProductPriceLabel, processExpiredDiscount } from '@/lib/discount-helpers'
+import { getSellerApprovalLabel } from '@/lib/product-approval'
 import {
   broadcastProductStatusUpdate,
   type ProductStatusValue,
@@ -1177,13 +1178,7 @@ const AccountPageContent = () => {
     return statusMap[status] || status
   }
 
-  const getProductApprovalLabel = (
-    status?: 'PENDING' | 'APPROVED' | 'REJECTED'
-  ) => {
-    if (status === 'APPROVED') return 'დამტკიცებულია'
-    if (status === 'REJECTED') return 'უარყოფილია'
-    return 'ველოდებით დამტკიცებას'
-  }
+  const getProductApprovalLabel = getSellerApprovalLabel
 
   const renderProfileTab = () => (
     <div className="space-y-6">
@@ -1930,19 +1925,19 @@ const AccountPageContent = () => {
                         product.approvalStatus === 'APPROVED'
                           ? ' text-green-500'
                           : product.approvalStatus === 'REJECTED'
-                            ? ' text-red-500'
+                            ? ' text-amber-600'
                             : ' text-yellow-500'
                       }`}
                     >
                       {getProductApprovalLabel(product.approvalStatus)}
                     </span>
                     {product.approvalStatus === 'REJECTED' && (
-                      <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 space-y-1">
-                        <p className="text-[16px] text-red-800 font-medium">
-                          უარყოფის მიზეზი: {product.rejectionReason?.trim() || 'მიზეზი არ არის მითითებული'}
+                      <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 space-y-1">
+                        <p className="text-[16px] text-amber-900 font-medium">
+                          საჭირო ცვლილებები: {product.rejectionReason?.trim() || 'კომენტარი არ არის მითითებული'}
                         </p>
-                        <p className="text-[15px] text-red-700">
-                          შეცვალეთ პროდუქტი ან გაგზავნეთ ხელახლა დამტკიცებაზე.
+                        <p className="text-[15px] text-amber-800">
+                          შეცვალეთ პროდუქტი და გაგზავნეთ ხელახლა დამტკიცებაზე.
                         </p>
                       </div>
                     )}

@@ -19,6 +19,11 @@ import {
   resolveCanonicalCategorySlug,
   type ProductGender,
 } from '@/lib/product-categories'
+import {
+  getAdminApprovalLabel,
+  PRODUCT_REJECT_REASON_PROMPT,
+  PRODUCT_SEND_BACK_REASON_PROMPT,
+} from '@/lib/product-approval'
 
 interface RentalPeriod {
   startDate: string
@@ -296,25 +301,25 @@ const SupportProductsPage = () => {
     return statusMap[status || ''] || 'თავისუფალია'
   }
 
-  const getApprovalStatusLabel = (status?: 'PENDING' | 'APPROVED' | 'REJECTED') => {
-    const map = {
-      PENDING: 'ველოდებით დამტკიცებას',
-      APPROVED: 'დამტკიცებულია',
-      REJECTED: 'უარყოფილია'
-    } as const
-    return map[status || 'PENDING']
-  }
+  const getApprovalStatusLabel = (status?: 'PENDING' | 'APPROVED' | 'REJECTED') =>
+    getAdminApprovalLabel(status)
 
   const handleApprovalAction = async (
     productId: number,
-    status: 'APPROVED' | 'REJECTED'
+    status: 'APPROVED' | 'REJECTED',
+    options?: {
+      reasonPrompt?: string
+      successMessage?: string
+    },
   ) => {
     let reason: string | undefined
 
     if (status === 'REJECTED') {
-      const rejectionInput = prompt('გთხოვთ მიუთითოთ უარყოფის მიზეზი:')?.trim()
+      const rejectionInput = prompt(
+        options?.reasonPrompt ?? PRODUCT_REJECT_REASON_PROMPT,
+      )?.trim()
       if (!rejectionInput) {
-        showToast('უარყოფის მიზეზი სავალდებულოა', 'warning')
+        showToast('კომენტარი სავალდებულოა', 'warning')
         return
       }
       reason = rejectionInput
@@ -346,9 +351,10 @@ const SupportProductsPage = () => {
           ),
         )
         showToast(
-          status === 'APPROVED'
-            ? 'პროდუქტი წარმატებით დამტკიცდა'
-            : 'პროდუქტი უარყოფილია',
+          options?.successMessage ??
+            (status === 'APPROVED'
+              ? 'პროდუქტი წარმატებით დამტკიცდა'
+              : 'პროდუქტი უარყოფილია'),
           'success'
         )
       } else {
@@ -360,6 +366,13 @@ const SupportProductsPage = () => {
     } finally {
       setApprovalUpdatingId(null)
     }
+  }
+
+  const handleSendBackToAuthor = (productId: number) => {
+    handleApprovalAction(productId, 'REJECTED', {
+      reasonPrompt: PRODUCT_SEND_BACK_REASON_PROMPT,
+      successMessage: 'პროდუქტი ავტორთან დაბრუნდა',
+    })
   }
 
   // Helper to get rental price from tier[0] (first tier with minimum days)
@@ -778,7 +791,7 @@ const SupportProductsPage = () => {
                           </span>
                           {product.approvalStatus === 'REJECTED' && product.rejectionReason && (
                             <span className="text-xs sm:text-sm md:text-[16px] text-red-700 break-words">
-                              მიზეზი: {product.rejectionReason}
+                              კომენტარი: {product.rejectionReason}
                             </span>
                           )}
                           {product.discount && product.discount > 0 && (
@@ -834,6 +847,18 @@ const SupportProductsPage = () => {
                        {/* Actions */}
                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2 sm:ml-4">
                         <div className="flex flex-row sm:flex-col sm:space-y-2 gap-2 sm:mr-4">
+                          {product.approvalStatus === 'APPROVED' && (
+                            <button
+                              type="button"
+                              onClick={() => handleSendBackToAuthor(product.id)}
+                              disabled={approvalUpdatingId === product.id}
+                              className="px-3 py-2 bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 transition-colors text-xs sm:text-sm md:text-[18px] disabled:opacity-50 whitespace-nowrap"
+                            >
+                              {approvalUpdatingId === product.id
+                                ? 'იგზავნება...'
+                                : 'ავტორთან დაბრუნება'}
+                            </button>
+                          )}
                           {product.approvalStatus !== 'APPROVED' && (
                             <>
                               <button
