@@ -47,6 +47,7 @@ import {
   getVariantSizes,
   productHasSkuVariants,
 } from '@/lib/product-variants'
+import { isFootwearCategory } from '@/lib/product-categories'
 import {
   calcRentalDays,
   firstAvailableRentalStartAfter,
@@ -1754,7 +1755,9 @@ const ProductPage = () => {
                                 )}
 
                                 <div className="space-y-3">
-                                    <h3 className="md:text-[18px] text-[16px] font-semibold text-black">ზომა:</h3>
+                                    <h3 className="md:text-[18px] text-[16px] font-semibold text-black">
+                                        {isFootwearCategory(product.category) ? 'ზომა (EU):' : 'ზომა:'}
+                                    </h3>
 
                                     {hasSkuVariants ? (
                                         <SizePillSelector

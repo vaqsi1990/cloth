@@ -151,6 +151,33 @@ const SIZE_OPTIONAL_CATEGORY_SLUGS = new Set([
   'kids-bags',
 ])
 
+const FOOTWEAR_CATEGORY_IDS = new Set([52, 54, 56])
+const FOOTWEAR_CATEGORY_SLUGS = new Set(['women-footwear', 'men-footwear', 'kids-footwear'])
+
+export function isFootwearCategory(category: ProductCategory | undefined | null): boolean {
+  if (!category) return false
+  if (FOOTWEAR_CATEGORY_IDS.has(category.id)) return true
+  if (FOOTWEAR_CATEGORY_SLUGS.has(category.slug)) return true
+  return category.slug.endsWith('-footwear')
+}
+
+export function isFootwearCategoryId(
+  categoryId: number | undefined,
+  categories: ProductCategory[],
+): boolean {
+  if (!categoryId) return false
+  return isFootwearCategory(categories.find((c) => c.id === categoryId))
+}
+
+export function getFootwearGenderFromCategory(
+  category: ProductCategory | undefined | null,
+): 'WOMEN' | 'MEN' | 'CHILDREN' | null {
+  if (!category || !isFootwearCategory(category)) return null
+  if (category.slug === 'men-footwear') return 'MEN'
+  if (category.slug === 'kids-footwear') return 'CHILDREN'
+  return 'WOMEN'
+}
+
 export function isAccessoryCategory(category: ProductCategory | undefined | null): boolean {
   if (!category) return false
   if (ACCESSORY_CATEGORY_IDS.has(category.id)) return true

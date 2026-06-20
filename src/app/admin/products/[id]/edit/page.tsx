@@ -19,6 +19,7 @@ import {
   DEFAULT_PRODUCT_CATEGORIES,
   filterProductCategoriesByGender,
   isCategoryValidForProductGender,
+  isFootwearCategoryId,
   isSizeOptionalCategoryId,
   mergeProductCategoriesWithDefaults,
   PRODUCT_GENDER_OPTIONS,
@@ -58,8 +59,9 @@ import {
 import { isProductVipActive, VIP_MONTHLY_PRICE_GEL } from '@/lib/product-vip'
 import {
   buildProductFormSizeOptions,
+  getProductFormSizeLabel,
   getProductFormSizeSelectValue,
-  isChildrenAgeSize,
+  isValidProductFormSize,
   parseProductFormSizeSelection,
 } from '@/lib/shop-product-filters'
 import SizePillSelector from '@/components/SizePillSelector'
@@ -226,9 +228,19 @@ const EditProductPage = () => {
 
   type SizeSystem = NonNullable<ProductFormData['sizeSystem']>
 
+  const sizeOptionsInput = useMemo(
+    () => ({ categoryId: formData.categoryId, categories }),
+    [formData.categoryId, categories],
+  )
+
   const combinedSizeOptions = useMemo(
-    () => buildProductFormSizeOptions(formData.gender),
-    [formData.gender],
+    () => buildProductFormSizeOptions(formData.gender, sizeOptionsInput),
+    [formData.gender, sizeOptionsInput],
+  )
+
+  const sizeFieldLabel = useMemo(
+    () => getProductFormSizeLabel(formData.gender, sizeOptionsInput),
+    [formData.gender, sizeOptionsInput],
   )
 
   const genderCategories = useMemo(
@@ -241,13 +253,16 @@ const EditProductPage = () => {
 
   useEffect(() => {
     if (formData.sizeSystem && formData.size) {
-      setSelectedSizeSystem(formData.gender === 'CHILDREN' ? '' : formData.sizeSystem)
+      const isFootwear = isFootwearCategoryId(formData.categoryId, categories)
+      setSelectedSizeSystem(
+        formData.gender === 'CHILDREN' && !isFootwear ? '' : formData.sizeSystem,
+      )
       setSelectedSizeValue(formData.size)
     } else {
       setSelectedSizeSystem('')
       setSelectedSizeValue('')
     }
-  }, [formData.sizeSystem, formData.size, formData.gender])
+  }, [formData.sizeSystem, formData.size, formData.gender, formData.categoryId, categories])
 
   const handleCombinedSizeSelect = (value: string) => {
     if (!value) {
@@ -280,17 +295,11 @@ const EditProductPage = () => {
   }
 
   useEffect(() => {
-    if (formData.gender === 'CHILDREN') {
-      if (selectedSizeValue && !isChildrenAgeSize(selectedSizeValue)) {
-        handleCombinedSizeSelect('')
-      }
-      return
-    }
-
-    if (selectedSizeValue && isChildrenAgeSize(selectedSizeValue)) {
+    if (!selectedSizeValue) return
+    if (!isValidProductFormSize(selectedSizeValue, formData.gender, sizeOptionsInput)) {
       handleCombinedSizeSelect('')
     }
-  }, [formData.gender, selectedSizeValue])
+  }, [formData.gender, formData.categoryId, selectedSizeValue, categories])
 
   const colors = PRODUCT_FORM_COLORS
 
@@ -498,7 +507,13 @@ const EditProductPage = () => {
 
   const handleCategoryChange = (categoryId: number | undefined) => {
     handleInputChange('categoryId', categoryId)
-    if (isSizeOptionalCategoryId(categoryId, categories)) {
+    if (
+      isSizeOptionalCategoryId(categoryId, categories) ||
+      (selectedSizeValue && !isValidProductFormSize(selectedSizeValue, formData.gender, {
+        categoryId,
+        categories,
+      }))
+    ) {
       clearSizeFields()
     }
   }
@@ -993,7 +1008,7 @@ const EditProductPage = () => {
               {!isSizeOptional && (
                 <div>
                   <label className="block text-[20px] text-black font-medium mb-2">
-                    {formData.gender === 'CHILDREN' ? 'ასაკი (არასავალდებულო)' : 'ზომა (არასავალდებულო)'}
+                    {sizeFieldLabel} (არასავალდებულო)
                   </label>
                   <SizePillSelector
                     value={getProductFormSizeSelectValue(
@@ -1049,6 +1064,8 @@ const EditProductPage = () => {
               <ProductVariantEditor
                 variants={formData.variants}
                 gender={formData.gender}
+                categoryId={formData.categoryId}
+                categories={categories}
                 sizeSystem={(formData.sizeSystem || 'EU') as 'EU' | 'US' | 'UK' | 'CN'}
                 isSizeOptional={isSizeOptional}
                 requireSize={!isSizeOptional}

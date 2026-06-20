@@ -19,7 +19,7 @@ import {
   type PublicListFilters,
 } from '@/lib/product-list-query'
 import { fetchBatchRentalStatus, type BatchRentalStatusMap } from '@/lib/product-rental-status-batch'
-import { buildShopFilterSizeOptions } from '@/lib/shop-product-filters'
+import { buildShopFilterSizeOptions, isFootwearShopContext, resolveFootwearGenderFromShopContext } from '@/lib/shop-product-filters'
 import { parseShopListFilterParams } from '@/lib/shop-list-params'
 import {
   convertBuyerPriceFiltersToSeller,
@@ -225,9 +225,18 @@ export async function loadShopBundle(input: ShopBundleInput): Promise<ShopBundle
 
   const rentableIds = products.filter((p) => p.isRentable).map((p) => p.id)
   const rentalStatus = await fetchBatchRentalStatus(rentableIds)
+  const categoryParam = searchParams.get('category')
+  const isFootwearShop = isFootwearShopContext({
+    genderParam: searchParams.get('gender'),
+    categoryParam,
+  })
+  const footwearGender = resolveFootwearGenderFromShopContext({
+    genderParam: searchParams.get('gender'),
+    categoryParam,
+  })
   const isChildrenShop =
-    ctx.genderEnum === 'CHILDREN' ||
-    isChildrenProductCategory(searchParams.get('category'))
+    !isFootwearShop &&
+    (ctx.genderEnum === 'CHILDREN' || isChildrenProductCategory(categoryParam))
 
   return {
     products,
@@ -243,6 +252,8 @@ export async function loadShopBundle(input: ShopBundleInput): Promise<ShopBundle
       categoryCounts: buildShopCategoryFacetCounts(categoryRows),
       sizes: buildShopFilterSizeOptions(sizeRows, {
         isChildren: isChildrenShop,
+        isFootwear: isFootwearShop,
+        footwearGender,
       }),
       vipCount,
       discountCount,

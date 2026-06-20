@@ -13,6 +13,8 @@ import {
   formatFilterCount,
   isChildrenAgeSize,
   isChildrenShopContext,
+  isFootwearShopContext,
+  resolveFootwearGenderFromShopContext,
   resolveShopDisplaySizes,
   SHOP_GENDER_FILTER_OPTIONS,
   type ShopGenderFilterValue,
@@ -90,6 +92,34 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
                 categories: shopCategories,
             }),
         [genderParam, categoryParam, selectedCategories, shopCategories],
+    )
+    const isFootwearShop = React.useMemo(
+        () =>
+            isFootwearShopContext({
+                genderParam,
+                categoryParam,
+                selectedCategories,
+                categories: shopCategories,
+            }),
+        [genderParam, categoryParam, selectedCategories, shopCategories],
+    )
+    const footwearGender = React.useMemo(
+        () =>
+            resolveFootwearGenderFromShopContext({
+                genderParam,
+                categoryParam,
+                selectedCategories,
+                categories: shopCategories,
+            }),
+        [genderParam, categoryParam, selectedCategories, shopCategories],
+    )
+    const shopSizeDisplayContext = React.useMemo(
+        () => ({
+            isChildren: isChildrenShop && !isFootwearShop,
+            isFootwear: isFootwearShop,
+            footwearGender,
+        }),
+        [isChildrenShop, isFootwearShop, footwearGender],
     )
     const [categoryCountsBySlug, setCategoryCountsBySlug] = useState<Record<string, number>>({})
     const [selectedLocations, setSelectedLocations] = useState<string[]>([])
@@ -321,15 +351,27 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
     useEffect(() => {
         if (!hasRestoredState) return
 
+        const sizeContext = {
+            isChildren: isChildrenShop && !isFootwearShop,
+            isFootwear: isFootwearShop,
+            footwearGender,
+        }
+
+        if (isFootwearShop) {
+            setSelectedSizeSystems([])
+            setAvailableSizes(resolveShopDisplaySizes([], sizeContext))
+            return
+        }
+
         if (isChildrenShop) {
             setSelectedSizeSystems([])
             setSelectedSizes((prev) => prev.filter((size) => isChildrenAgeSize(size)))
-            setAvailableSizes(resolveShopDisplaySizes([], true))
+            setAvailableSizes(resolveShopDisplaySizes([], sizeContext))
             return
         }
 
         setSelectedSizes((prev) => prev.filter((size) => !isChildrenAgeSize(size)))
-    }, [hasRestoredState, isChildrenShop])
+    }, [hasRestoredState, isChildrenShop, isFootwearShop, footwearGender])
 
     // Save when key filters/page change (skip until restore completes)
     useEffect(() => {
@@ -676,7 +718,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
 
                 setColorFacets(data.facets.colors)
                 setCategoryCountsBySlug(data.facets.categoryCounts)
-                setAvailableSizes(resolveShopDisplaySizes(data.facets.sizes, isChildrenShop))
+                setAvailableSizes(resolveShopDisplaySizes(data.facets.sizes, shopSizeDisplayContext))
                 setVipProductsCount(data.facets.vipCount)
                 setDiscountedProductsCount(data.facets.discountCount)
 

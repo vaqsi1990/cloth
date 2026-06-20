@@ -1,11 +1,89 @@
 import {
+  DEFAULT_PRODUCT_CATEGORIES,
+  findCategoryByParam,
+  getFootwearGenderFromCategory,
   isChildrenProductCategory,
+  isFootwearCategory,
+  isFootwearCategoryId,
   productMatchesCategoryFilter,
   type ProductCategory,
 } from '@/lib/product-categories'
 import { resolveProductColorFilterId } from '@/lib/product-colors'
 
 export const PREDEFINED_LETTER_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXXL']
+
+/** EU shoe sizes — women's footwear */
+export const WOMEN_FOOTWEAR_SIZES = [
+  '35.5',
+  '36',
+  '37',
+  '38',
+  '38.5',
+  '39',
+  '40',
+] as const
+
+/** EU shoe sizes — men's footwear */
+export const MEN_FOOTWEAR_SIZES = [
+  '39.5',
+  '40',
+  '41',
+  '42',
+  '43',
+  '43.5',
+  '44.5',
+  '45',
+  '46',
+] as const
+
+/** EU shoe sizes — children's footwear */
+export const KIDS_FOOTWEAR_SIZES = [
+  '20',
+  '21',
+  '22',
+  '23',
+  '24',
+  '25',
+  '26',
+  '27',
+  '28',
+  '29',
+  '30',
+  '31',
+] as const
+
+export type FootwearGender = 'WOMEN' | 'MEN' | 'CHILDREN'
+
+export function getFootwearSizesForGender(
+  gender: 'MEN' | 'WOMEN' | 'CHILDREN' | 'UNISEX' | string,
+): readonly string[] {
+  if (gender === 'MEN') return MEN_FOOTWEAR_SIZES
+  if (gender === 'CHILDREN') return KIDS_FOOTWEAR_SIZES
+  return WOMEN_FOOTWEAR_SIZES
+}
+
+export function isFootwearSize(
+  size: string,
+  gender: 'MEN' | 'WOMEN' | 'CHILDREN' | 'UNISEX' | string,
+): boolean {
+  const normalized = size.trim()
+  return getFootwearSizesForGender(gender).includes(normalized)
+}
+
+function sortFootwearSizes(sizes: string[]): string[] {
+  const order = new Map<string, number>()
+  for (const gender of ['WOMEN', 'MEN', 'CHILDREN'] as const) {
+    getFootwearSizesForGender(gender).forEach((size, index) => {
+      if (!order.has(size)) order.set(size, index)
+    })
+  }
+  return sizes.sort((a, b) => {
+    const aIndex = order.get(a) ?? Number.MAX_SAFE_INTEGER
+    const bIndex = order.get(b) ?? Number.MAX_SAFE_INTEGER
+    if (aIndex !== bIndex) return aIndex - bIndex
+    return a.localeCompare(b, undefined, { numeric: true })
+  })
+}
 
 /** Child age/size ranges — only for CHILDREN gender in forms and shop filter. */
 export const CHILDREN_AGE_SIZES = [
@@ -78,11 +156,82 @@ export function isChildrenShopContext(input: {
   )
 }
 
+export type ShopSizeDisplayContext = {
+  isChildren?: boolean
+  isFootwear?: boolean
+  footwearGender?: FootwearGender | null
+}
+
+export function resolveFootwearGenderFromShopContext(input: {
+  genderParam?: string | null
+  categoryParam?: string | null
+  selectedCategories?: string[]
+  categories?: ProductCategory[]
+}): FootwearGender | null {
+  const categories = input.categories ?? DEFAULT_PRODUCT_CATEGORIES
+
+  if (input.categoryParam) {
+    const category = findCategoryByParam(input.categoryParam, categories)
+    const fromCategory = getFootwearGenderFromCategory(category)
+    if (fromCategory) return fromCategory
+  }
+
+  for (const selectedCategory of input.selectedCategories ?? []) {
+    const category =
+      categories.find((entry) => entry.name === selectedCategory) ??
+      findCategoryByParam(selectedCategory, categories)
+    const fromCategory = getFootwearGenderFromCategory(category)
+    if (fromCategory) return fromCategory
+  }
+
+  if (input.genderParam === 'men') return 'MEN'
+  if (input.genderParam === 'children') return 'CHILDREN'
+  if (input.genderParam === 'women') return 'WOMEN'
+  return null
+}
+
+export function isFootwearShopContext(input: {
+  genderParam?: string | null
+  categoryParam?: string | null
+  selectedCategories?: string[]
+  categories?: ProductCategory[]
+}): boolean {
+  const categories = input.categories ?? DEFAULT_PRODUCT_CATEGORIES
+
+  if (input.categoryParam) {
+    const category = findCategoryByParam(input.categoryParam, categories)
+    if (category && isFootwearCategory(category)) return true
+    if (input.categoryParam.includes('footwear')) return true
+  }
+
+  return (input.selectedCategories ?? []).some((selectedCategory) => {
+    const category =
+      categories.find((entry) => entry.name === selectedCategory) ??
+      findCategoryByParam(selectedCategory, categories)
+    if (category) return isFootwearCategory(category)
+    return selectedCategory.toLowerCase().includes('ფეხსაცმ')
+  })
+}
+
 export function resolveShopDisplaySizes(
   apiSizes: string[],
-  isChildren: boolean,
+  context: boolean | ShopSizeDisplayContext = false,
 ): string[] {
-  if (isChildren) {
+  const normalizedContext: ShopSizeDisplayContext =
+    typeof context === 'boolean' ? { isChildren: context } : context
+
+  if (normalizedContext.isFootwear && normalizedContext.footwearGender) {
+    const base = [...getFootwearSizesForGender(normalizedContext.footwearGender)]
+    for (const size of apiSizes) {
+      const trimmed = size.trim()
+      if (trimmed && !base.includes(trimmed)) {
+        base.push(trimmed)
+      }
+    }
+    return sortFootwearSizes(base)
+  }
+
+  if (normalizedContext.isChildren) {
     return sortChildrenAgeSizes([
       ...new Set([
         ...CHILDREN_AGE_SIZES,
@@ -103,9 +252,29 @@ export function buildAdultProductFormSizeOptions(): ProductFormSizeOption[] {
   }))
 }
 
+export type ProductFormSizeOptionsInput = {
+  categoryId?: number
+  categories?: ProductCategory[]
+}
+
 export function buildProductFormSizeOptions(
   gender: 'MEN' | 'WOMEN' | 'CHILDREN' | 'UNISEX' | string,
+  options?: ProductFormSizeOptionsInput,
 ): ProductFormSizeOption[] {
+  const categories = options?.categories ?? DEFAULT_PRODUCT_CATEGORIES
+  const isFootwear = options?.categoryId
+    ? isFootwearCategoryId(options.categoryId, categories)
+    : false
+
+  if (isFootwear) {
+    return getFootwearSizesForGender(gender).map((size) => ({
+      value: `EU:${size}`,
+      label: size,
+      system: 'EU' as const,
+      size,
+    }))
+  }
+
   if (gender === 'CHILDREN') {
     return CHILDREN_AGE_SIZES.map((size) => ({
       value: size,
@@ -114,6 +283,38 @@ export function buildProductFormSizeOptions(
     }))
   }
   return buildAdultProductFormSizeOptions()
+}
+
+export function getProductFormSizeLabel(
+  gender: 'MEN' | 'WOMEN' | 'CHILDREN' | 'UNISEX' | string,
+  options?: ProductFormSizeOptionsInput,
+): string {
+  const categories = options?.categories ?? DEFAULT_PRODUCT_CATEGORIES
+  const isFootwear = options?.categoryId
+    ? isFootwearCategoryId(options.categoryId, categories)
+    : false
+
+  if (isFootwear) return 'ზომა (EU)'
+  if (gender === 'CHILDREN') return 'ასაკი'
+  return 'ზომა'
+}
+
+export function isValidProductFormSize(
+  size: string,
+  gender: 'MEN' | 'WOMEN' | 'CHILDREN' | 'UNISEX' | string,
+  options?: ProductFormSizeOptionsInput,
+): boolean {
+  const normalized = size.trim()
+  if (!normalized) return true
+
+  const categories = options?.categories ?? DEFAULT_PRODUCT_CATEGORIES
+  const isFootwear = options?.categoryId
+    ? isFootwearCategoryId(options.categoryId, categories)
+    : false
+
+  if (isFootwear) return isFootwearSize(normalized, gender)
+  if (gender === 'CHILDREN') return isChildrenAgeSize(normalized)
+  return !isChildrenAgeSize(normalized) && !isFootwearSize(normalized, gender)
 }
 
 export function parseProductFormSizeSelection(
@@ -210,11 +411,18 @@ export function productMatchesSizeFilter(
 
 export function collectAvailableSizes(
   products: Array<{ size?: string | null }>,
-  options?: { isChildren?: boolean },
+  options?: ShopSizeDisplayContext,
 ): string[] {
-  const isChildren = options?.isChildren ?? false
+  if (options?.isFootwear && options.footwearGender) {
+    const sizes = new Set<string>(getFootwearSizesForGender(options.footwearGender))
+    for (const product of products) {
+      const normalized = product.size?.trim()
+      if (normalized) sizes.add(normalized)
+    }
+    return sortFootwearSizes(Array.from(sizes))
+  }
 
-  if (isChildren) {
+  if (options?.isChildren) {
     const sizes = new Set<string>(CHILDREN_AGE_SIZES)
     for (const product of products) {
       if (!product.size?.trim()) continue
@@ -231,11 +439,18 @@ export function collectAvailableSizes(
 
 export function buildShopFilterSizeOptions(
   rows: Array<{ sizeValue: string; sizeSystem: string | null }>,
-  options?: { isChildren?: boolean },
+  options?: ShopSizeDisplayContext,
 ): string[] {
-  const isChildren = options?.isChildren ?? false
+  if (options?.isFootwear && options.footwearGender) {
+    const sizes = new Set<string>(getFootwearSizesForGender(options.footwearGender))
+    for (const row of rows) {
+      const raw = row.sizeValue.trim()
+      if (raw) sizes.add(raw)
+    }
+    return sortFootwearSizes(Array.from(sizes))
+  }
 
-  if (isChildren) {
+  if (options?.isChildren) {
     const sizes = new Set<string>(CHILDREN_AGE_SIZES)
     for (const row of rows) {
       const raw = row.sizeValue.trim()

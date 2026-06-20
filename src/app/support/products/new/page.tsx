@@ -53,8 +53,9 @@ import { prepareProductPricingSubmit } from '@/lib/product-form-pricing'
 import ProductPhotoBackgroundConsent from '@/components/ProductPhotoBackgroundConsent'
 import {
   buildProductFormSizeOptions,
+  getProductFormSizeLabel,
   getProductFormSizeSelectValue,
-  isChildrenAgeSize,
+  isValidProductFormSize,
   parseProductFormSizeSelection,
 } from '@/lib/shop-product-filters'
 import SizePillSelector from '@/components/SizePillSelector'
@@ -225,9 +226,19 @@ const NewProductPage = () => {
 
   type SizeSystem = NonNullable<ProductFormData['sizeSystem']>
 
+  const sizeOptionsInput = useMemo(
+    () => ({ categoryId: formData.categoryId, categories }),
+    [formData.categoryId],
+  )
+
   const combinedSizeOptions = useMemo(
-    () => (formData.gender ? buildProductFormSizeOptions(formData.gender) : []),
-    [formData.gender],
+    () => (formData.gender ? buildProductFormSizeOptions(formData.gender, sizeOptionsInput) : []),
+    [formData.gender, sizeOptionsInput],
+  )
+
+  const sizeFieldLabel = useMemo(
+    () => getProductFormSizeLabel(formData.gender, sizeOptionsInput),
+    [formData.gender, sizeOptionsInput],
   )
 
   const genderCategories = useMemo(
@@ -276,17 +287,11 @@ const NewProductPage = () => {
   }
 
   useEffect(() => {
-    if (formData.gender === 'CHILDREN') {
-      if (selectedSize && !isChildrenAgeSize(selectedSize)) {
-        handleCombinedSizeSelect('')
-      }
-      return
-    }
-
-    if (selectedSize && isChildrenAgeSize(selectedSize)) {
+    if (!selectedSize) return
+    if (!isValidProductFormSize(selectedSize, formData.gender, sizeOptionsInput)) {
       handleCombinedSizeSelect('')
     }
-  }, [formData.gender, selectedSize])
+  }, [formData.gender, formData.categoryId, selectedSize, categories])
 
   const isSizeOptional = useMemo(
     () => isSizeOptionalCategoryId(formData.categoryId, categories),
@@ -302,7 +307,13 @@ const NewProductPage = () => {
 
   const handleCategoryChange = (categoryId: number | undefined) => {
     handleInputChange('categoryId', categoryId)
-    if (isSizeOptionalCategoryId(categoryId, categories)) {
+    if (
+      isSizeOptionalCategoryId(categoryId, categories) ||
+      (selectedSize && !isValidProductFormSize(selectedSize, formData.gender, {
+        categoryId,
+        categories,
+      }))
+    ) {
       clearSizeFields()
     }
   }
@@ -811,7 +822,7 @@ const NewProductPage = () => {
               {!showVariantOptions && hasSelectedGender && !isSizeOptional && (
                 <div>
                   <label className="block text-[20px] text-black font-medium mb-2">
-                    {formData.gender === 'CHILDREN' ? 'ასაკი (არასავალდებულო)' : 'ზომა (არასავალდებულო)'}
+                    {sizeFieldLabel} (არასავალდებულო)
                   </label>
                   <SizePillSelector
                     value={getProductFormSizeSelectValue(formData.gender, sizeSystem, selectedSize)}
@@ -865,6 +876,8 @@ const NewProductPage = () => {
               <ProductVariantEditor
                 variants={formData.variants}
                 gender={formData.gender}
+                categoryId={formData.categoryId}
+                categories={categories}
                 sizeSystem={(formData.sizeSystem || 'EU') as 'EU' | 'US' | 'UK' | 'CN'}
                 isSizeOptional={isSizeOptional}
                 requireSize={!isSizeOptional}

@@ -6,10 +6,11 @@ import ProductColorPicker, { getProductColorPickerState } from '@/components/Pro
 import type { ProductVariantFormRow } from '@/lib/product-variants'
 import {
   buildProductFormSizeOptions,
+  getProductFormSizeLabel,
   getProductFormSizeSelectValue,
   parseProductFormSizeSelection,
 } from '@/lib/shop-product-filters'
-import type { ProductGender } from '@/lib/product-categories'
+import type { ProductCategory, ProductGender } from '@/lib/product-categories'
 import VariantImageUpload from '@/components/VariantImageUpload'
 import SizePillSelector from '@/components/SizePillSelector'
 
@@ -18,6 +19,8 @@ export type { ProductVariantFormRow } from '@/lib/product-variants'
 type ProductVariantEditorProps = {
   variants: ProductVariantFormRow[]
   gender: ProductGender | ''
+  categoryId?: number
+  categories?: ProductCategory[]
   sizeSystem: 'EU' | 'US' | 'UK' | 'CN'
   isSizeOptional: boolean
   requireSize?: boolean
@@ -32,6 +35,8 @@ type ProductVariantEditorProps = {
 export default function ProductVariantEditor({
   variants,
   gender,
+  categoryId,
+  categories,
   sizeSystem,
   isSizeOptional,
   requireSize = false,
@@ -42,7 +47,9 @@ export default function ProductVariantEditor({
   onRemove,
   onUpdate,
 }: ProductVariantEditorProps) {
-  const combinedSizeOptions = buildProductFormSizeOptions(gender)
+  const sizeOptionsInput = { categoryId, categories }
+  const combinedSizeOptions = buildProductFormSizeOptions(gender, sizeOptionsInput)
+  const sizeLabel = getProductFormSizeLabel(gender, sizeOptionsInput)
   const showSizeField = requireSize || !isSizeOptional
 
   return (
@@ -96,7 +103,7 @@ export default function ProductVariantEditor({
             {showSizeField && (
               <div>
                 <label className="block text-[18px] text-black font-medium mb-2">
-                  {gender === 'CHILDREN' ? 'ასაკი' : 'ზომა'}
+                  {sizeLabel}
                   {requireSize && <span className="text-red-600"> *</span>}
                 </label>
                 <SizePillSelector
