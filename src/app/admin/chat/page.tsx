@@ -14,16 +14,9 @@ import ChatMessageContent from '@/components/ChatMessageContent'
 import ChatImageUploadButton from '@/components/ChatImageUploadButton'
 import ChatPendingImagePreview from '@/components/ChatPendingImagePreview'
 import { canSendChatMessage } from '@/lib/chat-message'
+import { mapApiChatMessages, type UiChatMessage } from '@/lib/chat-message-ui'
 
-interface ChatMessage {
-  id: number
-  content: string
-  imageUrl?: string | null
-  createdAt: string
-  isFromAdmin: boolean
-  user?: { name: string; email: string }
-  admin?: { name: string; email: string }
-}
+interface ChatMessage extends UiChatMessage {}
 
 interface ChatRoom {
   id: number
@@ -55,6 +48,8 @@ const AdminChatPage = () => {
   const [showChatList, setShowChatList] = useState(true)
   const [otherPartyTyping, setOtherPartyTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesFetchIdRef = useRef(0)
+  const selectedChatRoomIdRef = useRef<number | null>(null)
   const { notifyTyping, stopTyping } = useChatTyping({
     chatRoomId: selectedChatRoom?.id,
     enabled: !!selectedChatRoom,
@@ -99,10 +94,13 @@ const AdminChatPage = () => {
   }, [filterStatus, selectedChatRoom?.id])
 
   const fetchMessages = useCallback(async () => {
-    if (!selectedChatRoom) return
+    const chatRoomId = selectedChatRoomIdRef.current
+    if (!chatRoomId) return
+
+    const fetchId = ++messagesFetchIdRef.current
 
     try {
-      const response = await fetch(`/api/chat/${selectedChatRoom.id}`, {
+      const response = await fetch(`/api/chat/${chatRoomId}`, {
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache'
@@ -115,38 +113,20 @@ const AdminChatPage = () => {
       
       const data = await response.json()
       
-      if (data.success && data.messages) {
-        // Transform the raw query results to match the expected format
-        const transformedMessages = data.messages.map((msg: {
-          id: number
-          content: string
-          imageUrl?: string | null
-          createdAt: string
-          isFromAdmin: boolean
-          user_name?: string
-          user_email?: string
-          admin_name?: string
-          admin_email?: string
-        }) => ({
-          id: msg.id,
-          content: msg.content,
-          imageUrl: msg.imageUrl ?? null,
-          createdAt: msg.createdAt,
-          isFromAdmin: msg.isFromAdmin,
-          user: msg.user_name ? { name: msg.user_name, email: msg.user_email } : undefined,
-          admin: msg.admin_name ? { name: msg.admin_name, email: msg.admin_email } : undefined
-        }))
-        
-        // Remove duplicates based on message ID to prevent React key conflicts
-        const uniqueMessages = transformedMessages.filter((message: ChatMessage, index: number, self: ChatMessage[]) => 
-          index === self.findIndex((m: ChatMessage) => m.id === message.id)
-        )
-        
-        setMessages(uniqueMessages)
+      if (
+        !data.success ||
+        fetchId !== messagesFetchIdRef.current ||
+        selectedChatRoomIdRef.current !== chatRoomId
+      ) {
+        return
+      }
+
+      if (Array.isArray(data.messages)) {
+        setMessages(mapApiChatMessages(data.messages))
         setOtherPartyTyping(Boolean(data.otherPartyTyping))
         setChatRooms((prev) =>
           prev.map((entry) =>
-            entry.id === selectedChatRoom.id ? { ...entry, is_unread: false } : entry,
+            entry.id === chatRoomId ? { ...entry, is_unread: false } : entry,
           ),
         )
         acknowledgeActiveChat()
@@ -154,7 +134,21 @@ const AdminChatPage = () => {
     } catch (error) {
       console.error('Error fetching messages:', error)
     }
-  }, [selectedChatRoom, acknowledgeActiveChat])
+  }, [acknowledgeActiveChat])
+
+  useEffect(() => {
+    selectedChatRoomIdRef.current = selectedChatRoom?.id ?? null
+  }, [selectedChatRoom?.id])
+
+  useEffect(() => {
+    setMessages([])
+    messagesFetchIdRef.current += 1
+  }, [selectedChatRoom?.id])
+
+  useEffect(() => {
+    if (messages.length === 0) return
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
 
   useEffect(() => {
     setActiveChatRoomId(selectedChatRoom?.id ?? null)
@@ -206,7 +200,7 @@ const AdminChatPage = () => {
   }, [chatRooms, selectedChatRoom, latestUnreadChatRoomId])
 
   useEffect(() => {
-    if (selectedChatRoom) {
+    if (selectedChatRoom?.id) {
       fetchMessages()
       // On mobile, hide chat list when chat is selected
       const handleResize = () => {
@@ -218,10 +212,10 @@ const AdminChatPage = () => {
       }
       handleResize()
       window.addEventListener('resize', handleResize)
-      // Poll for new messages every 5 seconds (reduced frequency)
+      // Poll for new messages every 3 seconds
       const interval = setInterval(() => {
         fetchMessages()
-      }, 5000)
+      }, 3000)
       return () => {
         clearInterval(interval)
         window.removeEventListener('resize', handleResize)
@@ -230,7 +224,7 @@ const AdminChatPage = () => {
       // Show chat list when no chat is selected
       setShowChatList(true)
     }
-  }, [selectedChatRoom, fetchMessages])
+  }, [selectedChatRoom?.id, fetchMessages])
 
 
 
@@ -279,6 +273,7 @@ const AdminChatPage = () => {
           }
           return [...prev, transformedMessage]
         })
+        void fetchMessages()
         fetchChatRooms() // Refresh chat rooms list
       } else {
         throw new Error(data.message || 'Failed to send message')

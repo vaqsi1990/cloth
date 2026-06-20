@@ -129,13 +129,17 @@ export async function GET(
     const latestMessageId =
       messages.length > 0 ? messages[messages.length - 1].id : null
 
-    await markChatRoomAsRead(
-      chatRoomId,
-      chatRoomMeta,
-      session,
-      viewerIsAdminSide,
-      latestMessageId,
-    )
+    try {
+      await markChatRoomAsRead(
+        chatRoomId,
+        chatRoomMeta,
+        session,
+        viewerIsAdminSide,
+        latestMessageId,
+      )
+    } catch (readError) {
+      console.error('Failed to mark chat room as read:', readError)
+    }
 
     return NextResponse.json({
       success: true,
