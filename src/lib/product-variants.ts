@@ -50,8 +50,12 @@ export const productVariantInputSchema = z.object({
 
 export type ProductVariantInput = z.infer<typeof productVariantInputSchema>
 
-export function variantHasSkuFields(variant: ProductVariantSkuLike): boolean {
-  return Boolean(variant.color?.trim() || variant.size?.trim())
+export function variantHasSkuFields(variant: ProductVariantSkuLike & { sizes?: string[] | null }): boolean {
+  return Boolean(
+    variant.color?.trim() ||
+      variant.size?.trim() ||
+      (variant.sizes || []).some((entry) => entry.trim()),
+  )
 }
 
 export function productHasSkuVariants(product: { variants?: ProductVariantSkuLike[] | null }): boolean {
@@ -175,10 +179,161 @@ export function findVariantBySelection(
 export type ProductVariantFormRow = {
   color?: string
   size?: string
+  /** Multiple sizes for the same color/image/price row in the form UI. */
+  sizes?: string[]
   sizeSystem?: SizeSystem
   price: number
   stock: number
   imageUrl?: string
+}
+
+export function getFormRowSizes(
+  row: Pick<ProductVariantFormRow, 'sizes'> & { size?: string | null },
+): string[] {
+  const fromArray = (row.sizes || []).map((entry) => entry.trim()).filter(Boolean)
+  if (fromArray.length > 0) {
+    return fromArray
+  }
+
+  const single = row.size?.trim()
+  return single ? [single] : []
+}
+
+export function expandVariantFormRows(
+  rows: ProductVariantFormRow[],
+): ProductVariantFormRow[] {
+  const expanded: ProductVariantFormRow[] = []
+
+  for (const row of rows) {
+    const sizes = getFormRowSizes(row)
+    const shared = {
+      color: row.color,
+      sizeSystem: row.sizeSystem,
+      price: row.price,
+      stock: row.stock,
+      imageUrl: row.imageUrl,
+    }
+
+    if (sizes.length === 0) {
+      expanded.push({ ...shared, price: row.price, stock: row.stock })
+      continue
+    }
+
+    for (const size of sizes) {
+      expanded.push({
+        ...shared,
+        size,
+        price: row.price,
+        stock: row.stock,
+      })
+    }
+  }
+
+  return expanded
+}
+
+function formRowGroupKey(row: {
+  color?: string | null
+  imageUrl?: string | null
+  price?: number | null
+  stock?: number | null
+  sizeSystem?: SizeSystem | null
+}): string {
+  return [
+    row.color?.trim() || '',
+    row.imageUrl?.trim() || '',
+    String(row.price ?? 0),
+    String(row.stock ?? 0),
+    row.sizeSystem || '',
+  ].join('\0')
+}
+
+export function groupSkuVariantsToFormRows(
+  variants: Array<{
+    color?: string | null
+    size?: string | null
+    sizeSystem?: SizeSystem | null
+    price?: number | null
+    stock?: number | null
+    imageUrl?: string | null
+  }>,
+): ProductVariantFormRow[] {
+  const groupMap = new Map<
+    string,
+    ProductVariantFormRow & { sizes: string[] }
+  >()
+
+  for (const variant of variants) {
+    const color = variant.color?.trim() || undefined
+    const size = variant.size?.trim()
+    const key = formRowGroupKey(variant)
+    const existing = groupMap.get(key)
+
+    if (existing) {
+      if (size && !existing.sizes.includes(size)) {
+        existing.sizes.push(size)
+      }
+      continue
+    }
+
+    groupMap.set(key, {
+      color,
+      sizeSystem: variant.sizeSystem || undefined,
+      price: variant.price ?? 0,
+      stock: variant.stock ?? 0,
+      imageUrl: variant.imageUrl?.trim() || undefined,
+      sizes: size ? [size] : [],
+    })
+  }
+
+  return Array.from(groupMap.values()).map(({ sizes, ...row }) => ({
+    ...row,
+    sizes: sizes.length > 1 ? sizes : undefined,
+    size: sizes.length === 1 ? sizes[0] : undefined,
+  }))
+}
+
+export function patchVariantFormRow<T extends { variants: ProductVariantFormRow[] }>(
+  state: T,
+  index: number,
+  patch: Partial<ProductVariantFormRow>,
+): T {
+  return {
+    ...state,
+    variants: state.variants.map((variant, variantIndex) =>
+      variantIndex === index ? { ...variant, ...patch } : variant,
+    ),
+  }
+}
+
+export function validateSkuVariantRowSizesUniqueness(
+  variants: Array<{
+    color?: string | null
+    size?: string | null
+    sizes?: string[]
+  }>,
+): Record<string, string> {
+  const errors: Record<string, string> = {}
+  const colorSizeToIndex = new Map<string, number>()
+
+  variants.forEach((variant, index) => {
+    const color = variant.color?.trim().toLowerCase() || ''
+    for (const size of getFormRowSizes(variant)) {
+      const key = `${color}\0${size.trim().toLowerCase()}`
+      const existingIndex = colorSizeToIndex.get(key)
+      if (existingIndex !== undefined) {
+        const message = 'ეს ზომა უკვე არჩეულია ამ ფერისთვის'
+        errors[`variants.${index}.size`] = message
+        if (!errors[`variants.${existingIndex}.size`]) {
+          errors[`variants.${existingIndex}.size`] = message
+        }
+      } else {
+        colorSizeToIndex.set(key, index)
+      }
+    }
+  })
+
+  return errors
 }
 
 export function getVariantImageUrls(variants: Array<{ imageUrl?: string | null }>): string[] {
@@ -323,7 +478,7 @@ export function validateSkuVariantRows(
     if (requireColor && !variant.color?.trim()) {
       errors[`variants.${index}.color`] = 'ფერი აუცილებელია'
     }
-    if (requireSize && !variant.size?.trim()) {
+    if (requireSize && getFormRowSizes(variant).length === 0) {
       errors[`variants.${index}.size`] = 'ზომა აუცილებელია'
     }
     if (!variant.imageUrl?.trim()) {
@@ -333,6 +488,8 @@ export function validateSkuVariantRows(
       errors[`variants.${index}.price`] = 'ფასი აუცილებელია'
     }
   })
+
+  Object.assign(errors, validateSkuVariantRowSizesUniqueness(variants))
 
   return errors
 }
@@ -391,14 +548,16 @@ export function mapProductVariantsToFormRows(
 
   if (productHasSkuVariants(product)) {
     return hydrateVariantRowsWithProductImages(
-      variants.map((variant) => ({
-        color: variant.color?.trim() || undefined,
-        size: variant.size?.trim() || undefined,
-        sizeSystem: variant.sizeSystem || undefined,
-        price: variant.price ?? 0,
-        stock: variant.stock ?? 0,
-        imageUrl: variant.imageUrl?.trim() || undefined,
-      })),
+      groupSkuVariantsToFormRows(
+        variants.map((variant) => ({
+          color: variant.color?.trim() || undefined,
+          size: variant.size?.trim() || undefined,
+          sizeSystem: variant.sizeSystem || undefined,
+          price: variant.price ?? 0,
+          stock: variant.stock ?? 0,
+          imageUrl: variant.imageUrl?.trim() || undefined,
+        })),
+      ),
       productImageUrls,
     )
   }

@@ -242,12 +242,13 @@ export function isSizeOptionalCategoryId(
   return isSizeOptionalCategory(categories.find((c) => c.id === categoryId))
 }
 
-export function clearVariantSizes<T extends { size?: string | null; sizeSystem?: string | null }>(
-  variants: T[],
-): T[] {
+export function clearVariantSizes<
+  T extends { size?: string | null; sizes?: string[] | null; sizeSystem?: string | null },
+>(variants: T[]): T[] {
   return variants.map((variant) => ({
     ...variant,
     size: undefined,
+    sizes: undefined,
     sizeSystem: undefined,
   }))
 }

@@ -4,6 +4,7 @@ import React from 'react'
 import { Plus, X } from 'lucide-react'
 import ProductColorPicker, { getProductColorPickerState } from '@/components/ProductColorPicker'
 import type { ProductVariantFormRow } from '@/lib/product-variants'
+import { getFormRowSizes } from '@/lib/product-variants'
 import {
   buildProductFormSizeOptions,
   getProductFormSizeLabel,
@@ -30,7 +31,8 @@ type ProductVariantEditorProps = {
   errors?: Record<string, string>
   onAdd: () => void
   onRemove: (index: number) => void
-  onUpdate: (index: number, field: keyof ProductVariantFormRow, value: string | number | undefined) => void
+  onUpdate: (index: number, field: keyof ProductVariantFormRow, value: string | number | string[] | undefined) => void
+  onPatch?: (index: number, patch: Partial<ProductVariantFormRow>) => void
 }
 
 export default function ProductVariantEditor({
@@ -47,11 +49,25 @@ export default function ProductVariantEditor({
   onAdd,
   onRemove,
   onUpdate,
+  onPatch,
 }: ProductVariantEditorProps) {
   const sizeOptionsInput = { categoryId, categories }
   const combinedSizeOptions = buildProductFormSizeOptions(gender, sizeOptionsInput)
   const sizeLabel = getProductFormSizeLabel(gender, sizeOptionsInput)
   const showSizeField = requireSize || !isSizeOptional
+
+  const patchVariant = (index: number, patch: Partial<ProductVariantFormRow>) => {
+    if (onPatch) {
+      onPatch(index, patch)
+      return
+    }
+
+    for (const [field, value] of Object.entries(patch) as Array<
+      [keyof ProductVariantFormRow, ProductVariantFormRow[keyof ProductVariantFormRow]]
+    >) {
+      onUpdate(index, field, value as string | number | string[] | undefined)
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -60,7 +76,7 @@ export default function ProductVariantEditor({
         <div>
           <h3 className="text-[20px] text-black font-semibold">ვარიანტები (ფერი / ზომა)</h3>
           <p className="text-sm text-gray-600 mt-1">
-            თითოეულ ვარიანტს დაამატეთ ზომა, სურათი და გაყიდვის ფასი.
+            თითოეულ ვარიანტს დაამატეთ ერთი ან რამდენიმე ზომა, სურათი და გაყიდვის ფასი.
           </p>
         </div>
         <button
@@ -74,9 +90,10 @@ export default function ProductVariantEditor({
       </div>
 
       {variants.map((variant, index) => {
-        const sizeValue =
-          getProductFormSizeSelectValue(gender, variant.sizeSystem || sizeSystem, variant.size || '') ||
-          ''
+        const activeSizeSystem = variant.sizeSystem || sizeSystem
+        const selectedSizeValues = getFormRowSizes(variant)
+          .map((size) => getProductFormSizeSelectValue(gender, activeSizeSystem, size))
+          .filter(Boolean)
         const { value: colorPickerValue, customColor } = getProductColorPickerState(variant.color)
 
         return (
@@ -103,17 +120,34 @@ export default function ProductVariantEditor({
             </div>
 
             {showSizeField && (
-              <div>
+              <div className="md:col-span-2 lg:col-span-3">
                 <label className="block text-[18px] text-black font-medium mb-2">
                   {sizeLabel}
                   {requireSize && <span className="text-red-600"> *</span>}
                 </label>
                 <SizePillSelector
-                  value={sizeValue}
-                  onChange={(nextValue) => {
-                    const parsed = parseProductFormSizeSelection(nextValue, gender)
-                    onUpdate(index, 'size', parsed.size || undefined)
-                    onUpdate(index, 'sizeSystem', parsed.sizeSystem || sizeSystem)
+                  mode="multiple"
+                  values={selectedSizeValues}
+                  onToggle={(optionValue) => {
+                    const parsed = parseProductFormSizeSelection(optionValue, gender)
+                    const isSelected = selectedSizeValues.includes(optionValue)
+                    const currentSizes = getFormRowSizes(variant)
+
+                    const nextSizes = isSelected
+                      ? currentSizes.filter(
+                          (size) =>
+                            getProductFormSizeSelectValue(gender, activeSizeSystem, size) !==
+                            optionValue,
+                        )
+                      : parsed.size
+                        ? [...currentSizes, parsed.size]
+                        : currentSizes
+
+                    patchVariant(index, {
+                      sizes: nextSizes.length > 0 ? nextSizes : undefined,
+                      size: undefined,
+                      sizeSystem: parsed.sizeSystem || activeSizeSystem,
+                    })
                   }}
                   options={combinedSizeOptions.map((option) => ({
                     value: option.value,
@@ -122,6 +156,11 @@ export default function ProductVariantEditor({
                   compact={gender === 'CHILDREN'}
                   error={errors[`variants.${index}.size`]}
                 />
+                {selectedSizeValues.length > 1 ? (
+                  <p className="text-sm text-gray-500 mt-2">
+                    არჩეულია {selectedSizeValues.length} ზომა
+                  </p>
+                ) : null}
               </div>
             )}
 

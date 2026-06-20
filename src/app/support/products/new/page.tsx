@@ -49,6 +49,7 @@ import {
   seedVariantRowsFromLegacyProduct,
   getVariantImageUrls,
   type ProductVariantFormRow,
+  patchVariantFormRow,
 } from '@/lib/product-variants'
 import {
   buildPricingModeFormPatch,
@@ -476,13 +477,17 @@ const NewProductPage = () => {
     }))
   }
 
-  const updateVariant = (index: number, field: string, value: string | number | undefined) => {
+  const updateVariant = (index: number, field: string, value: string | number | string[] | undefined) => {
     setFormData(prev => ({
       ...prev,
       variants: prev.variants.map((variant, i) =>
         i === index ? { ...variant, [field]: value } : variant
       )
     }))
+  }
+
+  const patchVariant = (index: number, patch: Partial<ProductVariantFormRow>) => {
+    setFormData((prev) => patchVariantFormRow(prev, index, patch))
   }
 
   const addRentalPriceTier = () => {
@@ -904,6 +909,7 @@ const NewProductPage = () => {
                 onAdd={addVariant}
                 onRemove={removeVariant}
                 onUpdate={updateVariant}
+                onPatch={patchVariant}
               />
             </div>
           )}

@@ -1,4 +1,5 @@
 import type { ProductVariantFormRow } from '@/lib/product-variants'
+import { expandVariantFormRows } from '@/lib/product-variants'
 
 export type RentalPriceTierFormRow = {
   minDays: number
@@ -111,10 +112,12 @@ export function prepareProductPricingSubmit(input: {
 
   let variantsToSubmit: Array<ProductVariantFormRow & { discount?: number }>
   if (input.showVariantOptions) {
-    variantsToSubmit = input.variants.map((variant) => ({
-      ...variant,
-      price: saleEnabled ? (variant.price ?? 0) : 0,
-    }))
+    variantsToSubmit = expandVariantFormRows(
+      input.variants.map((variant) => ({
+        ...variant,
+        price: saleEnabled ? (variant.price ?? 0) : 0,
+      })),
+    )
   } else {
     variantsToSubmit =
       saleEnabled && productVariantsHaveSalePrice(input.variants)
