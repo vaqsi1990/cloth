@@ -25,6 +25,7 @@ export const ownerProductListSelect = {
   maxRentalDays: true,
   status: true,
   approvalStatus: true,
+  rejectionReason: true,
   createdAt: true,
   updatedAt: true,
   category: {

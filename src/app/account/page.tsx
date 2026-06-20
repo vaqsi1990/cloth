@@ -20,7 +20,7 @@ import {
   getCartItemBuyerSavings,
   getCartItemPayablePrice,
 } from '@/lib/cart-item-pricing'
-import { processExpiredDiscount } from '@/lib/discount-helpers'
+import { formatOwnerProductPriceLabel, processExpiredDiscount } from '@/lib/discount-helpers'
 import {
   broadcastProductStatusUpdate,
   type ProductStatusValue,
@@ -113,6 +113,7 @@ interface ProductItem {
   isSecondHand?: boolean
   images?: Array<{ url: string }>
   variants?: Array<{ price: number; size: string; id: number; imageUrl?: string | null }>
+  rentalPriceTiers?: Array<{ minDays: number; pricePerDay: number }>
   approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED'
   rejectionReason?: string | null
 }
@@ -224,6 +225,7 @@ const AccountPageContent = () => {
   const [contactingChatKey, setContactingChatKey] = useState<string | null>(null)
   const [loadingSales, setLoadingSales] = useState(false)
   const [loadingProducts, setLoadingProducts] = useState(false)
+  const [resubmittingProductId, setResubmittingProductId] = useState<number | null>(null)
   const [vouchers, setVouchers] = useState<UserVoucherItem[]>([])
   const [loadingVouchers, setLoadingVouchers] = useState(false)
   const [verification, setVerification] = useState<{
@@ -1035,6 +1037,40 @@ const AccountPageContent = () => {
     if (nextPage === productsPageRef.current) return
     void fetchProducts(nextPage)
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleResubmitProduct = async (productId: number) => {
+    try {
+      setResubmittingProductId(productId)
+
+      const response = await fetch(
+        `/api/user/products/${productId}/resubmit-approval`,
+        { method: 'POST' },
+      )
+      const result = await response.json()
+
+      if (response.ok && result.success && result.product) {
+        setProducts((prev) =>
+          prev.map((product) =>
+            product.id === productId
+              ? {
+                  ...product,
+                  approvalStatus: result.product.approvalStatus,
+                  rejectionReason: result.product.rejectionReason,
+                }
+              : product,
+          ),
+        )
+        showToast(result.message || 'პროდუქტი ხელახლა გაიგზავნა დამტკიცებაზე', 'success')
+      } else {
+        showToast(result.error || 'შეცდომა დამტკიცებაზე ხელახლა გაგზავნისას', 'error')
+      }
+    } catch (error) {
+      console.error('Error resubmitting product:', error)
+      showToast('შეცდომა დამტკიცებაზე ხელახლა გაგზავნისას', 'error')
+    } finally {
+      setResubmittingProductId(null)
+    }
   }
 
   const handleDeleteProduct = async (productId: number) => {
@@ -1877,23 +1913,7 @@ const AccountPageContent = () => {
                     </div>
                   )}
                   <p className="md:text-[18px] text-[16px] font-bold text-black mb-2">
-                    {(() => {
-                      if (!product.variants || product.variants.length === 0) return '₾0.00'
-
-                      const variantPrices = product.variants as Array<{ price: number; size: string; id: number }>
-                      const prices = variantPrices
-                        .filter((v: { price: number; size: string; id: number }) => typeof v.price === 'number')
-                        .map((v: { price: number }) => v.price)
-
-                      if (prices.length === 0) return '₾0.00'
-
-                      const minPrice = Math.min(...prices)
-                      const maxPrice = Math.max(...prices)
-
-                      return minPrice === maxPrice
-                        ? `₾${minPrice.toFixed(2)}`
-                        : `₾${minPrice.toFixed(2)} - ₾${maxPrice.toFixed(2)}`
-                    })()}
+                    {formatOwnerProductPriceLabel(product)}
                   </p>
                   <div className="mb-3 space-y-1">
                     <span
@@ -1907,12 +1927,17 @@ const AccountPageContent = () => {
                     >
                       {getProductApprovalLabel(product.approvalStatus)}
                     </span>
-                    {product.approvalStatus === 'REJECTED' && product.rejectionReason && (
-                      <p className="text-[16px] text-red-700 font-medium">
-                        მიზეზი: {product.rejectionReason}
-                      </p>
+                    {product.approvalStatus === 'REJECTED' && (
+                      <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 space-y-1">
+                        <p className="text-[16px] text-red-800 font-medium">
+                          უარყოფის მიზეზი: {product.rejectionReason?.trim() || 'მიზეზი არ არის მითითებული'}
+                        </p>
+                        <p className="text-[15px] text-red-700">
+                          შეცვალეთ პროდუქტი ან გაგზავნეთ ხელახლა დამტკიცებაზე.
+                        </p>
+                      </div>
                     )}
-                    {product.approvalStatus !== 'APPROVED' && (
+                    {product.approvalStatus === 'PENDING' && (
                       <p className="text-[16px] text-black">
                         პროდუქტი გამოჩნდება მომხმარებლებისთვის დამტკიცების შემდეგ.
                       </p>
@@ -1935,7 +1960,20 @@ const AccountPageContent = () => {
                     </select>
                   </div>
 
-                  <div className="mt-4 flex space-x-2">
+                  <div className="mt-4 flex flex-col gap-2">
+                    {product.approvalStatus === 'REJECTED' && (
+                      <button
+                        type="button"
+                        onClick={() => handleResubmitProduct(product.id)}
+                        disabled={resubmittingProductId === product.id}
+                        className="w-full px-3 py-2 bg-[#1B3729] text-white rounded-lg font-bold transition-colors md:text-[18px] text-[16px] disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {resubmittingProductId === product.id
+                          ? 'იგზავნება...'
+                          : 'ხელახლა გაგზავნა დამტკიცებაზე'}
+                      </button>
+                    )}
+                    <div className="flex space-x-2">
                     <Link
                       href={`/account/products/${product.id}/edit`}
                       className="flex-1 px-3 py-2 bg-black text-white rounded-lg  font-bold transition-colors md:text-[18px] text-[16px] text-center"
@@ -1948,6 +1986,7 @@ const AccountPageContent = () => {
                     >
                     <Trash2 className="w-7 h-7" />
                     </button>
+                    </div>
                   </div>
                 </div>
               </div>

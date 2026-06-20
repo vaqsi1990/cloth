@@ -72,6 +72,54 @@ export function getProductDiscountBasePrice(
   return { basePrice: 0, priceType: null }
 }
 
+export type OwnerProductPriceInput = {
+  variants?: Array<{ price?: number | null }> | null
+  rentalPriceTiers?: Array<{ minDays: number; pricePerDay: number }> | null
+}
+
+export function getOwnerProductSalePrices(
+  variants: Array<{ price?: number | null }> | null | undefined,
+): number[] {
+  return (variants || [])
+    .map((variant) => variant.price ?? 0)
+    .filter((price) => price > 0)
+}
+
+export function getOwnerProductRentalDisplayPrice(
+  tiers: Array<{ minDays: number; pricePerDay: number }> | null | undefined,
+): number {
+  const validTiers = (tiers || []).filter(
+    (tier) => tier.pricePerDay > 0 && tier.minDays > 0,
+  )
+
+  if (validTiers.length === 0) {
+    return 0
+  }
+
+  const sortedTiers = [...validTiers].sort((a, b) => a.minDays - b.minDays)
+  const firstTier = sortedTiers[0]
+  return firstTier.minDays * firstTier.pricePerDay
+}
+
+export function formatOwnerProductPriceLabel(product: OwnerProductPriceInput): string {
+  const salePrices = getOwnerProductSalePrices(product.variants)
+  if (salePrices.length > 0) {
+    const minPrice = Math.min(...salePrices)
+    const maxPrice = Math.max(...salePrices)
+
+    return minPrice === maxPrice
+      ? `₾${minPrice.toFixed(2)}`
+      : `₾${minPrice.toFixed(2)} - ₾${maxPrice.toFixed(2)}`
+  }
+
+  const rentalPrice = getOwnerProductRentalDisplayPrice(product.rentalPriceTiers)
+  if (rentalPrice > 0) {
+    return `₾${rentalPrice.toFixed(2)}`
+  }
+
+  return '₾0.00'
+}
+
 export function getDiscountedPrice(
   basePrice: number,
   discount?: number | null,
