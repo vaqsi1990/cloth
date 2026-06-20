@@ -300,6 +300,13 @@ const AdminDashboard = () => {
       icon: Info,
       color: 'bg-gray-600',
     },
+    {
+      title: 'ანალიტიკა',
+      description: 'ვიზიტორები და IP სტატისტიკა',
+      href: '/admin/analytics',
+      icon: BarChart3,
+      color: 'bg-indigo-600',
+    },
   ]
 
   // ---------------------

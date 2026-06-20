@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Info, Check, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
+import { ArrowLeft, Info, Check, Trash2, ChevronDown, ChevronUp, BarChart3 } from 'lucide-react'
 import Image from '@/component/AppImage'
 import { formatDate } from '@/utils/dateUtils'
 import {
@@ -475,16 +475,25 @@ const AdminInfoPage = () => {
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white shadow-sm border-b">
         <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="flex items-center space-x-2 text-black hover:text-gray-900 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5 sm:w-7 sm:h-7 font-bold" />
-            <span className="text-sm sm:text-base md:text-lg lg:text-[20px] font-bold text-black">
-              უკან დაბრუნება
-            </span>
-          </button>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="flex items-center space-x-2 text-black hover:text-gray-900 transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5 sm:w-7 sm:h-7 font-bold" />
+              <span className="text-sm sm:text-base md:text-lg lg:text-[20px] font-bold text-black">
+                უკან დაბრუნება
+              </span>
+            </button>
+            <Link
+              href="/admin/analytics"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-gray-300 bg-white text-black hover:bg-gray-50 transition-colors text-sm sm:text-base font-medium"
+            >
+              <BarChart3 className="w-4 h-4" />
+              ანალიტიკა
+            </Link>
+          </div>
         </div>
       </div>
 

@@ -127,6 +127,7 @@ export async function saveCookieConsent(consent: CookieConsent): Promise<void> {
       },
     };
     localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(data));
+    window.dispatchEvent(new Event('dressla-cookie-consent-changed'));
 
     // If user is authenticated, also save to API
     const authenticated = await isAuthenticated();
@@ -184,6 +185,7 @@ export async function rejectCookiesDontSave(): Promise<void> {
   try {
     // Remove local record
     localStorage.removeItem(COOKIE_CONSENT_KEY);
+    window.dispatchEvent(new Event('dressla-cookie-consent-changed'));
 
     // If authenticated, also clear server-side record
     const authenticated = await isAuthenticated();

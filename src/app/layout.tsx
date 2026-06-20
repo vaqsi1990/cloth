@@ -12,6 +12,7 @@ import SupportChatNotificationProvider from "@/components/SupportChatNotificatio
 import ToastProvider from "@/components/ToastProvider";
 import ScrollRestorer from "@/components/ScrollRestorer";
 import CookieConsent from "@/components/CookieConsent";
+import SiteAnalytics from "@/components/SiteAnalytics";
 import VoucherGiftPopup from "@/components/VoucherGiftPopup";
 
 const geistSans = Geist({
@@ -130,6 +131,7 @@ export default async function RootLayout({
             {children}
             <Footer />
             <CookieConsent />
+            <SiteAnalytics />
           </ChatProvider>
           </SupportChatNotificationProvider>
         </AuthProvider>
