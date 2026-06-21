@@ -1,7 +1,6 @@
 import type { Session } from 'next-auth'
 import { prisma } from '@/lib/prisma'
 import { isAdminSide } from '@/lib/chat-access'
-import { isAdminOrSupport } from '@/lib/roles'
 
 type ChatRoomReadMeta = {
   userId: string | null
@@ -17,7 +16,7 @@ export async function markChatRoomAsRead(
 ) {
   const readCursor = latestMessageId ?? 0
 
-  if (isAdminOrSupport(session?.user?.role) || viewerIsAdminSide) {
+  if (viewerIsAdminSide) {
     await prisma.$executeRaw`
       UPDATE "ChatRoom"
       SET "adminLastReadMessageId" = ${readCursor}
@@ -30,15 +29,6 @@ export async function markChatRoomAsRead(
     await prisma.$executeRaw`
       UPDATE "ChatRoom"
       SET "userLastReadMessageId" = ${readCursor}
-      WHERE id = ${chatRoomId}
-    `
-    return
-  }
-
-  if (session?.user?.id && session.user.id === chatRoom.adminId) {
-    await prisma.$executeRaw`
-      UPDATE "ChatRoom"
-      SET "adminLastReadMessageId" = ${readCursor}
       WHERE id = ${chatRoomId}
     `
     return

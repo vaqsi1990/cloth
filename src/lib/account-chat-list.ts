@@ -1,5 +1,9 @@
 import { prisma } from '@/lib/prisma'
-import { isLiveSupportUnreadForUser, isProductChatUnreadForUser } from '@/lib/chat-unread'
+import {
+  isLiveSupportUnreadForUser,
+  isProductChatMessageFromSeller,
+  isProductChatUnreadForUser,
+} from '@/lib/chat-unread'
 import { accountChatListWhereForUser } from '@/lib/account-product-chat'
 
 export type AccountChatRoomRow = {
@@ -24,6 +28,7 @@ export type AccountChatRoomRow = {
   last_message?: string
   last_message_isFromAdmin?: boolean
   last_message_userId?: string
+  last_message_adminId?: string | null
   last_message_id?: number
   userLastReadMessageId?: number | null
   adminLastReadMessageId?: number | null
@@ -50,13 +55,29 @@ export function isAccountLiveSupportRoom(
   )
 }
 
+function resolveAccountLastMessageFromSellerSide(
+  room: AccountChatRoomRow,
+): boolean {
+  if (isAccountLiveSupportRoom(room)) {
+    return room.last_message_isFromAdmin || false
+  }
+
+  return isProductChatMessageFromSeller(
+    room.last_message_isFromAdmin || false,
+    room.last_message_userId,
+    room.last_message_adminId,
+    room.userId,
+    room.adminId,
+  )
+}
+
 export function isAccountChatRoomUnread(
   room: AccountChatRoomRow,
   userId: string,
 ): boolean {
   if (!room.last_message) return false
 
-  const lastMessageIsFromAdmin = room.last_message_isFromAdmin || false
+  const lastMessageIsFromAdmin = resolveAccountLastMessageFromSellerSide(room)
   const isLiveSupport = isAccountLiveSupportRoom(room)
 
   if (isLiveSupport && room.userId === userId) {
@@ -84,7 +105,7 @@ function transformAccountChatRoom(
   room: AccountChatRoomRow,
   userId: string,
 ): AccountChatRoomSummary {
-  const lastMessageIsFromAdmin = room.last_message_isFromAdmin || false
+  const lastMessageIsFromAdmin = resolveAccountLastMessageFromSellerSide(room)
   const isLiveSupport = isAccountLiveSupportRoom(room)
   const isUnread = isAccountChatRoomUnread(room, userId)
 
@@ -126,6 +147,7 @@ export async function fetchAccountChatRooms(
             FROM "ChatMessage" cm WHERE cm."chatRoomId" = cr.id ORDER BY cm."createdAt" DESC LIMIT 1) as last_message,
            (SELECT "isFromAdmin" FROM "ChatMessage" WHERE "chatRoomId" = cr.id ORDER BY "createdAt" DESC LIMIT 1) as last_message_isFromAdmin,
            (SELECT "userId" FROM "ChatMessage" WHERE "chatRoomId" = cr.id ORDER BY "createdAt" DESC LIMIT 1) as last_message_userId,
+           (SELECT "adminId" FROM "ChatMessage" WHERE "chatRoomId" = cr.id ORDER BY "createdAt" DESC LIMIT 1) as last_message_adminId,
            (SELECT id FROM "ChatMessage" WHERE "chatRoomId" = cr.id ORDER BY "createdAt" DESC LIMIT 1) as last_message_id
     FROM "ChatRoom" cr
     LEFT JOIN "User" u ON cr."userId" = u.id

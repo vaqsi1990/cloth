@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { isAdminOrSupport } from '@/lib/roles'
 import { getChatRoomIfAllowed, isAdminSide } from '@/lib/chat-access'
+import { resolveMessageFromAdminSide } from '@/lib/chat-unread'
 import {
   getOtherPartyTyping,
   getTypingLabel,
@@ -211,16 +212,24 @@ export async function POST(
       )
     }
 
-    // Check if user is the seller (adminId) in this chat room
-    const chatRoomInfo = await prisma.$queryRaw<Array<{ userId: string | null; adminId: string | null }>>`
-      SELECT "userId", "adminId" FROM "ChatRoom" WHERE id = ${chatRoomId} LIMIT 1
+    const chatRoomInfo = await prisma.$queryRaw<
+      Array<{ userId: string | null; adminId: string | null; productId: number | null }>
+    >`
+      SELECT "userId", "adminId", "productId" FROM "ChatRoom" WHERE id = ${chatRoomId} LIMIT 1
     `
-    
-    const isUserSeller = chatRoomInfo.length > 0 && chatRoomInfo[0].adminId === session?.user?.id
+
+    const roomMeta = chatRoomInfo[0]
+    const isUserSeller = roomMeta?.adminId === session?.user?.id
+    const isUserBuyer = roomMeta?.userId === session?.user?.id
     const isUserAdminOrSupport = isAdminOrSupport(session?.user?.role)
-    
-    // Determine if message is from admin/support/seller
-    const isFromAdmin = isUserAdminOrSupport || isUserSeller
+    const isProductChat = roomMeta?.productId != null
+
+    const isFromAdmin = resolveMessageFromAdminSide({
+      isUserSeller,
+      isUserBuyer,
+      isUserAdminOrSupport,
+      isProductChat,
+    })
     let adminId: string | null = null
     if (isFromAdmin && session?.user?.id) {
       const adminUser = await prisma.user.findUnique({

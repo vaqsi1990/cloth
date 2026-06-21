@@ -278,8 +278,8 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
     chatRoomId: selectedChatRoom?.id,
     enabled: !!selectedChatRoom,
   })
-  const { unreadCount: polledChatUnread } = useUserChatUnreadCount(
-    section === 'chats' && !!session?.user?.id,
+  const { unreadCount: polledChatUnread, refresh: refreshChatUnread } = useUserChatUnreadCount(
+    !!session?.user?.id,
   )
   const chatsUnreadCount = Math.max(
     polledChatUnread,
@@ -415,7 +415,7 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
 
     void fetchChatRooms({ silent: false })
     const interval = setInterval(() => {
-      void fetchChatRooms({ silent: false })
+      void fetchChatRooms({ silent: true })
     }, 10000)
 
     return () => clearInterval(interval)
@@ -599,7 +599,7 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
           })
         }
 
-        void fetchChatRooms()
+        void refreshChatUnread()
       }
     } catch (error) {
       console.error('Error fetching chat rooms:', error)
@@ -644,7 +644,7 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
             room.id === chatRoomId ? { ...room, is_unread: false } : room,
           ),
         )
-        void fetchChatRooms()
+        void refreshChatUnread()
       }
     } catch (error) {
       console.error('Error fetching messages:', error)
@@ -723,7 +723,7 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
         ) {
           localStorage.removeItem('liveSupportChatRoomId')
         }
-        void fetchChatRooms()
+        void refreshChatUnread()
       } else {
         showToast(data.error || 'შეცდომა ჩათის წაშლისას', 'error')
       }
@@ -2141,10 +2141,17 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
             }`}
           >
             <div className="p-3 sm:p-4 border-b border-gray-200 shrink-0 flex items-center justify-between gap-2">
-              <h3 className="md:text-[20px] text-[18px] font-bold text-black">ჩათები</h3>
+              <div className="min-w-0">
+                <h3 className="md:text-[20px] text-[18px] font-bold text-black">ჩათები</h3>
+                {chatsUnreadCount > 0 ? (
+                  <p className="text-sm text-red-600 font-medium mt-0.5">
+                    {chatsUnreadCount} წაუკითხავი ჩათი
+                  </p>
+                ) : null}
+              </div>
               <ChatUnreadBadge
                 count={chatsUnreadCount}
-                className="relative"
+                className="relative shrink-0"
                 pulse={false}
               />
             </div>
@@ -2184,8 +2191,12 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
                         >
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex-1 min-w-0">
-                              <p className={`font-semibold md:text-[16px] text-[14px] truncate ${
-                                isSelected ? 'text-white' : 'text-black'
+                              <p className={`md:text-[16px] text-[14px] truncate ${
+                                isSelected
+                                  ? 'text-white font-semibold'
+                                  : room.is_unread
+                                    ? 'text-black font-bold'
+                                    : 'text-black font-semibold'
                               }`}>
                                 {displayName}
                               </p>
@@ -2209,9 +2220,14 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
                             </div>
                             {room.is_unread ? (
                               <span
-                                className="shrink-0 w-2.5 h-2.5 rounded-full bg-red-500"
+                                className="shrink-0 flex items-center gap-1.5"
                                 title="ახალი შეტყობინება"
-                              />
+                              >
+                                <span className="hidden sm:inline text-xs font-semibold text-red-600">
+                                  ახალი
+                                </span>
+                                <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+                              </span>
                             ) : null}
                           </div>
                         </button>

@@ -79,12 +79,13 @@ export async function getChatRoomIfAllowed(
   return room
 }
 
-/** Admin/support, assigned seller, or product author side */
+/** Seller/staff side of the room (not the buyer/customer side). */
 export function isAdminSide(
   session: Session | null,
-  chatRoom: Pick<ChatRoomAccess, 'adminId'>
+  chatRoom: Pick<ChatRoomAccess, 'adminId' | 'userId'>,
 ): boolean {
-  if (isAdminOrSupport(session?.user?.role)) return true
-  if (session?.user?.id && chatRoom.adminId === session.user.id) return true
-  return false
+  const viewerId = session?.user?.id
+  if (viewerId && chatRoom.adminId === viewerId) return true
+  if (viewerId && chatRoom.userId === viewerId) return false
+  return isAdminOrSupport(session?.user?.role)
 }

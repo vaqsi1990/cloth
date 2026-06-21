@@ -1,3 +1,44 @@
+/** Whether an outgoing message belongs to the seller/staff side of the room. */
+export function resolveMessageFromAdminSide(params: {
+  isUserSeller: boolean
+  isUserBuyer: boolean
+  isUserAdminOrSupport: boolean
+  isProductChat: boolean
+}): boolean {
+  if (params.isProductChat) {
+    return params.isUserSeller
+  }
+
+  if (params.isUserBuyer) {
+    return false
+  }
+
+  return params.isUserAdminOrSupport || params.isUserSeller
+}
+
+/** Product chat rows: derive seller-side from sender ids (handles legacy mis-tagged admin buyer messages). */
+export function isProductChatMessageFromSeller(
+  lastMessageIsFromAdmin: boolean,
+  lastMessageUserId: string | null | undefined,
+  lastMessageAdminId: string | null | undefined,
+  roomUserId: string | null | undefined,
+  roomAdminId: string | null | undefined,
+): boolean {
+  if (lastMessageAdminId && roomAdminId && lastMessageAdminId === roomAdminId) {
+    return true
+  }
+
+  if (lastMessageUserId && roomUserId && lastMessageUserId === roomUserId) {
+    return false
+  }
+
+  if (lastMessageAdminId && roomUserId && lastMessageAdminId === roomUserId) {
+    return false
+  }
+
+  return lastMessageIsFromAdmin
+}
+
 /** Product chat (buyer ↔ seller): unread when the last message is from the other side and not yet read. */
 function toMessageId(value: number | bigint | null | undefined): number | null {
   if (value == null) return null
