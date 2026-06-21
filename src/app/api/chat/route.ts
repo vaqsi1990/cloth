@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
     const messageContent = normalizeChatMessageContent(guestData.message)
     const messageImageUrl = guestData.imageUrl ?? null
 
-    const rateLimit = checkGuestChatCreateRateLimit(getClientIp(request), guestEmail)
+    const rateLimit = await checkGuestChatCreateRateLimit(getClientIp(request), guestEmail)
     if (!rateLimit.allowed) {
       return NextResponse.json(
         {

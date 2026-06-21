@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef } from 'react'
+import { guestChatEmailHeaders } from '@/lib/chat-guest-header'
 
 type UseChatTypingOptions = {
   chatRoomId?: number | null
@@ -24,11 +25,11 @@ export function useChatTyping({
       try {
         await fetch(`/api/chat/${chatRoomId}/typing`, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            typing,
-            ...(guestEmail?.trim() ? { guestEmail: guestEmail.trim() } : {}),
-          }),
+          headers: {
+            'Content-Type': 'application/json',
+            ...guestChatEmailHeaders(guestEmail),
+          },
+          body: JSON.stringify({ typing }),
         })
         typingActiveRef.current = typing
       } catch {

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { z } from 'zod'
 import { getChatRoomIfAllowed, isAdminSide } from '@/lib/chat-access'
+import { resolveGuestEmailFromRequest } from '@/lib/chat-guest-auth'
 import { setChatTyping } from '@/lib/chat-typing'
 
 const typingSchema = z.object({
@@ -26,8 +27,10 @@ export async function PATCH(
 
     const session = await getServerSession(authOptions)
     const body = await request.json().catch(() => ({}))
-    const guestEmail =
-      typeof body?.guestEmail === 'string' ? body.guestEmail : null
+    const guestEmail = resolveGuestEmailFromRequest(
+      request,
+      typeof body?.guestEmail === 'string' ? body.guestEmail : null,
+    )
     const chatRoom = await getChatRoomIfAllowed(chatRoomId, session, guestEmail)
 
     if (!chatRoom) {

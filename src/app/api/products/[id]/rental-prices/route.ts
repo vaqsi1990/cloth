@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { internalServerErrorResponse } from '@/lib/api-error'
 
 // Validation schema for rental price tier
 const rentalPriceTierSchema = z.object({
@@ -41,15 +42,7 @@ export async function GET(
     })
 
   } catch (error) {
-    console.error('Error fetching rental price tiers:', error)
-    return NextResponse.json(
-      { 
-        success: false,
-        error: 'Internal server error',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    )
+    return internalServerErrorResponse('Error fetching rental price tiers:', error)
   }
 }
 
@@ -137,18 +130,9 @@ export async function POST(
       )
     }
     
-    return NextResponse.json(
-      { 
-        success: false,
-        error: 'Internal server error',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    )
+    return internalServerErrorResponse('Error saving rental price tiers:', error)
   }
 }
-
-// DELETE - Delete all rental price tiers for a product
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -183,14 +167,6 @@ export async function DELETE(
     })
 
   } catch (error) {
-    console.error('Error deleting rental price tiers:', error)
-    return NextResponse.json(
-      { 
-        success: false,
-        error: 'Internal server error',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    )
+    return internalServerErrorResponse('Error deleting rental price tiers:', error)
   }
 }

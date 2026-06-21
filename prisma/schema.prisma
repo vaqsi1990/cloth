@@ -804,3 +804,10 @@ model SiteVisit {
   @@index([createdAt])
   @@index([visitorId, createdAt])
 }
+
+model ApiRateLimitBucket {
+  bucketKey String   @id
+  count     Int      @default(0)
+  resetAt   DateTime
+  updatedAt DateTime @updatedAt
+}

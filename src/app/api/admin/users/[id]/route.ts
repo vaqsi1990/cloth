@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { isAdminOrSupport } from '@/lib/roles'
+import { isAdmin } from '@/lib/roles'
 
 // DELETE - Delete user by ID
 export async function DELETE(
@@ -12,9 +12,9 @@ export async function DELETE(
   try {
     // Check authentication and admin/support role
     const session = await getServerSession(authOptions)
-    if (!session || !isAdminOrSupport(session.user.role)) {
+    if (!session || !isAdmin(session.user.role)) {
       return NextResponse.json(
-        { success: false, error: 'Admin or Support access required' },
+        { success: false, error: 'Admin access required' },
         { status: 403 }
       )
     }

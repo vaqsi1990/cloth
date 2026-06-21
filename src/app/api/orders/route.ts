@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { findRentalDateConflict } from '@/lib/rental-date-conflicts'
 import { MAX_CHECKOUT_ITEMS, MAX_CART_ITEM_QUANTITY, CHECKOUT_SINGLE_ITEM_MESSAGE } from '@/lib/cart-limits'
+import { internalServerErrorResponse } from '@/lib/api-error'
 
 // Order validation schema
 const orderSchema = z.object({
@@ -167,14 +168,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
     
-    // Provide more detailed error information in development
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    
-    return NextResponse.json({
-      success: false,
-      message: 'შეცდომა შეკვეთის გაფორმებისას',
-      ...(process.env.NODE_ENV === 'development' && { error: errorMessage })
-    }, { status: 500 })
+    return internalServerErrorResponse('Error creating order:', error)
   }
 }
 

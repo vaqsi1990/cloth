@@ -12,12 +12,8 @@ import ChatMessageContent from '@/components/ChatMessageContent'
 import ChatImageUploadButton from '@/components/ChatImageUploadButton'
 import ChatPendingImagePreview from '@/components/ChatPendingImagePreview'
 import { canSendChatMessage } from '@/lib/chat-message'
+import { guestChatEmailHeaders } from '@/lib/chat-guest-header'
 import { useUserChatNotification } from '@/components/UserChatNotificationProvider'
-
-function guestChatQuery(guestEmail: string | undefined): string {
-  if (!guestEmail?.trim()) return ''
-  return `?guestEmail=${encodeURIComponent(guestEmail.trim())}`
-}
 
 interface ChatMessage {
   id: number
@@ -116,12 +112,12 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
     setIsFetchingMessages(true)
     
     try {
-      const guestQuery = session?.user?.id ? '' : guestChatQuery(guestEmail)
-      const response = await fetch(`/api/chat/${chatRoomId}${guestQuery}`, {
-        cache: 'no-store', // Ensure fresh data
+      const response = await fetch(`/api/chat/${chatRoomId}`, {
+        cache: 'no-store',
         headers: {
-          'Cache-Control': 'no-cache'
-        }
+          'Cache-Control': 'no-cache',
+          ...(!session?.user?.id ? guestChatEmailHeaders(guestEmail) : {}),
+        },
       })
 
       if (!response.ok) {
@@ -387,10 +383,9 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
 
     setIsEndingChat(true)
     try {
-      const response = await fetch(
-        `/api/chat/${chatRoomId}${session?.user?.id ? '' : guestChatQuery(guestEmail)}`,
-        {
-        method: 'DELETE'
+      const response = await fetch(`/api/chat/${chatRoomId}`, {
+        method: 'DELETE',
+        headers: !session?.user?.id ? guestChatEmailHeaders(guestEmail) : undefined,
       })
 
       if (response.ok) {

@@ -133,7 +133,7 @@ export async function PUT(request: NextRequest) {
         await saveUserIbanVerification(session.user.id, iban)
       } catch (error) {
         return NextResponse.json(
-          { success: false, error: error instanceof Error ? error.message : 'IBAN არასწორია' },
+          { success: false, error: 'IBAN არასწორია' },
           { status: 400 }
         )
       }

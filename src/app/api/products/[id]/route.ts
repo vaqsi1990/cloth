@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { internalServerErrorResponse } from '@/lib/api-error'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { getServerSession } from 'next-auth'
@@ -533,24 +534,9 @@ export async function PUT(
     
     console.error('=== ERROR UPDATING PRODUCT ===')
     console.error('Error type:', error?.constructor?.name)
-    console.error('Error message:', error instanceof Error ? error.message : String(error))
-    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
     console.error('Full error:', error)
     
-    // Check for Prisma errors
-    if (error && typeof error === 'object' && 'code' in error) {
-      console.error('Prisma error code:', (error as any).code)
-      console.error('Prisma error meta:', (error as any).meta)
-    }
-    
-    return NextResponse.json({
-      success: false,
-      message: 'შეცდომა პროდუქტის განახლებისას',
-      error: error instanceof Error ? error.message : 'Unknown error',
-      ...(process.env.NODE_ENV === 'development' && {
-        details: error instanceof Error ? error.stack : String(error)
-      })
-    }, { status: 500 })
+    return internalServerErrorResponse('Error updating product:', error)
   }
 }
 

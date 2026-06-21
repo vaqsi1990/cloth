@@ -13,6 +13,7 @@ import {
 } from '@/lib/chat-typing'
 import { markChatRoomAsRead } from '@/lib/chat-mark-read'
 import { closeLiveSupportChatRoom } from '@/lib/chat-live-support-room'
+import { resolveGuestEmailFromRequest } from '@/lib/chat-guest-auth'
 import {
   normalizeChatMessageContent,
   sendChatMessageSchema,
@@ -43,7 +44,7 @@ export async function GET(
     }
 
     const session = await getServerSession(authOptions)
-    const guestEmail = request.nextUrl.searchParams.get('guestEmail')
+    const guestEmail = resolveGuestEmailFromRequest(request)
 
     type ChatRoomMeta = {
       userId: string | null
@@ -179,8 +180,10 @@ export async function POST(
 
     const session = await getServerSession(authOptions)
     const body = await request.json()
-    const guestEmail =
-      typeof body?.guestEmail === 'string' ? body.guestEmail : null
+    const guestEmail = resolveGuestEmailFromRequest(
+      request,
+      typeof body?.guestEmail === 'string' ? body.guestEmail : null,
+    )
     const validatedData = sendMessageSchema.parse(body)
     const messageContent = normalizeChatMessageContent(validatedData.content)
     const messageImageUrl = validatedData.imageUrl ?? null
@@ -401,7 +404,7 @@ export async function DELETE(
     }
 
     const session = await getServerSession(authOptions)
-    const guestEmail = request.nextUrl.searchParams.get('guestEmail')
+    const guestEmail = resolveGuestEmailFromRequest(request)
 
     const chatRoomAccess = await getChatRoomIfAllowed(
       chatRoomId,

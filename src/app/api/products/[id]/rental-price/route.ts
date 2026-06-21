@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { internalServerErrorResponse } from '@/lib/api-error'
 
 // Validation schema for rental price calculation
 const calculatePriceSchema = z.object({
@@ -87,15 +88,7 @@ export async function GET(
     })
 
   } catch (error) {
-    console.error('Error calculating rental price:', error)
-    return NextResponse.json(
-      { 
-        success: false,
-        error: 'Internal server error',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    )
+    return internalServerErrorResponse('Error calculating rental price:', error)
   }
 }
 
@@ -188,13 +181,6 @@ export async function POST(
       )
     }
     
-    return NextResponse.json(
-      { 
-        success: false,
-        error: 'Internal server error',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    )
+    return internalServerErrorResponse('Error calculating rental price (POST):', error)
   }
 }
