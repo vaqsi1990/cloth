@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react'
 import { MessageCircle, Send, X, Minimize2, Maximize2, Bell, BellOff } from 'lucide-react'
 import { formatDateTime } from '@/utils/dateUtils'
 import { useSession } from 'next-auth/react'
@@ -54,7 +54,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
   const [showGuestForm, setShowGuestForm] = useState(true)
   const [isEndingChat, setIsEndingChat] = useState(false)
   const [otherPartyTyping, setOtherPartyTyping] = useState(false)
-  const { data: session } = useSession()
+  const { data: session, status: sessionStatus } = useSession()
   const {
     soundEnabled: chatSoundEnabled,
     toggleSound: toggleChatSound,
@@ -67,8 +67,8 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
     guestEmail: session?.user?.id ? undefined : guestEmail,
   })
 
-  // Load guest info from localStorage on component mount (guests only)
-  useEffect(() => {
+  // Restore guest session before paint so the first fetch includes x-guest-email.
+  useLayoutEffect(() => {
     if (typeof window === 'undefined') return
     if (session?.user?.id) return
 
@@ -83,8 +83,8 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
         setShowGuestForm(false)
 
         if (savedChatRoomId && savedChatRoomId !== '0') {
-          const roomId = parseInt(savedChatRoomId)
-          if (!isNaN(roomId)) {
+          const roomId = parseInt(savedChatRoomId, 10)
+          if (!Number.isNaN(roomId)) {
             onChatRoomCreated(roomId)
           }
         }
@@ -105,6 +105,9 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
       setMessages([])
       return
     }
+
+    if (sessionStatus === 'loading') return
+    if (!session?.user?.id && !guestEmail.trim()) return
 
     // Prevent multiple simultaneous fetches
     if (fetchingRef.current) return
@@ -203,7 +206,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
       fetchingRef.current = false
       setIsFetchingMessages(false)
     }
-  }, [chatRoomId, onChatRoomCreated, session?.user?.id, guestEmail, acknowledgeActiveChat])
+  }, [chatRoomId, onChatRoomCreated, session?.user?.id, sessionStatus, guestEmail, acknowledgeActiveChat])
 
   useEffect(() => {
     if (!session?.user?.id) return
@@ -216,20 +219,20 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
 
   // Fetch messages and poll when chat is open
   useEffect(() => {
-    if (chatRoomId && chatRoomId > 0 && isOpen) {
-      fetchMessages()
-      // Poll for new messages every 5 seconds, but only if we have a valid chat room
-      const interval = setInterval(() => {
-        if (chatRoomId && chatRoomId > 0) {
-          fetchMessages()
-        }
-      }, 5000)
-      return () => clearInterval(interval)
-    } else if (!chatRoomId || chatRoomId === 0) {
-      // Clear messages if no valid chat room
-      setMessages([])
+    if (!chatRoomId || chatRoomId <= 0 || !isOpen) {
+      if (!chatRoomId || chatRoomId === 0) {
+        setMessages([])
+      }
+      return
     }
-  }, [chatRoomId, isOpen, fetchMessages])
+
+    if (sessionStatus === 'loading') return
+    if (!session?.user?.id && !guestEmail.trim()) return
+
+    fetchMessages()
+    const interval = setInterval(fetchMessages, 5000)
+    return () => clearInterval(interval)
+  }, [chatRoomId, isOpen, fetchMessages, session?.user?.id, sessionStatus, guestEmail])
 
   const sendMessage = async () => {
     if (!canSendChatMessage(newMessage, pendingImageUrl)) return
