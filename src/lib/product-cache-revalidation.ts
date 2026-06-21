@@ -13,7 +13,8 @@ export function revalidateProductCaches(
   revalidatePath('/', 'page')
   revalidatePath('/admin/products', 'page')
   revalidatePath('/support/products', 'page')
-  revalidatePath('/account', 'page')
+  revalidatePath('/account/profile', 'page')
+  revalidatePath('/account/products', 'page')
 
   if (options?.authorId) {
     revalidatePath(`/author/${options.authorId}`, 'page')

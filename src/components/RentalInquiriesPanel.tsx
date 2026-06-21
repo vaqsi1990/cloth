@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from '@/component/AppImage'
 import { Check, MessageCircle, Trash2, X } from 'lucide-react'
 import { showToast } from '@/utils/toast'
+import { accountSectionPath } from '@/lib/account-routes'
 
 type Inquiry = {
   id: number
@@ -335,7 +336,7 @@ export default function RentalInquiriesPanel({ scope, title }: RentalInquiriesPa
 
               {inq.chatRoomId && (
                 <Link
-                  href={scope === 'buyer' ? '/account?tab=chats' : '/account?tab=chats'}
+                  href={accountSectionPath('chats')}
                   className="inline-flex items-center gap-2 mt-3 text-sm text-[#1B3729] font-medium"
                 >
                   <MessageCircle className="w-4 h-4" />

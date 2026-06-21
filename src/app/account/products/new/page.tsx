@@ -274,14 +274,14 @@ const NewProductPage = () => {
 
         if (!allowed) {
           showToast('პროდუქტის დასამატებლად სავალდებულოა ბანკის IBAN. მიუთითეთ პარამეტრებში.', 'error')
-          router.push('/account?tab=settings')
+          router.push('/account/settings')
           return
         }
 
         setEligibilityChecked(true)
       } catch {
         showToast('ვერ მოხერხდა უფლებების შემოწმება', 'error')
-        router.push('/account?tab=products')
+        router.push('/account/products')
       }
     }
 
@@ -681,19 +681,19 @@ const NewProductPage = () => {
           }
 
           showToast(payResult.error || 'VIP გადახდის დაწყება ვერ მოხერხდა', 'error')
-          router.push('/account?tab=products')
+          router.push('/account/products')
           return
         }
 
         showToast('პროდუქტი წარმატებით შეიქმნა!', 'success')
-        router.push('/account')
+        router.push('/account/profile')
       } else {
         if (result.missingIban) {
           showToast(
             result.error || 'პროდუქტის დასამატებლად სავალდებულოა ბანკის IBAN. მიუთითეთ პარამეტრებში.',
             'error',
           )
-          router.push('/account?tab=settings')
+          router.push('/account/settings')
           return
         }
         if (result.errors) {
@@ -1221,7 +1221,7 @@ const NewProductPage = () => {
           {/* Submit Button */}
           <div className="flex justify-end space-x-4">
             <Link
-              href="/account"
+              href="/account/profile"
               className="bg-gray-500 text-white px-6 py-3 rounded-lg text-[20px] text-black hover:bg-gray-600 transition-colors"
             >
               გაუქმება

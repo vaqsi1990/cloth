@@ -776,12 +776,12 @@ const EditProductPage = () => {
           }
 
           showToast(payResult.error || 'VIP გადახდის დაწყება ვერ მოხერხდა', 'error')
-          router.push('/account?tab=products')
+          router.push('/account/products')
           return
         }
 
         showToast('პროდუქტი წარმატებით განახლდა!', 'success')
-        router.push('/account')
+        router.push('/account/profile')
       } else {
         if (result.errors) {
           const newErrors = mapZodIssuesToProductFormErrors(result.errors)
@@ -1358,7 +1358,7 @@ const EditProductPage = () => {
           {/* Submit Button */}
           <div className="flex justify-end space-x-4">
             <Link
-              href="/account"
+              href="/account/profile"
               className="bg-gray-500 text-white px-6 py-3 rounded-lg text-[20px] text-black hover:bg-gray-600 transition-colors"
             >
               გაუქმება

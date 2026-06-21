@@ -151,7 +151,7 @@ export default async function RentalInquiryEmailActionPage({ searchParams }: Pag
           )}
 
           <Link
-            href="/account?tab=inquiries"
+            href="/account/inquiries"
             className="inline-block bg-[#1B3729] text-white px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity"
           >
             მოთხოვნების ნახვა

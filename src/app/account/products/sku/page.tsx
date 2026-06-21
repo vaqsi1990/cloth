@@ -147,7 +147,7 @@ const UserProductBySKUPage = () => {
                 <span>უკან</span>
               </button>
               <Link
-                href="/account"
+                href="/account/profile"
                 className="px-4 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide transition-colors"
               >
                 ჩემი ანგარიში

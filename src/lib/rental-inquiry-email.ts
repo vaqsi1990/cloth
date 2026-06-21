@@ -36,7 +36,7 @@ export function buildRentalInquirySellerEmailHtml(
   payload: RentalInquiryEmailPayload,
 ): string {
   const siteUrl = getSiteUrl()
-  const confirmUrl = `${siteUrl}/account?tab=inquiries`
+  const confirmUrl = `${siteUrl}/account/inquiries`
   const approveUrl = buildRentalInquiryActionUrl(
     payload.inquiryId,
     payload.sellerId,

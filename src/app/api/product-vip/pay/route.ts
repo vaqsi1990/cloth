@@ -29,8 +29,8 @@ function buildVipRedirectUrls(siteUrl: string, productId: number, returnTo: 'acc
   }
 
   return {
-    success: `${siteUrl}/account?tab=products&vipSuccess=1&productId=${productId}`,
-    fail: `${siteUrl}/account?tab=products&vipFailed=1&productId=${productId}`,
+    success: `${siteUrl}/account/products?vipSuccess=1&productId=${productId}`,
+    fail: `${siteUrl}/account/products?vipFailed=1&productId=${productId}`,
   }
 }
 
