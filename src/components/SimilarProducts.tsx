@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Plus } from "lucide-react"
 import { Product } from "@/types/product"
 import StarRating from "@/components/StarRating"
-import ProductSalePrice from "@/components/ProductSalePrice"
+import ProductListPrice from '@/components/ProductListPrice'
 import { getBuyerSavingsFromSellerDiscount } from '@/lib/platform-pricing'
 
 interface SimilarProductsProps {
@@ -16,38 +16,6 @@ interface SimilarProductsProps {
 const SimilarProducts: React.FC<SimilarProductsProps> = ({ productId, categoryName }) => {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
-
-  // Helper to get rental price from tier[0] (first tier with minimum days)
-  const getRentalPrice = (product: Product): number => {
-    if (!product.isRentable || !product.rentalPriceTiers || product.rentalPriceTiers.length === 0) {
-      return 0
-    }
-    // Sort tiers by minDays to get the first tier (lowest minDays)
-    const sortedTiers = [...product.rentalPriceTiers].sort((a, b) => a.minDays - b.minDays)
-    const tier0 = sortedTiers[0]
-    return tier0.pricePerDay * tier0.minDays
-  }
-
-  // Get display price (buy price or rental price if buy price is 0)
-  const getDisplayPrice = (product: Product): number => {
-    // First check if product has variants with prices
-    if (product.variants && product.variants.length > 0) {
-      const prices = product.variants.map(v => v.price).filter(p => p > 0)
-      // If all prices are 0 or no positive prices, check rental
-      if (prices.length === 0) {
-        return getRentalPrice(product)
-      }
-      const minBuyPrice = Math.min(...prices)
-      // If min buy price is 0, show rental price instead
-      if (minBuyPrice === 0) {
-        const rentalPrice = getRentalPrice(product)
-        return rentalPrice > 0 ? rentalPrice : 0
-      }
-      return minBuyPrice
-    }
-    // If no variants, check if it's rentable
-    return getRentalPrice(product)
-  }
 
   useEffect(() => {
     const fetchSimilarProducts = async () => {
@@ -128,10 +96,7 @@ const SimilarProducts: React.FC<SimilarProductsProps> = ({ productId, categoryNa
                 </Link>
               </div>
               <div className="flex items-center justify-between gap-2">
-                <ProductSalePrice
-                  originalPrice={getDisplayPrice(product)}
-                  discount={product.discount}
-                />
+                <ProductListPrice product={product} />
               </div>
 
               {product.discount && product.discount > 0 && (

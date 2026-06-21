@@ -32,14 +32,8 @@ import {
   type ProductCategory,
 } from '@/lib/product-categories'
 import { isProductVipActive } from '@/lib/product-vip'
-import { getBuyerPrice, getBuyerSavingsFromSellerDiscount } from '@/lib/platform-pricing'
-import ProductSalePrice from '@/components/ProductSalePrice'
-import { formatVariantPriceRange, getVariantSalePrices } from '@/lib/product-variants'
-import {
-  formatBuyerProductPriceRange,
-  getBuyerDisplayPrice,
-  productHasActiveDiscount,
-} from '@/lib/discount-helpers'
+import { getBuyerSavingsFromSellerDiscount } from '@/lib/platform-pricing'
+import ProductListPrice from '@/components/ProductListPrice'
 import {
     fetchShopData,
     getShopFilterKey,
@@ -488,59 +482,6 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         const query = params.toString()
         const base = homepageMode ? '/' : '/shop'
         router.push(query ? `${base}?${query}` : base)
-    }
-
-    // Helper functions for price calculation
-    const getRentalPrice = (product: Product): number => {
-        if (!product.isRentable || !product.rentalPriceTiers || product.rentalPriceTiers.length === 0) {
-            return 0
-        }
-        // Sort tiers by minDays to get the first tier (lowest minDays)
-        const sortedTiers = [...product.rentalPriceTiers].sort((a, b) => a.minDays - b.minDays)
-        const tier0 = sortedTiers[0]
-        return tier0.pricePerDay * tier0.minDays
-    }
-
-    const getDisplayPrice = (product: Product): number => {
-        // First check if product has variants with prices
-        if (product.variants && product.variants.length > 0) {
-            const prices = product.variants.map(v => v.price).filter(p => p > 0)
-            // If all prices are 0 or no positive prices, check rental
-            if (prices.length === 0) {
-                return getRentalPrice(product)
-            }
-            const minBuyPrice = Math.min(...prices)
-            // If min buy price is 0, show rental price instead
-            if (minBuyPrice === 0) {
-                const rentalPrice = getRentalPrice(product)
-                return rentalPrice > 0 ? rentalPrice : 0
-            }
-            return minBuyPrice
-        }
-        // If no variants, check if it's rentable
-        return getRentalPrice(product)
-    }
-
-    const getProductListPriceLabel = (product: Product): string | null => {
-        const salePrices = getVariantSalePrices(product)
-        if (salePrices.length === 0) {
-            const rentalPrice = getRentalPrice(product)
-            return rentalPrice > 0
-                ? `₾${getBuyerDisplayPrice(rentalPrice, product).toFixed(2)}`
-                : null
-        }
-
-        return formatBuyerProductPriceRange(salePrices, product)
-    }
-
-    const getProductListOriginalPriceLabel = (product: Product): string | null => {
-        const salePrices = getVariantSalePrices(product)
-        if (salePrices.length === 0) {
-            const rentalPrice = getRentalPrice(product)
-            return rentalPrice > 0 ? `₾${getBuyerPrice(rentalPrice).toFixed(2)}` : null
-        }
-
-        return formatVariantPriceRange(salePrices, getBuyerPrice)
     }
 
     const getProductPurchaseLabel = (product: Product): string | null => {
@@ -1714,44 +1655,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
                                                 </Link>
                                             </div>
                                             <div className="flex items-center justify-between gap-2">
-                                                {(() => {
-                                                    const priceLabel = getProductListPriceLabel(product)
-                                                    const originalPriceLabel =
-                                                        getProductListOriginalPriceLabel(product)
-                                                    const salePrices = getVariantSalePrices(product)
-                                                    const hasVariablePrices =
-                                                        salePrices.length > 1 &&
-                                                        Math.min(...salePrices) !== Math.max(...salePrices)
-                                                    const hasDiscount = productHasActiveDiscount(product)
-
-                                                    if (hasDiscount && priceLabel && originalPriceLabel) {
-                                                        return (
-                                                            <span className="inline-flex flex-wrap items-baseline gap-x-2">
-                                                                <span className="font-regular text-gray-500 line-through md:text-[16px] text-[14px]">
-                                                                    {originalPriceLabel}
-                                                                </span>
-                                                                <span className="font-regular text-red-600 md:text-[18px] text-[16px]">
-                                                                    {priceLabel}
-                                                                </span>
-                                                            </span>
-                                                        )
-                                                    }
-
-                                                    if (priceLabel && (hasVariablePrices || !hasDiscount)) {
-                                                        return (
-                                                            <span className="font-regular text-black md:text-[18px] text-[16px]">
-                                                                {priceLabel}
-                                                            </span>
-                                                        )
-                                                    }
-
-                                                    return (
-                                                        <ProductSalePrice
-                                                            originalPrice={getDisplayPrice(product)}
-                                                            discount={product.discount}
-                                                        />
-                                                    )
-                                                })()}
+                                                <ProductListPrice product={product} />
                                             </div>
 
                                             {product.discount && product.discount > 0 && (
