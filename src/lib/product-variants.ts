@@ -648,14 +648,9 @@ export function formatVariantPriceRange(
   if (prices.length === 0) return null
 
   const formatted = prices.map((price) => formatPrice(price))
-  const min = Math.min(...formatted)
-  const max = Math.max(...formatted)
+  const displayPrice = Math.min(...formatted)
 
-  if (min === max) {
-    return `₾${min.toFixed(2)}`
-  }
-
-  return `₾${min.toFixed(2)} - ₾${max.toFixed(2)}`
+  return `₾${displayPrice.toFixed(2)}`
 }
 
 export function validateSkuVariantRows(

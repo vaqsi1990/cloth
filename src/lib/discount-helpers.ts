@@ -107,12 +107,8 @@ export function getOwnerProductRentalDisplayPrice(
 export function formatOwnerProductPriceLabel(product: OwnerProductPriceInput): string {
   const salePrices = getOwnerProductSalePrices(product.variants)
   if (salePrices.length > 0) {
-    const minPrice = Math.min(...salePrices)
-    const maxPrice = Math.max(...salePrices)
-
-    return minPrice === maxPrice
-      ? `₾${minPrice.toFixed(2)}`
-      : `₾${minPrice.toFixed(2)} - ₾${maxPrice.toFixed(2)}`
+    const displayPrice = Math.min(...salePrices)
+    return `₾${displayPrice.toFixed(2)}`
   }
 
   const rentalPrice = getOwnerProductRentalDisplayPrice(product.rentalPriceTiers)
