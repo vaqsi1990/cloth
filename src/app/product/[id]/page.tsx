@@ -250,12 +250,20 @@ const ProductPage = () => {
                 const response = await fetch('/api/chat')
                 const data = await response.json()
                 if (data.success && product?.user?.id) {
-                    // Find chat room where current user is buyer (userId) and product author is seller (adminId)
-                    const existingChat = data.chatRooms.find((room: any) =>
+                    const activeChats = (data.chatRooms as Array<{
+                        id: number
+                        userId?: string
+                        adminId?: string
+                        productId?: number | null
+                        status?: string
+                    }>).filter((room) =>
                         room.userId === session.user.id &&
-                        room.adminId === product?.user?.id &&
+                        room.adminId === product.user?.id &&
+                        room.productId === product.id &&
                         (room.status === 'ACTIVE' || room.status === 'PENDING')
                     )
+
+                    const existingChat = activeChats.sort((a, b) => b.id - a.id)[0]
 
                     if (existingChat) {
                         setChatRoomId(existingChat.id)
@@ -263,9 +271,10 @@ const ProductPage = () => {
                             userId: existingChat.userId,
                             adminId: existingChat.adminId
                         })
-                        // Auto-open chat if it exists
-                        setIsChatOpen(true)
-                        fetchChatMessages(existingChat.id)
+                    } else {
+                        setChatRoomId(null)
+                        setChatRoomInfo(null)
+                        setChatMessages([])
                     }
                 }
             } catch (error) {
@@ -275,7 +284,7 @@ const ProductPage = () => {
 
         checkExistingChat()
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [session?.user?.id, product?.user?.id])
+    }, [session?.user?.id, product?.user?.id, product?.id])
 
     const tiers: Tier[] = useMemo(() => {
         if (!product) return []
@@ -1177,11 +1186,10 @@ const ProductPage = () => {
             const data = await response.json()
 
             if (data.success) {
-                showToast('ჩათი შექმნილია', 'success')
-                // Open chat on the same page
+                showToast(data.created ? 'ჩათი შექმნილია' : 'ჩათი გახსნილია', 'success')
                 setChatRoomId(data.chatRoomId)
                 setIsChatOpen(true)
-                // Fetch initial messages
+                setChatMessages([])
                 fetchChatMessages(data.chatRoomId)
             } else {
                 showToast(data.error || 'შეცდომა ჩათის შექმნისას', 'error')
@@ -2637,26 +2645,17 @@ const ProductPage = () => {
                                 </div>
                             ) : (
                                 chatMessages.map((message) => {
-                                    // Determine message position and style
-                                    const isCurrentUserAuthor = session?.user?.id === product?.user?.id
-
-                                    // Check if message is from author (seller)
-                                    const isFromAuthor = message.isFromAdmin
-
-                                    // Check if message is from current user (buyer)
-                                    const isFromBuyer = !message.isFromAdmin && message.userId === session?.user?.id
-
-                                    // Determine position: author messages on right, buyer messages on left
-                                    const isOnRight = isFromAuthor
-                                    const isOnLeft = isFromBuyer
+                                    const isFromMe =
+                                        !message.isFromAdmin &&
+                                        message.userId === session?.user?.id
 
                                     return (
                                         <div
                                             key={message.id}
-                                            className={`flex ${isOnRight ? 'justify-end' : 'justify-start'}`}
+                                            className={`flex ${isFromMe ? 'justify-end' : 'justify-start'}`}
                                         >
                                             <div
-                                                className={`max-w-[75%] rounded-lg px-4 py-2 ${isFromAuthor
+                                                className={`max-w-[75%] rounded-lg px-4 py-2 ${isFromMe
                                                         ? 'bg-[#1B3729] text-white'
                                                         : 'bg-white text-black border border-gray-200'
                                                     }`}
@@ -2666,7 +2665,7 @@ const ProductPage = () => {
                                                     imageUrl={message.imageUrl}
                                                     textClassName="md:text-[14px] text-[12px] break-words"
                                                 />
-                                                <p className={`text-xs mt-1 ${isFromAuthor ? 'text-gray-300' : 'text-gray-500'
+                                                <p className={`text-xs mt-1 ${isFromMe ? 'text-gray-300' : 'text-gray-500'
                                                     }`}>
                                                     {new Date(message.createdAt).toLocaleTimeString('ka-GE', {
                                                         hour: '2-digit',

@@ -277,10 +277,8 @@ const AccountPageContent = () => {
   const { unreadCount: polledChatUnread, refresh: refreshChatUnread } = useUserChatUnreadCount(
     !!session?.user?.id,
   )
-  const chatsUnreadCount =
-    activeTab === 'chats' && chatRooms.length > 0
-      ? chatRooms.filter((room) => room.is_unread).length
-      : polledChatUnread
+  const localChatUnreadCount = chatRooms.filter((room) => room.is_unread).length
+  const chatsUnreadCount = Math.max(polledChatUnread, localChatUnreadCount)
   const isSeller = userStats.productsCount > 0
   // Show verification for all non-admin users who haven't been approved yet
   const sellerNeedsVerification = true // Always show for non-admin users
@@ -413,16 +411,23 @@ const AccountPageContent = () => {
     void confirmVip()
   }, [searchParams, router])
 
-  // Fetch chats when tab changes to chats
+  // Keep chat list + sidebar badge in sync across all account tabs
   useEffect(() => {
-    if (activeTab === 'chats' && session?.user?.id) {
-      fetchChatRooms()
-    }
+    if (!session?.user?.id) return
+
+    void fetchChatRooms({ silent: activeTab !== 'chats' })
+    const interval = setInterval(() => {
+      void fetchChatRooms({ silent: activeTab !== 'chats' })
+    }, 10000)
+
+    return () => clearInterval(interval)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab])
+  }, [activeTab, session?.user?.id])
 
   // Select chat room when chatRooms are loaded and chat param exists
   useEffect(() => {
+    if (activeTab !== 'chats') return
+
     const chatParam = searchParams.get('chat')
     if (!chatParam || chatRooms.length === 0) return
 
@@ -435,26 +440,27 @@ const AccountPageContent = () => {
       preferredChatRoomIdRef.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chatRooms, searchParams])
+  }, [activeTab, chatRooms, searchParams])
 
-  // Fetch messages when chat room is selected
+  // Fetch messages when chat room is selected on the chats tab
   useEffect(() => {
     selectedChatRoomIdRef.current = selectedChatRoom?.id ?? null
 
-    if (selectedChatRoom?.id) {
+    if (activeTab !== 'chats' || !selectedChatRoom?.id) {
       setChatMessages([])
       setOtherPartyTyping(false)
-      fetchChatMessages(selectedChatRoom.id)
-      const interval = setInterval(() => {
-        fetchChatMessages(selectedChatRoom.id)
-      }, 3000)
-      return () => clearInterval(interval)
+      return
     }
 
     setChatMessages([])
     setOtherPartyTyping(false)
+    fetchChatMessages(selectedChatRoom.id)
+    const interval = setInterval(() => {
+      fetchChatMessages(selectedChatRoom.id)
+    }, 3000)
+    return () => clearInterval(interval)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedChatRoom?.id])
+  }, [activeTab, selectedChatRoom?.id])
 
   // Check ban status and blocked/verified status
   useEffect(() => {
@@ -558,9 +564,11 @@ const AccountPageContent = () => {
     }
   }
 
-  const fetchChatRooms = async () => {
+  const fetchChatRooms = async (options?: { silent?: boolean }) => {
     try {
-      setLoadingChats(true)
+      if (!options?.silent) {
+        setLoadingChats(true)
+      }
       const response = await fetch('/api/chat')
       const data = await response.json()
       if (data.success) {
@@ -581,13 +589,14 @@ const AccountPageContent = () => {
           }
         } else {
           setSelectedChatRoom((current) => {
-            if (!current) {
-              const unreadRoom = rooms.find((room) => room.is_unread)
-              return unreadRoom ?? null
+            if (current && rooms.some((room) => room.id === current.id)) {
+              return current
             }
-            if (rooms.some((room) => room.id === current.id)) return current
             const urlChatId = urlChatParam ? parseInt(urlChatParam, 10) : NaN
-            if (current.id === urlChatId) return current
+            if (!isNaN(urlChatId)) {
+              const urlRoom = rooms.find((room) => room.id === urlChatId)
+              if (urlRoom) return urlRoom
+            }
             return null
           })
         }
@@ -597,7 +606,9 @@ const AccountPageContent = () => {
     } catch (error) {
       console.error('Error fetching chat rooms:', error)
     } finally {
-      setLoadingChats(false)
+      if (!options?.silent) {
+        setLoadingChats(false)
+      }
     }
   }
 
@@ -701,14 +712,20 @@ const AccountPageContent = () => {
 
       const data = await response.json()
       if (data.success) {
+        const deletedRoom = chatRooms.find((room) => room.id === chatRoomId)
         showToast('ჩათი წარმატებით წაიშალა', 'success')
-        // Remove from chat rooms list
         setChatRooms(chatRooms.filter(room => room.id !== chatRoomId))
-        // If deleted chat was selected, clear selection
         if (selectedChatRoom?.id === chatRoomId) {
           setSelectedChatRoom(null)
           setChatMessages([])
         }
+        if (
+          deletedRoom?.chatKind === 'live_support' &&
+          typeof window !== 'undefined'
+        ) {
+          localStorage.removeItem('liveSupportChatRoomId')
+        }
+        void refreshChatUnread()
       } else {
         showToast(data.error || 'შეცდომა ჩათის წაშლისას', 'error')
       }
@@ -2129,9 +2146,10 @@ const AccountPageContent = () => {
   const renderTabButtons = (layout: 'vertical' | 'horizontal') => (
     tabs.map((tab) => {
       const isActive = activeTab === tab.id
+      const isChatsTab = tab.id === 'chats'
       const baseClass = layout === 'vertical'
-        ? 'w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors text-[16px]'
-        : 'flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-[14px] sm:text-[16px] whitespace-nowrap shrink-0'
+        ? 'w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg transition-colors text-[16px] overflow-visible'
+        : 'flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-[14px] sm:text-[16px] whitespace-nowrap shrink-0 overflow-visible'
 
       return (
         <button
@@ -2141,16 +2159,17 @@ const AccountPageContent = () => {
             isActive ? 'bg-[#1B3729] text-white' : 'text-black hover:bg-gray-50'
           }`}
         >
-          <span className="relative shrink-0">
-            <tab.icon className="w-5 h-5" />
-            {tab.id === 'chats' && (
-              <ChatUnreadBadge
-                count={chatsUnreadCount}
-                className="absolute -top-1.5 -right-2"
-              />
-            )}
+          <span className="flex items-center gap-3 min-w-0">
+            <tab.icon className="w-5 h-5 shrink-0" />
+            <span>{tab.label}</span>
           </span>
-          <span>{tab.label}</span>
+          {isChatsTab && (
+            <ChatUnreadBadge
+              count={chatsUnreadCount}
+              className="relative shrink-0"
+              pulse={!isActive}
+            />
+          )}
         </button>
       )
     })
@@ -2203,11 +2222,6 @@ const AccountPageContent = () => {
                         <button
                           onClick={() => {
                             setSelectedChatRoom(room)
-                            setChatRooms((prev) =>
-                              prev.map((entry) =>
-                                entry.id === room.id ? { ...entry, is_unread: false } : entry,
-                              ),
-                            )
                             preferredChatRoomIdRef.current = null
                             router.push(`/account?tab=chats&chat=${room.id}`)
                           }}
@@ -2479,7 +2493,7 @@ const AccountPageContent = () => {
             {/* Sidebar */}
             <div className="lg:w-64 flex-shrink-0">
               <div className="bg-white rounded-2xl p-6 shadow-sm border border-black">
-                <nav className="space-y-2">
+                <nav className="space-y-2 overflow-visible">
                   {renderTabButtons('vertical')}
                 </nav>
               </div>

@@ -72,6 +72,31 @@ export function liveSupportChatRoomAccessForUser(userId: string) {
   `
 }
 
+/** Active live-support inbox rows for a user (widget / unread sync). */
+export function activeLiveSupportChatRoomWhereForUser(userId: string) {
+  return Prisma.sql`
+    cr."userId" = ${userId}
+    AND cr."productId" IS NULL
+    AND cr.status IN ('PENDING', 'ACTIVE')
+    AND (
+      cr."adminId" IS NULL
+      OR EXISTS (
+        SELECT 1 FROM "User" staff
+        WHERE staff.id = cr."adminId"
+          AND staff.role IN ('ADMIN', 'SUPPORT')
+      )
+    )
+  `
+}
+
+/** Staff inbox: user ↔ support chats only (exclude buyer ↔ seller product chats). */
+export function staffSupportInboxWhere() {
+  return Prisma.sql`
+    cr."productId" IS NULL
+    AND (cr."adminId" IS NULL OR a.role IN ('ADMIN', 'SUPPORT'))
+  `
+}
+
 /** Product chats in /account or live support widget for the same user. */
 export function userChatRoomAccessForUser(userId: string) {
   return Prisma.sql`

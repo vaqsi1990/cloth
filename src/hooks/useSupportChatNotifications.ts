@@ -61,11 +61,11 @@ export function useSupportChatNotifications(enabled: boolean) {
       const data: UnreadChatResponse = await response.json()
       if (!data.success) return
 
-      const nextUnreadCount = data.unreadCount || 0
+      const nextUnreadCount = Number(data.unreadCount)
       const nextLatestUnreadMessageId = data.latestUnreadMessageId ?? null
       const nextLatestUnreadChatRoomId = data.latestUnreadChatRoomId ?? null
 
-      setUnreadCount(nextUnreadCount)
+      setUnreadCount(Number.isFinite(nextUnreadCount) ? nextUnreadCount : 0)
       setLatestUnreadChatRoomId(nextLatestUnreadChatRoomId)
 
       if (isInitialLoadRef.current) {
@@ -130,7 +130,15 @@ export function useSupportChatNotifications(enabled: boolean) {
       void checkUnreadChats()
     }, POLL_INTERVAL_MS)
 
-    return () => clearInterval(interval)
+    const onFocus = () => {
+      void checkUnreadChats()
+    }
+    window.addEventListener('focus', onFocus)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('focus', onFocus)
+    }
   }, [enabled, checkUnreadChats])
 
   return {

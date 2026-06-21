@@ -1,4 +1,6 @@
-import { prisma } from '@/lib/prisma'
+import {
+  getOrCreateProductChatRoom as createProductChatRoom,
+} from '@/lib/chat-product-room'
 
 export async function getOrCreateProductChatRoom(params: {
   productId: number
@@ -6,45 +8,12 @@ export async function getOrCreateProductChatRoom(params: {
   sellerId: string
   initialMessage: string
 }): Promise<number> {
-  const existing = await prisma.chatRoom.findFirst({
-    where: {
-      userId: params.buyerId,
-      adminId: params.sellerId,
-      productId: params.productId,
-      status: { in: ['PENDING', 'ACTIVE'] },
-    },
-    orderBy: { createdAt: 'desc' },
-    select: { id: true },
+  const { chatRoomId } = await createProductChatRoom({
+    buyerId: params.buyerId,
+    sellerId: params.sellerId,
+    productId: params.productId,
+    initialMessage: params.initialMessage,
+    addMessageIfExists: true,
   })
-
-  if (existing) {
-    await prisma.chatMessage.create({
-      data: {
-        content: params.initialMessage,
-        chatRoomId: existing.id,
-        userId: params.buyerId,
-        isFromAdmin: false,
-      },
-    })
-    return existing.id
-  }
-
-  const room = await prisma.chatRoom.create({
-    data: {
-      userId: params.buyerId,
-      adminId: params.sellerId,
-      productId: params.productId,
-      status: 'ACTIVE',
-      messages: {
-        create: {
-          content: params.initialMessage,
-          userId: params.buyerId,
-          isFromAdmin: false,
-        },
-      },
-    },
-    select: { id: true },
-  })
-
-  return room.id
+  return chatRoomId
 }

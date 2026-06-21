@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { isAdminOrSupport } from '@/lib/roles'
+import { staffSupportInboxWhere } from '@/lib/account-product-chat'
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
         ORDER BY cm."createdAt" DESC
         LIMIT 1
       ) last_msg ON true
-      WHERE (cr."adminId" IS NULL OR a.role IN ('ADMIN', 'SUPPORT'))
+      WHERE ${staffSupportInboxWhere()}
         AND cr.status IN ('PENDING', 'ACTIVE')
         AND last_msg.id IS NOT NULL
         AND last_msg."isFromAdmin" = false
@@ -54,7 +55,7 @@ export async function GET(request: NextRequest) {
         ORDER BY cm."createdAt" DESC
         LIMIT 1
       ) last_msg ON true
-      WHERE (cr."adminId" IS NULL OR a.role IN ('ADMIN', 'SUPPORT'))
+      WHERE ${staffSupportInboxWhere()}
         AND cr.status IN ('PENDING', 'ACTIVE')
         AND last_msg.id IS NOT NULL
         AND last_msg."isFromAdmin" = false

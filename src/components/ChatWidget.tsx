@@ -13,6 +13,11 @@ import ChatImageUploadButton from '@/components/ChatImageUploadButton'
 import ChatPendingImagePreview from '@/components/ChatPendingImagePreview'
 import { canSendChatMessage } from '@/lib/chat-message'
 
+function guestChatQuery(guestEmail: string | undefined): string {
+  if (!guestEmail?.trim()) return ''
+  return `?guestEmail=${encodeURIComponent(guestEmail.trim())}`
+}
+
 interface ChatMessage {
   id: number
   content: string
@@ -56,12 +61,14 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
   const { notifyTyping, stopTyping } = useChatTyping({
     chatRoomId,
     enabled: isOpen && !!chatRoomId,
+    guestEmail: session?.user?.id ? undefined : guestEmail,
   })
 
-  // Load guest info from localStorage on component mount
+  // Load guest info from localStorage on component mount (guests only)
   useEffect(() => {
     if (typeof window === 'undefined') return
-    
+    if (session?.user?.id) return
+
     try {
       const savedName = localStorage.getItem('chatGuestName')
       const savedEmail = localStorage.getItem('chatGuestEmail')
@@ -72,7 +79,6 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
         setGuestEmail(savedEmail)
         setShowGuestForm(false)
 
-        // If there's a saved chat room ID, try to restore it
         if (savedChatRoomId && savedChatRoomId !== '0') {
           const roomId = parseInt(savedChatRoomId)
           if (!isNaN(roomId)) {
@@ -83,7 +89,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
     } catch (error) {
       console.error('Error loading chat data from localStorage:', error)
     }
-  }, [onChatRoomCreated])
+  }, [onChatRoomCreated, session?.user?.id])
 
 
 
@@ -103,7 +109,8 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
     setIsFetchingMessages(true)
     
     try {
-      const response = await fetch(`/api/chat/${chatRoomId}`, {
+      const guestQuery = session?.user?.id ? '' : guestChatQuery(guestEmail)
+      const response = await fetch(`/api/chat/${chatRoomId}${guestQuery}`, {
         cache: 'no-store', // Ensure fresh data
         headers: {
           'Cache-Control': 'no-cache'
@@ -187,7 +194,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
       fetchingRef.current = false
       setIsFetchingMessages(false)
     }
-  }, [chatRoomId, onChatRoomCreated])
+  }, [chatRoomId, onChatRoomCreated, session?.user?.id, guestEmail])
 
   // Fetch messages and poll when chat is open
   useEffect(() => {
@@ -281,6 +288,9 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
         const requestBody = {
           content: messageToSend,
           ...(imageToSend ? { imageUrl: imageToSend } : {}),
+          ...(!session?.user?.id && guestEmail.trim()
+            ? { guestEmail: guestEmail.trim() }
+            : {}),
         }
 
         const response = await fetch(`/api/chat/${chatRoomId}`, {
@@ -355,7 +365,9 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
 
     setIsEndingChat(true)
     try {
-      const response = await fetch(`/api/chat/${chatRoomId}`, {
+      const response = await fetch(
+        `/api/chat/${chatRoomId}${session?.user?.id ? '' : guestChatQuery(guestEmail)}`,
+        {
         method: 'DELETE'
       })
 

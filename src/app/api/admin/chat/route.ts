@@ -3,7 +3,9 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { isAdminOrSupport } from '@/lib/roles'
+import { staffSupportInboxWhere } from '@/lib/account-product-chat'
 import { isStaffChatRoomUnread } from '@/lib/chat-unread'
+import { deleteLiveSupportChatRoom } from '@/lib/chat-live-support-room'
 
 // GET - Get all chat rooms for admin
 export async function GET(request: NextRequest) {
@@ -23,10 +25,12 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20')
     const skip = (page - 1) * limit
 
-    // Filter to only show admin chats (not buyer-to-author chats)
-    // We need to exclude chat rooms where adminId points to a regular user (product author)
-    // Only show: adminId is NULL OR adminId points to a user with role ADMIN
-    const validStatus = status && ['PENDING', 'ACTIVE', 'CLOSED'].includes(status) ? status : null
+    const inboxScope =
+      status === 'ALL'
+        ? 'ALL'
+        : status && ['PENDING', 'ACTIVE', 'CLOSED'].includes(status)
+          ? status
+          : 'INBOX'
 
     // Build queries conditionally based on status filter
     let chatRooms: Array<{
@@ -52,7 +56,7 @@ export async function GET(request: NextRequest) {
 
     let totalResult: Array<{ count: bigint }>
 
-    if (validStatus) {
+    if (inboxScope === 'INBOX') {
       chatRooms = await prisma.$queryRaw`
         SELECT 
           cr.id,
@@ -99,8 +103,8 @@ export async function GET(request: NextRequest) {
           FROM "ChatMessage"
           GROUP BY "chatRoomId"
         ) mc ON mc."chatRoomId" = cr.id
-        WHERE (cr."adminId" IS NULL OR a.role IN ('ADMIN', 'SUPPORT'))
-          AND cr.status = ${validStatus}
+        WHERE ${staffSupportInboxWhere()}
+          AND cr.status IN ('PENDING', 'ACTIVE')
         ORDER BY last_message_id DESC NULLS LAST, cr.id DESC
         LIMIT ${limit} OFFSET ${skip}
       `
@@ -109,8 +113,68 @@ export async function GET(request: NextRequest) {
         SELECT COUNT(*)::int as count
         FROM "ChatRoom" cr
         LEFT JOIN "User" a ON cr."adminId" = a.id
-        WHERE (cr."adminId" IS NULL OR a.role IN ('ADMIN', 'SUPPORT'))
-          AND cr.status = ${validStatus}
+        WHERE ${staffSupportInboxWhere()}
+          AND cr.status IN ('PENDING', 'ACTIVE')
+      `
+    } else if (inboxScope !== 'ALL') {
+      chatRooms = await prisma.$queryRaw`
+        SELECT 
+          cr.id,
+          cr."createdAt",
+          cr."updatedAt",
+          cr.status,
+          cr."userId",
+          cr."adminId",
+          cr."guestName",
+          cr."guestEmail",
+          u.name as user_name,
+          u.email as user_email,
+          a.name as admin_name,
+          a.email as admin_email,
+          COALESCE(mc.cnt, 0)::int as message_count,
+          (
+            SELECT cm."isFromAdmin"
+            FROM "ChatMessage" cm
+            WHERE cm."chatRoomId" = cr.id
+            ORDER BY cm."createdAt" DESC
+            LIMIT 1
+          ) as last_message_isFromAdmin,
+          (
+            SELECT cm.id
+            FROM "ChatMessage" cm
+            WHERE cm."chatRoomId" = cr.id
+            ORDER BY cm."createdAt" DESC
+            LIMIT 1
+          ) as last_message_id,
+          (
+            SELECT cm."createdAt"
+            FROM "ChatMessage" cm
+            WHERE cm."chatRoomId" = cr.id
+            ORDER BY cm.id DESC
+            LIMIT 1
+          ) as last_message_at,
+          cr."adminLastReadMessageId",
+          false as is_unread
+        FROM "ChatRoom" cr
+        LEFT JOIN "User" u ON cr."userId" = u.id
+        LEFT JOIN "User" a ON cr."adminId" = a.id
+        LEFT JOIN (
+          SELECT "chatRoomId", COUNT(*)::int AS cnt
+          FROM "ChatMessage"
+          GROUP BY "chatRoomId"
+        ) mc ON mc."chatRoomId" = cr.id
+        WHERE ${staffSupportInboxWhere()}
+          AND cr.status = ${inboxScope}
+        ORDER BY last_message_id DESC NULLS LAST, cr.id DESC
+        LIMIT ${limit} OFFSET ${skip}
+      `
+
+      totalResult = await prisma.$queryRaw`
+        SELECT COUNT(*)::int as count
+        FROM "ChatRoom" cr
+        LEFT JOIN "User" a ON cr."adminId" = a.id
+        WHERE ${staffSupportInboxWhere()}
+          AND cr.status = ${inboxScope}
       `
     } else {
       chatRooms = await prisma.$queryRaw`
@@ -159,7 +223,7 @@ export async function GET(request: NextRequest) {
           FROM "ChatMessage"
           GROUP BY "chatRoomId"
         ) mc ON mc."chatRoomId" = cr.id
-        WHERE (cr."adminId" IS NULL OR a.role IN ('ADMIN', 'SUPPORT'))
+        WHERE ${staffSupportInboxWhere()}
         ORDER BY last_message_id DESC NULLS LAST, cr.id DESC
         LIMIT ${limit} OFFSET ${skip}
       `
@@ -168,7 +232,7 @@ export async function GET(request: NextRequest) {
         SELECT COUNT(*)::int as count
         FROM "ChatRoom" cr
         LEFT JOIN "User" a ON cr."adminId" = a.id
-        WHERE (cr."adminId" IS NULL OR a.role IN ('ADMIN', 'SUPPORT'))
+        WHERE ${staffSupportInboxWhere()}
       `
     }
 
@@ -274,6 +338,22 @@ export async function PATCH(request: NextRequest) {
         }, { status: 400 })
     }
 
+    const allowedRoom = await prisma.$queryRaw<Array<{ id: number }>>`
+      SELECT cr.id
+      FROM "ChatRoom" cr
+      LEFT JOIN "User" a ON cr."adminId" = a.id
+      WHERE cr.id = ${chatRoomId}
+        AND ${staffSupportInboxWhere()}
+      LIMIT 1
+    `
+
+    if (allowedRoom.length === 0) {
+      return NextResponse.json({
+        success: false,
+        message: 'Chat room not found or access denied',
+      }, { status: 404 })
+    }
+
     const updatedChatRoom = await prisma.chatRoom.update({
       where: {
         id: chatRoomId
@@ -331,12 +411,23 @@ export async function DELETE(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Delete the chat room (messages will be deleted due to cascade)
-    await prisma.chatRoom.delete({
-      where: {
-        id: chatRoomId
-      }
-    })
+    const allowedRoom = await prisma.$queryRaw<Array<{ id: number }>>`
+      SELECT cr.id
+      FROM "ChatRoom" cr
+      LEFT JOIN "User" a ON cr."adminId" = a.id
+      WHERE cr.id = ${chatRoomId}
+        AND ${staffSupportInboxWhere()}
+      LIMIT 1
+    `
+
+    if (allowedRoom.length === 0) {
+      return NextResponse.json({
+        success: false,
+        message: 'Chat room not found or access denied',
+      }, { status: 404 })
+    }
+
+    await deleteLiveSupportChatRoom(chatRoomId)
 
     console.log(`✅ Admin ${session.user.id} deleted chat room ${chatRoomId}`)
 

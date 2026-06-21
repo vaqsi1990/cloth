@@ -11,7 +11,8 @@ export type ChatRoomAccess = {
 
 export async function getChatRoomIfAllowed(
   chatRoomId: number,
-  session: Session | null
+  session: Session | null,
+  guestEmail?: string | null,
 ): Promise<ChatRoomAccess | null> {
   if (isAdminOrSupport(session?.user?.role)) {
     const room = await prisma.chatRoom.findUnique({
@@ -63,6 +64,18 @@ export async function getChatRoomIfAllowed(
     where: { id: chatRoomId },
     select: { id: true, userId: true, adminId: true, guestEmail: true },
   })
+  if (!room || room.userId != null) {
+    return null
+  }
+  if (room.guestEmail) {
+    const normalizedGuest = guestEmail?.trim().toLowerCase()
+    if (
+      !normalizedGuest ||
+      room.guestEmail.trim().toLowerCase() !== normalizedGuest
+    ) {
+      return null
+    }
+  }
   return room
 }
 

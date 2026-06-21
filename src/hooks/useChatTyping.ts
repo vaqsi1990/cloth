@@ -5,11 +5,13 @@ import { useCallback, useEffect, useRef } from 'react'
 type UseChatTypingOptions = {
   chatRoomId?: number | null
   enabled?: boolean
+  guestEmail?: string
 }
 
 export function useChatTyping({
   chatRoomId,
   enabled = true,
+  guestEmail,
 }: UseChatTypingOptions) {
   const typingActiveRef = useRef(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -23,14 +25,17 @@ export function useChatTyping({
         await fetch(`/api/chat/${chatRoomId}/typing`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ typing }),
+          body: JSON.stringify({
+            typing,
+            ...(guestEmail?.trim() ? { guestEmail: guestEmail.trim() } : {}),
+          }),
         })
         typingActiveRef.current = typing
       } catch {
         // ignore network errors for typing pulses
       }
     },
-    [chatRoomId, enabled]
+    [chatRoomId, enabled, guestEmail]
   )
 
   const stopTyping = useCallback(() => {

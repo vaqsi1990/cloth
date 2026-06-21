@@ -58,7 +58,7 @@ const SupportChatPage = () => {
     chatRoomId: selectedChatRoom?.id,
     enabled: !!selectedChatRoom,
   })
-  const { soundEnabled, toggleSound, unreadCount, latestUnreadChatRoomId, setActiveChatRoomId, acknowledgeActiveChat } = useSupportChatNotification()
+  const { soundEnabled, toggleSound, unreadCount, setActiveChatRoomId, acknowledgeActiveChat } = useSupportChatNotification()
 
  
   const fetchChatRooms = useCallback(async () => {
@@ -82,10 +82,6 @@ const SupportChatPage = () => {
           const activeRoomId = selectedChatRoom?.id
           return data.chatRooms.map((entry: ChatRoom) => {
             if (activeRoomId && entry.id === activeRoomId) {
-              return { ...entry, is_unread: false }
-            }
-            const previous = prev.find((room) => room.id === entry.id)
-            if (previous && !previous.is_unread) {
               return { ...entry, is_unread: false }
             }
             return entry
@@ -112,6 +108,13 @@ const SupportChatPage = () => {
       })
       
       if (!response.ok) {
+        if (response.status === 404 && selectedChatRoomIdRef.current === chatRoomId) {
+          setSelectedChatRoom(null)
+          setMessages([])
+          selectedChatRoomIdRef.current = null
+          setActiveChatRoomId(null)
+          void fetchChatRooms()
+        }
         throw new Error(`HTTP error! status: ${response.status}`)
       }
       
@@ -138,7 +141,7 @@ const SupportChatPage = () => {
     } catch (error) {
       console.error('Error fetching messages:', error)
     }
-  }, [acknowledgeActiveChat])
+  }, [acknowledgeActiveChat, fetchChatRooms, setActiveChatRoomId])
 
   useEffect(() => {
     if (status === 'loading') {
@@ -157,27 +160,6 @@ const SupportChatPage = () => {
     return () => clearInterval(interval)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, session?.user?.role, fetchChatRooms])
-
-  useEffect(() => {
-    if (selectedChatRoom || chatRooms.length === 0) return
-
-    const preferredRoomId = latestUnreadChatRoomId
-    const roomToOpen =
-      (preferredRoomId ? chatRooms.find((room) => room.id === preferredRoomId) : undefined) ??
-      chatRooms.find((room) => room.is_unread)
-
-    if (!roomToOpen) return
-
-    setSelectedChatRoom(roomToOpen)
-    setChatRooms((prev) =>
-      prev.map((entry) =>
-        entry.id === roomToOpen.id ? { ...entry, is_unread: false } : entry,
-      ),
-    )
-    if (window.innerWidth < 1024) {
-      setShowChatList(false)
-    }
-  }, [chatRooms, selectedChatRoom, latestUnreadChatRoomId])
 
   useEffect(() => {
     selectedChatRoomIdRef.current = selectedChatRoom?.id ?? null
@@ -323,10 +305,13 @@ const SupportChatPage = () => {
         if (selectedChatRoom?.id === chatRoomToDelete.id) {
           setSelectedChatRoom(null)
           setMessages([])
+          selectedChatRoomIdRef.current = null
+          setActiveChatRoomId(null)
         }
         setShowDeleteModal(false)
         setDeleteConfirmText('')
         setChatRoomToDelete(null)
+        acknowledgeActiveChat()
         showToast('საუბარი წარმატებით წაიშალა', 'success')
       } else {
         showToast('შეცდომა საუბრის წაშლისას: ' + data.message, 'error')
@@ -433,7 +418,8 @@ const SupportChatPage = () => {
                   onChange={(e) => setFilterStatus(e.target.value)}
                   className="px-2 sm:px-3 py-1.5 border border-gray-300 rounded-md text-xs sm:text-sm md:text-[16px] focus:ring-2 focus:ring-[#1B3729] focus:border-transparent w-full sm:w-auto bg-white"
                 >
-                  <option value="">ყველა</option>
+                  <option value="">აქტიური / ლოდინში</option>
+                  <option value="ALL">ყველა</option>
                   <option value="PENDING">ლოდინი</option>
                   <option value="ACTIVE">აქტიური</option>
                   <option value="CLOSED">დახურული</option>
@@ -454,12 +440,6 @@ const SupportChatPage = () => {
                       key={room.id}
                       onClick={() => {
                         setSelectedChatRoom(room)
-                        setChatRooms((prev) =>
-                          prev.map((entry) =>
-                            entry.id === room.id ? { ...entry, is_unread: false } : entry,
-                          ),
-                        )
-                        // On mobile, hide chat list when chat is selected
                         if (window.innerWidth < 1024) {
                           setShowChatList(false)
                         }

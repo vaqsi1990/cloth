@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 
-const POLL_INTERVAL_MS = 10000
+const POLL_INTERVAL_MS = 5000
 
 export function useUserChatUnreadCount(enabled: boolean) {
   const [unreadCount, setUnreadCount] = useState(0)
@@ -20,7 +20,8 @@ export function useUserChatUnreadCount(enabled: boolean) {
 
       const data = await response.json()
       if (data.success) {
-        setUnreadCount(data.unreadCount || 0)
+        const count = Number(data.unreadCount)
+        setUnreadCount(Number.isFinite(count) ? count : 0)
       }
     } catch (error) {
       console.error('Error fetching user chat unread count:', error)
@@ -38,7 +39,15 @@ export function useUserChatUnreadCount(enabled: boolean) {
       void refresh()
     }, POLL_INTERVAL_MS)
 
-    return () => clearInterval(interval)
+    const onFocus = () => {
+      void refresh()
+    }
+    window.addEventListener('focus', onFocus)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('focus', onFocus)
+    }
   }, [enabled, refresh])
 
   return { unreadCount, refresh }

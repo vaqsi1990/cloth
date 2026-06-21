@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getOrCreateProductChatRoom } from '@/lib/chat-product-room'
 
 // POST - Create or get chat room with product author
 export async function POST(
@@ -78,54 +79,20 @@ export async function POST(
         ? body.message.trim()
         : `გამარჯობა! მაინტერესებს პროდუქტი: ${product.name}`
 
-    const existingChatRoom = await prisma.chatRoom.findFirst({
-      where: {
-        userId: buyerId,
-        adminId: sellerId,
-        productId: productIdNum,
-        status: { in: ['PENDING', 'ACTIVE'] },
-      },
-      orderBy: { createdAt: 'desc' },
-      select: { id: true },
-    })
-
-    if (existingChatRoom) {
-      await prisma.chatMessage.create({
-        data: {
-          content: customMessage,
-          chatRoomId: existingChatRoom.id,
-          userId: buyerId,
-          isFromAdmin: false,
-        },
-      })
-      return NextResponse.json({
-        success: true,
-        chatRoomId: existingChatRoom.id,
-        message: 'Chat room already exists',
-      })
-    }
-
-    const room = await prisma.chatRoom.create({
-      data: {
-        userId: buyerId,
-        adminId: sellerId,
-        productId: productIdNum,
-        status: 'ACTIVE',
-        messages: {
-          create: {
-            content: customMessage,
-            userId: buyerId,
-            isFromAdmin: false,
-          },
-        },
-      },
-      select: { id: true },
+    const { chatRoomId, created } = await getOrCreateProductChatRoom({
+      buyerId,
+      sellerId,
+      productId: productIdNum,
+      initialMessage: customMessage,
+      addMessageIfExists:
+        typeof body?.message === 'string' && body.message.trim().length > 0,
     })
 
     return NextResponse.json({
       success: true,
-      chatRoomId: room.id,
-      message: 'Chat room created successfully',
+      chatRoomId,
+      created,
+      message: created ? 'Chat room created successfully' : 'Chat room already exists',
     })
 
   } catch (error) {

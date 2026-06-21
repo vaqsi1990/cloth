@@ -87,6 +87,10 @@ const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   useEffect(() => {
     if (!session?.user?.id) {
       setUnreadCount(0)
+      setChatRoomId(undefined)
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(LIVE_SUPPORT_ROOM_STORAGE_KEY)
+      }
       return
     }
 

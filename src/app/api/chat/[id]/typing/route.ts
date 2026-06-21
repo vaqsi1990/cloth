@@ -25,7 +25,10 @@ export async function PATCH(
     }
 
     const session = await getServerSession(authOptions)
-    const chatRoom = await getChatRoomIfAllowed(chatRoomId, session)
+    const body = await request.json().catch(() => ({}))
+    const guestEmail =
+      typeof body?.guestEmail === 'string' ? body.guestEmail : null
+    const chatRoom = await getChatRoomIfAllowed(chatRoomId, session, guestEmail)
 
     if (!chatRoom) {
       return NextResponse.json(
@@ -34,7 +37,6 @@ export async function PATCH(
       )
     }
 
-    const body = await request.json()
     const { typing } = typingSchema.parse(body)
     const viewerIsAdminSide = isAdminSide(session, chatRoom)
     const side = viewerIsAdminSide ? 'admin' : 'user'

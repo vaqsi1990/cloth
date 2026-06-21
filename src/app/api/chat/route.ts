@@ -3,12 +3,16 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { isLiveSupportUnreadForUser, isProductChatUnreadForUser } from '@/lib/chat-unread'
-import { accountChatListWhereForUser } from '@/lib/account-product-chat'
+import { fetchAccountChatRooms } from '@/lib/account-chat-list'
+import { activeLiveSupportChatRoomWhereForUser } from '@/lib/account-product-chat'
 import {
   createChatRoomMessageSchema,
   normalizeChatMessageContent,
 } from '@/lib/chat-message'
+import {
+  removeClosedLiveSupportRoomsForGuest,
+  removeClosedLiveSupportRoomsForUser,
+} from '@/lib/chat-live-support-room'
 
 // Validation schemas
 const createChatRoomSchema = createChatRoomMessageSchema
@@ -25,105 +29,11 @@ export async function GET(request: NextRequest) {
       }, { status: 401 })
     }
 
-    // Buyer ↔ seller product chats only (legacy rows without productId included).
-    const chatRooms = await prisma.$queryRaw<Array<{
-      id: number
-      createdAt: Date
-      updatedAt: Date
-      status: string
-      userId: string | null
-      adminId: string | null
-      productId: number | null
-      orderId: number | null
-      product_name: string | null
-      product_image: string | null
-      guestName?: string
-      guestEmail?: string
-      user_name?: string
-      user_email?: string
-      admin_name?: string
-      admin_email?: string
-      admin_role?: string | null
-      message_count: number
-      last_message?: string
-      last_message_isFromAdmin?: boolean
-      last_message_userId?: string
-      last_message_id?: number
-      userLastReadMessageId?: number | null
-      adminLastReadMessageId?: number | null
-    }>>`
-      SELECT cr.id, cr."createdAt", cr."updatedAt", cr.status,
-             cr."userId", cr."adminId", cr."productId", cr."orderId",
-             cr."userLastReadMessageId", cr."adminLastReadMessageId",
-             p.name as product_name,
-             (SELECT pi.url FROM "ProductImage" pi WHERE pi."productId" = p.id ORDER BY pi.position ASC LIMIT 1) as product_image,
-             cr."guestName", cr."guestEmail",
-             u.name as user_name, u.email as user_email,
-             a.name as admin_name, a.email as admin_email, a.role as admin_role,
-             (SELECT COUNT(*) FROM "ChatMessage" WHERE "chatRoomId" = cr.id)::int as message_count,
-             (SELECT CASE
-                WHEN TRIM(cm.content) <> '' THEN cm.content
-                WHEN cm."imageUrl" IS NOT NULL THEN '📷 ფოტო'
-                ELSE cm.content
-              END
-              FROM "ChatMessage" cm WHERE cm."chatRoomId" = cr.id ORDER BY cm."createdAt" DESC LIMIT 1) as last_message,
-             (SELECT "isFromAdmin" FROM "ChatMessage" WHERE "chatRoomId" = cr.id ORDER BY "createdAt" DESC LIMIT 1) as last_message_isFromAdmin,
-             (SELECT "userId" FROM "ChatMessage" WHERE "chatRoomId" = cr.id ORDER BY "createdAt" DESC LIMIT 1) as last_message_userId,
-             (SELECT id FROM "ChatMessage" WHERE "chatRoomId" = cr.id ORDER BY "createdAt" DESC LIMIT 1) as last_message_id
-      FROM "ChatRoom" cr
-      LEFT JOIN "User" u ON cr."userId" = u.id
-      LEFT JOIN "User" a ON cr."adminId" = a.id
-      LEFT JOIN "Product" p ON cr."productId" = p.id
-      WHERE ${accountChatListWhereForUser(session.user.id)}
-      ORDER BY last_message_id DESC NULLS LAST, cr.id DESC
-    `
-    
-    // Transform the data to include messages array for compatibility
-    const transformedChatRooms = chatRooms.map((room) => {
-      const lastMessageIsFromAdmin = room.last_message_isFromAdmin || false
-      const isLiveSupport =
-        room.productId == null &&
-        (room.adminId == null ||
-          room.admin_role === 'ADMIN' ||
-          room.admin_role === 'SUPPORT')
-      const isUnread = room.last_message
-        ? isLiveSupport && room.userId === session.user.id
-          ? isLiveSupportUnreadForUser(
-              lastMessageIsFromAdmin,
-              room.last_message_id,
-              room.userLastReadMessageId,
-            )
-          : isProductChatUnreadForUser(
-              lastMessageIsFromAdmin,
-              room.last_message_id,
-              room.userId,
-              room.adminId,
-              session.user.id,
-              room.userLastReadMessageId,
-              room.adminLastReadMessageId,
-            )
-        : false
-
-      return {
-        ...room,
-        chatKind: isLiveSupport ? 'live_support' : 'product',
-        product_name: isLiveSupport
-          ? 'საფორთის მხარდაჭერა'
-          : room.product_name,
-        is_unread: isUnread,
-        messages: room.last_message
-          ? [{
-              isFromAdmin: lastMessageIsFromAdmin,
-              userId: room.last_message_userId || null,
-              content: room.last_message,
-            }]
-          : [],
-      }
-    })
+    const chatRooms = await fetchAccountChatRooms(session.user.id)
 
     return NextResponse.json({
       success: true,
-      chatRooms: transformedChatRooms
+      chatRooms,
     })
 
   } catch (error) {
@@ -160,10 +70,9 @@ export async function POST(request: NextRequest) {
     // If we have a valid user, try to reuse/create a chat room with userId
     if (userId) {
       const existingChatRoom = await prisma.$queryRaw<Array<{ id: number }>>`
-        SELECT id FROM "ChatRoom" 
-        WHERE "userId" = ${userId} 
-        AND status IN ('PENDING', 'ACTIVE')
-        ORDER BY "createdAt" DESC
+        SELECT cr.id FROM "ChatRoom" cr
+        WHERE ${activeLiveSupportChatRoomWhereForUser(userId)}
+        ORDER BY cr."createdAt" DESC
         LIMIT 1
       `
 
@@ -190,6 +99,8 @@ export async function POST(request: NextRequest) {
         })
       }
 
+      await removeClosedLiveSupportRoomsForUser(userId)
+
       const newRoom = await prisma.$queryRaw<Array<{ id: number }>>`
         INSERT INTO "ChatRoom" ("userId", status, "createdAt", "updatedAt")
         VALUES (${userId}, 'PENDING', NOW(), NOW())
@@ -204,15 +115,19 @@ export async function POST(request: NextRequest) {
       `
 
       console.log(`✅ Created new chat room ${roomId} for user ${userId}`)
-      
+
       return NextResponse.json({
         success: true,
         message: 'Chat room created',
-        chatRoomId: roomId
+        chatRoomId: roomId,
+        created: true,
       })
     }
 
-    // Guest (or missing user) flow - no required guest fields
+    if (validatedData.guestEmail?.trim()) {
+      await removeClosedLiveSupportRoomsForGuest(validatedData.guestEmail)
+    }
+
     const newRoom = await prisma.$queryRaw<Array<{ id: number }>>`
       INSERT INTO "ChatRoom" ("guestName", "guestEmail", status, "createdAt", "updatedAt")
       VALUES (${validatedData.guestName || null}, ${validatedData.guestEmail || null}, 'PENDING', NOW(), NOW())
@@ -229,34 +144,33 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Chat room created',
-      chatRoomId: roomId
+      chatRoomId: roomId,
+      created: true,
     })
-
   } catch (error) {
     console.error('Error creating chat room:', error)
-    
-    // Handle validation errors
+
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { 
+        {
           success: false,
           message: 'Validation error',
-          errors: error.issues.map(err => ({
+          errors: error.issues.map((err) => ({
             field: err.path.join('.'),
-            message: err.message
-          }))
+            message: err.message,
+          })),
         },
-        { status: 400 }
+        { status: 400 },
       )
     }
-    
+
     return NextResponse.json(
-      { 
+      {
         success: false,
         error: 'Internal server error',
-        message: error instanceof Error ? error.message : 'Unknown error'
+        message: error instanceof Error ? error.message : 'Unknown error',
       },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }

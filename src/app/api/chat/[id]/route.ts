@@ -4,13 +4,12 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { isAdminOrSupport } from '@/lib/roles'
-import { isAdminSide } from '@/lib/chat-access'
+import { getChatRoomIfAllowed, isAdminSide } from '@/lib/chat-access'
 import {
   getOtherPartyTyping,
   getTypingLabel,
   setChatTyping,
 } from '@/lib/chat-typing'
-import { userChatRoomAccessForUser } from '@/lib/account-product-chat'
 import {
   markChatRoomAsRead,
   resolveViewerIsAdminSide,
@@ -44,6 +43,7 @@ export async function GET(
     }
 
     const session = await getServerSession(authOptions)
+    const guestEmail = request.nextUrl.searchParams.get('guestEmail')
 
     type ChatRoomMeta = {
       userId: string | null
@@ -52,36 +52,34 @@ export async function GET(
       adminTypingAt: Date | null
     }
 
-    let chatRoomRows: ChatRoomMeta[]
+    const chatRoomAccess = await getChatRoomIfAllowed(
+      chatRoomId,
+      session,
+      guestEmail,
+    )
 
-    if (isAdminOrSupport(session?.user?.role)) {
-      chatRoomRows = await prisma.$queryRaw<ChatRoomMeta[]>`
-        SELECT "userId", "adminId", "userTypingAt", "adminTypingAt"
-        FROM "ChatRoom"
-        WHERE id = ${chatRoomId}
-        LIMIT 1
-      `
-    } else if (session?.user?.id) {
-      chatRoomRows = await prisma.$queryRaw<ChatRoomMeta[]>`
-        SELECT "userId", "adminId", "userTypingAt", "adminTypingAt"
-        FROM "ChatRoom"
-        WHERE id = ${chatRoomId}
-        AND ${userChatRoomAccessForUser(session.user.id)}
-        LIMIT 1
-      `
-    } else {
-      chatRoomRows = await prisma.$queryRaw<ChatRoomMeta[]>`
-        SELECT "userId", "adminId", "userTypingAt", "adminTypingAt"
-        FROM "ChatRoom"
-        WHERE id = ${chatRoomId}
-        LIMIT 1
-      `
+    if (!chatRoomAccess) {
+      console.log(`Chat room ${chatRoomId} not found or access denied for user ${session?.user?.id || 'guest'}`)
+      return NextResponse.json(
+        { 
+          success: false,
+          error: 'Chat room not found or access denied',
+          message: 'Chat room not found or access denied'
+        },
+        { status: 404 }
+      )
     }
+
+    const chatRoomRows = await prisma.$queryRaw<ChatRoomMeta[]>`
+      SELECT "userId", "adminId", "userTypingAt", "adminTypingAt"
+      FROM "ChatRoom"
+      WHERE id = ${chatRoomId}
+      LIMIT 1
+    `
 
     const chatRoomMeta = chatRoomRows[0] ?? null
 
     if (!chatRoomMeta) {
-      console.log(`Chat room ${chatRoomId} not found or access denied for user ${session?.user?.id || 'guest'}`)
       return NextResponse.json(
         { 
           success: false,
@@ -189,42 +187,19 @@ export async function POST(
 
     const session = await getServerSession(authOptions)
     const body = await request.json()
+    const guestEmail =
+      typeof body?.guestEmail === 'string' ? body.guestEmail : null
     const validatedData = sendMessageSchema.parse(body)
     const messageContent = normalizeChatMessageContent(validatedData.content)
     const messageImageUrl = validatedData.imageUrl ?? null
 
-    // Check if chat room exists and user has access
-    // Admin/Support users can access any chat room
-    // Regular users can access chat rooms where they are userId (buyer) or adminId (seller/product author)
-    let chatRoom
-    if (isAdminOrSupport(session?.user?.role)) {
-      // Admin/Support can access any chat room
-      chatRoom = await prisma.$queryRaw<Array<{ id: number }>>`
-        SELECT id FROM "ChatRoom" 
-        WHERE id = ${chatRoomId}
-        LIMIT 1
-      `
-    } else {
-      // Regular users can access their own chat rooms (as buyer) or chat rooms where they are seller (adminId)
-      // For guest users, we need to check if they have access via session or if it's a guest chat
-      if (session?.user?.id) {
-        chatRoom = await prisma.$queryRaw<Array<{ id: number }>>`
-          SELECT id FROM "ChatRoom" 
-          WHERE id = ${chatRoomId}
-          AND ${userChatRoomAccessForUser(session.user.id)}
-          LIMIT 1
-        `
-      } else {
-        // Guest user - allow access to any chat room (they'll be identified by guestEmail in messages)
-        chatRoom = await prisma.$queryRaw<Array<{ id: number }>>`
-          SELECT id FROM "ChatRoom" 
-          WHERE id = ${chatRoomId}
-          LIMIT 1
-        `
-      }
-    }
+    const chatRoomAccess = await getChatRoomIfAllowed(
+      chatRoomId,
+      session,
+      guestEmail,
+    )
 
-    if (chatRoom.length === 0) {
+    if (!chatRoomAccess) {
       console.log(`Chat room ${chatRoomId} not found or access denied for user ${session?.user?.id || 'guest'}`)
       return NextResponse.json(
         { 
@@ -327,14 +302,30 @@ export async function POST(
     }
 
     const senderSide = isFromAdmin ? 'admin' : 'user'
-    await Promise.all([
+
+    const roomUpdates: Promise<unknown>[] = [
       prisma.$executeRaw`
         UPDATE "ChatRoom" 
         SET "updatedAt" = NOW()
         WHERE id = ${chatRoomId}
       `,
       setChatTyping(chatRoomId, senderSide, false),
-    ])
+    ]
+
+    if (isUserAdminOrSupport && !isUserSeller && adminId) {
+      roomUpdates.push(
+        prisma.$executeRaw`
+          UPDATE "ChatRoom"
+          SET "adminId" = COALESCE("adminId", ${adminId}),
+              status = CASE WHEN status = 'PENDING' THEN 'ACTIVE'::"ChatStatus" ELSE status END,
+              "updatedAt" = NOW()
+          WHERE id = ${chatRoomId}
+            AND "productId" IS NULL
+        `,
+      )
+    }
+
+    await Promise.all(roomUpdates)
 
     const message = newMessage[0]
     
@@ -417,36 +408,15 @@ export async function DELETE(
     }
 
     const session = await getServerSession(authOptions)
-    
-    // Check if user has access to this chat room
-    let chatRoom
-    if (isAdminOrSupport(session?.user?.role)) {
-      // Admin/Support can delete any chat room
-      chatRoom = await prisma.$queryRaw<Array<{ id: number }>>`
-        SELECT id FROM "ChatRoom" 
-        WHERE id = ${chatRoomId}
-        LIMIT 1
-      `
-    } else {
-      // Regular users can delete their own chat rooms (as buyer) or chat rooms where they are seller (adminId)
-      if (session?.user?.id) {
-        chatRoom = await prisma.$queryRaw<Array<{ id: number }>>`
-          SELECT id FROM "ChatRoom" 
-          WHERE id = ${chatRoomId}
-          AND ${userChatRoomAccessForUser(session.user.id)}
-          LIMIT 1
-        `
-      } else {
-        // Guest users can delete their own chat rooms
-        chatRoom = await prisma.$queryRaw<Array<{ id: number }>>`
-          SELECT id FROM "ChatRoom" 
-          WHERE id = ${chatRoomId}
-          LIMIT 1
-        `
-      }
-    }
+    const guestEmail = request.nextUrl.searchParams.get('guestEmail')
 
-    if (chatRoom.length === 0) {
+    const chatRoomAccess = await getChatRoomIfAllowed(
+      chatRoomId,
+      session,
+      guestEmail,
+    )
+
+    if (!chatRoomAccess) {
       console.log(`Chat room ${chatRoomId} not found or access denied for user ${session?.user?.id || 'guest'}`)
       return NextResponse.json(
         { 
