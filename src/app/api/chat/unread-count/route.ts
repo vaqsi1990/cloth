@@ -16,6 +16,8 @@ export async function GET() {
       liveSupportUnreadCount,
       productChatUnreadCount,
       liveSupportChatRoomId,
+      latestUnreadMessageId,
+      latestUnreadChatRoomId,
     } = await getAccountChatUnreadSummary(session.user.id)
 
     return NextResponse.json({
@@ -24,6 +26,8 @@ export async function GET() {
       liveSupportUnreadCount,
       productChatUnreadCount,
       liveSupportChatRoomId,
+      latestUnreadMessageId,
+      latestUnreadChatRoomId,
     })
   } catch (error) {
     console.error('GET chat unread-count:', error)

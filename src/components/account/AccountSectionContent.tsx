@@ -5,7 +5,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from '@/component/AppImage'
-import { User, Package, ShoppingCart, Settings, MapPin, Phone, Mail, Camera, MessageCircle, Search, Trash2, TrendingUp, ClipboardList, Ticket, Copy, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react'
+import { User, Package, ShoppingCart, Settings, MapPin, Phone, Mail, Camera, MessageCircle, Search, Trash2, TrendingUp, ClipboardList, Ticket, Copy, ArrowLeft, ChevronLeft, ChevronRight, Bell, BellOff } from 'lucide-react'
 import ImageUpload from '@/component/CloudinaryUploader'
 import UploadLoadingIndicator from '@/component/UploadLoadingIndicator'
 import ContactForm from '@/component/ContactForm'
@@ -36,6 +36,7 @@ import { useChatTyping } from '@/hooks/useChatTyping'
 import { useChatAutoScroll } from '@/hooks/useChatAutoScroll'
 import { isValidGeorgianIban } from '@/lib/iban'
 import { useUserChatUnreadCount } from '@/hooks/useUserChatUnreadCount'
+import { useUserChatNotification } from '@/components/UserChatNotificationProvider'
 import {
   accountSectionPath,
   buildAccountChatsPath,
@@ -281,6 +282,12 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
   const { unreadCount: polledChatUnread, refresh: refreshChatUnread } = useUserChatUnreadCount(
     !!session?.user?.id,
   )
+  const {
+    soundEnabled: chatSoundEnabled,
+    toggleSound: toggleChatSound,
+    setActiveChatRoomId,
+    acknowledgeActiveChat,
+  } = useUserChatNotification()
   const chatsUnreadCount = Math.max(
     polledChatUnread,
     chatRooms.filter((room) => room.is_unread).length,
@@ -444,7 +451,16 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
   useEffect(() => {
     selectedChatRoomIdRef.current = selectedChatRoom?.id ?? null
 
-    if (section !== 'chats' || !selectedChatRoom?.id) {
+    if (section !== 'chats') {
+      setActiveChatRoomId(null)
+      setChatMessages([])
+      setOtherPartyTyping(false)
+      return
+    }
+
+    setActiveChatRoomId(selectedChatRoom?.id ?? null)
+
+    if (!selectedChatRoom?.id) {
       setChatMessages([])
       setOtherPartyTyping(false)
       return
@@ -456,9 +472,12 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
     const interval = setInterval(() => {
       fetchChatMessages(selectedChatRoom.id)
     }, 3000)
-    return () => clearInterval(interval)
+    return () => {
+      clearInterval(interval)
+      setActiveChatRoomId(null)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [section, selectedChatRoom?.id])
+  }, [section, selectedChatRoom?.id, setActiveChatRoomId])
 
   // Check ban status and blocked/verified status
   useEffect(() => {
@@ -644,6 +663,7 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
             room.id === chatRoomId ? { ...room, is_unread: false } : room,
           ),
         )
+        acknowledgeActiveChat()
         void refreshChatUnread()
       }
     } catch (error) {
@@ -2149,11 +2169,24 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
                   </p>
                 ) : null}
               </div>
-              <ChatUnreadBadge
-                count={chatsUnreadCount}
-                className="relative shrink-0"
-                pulse={false}
-              />
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={toggleChatSound}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-black hover:bg-gray-50 transition-colors"
+                  title={chatSoundEnabled ? 'შემომავალი მესიჯის ხმა ჩართულია' : 'შემომავალი მესიჯის ხმა გამორთულია'}
+                >
+                  {chatSoundEnabled ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+                  <span className="hidden sm:inline">
+                    {chatSoundEnabled ? 'ხმა ჩართ.' : 'ხმა გამორთ.'}
+                  </span>
+                </button>
+                <ChatUnreadBadge
+                  count={chatsUnreadCount}
+                  className="relative shrink-0"
+                  pulse={false}
+                />
+              </div>
             </div>
             <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 min-w-0">
               {loadingChats ? (

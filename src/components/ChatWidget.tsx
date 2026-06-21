@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { MessageCircle, Send, X, Minimize2, Maximize2 } from 'lucide-react'
+import { MessageCircle, Send, X, Minimize2, Maximize2, Bell, BellOff } from 'lucide-react'
 import { formatDateTime } from '@/utils/dateUtils'
 import { useSession } from 'next-auth/react'
 import { showToast } from '@/utils/toast'
@@ -12,6 +12,7 @@ import ChatMessageContent from '@/components/ChatMessageContent'
 import ChatImageUploadButton from '@/components/ChatImageUploadButton'
 import ChatPendingImagePreview from '@/components/ChatPendingImagePreview'
 import { canSendChatMessage } from '@/lib/chat-message'
+import { useUserChatNotification } from '@/components/UserChatNotificationProvider'
 
 function guestChatQuery(guestEmail: string | undefined): string {
   if (!guestEmail?.trim()) return ''
@@ -58,6 +59,12 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
   const [isEndingChat, setIsEndingChat] = useState(false)
   const [otherPartyTyping, setOtherPartyTyping] = useState(false)
   const { data: session } = useSession()
+  const {
+    soundEnabled: chatSoundEnabled,
+    toggleSound: toggleChatSound,
+    setActiveChatRoomId,
+    acknowledgeActiveChat,
+  } = useUserChatNotification()
   const { notifyTyping, stopTyping } = useChatTyping({
     chatRoomId,
     enabled: isOpen && !!chatRoomId,
@@ -182,10 +189,16 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
 
         setMessages(uniqueMessages)
         setOtherPartyTyping(Boolean(data.otherPartyTyping))
+        if (session?.user?.id) {
+          acknowledgeActiveChat()
+        }
       } else if (data.success && !data.messages) {
         // Chat room exists but has no messages yet
         setMessages([])
         setOtherPartyTyping(Boolean(data.otherPartyTyping))
+        if (session?.user?.id) {
+          acknowledgeActiveChat()
+        }
       }
     } catch (error) {
       console.error('Error fetching messages:', error)
@@ -194,7 +207,16 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
       fetchingRef.current = false
       setIsFetchingMessages(false)
     }
-  }, [chatRoomId, onChatRoomCreated, session?.user?.id, guestEmail])
+  }, [chatRoomId, onChatRoomCreated, session?.user?.id, guestEmail, acknowledgeActiveChat])
+
+  useEffect(() => {
+    if (!session?.user?.id) return
+    if (isOpen && chatRoomId && chatRoomId > 0) {
+      setActiveChatRoomId(chatRoomId)
+      return () => setActiveChatRoomId(null)
+    }
+    setActiveChatRoomId(null)
+  }, [session?.user?.id, isOpen, chatRoomId, setActiveChatRoomId])
 
   // Fetch messages and poll when chat is open
   useEffect(() => {
@@ -417,6 +439,17 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
             <span className="font-semibold">Live Chat</span>
           </div>
           <div className="flex items-center space-x-2">
+            {session?.user?.id ? (
+              <button
+                type="button"
+                onClick={toggleChatSound}
+                className="text-white hover:text-gray-300 transition-colors p-1 rounded hover:bg-white/10"
+                title={chatSoundEnabled ? 'შემომავალი მესიჯის ხმა ჩართულია' : 'შემომავალი მესიჯის ხმა გამორთულია'}
+                aria-label={chatSoundEnabled ? 'შემომავალი მესიჯის ხმა ჩართულია' : 'შემომავალი მესიჯის ხმა გამორთულია'}
+              >
+                {chatSoundEnabled ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+              </button>
+            ) : null}
             <button
               onClick={() => setIsMinimized(!isMinimized)}
               className="text-white hover:text-gray-300 transition-colors p-1 rounded hover:bg-white/10"

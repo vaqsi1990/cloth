@@ -171,6 +171,11 @@ export async function getAccountChatUnreadSummary(userId: string) {
   const liveSupportUnreadCount = liveSupportUnreadRooms.length
   const productChatUnreadCount = Math.max(0, unreadCount - liveSupportUnreadCount)
 
+  const latestUnreadRoom =
+    unreadRooms
+      .slice()
+      .sort((a, b) => (b.last_message_id ?? 0) - (a.last_message_id ?? 0))[0] ?? null
+
   const latestLiveSupportRoom =
     chatRooms.find((room) => room.chatKind === 'live_support') ?? null
 
@@ -179,6 +184,8 @@ export async function getAccountChatUnreadSummary(userId: string) {
     liveSupportUnreadCount,
     productChatUnreadCount,
     liveSupportChatRoomId: latestLiveSupportRoom?.id ?? null,
+    latestUnreadMessageId: latestUnreadRoom?.last_message_id ?? null,
+    latestUnreadChatRoomId: latestUnreadRoom?.id ?? null,
     chatRooms,
   }
 }
