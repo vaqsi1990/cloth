@@ -24,6 +24,7 @@ import {
   PRODUCT_REJECT_REASON_PROMPT,
   PRODUCT_SEND_BACK_REASON_PROMPT,
 } from '@/lib/product-approval'
+import { productMatchesPanelSearch } from '@/lib/admin-product-search'
 
 interface RentalPeriod {
   startDate: string
@@ -143,6 +144,10 @@ const SupportProductsPage = () => {
         includeUnapproved: 'true',
         pendingFirst: 'true',
       })
+      const trimmedSearch = searchTerm.trim()
+      if (trimmedSearch) {
+        params.set('search', trimmedSearch)
+      }
       if (offset > 0) {
         params.set('offset', String(offset))
       }
@@ -174,7 +179,7 @@ const SupportProductsPage = () => {
       setLoading(false)
       setLoadingMore(false)
     }
-  }, [])
+  }, [searchTerm])
 
   const loadMoreProducts = () => {
     if (hasMore && nextOffset != null && !loadingMore) {
@@ -183,10 +188,14 @@ const SupportProductsPage = () => {
   }
 
   useEffect(() => {
-    if (status === 'authenticated' && isSupport(session?.user?.role)) {
-      fetchProducts()
-    }
-  }, [status, session?.user?.role, fetchProducts])
+    if (status !== 'authenticated' || !isSupport(session?.user?.role)) return
+
+    const timer = window.setTimeout(() => {
+      void fetchProducts(0, false)
+    }, searchTerm.trim() ? 300 : 0)
+
+    return () => window.clearTimeout(timer)
+  }, [status, session?.user?.role, searchTerm, fetchProducts])
 
   const handleDeleteProduct = async (productId: number) => {
     if (!confirm('ნამდვილად გსურთ პროდუქტის წაშლა?')) {
@@ -424,9 +433,7 @@ const SupportProductsPage = () => {
 
   const filteredProducts = sortProductsByApprovalPriority(
     products.filter((product) => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.sku?.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesSearch = productMatchesPanelSearch(product, searchTerm)
     const matchesGender = filterGender === 'ALL' || product.gender === filterGender
     const productCategorySlug = resolveCanonicalCategorySlug(product.category ?? undefined)
     const matchesCategory =

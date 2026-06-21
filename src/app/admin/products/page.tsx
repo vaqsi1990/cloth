@@ -21,6 +21,7 @@ import {
   type ProductGender,
 } from '@/lib/product-categories'
 import { markAdminSectionSeen } from '@/lib/admin-dashboard-seen'
+import { productMatchesPanelSearch } from '@/lib/admin-product-search'
 import {
   getAdminApprovalLabel,
   PRODUCT_REJECT_REASON_PROMPT,
@@ -128,6 +129,10 @@ const AdminProductsPage = () => {
         includeUnapproved: 'true',
         pendingFirst: 'true',
       })
+      const trimmedSearch = searchTerm.trim()
+      if (trimmedSearch) {
+        params.set('search', trimmedSearch)
+      }
       if (offset > 0) {
         params.set('offset', String(offset))
       }
@@ -156,7 +161,7 @@ const AdminProductsPage = () => {
       setLoading(false)
       setLoadingMore(false)
     }
-  }, [enrichWithRentalStatus])
+  }, [enrichWithRentalStatus, searchTerm])
 
   const loadMoreProducts = () => {
     if (hasMore && nextOffset != null && !loadingMore) {
@@ -165,10 +170,14 @@ const AdminProductsPage = () => {
   }
 
   useEffect(() => {
-    if (status === 'authenticated' && session?.user?.role === 'ADMIN') {
-      fetchProducts()
-    }
-  }, [status, session?.user?.role, fetchProducts])
+    if (status !== 'authenticated' || session?.user?.role !== 'ADMIN') return
+
+    const timer = window.setTimeout(() => {
+      void fetchProducts(0, false)
+    }, searchTerm.trim() ? 300 : 0)
+
+    return () => window.clearTimeout(timer)
+  }, [status, session?.user?.role, searchTerm, fetchProducts])
 
   useEffect(() => {
     const vipSuccess = searchParams.get('vipSuccess')
@@ -500,9 +509,7 @@ const AdminProductsPage = () => {
 
   const filteredProducts = sortProductsByApprovalPriority(
     products.filter((product) => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.sku?.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesSearch = productMatchesPanelSearch(product, searchTerm)
     const matchesGender = filterGender === 'ALL' || product.gender === filterGender
     const productCategorySlug = resolveCanonicalCategorySlug(product.category ?? undefined)
     const matchesCategory =

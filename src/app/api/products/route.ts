@@ -379,6 +379,14 @@ export async function GET(request: NextRequest) {
             OR: [
               { name: { contains: search, mode: 'insensitive' as const } },
               { brand: { contains: search, mode: 'insensitive' as const } },
+              { sku: { contains: search, mode: 'insensitive' as const } },
+              {
+                variants: {
+                  some: {
+                    sku: { contains: search, mode: 'insensitive' as const },
+                  },
+                },
+              },
             ],
           }
         : {}),
@@ -410,7 +418,10 @@ export async function GET(request: NextRequest) {
     }
 
     const useApprovalPriorityOrder =
-      pendingFirst && shouldIncludeUnapproved && !useOffsetPagination
+      pendingFirst && shouldIncludeUnapproved && !useOffsetPagination && !search
+
+    const useAdminFilteredOffset =
+      shouldIncludeUnapproved && !useOffsetPagination && Boolean(search)
 
     const productsPromise = useApprovalPriorityOrder
       ? (async () => {
@@ -426,6 +437,15 @@ export async function GET(request: NextRequest) {
           })
           return orderProductsByIdList(rows, orderedIds)
         })()
+      : useAdminFilteredOffset
+        ? listProducts(
+            {
+              ...listQueryBase,
+              skip: adminOffset,
+            },
+            false,
+            listCacheStrategy,
+          )
       : useOffsetPagination
         ? listProducts(
             {
@@ -530,7 +550,7 @@ export async function GET(request: NextRequest) {
         : null
 
     const nextOffset =
-      useApprovalPriorityOrder && hasMore
+      (useApprovalPriorityOrder || useAdminFilteredOffset) && hasMore
         ? adminOffset + pageSize
         : null
 
