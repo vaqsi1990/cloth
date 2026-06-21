@@ -120,7 +120,7 @@ async function seedSampleProducts() {
       stock: 2,
       gender: 'WOMEN',
       color: 'შავი',
-      size: 'M',
+      size: 'M (38)',
       sizeSystem: 'EU',
       location: 'თბილისი',
       allowsPickup: true,

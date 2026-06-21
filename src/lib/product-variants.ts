@@ -1,5 +1,10 @@
 import type { Prisma, SizeSystem } from '@prisma/client'
 import { z } from 'zod'
+import {
+  ADULT_CLOTHING_SIZES,
+  isAdultClothingSize,
+  normalizeAdultClothingSize,
+} from '@/lib/shop-product-filters'
 
 export type ProductVariantSkuLike = {
   color?: string | null
@@ -148,11 +153,12 @@ export type VariantSizeOption = {
   inStock: boolean
 }
 
-const SIZE_OPTION_ORDER = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL']
+const SIZE_OPTION_ORDER = [...ADULT_CLOTHING_SIZES]
 
 function compareVariantSizeOptions(a: VariantSizeOption, b: VariantSizeOption): number {
   const rank = (size: string) => {
-    const index = SIZE_OPTION_ORDER.indexOf(size.trim().toUpperCase())
+    const normalized = normalizeAdultClothingSize(size.trim())
+    const index = SIZE_OPTION_ORDER.indexOf(normalized as (typeof ADULT_CLOTHING_SIZES)[number])
     return index === -1 ? SIZE_OPTION_ORDER.length : index
   }
 
@@ -179,12 +185,15 @@ export function getVariantSizeOptions(
   }
 
   return Array.from(sizeStock.entries())
-    .map(([size, stock]) => ({
-      value: size,
-      label: size,
-      disabled: stock <= 0,
-      inStock: stock > 0,
-    }))
+    .map(([size, stock]) => {
+      const label = normalizeAdultClothingSize(size)
+      return {
+        value: size,
+        label: isAdultClothingSize(label) ? label : size,
+        disabled: stock <= 0,
+        inStock: stock > 0,
+      }
+    })
     .sort(compareVariantSizeOptions)
 }
 

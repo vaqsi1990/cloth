@@ -9,6 +9,7 @@ import {
 import { resolveCanonicalCategory } from '@/lib/product-categories'
 import { getDbColorMatchValues } from '@/lib/product-colors'
 import {
+  getAdultSizeDbMatchValues,
   isLetterSize,
   LETTER_SIZE_TO_SYSTEM_SIZES,
 } from '@/lib/shop-product-filters'
@@ -94,29 +95,23 @@ function buildSizeWhere(filters: PublicListFilters): Prisma.Sql | null {
     .map((raw) => raw.trim())
     .filter(Boolean)
     .map((selectedSize) => {
-      const upper = selectedSize.toUpperCase()
-
       if (isLetterSize(selectedSize)) {
-        const mapping = LETTER_SIZE_TO_SYSTEM_SIZES[upper]
-        const parts: Prisma.Sql[] = [
-          Prisma.sql`UPPER(TRIM(p.size)) = ${upper}`,
-        ]
+        const matchValues = getAdultSizeDbMatchValues(selectedSize)
+        const parts: Prisma.Sql[] = matchValues.map(
+          (value) =>
+            Prisma.sql`(TRIM(p.size) = ${value} OR UPPER(TRIM(p.size)) = ${value.toUpperCase()})`,
+        )
 
         for (const system of activeSystems) {
+          const mapping = LETTER_SIZE_TO_SYSTEM_SIZES[selectedSize.toUpperCase()]
           const values = mapping?.[system as keyof typeof mapping]
           if (!values?.length) continue
 
-          if (system === 'CN') {
-            parts.push(
-              Prisma.sql`(p."sizeSystem"::text = 'CN' AND UPPER(TRIM(p.size)) = ${upper})`,
-            )
-          } else {
-            parts.push(
-              Prisma.sql`(p."sizeSystem"::text = ${system} AND TRIM(p.size) IN (${Prisma.join(
-                values,
-              )}))`,
-            )
-          }
+          parts.push(
+            Prisma.sql`(p."sizeSystem"::text = ${system} AND TRIM(p.size) IN (${Prisma.join(
+              values,
+            )}))`,
+          )
         }
 
         return Prisma.sql`(${Prisma.join(parts, ' OR ')})`

@@ -10,7 +10,68 @@ import {
 } from '@/lib/product-categories'
 import { resolveProductColorFilterId } from '@/lib/product-colors'
 
-export const PREDEFINED_LETTER_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXXL']
+/** Adult clothing sizes (EU in parentheses). */
+export const ADULT_CLOTHING_SIZES = [
+  'XXS (32)',
+  'XS (34)',
+  'S (36)',
+  'M (38)',
+  'L (40–42)',
+  'XL (44)',
+  'XXL (46)',
+  '3XL (48)',
+  '4XL (50)',
+  '5XL (52)',
+  '6XL (54)',
+] as const
+
+export type AdultClothingSize = (typeof ADULT_CLOTHING_SIZES)[number]
+
+/** @deprecated Use ADULT_CLOTHING_SIZES — kept for existing imports. */
+export const PREDEFINED_LETTER_SIZES = [...ADULT_CLOTHING_SIZES]
+
+/** Legacy short codes stored on older products → canonical label. */
+export const LEGACY_ADULT_SIZE_TO_CANONICAL: Record<string, AdultClothingSize> = {
+  XXS: 'XXS (32)',
+  XS: 'XS (34)',
+  S: 'S (36)',
+  M: 'M (38)',
+  L: 'L (40–42)',
+  XL: 'XL (44)',
+  XXL: 'XXL (46)',
+  XXXL: '3XL (48)',
+  '3XL': '3XL (48)',
+  '4XL': '4XL (50)',
+  '5XL': '5XL (52)',
+  '6XL': '6XL (54)',
+}
+
+export function isAdultClothingSize(size: string): boolean {
+  return ADULT_CLOTHING_SIZES.includes(size.trim() as AdultClothingSize)
+}
+
+export function normalizeAdultClothingSize(size: string): string {
+  const trimmed = size.trim()
+  if (isAdultClothingSize(trimmed)) return trimmed
+  return LEGACY_ADULT_SIZE_TO_CANONICAL[trimmed.toUpperCase()] ?? trimmed
+}
+
+/** DB values that should match a shop filter size (includes legacy codes). */
+export function getAdultSizeDbMatchValues(size: string): string[] {
+  const canonical = normalizeAdultClothingSize(size)
+  const values = new Set<string>([canonical])
+  for (const [legacy, label] of Object.entries(LEGACY_ADULT_SIZE_TO_CANONICAL)) {
+    if (label === canonical) values.add(legacy)
+  }
+  const euMatch = canonical.match(/\(([^)]+)\)/)
+  if (euMatch?.[1]) {
+    for (const part of euMatch[1].split(/[–-]/)) {
+      const eu = part.trim()
+      if (eu) values.add(eu)
+    }
+  }
+  return [...values]
+}
 
 /** EU shoe sizes — women's footwear */
 export const WOMEN_FOOTWEAR_SIZES = [
@@ -244,10 +305,10 @@ export function resolveShopDisplaySizes(
 }
 
 export function buildAdultProductFormSizeOptions(): ProductFormSizeOption[] {
-  return PREDEFINED_LETTER_SIZES.map((size) => ({
-    value: `CN:${size}`,
+  return ADULT_CLOTHING_SIZES.map((size) => ({
+    value: size,
     label: size,
-    system: 'CN' as const,
+    system: 'EU' as const,
     size,
   }))
 }
@@ -314,7 +375,7 @@ export function isValidProductFormSize(
 
   if (isFootwear) return isFootwearSize(normalized, gender)
   if (gender === 'CHILDREN') return isChildrenAgeSize(normalized)
-  return !isChildrenAgeSize(normalized) && !isFootwearSize(normalized, gender)
+  return isAdultClothingSize(normalized)
 }
 
 export function parseProductFormSizeSelection(
@@ -329,16 +390,35 @@ export function parseProductFormSizeSelection(
     return { sizeSystem: undefined, size: value }
   }
 
+  if (isAdultClothingSize(value)) {
+    return { sizeSystem: 'EU', size: value }
+  }
+
   const [system, ...sizeParts] = value.split(':')
   const nextSize = sizeParts.join(':')
   if (!system || !nextSize) {
+    const legacy = LEGACY_ADULT_SIZE_TO_CANONICAL[value.trim().toUpperCase()]
+    if (legacy) {
+      return { sizeSystem: 'EU', size: legacy }
+    }
     return { sizeSystem: undefined, size: undefined }
   }
 
-  return {
-    sizeSystem: system as ProductFormSizeSystem,
-    size: nextSize,
+  if (['EU', 'US', 'UK', 'CN'].includes(system)) {
+    const legacy = LEGACY_ADULT_SIZE_TO_CANONICAL[nextSize.trim().toUpperCase()]
+    if (legacy) {
+      return { sizeSystem: 'EU', size: legacy }
+    }
+    if (isAdultClothingSize(nextSize)) {
+      return { sizeSystem: 'EU', size: nextSize }
+    }
+    return {
+      sizeSystem: system as ProductFormSizeSystem,
+      size: nextSize,
+    }
   }
+
+  return { sizeSystem: undefined, size: undefined }
 }
 
 export function getProductFormSizeSelectValue(
@@ -348,25 +428,28 @@ export function getProductFormSizeSelectValue(
 ): string {
   if (!size?.trim()) return ''
   if (gender === 'CHILDREN') return size
+  if (isAdultClothingSize(size)) return size
+  const normalized = normalizeAdultClothingSize(size)
+  if (isAdultClothingSize(normalized)) return normalized
   if (sizeSystem?.trim()) return `${sizeSystem}:${size}`
   return ''
 }
 
-/** Letter size → stored size values per measurement system (shop filter matching). */
+/** Adult clothing filter → stored size values per measurement system. */
 export const LETTER_SIZE_TO_SYSTEM_SIZES: Record<
   string,
   Partial<Record<'EU' | 'US' | 'UK' | 'CN', string[]>>
-> = {
-  XS: { CN: ['XS'] },
-  S: { CN: ['S'] },
-  M: { CN: ['M'] },
-  L: { CN: ['L'] },
-  XL: { CN: ['XL'] },
-  XXXL: { CN: ['XXXL'] },
-}
+> = Object.fromEntries(
+  ADULT_CLOTHING_SIZES.map((label) => {
+    const matchValues = getAdultSizeDbMatchValues(label)
+    return [label.toUpperCase(), { EU: matchValues, CN: matchValues }]
+  }),
+)
 
 export function isLetterSize(size: string): boolean {
-  return PREDEFINED_LETTER_SIZES.includes(size.trim().toUpperCase())
+  const trimmed = size.trim()
+  if (isAdultClothingSize(trimmed)) return true
+  return Boolean(LEGACY_ADULT_SIZE_TO_CANONICAL[trimmed.toUpperCase()])
 }
 
 export function formatFilterCount(count: number): string {
@@ -405,7 +488,12 @@ export function productMatchesSizeFilter(
 
   return selectedSizes.some((selectedSize) => {
     const sel = selectedSize.trim()
-    return normalized === sel || productUpper === sel.toUpperCase()
+    if (normalized === sel || productUpper === sel.toUpperCase()) return true
+    if (!isLetterSize(sel)) return false
+    return getAdultSizeDbMatchValues(sel).some(
+      (candidate) =>
+        normalized === candidate || productUpper === candidate.toUpperCase(),
+    )
   })
 }
 

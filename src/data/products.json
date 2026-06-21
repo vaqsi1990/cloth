@@ -11,7 +11,7 @@
       "images": ["/new/1.jpg", "/new/2.jpg", "/new/3.jpg", "/new/4.jpg"],
       "hasSale": true,
       "isNew": true,
-      "sizes": ["S", "M", "L"],
+      "sizes": ["S (36)", "M (38)", "L (40–42)"],
       "colors": ["black", "red", "blue"],
       "description": "ელეგანტური კაბა უმაღლესი ხარისხის მასალისგან. იდეალურია როგორც ყოველდღიური, ასევე სპეციალური ღონისძიებებისთვის.",
       "features": [
@@ -45,7 +45,7 @@
       "images": ["/new/2.jpg", "/new/3.jpg", "/new/4.jpg", "/new/5.jpg"],
       "hasSale": false,
       "isNew": true,
-      "sizes": ["XS", "S", "M", "L"],
+      "sizes": ["XXS (32)", "XS (34)", "S (36)", "M (38)", "L (40–42)", "XL (44)", "XXL (46)", "3XL (48)", "4XL (50)", "5XL (52)", "6XL (54)"],
       "colors": ["white", "pink", "purple"],
       "description": "სტილური ბლუზა ფრენჩული მანჟეტებით, რომელიც გამოირჩევა თავისი ელეგანტურობით და კომფორტით.",
       "features": [
@@ -77,7 +77,7 @@
       "images": ["/new/3.jpg", "/new/4.jpg", "/new/5.jpg", "/new/6.jpg"],
       "hasSale": false,
       "isNew": false,
-      "sizes": ["S", "M", "L", "XL"],
+      "sizes": ["S (36)", "M (38)", "L (40–42)", "XL (44)"],
       "colors": ["green", "yellow", "blue"],
       "description": "მოდური ზაფხულის კაბა, რომელიც გამოირჩევა თავისი ფერადობით და კომფორტით.",
       "features": [
@@ -143,7 +143,7 @@
       "images": ["/new/5.jpg", "/new/6.jpg", "/new/7.jpg", "/new/1.jpg"],
       "hasSale": false,
       "isNew": true,
-      "sizes": ["S", "M", "L"],
+      "sizes": ["S (36)", "M (38)", "L (40–42)"],
       "colors": ["white", "black", "red"],
       "description": "ელეგანტური ბლუზა ბოუტონებით, რომელიც გამოირჩევა თავისი სტილით და კომფორტით.",
       "features": [
@@ -207,7 +207,7 @@
       "images": ["/new/5.jpg", "/new/6.jpg", "/new/7.jpg", "/new/1.jpg"],
       "hasSale": true,
       "isNew": false,
-      "sizes": ["S", "M", "L", "XL"],
+      "sizes": ["S (36)", "M (38)", "L (40–42)", "XL (44)"],
       "colors": ["white", "blue", "green"],
       "description": "კლასიკური მამაკაცის ბლუზა, რომელიც გამოირჩევა თავისი ხარისხით და კომფორტით.",
       "features": [
@@ -238,7 +238,7 @@
       "images": ["/new/2.jpg", "/new/3.jpg", "/new/4.jpg", "/new/5.jpg"],
       "hasSale": true,
       "isNew": false,
-      "sizes": ["M", "L", "XL", "XXL"],
+      "sizes": ["M (38)", "L (40–42)", "XL (44)", "XXL (46)"],
       "colors": ["black", "gray", "brown"],
       "description": "ელეგანტური მამაკაცის ქურთუკი, რომელიც გამოირჩევა თავისი სტილით და ხარისხით.",
       "features": [
@@ -300,7 +300,7 @@
       "images": ["/new/4.jpg", "/new/5.jpg", "/new/6.jpg", "/new/7.jpg"],
       "hasSale": false,
       "isNew": true,
-      "sizes": ["S", "M", "L"],
+      "sizes": ["S (36)", "M (38)", "L (40–42)"],
       "colors": ["white", "black", "gray"],
       "description": "კომფორტული მამაკაცის ტანსაცმელი, რომელიც გამოირჩევა თავისი ხარისხით.",
       "features": [
