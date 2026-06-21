@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { isAdminOrSupport } from '@/lib/roles'
 import { staffSupportInboxWhere } from '@/lib/account-product-chat'
+import { internalServerErrorResponse } from '@/lib/api-error'
 
 export async function GET(request: NextRequest) {
   try {
@@ -78,14 +79,6 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error fetching unread chat count:', error)
-    return NextResponse.json(
-      { 
-        success: false,
-        error: 'Internal server error',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    )
+    return internalServerErrorResponse('Error fetching unread chat count:', error)
   }
 }

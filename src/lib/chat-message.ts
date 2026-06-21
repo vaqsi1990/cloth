@@ -32,6 +32,23 @@ export const createChatRoomMessageSchema = z
     { message: 'შეტყობინება უნდა შეიცავდეს ტექსტს ან ფოტოს' },
   )
 
+/** Guest live-support room creation (email required server-side). */
+export const createGuestChatRoomMessageSchema = z
+  .object({
+    guestName: z.string().trim().min(1).optional(),
+    guestEmail: z.string().trim().email('გთხოვთ შეიყვანოთ სწორი ელ-ფოსტა'),
+    message: z.string().max(1000).optional().default(''),
+    imageUrl: chatImageUrlSchema.optional(),
+  })
+  .refine(
+    (data) => data.message.trim().length > 0 || Boolean(data.imageUrl),
+    { message: 'შეტყობინება უნდა შეიცავდეს ტექსტს ან ფოტოს' },
+  )
+
+export function normalizeGuestEmail(email: string): string {
+  return email.trim().toLowerCase()
+}
+
 export function normalizeChatMessageContent(content?: string): string {
   return (content ?? '').trim()
 }

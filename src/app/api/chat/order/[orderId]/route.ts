@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getOrCreateProductChatRoom } from '@/lib/chat-product-room'
+import { internalServerErrorResponse } from '@/lib/api-error'
 
 // POST - Create or get chat room for a specific order (separate thread per order)
 export async function POST(
@@ -135,14 +136,6 @@ export async function POST(
       message: created ? 'Chat room created successfully' : 'Chat room already exists',
     })
   } catch (error) {
-    console.error('Error creating order chat:', error)
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Internal server error',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      },
-      { status: 500 },
-    )
+    return internalServerErrorResponse('Error creating order chat:', error)
   }
 }

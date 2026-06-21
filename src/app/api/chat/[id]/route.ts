@@ -11,14 +11,13 @@ import {
   getTypingLabel,
   setChatTyping,
 } from '@/lib/chat-typing'
-import {
-  markChatRoomAsRead,
-  resolveViewerIsAdminSide,
-} from '@/lib/chat-mark-read'
+import { markChatRoomAsRead } from '@/lib/chat-mark-read'
+import { closeLiveSupportChatRoom } from '@/lib/chat-live-support-room'
 import {
   normalizeChatMessageContent,
   sendChatMessageSchema,
 } from '@/lib/chat-message'
+import { internalServerErrorResponse } from '@/lib/api-error'
 
 // Validation schema
 const sendMessageSchema = sendChatMessageSchema
@@ -154,15 +153,7 @@ export async function GET(
     })
 
   } catch (error) {
-    console.error('Error fetching messages:', error)
-    return NextResponse.json(
-      { 
-        success: false,
-        error: 'Internal server error',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    )
+    return internalServerErrorResponse('Error fetching messages:', error)
   }
 }
 
@@ -385,18 +376,11 @@ export async function POST(
       )
     }
     
-    return NextResponse.json(
-      { 
-        success: false,
-        error: 'Internal server error',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    )
+    return internalServerErrorResponse('Error sending message:', error)
   }
 }
 
-// DELETE - Delete chat room
+// DELETE - Close live-support chat room (user/guest "end chat")
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -437,32 +421,44 @@ export async function DELETE(
       )
     }
 
-    // Delete all messages first (cascade should handle this, but being explicit)
-    await prisma.$executeRaw`
-      DELETE FROM "ChatMessage" 
-      WHERE "chatRoomId" = ${chatRoomId}
-    `
+    const room = await prisma.chatRoom.findUnique({
+      where: { id: chatRoomId },
+      select: { productId: true, status: true },
+    })
 
-    // Delete the chat room
-    await prisma.$executeRaw`
-      DELETE FROM "ChatRoom" 
-      WHERE id = ${chatRoomId}
-    `
+    if (!room) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Chat room not found or access denied',
+          message: 'Chat room not found or access denied',
+        },
+        { status: 404 },
+      )
+    }
+
+    if (room.productId != null) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Product chats cannot be closed this way',
+          message: 'Product chats cannot be closed this way',
+        },
+        { status: 403 },
+      )
+    }
+
+    if (room.status !== 'CLOSED') {
+      await closeLiveSupportChatRoom(chatRoomId)
+    }
 
     return NextResponse.json({
       success: true,
-      message: 'Chat room deleted successfully'
+      message: 'Chat room closed successfully',
+      closed: true,
     })
 
   } catch (error) {
-    console.error('Error deleting chat room:', error)
-    return NextResponse.json(
-      { 
-        success: false,
-        error: 'Internal server error',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    )
+    return internalServerErrorResponse('Error closing chat room:', error)
   }
 }

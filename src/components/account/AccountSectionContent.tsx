@@ -716,10 +716,16 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
     }
   }
 
-  const handleDeleteChat = async (chatRoomId: number, e: React.MouseEvent) => {
+  const handleDeleteChat = async (
+    chatRoomId: number,
+    chatKind: 'product' | 'live_support',
+    e: React.MouseEvent,
+  ) => {
     e.stopPropagation() // Prevent selecting the chat room when clicking delete
 
-    if (!confirm('ნამდვილად გსურთ ამ ჩათის წაშლა? ეს ქმედება შეუქცევადია.')) {
+    if (chatKind !== 'live_support') return
+
+    if (!confirm('ნამდვილად გსურთ ამ საუბრის დახურვა?')) {
       return
     }
 
@@ -731,7 +737,7 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
       const data = await response.json()
       if (data.success) {
         const deletedRoom = chatRooms.find((room) => room.id === chatRoomId)
-        showToast('ჩათი წარმატებით წაიშალა', 'success')
+        showToast('საუბარი წარმატებით დახურულია', 'success')
         setChatRooms(chatRooms.filter(room => room.id !== chatRoomId))
         if (selectedChatRoom?.id === chatRoomId) {
           setSelectedChatRoom(null)
@@ -2264,17 +2270,19 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
                             ) : null}
                           </div>
                         </button>
-                        <button
-                          onClick={(e) => handleDeleteChat(room.id, e)}
-                          className={`p-2 mr-1 sm:mr-2 shrink-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity hover:bg-red-100 rounded ${
-                            isSelected ? 'hover:bg-red-900/40' : ''
-                          }`}
-                          title="ჩათის წაშლა"
-                        >
-                          <Trash2 className={`w-4 h-4 ${
-                            isSelected ? 'text-white' : 'text-red-600'
-                          }`} />
-                        </button>
+                        {room.chatKind === 'live_support' ? (
+                          <button
+                            onClick={(e) => handleDeleteChat(room.id, 'live_support', e)}
+                            className={`p-2 mr-1 sm:mr-2 shrink-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity hover:bg-red-100 rounded ${
+                              isSelected ? 'hover:bg-red-900/40' : ''
+                            }`}
+                            title="საუბრის დახურვა"
+                          >
+                            <Trash2 className={`w-4 h-4 ${
+                              isSelected ? 'text-white' : 'text-red-600'
+                            }`} />
+                          </button>
+                        ) : null}
                       </div>
                     )
                   })}

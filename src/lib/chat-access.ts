@@ -67,15 +67,17 @@ export async function getChatRoomIfAllowed(
   if (!room || room.userId != null) {
     return null
   }
-  if (room.guestEmail) {
-    const normalizedGuest = guestEmail?.trim().toLowerCase()
-    if (
-      !normalizedGuest ||
-      room.guestEmail.trim().toLowerCase() !== normalizedGuest
-    ) {
-      return null
-    }
+
+  const roomEmail = room.guestEmail?.trim().toLowerCase()
+  if (!roomEmail) {
+    return null
   }
+
+  const normalizedGuest = guestEmail?.trim().toLowerCase()
+  if (!normalizedGuest || roomEmail !== normalizedGuest) {
+    return null
+  }
+
   return room
 }
 

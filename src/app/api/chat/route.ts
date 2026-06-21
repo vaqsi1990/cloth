@@ -7,15 +7,19 @@ import { fetchAccountChatRooms } from '@/lib/account-chat-list'
 import { activeLiveSupportChatRoomWhereForUser } from '@/lib/account-product-chat'
 import {
   createChatRoomMessageSchema,
+  createGuestChatRoomMessageSchema,
   normalizeChatMessageContent,
+  normalizeGuestEmail,
 } from '@/lib/chat-message'
 import {
   removeClosedLiveSupportRoomsForGuest,
   removeClosedLiveSupportRoomsForUser,
 } from '@/lib/chat-live-support-room'
-
-// Validation schemas
-const createChatRoomSchema = createChatRoomMessageSchema
+import {
+  checkGuestChatCreateRateLimit,
+  getClientIp,
+} from '@/lib/chat-rate-limit'
+import { internalServerErrorResponse } from '@/lib/api-error'
 
 // GET - Get user's chat rooms
 export async function GET(request: NextRequest) {
@@ -38,10 +42,7 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error fetching chat rooms:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return internalServerErrorResponse('Error fetching chat rooms:', error)
   }
 }
 
@@ -63,12 +64,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const validatedData = createChatRoomSchema.parse(body)
-    const messageContent = normalizeChatMessageContent(validatedData.message)
-    const messageImageUrl = validatedData.imageUrl ?? null
-
-    // If we have a valid user, try to reuse/create a chat room with userId
     if (userId) {
+      const validatedData = createChatRoomMessageSchema.parse(body)
+      const messageContent = normalizeChatMessageContent(validatedData.message)
+      const messageImageUrl = validatedData.imageUrl ?? null
+
       const existingChatRoom = await prisma.$queryRaw<Array<{ id: number }>>`
         SELECT cr.id FROM "ChatRoom" cr
         WHERE ${activeLiveSupportChatRoomWhereForUser(userId)}
@@ -124,13 +124,31 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    if (validatedData.guestEmail?.trim()) {
-      await removeClosedLiveSupportRoomsForGuest(validatedData.guestEmail)
+    const guestData = createGuestChatRoomMessageSchema.parse(body)
+    const guestEmail = normalizeGuestEmail(guestData.guestEmail)
+    const messageContent = normalizeChatMessageContent(guestData.message)
+    const messageImageUrl = guestData.imageUrl ?? null
+
+    const rateLimit = checkGuestChatCreateRateLimit(getClientIp(request), guestEmail)
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'ძალიან ბევრი მოთხოვნა. სცადეთ მოგვიანებით.',
+          retryAfterSec: rateLimit.retryAfterSec,
+        },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(rateLimit.retryAfterSec) },
+        },
+      )
     }
+
+    await removeClosedLiveSupportRoomsForGuest(guestEmail)
 
     const newRoom = await prisma.$queryRaw<Array<{ id: number }>>`
       INSERT INTO "ChatRoom" ("guestName", "guestEmail", status, "createdAt", "updatedAt")
-      VALUES (${validatedData.guestName || null}, ${validatedData.guestEmail || null}, 'PENDING', NOW(), NOW())
+      VALUES (${guestData.guestName || null}, ${guestEmail}, 'PENDING', NOW(), NOW())
       RETURNING id
     `
 
@@ -148,8 +166,6 @@ export async function POST(request: NextRequest) {
       created: true,
     })
   } catch (error) {
-    console.error('Error creating chat room:', error)
-
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         {
@@ -164,13 +180,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Internal server error',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      },
-      { status: 500 },
-    )
+    return internalServerErrorResponse('Error creating chat room:', error)
   }
 }

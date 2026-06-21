@@ -50,3 +50,16 @@ export async function deleteLiveSupportChatRoom(chatRoomId: number) {
     where: { id: chatRoomId },
   })
 }
+
+/** End a live-support conversation for the user/guest (keeps history for staff). */
+export async function closeLiveSupportChatRoom(chatRoomId: number): Promise<boolean> {
+  const result = await prisma.chatRoom.updateMany({
+    where: {
+      id: chatRoomId,
+      productId: null,
+      status: { in: ['PENDING', 'ACTIVE'] },
+    },
+    data: { status: 'CLOSED', updatedAt: new Date() },
+  })
+  return result.count > 0
+}
