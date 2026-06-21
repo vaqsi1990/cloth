@@ -243,12 +243,18 @@ export function isSizeOptionalCategoryId(
 }
 
 export function clearVariantSizes<
-  T extends { size?: string | null; sizes?: string[] | null; sizeSystem?: string | null },
+  T extends {
+    size?: string | null
+    sizes?: string[] | null
+    sizeDetails?: Array<{ size: string; price: number; stock: number }> | null
+    sizeSystem?: string | null
+  },
 >(variants: T[]): T[] {
   return variants.map((variant) => ({
     ...variant,
     size: undefined,
     sizes: undefined,
+    sizeDetails: undefined,
     sizeSystem: undefined,
   }))
 }

@@ -1,5 +1,5 @@
 import type { ProductVariantFormRow } from '@/lib/product-variants'
-import { expandVariantFormRows } from '@/lib/product-variants'
+import { expandVariantFormRows, getFormRowSizes } from '@/lib/product-variants'
 
 export type RentalPriceTierFormRow = {
   minDays: number
@@ -9,9 +9,15 @@ export type RentalPriceTierFormRow = {
 export type ProductPricingMode = 'purchase' | 'rental'
 
 export function productVariantsHaveSalePrice(
-  variants: Array<{ price?: number | null }>,
+  variants: Array<{
+    price?: number | null
+    sizeDetails?: Array<{ price?: number | null }> | null
+  }>,
 ): boolean {
-  return variants.some((variant) => (variant.price ?? 0) > 0)
+  return variants.some((variant) => {
+    if ((variant.price ?? 0) > 0) return true
+    return (variant.sizeDetails || []).some((detail) => (detail.price ?? 0) > 0)
+  })
 }
 
 export function productHasRentalPricing(
@@ -21,8 +27,18 @@ export function productHasRentalPricing(
 }
 
 export function deriveShowPurchaseOptionsFromVariants(
-  variants: Array<{ price?: number | null }>,
+  variants: Array<{
+    price?: number | null
+    sizeDetails?: Array<{ price?: number | null }> | null
+    size?: string | null
+    sizes?: string[] | null
+    stock?: number | null
+  }>,
 ): boolean {
+  const asFormRows = variants as ProductVariantFormRow[]
+  if (asFormRows.some((variant) => variant.sizeDetails?.length || variant.sizes?.length || variant.size)) {
+    return expandVariantFormRows(asFormRows).some((variant) => (variant.price ?? 0) > 0)
+  }
   return productVariantsHaveSalePrice(variants)
 }
 
@@ -92,7 +108,16 @@ export function buildPricingModeFormPatch(
     rentalPriceTiers: productHasRentalPricing(input.rentalPriceTiers)
       ? (input.rentalPriceTiers || [{ minDays: 1, pricePerDay: 0 }])
       : [{ minDays: 1, pricePerDay: 0 }],
-    variants: input.variants.map((variant) => ({ ...variant, price: 0 })),
+    variants: input.variants.map((variant) => {
+      const sizes = getFormRowSizes(variant)
+      return {
+        ...variant,
+        price: 0,
+        sizeDetails: undefined,
+        sizes: sizes.length > 1 ? sizes : undefined,
+        size: sizes.length === 1 ? sizes[0] : variant.size,
+      }
+    }),
   }
 }
 
@@ -117,11 +142,13 @@ export function prepareProductPricingSubmit(input: {
         ...variant,
         price: saleEnabled ? (variant.price ?? 0) : 0,
       })),
+      { perSizeSalePricing: saleEnabled },
     )
   } else {
+    const simpleSaleVariant = input.variants.find((variant) => (variant.price ?? 0) > 0) ?? input.variants[0]
     variantsToSubmit =
-      saleEnabled && productVariantsHaveSalePrice(input.variants)
-        ? input.variants
+      saleEnabled && simpleSaleVariant && productVariantsHaveSalePrice([simpleSaleVariant])
+        ? [{ ...simpleSaleVariant, price: simpleSaleVariant.price ?? 0 }]
         : []
   }
 

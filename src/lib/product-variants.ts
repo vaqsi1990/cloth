@@ -251,11 +251,19 @@ export function getDefaultVariantSelection(
   }
 }
 
+export type ProductVariantSizeDetail = {
+  size: string
+  price: number
+  stock: number
+}
+
 export type ProductVariantFormRow = {
   color?: string
   size?: string
-  /** Multiple sizes for the same color/image/price row in the form UI. */
+  /** Multiple sizes for the same color/image row in the form UI. */
   sizes?: string[]
+  /** Per-size price and stock when multiple sizes are selected for one color. */
+  sizeDetails?: ProductVariantSizeDetail[]
   sizeSystem?: SizeSystem
   price: number
   stock: number
@@ -263,8 +271,15 @@ export type ProductVariantFormRow = {
 }
 
 export function getFormRowSizes(
-  row: Pick<ProductVariantFormRow, 'sizes'> & { size?: string | null },
+  row: Pick<ProductVariantFormRow, 'sizeDetails' | 'sizes'> & { size?: string | null },
 ): string[] {
+  const fromDetails = (row.sizeDetails || [])
+    .map((entry) => entry.size.trim())
+    .filter(Boolean)
+  if (fromDetails.length > 0) {
+    return fromDetails
+  }
+
   const fromArray = (row.sizes || []).map((entry) => entry.trim()).filter(Boolean)
   if (fromArray.length > 0) {
     return fromArray
@@ -274,32 +289,90 @@ export function getFormRowSizes(
   return single ? [single] : []
 }
 
+export function getFormRowSizeDetails(
+  row: {
+    sizeDetails?: ProductVariantSizeDetail[]
+    sizes?: string[]
+    size?: string | null
+    price?: number | null
+    stock?: number | null
+  },
+): ProductVariantSizeDetail[] {
+  if (row.sizeDetails?.length) {
+    return row.sizeDetails
+  }
+
+  const sizes = getFormRowSizes(row)
+  if (sizes.length === 0) {
+    return []
+  }
+
+  return sizes.map((size) => ({
+    size,
+    price: row.price ?? 0,
+    stock: row.stock ?? 0,
+  }))
+}
+
+export function buildSizeDetailsForSelection(
+  currentDetails: ProductVariantSizeDetail[] | undefined,
+  selectedSizes: string[],
+  fallback: { price: number; stock: number },
+): ProductVariantSizeDetail[] {
+  const detailBySize = new Map(
+    (currentDetails || []).map((detail) => [detail.size, detail]),
+  )
+
+  return selectedSizes.map((size) => {
+    const existing = detailBySize.get(size)
+    if (existing) return existing
+    return {
+      size,
+      price: fallback.price,
+      stock: fallback.stock,
+    }
+  })
+}
+
 export function expandVariantFormRows(
   rows: ProductVariantFormRow[],
+  options?: { perSizeSalePricing?: boolean },
 ): ProductVariantFormRow[] {
+  const perSizeSalePricing = options?.perSizeSalePricing ?? true
   const expanded: ProductVariantFormRow[] = []
 
   for (const row of rows) {
-    const sizes = getFormRowSizes(row)
     const shared = {
       color: row.color,
       sizeSystem: row.sizeSystem,
-      price: row.price,
-      stock: row.stock,
       imageUrl: row.imageUrl,
     }
+    const sizes = getFormRowSizes(row)
 
     if (sizes.length === 0) {
       expanded.push({ ...shared, price: row.price, stock: row.stock })
       continue
     }
 
-    for (const size of sizes) {
+    if (!perSizeSalePricing) {
+      for (const size of sizes) {
+        expanded.push({
+          ...shared,
+          size,
+          price: row.price,
+          stock: row.stock,
+        })
+      }
+      continue
+    }
+
+    const details = row.sizeDetails?.length ? row.sizeDetails : getFormRowSizeDetails(row)
+    for (const detail of details) {
       expanded.push({
         ...shared,
-        size,
-        price: row.price,
-        stock: row.stock,
+        size: detail.size,
+        price: detail.price,
+        stock: detail.stock,
       })
     }
   }
@@ -307,20 +380,25 @@ export function expandVariantFormRows(
   return expanded
 }
 
-function formRowGroupKey(row: {
-  color?: string | null
-  imageUrl?: string | null
-  price?: number | null
-  stock?: number | null
-  sizeSystem?: SizeSystem | null
-}): string {
-  return [
-    row.color?.trim() || '',
-    row.imageUrl?.trim() || '',
-    String(row.price ?? 0),
-    String(row.stock ?? 0),
-    row.sizeSystem || '',
-  ].join('\0')
+function formRowGroupKey(
+  row: {
+    color?: string | null
+    imageUrl?: string | null
+    price?: number | null
+    stock?: number | null
+    sizeSystem?: SizeSystem | null
+  },
+  options?: { perSizeSalePricing?: boolean },
+): string {
+  const color = row.color?.trim() || ''
+  const imageUrl = row.imageUrl?.trim() || ''
+  const sizeSystem = row.sizeSystem || ''
+
+  if (options?.perSizeSalePricing ?? true) {
+    return [color, imageUrl, sizeSystem].join('\0')
+  }
+
+  return [color, imageUrl, String(row.price ?? 0), String(row.stock ?? 0), sizeSystem].join('\0')
 }
 
 export function groupSkuVariantsToFormRows(
@@ -332,21 +410,62 @@ export function groupSkuVariantsToFormRows(
     stock?: number | null
     imageUrl?: string | null
   }>,
+  options?: { perSizeSalePricing?: boolean },
 ): ProductVariantFormRow[] {
+  const perSizeSalePricing = options?.perSizeSalePricing ?? true
+
+  if (!perSizeSalePricing) {
+    const groupMap = new Map<string, ProductVariantFormRow & { sizes: string[] }>()
+
+    for (const variant of variants) {
+      const color = variant.color?.trim() || undefined
+      const size = variant.size?.trim()
+      const key = formRowGroupKey(variant, { perSizeSalePricing: false })
+      const existing = groupMap.get(key)
+
+      if (existing) {
+        if (size && !existing.sizes.includes(size)) {
+          existing.sizes.push(size)
+        }
+        continue
+      }
+
+      groupMap.set(key, {
+        color,
+        sizeSystem: variant.sizeSystem || undefined,
+        price: variant.price ?? 0,
+        stock: variant.stock ?? 0,
+        imageUrl: variant.imageUrl?.trim() || undefined,
+        sizes: size ? [size] : [],
+      })
+    }
+
+    return Array.from(groupMap.values()).map(({ sizes, ...row }) => ({
+      ...row,
+      sizes: sizes.length > 1 ? sizes : undefined,
+      size: sizes.length === 1 ? sizes[0] : undefined,
+    }))
+  }
+
   const groupMap = new Map<
     string,
-    ProductVariantFormRow & { sizes: string[] }
+    ProductVariantFormRow & { sizeDetails: ProductVariantSizeDetail[] }
   >()
 
   for (const variant of variants) {
     const color = variant.color?.trim() || undefined
     const size = variant.size?.trim()
-    const key = formRowGroupKey(variant)
+    const key = formRowGroupKey(variant, { perSizeSalePricing: true })
     const existing = groupMap.get(key)
+    const detail: ProductVariantSizeDetail = {
+      size: size || '',
+      price: variant.price ?? 0,
+      stock: variant.stock ?? 0,
+    }
 
     if (existing) {
-      if (size && !existing.sizes.includes(size)) {
-        existing.sizes.push(size)
+      if (size && !existing.sizeDetails.some((entry) => entry.size === size)) {
+        existing.sizeDetails.push(detail)
       }
       continue
     }
@@ -357,15 +476,23 @@ export function groupSkuVariantsToFormRows(
       price: variant.price ?? 0,
       stock: variant.stock ?? 0,
       imageUrl: variant.imageUrl?.trim() || undefined,
-      sizes: size ? [size] : [],
+      sizeDetails: size ? [detail] : [],
     })
   }
 
-  return Array.from(groupMap.values()).map(({ sizes, ...row }) => ({
-    ...row,
-    sizes: sizes.length > 1 ? sizes : undefined,
-    size: sizes.length === 1 ? sizes[0] : undefined,
-  }))
+  return Array.from(groupMap.values()).map(({ sizeDetails, ...row }) => {
+    const sizes = sizeDetails.map((detail) => detail.size).filter(Boolean)
+    const hasSizes = sizes.length > 0
+
+    return {
+      ...row,
+      sizeDetails: hasSizes ? sizeDetails : undefined,
+      sizes: sizes.length > 1 ? sizes : undefined,
+      size: sizes.length === 1 ? sizes[0] : undefined,
+      price: hasSizes ? (sizeDetails[0]?.price ?? row.price) : row.price,
+      stock: hasSizes ? (sizeDetails[0]?.stock ?? row.stock) : row.stock,
+    }
+  })
 }
 
 export function patchVariantFormRow<T extends { variants: ProductVariantFormRow[] }>(
@@ -501,6 +628,9 @@ export function getVariantSalePricesForSelection(
 
 export type ProductVariantSkuFormRow = ProductVariantSkuLike & {
   price?: number | null
+  stock?: number | null
+  sizes?: string[]
+  sizeDetails?: ProductVariantSizeDetail[]
 }
 
 export function getVariantSalePrices(
@@ -559,8 +689,18 @@ export function validateSkuVariantRows(
     if (!variant.imageUrl?.trim()) {
       errors[`variants.${index}.imageUrl`] = 'სურათი აუცილებელია'
     }
-    if (requireSalePrices && (variant.price ?? 0) <= 0) {
-      errors[`variants.${index}.price`] = 'ფასი აუცილებელია'
+
+    const sizeDetails = getFormRowSizeDetails(variant)
+    if (requireSalePrices) {
+      if (sizeDetails.length > 0) {
+        sizeDetails.forEach((detail, detailIndex) => {
+          if ((detail.price ?? 0) <= 0) {
+            errors[`variants.${index}.sizeDetails.${detailIndex}.price`] = 'ფასი აუცილებელია'
+          }
+        })
+      } else if ((variant.price ?? 0) <= 0) {
+        errors[`variants.${index}.price`] = 'ფასი აუცილებელია'
+      }
     }
   })
 
@@ -615,6 +755,12 @@ export function hydrateVariantRowsWithProductImages(
   })
 }
 
+export function skuVariantsUsePerSizeSalePricing(
+  variants: Array<{ price?: number | null }>,
+): boolean {
+  return variants.some((variant) => (variant.price ?? 0) > 0)
+}
+
 export function mapProductVariantsToFormRows(
   product: ProductWithVariantsAndImages,
 ): ProductVariantFormRow[] {
@@ -622,6 +768,7 @@ export function mapProductVariantsToFormRows(
   const productImageUrls = getOrderedProductImageUrls(product)
 
   if (productHasSkuVariants(product)) {
+    const perSizeSalePricing = skuVariantsUsePerSizeSalePricing(variants)
     return hydrateVariantRowsWithProductImages(
       groupSkuVariantsToFormRows(
         variants.map((variant) => ({
@@ -632,6 +779,7 @@ export function mapProductVariantsToFormRows(
           stock: variant.stock ?? 0,
           imageUrl: variant.imageUrl?.trim() || undefined,
         })),
+        { perSizeSalePricing },
       ),
       productImageUrls,
     )
@@ -815,6 +963,10 @@ export function deriveProductFieldsFromVariants(
     sizeSystem: fallback.sizeSystem || first.sizeSystem || undefined,
     stock: skuVariants.reduce((sum, variant) => sum + (variant.stock ?? 0), 0),
   }
+}
+
+export function formVariantRowsHaveSalePrice(variants: ProductVariantFormRow[]): boolean {
+  return expandVariantFormRows(variants).some((variant) => (variant.price ?? 0) > 0)
 }
 
 export function formatVariantLabel(variant: {

@@ -38,6 +38,7 @@ import {
 } from '@/lib/product-create-validation'
 import ProductDiscountFields from '@/components/ProductDiscountFields'
 import ProductMinPriceNotice from '@/components/ProductMinPriceNotice'
+import SimpleProductSalePriceSection from '@/components/SimpleProductSalePriceSection'
 import ProductVariantEditor from '@/components/ProductVariantEditor'
 import ProductTypeSelector, { type ProductListingType } from '@/components/ProductTypeSelector'
 import ProductMultiPricingSelector from '@/components/ProductMultiPricingSelector'
@@ -1017,53 +1018,22 @@ const NewProductPage = () => {
           )}
 
           {!showVariantOptions && showPurchaseOptions && (
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-[20px] text-black font-semibold">გაყიდვა</h2>
-              <button
-                type="button"
-                onClick={addVariant}
-                className="bg-black text-white px-4 py-2 rounded-lg text-[20px] text-black font-bold flex items-center space-x-2"
-              >
-                <Plus className="w-7 h-7 font-bold" />
-              </button>
-            </div>
-
-            <ProductMinPriceNotice mode="purchase" className="mb-4" />
-
-            {formData.variants.map((variant, index) => (
-              <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border border-gray-200 rounded-lg mb-4">
-                <div>
-                  <label className="block text-[20px] text-black font-medium mb-2">ფასი </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={variant.price === 0 ? '' : variant.price || ''}
-                    onChange={(e) => {
-                      const val = e.target.value === '' ? undefined : (e.target.value ? parseFloat(e.target.value) : undefined)
-                      updateVariant(index, 'price', val)
-                    }}
-                    className="w-full pl-10 pr-4 py-3 placeholder:text-gray-500 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  />
-                </div>
-                <div className="flex items-end">
-                  <button
-                    type="button"
-                    onClick={() => removeVariant(index)}
-                    className=" text-white px-3 py-2 rounded-lg text-[20px] text-black flex items-center space-x-2"
-                  >
-                    <Trash2 className="w-7 h-7 text-red-500" />
-                    
-                  </button>
-                </div>
-              </div>
-            ))}
-
-            {formData.variants.length === 0 && (
-              <p className="md:text-[18px] text-[16px] text-black">თქვენ შეგიძლიათ დაამატოთ ზომები და საწყობის რაოდენობა.</p>
-            )}
-
-          </div>
+            <SimpleProductSalePriceSection
+              price={formData.variants[0]?.price ?? 0}
+              onPriceChange={(price) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  variants: [
+                    {
+                      ...(prev.variants[0] ?? { stock: prev.stock || 1 }),
+                      price,
+                      stock: prev.variants[0]?.stock ?? (prev.stock || 1),
+                    },
+                  ],
+                }))
+              }
+              error={errors['variants.0.price']}
+            />
           )}
 
           {getProductDiscountBasePrice(formData.variants, formData.rentalPriceTiers).basePrice > 0 && (

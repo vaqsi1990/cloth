@@ -44,6 +44,11 @@ const PRODUCT_FORM_FIELD_LABELS: Record<string, string> = {
 }
 
 export function formatProductFormFieldError(fieldPath: string, message: string): string {
+  const sizeDetailMatch = fieldPath.match(/^variants\.(\d+)\.sizeDetails\.(\d+)\./)
+  if (sizeDetailMatch) {
+    return `ვარიანტი ${Number(sizeDetailMatch[1]) + 1}, ზომა ${Number(sizeDetailMatch[2]) + 1}: ${message}`
+  }
+
   const variantMatch = fieldPath.match(/^variants\.(\d+)\./)
   if (variantMatch) {
     return `ვარიანტი ${Number(variantMatch[1]) + 1}: ${message}`
