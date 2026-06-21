@@ -17,12 +17,15 @@ import { syncCartItemBuyerListPrices } from '@/lib/sync-cart-prices'
 import { z } from 'zod'
 import { MAX_CART_ITEM_QUANTITY, CHECKOUT_SINGLE_ITEM_MESSAGE } from '@/lib/cart-limits'
 import { toPrismaDeliverySpeed } from '@/lib/delivery'
+import { resolveServerCheckoutDelivery } from '@/lib/checkout-delivery'
+import { requireAuthedUser } from '@/lib/auth-session'
 import { findRentalDateConflict } from '@/lib/rental-date-conflicts'
 import { validateSelfServeRentalDates } from '@/lib/rental-dates'
 import {
   buildOrderItemProductSnapshot,
   orderItemSnapshotProductSelect,
 } from '@/lib/order-item-snapshot'
+import { releaseRentalOrderHolds } from '@/lib/rental-order-holds'
 
 interface CartItemInput {
   productId: string | number
@@ -96,7 +99,6 @@ interface BOGResponseData {
 }
 
 const orderDataSchema = z.object({
-  token: z.string().min(1),
   orderData: z.object({
     cart: z.object({
       items: z.array(z.object({
@@ -346,17 +348,20 @@ function extractRedirectUrl(responseData: BOGResponseData): string | undefined {
 }
 
 export async function POST(req: NextRequest) {
+  let pendingOrderId: number | null = null
+
   try {
     const json = await req.json()
     const { orderData } = orderDataSchema.parse(json)
 
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
+    const auth = await requireAuthedUser(session)
+    if (!auth.ok) {
+      return NextResponse.json({ success: false, error: auth.error }, { status: auth.status })
     }
 
     const cart = await prisma.cart.findFirst({
-      where: { userId: session.user.id },
+      where: { userId: auth.user.id },
       include: {
         items: {
           include: {
@@ -364,6 +369,8 @@ export async function POST(req: NextRequest) {
               select: {
                 ...cartProductPricingSelect,
                 ...orderItemSnapshotProductSelect,
+                approvalStatus: true,
+                allowsPickup: true,
               },
             },
           },
@@ -395,6 +402,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { success: false, error: 'არჩეული ნივთი კალათაში ვერ მოიძებნა' },
         { status: 400 },
+      )
+    }
+
+    if (selectedCartItem.product?.approvalStatus !== 'APPROVED') {
+      return NextResponse.json(
+        { success: false, error: 'პროდუქტი ჯერ არ არის დამტკიცებული' },
+        { status: 403 },
       )
     }
 
@@ -461,7 +475,7 @@ export async function POST(req: NextRequest) {
       })),
     )
 
-    const cartSubtotal = await computeCartItemSubtotal(session.user.id, cartItemId)
+    const cartSubtotal = await computeCartItemSubtotal(auth.user.id, cartItemId)
 
     let voucherDiscount = 0
     let voucherId: number | null = null
@@ -470,7 +484,7 @@ export async function POST(req: NextRequest) {
     if (orderData.voucherCode) {
       const voucherResult = await validateVoucher(
         orderData.voucherCode,
-        session.user.id,
+        auth.user.id,
         cartSubtotal,
       )
       if (!voucherResult.valid) {
@@ -484,16 +498,34 @@ export async function POST(req: NextRequest) {
       voucherCode = voucherResult.code
     }
 
-    // Parse delivery info
-    const deliveryCityId = orderData.deliveryCityId 
-      ? (typeof orderData.deliveryCityId === 'string' ? parseInt(orderData.deliveryCityId, 10) : orderData.deliveryCityId)
-      : null
-    const deliveryPrice = orderData.deliveryPrice 
-      ? (typeof orderData.deliveryPrice === 'string' ? parseFloat(orderData.deliveryPrice) : orderData.deliveryPrice)
-      : null
+    const deliveryResolved = await resolveServerCheckoutDelivery({
+      userId: auth.user.id,
+      productAllowsPickup: selectedCartItem.product?.allowsPickup ?? false,
+      requestedDeliveryType: orderData.deliveryType,
+      requestedCityId: orderData.deliveryCityId
+        ? (typeof orderData.deliveryCityId === 'string'
+            ? parseInt(orderData.deliveryCityId, 10)
+            : orderData.deliveryCityId)
+        : null,
+      requestedSpeed: orderData.deliverySpeed ?? null,
+    })
 
-    const deliveryFee =
-      orderData.deliveryType === 'delivery' && deliveryPrice ? deliveryPrice : 0
+    if ('error' in deliveryResolved) {
+      return NextResponse.json(
+        { success: false, error: deliveryResolved.error },
+        { status: 400 },
+      )
+    }
+
+    const {
+      deliveryType,
+      deliveryCityId,
+      deliverySpeed,
+      deliveryPrice,
+      deliveryFee,
+      deliveryCityName,
+    } = deliveryResolved
+
     const productBuyerSubtotal =
       Math.round((cartSubtotal - voucherDiscount) * 100) / 100
     const total =
@@ -505,29 +537,30 @@ export async function POST(req: NextRequest) {
     }
 
     // Get delivery city name if delivery
-    let deliveryCityName: string | null = null
-    if (deliveryCityId) {
+    let deliveryCityNameResolved: string | null = deliveryCityName
+    if (!deliveryCityNameResolved && deliveryCityId) {
       const deliveryCity = await prisma.deliveryCity.findUnique({
         where: { id: deliveryCityId },
         select: { name: true }
       })
-      deliveryCityName = deliveryCity?.name || null
+      deliveryCityNameResolved = deliveryCity?.name || null
     }
 
     const dbOrder = await prisma.order.create({
       data: {
-        userId: session.user.id,
+        userId: auth.user.id,
+        sourceCartItemId: cartItemId,
         customerName:
           orderData.address
             ? `${orderData.address.firstName} ${orderData.address.lastName}`.trim()
-            : session.user.name || 'Customer',
-        phone: session.user.phone || '',
-        email: orderData.address?.email || session.user.email || '',
+            : auth.user.name || 'Customer',
+        phone: auth.user.phone || '',
+        email: orderData.address?.email || auth.user.email || '',
         address: orderData.deliveryOption || "",
-        city: orderData.deliveryType === 'pickup' ? 'თბილისი' : (deliveryCityName || null),
+        city: deliveryType === 'pickup' ? 'თბილისი' : (deliveryCityNameResolved || null),
         deliveryCityId: deliveryCityId,
-        deliverySpeed: orderData.deliverySpeed
-          ? toPrismaDeliverySpeed(orderData.deliverySpeed)
+        deliverySpeed: deliverySpeed
+          ? toPrismaDeliverySpeed(deliverySpeed)
           : null,
         deliveryPrice: deliveryPrice,
         paymentMethod: "BOG Card Payment",
@@ -570,6 +603,8 @@ export async function POST(req: NextRequest) {
         }
       }
     })
+
+    pendingOrderId = dbOrder.id
 
     const productIds = resolvedCartItems
       .map((i) => i.productId)
@@ -724,8 +759,6 @@ export async function POST(req: NextRequest) {
 
     const redirect = extractRedirectUrl(response.data)
 
-    await prisma.cartItem.delete({ where: { id: cartItemId } })
-
     return NextResponse.json({
       success: true,
       orderId: dbOrder.id,
@@ -734,6 +767,14 @@ export async function POST(req: NextRequest) {
     })
 
   } catch (err) {
+    if (pendingOrderId) {
+      await prisma.order.update({
+        where: { id: pendingOrderId },
+        data: { status: 'CANCELED' },
+      }).catch(() => undefined)
+      await releaseRentalOrderHolds(pendingOrderId).catch(() => undefined)
+    }
+
     console.error('❌ [ERROR] Order creation failed:', err)
     if (axios.isAxiosError(err)) {
       console.error('❌ [ERROR] BOG API Error:')

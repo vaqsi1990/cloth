@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { isRentalEndBeforeStart, minRentalEndDateStillBlocking, hasRentalPeriodConflict } from '@/lib/rental-dates'
+import { computeRentalSellerTotal } from '@/lib/resolve-cart-item-price'
+import { RENTAL_BLOCKING_ORDER_STATUSES } from '@/lib/rental-blocking-orders'
 import { markRentalProductsRented } from '@/lib/update-product-status'
 import { RentalStatus } from '@prisma/client'
 
@@ -19,15 +21,13 @@ export async function POST(request: NextRequest) {
       productId, 
       variantId, 
       startDate, 
-      endDate, 
-      pricePerDay,
-      totalPrice 
+      endDate,
     } = body
 
     // Validate required fields
-    if (!productId || !startDate || !endDate || !pricePerDay || !totalPrice) {
+    if (!productId || !startDate || !endDate) {
       return NextResponse.json(
-        { error: 'Missing required fields: productId, startDate, endDate, pricePerDay, totalPrice' },
+        { error: 'Missing required fields: productId, startDate, endDate' },
         { status: 400 }
       )
     }
@@ -58,6 +58,10 @@ export async function POST(request: NextRequest) {
         status: true,
         approvalStatus: true,
         userId: true,
+        rentalPriceTiers: {
+          select: { minDays: true, pricePerDay: true },
+          orderBy: { minDays: 'asc' },
+        },
         variants: {
           select: {
             id: true,
@@ -81,6 +85,23 @@ export async function POST(request: NextRequest) {
         { status: 403 }
       )
     }
+
+    const rentalDays = Math.max(
+      1,
+      Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1,
+    )
+    const sellerTotal = computeRentalSellerTotal(
+      rentalDays,
+      product.rentalPriceTiers,
+    )
+    if (sellerTotal <= 0) {
+      return NextResponse.json(
+        { error: 'Product rental pricing is not configured' },
+        { status: 400 },
+      )
+    }
+    const pricePerDay = Math.round((sellerTotal / rentalDays) * 100) / 100
+    const totalPrice = sellerTotal
 
     // Also check for size-based rentals if variantId is not provided
     // or if we need to validate by size from the variant
@@ -121,7 +142,7 @@ export async function POST(request: NextRequest) {
       const existingOrders = await prisma.order.findMany({
         where: {
           status: {
-            in: ['PAID', 'SHIPPED']
+            in: [...RENTAL_BLOCKING_ORDER_STATUSES],
           },
           items: {
             some: {

@@ -735,7 +735,6 @@ export async function POST(request: NextRequest) {
       discount: validatedData.discount,
       discountDays: validatedData.discountDays,
       discountStartDate: validatedData.discount && validatedData.discountDays ? new Date() : null,
-      rating: validatedData.rating,
       category: resolvedCategoryId
         ? { connect: { id: resolvedCategoryId } }
         : undefined,

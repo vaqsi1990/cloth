@@ -418,9 +418,24 @@ export async function POST(request: NextRequest) {
       where: { id: validatedData.productId },
       select: {
         allowsPickup: true,
+        approvalStatus: true,
         ...cartProductPricingSelect,
       },
     })
+
+    if (!product) {
+      return NextResponse.json({
+        success: false,
+        message: 'პროდუქტი ვერ მოიძებნა',
+      }, { status: 404 })
+    }
+
+    if (product.approvalStatus !== 'APPROVED') {
+      return NextResponse.json({
+        success: false,
+        message: 'პროდუქტი ჯერ არ არის დამტკიცებული',
+      }, { status: 403 })
+    }
 
     const buyerListPrice = resolveCartItemBuyerListPrice({
       storedPrice: validatedData.price,

@@ -31,7 +31,6 @@ export const authOptions: NextAuthOptions = {
           where: {
             email: { equals: email, mode: 'insensitive' },
           },
-          ...prismaCacheStrategy({ swr: 60, ttl: 60 }),
           select: {
             id: true,
             email: true,
@@ -105,11 +104,25 @@ export const authOptions: NextAuthOptions = {
           // Check if user is banned (case-insensitive email match)
           const existingUser = await prisma.user.findFirst({
             where: { email: { equals: email, mode: 'insensitive' } },
-            select: { id: true, banned: true, banReason: true, email: true }
+            select: {
+              id: true,
+              banned: true,
+              banReason: true,
+              email: true,
+              password: true,
+              accounts: { where: { provider: 'google' }, select: { id: true } },
+            },
           })
 
           if (existingUser?.banned) {
             console.log("BANNED USER BLOCKED")
+            return false
+          }
+
+          if (
+            existingUser?.password &&
+            existingUser.accounts.length === 0
+          ) {
             return false
           }
 
@@ -218,6 +231,7 @@ export const authOptions: NextAuthOptions = {
 
       const userDataSelect = {
         id: true,
+        email: true,
         name: true,
         role: true,
         image: true,
@@ -226,6 +240,7 @@ export const authOptions: NextAuthOptions = {
         address: true,
         personalId: true,
         iban: true,
+        banned: true,
         verification: {
           select: {
             status: true
@@ -235,6 +250,7 @@ export const authOptions: NextAuthOptions = {
 
       const applyDbUserToToken = (dbUser: {
         id: string
+        email: string
         name: string | null
         role: string
         image: string | null
@@ -243,17 +259,20 @@ export const authOptions: NextAuthOptions = {
         address: string | null
         personalId: string | null
         iban: string | null
+        banned: boolean
         verification: { status: string } | null
       }) => {
         token.sub = dbUser.id
+        token.email = normalizeEmail(dbUser.email)
         token.name = dbUser.name
         token.role = dbUser.role
         token.image = dbUser.image
-        token.phone = dbUser.phone ?? token.phone
+        token.phone = dbUser.phone
         token.location = dbUser.location
         token.address = dbUser.address
         token.personalId = dbUser.personalId
         token.iban = dbUser.iban
+        token.banned = dbUser.banned
         token.verificationStatus = dbUser.verification?.status || null
       }
 
@@ -263,15 +282,11 @@ export const authOptions: NextAuthOptions = {
         type UpdatePayload = Partial<{
           image: string | null
           name: string | null
-          email: string
-          phone: string | null
           location: string | null
           address: string | null
-          personalId: string | null
           iban: string | null
         }> & {
           user?: Partial<{
-            phone: string | null
             iban: string | null
             image: string | null
             name: string | null
@@ -279,18 +294,14 @@ export const authOptions: NextAuthOptions = {
         }
 
         const s = updateSession as UpdatePayload
-        const phone = s.phone ?? s.user?.phone
         const iban = s.iban ?? s.user?.iban
         const image = s.image ?? s.user?.image
         const name = s.name ?? s.user?.name
 
         if (image !== undefined) token.image = image
         if (name !== undefined) token.name = name
-        if (s.email !== undefined) token.email = s.email
-        if (phone !== undefined) token.phone = phone
         if (s.location !== undefined) token.location = s.location
         if (s.address !== undefined) token.address = s.address
-        if (s.personalId !== undefined) token.personalId = s.personalId
         if (iban !== undefined) token.iban = iban
       }
 
@@ -334,31 +345,37 @@ export const authOptions: NextAuthOptions = {
           const dbUser = await findDbUserForToken(trigger === 'update')
 
           if (dbUser) {
-            token.sub = dbUser.id
-            token.name = dbUser.name ?? token.name
-            // Always update role from database to ensure it's current
-            token.role = dbUser.role
-            if (!token.image && dbUser.image) token.image = dbUser.image
-            token.phone = dbUser.phone ?? token.phone
-            token.location = dbUser.location ?? token.location
-            token.address = dbUser.address ?? token.address
-            token.personalId = dbUser.personalId ?? token.personalId
-            token.iban = dbUser.iban ?? token.iban
-            token.verificationStatus = dbUser.verification?.status || null
+            if (dbUser.banned) {
+              token.banned = true
+            } else {
+              applyDbUserToToken(dbUser)
+            }
           }
         } catch (error) {
           console.error('Error refreshing user data in jwt callback:', error)
         }
       }
 
-      // Client session updates must run last so they are not overwritten.
-      if (trigger === 'update' && session) {
+      // Client session updates (cosmetic fields only) — run after DB refresh.
+      if (trigger === 'update' && session && !token.banned) {
         applySessionUpdateToToken(session)
       }
 
       return token
     },
     async session({ session, token }) {
+      if (token?.banned) {
+        return {
+          ...session,
+          user: {
+            ...session.user,
+            id: '',
+            email: '',
+          },
+          expires: new Date(0).toISOString(),
+        }
+      }
+
       if (token) {
         session.user.id = token.sub!
         session.user.role = (typeof token.role === 'string' ? token.role : session.user.role)

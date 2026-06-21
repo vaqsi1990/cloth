@@ -492,6 +492,7 @@ model Order {
   // optional for payment
   paymentMethod String?
   paymentId     String?
+  sourceCartItemId Int?
 
   // Voucher
   voucherCode     String?

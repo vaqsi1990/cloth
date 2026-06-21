@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
+import { randomBytes } from "crypto"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 import { Prisma } from "@prisma/client"
 import { PERSON_ADDRESS_REGEX, PERSON_NAME_REGEX } from "@/lib/personal-text"
 import { isValidPhone, normalizePhone, phoneLookupVariants } from "@/lib/phone"
 import { normalizeEmail } from "@/lib/email-address"
+import { checkSignupAttemptRateLimit } from "@/lib/registration-rate-limit"
 
 const signupSchema = z.object({
   name: z.string()
@@ -50,6 +52,17 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validatedData = signupSchema.parse(body)
     const email = normalizeEmail(validatedData.email)
+
+    const rateLimit = checkSignupAttemptRateLimit(request, email)
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: 'ძალიან ბევრი მოთხოვნა. სცადეთ მოგვიანებით.' },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(rateLimit.retryAfterSec) },
+        },
+      )
+    }
 
     // Check if user already exists
     const existingUser = await prisma.user.findFirst({
@@ -112,7 +125,7 @@ export async function POST(request: NextRequest) {
         personalId: validatedData.personalId,
         email,
         password: hashedPassword,
-        code: validatedData.code,
+        code: randomBytes(16).toString('hex'),
         role: "USER"
       }
     })

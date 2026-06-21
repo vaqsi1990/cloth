@@ -12,22 +12,21 @@ export async function saveUserIbanVerification(userId: string, iban: string): Pr
     where: { id: userId },
     data: {
       iban: normalized,
-      verified: true,
     },
   })
 
   await prisma.userVerification.upsert({
     where: { userId },
     update: {
-      identityStatus: 'APPROVED',
+      identityStatus: 'PENDING',
       identityComment: null,
-      status: 'APPROVED',
+      status: 'PENDING',
       comment: null,
     },
     create: {
       userId,
-      identityStatus: 'APPROVED',
-      status: 'APPROVED',
+      identityStatus: 'PENDING',
+      status: 'PENDING',
     },
   })
 

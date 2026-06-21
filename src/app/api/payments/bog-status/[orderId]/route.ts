@@ -1,19 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import type { Session } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { bogTokenManager } from '@/lib/bog-token'
 import { isAdminOrSupport } from '@/lib/roles'
 import { internalServerErrorResponse } from '@/lib/api-error'
+import { requireAuthedUser } from '@/lib/auth-session'
 import axios, { AxiosError } from 'axios'
 
 async function canAccessBogPaymentStatus(
   orderId: string,
-  session: Session | null,
+  user: { id: string; email: string; role: string },
 ): Promise<boolean> {
-  if (!session?.user?.id) return false
-  if (isAdminOrSupport(session.user.role)) return true
+  if (isAdminOrSupport(user.role)) return true
 
   const order = await prisma.order.findFirst({
     where: { paymentId: orderId },
@@ -21,13 +20,12 @@ async function canAccessBogPaymentStatus(
   })
 
   if (!order) return false
-  if (order.userId === session.user.id) return true
+  if (order.userId === user.id) return true
 
   if (
     !order.userId &&
     order.email &&
-    session.user.email &&
-    order.email.trim().toLowerCase() === session.user.email.trim().toLowerCase()
+    order.email.trim().toLowerCase() === user.email.trim().toLowerCase()
   ) {
     return true
   }
@@ -60,7 +58,15 @@ export async function GET(
       )
     }
 
-    const allowed = await canAccessBogPaymentStatus(orderId, session)
+    const auth = await requireAuthedUser(session)
+    if (!auth.ok) {
+      return NextResponse.json(
+        { success: false, error: auth.error },
+        { status: auth.status },
+      )
+    }
+
+    const allowed = await canAccessBogPaymentStatus(orderId, auth.user)
     if (!allowed) {
       return NextResponse.json(
         { success: false, error: 'Access denied' },

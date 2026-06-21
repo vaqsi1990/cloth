@@ -145,6 +145,7 @@ export async function POST(request: NextRequest) {
         isRentable: true,
         requiresInquiryBeforeRent: true,
         status: true,
+        approvalStatus: true,
         maxRentalDays: true,
         pricePerDay: true,
         discount: true,
@@ -160,6 +161,13 @@ export async function POST(request: NextRequest) {
 
     if (!product.isRentable) {
       return NextResponse.json({ success: false, message: 'პროდუქტი არ იქირავება' }, { status: 400 })
+    }
+
+    if (product.approvalStatus !== 'APPROVED') {
+      return NextResponse.json({
+        success: false,
+        message: 'პროდუქტი ჯერ არ არის დამტკიცებული',
+      }, { status: 403 })
     }
 
     if (!product.userId) {

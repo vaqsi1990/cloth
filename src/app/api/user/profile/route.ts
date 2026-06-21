@@ -60,7 +60,7 @@ export async function PUT(request: NextRequest) {
 
     const currentUser = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { phone: true },
+      select: { phone: true, email: true },
     })
 
     const phoneWasCleared = typeof body.phone === 'string' && body.phone.trim() === ''
@@ -77,18 +77,12 @@ export async function PUT(request: NextRequest) {
       phoneToSave = currentUser.phone
     }
 
-    // Check if email is already taken by another user
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        email: email,
-        id: { not: session.user.id }
-      }
-    })
-
-    if (existingUser) {
+    // Email cannot be changed via profile (prevents account takeover).
+    const emailToSave = currentUser?.email
+    if (!emailToSave) {
       return NextResponse.json(
-        { success: false, error: 'ელფოსტა უკვე გამოიყენება' },
-        { status: 409 }
+        { success: false, error: 'ელფოსტა ვერ მოიძებნა' },
+        { status: 400 },
       )
     }
 
@@ -143,7 +137,7 @@ export async function PUT(request: NextRequest) {
       where: { id: session.user.id },
       data: {
         name,
-        email,
+        email: emailToSave,
         image: image || null,
         phone: phoneToSave,
         location: location ?? undefined,

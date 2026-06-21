@@ -454,7 +454,6 @@ export async function PUT(
       discount: validatedData.discount,
       discountDays: validatedData.discountDays,
       discountStartDate: discountStartDate,
-      rating: validatedData.rating,
       isRentable: validatedData.isRentable,
       pricePerDay: validatedData.pricePerDay,
       maxRentalDays: validatedData.maxRentalDays,

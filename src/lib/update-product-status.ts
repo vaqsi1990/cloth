@@ -26,15 +26,9 @@ export function isProductRentalBlockingSuspended(
   return status === 'AVAILABLE'
 }
 
-/** Clear rental blocks so the product can be booked again immediately. */
+/** Clear active rental holds so the product can be booked again (keeps order history). */
 export async function clearProductRentalBlocks(productId: number): Promise<void> {
   await Promise.all([
-    prisma.orderItem.deleteMany({
-      where: {
-        productId,
-        isRental: true,
-      },
-    }),
     prisma.rental.updateMany({
       where: {
         productId,

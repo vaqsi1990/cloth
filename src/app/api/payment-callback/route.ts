@@ -36,7 +36,8 @@ async function updateOrderStatus(paymentId: string, status: string) {
 
   let final: "PENDING" | "PAID" | "CANCELED" | "REFUNDED" = "PENDING"
 
-  if (lower === "completed" || lower === "partial_completed") final = "PAID"
+  if (lower === "completed") final = "PAID"
+  else if (lower === "partial_completed") final = "PENDING"
   else if (lower === "rejected" || lower === "blocked") final = "CANCELED"
   else if (lower === "refunded" || lower === "refunded_partially") final = "REFUNDED"
 
@@ -56,6 +57,15 @@ async function updateOrderStatus(paymentId: string, status: string) {
   if (final === "PAID") {
     await recordSellerTransactions(order.id)
     await finalizeRentalOrderHolds(order.id)
+
+    if (order.sourceCartItemId) {
+      await prisma.cartItem.deleteMany({
+        where: {
+          id: order.sourceCartItemId,
+          cart: order.userId ? { userId: order.userId } : undefined,
+        },
+      }).catch(() => undefined)
+    }
 
     if (order.voucherId && order.userId && order.voucherDiscount) {
       const existing = await prisma.voucherRedemption.findFirst({
@@ -131,6 +141,6 @@ export async function POST(req: NextRequest) {
 
   } catch (e) {
     console.error("Callback error", e)
-    return NextResponse.json({ success: false }, { status: 200 })
+    return NextResponse.json({ success: false }, { status: 500 })
   }
 }

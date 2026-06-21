@@ -1,20 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { randomInt } from 'crypto'
 import { isEmailConfigured, sendVerificationEmail } from '@/lib/email'
 import { normalizeEmail } from '@/lib/email-address'
+import { checkRegistrationCodeSendRateLimit } from '@/lib/registration-rate-limit'
 
 const schema = z.object({
   email: z.string().email('გთხოვთ შეიყვანოთ სწორი ელ-ფოსტა'),
 })
 
 function generateCode(): string {
-  const chars = '0123456789'
-  let code = ''
-  for (let i = 0; i < 6; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length))
-  }
-  return code
+  return String(randomInt(0, 1_000_000)).padStart(6, '0')
 }
 
 export async function POST(request: NextRequest) {
@@ -29,6 +26,17 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { email: rawEmail } = schema.parse(body)
     const email = normalizeEmail(rawEmail)
+
+    const rateLimit = checkRegistrationCodeSendRateLimit(request, email)
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: 'ძალიან ბევრი მოთხოვნა. სცადეთ მოგვიანებით.' },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(rateLimit.retryAfterSec) },
+        },
+      )
+    }
 
     // Optional: block if user already exists
     const existing = await prisma.user.findFirst({

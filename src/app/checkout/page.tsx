@@ -427,21 +427,6 @@ const CheckoutPage = () => {
         return true
     }
 
-    const getToken = async () => {
-        try {
-            const res = await fetch('/api/token')
-            const data = await res.json()
-
-            if (!data.success) {
-                throw new Error(data.error || 'Failed to get token')
-            }
-
-            return data.access_token
-        } catch (error) {
-            console.error('Token error:', error)
-            throw new Error('Failed to get BOG access token')
-        }
-    }
 
     const processOrder = async (googlePayToken?: string) => {
         setIsProcessing(true)
@@ -457,10 +442,7 @@ const CheckoutPage = () => {
         }
         
         try {
-            // Step 1: Get BOG token
-            const token = await getToken()
-
-            // Step 2: Prepare order data for BOG
+            // Step 1: Prepare order data for BOG
             const totalAmount = getTotalWithDelivery()
             const orderId = `order_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`
 
@@ -557,7 +539,6 @@ const CheckoutPage = () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    token,
                     orderData
                 }),
             })

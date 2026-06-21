@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { prismaCacheStrategy } from '@/lib/prisma-cache'
 import { z } from 'zod'
 import { checkCanUserReviewProduct } from '@/lib/review-eligibility'
+import { requireAuthedUser } from '@/lib/auth-session'
 
 const reviewSchema = z.object({
   rating: z.number().min(1).max(5),
@@ -51,14 +52,17 @@ export async function GET(
     let canReview = false
 
     if (session?.user?.id) {
-      canReview = await checkCanUserReviewProduct({
-        productId,
-        productUserId: product.userId,
-        productStatus: product.status,
-        userId: session.user.id,
-        userEmail: session.user.email,
-        userPhone: session.user.phone,
-      })
+      const auth = await requireAuthedUser(session)
+      if (auth.ok) {
+        canReview = await checkCanUserReviewProduct({
+          productId,
+          productUserId: product.userId,
+          productStatus: product.status,
+          userId: auth.user.id,
+          userEmail: auth.user.email,
+          userPhone: auth.user.phone,
+        })
+      }
     }
 
     const reviews = await prisma.review.findMany({
@@ -128,10 +132,11 @@ export async function POST(
 ) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session) {
+    const auth = await requireAuthedUser(session)
+    if (!auth.ok) {
       return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
+        { success: false, error: auth.error },
+        { status: auth.status },
       )
     }
 
@@ -163,9 +168,9 @@ export async function POST(
       productId,
       productUserId: product.userId,
       productStatus: product.status,
-      userId: session.user.id,
-      userEmail: session.user.email,
-      userPhone: session.user.phone,
+      userId: auth.user.id,
+      userEmail: auth.user.email,
+      userPhone: auth.user.phone,
     })
 
     if (!canReview) {
@@ -186,7 +191,7 @@ export async function POST(
       where: {
         productId_userId: {
           productId,
-          userId: session.user.id,
+          userId: auth.user.id,
         },
       },
     })
@@ -220,7 +225,7 @@ export async function POST(
       review = await prisma.review.create({
         data: {
           productId,
-          userId: session.user.id,
+          userId: auth.user.id,
           rating,
           comment: comment || null,
         },
