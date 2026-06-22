@@ -710,9 +710,6 @@ const NewProductPage = () => {
                 >
                   <option value="">მდებარეობის არჩევა</option>
                   <option value="თბილისი">თბილისი</option>
-                  <option value="ქუთაისი">ქუთაისი</option>
-                  <option value="რუსთავი">რუსთავი</option>
-                  <option value="ბათუმი">ბათუმი</option>
                 </select>
               </div>
 
