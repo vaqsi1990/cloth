@@ -17,6 +17,10 @@ interface OrderItem {
   size?: string
   quantity: number
   price: number
+  sellerReportedOutOfStock?: boolean
+  sellerReportedAt?: string | null
+  sellerMarkedTransferred?: boolean
+  sellerMarkedTransferredAt?: string | null
   // Rental fields
   isRental?: boolean
   rentalStartDate?: string
@@ -67,7 +71,10 @@ const AdminOrdersPage = () => {
   const [loadingMoreOrders, setLoadingMoreOrders] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('ALL')
+  const [filterOutOfStock, setFilterOutOfStock] = useState(false)
+  const [filterTransferred, setFilterTransferred] = useState(false)
   const [expandedOrders, setExpandedOrders] = useState<Set<number>>(new Set())
+  const [cancelingOrderId, setCancelingOrderId] = useState<number | null>(null)
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -90,7 +97,15 @@ const AdminOrdersPage = () => {
         setLoading(true)
       }
 
-      const response = await fetch(`/api/admin/orders?page=${page}&limit=50`)
+      const params = new URLSearchParams({ page: String(page), limit: '50' })
+      if (filterOutOfStock) {
+        params.set('outOfStock', 'true')
+      }
+      if (filterTransferred) {
+        params.set('transferred', 'true')
+      }
+
+      const response = await fetch(`/api/admin/orders?${params.toString()}`)
       const data = await response.json()
 
       if (data.success) {
@@ -104,7 +119,7 @@ const AdminOrdersPage = () => {
       setLoading(false)
       setLoadingMoreOrders(false)
     }
-  }, [])
+  }, [filterOutOfStock, filterTransferred])
 
   const loadMoreOrders = () => {
     if (ordersHasMore && !loadingMoreOrders) {
@@ -116,7 +131,46 @@ const AdminOrdersPage = () => {
     if (status === 'authenticated' && session?.user?.role === 'ADMIN') {
       fetchOrders()
     }
-  }, [status, session?.user?.role, fetchOrders])
+  }, [status, session?.user?.role, fetchOrders, filterOutOfStock, filterTransferred])
+
+  const orderHasOutOfStockReport = (order: Order) =>
+    order.items.some((item) => !item.isRental && item.sellerReportedOutOfStock)
+
+  const orderHasTransferredItems = (order: Order) =>
+    order.items.some((item) => !item.isRental && item.sellerMarkedTransferred)
+
+  const handleCancelOutOfStock = async (orderId: number) => {
+    if (
+      !confirm(
+        'დარწმუნებული ხართ, რომ გსურთ ამ შეკვეთის გაუქმება? ის გადავა გაუქმებულ შეკვეთებში და მარაგი აღდგება.',
+      )
+    ) {
+      return
+    }
+
+    try {
+      setCancelingOrderId(orderId)
+      const response = await fetch(`/api/admin/orders/${orderId}/cancel-out-of-stock`, {
+        method: 'POST',
+      })
+      const data = await response.json()
+      if (response.ok && data.success) {
+        setOrders((prev) =>
+          prev.map((order) =>
+            order.id === orderId ? { ...order, status: 'CANCELED' } : order,
+          ),
+        )
+        showToast(data.message || 'შეკვეთა გაუქმდა', 'success')
+      } else {
+        showToast(data.message || 'შეცდომა შეკვეთის გაუქმებისას', 'error')
+      }
+    } catch (error) {
+      console.error('Error canceling out-of-stock order:', error)
+      showToast('შეცდომა შეკვეთის გაუქმებისას', 'error')
+    } finally {
+      setCancelingOrderId(null)
+    }
+  }
 
   const handleStatusUpdate = async (orderId: number, newStatus: string) => {
     try {
@@ -294,7 +348,6 @@ const AdminOrdersPage = () => {
         {/* Filters */}
         <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 mb-6 sm:mb-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-            {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
@@ -322,6 +375,26 @@ const AdminOrdersPage = () => {
                 <option value="REFUNDED">დაბრუნებული</option>
               </select>
             </div>
+
+            <label className="flex items-center gap-2 px-3 py-3 border border-gray-300 rounded-lg cursor-pointer">
+              <input
+                type="checkbox"
+                checked={filterOutOfStock}
+                onChange={(e) => setFilterOutOfStock(e.target.checked)}
+                className="rounded border-gray-300"
+              />
+              <span className="text-sm text-black">მარაგში არ არის</span>
+            </label>
+
+            <label className="flex items-center gap-2 px-3 py-3 border border-gray-300 rounded-lg cursor-pointer">
+              <input
+                type="checkbox"
+                checked={filterTransferred}
+                onChange={(e) => setFilterTransferred(e.target.checked)}
+                className="rounded border-gray-300"
+              />
+              <span className="text-sm text-black">გადაცემული შეკვეთები</span>
+            </label>
           </div>
         </div>
 
@@ -366,6 +439,16 @@ const AdminOrdersPage = () => {
                         {getStatusIcon(order.status)}
                         <span>{getStatusText(order.status)}</span>
                       </span>
+                      {orderHasOutOfStockReport(order) && (
+                        <span className="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap">
+                          ნივთი არაა მარაგში
+                        </span>
+                      )}
+                      {orderHasTransferredItems(order) && (
+                        <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap">
+                          გადაცემული
+                        </span>
+                      )}
                       {/* Rental indicator */}
                       {order.items.some(item => item.isRental) && (
                         <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap">
@@ -436,6 +519,16 @@ const AdminOrdersPage = () => {
                                   {item.isRental && (
                                     <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full whitespace-nowrap">
                                       ქირაობა
+                                    </span>
+                                  )}
+                                  {!item.isRental && item.sellerMarkedTransferred && (
+                                    <span className="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full whitespace-nowrap font-medium">
+                                      გადაცემული შეკვეთა
+                                    </span>
+                                  )}
+                                  {!item.isRental && item.sellerReportedOutOfStock && (
+                                    <span className="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full whitespace-nowrap font-medium">
+                                      ნივთი არაა მარაგში
                                     </span>
                                   )}
                                 </div>

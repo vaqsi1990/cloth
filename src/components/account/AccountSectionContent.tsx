@@ -89,6 +89,7 @@ interface Order {
 }
 
 interface SaleOrderItem {
+  id: number
   productName: string
   size: string | null
   price: number
@@ -97,6 +98,10 @@ interface SaleOrderItem {
   quantity: number
   image?: string | null
   snapshot?: OrderItemProductSnapshot | null
+  sellerReportedOutOfStock?: boolean
+  sellerReportedAt?: string | null
+  sellerMarkedTransferred?: boolean
+  sellerMarkedTransferredAt?: string | null
 }
 
 interface SaleOrder {
@@ -235,6 +240,9 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
   const [loadingOrders, setLoadingOrders] = useState(false)
   const [contactingChatKey, setContactingChatKey] = useState<string | null>(null)
   const [loadingSales, setLoadingSales] = useState(false)
+  const [reportingOutOfStockItemId, setReportingOutOfStockItemId] = useState<number | null>(null)
+  const [markingTransferredItemId, setMarkingTransferredItemId] = useState<number | null>(null)
+  const [salesTransferFilter, setSalesTransferFilter] = useState<'ALL' | 'TRANSFERRED' | 'PENDING'>('ALL')
   const [loadingProducts, setLoadingProducts] = useState(false)
   const [resubmittingProductId, setResubmittingProductId] = useState<number | null>(null)
   const [vouchers, setVouchers] = useState<UserVoucherItem[]>([])
@@ -1011,6 +1019,86 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
     }
   }
 
+  const handleReportOutOfStock = async (itemId: number) => {
+    if (
+      !confirm(
+        'დარწმუნებული ხართ, რომ ამ ნივთს მარაგში არ გაქვთ? ადმინისტრატორი გაიგებს და შეკვეთა შეიძლება გაუქმდეს.',
+      )
+    ) {
+      return
+    }
+
+    try {
+      setReportingOutOfStockItemId(itemId)
+      const response = await fetch(`/api/user/sales/items/${itemId}/report-out-of-stock`, {
+        method: 'POST',
+      })
+      const data = await response.json()
+      if (data.success) {
+        setSales((prev) =>
+          prev.map((order) => ({
+            ...order,
+            items: order.items?.map((item) =>
+              item.id === itemId
+                ? {
+                    ...item,
+                    sellerReportedOutOfStock: true,
+                    sellerReportedAt: data.item?.sellerReportedAt ?? new Date().toISOString(),
+                  }
+                : item,
+            ),
+          })),
+        )
+        showToast(data.message, 'success')
+      } else {
+        showToast(data.message || 'შეცდომა მოხსენებისას', 'error')
+      }
+    } catch (error) {
+      console.error('Error reporting out of stock:', error)
+      showToast('შეცდომა მოხსენებისას', 'error')
+    } finally {
+      setReportingOutOfStockItemId(null)
+    }
+  }
+
+  const handleMarkTransferred = async (itemId: number, transferred: boolean) => {
+    try {
+      setMarkingTransferredItemId(itemId)
+      const response = await fetch(`/api/user/sales/items/${itemId}/mark-transferred`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transferred }),
+      })
+      const data = await response.json()
+      if (data.success) {
+        setSales((prev) =>
+          prev.map((order) => ({
+            ...order,
+            items: order.items?.map((item) =>
+              item.id === itemId
+                ? {
+                    ...item,
+                    sellerMarkedTransferred: transferred,
+                    sellerMarkedTransferredAt: transferred
+                      ? data.item?.sellerMarkedTransferredAt ?? new Date().toISOString()
+                      : null,
+                  }
+                : item,
+            ),
+          })),
+        )
+        showToast(data.message, 'success')
+      } else {
+        showToast(data.message || 'შეცდომა გადაცემის მონიშვნისას', 'error')
+      }
+    } catch (error) {
+      console.error('Error marking transferred:', error)
+      showToast('შეცდომა გადაცემის მონიშვნისას', 'error')
+    } finally {
+      setMarkingTransferredItemId(null)
+    }
+  }
+
   const fetchVouchers = async () => {
     try {
       setLoadingVouchers(true)
@@ -1688,6 +1776,27 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
 
     const totalSalesAmount = totalSellerIncome
 
+    const filteredSales = sales
+      .map((order) => {
+        const items = order.items?.filter((item) => {
+          if (salesTransferFilter === 'TRANSFERRED') {
+            return item.sellerMarkedTransferred === true
+          }
+          if (salesTransferFilter === 'PENDING') {
+            return !item.sellerMarkedTransferred && !item.sellerReportedOutOfStock
+          }
+          return true
+        })
+        return { ...order, items }
+      })
+      .filter((order) => (order.items?.length ?? 0) > 0)
+
+    const transferredCount = sales.reduce(
+      (sum, order) =>
+        sum + (order.items?.filter((item) => item.sellerMarkedTransferred).length ?? 0),
+      0,
+    )
+
     return (
       <div className="space-y-6">
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
@@ -1705,22 +1814,57 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
         </div>
 
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <h3 className="md:text-[20px] text-[18px] font-bold text-black mb-6">გაყიდვების ისტორია</h3>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <h3 className="md:text-[20px] text-[18px] font-bold text-black">გაყიდვების ისტორია</h3>
+            <div className="flex flex-wrap gap-2">
+              {(
+                [
+                  ['ALL', 'ყველა'],
+                  ['TRANSFERRED', 'გადაცემული'],
+                  ['PENDING', 'გადაუცემელი'],
+                ] as const
+              ).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setSalesTransferFilter(value)}
+                  className={`px-3 py-1.5 rounded-lg text-[15px] font-medium transition-colors ${
+                    salesTransferFilter === value
+                      ? 'bg-[#1B3729] text-white'
+                      : 'bg-gray-100 text-black hover:bg-gray-200'
+                  }`}
+                >
+                  {label}
+                  {value === 'TRANSFERRED' && transferredCount > 0
+                    ? ` (${transferredCount})`
+                    : ''}
+                </button>
+              ))}
+            </div>
+          </div>
 
           {loadingSales ? (
             <div className="text-center py-12">
               <div className="w-12 h-12 border-4 border-gray-300 border-t-[#1B3729] rounded-full animate-spin mx-auto mb-4"></div>
               <p className="text-[16px] text-black">გაყიდვები იტვირთება...</p>
             </div>
-          ) : sales.length === 0 ? (
+          ) : filteredSales.length === 0 ? (
             <div className="text-center py-8">
               <TrendingUp className="w-12 h-12 text-black mx-auto mb-4" />
-              <p className="text-[18px] text-black">ჯერ არ გაქვთ გაყიდვები</p>
-              <p className="text-[16px] text-black">დაამატეთ პროდუქტი და დაიწყეთ გაყიდვები</p>
+              <p className="text-[18px] text-black">
+                {salesTransferFilter === 'ALL'
+                  ? 'ჯერ არ გაქვთ გაყიდვები'
+                  : salesTransferFilter === 'TRANSFERRED'
+                    ? 'გადაცემული შეკვეთები ჯერ არ გაქვთ'
+                    : 'გადაუცემელი შეკვეთები ჯერ არ გაქვთ'}
+              </p>
+              {salesTransferFilter === 'ALL' && (
+                <p className="text-[16px] text-black">დაამატეთ პროდუქტი და დაიწყეთ გაყიდვები</p>
+              )}
             </div>
           ) : (
             <div className="space-y-4">
-              {sales.map((order) => {
+              {filteredSales.map((order) => {
                 const saleDate = new Date(order.createdAt)
                 const saleDateLabel = saleDate.toLocaleDateString('ka-GE')
                 const saleTimeLabel = saleDate.toLocaleTimeString('ka-GE', {
@@ -1789,7 +1933,7 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
 
                         return (
                         <div
-                          key={index}
+                          key={item.id ?? index}
                           className="rounded-lg border border-gray-200 p-3 sm:p-4"
                         >
                           <div className="flex flex-col sm:flex-row gap-4">
@@ -1846,6 +1990,46 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
                                 <span><span className="font-medium">რაოდენობა:</span> {item.quantity ?? 1}</span>
                                 <span className="font-semibold text-[#1B3729]">ჯამი: ₾{lineTotal.toFixed(2)}</span>
                               </div>
+
+                              {(order.status === 'PAID' || order.status === 'SHIPPED') && (
+                                <div className="mt-3 space-y-2">
+                                  {!item.sellerReportedOutOfStock && (
+                                    <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                                      <input
+                                        type="checkbox"
+                                        checked={Boolean(item.sellerMarkedTransferred)}
+                                        disabled={markingTransferredItemId === item.id}
+                                        onChange={(e) =>
+                                          void handleMarkTransferred(item.id, e.target.checked)
+                                        }
+                                        className="h-4 w-4 rounded border-gray-300 text-[#1B3729] focus:ring-[#1B3729] disabled:opacity-50"
+                                      />
+                                      <span className="text-[15px] text-black font-medium">
+                                        {markingTransferredItemId === item.id
+                                          ? 'ინახება...'
+                                          : 'გადაცემული შეკვეთა'}
+                                      </span>
+                                    </label>
+                                  )}
+
+                                  {item.sellerReportedOutOfStock ? (
+                                    <span className="inline-flex items-center rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-[15px] font-medium text-amber-800">
+                                      მარაგში არ მაქვს — ადმინისტრატორს გადაეცემა
+                                    </span>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleReportOutOfStock(item.id)}
+                                      disabled={reportingOutOfStockItemId === item.id}
+                                      className="inline-flex items-center rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-[15px] font-medium text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                      {reportingOutOfStockItemId === item.id
+                                        ? 'იგზავნება...'
+                                        : 'მარაგში არ მაქვს'}
+                                    </button>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>

@@ -530,6 +530,10 @@ model OrderItem {
   quantity    Int
   sellerUserId String?
   productSnapshot Json?
+  sellerReportedOutOfStock Boolean  @default(false)
+  sellerReportedAt         DateTime?
+  sellerMarkedTransferred  Boolean  @default(false)
+  sellerMarkedTransferredAt DateTime?
   
   // Rental fields
   isRental        Boolean?

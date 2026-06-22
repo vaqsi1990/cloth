@@ -11,12 +11,17 @@ import {
 import { computeSellerSaleLineAmount } from '@/lib/seller-sale-amounts'
 
 function mapSaleItem(item: {
+  id: number
   productName: string
   size: string | null
   price: number
   quantity: number
   image: string | null
   productSnapshot: Prisma.JsonValue | null
+  sellerReportedOutOfStock: boolean
+  sellerReportedAt: Date | null
+  sellerMarkedTransferred: boolean
+  sellerMarkedTransferredAt: Date | null
   product: {
     id: number
     discount: number | null
@@ -35,6 +40,7 @@ function mapSaleItem(item: {
   )
 
   return {
+    id: item.id,
     productName: snapshot?.name || item.productName,
     size: snapshot?.size || item.size,
     price: buyerUnitPrice,
@@ -47,6 +53,10 @@ function mapSaleItem(item: {
       item.product?.images?.[0]?.url ||
       null,
     snapshot,
+    sellerReportedOutOfStock: item.sellerReportedOutOfStock,
+    sellerReportedAt: item.sellerReportedAt,
+    sellerMarkedTransferred: item.sellerMarkedTransferred,
+    sellerMarkedTransferredAt: item.sellerMarkedTransferredAt,
   }
 }
 
@@ -54,6 +64,7 @@ function mapSellerOrder(
   order: {
     id: number
     items: Array<{
+      id: number
       isRental: boolean | null
       sellerUserId: string | null
       productName: string
@@ -62,6 +73,10 @@ function mapSellerOrder(
       quantity: number
       image: string | null
       productSnapshot: Prisma.JsonValue | null
+      sellerReportedOutOfStock: boolean
+      sellerReportedAt: Date | null
+      sellerMarkedTransferred: boolean
+      sellerMarkedTransferredAt: Date | null
       product: {
         id: number
         discount: number | null

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { isAdminOrSupport } from '@/lib/roles'
+import { Prisma } from '@prisma/client'
 
 // GET - Fetch all orders (admin only)
 export async function GET(request: NextRequest) {
@@ -20,8 +21,36 @@ export async function GET(request: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1)
     const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '50', 10) || 50, 1), 200)
     const skip = (page - 1) * limit
+    const statusFilter = searchParams.get('status')
+    const outOfStockOnly = searchParams.get('outOfStock') === 'true'
 
-    const where = { status: 'PAID' as const }
+    const where: Prisma.OrderWhereInput = {}
+
+    if (
+      statusFilter &&
+      ['PENDING', 'PAID', 'SHIPPED', 'CANCELED', 'REFUNDED'].includes(statusFilter)
+    ) {
+      where.status = statusFilter as Prisma.EnumOrderStatusFilter['equals']
+    }
+
+    if (outOfStockOnly) {
+      where.items = {
+        some: {
+          sellerReportedOutOfStock: true,
+          isRental: { not: true },
+        },
+      }
+    }
+
+    const transferredOnly = searchParams.get('transferred') === 'true'
+    if (transferredOnly) {
+      where.items = {
+        some: {
+          sellerMarkedTransferred: true,
+          isRental: { not: true },
+        },
+      }
+    }
 
     const [orders, totalCount] = await Promise.all([
       prisma.order.findMany({
