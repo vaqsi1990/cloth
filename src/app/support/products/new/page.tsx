@@ -55,6 +55,8 @@ import {
 import {
   buildPricingModeFormPatch,
   flagsToProductPricingMode,
+  getSimpleSaleStockValue,
+  patchSimpleSaleFormState,
   prepareProductPricingSubmit,
   productPricingModeToFlags,
   type ProductPricingMode,
@@ -229,7 +231,7 @@ const NewProductPage = () => {
         stock: prev.stock,
         variants: prev.variants.length > 0
           ? prev.variants
-          : [{ price: 0, stock: prev.stock || 1 }],
+          : [{ price: 0, stock: prev.stock && prev.stock > 0 ? prev.stock : 1 }],
       }),
     }))
   }
@@ -460,7 +462,7 @@ const NewProductPage = () => {
       })
       const nextVariants =
         mode === 'purchase' && !showVariantOptions && prev.variants.length === 0
-          ? [{ price: 0, stock: prev.stock || 1 }]
+          ? [{ price: 0, stock: prev.stock && prev.stock > 0 ? prev.stock : 1 }]
           : patch.variants
 
       return {
@@ -559,6 +561,7 @@ const NewProductPage = () => {
         showVariantOptions,
         showPurchaseOptions,
         showRentalOptions,
+        productStock: formData.stock,
         variants: formData.variants,
         rentalPriceTiers: formData.rentalPriceTiers,
       })
@@ -566,6 +569,10 @@ const NewProductPage = () => {
       
       const dataToValidate: any = {
         ...formData,
+        stock:
+          !showVariantOptions && showPurchaseOptions
+            ? getSimpleSaleStockValue(formData)
+            : formData.stock,
         isSkuVariantProduct: showVariantOptions,
         requireVariantSalePrices: showPurchaseOptions && showVariantOptions,
         requireVariantSize: !isSizeOptional,
@@ -692,7 +699,7 @@ const NewProductPage = () => {
                 {errors.name && <p className="text-red-500 md:text-[20px] text-[18px] mt-1">{errors.name}</p>}
               </div>
 
-              <div className={showVariantOptions ? 'hidden' : ''}>
+              <div className={showVariantOptions || showPurchaseOptions ? 'hidden' : ''}>
                 <label className="block text-[20px] text-black font-medium mb-2">
                   საწყობში რაოდენობა *
                 </label>
@@ -1017,19 +1024,17 @@ const NewProductPage = () => {
           {!showVariantOptions && showPurchaseOptions && (
             <SimpleProductSalePriceSection
               price={formData.variants[0]?.price ?? 0}
+              stock={getSimpleSaleStockValue(formData)}
               onPriceChange={(price) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  variants: [
-                    {
-                      ...(prev.variants[0] ?? { stock: prev.stock || 1 }),
-                      price,
-                      stock: prev.variants[0]?.stock ?? (prev.stock || 1),
-                    },
-                  ],
-                }))
+                setFormData((prev) => patchSimpleSaleFormState(prev, { price }))
+              }
+              onStockChange={(stock) =>
+                setFormData((prev) =>
+                  patchSimpleSaleFormState(prev, { stock: stock ?? 0 }),
+                )
               }
               error={errors['variants.0.price']}
+              stockError={errors['variants.0.stock'] || errors.stock}
             />
           )}
 

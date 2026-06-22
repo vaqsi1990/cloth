@@ -26,6 +26,7 @@ import {
   orderItemSnapshotProductSelect,
 } from '@/lib/order-item-snapshot'
 import { releaseRentalOrderHolds } from '@/lib/rental-order-holds'
+import { validateSaleItemStock } from '@/lib/sale-stock'
 
 interface CartItemInput {
   productId: string | number
@@ -417,6 +418,23 @@ export async function POST(req: NextRequest) {
         { success: false, error: CHECKOUT_SINGLE_ITEM_MESSAGE },
         { status: 400 },
       )
+    }
+
+    if (!selectedCartItem.isRental) {
+      const stockCheck = await validateSaleItemStock({
+        productId: selectedCartItem.productId as number,
+        variantId: selectedCartItem.variantId ?? null,
+        color: selectedCartItem.color ?? null,
+        size: selectedCartItem.size ?? null,
+        quantity: selectedCartItem.quantity ?? MAX_CART_ITEM_QUANTITY,
+        isRental: false,
+      })
+      if (!stockCheck.ok) {
+        return NextResponse.json(
+          { success: false, error: stockCheck.message },
+          { status: 409 },
+        )
+      }
     }
 
     const resolvedCartItems = [selectedCartItem].map((item) => ({

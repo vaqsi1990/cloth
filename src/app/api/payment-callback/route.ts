@@ -48,6 +48,7 @@ async function updateOrderStatus(paymentId: string, status: string) {
   if (!order) return false
 
   const wasAlreadyPaid = order.status === 'PAID'
+  const wasFulfilled = order.status === 'PAID' || order.status === 'SHIPPED'
 
   await prisma.order.update({
     where: { id: order.id },
@@ -55,7 +56,9 @@ async function updateOrderStatus(paymentId: string, status: string) {
   })
 
   if (final === "PAID") {
-    await recordSellerTransactions(order.id)
+    if (!wasAlreadyPaid) {
+      await recordSellerTransactions(order.id)
+    }
     await finalizeRentalOrderHolds(order.id)
 
     if (order.sourceCartItemId) {
@@ -90,6 +93,10 @@ async function updateOrderStatus(paymentId: string, status: string) {
 
   if (final === "CANCELED" || final === "REFUNDED") {
     await releaseRentalOrderHolds(order.id)
+    if (wasFulfilled) {
+      const { restoreOrderSaleItems } = await import('@/lib/restore-order-sale-items')
+      await restoreOrderSaleItems(order.id)
+    }
   }
 
   return true

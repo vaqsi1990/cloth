@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { prismaCacheStrategy } from '@/lib/prisma-cache'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { buildPublicProductDiscoveryWhere } from '@/lib/sold-products'
 
 // GET - Fetch similar products by category
 export async function GET(
@@ -67,15 +68,9 @@ export async function GET(
       ...prismaCacheStrategy({ swr: 60, ttl: 60 }),
       where: {
         categoryId: currentProduct.categoryId,
-        id: { not: productId }, // Exclude current product
-        gender: currentProduct.gender, // Same gender
-        ...(isAdmin ? {} : { 
-          status: 'AVAILABLE',
-          approvalStatus: 'APPROVED',
-          user: {
-            banned: false,
-          },
-        })
+        id: { not: productId },
+        gender: currentProduct.gender,
+        ...(isAdmin ? {} : buildPublicProductDiscoveryWhere()),
       },
       select: {
         id: true,

@@ -43,6 +43,7 @@ import {
   updateProductStatus,
   clearProductRentalBlocks,
 } from '@/lib/update-product-status'
+import { buildPublicProductDiscoveryWhere } from '@/lib/sold-products'
 
 const VALID_PRODUCT_STATUSES = new Set([
   'AVAILABLE',
@@ -267,6 +268,22 @@ export async function GET(
         success: false,
         message: 'პროდუქტი ვერ მოიძებნა'
       }, { status: 404 })
+    }
+
+    if (!isAdminOrSupportRole && !isOwner) {
+      const isPubliclyDiscoverable = await prisma.product.count({
+        where: {
+          id: productId,
+          ...buildPublicProductDiscoveryWhere(),
+        },
+      })
+
+      if (!isPubliclyDiscoverable) {
+        return NextResponse.json({
+          success: false,
+          message: 'პროდუქტი ვერ მოიძებნა'
+        }, { status: 404 })
+      }
     }
 
     // Process expired discount inline (faster than function call with spread)

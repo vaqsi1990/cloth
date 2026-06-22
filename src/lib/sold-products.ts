@@ -38,7 +38,6 @@ export function buildSoldProductSqlExclusion(): Prisma.Sql {
         AND (
           (pv.color IS NOT NULL AND TRIM(pv.color) <> '')
           OR (pv.size IS NOT NULL AND TRIM(pv.size) <> '')
-          OR (pv."imageUrl" IS NOT NULL AND TRIM(pv."imageUrl") <> '')
         )
     )
     OR NOT EXISTS (
@@ -54,8 +53,7 @@ export function buildSoldProductSqlExclusion(): Prisma.Sql {
 /** Sale listings need stock on the product or on at least one priced variant. */
 export function buildSaleStockAvailabilitySql(): Prisma.Sql {
   return Prisma.sql`(
-    p."isRentable" = true
-    OR p.stock > 0
+    p.stock > 0
     OR EXISTS (
       SELECT 1 FROM "ProductVariant" pv
       WHERE pv."productId" = p.id
@@ -66,13 +64,22 @@ export function buildSaleStockAvailabilitySql(): Prisma.Sql {
       SELECT 1 FROM "ProductVariant" pv
       WHERE pv."productId" = p.id AND pv.price > 0
     )
+    OR (
+      p."isRentable" = true
+      AND (
+        p."pricePerDay" > 0
+        OR EXISTS (
+          SELECT 1 FROM "RentalPriceTier" rpt
+          WHERE rpt."productId" = p.id AND rpt."pricePerDay" > 0
+        )
+      )
+    )
   )`
 }
 
 export function buildSaleStockAvailabilityWhere(): Prisma.ProductWhereInput {
   return {
     OR: [
-      { isRentable: true },
       { stock: { gt: 0 } },
       {
         variants: {
@@ -89,6 +96,31 @@ export function buildSaleStockAvailabilityWhere(): Prisma.ProductWhereInput {
           },
         },
       },
+      {
+        AND: [
+          { isRentable: true },
+          {
+            OR: [
+              { pricePerDay: { gt: 0 } },
+              { rentalPriceTiers: { some: { pricePerDay: { gt: 0 } } } },
+            ],
+          },
+        ],
+      },
+    ],
+  }
+}
+
+/** Shop, search, and public product pages (non-owner, non-admin). */
+export function buildPublicProductDiscoveryWhere(): Prisma.ProductWhereInput {
+  return {
+    AND: [
+      { status: { notIn: ['MAINTENANCE', 'DAMAGED', 'RESERVED'] } },
+      { approvalStatus: 'APPROVED' },
+      { userId: { not: null } },
+      { user: { banned: false } },
+      buildExcludeSoldProductsWhere(),
+      buildSaleStockAvailabilityWhere(),
     ],
   }
 }

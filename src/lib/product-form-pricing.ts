@@ -121,10 +121,42 @@ export function buildPricingModeFormPatch(
   }
 }
 
+export function getSimpleSaleStockValue(input: {
+  stock?: number
+  variants?: Array<{ stock?: number | null }>
+}): number {
+  return input.variants?.[0]?.stock ?? input.stock ?? 0
+}
+
+export function patchSimpleSaleFormState<
+  T extends { stock?: number; variants: ProductVariantFormRow[] },
+>(prev: T, patch: { price?: number; stock?: number }): T {
+  const currentVariant = prev.variants[0]
+  const resolvedStock =
+    patch.stock !== undefined
+      ? patch.stock
+      : (currentVariant?.stock ?? prev.stock ?? 0)
+  const resolvedPrice =
+    patch.price !== undefined ? patch.price : (currentVariant?.price ?? 0)
+
+  return {
+    ...prev,
+    stock: resolvedStock,
+    variants: [
+      {
+        ...(currentVariant ?? {}),
+        price: resolvedPrice,
+        stock: resolvedStock,
+      },
+    ],
+  }
+}
+
 export function prepareProductPricingSubmit(input: {
   showVariantOptions: boolean
   showPurchaseOptions: boolean
   showRentalOptions?: boolean
+  productStock?: number
   variants: Array<ProductVariantFormRow & { discount?: number }>
   rentalPriceTiers?: RentalPriceTierFormRow[] | null
 }) {
@@ -146,9 +178,17 @@ export function prepareProductPricingSubmit(input: {
     )
   } else {
     const simpleSaleVariant = input.variants.find((variant) => (variant.price ?? 0) > 0) ?? input.variants[0]
+    const resolvedStock = getSimpleSaleStockValue({
+      stock: input.productStock,
+      variants: simpleSaleVariant ? [simpleSaleVariant] : input.variants,
+    })
     variantsToSubmit =
       saleEnabled && simpleSaleVariant && productVariantsHaveSalePrice([simpleSaleVariant])
-        ? [{ ...simpleSaleVariant, price: simpleSaleVariant.price ?? 0 }]
+        ? [{
+            ...simpleSaleVariant,
+            price: simpleSaleVariant.price ?? 0,
+            stock: resolvedStock,
+          }]
         : []
   }
 

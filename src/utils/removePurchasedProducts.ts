@@ -6,6 +6,7 @@ import {
   productHasSkuVariants,
   sumVariantStock,
 } from '@/lib/product-variants'
+import { resolveVariantIdForSaleItem } from '@/lib/sale-stock'
 
 type RemovalContext = {
   orderId?: number
@@ -21,56 +22,27 @@ export type SoldSaleItem = {
 
 type TransactionClient = Prisma.TransactionClient
 
-async function deleteEntireProductInTx(tx: TransactionClient, productId: number) {
-  const rentals = await tx.rental.findMany({
-    where: { productId },
-    select: { id: true },
-  })
-  const rentalIds = rentals.map((rental) => rental.id)
-
-  if (rentalIds.length > 0) {
-    await tx.transaction.deleteMany({
-      where: { rentalId: { in: rentalIds } },
-    })
-    await tx.rental.deleteMany({
-      where: { id: { in: rentalIds } },
-    })
-  }
-
-  await tx.rentalInquiry.deleteMany({
-    where: { productId },
-  })
-
-  await tx.orderItem.updateMany({
-    where: { productId },
-    data: { productId: null },
-  })
-
-  await tx.cartItem.deleteMany({
-    where: { productId },
-  })
-
-  await tx.product.delete({
-    where: { id: productId },
-  })
-}
-
 /**
  * Marks a sold SKU variant as out of stock and keeps the row so the shop can show it disabled.
+ * Uses conditional update so concurrent payments cannot oversell the same variant.
  */
 async function markSoldSkuVariantInTx(
   tx: TransactionClient,
   productId: number,
   variantId: number,
-) {
+): Promise<'fulfilled' | 'already_sold'> {
   await tx.cartItem.deleteMany({
     where: { variantId },
   })
 
-  await tx.productVariant.update({
-    where: { id: variantId },
+  const updated = await tx.productVariant.updateMany({
+    where: { id: variantId, stock: { gt: 0 } },
     data: { stock: 0 },
   })
+
+  if (updated.count === 0) {
+    return 'already_sold'
+  }
 
   const remainingVariants = await tx.productVariant.findMany({
     where: { productId },
@@ -84,30 +56,33 @@ async function markSoldSkuVariantInTx(
     },
   })
 
-  return { deletedProduct: false as const, productId }
+  return 'fulfilled'
 }
 
-function resolveVariantIdForSaleItem(
-  product: { variants: Array<{ id: number; color: string | null; size: string | null }> },
-  item: SoldSaleItem,
-): number | null {
-  if (item.variantId) {
-    return item.variantId
-  }
-
-  const color = item.color?.trim() || null
-  const size = item.size?.trim() || null
-  if (!color && !size) {
-    return null
-  }
-
-  const match = product.variants.find((variant) => {
-    const variantColor = variant.color?.trim() || null
-    const variantSize = variant.size?.trim() || null
-    return (color ? variantColor === color : true) && (size ? variantSize === size : true)
+/** Simple listing: zero stock instead of deleting the product so inventory can be restored. */
+async function markSoldSimpleProductInTx(
+  tx: TransactionClient,
+  productId: number,
+): Promise<'fulfilled' | 'already_sold'> {
+  await tx.cartItem.deleteMany({
+    where: { productId },
   })
 
-  return match?.id ?? null
+  const updated = await tx.product.updateMany({
+    where: { id: productId, stock: { gt: 0 } },
+    data: { stock: 0 },
+  })
+
+  if (updated.count === 0) {
+    return 'already_sold'
+  }
+
+  await tx.productVariant.updateMany({
+    where: { productId },
+    data: { stock: 0 },
+  })
+
+  return 'fulfilled'
 }
 
 async function fulfillSoldSaleItem(item: SoldSaleItem, context: RemovalContext = {}) {
@@ -120,7 +95,7 @@ async function fulfillSoldSaleItem(item: SoldSaleItem, context: RemovalContext =
           id: true,
           color: true,
           size: true,
-          imageUrl: true,
+          stock: true,
         },
       },
     },
@@ -141,7 +116,6 @@ async function fulfillSoldSaleItem(item: SoldSaleItem, context: RemovalContext =
             context.orderId ? ` (order ${context.orderId})` : ''
           }`,
         )
-        await removePurchasedProducts([item.productId], context)
         return
       }
 
@@ -150,15 +124,35 @@ async function fulfillSoldSaleItem(item: SoldSaleItem, context: RemovalContext =
         return
       }
 
-      await prisma.$transaction(async (tx) =>
+      const result = await prisma.$transaction(async (tx) =>
         markSoldSkuVariantInTx(tx, item.productId, variantId),
       )
+
+      if (result === 'already_sold') {
+        console.warn(
+          `[fulfillSoldSaleItem] Variant ${variantId} already sold for product ${item.productId}${
+            context.orderId ? ` (order ${context.orderId})` : ''
+          }`,
+        )
+      }
 
       revalidateProductCaches(item.productId, { authorId: product.userId ?? undefined })
       return
     }
 
-    await removePurchasedProducts([item.productId], context)
+    const result = await prisma.$transaction(async (tx) =>
+      markSoldSimpleProductInTx(tx, item.productId),
+    )
+
+    if (result === 'already_sold') {
+      console.warn(
+        `[fulfillSoldSaleItem] Product ${item.productId} already sold${
+          context.orderId ? ` (order ${context.orderId})` : ''
+        }`,
+      )
+    }
+
+    revalidateProductCaches(item.productId, { authorId: product.userId ?? undefined })
   } catch (error) {
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -202,7 +196,7 @@ export async function fulfillSoldSaleItems(
 }
 
 /**
- * Legacy full-product removal for simple (single-item) listings.
+ * Legacy helper — now zeros stock instead of deleting products.
  */
 export async function removePurchasedProducts(
   productIds: number[],
@@ -213,39 +207,10 @@ export async function removePurchasedProducts(
   )
 
   for (const productId of uniqueIds) {
-    try {
-      const product = await prisma.product.findUnique({
-        where: { id: productId },
-        select: { userId: true },
-      })
-
-      await prisma.$transaction(async (tx) => {
-        await deleteEntireProductInTx(tx, productId)
-      })
-
-      if (product?.userId) {
-        revalidateProductCaches(productId, { authorId: product.userId })
-      }
-    } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2025'
-      ) {
-        console.warn(
-          `[removePurchasedProducts] Product ${productId} already removed${
-            context.orderId ? ` (order ${context.orderId})` : ''
-          }`,
-        )
-        continue
-      }
-
-      console.error(
-        `[removePurchasedProducts] Failed to remove product ${productId}${
-          context.orderId ? ` (order ${context.orderId})` : ''
-        }:`,
-        error,
-      )
-    }
+    await fulfillSoldSaleItem(
+      { productId, variantId: null, quantity: 1 },
+      context,
+    )
   }
 }
 

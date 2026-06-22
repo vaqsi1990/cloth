@@ -26,6 +26,7 @@ import {
   resolveCartItemsBuyerListPrices,
   syncCartItemBuyerListPrices,
 } from '@/lib/sync-cart-prices'
+import { validateSaleItemStock } from '@/lib/sale-stock'
 
 // Cart item validation schema
 const cartItemSchema = z.object({
@@ -435,6 +436,23 @@ export async function POST(request: NextRequest) {
         success: false,
         message: 'პროდუქტი ჯერ არ არის დამტკიცებული',
       }, { status: 403 })
+    }
+
+    if (!validatedData.isRental) {
+      const stockCheck = await validateSaleItemStock({
+        productId: validatedData.productId,
+        variantId: validatedData.variantId ?? null,
+        color: validatedData.color ?? null,
+        size: validatedData.size ?? null,
+        quantity: MAX_CART_ITEM_QUANTITY,
+        isRental: false,
+      })
+      if (!stockCheck.ok) {
+        return NextResponse.json(
+          { success: false, message: stockCheck.message },
+          { status: 409 },
+        )
+      }
     }
 
     const buyerListPrice = resolveCartItemBuyerListPrice({

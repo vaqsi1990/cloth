@@ -114,10 +114,8 @@ export async function recordSellerTransactions(orderId: number) {
   if (soldSaleItems.length > 0) {
     await fulfillSoldSaleItems(soldSaleItems, { orderId: order.id })
     revalidateProductListCache()
+    await purgeSoldProductsStillInDatabase()
   }
-
-  // Clean up legacy sold products that were only hidden, not deleted.
-  await purgeSoldProductsStillInDatabase()
 }
 
 

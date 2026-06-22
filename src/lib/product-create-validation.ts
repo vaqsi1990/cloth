@@ -197,7 +197,8 @@ export function hasProductPricing(data: ProductPricingInput): boolean {
 
 export function getProductCreateFieldErrors(data: {
   imageUrls?: string[]
-  variants?: Array<{ color?: string; size?: string; imageUrl?: string; price?: number | null }>
+  stock?: number
+  variants?: Array<{ color?: string; size?: string; imageUrl?: string; price?: number | null; stock?: number | null }>
   isSkuVariantProduct?: boolean
   requireVariantSalePrices?: boolean
   requireVariantSize?: boolean
@@ -223,6 +224,17 @@ export function getProductCreateFieldErrors(data: {
     errors.pricingMode = PRODUCT_PRICING_MODE_EXCLUSIVE_MESSAGE
   } else if (!data.showPurchaseOptions && !data.showRentalOptions) {
     errors.pricingMode = PRODUCT_PRICING_MODE_REQUIRED_MESSAGE
+  }
+
+  if (
+    !data.isSkuVariantProduct &&
+    data.showPurchaseOptions &&
+    !data.showRentalOptions
+  ) {
+    const saleStock = data.variants?.[0]?.stock ?? data.stock ?? 0
+    if (saleStock < 1) {
+      errors['variants.0.stock'] = 'რაოდენობა უნდა იყოს მინიმუმ 1'
+    }
   }
 
   const pricingCheckData: ProductPricingInput = { ...data }

@@ -7,6 +7,7 @@ import {
   productHasSkuVariants,
   sumVariantStock,
 } from '@/lib/product-variants'
+import { resolveVariantIdForSaleItem } from '@/lib/sale-stock'
 import type { SoldSaleItem } from '@/utils/removePurchasedProducts'
 
 export const REPORTABLE_SALE_ORDER_STATUSES = [...COMPLETED_SALE_ORDER_STATUSES] as const
@@ -50,6 +51,19 @@ async function restoreSimpleProductStockInTx(
     where: { id: productId },
     data: { stock: { increment: quantity } },
   })
+
+  const defaultVariant = await tx.productVariant.findFirst({
+    where: { productId },
+    orderBy: { id: 'asc' },
+    select: { id: true },
+  })
+
+  if (defaultVariant) {
+    await tx.productVariant.update({
+      where: { id: defaultVariant.id },
+      data: { stock: { increment: quantity } },
+    })
+  }
 }
 
 export async function restoreSaleItemStock(item: SoldSaleItem) {
@@ -57,8 +71,9 @@ export async function restoreSaleItemStock(item: SoldSaleItem) {
     where: { id: item.productId },
     select: {
       userId: true,
+      stock: true,
       variants: {
-        select: { id: true, color: true, size: true, imageUrl: true },
+        select: { id: true, color: true, size: true, stock: true },
       },
     },
   })
@@ -67,18 +82,24 @@ export async function restoreSaleItemStock(item: SoldSaleItem) {
 
   const quantity = item.quantity ?? 1
 
-  if (productHasSkuVariants(product) && item.variantId) {
-    const variantExists = product.variants.some((v) => v.id === item.variantId)
-    if (!variantExists) return
+  if (productHasSkuVariants(product)) {
+    const variantId = resolveVariantIdForSaleItem(product, item)
+    if (variantId) {
+      const variantExists = product.variants.some((v) => v.id === variantId)
+      if (!variantExists) return
 
-    await prisma.$transaction(async (tx) => {
-      await restoreVariantStockInTx(tx, item.productId, item.variantId!, quantity)
-    })
-  } else {
-    await prisma.$transaction(async (tx) => {
-      await restoreSimpleProductStockInTx(tx, item.productId, quantity)
-    })
+      await prisma.$transaction(async (tx) => {
+        await restoreVariantStockInTx(tx, item.productId, variantId, quantity)
+      })
+
+      revalidateProductCaches(item.productId, { authorId: product.userId ?? undefined })
+      return
+    }
   }
+
+  await prisma.$transaction(async (tx) => {
+    await restoreSimpleProductStockInTx(tx, item.productId, quantity)
+  })
 
   revalidateProductCaches(item.productId, { authorId: product.userId ?? undefined })
 }

@@ -5,6 +5,10 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { isAdminOrSupport } from '@/lib/roles'
 import { recordSellerTransactions } from '@/utils/sellerTransactions'
+import {
+  restoreOrderSaleItems,
+  shouldRestoreStockOnCancel,
+} from '@/lib/restore-order-sale-items'
 
 const statusSchema = z.object({
   status: z.enum(['PENDING', 'PAID', 'SHIPPED', 'CANCELED', 'REFUNDED'])
@@ -50,6 +54,7 @@ export async function PUT(
     }
 
     const wasAlreadyPaid = existingOrder.status === 'PAID'
+    const previousStatus = existingOrder.status
 
     // Update order status
     const updatedOrder = await prisma.order.update({
@@ -80,6 +85,10 @@ export async function PUT(
 
     if (status === 'PAID' && !wasAlreadyPaid) {
       await recordSellerTransactions(orderId)
+    }
+
+    if (shouldRestoreStockOnCancel(previousStatus, status)) {
+      await restoreOrderSaleItems(orderId)
     }
 
     return NextResponse.json({

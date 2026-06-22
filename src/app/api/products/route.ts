@@ -46,8 +46,7 @@ import {
 import { parseShopListFilterParams } from '@/lib/shop-list-params'
 import { convertBuyerPriceFiltersToSeller } from '@/lib/platform-pricing'
 import {
-  buildExcludeSoldProductsWhere,
-  buildSaleStockAvailabilityWhere,
+  buildPublicProductDiscoveryWhere,
 } from '@/lib/sold-products'
 import { resolveCategoryIdForWrite } from '@/lib/category-sync'
 import { sortProductsByVipPriority } from '@/lib/product-vip'
@@ -357,23 +356,9 @@ export async function GET(request: NextRequest) {
     }
     
     const productWhere: Prisma.ProductWhereInput = {
-      ...(isAdminOrSupportRole
+      ...(isAdminOrSupportRole || shouldIncludeUnapproved
         ? {}
-        : {
-            status: {
-              notIn: ['MAINTENANCE', 'DAMAGED', 'RESERVED'],
-            },
-            ...buildExcludeSoldProductsWhere(),
-            ...buildSaleStockAvailabilityWhere(),
-          }),
-      ...(shouldIncludeUnapproved || isAdminOrSupportRole
-        ? {}
-        : {
-            approvalStatus: 'APPROVED',
-            userId: {
-              not: null,
-            },
-          }),
+        : buildPublicProductDiscoveryWhere()),
       ...(search
         ? {
             OR: [
