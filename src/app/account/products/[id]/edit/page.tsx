@@ -11,7 +11,6 @@ import { showToast } from '@/utils/toast'
 import { PRODUCT_FORM_COLORS } from '@/lib/product-colors'
 import {
   isValidProductText,
-  PRODUCT_DESCRIPTION_ERROR_MESSAGE,
   PRODUCT_NAME_ERROR_MESSAGE,
   PRODUCT_TEXT_REGEX,
 } from '@/lib/product-text'
@@ -79,11 +78,7 @@ const productSchema = z.object({
     .regex(PRODUCT_TEXT_REGEX, PRODUCT_NAME_ERROR_MESSAGE),
   slug: z.string().min(1, 'Slug აუცილებელია').regex(/^[a-z0-9-]+$/, 'Slug უნდა შეიცავდეს მხოლოდ პატარა ასოებს, ციფრებს და ტირეებს'),
   brand: z.string().optional(),
-  description: z.string()
-    .optional()
-    .refine((val) => !val || isValidProductText(val), {
-      message: PRODUCT_DESCRIPTION_ERROR_MESSAGE,
-    }),
+  description: z.string().optional(),
   stock: z.number().min(0, 'საწყობი უნდა იყოს დადებითი').default(0),
   gender: z.enum(['MEN', 'WOMEN', 'CHILDREN', 'UNISEX']).default('UNISEX'),
   color: z.string().optional(),
@@ -513,24 +508,9 @@ const EditProductPage = () => {
         : {})
     }))
     
-    // Validate Georgian characters for description in real-time
-    if (field === 'description' && typeof value === 'string') {
-      if (value && !isValidProductText(value)) {
-        setErrors(prev => ({
-          ...prev,
-          description: PRODUCT_DESCRIPTION_ERROR_MESSAGE,
-        }))
-      } else {
-        // Clear errors when valid
-        if (errors.description) {
-          setErrors(prev => ({ ...prev, description: '' }))
-        }
-      }
-    } else {
-      // Clear error when user starts typing for other fields
-      if (errors[field]) {
-        setErrors(prev => ({ ...prev, [field]: '' }))
-      }
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }))
     }
   }
 
