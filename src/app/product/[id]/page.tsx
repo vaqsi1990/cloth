@@ -2303,16 +2303,8 @@ const ProductPage = () => {
                 </div>
 
                 <div className="mt-12 flex flex-col gap-12">
-                    {/* Similar Products — above comments on mobile */}
-                    <div className="order-1 lg:order-2">
-                        <SimilarProducts
-                            productId={product.id}
-                            categoryName={product.category?.name}
-                        />
-                    </div>
-
                     {/* Reviews Section */}
-                    <div className="order-2 lg:order-1">
+                    <div>
                     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                         <h2 className="text-2xl font-bold text-black mb-6">კომენტარები და რეიტინგები</h2>
 
@@ -2594,6 +2586,14 @@ const ProductPage = () => {
                             </div>
                         )}
                     </div>
+                    </div>
+
+                    {/* Similar Products */}
+                    <div>
+                        <SimilarProducts
+                            productId={product.id}
+                            categoryName={product.category?.name}
+                        />
                     </div>
                 </div>
 
