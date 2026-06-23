@@ -50,7 +50,7 @@ export function shouldRestoreStockOnCancel(
   const wasFulfilled = RESTORABLE_STATUSES.includes(
     previousStatus as (typeof RESTORABLE_STATUSES)[number],
   )
-  return wasFulfilled && (nextStatus === 'CANCELED' || nextStatus === 'REFUNDED')
+  return wasFulfilled && nextStatus === 'REFUNDED'
 }
 
 export function mapOrderItemsToSoldSaleItems(

@@ -9,6 +9,7 @@ import {
   restoreOrderSaleItems,
   shouldRestoreStockOnCancel,
 } from '@/lib/restore-order-sale-items'
+import { finalizeCanceledSaleProducts } from '@/lib/finalize-canceled-sale-products'
 
 const statusSchema = z.object({
   status: z.enum(['PENDING', 'PAID', 'SHIPPED', 'CANCELED', 'REFUNDED'])
@@ -56,39 +57,46 @@ export async function PUT(
     const wasAlreadyPaid = existingOrder.status === 'PAID'
     const previousStatus = existingOrder.status
 
-    // Update order status
     const updatedOrder = await prisma.order.update({
       where: { id: orderId },
-      data: { 
+      data: {
         status: status,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       },
       include: {
         items: {
           include: {
             product: {
               include: {
-                images: true
-              }
-            }
-          }
+                images: true,
+              },
+            },
+          },
         },
         user: {
           select: {
             id: true,
             name: true,
-            email: true
-          }
-        }
-      }
+            email: true,
+          },
+        },
+      },
     })
 
     if (status === 'PAID' && !wasAlreadyPaid) {
       await recordSellerTransactions(orderId)
     }
 
+    if (status === 'CANCELED' && previousStatus !== 'CANCELED') {
+      await prisma.transaction.deleteMany({
+        where: { orderId, type: 'SALE' },
+      })
+    }
+
     if (shouldRestoreStockOnCancel(previousStatus, status)) {
       await restoreOrderSaleItems(orderId)
+    } else if (status === 'CANCELED' && previousStatus !== 'CANCELED') {
+      await finalizeCanceledSaleProducts(orderId)
     }
 
     return NextResponse.json({

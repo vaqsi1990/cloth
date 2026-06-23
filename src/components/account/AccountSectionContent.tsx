@@ -100,6 +100,8 @@ interface SaleOrderItem {
   snapshot?: OrderItemProductSnapshot | null
   sellerReportedOutOfStock?: boolean
   sellerReportedAt?: string | null
+  sellerReportedDamaged?: boolean
+  sellerReportedDamagedAt?: string | null
   sellerMarkedTransferred?: boolean
   sellerMarkedTransferredAt?: string | null
 }
@@ -241,8 +243,13 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
   const [contactingChatKey, setContactingChatKey] = useState<string | null>(null)
   const [loadingSales, setLoadingSales] = useState(false)
   const [reportingOutOfStockItemId, setReportingOutOfStockItemId] = useState<number | null>(null)
+  const [reportingDamagedItemId, setReportingDamagedItemId] = useState<number | null>(null)
   const [markingTransferredItemId, setMarkingTransferredItemId] = useState<number | null>(null)
-  const [salesTransferFilter, setSalesTransferFilter] = useState<'ALL' | 'TRANSFERRED' | 'PENDING'>('ALL')
+  const [cancelingSaleOrderId, setCancelingSaleOrderId] = useState<number | null>(null)
+  const [salesTransferFilter, setSalesTransferFilter] = useState<
+    'ALL' | 'TRANSFERRED' | 'PENDING' | 'CANCELED'
+  >('ALL')
+  const [ordersStatusFilter, setOrdersStatusFilter] = useState<'ALL' | 'ACTIVE' | 'CANCELED'>('ALL')
   const [loadingProducts, setLoadingProducts] = useState(false)
   const [resubmittingProductId, setResubmittingProductId] = useState<number | null>(null)
   const [vouchers, setVouchers] = useState<UserVoucherItem[]>([])
@@ -1019,10 +1026,57 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
     }
   }
 
+  const handleCancelSaleOrder = async (orderId: number) => {
+    if (
+      !confirm(
+        'დარწმუნებული ხართ, რომ გსურთ ამ შეკვეთის გაუქმება? შეკვეთა გადავა გაუქმებულებში და ნივთი აღარ გამოჩნდება მარაგში.',
+      )
+    ) {
+      return
+    }
+
+    try {
+      setCancelingSaleOrderId(orderId)
+      const response = await fetch(`/api/user/sales/orders/${orderId}/cancel`, {
+        method: 'POST',
+      })
+      const data = await response.json()
+      if (data.success) {
+        setSales((prev) =>
+          prev.map((order) =>
+            order.id === orderId ? { ...order, status: 'CANCELED' } : order,
+          ),
+        )
+        setTotalSellerIncome((prev) => {
+          const canceledOrder = sales.find((order) => order.id === orderId)
+          if (!canceledOrder) return prev
+          const orderTotal =
+            canceledOrder.sellerTotal ??
+            (canceledOrder.items?.reduce(
+              (sum, item) =>
+                sum +
+                (item.sellerLineTotal ??
+                  (item.sellerUnitPrice ?? 0) * (item.quantity ?? 1)),
+              0,
+            ) ?? 0)
+          return Math.max(0, prev - orderTotal)
+        })
+        showToast(data.message || 'შეკვეთა გაუქმდა', 'success')
+      } else {
+        showToast(data.message || 'შეცდომა შეკვეთის გაუქმებისას', 'error')
+      }
+    } catch (error) {
+      console.error('Error canceling sale order:', error)
+      showToast('შეცდომა შეკვეთის გაუქმებისას', 'error')
+    } finally {
+      setCancelingSaleOrderId(null)
+    }
+  }
+
   const handleReportOutOfStock = async (itemId: number) => {
     if (
       !confirm(
-        'დარწმუნებული ხართ, რომ ამ ნივთს მარაგში არ გაქვთ? ადმინისტრატორი გაიგებს და შეკვეთა შეიძლება გაუქმდეს.',
+        'დარწმუნებული ხართ, რომ ამ ნივთს მარაგში არ გაქვთ? შეკვეთის გაუქმების შემდეგ ნივთი აღარ გამოჩნდება მარაგში.',
       )
     ) {
       return
@@ -1058,6 +1112,49 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
       showToast('შეცდომა მოხსენებისას', 'error')
     } finally {
       setReportingOutOfStockItemId(null)
+    }
+  }
+
+  const handleReportDamaged = async (itemId: number) => {
+    if (
+      !confirm(
+        'დარწმუნებული ხართ, რომ ეს ნივთი დაზიანებულია? შეკვეთის გაუქმების შემდეგ ნივთი აღარ გამოჩნდება მარაგში.',
+      )
+    ) {
+      return
+    }
+
+    try {
+      setReportingDamagedItemId(itemId)
+      const response = await fetch(`/api/user/sales/items/${itemId}/report-damaged`, {
+        method: 'POST',
+      })
+      const data = await response.json()
+      if (data.success) {
+        setSales((prev) =>
+          prev.map((order) => ({
+            ...order,
+            items: order.items?.map((item) =>
+              item.id === itemId
+                ? {
+                    ...item,
+                    sellerReportedDamaged: true,
+                    sellerReportedDamagedAt:
+                      data.item?.sellerReportedDamagedAt ?? new Date().toISOString(),
+                  }
+                : item,
+            ),
+          })),
+        )
+        showToast(data.message, 'success')
+      } else {
+        showToast(data.message || 'შეცდომა მოხსენებისას', 'error')
+      }
+    } catch (error) {
+      console.error('Error reporting damaged item:', error)
+      showToast('შეცდომა მოხსენებისას', 'error')
+    } finally {
+      setReportingDamagedItemId(null)
     }
   }
 
@@ -1535,30 +1632,73 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
     </div>
   )
 
-  const renderOrdersTab = () => (
+  const renderOrdersTab = () => {
+    const filteredOrders = orders.filter((order) => {
+      if (ordersStatusFilter === 'CANCELED') {
+        return order.status === 'CANCELED'
+      }
+      if (ordersStatusFilter === 'ACTIVE') {
+        return order.status !== 'CANCELED' && order.status !== 'REFUNDED'
+      }
+      return true
+    })
+
+    return (
     <div className="space-y-6">
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-        <h3 className="md:text-[20px] text-[18px] font-bold text-black mb-6">შეკვეთების ისტორია</h3>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <h3 className="md:text-[20px] text-[18px] font-bold text-black">შეკვეთების ისტორია</h3>
+          <div className="flex flex-wrap gap-2">
+            {(
+              [
+                ['ALL', 'ყველა'],
+                ['ACTIVE', 'აქტიური'],
+                ['CANCELED', 'გაუქმებული'],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setOrdersStatusFilter(value)}
+                className={`px-3 py-1.5 rounded-lg text-[15px] font-medium transition-colors ${
+                  ordersStatusFilter === value
+                    ? 'bg-[#1B3729] text-white'
+                    : 'bg-gray-100 text-black hover:bg-gray-200'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {loadingOrders ? (
           <div className="text-center py-12">
             <div className="w-12 h-12 border-4 border-gray-300 border-t-[#1B3729] rounded-full animate-spin mx-auto mb-4"></div>
             <p className="text-[18px] text-black">იტვირთება...</p>
           </div>
-        ) : orders.length === 0 ? (
+        ) : filteredOrders.length === 0 ? (
           <div className="text-center py-8">
             <ShoppingCart className="w-12 h-12 text-black mx-auto mb-4" />
-            <p className="text-[18px] text-black">ჯერ არ გაქვთ შეკვეთები</p>
+            <p className="text-[18px] text-black">
+              {ordersStatusFilter === 'CANCELED'
+                ? 'გაუქმებული შეკვეთები ჯერ არ გაქვთ'
+                : ordersStatusFilter === 'ACTIVE'
+                  ? 'აქტიური შეკვეთები ჯერ არ გაქვთ'
+                  : 'ჯერ არ გაქვთ შეკვეთები'}
+            </p>
+            {ordersStatusFilter === 'ALL' && (
             <Link
               href="/shop"
               className="inline-block md:text-[18px] text-[16px] mt-4 px-6 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide transition-colors"
             >
               შეკვეთის დაწყება
             </Link>
+            )}
           </div>
         ) : (
           <div className="space-y-4">
-            {orders.map((order) => {
+            {filteredOrders.map((order) => {
               const orderDate = formatDate(order.createdAt)
               const deliverySpeed = fromPrismaDeliverySpeed(
                 order.deliverySpeed as 'EXTRA' | 'STANDARD' | null,
@@ -1764,10 +1904,13 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
         )}
       </div>
     </div>
-  )
+    )
+  }
 
   const renderSalesTab = () => {
-    const totalSoldItems = sales.reduce(
+    const totalSoldItems = sales
+      .filter((order) => order.status !== 'CANCELED')
+      .reduce(
       (sum, order) =>
         sum +
         (order.items?.reduce((itemSum, item) => itemSum + (item.quantity ?? 1), 0) || 0),
@@ -1777,13 +1920,26 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
     const totalSalesAmount = totalSellerIncome
 
     const filteredSales = sales
+      .filter((order) => {
+        if (salesTransferFilter === 'CANCELED') {
+          return order.status === 'CANCELED'
+        }
+        if (salesTransferFilter !== 'ALL') {
+          return order.status !== 'CANCELED'
+        }
+        return true
+      })
       .map((order) => {
         const items = order.items?.filter((item) => {
           if (salesTransferFilter === 'TRANSFERRED') {
             return item.sellerMarkedTransferred === true
           }
           if (salesTransferFilter === 'PENDING') {
-            return !item.sellerMarkedTransferred && !item.sellerReportedOutOfStock
+            return (
+              !item.sellerMarkedTransferred &&
+              !item.sellerReportedOutOfStock &&
+              !item.sellerReportedDamaged
+            )
           }
           return true
         })
@@ -1796,6 +1952,7 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
         sum + (order.items?.filter((item) => item.sellerMarkedTransferred).length ?? 0),
       0,
     )
+    const canceledCount = sales.filter((order) => order.status === 'CANCELED').length
 
     return (
       <div className="space-y-6">
@@ -1822,6 +1979,7 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
                   ['ALL', 'ყველა'],
                   ['TRANSFERRED', 'გადაცემული'],
                   ['PENDING', 'გადაუცემელი'],
+                  ['CANCELED', 'გაუქმებული'],
                 ] as const
               ).map(([value, label]) => (
                 <button
@@ -1837,7 +1995,9 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
                   {label}
                   {value === 'TRANSFERRED' && transferredCount > 0
                     ? ` (${transferredCount})`
-                    : ''}
+                    : value === 'CANCELED' && canceledCount > 0
+                      ? ` (${canceledCount})`
+                      : ''}
                 </button>
               ))}
             </div>
@@ -1856,7 +2016,9 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
                   ? 'ჯერ არ გაქვთ გაყიდვები'
                   : salesTransferFilter === 'TRANSFERRED'
                     ? 'გადაცემული შეკვეთები ჯერ არ გაქვთ'
-                    : 'გადაუცემელი შეკვეთები ჯერ არ გაქვთ'}
+                    : salesTransferFilter === 'CANCELED'
+                      ? 'გაუქმებული შეკვეთები ჯერ არ გაქვთ'
+                      : 'გადაუცემელი შეკვეთები ჯერ არ გაქვთ'}
               </p>
               {salesTransferFilter === 'ALL' && (
                 <p className="text-[16px] text-black">დაამატეთ პროდუქტი და დაიწყეთ გაყიდვები</p>
@@ -1894,7 +2056,7 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
                           </p>
                         )}
                       </div>
-                      <div className="text-right">
+                      <div className="text-right space-y-2">
                         <p className="font-bold md:text-[22px] text-[16px] text-black">ჯამი: ₾{sellerTotal.toFixed(2)}</p>
                         <span
                           className={`inline-block px-2 py-1 md:text-[20px] text-[18px] font-bold rounded-full ${
@@ -1919,6 +2081,20 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
                                   ? 'დაბრუნებული'
                                   : 'მოლოდინში'}
                         </span>
+                        {(order.status === 'PAID' || order.status === 'SHIPPED') && (
+                          <div>
+                            <button
+                              type="button"
+                              onClick={() => void handleCancelSaleOrder(order.id)}
+                              disabled={cancelingSaleOrderId === order.id}
+                              className="inline-flex items-center rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-[15px] font-medium text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {cancelingSaleOrderId === order.id
+                                ? 'იუქმდება...'
+                                : 'შეკვეთის გაუქმება'}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -1993,7 +2169,8 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
 
                               {(order.status === 'PAID' || order.status === 'SHIPPED') && (
                                 <div className="mt-3 space-y-2">
-                                  {!item.sellerReportedOutOfStock && (
+                                  {!item.sellerReportedOutOfStock &&
+                                    !item.sellerReportedDamaged && (
                                     <label className="inline-flex items-center gap-2 cursor-pointer select-none">
                                       <input
                                         type="checkbox"
@@ -2014,19 +2191,35 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
 
                                   {item.sellerReportedOutOfStock ? (
                                     <span className="inline-flex items-center rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-[15px] font-medium text-amber-800">
-                                      მარაგში არ მაქვს — ადმინისტრატორს გადაეცემა
+                                      მარაგში არ მაქვს
+                                    </span>
+                                  ) : item.sellerReportedDamaged ? (
+                                    <span className="inline-flex items-center rounded-lg border border-orange-300 bg-orange-50 px-3 py-2 text-[15px] font-medium text-orange-800">
+                                      დაზიანებულია
                                     </span>
                                   ) : (
-                                    <button
-                                      type="button"
-                                      onClick={() => handleReportOutOfStock(item.id)}
-                                      disabled={reportingOutOfStockItemId === item.id}
-                                      className="inline-flex items-center rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-[15px] font-medium text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
-                                    >
-                                      {reportingOutOfStockItemId === item.id
-                                        ? 'იგზავნება...'
-                                        : 'მარაგში არ მაქვს'}
-                                    </button>
+                                    <div className="flex flex-wrap gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleReportOutOfStock(item.id)}
+                                        disabled={reportingOutOfStockItemId === item.id}
+                                        className="inline-flex items-center rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-[15px] font-medium text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                      >
+                                        {reportingOutOfStockItemId === item.id
+                                          ? 'იგზავნება...'
+                                          : 'მარაგში არ მაქვს'}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleReportDamaged(item.id)}
+                                        disabled={reportingDamagedItemId === item.id}
+                                        className="inline-flex items-center rounded-lg border border-orange-300 bg-orange-50 px-3 py-2 text-[15px] font-medium text-orange-800 transition hover:bg-orange-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                      >
+                                        {reportingDamagedItemId === item.id
+                                          ? 'იგზავნება...'
+                                          : 'დაზიანებულია'}
+                                      </button>
+                                    </div>
                                   )}
                                 </div>
                               )}

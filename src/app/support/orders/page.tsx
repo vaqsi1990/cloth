@@ -111,7 +111,21 @@ const SupportOrdersPage = () => {
     }
   }, [status, session?.user?.role, fetchOrders])
 
-  const handleStatusUpdate = async (orderId: number, newStatus: string) => {
+  const handleStatusUpdate = async (
+    orderId: number,
+    newStatus: string,
+    previousStatus: string,
+  ) => {
+    if (
+      newStatus === 'CANCELED' &&
+      (previousStatus === 'PAID' || previousStatus === 'SHIPPED') &&
+      !confirm(
+        'დარწმუნებული ხართ, რომ გსურთ ამ გაყიდული შეკვეთის გაუქმება? შეკვეთა გადავა გაუქმებულებში და ნივთი აღარ გამოჩნდება მარაგში.',
+      )
+    ) {
+      return
+    }
+
     try {
       const response = await fetch(`/api/admin/orders/${orderId}/status`, {
         method: 'PUT',
@@ -120,13 +134,16 @@ const SupportOrdersPage = () => {
         },
         body: JSON.stringify({ status: newStatus }),
       })
-      
+
+      const data = await response.json()
+
       if (response.ok) {
-        setOrders(orders.map(order => 
+        setOrders(orders.map(order =>
           order.id === orderId ? { ...order, status: newStatus } : order
         ))
+        showToast(data.message || 'შეკვეთის სტატუსი განახლდა', 'success')
       } else {
-        showToast('შეცდომა სტატუსის განახლებისას', 'error')
+        showToast(data.message || 'შეცდომა სტატუსის განახლებისას', 'error')
       }
     } catch (error) {
       console.error('Error updating status:', error)
@@ -467,7 +484,9 @@ const SupportOrdersPage = () => {
                           <span className="text-xs sm:text-sm text-black whitespace-nowrap">სტატუსის შეცვლა:</span>
                           <select
                             value={order.status}
-                            onChange={(e) => handleStatusUpdate(order.id, e.target.value)}
+                            onChange={(e) =>
+                              handleStatusUpdate(order.id, e.target.value, order.status)
+                            }
                             className="px-2 sm:px-3 py-1 border border-gray-300 rounded text-xs sm:text-sm focus:ring-2 focus:ring-black focus:border-transparent w-full sm:w-auto"
                           >
                             <option value="PENDING">მოლოდინი</option>

@@ -532,6 +532,8 @@ model OrderItem {
   productSnapshot Json?
   sellerReportedOutOfStock Boolean  @default(false)
   sellerReportedAt         DateTime?
+  sellerReportedDamaged    Boolean  @default(false)
+  sellerReportedDamagedAt  DateTime?
   sellerMarkedTransferred  Boolean  @default(false)
   sellerMarkedTransferredAt DateTime?
   

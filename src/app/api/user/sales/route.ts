@@ -10,26 +10,58 @@ import {
 } from '@/lib/order-item-snapshot'
 import { computeSellerSaleLineAmount } from '@/lib/seller-sale-amounts'
 
-function mapSaleItem(item: {
-  id: number
-  productName: string
-  size: string | null
-  price: number
-  quantity: number
-  image: string | null
-  productSnapshot: Prisma.JsonValue | null
-  sellerReportedOutOfStock: boolean
-  sellerReportedAt: Date | null
-  sellerMarkedTransferred: boolean
-  sellerMarkedTransferredAt: Date | null
-  product: {
-    id: number
-    discount: number | null
-    discountDays: number | null
-    discountStartDate: Date | null
-    images: Array<{ url: string }>
-  } | null
-}) {
+const VISIBLE_SALE_ORDER_STATUSES = [
+  ...COMPLETED_SALE_ORDER_STATUSES,
+  'CANCELED',
+] as const
+
+const sellerOrderInclude = {
+  user: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+    },
+  },
+  items: {
+    include: {
+      product: {
+        select: {
+          id: true,
+          discount: true,
+          discountDays: true,
+          discountStartDate: true,
+          images: {
+            select: { url: true },
+            take: 1,
+            orderBy: { position: 'asc' as const },
+          },
+        },
+      },
+    },
+  },
+} satisfies Prisma.OrderInclude
+
+type SellerOrderRecord = Prisma.OrderGetPayload<{
+  include: typeof sellerOrderInclude
+}>
+
+/** Present after migration; optional until Prisma client is regenerated. */
+type SellerOrderItemRecord = SellerOrderRecord['items'][number] & {
+  sellerReportedDamaged?: boolean
+  sellerReportedDamagedAt?: Date | null
+}
+
+function readDamagedReport(item: SellerOrderItemRecord) {
+  return {
+    sellerReportedDamaged: item.sellerReportedDamaged ?? false,
+    sellerReportedDamagedAt: item.sellerReportedDamagedAt ?? null,
+  }
+}
+
+function mapSaleItem(item: SellerOrderItemRecord) {
+  const damagedReport = readDamagedReport(item)
   const snapshot = parseOrderItemProductSnapshot(item.productSnapshot)
   const buyerUnitPrice = snapshot?.price ?? item.price
   const quantity = snapshot?.quantity ?? item.quantity
@@ -55,43 +87,15 @@ function mapSaleItem(item: {
     snapshot,
     sellerReportedOutOfStock: item.sellerReportedOutOfStock,
     sellerReportedAt: item.sellerReportedAt,
+    sellerReportedDamaged: damagedReport.sellerReportedDamaged,
+    sellerReportedDamagedAt: damagedReport.sellerReportedDamagedAt,
     sellerMarkedTransferred: item.sellerMarkedTransferred,
     sellerMarkedTransferredAt: item.sellerMarkedTransferredAt,
   }
 }
 
 function mapSellerOrder(
-  order: {
-    id: number
-    items: Array<{
-      id: number
-      isRental: boolean | null
-      sellerUserId: string | null
-      productName: string
-      size: string | null
-      price: number
-      quantity: number
-      image: string | null
-      productSnapshot: Prisma.JsonValue | null
-      sellerReportedOutOfStock: boolean
-      sellerReportedAt: Date | null
-      sellerMarkedTransferred: boolean
-      sellerMarkedTransferredAt: Date | null
-      product: {
-        id: number
-        discount: number | null
-        discountDays: number | null
-        discountStartDate: Date | null
-        images: Array<{ url: string }>
-      } | null
-    }>
-    user: {
-      id: string
-      name: string | null
-      email: string | null
-      phone: string | null
-    } | null
-  } & Record<string, unknown>,
+  order: SellerOrderRecord,
   sellerUserId: string,
   transactionOrderIds: number[],
   transactionTotalByOrderId: Map<number, number>,
@@ -156,7 +160,7 @@ export async function GET(request: NextRequest) {
 
     const sellerItemOrders = await prisma.order.findMany({
       where: {
-        status: { in: [...COMPLETED_SALE_ORDER_STATUSES] },
+        status: { in: [...VISIBLE_SALE_ORDER_STATUSES] },
         items: {
           some: {
             sellerUserId: session.user.id,
@@ -185,35 +189,9 @@ export async function GET(request: NextRequest) {
     const orders = await prisma.order.findMany({
       where: {
         id: { in: orderIds },
-        status: { in: [...COMPLETED_SALE_ORDER_STATUSES] },
+        status: { in: [...VISIBLE_SALE_ORDER_STATUSES] },
       },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
-          },
-        },
-        items: {
-          include: {
-            product: {
-              select: {
-                id: true,
-                discount: true,
-                discountDays: true,
-                discountStartDate: true,
-                images: {
-                  select: { url: true },
-                  take: 1,
-                  orderBy: { position: 'asc' },
-                },
-              },
-            },
-          },
-        },
-      },
+      include: sellerOrderInclude,
       orderBy: {
         createdAt: 'desc',
       },
@@ -230,10 +208,9 @@ export async function GET(request: NextRequest) {
       )
       .filter((order) => (order.items?.length ?? 0) > 0)
 
-    const totalSellerIncome = mappedOrders.reduce(
-      (sum, order) => sum + order.sellerTotal,
-      0,
-    )
+    const totalSellerIncome = mappedOrders
+      .filter((order) => order.status !== 'CANCELED')
+      .reduce((sum, order) => sum + order.sellerTotal, 0)
 
     return NextResponse.json({
       success: true,

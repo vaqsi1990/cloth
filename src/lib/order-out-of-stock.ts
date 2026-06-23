@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
-import { revalidateProductListCache } from '@/lib/product-list-query'
 import { revalidateProductCaches } from '@/lib/product-cache-revalidation'
+import { cancelSaleOrder } from '@/lib/cancel-sale-order'
 import { COMPLETED_SALE_ORDER_STATUSES } from '@/lib/sold-products'
 import {
   productHasSkuVariants,
@@ -143,36 +143,14 @@ export async function cancelOrderForOutOfStock(orderId: number) {
     }
   }
 
-  const saleItems = order.items
-    .filter((item) => item.productId != null)
-    .map((item) => ({
-      productId: item.productId as number,
-      variantId: item.variantId,
-      quantity: item.quantity ?? 1,
-      color: item.color,
-      size: item.size,
-    }))
-
-  await prisma.$transaction(async (tx) => {
-    await tx.order.update({
-      where: { id: orderId },
-      data: { status: 'CANCELED', updatedAt: new Date() },
-    })
-
-    await tx.transaction.deleteMany({
-      where: { orderId, type: 'SALE' },
-    })
-  })
-
-  for (const item of saleItems) {
-    await restoreSaleItemStock(item)
+  const result = await cancelSaleOrder(orderId)
+  if (!result.ok) {
+    return result
   }
 
-  try {
-    revalidateProductListCache()
-  } catch {
-    // non-fatal
+  return {
+    ok: true as const,
+    status: 200,
+    message: 'შეკვეთა გადავიდა გაუქმებულებში',
   }
-
-  return { ok: true as const, status: 200, message: 'შეკვეთა გადავიდა გაუქმებულებში' }
 }
