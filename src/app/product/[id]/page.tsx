@@ -1401,209 +1401,63 @@ const ProductPage = () => {
     }
 
 
-
-    return (
-        <div className="min-h-screen">
-            {product && <StructuredData type="Product" data={product} />}
-            {/* Header (Back) */}
-            <header className=" top-0 z-30 ">
-                <div className="max-w-[1200px] mx-auto px-4 py-4">
-                    <button
-                        type="button"
-                        onClick={() => router.back()}
-                        className="flex md:text-[20px] text-[18px] items-center text-black hover:opacity-80"
-                    >
-                        <ArrowLeft className="w-5 h-5 mr-2" />
-                        უკან დაბრუნება
-                    </button>
-                </div>
-            </header>
-
-            <main className="max-w-[1200px] mx-auto px-4 py-10">
-                <div className="grid lg:grid-cols-2 gap-10">
-                    {/* LEFT — Gallery */}
-                    <section>
-                        <div className="flex flex-col lg:flex-row gap-4">
-                            {/* Main image - First on mobile, second on desktop */}
-                            <button
-                                type="button"
-                                onClick={() => setIsGalleryOpen(true)}
-                                aria-label="სურათის გადიდება"
-                                className="relative w-full lg:flex-1 
-                aspect-[3/4] sm:w-[100px] lg:aspect-[3/4]
-                bg-white rounded-2xl overflow-hidden shadow border
-                order-1 lg:order-2 cursor-pointer group"
-                            >
-                                <Image
-                                    key={getMainImage()}
-                                    src={getMainImage()}
-                                    alt={product.name}
-                                    fill
-                                    quality={PRODUCT_IMAGE_QUALITY}
-                                    sizes="(max-width: 640px) 100vw,
-               (max-width: 1024px) 50vw,
-               600px"
-                                    className="object-cover transition-transform duration-300 ease-out group-hover:scale-105"
-                                    priority
-                                />
-                            </button>
-
-
-                            {/* Small images - Below on mobile, left on desktop */}
-                            <div className="flex flex-row lg:flex-col gap-3 order-2 lg:order-1 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0">
-                                {displayImages.map((img, i) => (
-                                    <button
-                                        key={img.url}
-                                        onClick={() => setActiveImage(i)}
-                                        className={`relative w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden border-2 transition group ${activeImage === i
-                                            ? "border-black"
-                                            : "border-gray-200 hover:border-black"
-                                            }`}
-                                    >
-                                        <Image
-                                            width={164}
-                                            height={164}
-                                            src={img.url}
-                                            alt={`${product.name}-${i}`}
-                                            quality={PRODUCT_IMAGE_QUALITY}
-                                            sizes="80px"
-                                            className="object-cover transition-transform duration-300 ease-out group-hover:scale-110"
-                                        />
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {isGalleryOpen && (
-                            <div
-                                className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
-                                onClick={() => setIsGalleryOpen(false)}
-                            >
-                                <button
-                                    type="button"
-                                    onClick={() => setIsGalleryOpen(false)}
-                                    className="absolute top-4 right-4 text-white hover:text-gray-300 text-3xl font-bold z-10 bg-black/50 rounded-full w-10 h-10 flex items-center justify-center cursor-pointer"
-                                    aria-label="დახურვა"
-                                >
-                                    <X className="w-5 h-5" />
-                                </button>
-
-                                {imageCount > 1 && (
-                                    <>
-                                        <button
-                                            type="button"
-                                            onClick={(e) => { e.stopPropagation(); showPrevImage() }}
-                                            className="absolute left-4 top-1/2 -translate-y-1/2 text-white bg-black/50 hover:bg-black/70 rounded-full w-10 h-10 flex items-center justify-center z-10 cursor-pointer"
-                                            aria-label="წინა სურათი"
-                                        >
-                                            <ChevronLeft className="w-6 h-6" />
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={(e) => { e.stopPropagation(); showNextImage() }}
-                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-black/50 hover:bg-black/70 rounded-full w-10 h-10 flex items-center justify-center z-10 cursor-pointer"
-                                            aria-label="შემდეგი სურათი"
-                                        >
-                                            <ChevronRight className="w-6 h-6" />
-                                        </button>
-                                    </>
-                                )}
-
-                                <div
-                                    className="relative max-w-[90vw] max-h-[90vh] flex items-center justify-center"
-                                    onClick={(e) => e.stopPropagation()}
-                                >
-                                    <Image
-                                        key={getMainImage()}
-                                        width={1600}
-                                        height={1600}
-                                        src={getMainImage()}
-                                        alt={product.name}
-                                        quality={PRODUCT_IMAGE_QUALITY}
-                                        className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
-                                    />
-                                </div>
-
-                                {imageCount > 1 && (
-                                    <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/80 text-sm">
-                                        {activeImage + 1} / {imageCount}
-                                    </p>
-                                )}
-                            </div>
-                        )}
-                    </section>
-
-                    {/* RIGHT — Details */}
-                    <section className="space-y-6">
-                        <div className="bg-white ">
-
-
-                            {/* Author Info */}
-                            <div className="bg-white  p-6 ">
-                                <div className="flex flex-col md:flex-row gap-4 md:gap-2 items-center justify-between">
-                                    <div className="flex items-center space-x-4">
-                                        <div className="relative w-16 h-16 rounded-full overflow-hidden bg-black">
-                                            {product.user?.image ? (
-                                                <Image
-                                                    width={64}
-                                                    height={64}
-                                                    src={product.user.image}
-                                                    alt={product.user.name || "ავტორი"}
-
-                                                    className="object-cover"
-                                                />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center bg-black text-white font-semibold">
-                                                    {product.user?.name ? product.user.name.charAt(0).toUpperCase() : "?"}
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div>
-                                            {product.user ? (
-                                                <Link
-                                                    href={`/author/${product.user.id}`}
-                                                    className="hover:opacity-80 transition-opacity"
+    const renderVariantAndBuySection = () => (
+        <>
+                            {/* Color / size selector */}
+                            <div className="p-6 space-y-4">
+                                {hasSkuVariants && availableColors.length > 0 && (
+                                    <div className="space-y-3">
+                                        <h3 className="md:text-[18px] text-[16px] font-semibold text-black">ფერი:</h3>
+                                        <div className="flex flex-wrap gap-3">
+                                            {availableColors.map((color) => (
+                                                <button
+                                                    key={color}
+                                                    type="button"
+                                                    onClick={() => handleColorClick(color)}
+                                                    className={`rounded-xl border-2 px-5 py-3 text-center transition ${
+                                                        selectedColor === color
+                                                            ? 'border-black bg-black text-white'
+                                                            : 'border-gray-300 text-black hover:border-black'
+                                                    }`}
                                                 >
-                                                    <h3 className="md:text-[18px] text-[16px] font-semibold text-black hover:text-underline transition-colors">
-                                                        {product.user.name || "უცნობი ავტორი"}
-                                                    </h3>
-                                                </Link>
-                                            ) : (
-                                                <h3 className="md:text-[20px] text-[18px] font-semibold text-black">
-                                                    უცნობი ავტორი
-                                                </h3>
-                                            )}
-                                            <p className="md:text-[20px] text-[18px] text-black">პროდუქტის ავტორი</p>
+                                                    {color}
+                                                </button>
+                                            ))}
                                         </div>
                                     </div>
-                                    {product.user && session?.user?.id !== product.user.id && (
-                                        <button
-                                            onClick={handleContactAuthor}
-                                            className="flex items-center space-x-2 px-4 py-2 bg-black text-white rounded-lg hover:opacity-90 transition-opacity md:text-[16px] text-[14px] font-medium"
-                                        >
-                                            <MessageCircle className="w-4 h-4" />
-                                            <span>დაეკონტაქტე</span>
-                                        </button>
-                                    )}
-                                </div>
-                                {product.sku && (
-                                    <div className="bg-white flex items-center justify-between p-6 ">
-                                        <p className="text-black md:text-[18px] text-[16px] uppercase tracking-wide">პროდუქტის საიდენტიფიკაციო </p>
-                                        <p className="text-black md:text-[18px] text-[16px]">{product.sku}</p>
-                                    </div>
                                 )}
-                            </div>
-                            {/* Title */}
-                            <div className="bg-white  p-6 s">
-                                <h1 className="text-3xl font-bold text-black md:text-[20px] text-[18px]">{product.name}</h1>
-                                {product.description && (
-                                    <p className="text-black md:text-[18px] text-[16px] mt-2 leading-relaxed">{product.description}</p>
+
+                                {!isSizeOptionalProduct && (
+                                <div className="space-y-3">
+                                    <h3 className="md:text-[18px] text-[16px] font-semibold text-black">
+                                        {isFootwearCategory(product.category) ? 'ზომა (EU):' : 'ზომა:'}
+                                    </h3>
+
+                                    {hasSkuVariants ? (
+                                        <SizePillSelector
+                                            value={selectedSize}
+                                            onChange={(value) => {
+                                                if (
+                                                    product?.status !== 'MAINTENANCE' &&
+                                                    product?.status !== 'DAMAGED'
+                                                ) {
+                                                    setSelectedSize(value)
+                                                }
+                                            }}
+                                            options={getAvailableSizeOptions()}
+                                        />
+                                    ) : product.size ? (
+                                        <span className="inline-flex rounded-full border-2 border-black px-5 py-2 text-sm sm:text-base font-medium text-black">
+                                            {product.size}
+                                        </span>
+                                    ) : null}
+                                </div>
                                 )}
                             </div>
 
-                            {/* Sale price */}
+                            {/* Sale price + buy actions */}
                             {canBuyProduct && (
-                                <div className="bg-white p-6  rounded-2xl">
+                                <div className="bg-white p-6 rounded-2xl space-y-4">
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <p className="text-black md:text-[18px] text-[16px] uppercase tracking-wide">გაყიდვის ფასი</p>
@@ -1718,12 +1572,202 @@ const ProductPage = () => {
                                         ) : null}
                                     </div>
                                     {selectedSize && !showBuyOption && (
-                                        <p className="md:text-[18px] text-[16px] text-red-600 mt-2">
+                                        <p className="md:text-[18px] text-[16px] text-red-600">
                                             არჩეული ზომა ამჟამად არ იყიდება
                                         </p>
                                     )}
+                                    {purchaseMode === "buy" && (
+                                        !session ? (
+                                            <div className="p-4 text-center border-2 border-red-500 text-red-500 rounded-lg">
+                                                <p className="font-bold mb-4">
+                                                    პროდუქტის შეძენისთვის საჭიროა ანგარიში. გთხოვთ, შეხვიდეთ ანგარიშში.
+                                                </p>
+                                                <Link
+                                                    href="/auth/signin"
+                                                    className="inline-block px-6 py-2 bg-[#1B3729] text-white rounded-lg font-bold uppercase tracking-wide transition-colors hover:opacity-90"
+                                                >
+                                                    შესვლა
+                                                </Link>
+                                            </div>
+                                        ) : product.status !== 'MAINTENANCE' && product.status !== 'DAMAGED' && showBuyOption ? (
+                                            <div className="space-y-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={handleBuyCheckout}
+                                                    disabled={Boolean(isAdding || !selectionComplete)}
+                                                    className="w-full py-4 rounded-xl md:text-[18px] text-[16px] text-white font-bold transition bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                    {isAdding ? "მუშავდება..." : "გადახდა"}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={handleAddToCart}
+                                                    disabled={Boolean(isAdding || !selectionComplete)}
+                                                    className="w-full py-4 rounded-xl md:text-[18px] text-[16px] text-white font-bold transition bg-black hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                    {isAdding ? "მუშავდება..." : "კალათაში დამატება"}
+                                                </button>
+                                            </div>
+                                        ) : null
+                                    )}
                                 </div>
                             )}
+
+        </>
+    )
+
+
+    return (
+        <div className="min-h-screen">
+            {product && <StructuredData type="Product" data={product} />}
+            {/* Header (Back) */}
+            <header className=" top-0 z-30 ">
+                <div className="max-w-[1200px] mx-auto px-4 py-4">
+                    <button
+                        type="button"
+                        onClick={() => router.back()}
+                        className="flex md:text-[20px] text-[18px] items-center text-black hover:opacity-80"
+                    >
+                        <ArrowLeft className="w-5 h-5 mr-2" />
+                        უკან დაბრუნება
+                    </button>
+                </div>
+            </header>
+
+            <main className="max-w-[1200px] mx-auto px-4 py-10">
+                <div className="grid lg:grid-cols-2 gap-10">
+                    {/* LEFT — Gallery */}
+                    <section>
+                        <div className="flex flex-col lg:flex-row gap-4">
+                            {/* Main image - First on mobile, second on desktop */}
+                            <button
+                                type="button"
+                                onClick={() => setIsGalleryOpen(true)}
+                                aria-label="სურათის გადიდება"
+                                className="relative w-full lg:flex-1 
+                aspect-[3/4] sm:w-[100px] lg:aspect-[3/4]
+                bg-white rounded-2xl overflow-hidden shadow border
+                order-1 lg:order-2 cursor-pointer group"
+                            >
+                                <Image
+                                    key={getMainImage()}
+                                    src={getMainImage()}
+                                    alt={product.name}
+                                    fill
+                                    quality={PRODUCT_IMAGE_QUALITY}
+                                    sizes="(max-width: 640px) 100vw,
+               (max-width: 1024px) 50vw,
+               600px"
+                                    className="object-cover transition-transform duration-300 ease-out group-hover:scale-105"
+                                    priority
+                                />
+                            </button>
+
+
+                            {/* Small images - Below on mobile, left on desktop */}
+                            <div className="flex flex-row lg:flex-col gap-3 order-2 lg:order-1 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0">
+                                {displayImages.map((img, i) => (
+                                    <button
+                                        key={img.url}
+                                        onClick={() => setActiveImage(i)}
+                                        className={`relative w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden border-2 transition group ${activeImage === i
+                                            ? "border-black"
+                                            : "border-gray-200 hover:border-black"
+                                            }`}
+                                    >
+                                        <Image
+                                            width={164}
+                                            height={164}
+                                            src={img.url}
+                                            alt={`${product.name}-${i}`}
+                                            quality={PRODUCT_IMAGE_QUALITY}
+                                            sizes="80px"
+                                            className="object-cover transition-transform duration-300 ease-out group-hover:scale-110"
+                                        />
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Mobile: color, size, payment under images */}
+                        <div className="lg:hidden bg-white">
+                            {renderVariantAndBuySection()}
+                        </div>
+
+                        {isGalleryOpen && (
+                            <div
+                                className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+                                onClick={() => setIsGalleryOpen(false)}
+                            >
+                                <button
+                                    type="button"
+                                    onClick={() => setIsGalleryOpen(false)}
+                                    className="absolute top-4 right-4 text-white hover:text-gray-300 text-3xl font-bold z-10 bg-black/50 rounded-full w-10 h-10 flex items-center justify-center cursor-pointer"
+                                    aria-label="დახურვა"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+
+                                {imageCount > 1 && (
+                                    <>
+                                        <button
+                                            type="button"
+                                            onClick={(e) => { e.stopPropagation(); showPrevImage() }}
+                                            className="absolute left-4 top-1/2 -translate-y-1/2 text-white bg-black/50 hover:bg-black/70 rounded-full w-10 h-10 flex items-center justify-center z-10 cursor-pointer"
+                                            aria-label="წინა სურათი"
+                                        >
+                                            <ChevronLeft className="w-6 h-6" />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={(e) => { e.stopPropagation(); showNextImage() }}
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-black/50 hover:bg-black/70 rounded-full w-10 h-10 flex items-center justify-center z-10 cursor-pointer"
+                                            aria-label="შემდეგი სურათი"
+                                        >
+                                            <ChevronRight className="w-6 h-6" />
+                                        </button>
+                                    </>
+                                )}
+
+                                <div
+                                    className="relative max-w-[90vw] max-h-[90vh] flex items-center justify-center"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <Image
+                                        key={getMainImage()}
+                                        width={1600}
+                                        height={1600}
+                                        src={getMainImage()}
+                                        alt={product.name}
+                                        quality={PRODUCT_IMAGE_QUALITY}
+                                        className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+                                    />
+                                </div>
+
+                                {imageCount > 1 && (
+                                    <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/80 text-sm">
+                                        {activeImage + 1} / {imageCount}
+                                    </p>
+                                )}
+                            </div>
+                        )}
+                    </section>
+
+                    {/* RIGHT — Details */}
+                    <section className="space-y-6">
+                        <div className="bg-white ">
+
+                            {/* Title */}
+                            <div className="bg-white p-6">
+                                <h1 className="text-3xl font-bold text-black md:text-[20px] text-[18px]">{product.name}</h1>
+                                {product.description && (
+                                    <p className="text-black md:text-[18px] text-[16px] mt-2 leading-relaxed">{product.description}</p>
+                                )}
+                            </div>
+
+                            <div className="hidden lg:block">
+                                {renderVariantAndBuySection()}
+                            </div>
 
                             {/* Pricing plans (4+/7+/28+) */}
                             {product.isRentable && tiers.length > 0 && (
@@ -1774,58 +1818,6 @@ const ProductPage = () => {
                                     </div>
                                 </div>
                             )}
-
-                            {/* Color / size selector */}
-                            <div className="p-6 space-y-4">
-                                {hasSkuVariants && availableColors.length > 0 && (
-                                    <div className="space-y-3">
-                                        <h3 className="md:text-[18px] text-[16px] font-semibold text-black">ფერი:</h3>
-                                        <div className="flex flex-wrap gap-3">
-                                            {availableColors.map((color) => (
-                                                <button
-                                                    key={color}
-                                                    type="button"
-                                                    onClick={() => handleColorClick(color)}
-                                                    className={`rounded-xl border-2 px-5 py-3 text-center transition ${
-                                                        selectedColor === color
-                                                            ? 'border-black bg-black text-white'
-                                                            : 'border-gray-300 text-black hover:border-black'
-                                                    }`}
-                                                >
-                                                    {color}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {!isSizeOptionalProduct && (
-                                <div className="space-y-3">
-                                    <h3 className="md:text-[18px] text-[16px] font-semibold text-black">
-                                        {isFootwearCategory(product.category) ? 'ზომა (EU):' : 'ზომა:'}
-                                    </h3>
-
-                                    {hasSkuVariants ? (
-                                        <SizePillSelector
-                                            value={selectedSize}
-                                            onChange={(value) => {
-                                                if (
-                                                    product?.status !== 'MAINTENANCE' &&
-                                                    product?.status !== 'DAMAGED'
-                                                ) {
-                                                    setSelectedSize(value)
-                                                }
-                                            }}
-                                            options={getAvailableSizeOptions()}
-                                        />
-                                    ) : product.size ? (
-                                        <span className="inline-flex rounded-full border-2 border-black px-5 py-2 text-sm sm:text-base font-medium text-black">
-                                            {product.size}
-                                        </span>
-                                    ) : null}
-                                </div>
-                                )}
-                            </div>
 
                             {/* Purchase / Rent toggle + calendars */}
                             <div className=" p-6  space-y-4">
@@ -2056,12 +2048,11 @@ const ProductPage = () => {
 
                             {/* Action button */}
                             {!session ? (
+                                purchaseMode === "rent" ? (
                                 <div className="space-y-2">
                                     <div className="p-4 text-center border-2 border-red-500 text-red-500 rounded-lg">
                                         <p className="font-bold mb-4">
-                                            {purchaseMode === "rent"
-                                                ? 'პროდუქტის ქირაობა შესაძლებელია მხოლოდ რეგისტრირებული მომხმარებლებისთვის. გთხოვთ, შეხვიდეთ ანგარიშში.'
-                                                : 'პროდუქტის შეძენისთვის საჭიროა ანგარიში. გთხოვთ, შეხვიდეთ ანგარიშში.'}
+                                            პროდუქტის ქირაობა შესაძლებელია მხოლოდ რეგისტრირებული მომხმარებლებისთვის. გთხოვთ, შეხვიდეთ ანგარიშში.
                                         </p>
                                         <Link
                                             href="/auth/signin"
@@ -2071,6 +2062,7 @@ const ProductPage = () => {
                                         </Link>
                                     </div>
                                 </div>
+                                ) : null
                             ) : (
                                 <div className="space-y-2">
                                     {product.status !== 'AVAILABLE' && (
@@ -2147,26 +2139,7 @@ const ProductPage = () => {
 
                                     {product.status !== 'MAINTENANCE' && product.status !== 'DAMAGED' && (
                                         <div className="space-y-2">
-                                            {purchaseMode === "buy" && showBuyOption ? (
-                                                <div className="space-y-2">
-                                                    <button
-                                                        type="button"
-                                                        onClick={handleBuyCheckout}
-                                                        disabled={Boolean(isAdding || !selectionComplete)}
-                                                        className="w-full py-4 rounded-xl md:text-[18px] text-[16px] text-white font-bold transition bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                    >
-                                                        {isAdding ? "მუშავდება..." : "გადახდა"}
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={handleAddToCart}
-                                                        disabled={Boolean(isAdding || !selectionComplete)}
-                                                        className="w-full py-4 rounded-xl md:text-[18px] text-[16px] text-white font-bold transition bg-black hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                    >
-                                                        {isAdding ? "მუშავდება..." : "კალათაში დამატება"}
-                                                    </button>
-                                                </div>
-                                            ) : purchaseMode === "rent" && canRent ? (
+                                            {purchaseMode === "rent" && canRent ? (
                                                 <div className="space-y-2">
                                                     {requiresInquiry && !canBookFromInquiry ? (
                                                         <button
@@ -2208,6 +2181,62 @@ const ProductPage = () => {
                                     )}
                                 </div>
                             )}
+
+                            {/* Author Info */}
+                            <div className="bg-white  p-6 ">
+                                <div className="flex flex-col md:flex-row gap-4 md:gap-2 items-center justify-between">
+                                    <div className="flex items-center space-x-4">
+                                        <div className="relative w-16 h-16 rounded-full overflow-hidden bg-black">
+                                            {product.user?.image ? (
+                                                <Image
+                                                    width={64}
+                                                    height={64}
+                                                    src={product.user.image}
+                                                    alt={product.user.name || "ავტორი"}
+
+                                                    className="object-cover"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center bg-black text-white font-semibold">
+                                                    {product.user?.name ? product.user.name.charAt(0).toUpperCase() : "?"}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div>
+                                            {product.user ? (
+                                                <Link
+                                                    href={`/author/${product.user.id}`}
+                                                    className="hover:opacity-80 transition-opacity"
+                                                >
+                                                    <h3 className="md:text-[18px] text-[16px] font-semibold text-black hover:text-underline transition-colors">
+                                                        {product.user.name || "უცნობი ავტორი"}
+                                                    </h3>
+                                                </Link>
+                                            ) : (
+                                                <h3 className="md:text-[20px] text-[18px] font-semibold text-black">
+                                                    უცნობი ავტორი
+                                                </h3>
+                                            )}
+                                            <p className="md:text-[20px] text-[18px] text-black">პროდუქტის ავტორი</p>
+                                        </div>
+                                    </div>
+                                    {product.user && session?.user?.id !== product.user.id && (
+                                        <button
+                                            onClick={handleContactAuthor}
+                                            className="flex items-center space-x-2 px-4 py-2 bg-black text-white rounded-lg hover:opacity-90 transition-opacity md:text-[16px] text-[14px] font-medium"
+                                        >
+                                            <MessageCircle className="w-4 h-4" />
+                                            <span>დაეკონტაქტე</span>
+                                        </button>
+                                    )}
+                                </div>
+                                {product.sku && (
+                                    <div className="bg-white flex items-center justify-between p-6 ">
+                                        <p className="text-black md:text-[18px] text-[16px] uppercase tracking-wide">პროდუქტის საიდენტიფიკაციო </p>
+                                        <p className="text-black md:text-[18px] text-[16px]">{product.sku}</p>
+                                    </div>
+                                )}
+                            </div>
 
                             {/* Facts block (Brand/Size/Location/Colour/Minimal days) */}
                             <div className="  p-6 ">
@@ -2273,8 +2302,17 @@ const ProductPage = () => {
                     </section>
                 </div>
 
-                {/* Reviews Section */}
-                <div className="mt-12">
+                <div className="mt-12 flex flex-col gap-12">
+                    {/* Similar Products — above comments on mobile */}
+                    <div className="order-1 lg:order-2">
+                        <SimilarProducts
+                            productId={product.id}
+                            categoryName={product.category?.name}
+                        />
+                    </div>
+
+                    {/* Reviews Section */}
+                    <div className="order-2 lg:order-1">
                     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                         <h2 className="text-2xl font-bold text-black mb-6">კომენტარები და რეიტინგები</h2>
 
@@ -2556,14 +2594,7 @@ const ProductPage = () => {
                             </div>
                         )}
                     </div>
-                </div>
-
-                {/* Similar Products */}
-                <div className="mt-12">
-                    <SimilarProducts
-                        productId={product.id}
-                        categoryName={product.category?.name}
-                    />
+                    </div>
                 </div>
 
             </main>
