@@ -1401,9 +1401,7 @@ const ProductPage = () => {
     }
 
 
-    const renderVariantAndBuySection = () => (
-        <>
-                            {/* Color / size selector */}
+    const renderColorAndSizeSection = () => (
                             <div className="p-6 space-y-4">
                                 {hasSkuVariants && availableColors.length > 0 && (
                                     <div className="space-y-3">
@@ -1454,9 +1452,10 @@ const ProductPage = () => {
                                 </div>
                                 )}
                             </div>
+    )
 
-                            {/* Sale price + buy actions */}
-                            {canBuyProduct && (
+    const renderSalePriceSection = () => (
+                            canBuyProduct ? (
                                 <div className="bg-white p-6 rounded-2xl space-y-4">
                                     <div className="flex items-center justify-between">
                                         <div>
@@ -1576,6 +1575,13 @@ const ProductPage = () => {
                                             არჩეული ზომა ამჟამად არ იყიდება
                                         </p>
                                     )}
+                                </div>
+                            ) : null
+    )
+
+    const renderBuyActionsSection = () => (
+                            canBuyProduct ? (
+                                <div className="bg-white p-6 rounded-2xl space-y-4">
                                     {purchaseMode === "buy" && (
                                         !session ? (
                                             <div className="p-4 text-center border-2 border-red-500 text-red-500 rounded-lg">
@@ -1611,8 +1617,14 @@ const ProductPage = () => {
                                         ) : null
                                     )}
                                 </div>
-                            )}
+                            ) : null
+    )
 
+    const renderVariantAndBuySection = () => (
+        <>
+            {renderColorAndSizeSection()}
+            {renderSalePriceSection()}
+            {renderBuyActionsSection()}
         </>
     )
 
@@ -1689,9 +1701,10 @@ const ProductPage = () => {
                             </div>
                         </div>
 
-                        {/* Mobile: color, size, payment under images */}
+                        {/* Mobile: color + price under images */}
                         <div className="lg:hidden bg-white">
-                            {renderVariantAndBuySection()}
+                            {renderColorAndSizeSection()}
+                            {renderSalePriceSection()}
                         </div>
 
                         {isGalleryOpen && (
@@ -1755,20 +1768,26 @@ const ProductPage = () => {
 
                     {/* RIGHT — Details */}
                     <section className="space-y-6">
-                        <div className="bg-white ">
+                        <div className="bg-white flex flex-col">
 
                             {/* Title */}
-                            <div className="bg-white p-6">
+                            <div className="order-1 lg:order-none bg-white p-6">
                                 <h1 className="text-3xl font-bold text-black md:text-[20px] text-[18px]">{product.name}</h1>
                                 {product.description && (
                                     <p className="text-black md:text-[18px] text-[16px] mt-2 leading-relaxed">{product.description}</p>
                                 )}
                             </div>
 
+                            {/* Mobile: buy actions after title */}
+                            <div className="order-3 lg:order-none lg:hidden">
+                                {renderBuyActionsSection()}
+                            </div>
+
                             <div className="hidden lg:block">
                                 {renderVariantAndBuySection()}
                             </div>
 
+                            <div className="order-6 lg:order-none flex flex-col">
                             {/* Pricing plans (4+/7+/28+) */}
                             {product.isRentable && tiers.length > 0 && (
                                 <div className="bg-white  p-6 ">
@@ -2182,8 +2201,10 @@ const ProductPage = () => {
                                 </div>
                             )}
 
+                            </div>
+
                             {/* Author Info */}
-                            <div className="bg-white  p-6 ">
+                            <div className="order-5 lg:order-none bg-white p-6">
                                 <div className="flex flex-col md:flex-row gap-4 md:gap-2 items-center justify-between">
                                     <div className="flex items-center space-x-4">
                                         <div className="relative w-16 h-16 rounded-full overflow-hidden bg-black">
@@ -2239,7 +2260,7 @@ const ProductPage = () => {
                             </div>
 
                             {/* Facts block (Brand/Size/Location/Colour/Minimal days) */}
-                            <div className="  p-6 ">
+                            <div className="order-2 lg:order-none p-6">
                                 <ul className="md:text-[18px] text-[16px] text-black space-y-2">
                                     <li>
                                         <span className="font-semibold">კატეგორია: </span>
@@ -2276,15 +2297,12 @@ const ProductPage = () => {
                                         </li>
                                     )}
 
-                                    <li>
-                                        <span className="font-semibold">მინიმალური ქირაობის დღეები: </span>
-                                        {minDaysGlobal} დღე
-                                    </li>
+                                   
                                 </ul>
                             </div>
 
                             {/* Benefits */}
-                            <div className=" p-6  space-y-3">
+                            <div className="order-4 lg:order-none p-6 space-y-3">
                                 {[
                                     { icon: Shield, title: "უსაფრთხო გადახდა", desc: "SSL დაცული გადახდები" },
                                   
