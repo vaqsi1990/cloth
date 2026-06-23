@@ -363,8 +363,10 @@ const EditProductPage = () => {
           const product = data.product
           console.log('Product data:', product)
           console.log('Product images:', product.images)
-          const imageUrls = getOrderedProductImageUrls(product)
-          console.log('Mapped image URLs:', imageUrls)
+          const orderedImageUrls = getOrderedProductImageUrls(product)
+          const mappedVariants = mapProductVariantsToFormRows(product)
+          const isSkuProduct = productHasSkuVariants(product)
+          console.log('Mapped image URLs:', orderedImageUrls)
           setProduct(product)
           const vipActive = isProductVipActive(product)
           setWantsVip(vipActive)
@@ -403,13 +405,12 @@ const EditProductPage = () => {
             pricePerDay: product.pricePerDay || undefined,
             maxRentalDays: product.maxRentalDays || undefined,
             status: product.status || 'AVAILABLE',
-            variants: mapProductVariantsToFormRows(product),
-            imageUrls: imageUrls,
+            variants: mappedVariants,
+            imageUrls: isSkuProduct ? [] : orderedImageUrls,
             rentalPriceTiers: product.rentalPriceTiers && product.rentalPriceTiers.length > 0 
               ? product.rentalPriceTiers 
               : [{ minDays: 1, pricePerDay: 0 }]
           })
-          const mappedVariants = mapProductVariantsToFormRows(product)
           const pricingFlags = resolveExclusivePricingFlagsFromProduct({
             variants: mappedVariants,
             isRentable: product.isRentable,
@@ -417,7 +418,7 @@ const EditProductPage = () => {
           })
           setShowPurchaseOptions(pricingFlags.showPurchaseOptions)
           setShowRentalOptions(pricingFlags.showRentalOptions)
-          setShowVariantOptions(productHasSkuVariants(product))
+          setShowVariantOptions(isSkuProduct)
           console.log('Form data set successfully')
         } else {
           console.log('API returned success: false')
@@ -613,6 +614,7 @@ const EditProductPage = () => {
   const updateVariant = (index: number, field: string, value: string | number | string[] | undefined) => {
     setFormData(prev => ({
       ...prev,
+      imageUrls: showVariantOptions && field === 'imageUrl' ? [] : prev.imageUrls,
       variants: prev.variants.map((variant, i) =>
         i === index ? { ...variant, [field]: value } : variant
       )
@@ -620,13 +622,21 @@ const EditProductPage = () => {
   }
 
   const patchVariant = (index: number, patch: Partial<ProductVariantFormRow>) => {
-    setFormData((prev) => patchVariantFormRow(prev, index, patch))
+    setFormData((prev) => {
+      const next = patchVariantFormRow(prev, index, patch)
+      return patch.imageUrl !== undefined && showVariantOptions
+        ? { ...next, imageUrls: [] }
+        : next
+    })
   }
 
   const handleImageChange = (urls: string[]) => {
     setFormData(prev => ({
       ...prev,
-      imageUrls: urls
+      imageUrls: urls,
+      variants: showVariantOptions
+        ? prev.variants
+        : prev.variants.map((variant) => ({ ...variant, imageUrl: undefined })),
     }))
   }
 

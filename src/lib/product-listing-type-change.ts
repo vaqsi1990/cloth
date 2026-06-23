@@ -99,6 +99,7 @@ export function applyProductListingTypeChange(input: {
     formData: {
       ...input.formData,
       variants: multiVariants,
+      imageUrls: [],
     },
   }
 }

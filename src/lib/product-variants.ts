@@ -539,9 +539,18 @@ export function validateSkuVariantRowSizesUniqueness(
 }
 
 export function getVariantImageUrls(variants: Array<{ imageUrl?: string | null }>): string[] {
-  return variants
-    .map((variant) => variant.imageUrl?.trim())
-    .filter((url): url is string => Boolean(url))
+  const seen = new Set<string>()
+  const urls: string[] = []
+
+  for (const variant of variants) {
+    const url = variant.imageUrl?.trim()
+    if (url && !seen.has(url)) {
+      seen.add(url)
+      urls.push(url)
+    }
+  }
+
+  return urls
 }
 
 type VariantImageWriteRow = { imageUrl?: string | null }
@@ -905,12 +914,9 @@ export function convertMultiToSimpleFormState(input: {
   }
 
   const first = input.variants[0]
-  const mergedImageUrls = Array.from(
-    new Set([
-      ...input.imageUrls.map((url) => url.trim()).filter(Boolean),
-      ...getVariantImageUrls(input.variants),
-    ]),
-  )
+  const variantImageUrls = getVariantImageUrls(input.variants)
+  const fallbackImageUrls = input.imageUrls.map((url) => url.trim()).filter(Boolean)
+  const imageUrls = variantImageUrls.length > 0 ? variantImageUrls : fallbackImageUrls
   const totalStock = sumVariantStock(input.variants) || input.stock || 0
   const salePrice =
     input.variants.find((variant) => (variant.price ?? 0) > 0)?.price ?? 0
@@ -920,7 +926,7 @@ export function convertMultiToSimpleFormState(input: {
     size: first.size?.trim() || input.size,
     sizeSystem: first.sizeSystem || input.sizeSystem,
     stock: totalStock,
-    imageUrls: mergedImageUrls,
+    imageUrls,
     variants: [{
       price: salePrice,
       stock: totalStock,
