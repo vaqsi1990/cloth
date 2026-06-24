@@ -57,6 +57,38 @@ export const DEFAULT_PRODUCT_CATEGORIES: ProductCategory[] = [
   { id: 71, name: 'ბლუზა', slug: 'kids-blouse' },
   { id: 72, name: 'ქოსფლეის კოსტუმი', slug: 'kids-cosplay' },
   { id: 73, name: 'შარვალი', slug: 'kids-pants' },
+  { id: 74, name: 'შარვალ-კოსტიუმი', slug: 'women-pants-suit' },
+  { id: 75, name: 'ორეული', slug: 'women-two-piece' },
+  { id: 76, name: 'ბოდე', slug: 'women-bodysuit' },
+  { id: 77, name: 'ტოპი', slug: 'women-top' },
+  { id: 78, name: 'კორსეტი', slug: 'women-corset' },
+  { id: 79, name: 'ტუფლები', slug: 'women-shoes' },
+  { id: 80, name: 'სპორტული ფეხსაცმელი', slug: 'women-sports-shoes' },
+  { id: 81, name: 'ბოტასი', slug: 'women-boots' },
+  { id: 82, name: 'ბოტები', slug: 'women-booties' },
+  { id: 83, name: 'ნახევარბოტები', slug: 'women-ankle-boots' },
+  { id: 84, name: 'სანდლები', slug: 'women-sandals' },
+  { id: 85, name: 'ჩუსტები', slug: 'women-slippers' },
+  { id: 86, name: 'მაღალქუსლიანი ფეხსაცმელი', slug: 'women-high-heels' },
+  { id: 87, name: 'ლოფერები', slug: 'women-loafers' },
+  { id: 88, name: 'ბალეტკები', slug: 'women-ballet-flats' },
+  { id: 89, name: 'შარვალ-კოსტიუმი', slug: 'men-pants-suit' },
+  { id: 90, name: 'ორეული', slug: 'men-two-piece' },
+  { id: 91, name: 'სპორტული ფეხსაცმელი', slug: 'men-sports-shoes' },
+  { id: 92, name: 'ბოტასი', slug: 'men-boots' },
+  { id: 93, name: 'ბოტები', slug: 'men-booties' },
+  { id: 94, name: 'კლასიკური ფეხსაცმელი', slug: 'men-classic-shoes' },
+  { id: 95, name: 'ლოფერები', slug: 'men-loafers' },
+  { id: 96, name: 'სანდლები', slug: 'men-sandals' },
+  { id: 97, name: 'ჩუსტები', slug: 'men-slippers' },
+  { id: 98, name: 'შარვალ-კოსტიუმი', slug: 'kids-pants-suit' },
+  { id: 99, name: 'ორეული', slug: 'kids-two-piece' },
+  { id: 100, name: 'სპორტული ფეხსაცმელი', slug: 'kids-sports-shoes' },
+  { id: 101, name: 'ბოტასი', slug: 'kids-boots' },
+  { id: 102, name: 'ბოტები', slug: 'kids-booties' },
+  { id: 103, name: 'სანდლები', slug: 'kids-sandals' },
+  { id: 104, name: 'ჩუსტები', slug: 'kids-slippers' },
+  { id: 105, name: 'რეზინის ჩექმები', slug: 'kids-rubber-boots' },
 ]
 
 /** Canonical women's shop taxonomy — order matches navigation and filters */
@@ -84,6 +116,21 @@ export const WOMEN_PRODUCT_CATEGORIES: ProductCategory[] = [
   { id: 65, name: 'კომბინიზონი', slug: 'jumpsuit' },
   { id: 66, name: 'პერანგი', slug: 'shirt' },
   { id: 3, name: 'შარვალი', slug: 'pants' },
+  { id: 74, name: 'შარვალ-კოსტიუმი', slug: 'women-pants-suit' },
+  { id: 75, name: 'ორეული', slug: 'women-two-piece' },
+  { id: 76, name: 'ბოდე', slug: 'women-bodysuit' },
+  { id: 77, name: 'ტოპი', slug: 'women-top' },
+  { id: 78, name: 'კორსეტი', slug: 'women-corset' },
+  { id: 79, name: 'ტუფლები', slug: 'women-shoes' },
+  { id: 80, name: 'სპორტული ფეხსაცმელი', slug: 'women-sports-shoes' },
+  { id: 81, name: 'ბოტასი', slug: 'women-boots' },
+  { id: 82, name: 'ბოტები', slug: 'women-booties' },
+  { id: 83, name: 'ნახევარბოტები', slug: 'women-ankle-boots' },
+  { id: 84, name: 'სანდლები', slug: 'women-sandals' },
+  { id: 85, name: 'ჩუსტები', slug: 'women-slippers' },
+  { id: 86, name: 'მაღალქუსლიანი ფეხსაცმელი', slug: 'women-high-heels' },
+  { id: 87, name: 'ლოფერები', slug: 'women-loafers' },
+  { id: 88, name: 'ბალეტკები', slug: 'women-ballet-flats' },
 ]
 
 /** Canonical men's shop taxonomy — order matches navigation and filters */
@@ -108,6 +155,15 @@ export const MEN_PRODUCT_CATEGORIES: ProductCategory[] = [
   { id: 65, name: 'კომბინიზონი', slug: 'jumpsuit' },
   { id: 66, name: 'პერანგი', slug: 'shirt' },
   { id: 67, name: 'შარვალი', slug: 'men-pants' },
+  { id: 89, name: 'შარვალ-კოსტიუმი', slug: 'men-pants-suit' },
+  { id: 90, name: 'ორეული', slug: 'men-two-piece' },
+  { id: 91, name: 'სპორტული ფეხსაცმელი', slug: 'men-sports-shoes' },
+  { id: 92, name: 'ბოტასი', slug: 'men-boots' },
+  { id: 93, name: 'ბოტები', slug: 'men-booties' },
+  { id: 94, name: 'კლასიკური ფეხსაცმელი', slug: 'men-classic-shoes' },
+  { id: 95, name: 'ლოფერები', slug: 'men-loafers' },
+  { id: 96, name: 'სანდლები', slug: 'men-sandals' },
+  { id: 97, name: 'ჩუსტები', slug: 'men-slippers' },
 ]
 
 /** Canonical children's shop taxonomy — order matches navigation and filters */
@@ -134,6 +190,14 @@ export const CHILDREN_PRODUCT_CATEGORIES: ProductCategory[] = [
   { id: 65, name: 'კომბინიზონი', slug: 'jumpsuit' },
   { id: 66, name: 'პერანგი', slug: 'shirt' },
   { id: 73, name: 'შარვალი', slug: 'kids-pants' },
+  { id: 98, name: 'შარვალ-კოსტიუმი', slug: 'kids-pants-suit' },
+  { id: 99, name: 'ორეული', slug: 'kids-two-piece' },
+  { id: 100, name: 'სპორტული ფეხსაცმელი', slug: 'kids-sports-shoes' },
+  { id: 101, name: 'ბოტასი', slug: 'kids-boots' },
+  { id: 102, name: 'ბოტები', slug: 'kids-booties' },
+  { id: 103, name: 'სანდლები', slug: 'kids-sandals' },
+  { id: 104, name: 'ჩუსტები', slug: 'kids-slippers' },
+  { id: 105, name: 'რეზინის ჩექმები', slug: 'kids-rubber-boots' },
 ]
 
 const WOMEN_CATEGORY_IDS = new Set(WOMEN_PRODUCT_CATEGORIES.map((category) => category.id))
@@ -151,8 +215,22 @@ const SIZE_OPTIONAL_CATEGORY_SLUGS = new Set([
   'kids-bags',
 ])
 
-const FOOTWEAR_CATEGORY_IDS = new Set([52, 54, 56])
-const FOOTWEAR_CATEGORY_SLUGS = new Set(['women-footwear', 'men-footwear', 'kids-footwear'])
+const FOOTWEAR_CATEGORY_IDS = new Set([
+  52, 54, 56,
+  79, 80, 81, 82, 83, 84, 85, 86, 87, 88,
+  91, 92, 93, 94, 95, 96, 97,
+  100, 101, 102, 103, 104, 105,
+])
+const FOOTWEAR_CATEGORY_SLUGS = new Set([
+  'women-footwear', 'men-footwear', 'kids-footwear',
+  'women-shoes', 'women-sports-shoes', 'women-boots', 'women-booties',
+  'women-ankle-boots', 'women-sandals', 'women-slippers', 'women-high-heels',
+  'women-loafers', 'women-ballet-flats',
+  'men-sports-shoes', 'men-boots', 'men-booties', 'men-classic-shoes',
+  'men-loafers', 'men-sandals', 'men-slippers',
+  'kids-sports-shoes', 'kids-boots', 'kids-booties', 'kids-sandals',
+  'kids-slippers', 'kids-rubber-boots',
+])
 
 export function isFootwearCategory(category: ProductCategory | undefined | null): boolean {
   if (!category) return false
@@ -173,8 +251,9 @@ export function getFootwearGenderFromCategory(
   category: ProductCategory | undefined | null,
 ): 'WOMEN' | 'MEN' | 'CHILDREN' | null {
   if (!category || !isFootwearCategory(category)) return null
-  if (category.slug === 'men-footwear') return 'MEN'
-  if (category.slug === 'kids-footwear') return 'CHILDREN'
+  if (category.slug.startsWith('men-')) return 'MEN'
+  if (category.slug.startsWith('kids-')) return 'CHILDREN'
+  if (category.slug.startsWith('women-')) return 'WOMEN'
   return 'WOMEN'
 }
 
@@ -793,6 +872,72 @@ const CATEGORY_SLUG_ALIASES: Record<string, string> = {
   kacischanta: 'men-bags',
   bavshvispecsapertmeli: 'kids-footwear',
   bavshvischanta: 'kids-bags',
+  'women-pants-suit': 'women-pants-suit',
+  'sharval-kostiumi': 'women-pants-suit',
+  'შარვალ-კოსტიუმი': 'women-pants-suit',
+  'women-two-piece': 'women-two-piece',
+  oreuli: 'women-two-piece',
+  'ორეული': 'women-two-piece',
+  'women-bodysuit': 'women-bodysuit',
+  bode: 'women-bodysuit',
+  'ბოდე': 'women-bodysuit',
+  'women-top': 'women-top',
+  topi: 'women-top',
+  'ტოპი': 'women-top',
+  'women-corset': 'women-corset',
+  korseti: 'women-corset',
+  'კორსეტი': 'women-corset',
+  'women-shoes': 'women-shoes',
+  tuflebi: 'women-shoes',
+  'ტუფლები': 'women-shoes',
+  'women-sports-shoes': 'women-sports-shoes',
+  'women-boots': 'women-boots',
+  botasi: 'women-boots',
+  'ბოტასი': 'women-boots',
+  'women-booties': 'women-booties',
+  botebi: 'women-booties',
+  'ბოტები': 'women-booties',
+  'women-ankle-boots': 'women-ankle-boots',
+  nakhevarbotebi: 'women-ankle-boots',
+  'ნახევარბოტები': 'women-ankle-boots',
+  'women-sandals': 'women-sandals',
+  sandlebi: 'women-sandals',
+  'სანდლები': 'women-sandals',
+  'women-slippers': 'women-slippers',
+  chustebi: 'women-slippers',
+  'ჩუსტები': 'women-slippers',
+  'women-high-heels': 'women-high-heels',
+  'magalkusliani-fecsapertmeli': 'women-high-heels',
+  'მაღალქუსლიანი ფეხსაცმელი': 'women-high-heels',
+  'women-loafers': 'women-loafers',
+  loferi: 'women-loafers',
+  'ლოფერები': 'women-loafers',
+  'women-ballet-flats': 'women-ballet-flats',
+  baletki: 'women-ballet-flats',
+  'ბალეტკები': 'women-ballet-flats',
+  'men-pants-suit': 'men-pants-suit',
+  'men-two-piece': 'men-two-piece',
+  'men-sports-shoes': 'men-sports-shoes',
+  'sportuli-fecsapertmeli': 'men-sports-shoes',
+  'სპორტული ფეხსაცმელი': 'men-sports-shoes',
+  'men-boots': 'men-boots',
+  'men-booties': 'men-booties',
+  'men-classic-shoes': 'men-classic-shoes',
+  'klasikuri-fecsapertmeli': 'men-classic-shoes',
+  'კლასიკური ფეხსაცმელი': 'men-classic-shoes',
+  'men-loafers': 'men-loafers',
+  'men-sandals': 'men-sandals',
+  'men-slippers': 'men-slippers',
+  'kids-pants-suit': 'kids-pants-suit',
+  'kids-two-piece': 'kids-two-piece',
+  'kids-sports-shoes': 'kids-sports-shoes',
+  'kids-boots': 'kids-boots',
+  'kids-booties': 'kids-booties',
+  'kids-sandals': 'kids-sandals',
+  'kids-slippers': 'kids-slippers',
+  'kids-rubber-boots': 'kids-rubber-boots',
+  'rezinis-cheqmebi': 'kids-rubber-boots',
+  'რეზინის ჩექმები': 'kids-rubber-boots',
 }
 
 const categoryIdBySlug = new Map(

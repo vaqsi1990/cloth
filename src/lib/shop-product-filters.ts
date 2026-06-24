@@ -270,7 +270,17 @@ export function isFootwearShopContext(input: {
       categories.find((entry) => entry.name === selectedCategory) ??
       findCategoryByParam(selectedCategory, categories)
     if (category) return isFootwearCategory(category)
-    return selectedCategory.toLowerCase().includes('ფეხსაცმ')
+    const normalized = selectedCategory.toLowerCase()
+    return (
+      normalized.includes('ფეხსაცმ') ||
+      normalized.includes('ტუფლ') ||
+      normalized.includes('ბოტ') ||
+      normalized.includes('სანდლ') ||
+      normalized.includes('ჩუსტ') ||
+      normalized.includes('ლოფერ') ||
+      normalized.includes('ბალეტკ') ||
+      normalized.includes('ჩექმ')
+    )
   })
 }
 

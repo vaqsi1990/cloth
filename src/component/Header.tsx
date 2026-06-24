@@ -476,7 +476,7 @@ const HeaderContent = () => {
                             {MEN_PRODUCT_CATEGORIES.map((category, index) => (
                               <Link
                                 key={category.slug}
-                                href={`/shop?gender=men&category=${encodeURIComponent(category.name)}`}
+                                href={`/shop?gender=men&category=${encodeURIComponent(category.slug)}`}
                                 onClick={closeMobileMenu}
                                 className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]"
                               >
@@ -584,7 +584,7 @@ const HeaderContent = () => {
                               {MEN_PRODUCT_CATEGORIES.map((menCategory, index) => (
                                 <Link
                                   key={menCategory.slug}
-                                  href={`/shop?gender=men&category=${encodeURIComponent(menCategory.name)}`}
+                                  href={`/shop?gender=men&category=${encodeURIComponent(menCategory.slug)}`}
                                   className="block px-4 py-2 text-gray-900 hover:bg-gray-100 text-sm"
                                 >
                                   {index + 1}. {menCategory.name}
