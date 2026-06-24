@@ -177,7 +177,9 @@ const HeaderContent = () => {
     ? '/auth/signup'
     : session.user.role === 'ADMIN'
       ? '/admin/products/new'
-      : '/account/products/new'
+      : session.user.role === 'SUPPORT'
+        ? '/support/products/new'
+        : '/account/products/new'
 
   const handleSearchSubmit = (event?: React.FormEvent) => {
     event?.preventDefault()

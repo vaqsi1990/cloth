@@ -929,12 +929,6 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
     return null
   }
 
-  const ibanForEligibility =
-    userIban ?? (session.user as { iban?: string | null }).iban ?? null
-  const hasIban = isValidGeorgianIban(ibanForEligibility)
-  const isAdminOrSupport = session.user.role === 'ADMIN' || session.user.role === 'SUPPORT'
-  const canCreateProducts = isAdminOrSupport || hasIban
-
   const fetchOrders = async () => {
     try {
       setLoadingOrders(true)
@@ -2252,35 +2246,8 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
               <Search className="w-4 h-4" />
               <span>ძიება კოდის მიხედვით</span>
             </Link>
-            {canCreateProducts ? (
-              <Link
-                href="/account/products/new"
-                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#1B3729] text-white rounded-lg font-semibold uppercase tracking-wide transition-colors hover:bg-[#164321]"
-              >
-                <Package className="w-4 h-4" />
-                <span className="md:text-[18px] text-[16px]">ახალი პროდუქტი</span>
-              </Link>
-            ) : (
-              <button
-                disabled
-                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-gray-200 text-black rounded-lg font-semibold uppercase tracking-wide cursor-not-allowed"
-                title="ახალი პროდუქტის დამატება შესაძლებელია მხოლოდ IBAN-ს მქონე ანგარიშებისთვის"
-              >
-                <Package className="w-4 h-4" />
-                <span className="md:text-[18px] text-[16px]">ახალი პროდუქტი</span>
-              </button>
-            )}
           </div>
         </div>
-        {!isAdminOrSupport && !canCreateProducts && (
-          <div className="mb-4 p-3 border border-yellow-400 bg-yellow-50 text-yellow-800 rounded md:text-[18px] text-[16px]">
-            პროდუქტის დასამატებლად სავალდებულოა ბანკის IBAN.{' '}
-            <Link href={accountSectionPath('settings')} className="underline font-semibold hover:opacity-80">
-              მიუთითეთ პარამეტრებში
-            </Link>
-            .
-          </div>
-        )}
 
        
         {loadingProducts ? (

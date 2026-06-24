@@ -641,17 +641,20 @@ const NewProductPage = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
-        <div className="px-6 py-4">
-        <div className=" mx-auto px-4 py-4">
-                    <button
-                        type="button"
-                        onClick={() => router.back()}
-                        className="flex md:text-[20px] text-[18px] items-center text-black hover:opacity-80"
-                    >
-                        <ArrowLeft className="w-7 font-bold h-7 mr-2" />
-                 
-                    </button>
-                </div>
+        <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
+          <div className="flex items-center space-x-2 sm:space-x-4">
+            <button
+              type="button"
+              onClick={() => router.push('/support/products')}
+              className="flex items-center space-x-2 text-black hover:opacity-80 transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5 sm:w-7 sm:h-7 font-bold" />
+              <span className="text-sm sm:text-base">საფორთის პანელი</span>
+            </button>
+            <h1 className="text-base sm:text-lg md:text-[20px] font-bold text-black">
+              საფორთის ახალი პროდუქტის დამატება
+            </h1>
+          </div>
         </div>
       </div>
 

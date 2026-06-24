@@ -260,6 +260,11 @@ const NewProductPage = () => {
       return
     }
 
+    if (session.user.role === 'SUPPORT') {
+      router.replace('/support/products/new')
+      return
+    }
+
     const checkEligibility = async () => {
       try {
         const profileRes = await fetch('/api/user/profile')
