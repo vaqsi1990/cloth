@@ -270,6 +270,18 @@ export type ProductVariantFormRow = {
   imageUrl?: string
 }
 
+/** Accepts both strict form rows and looser SKU validation rows (nullable fields). */
+export type VariantFormRowPricingInput = {
+  color?: string | null
+  size?: string | null
+  sizes?: string[]
+  sizeDetails?: ProductVariantSizeDetail[]
+  sizeSystem?: SizeSystem
+  imageUrl?: string | null
+  price?: number | null
+  stock?: number | null
+}
+
 export function getFormRowSizes(
   row: Pick<ProductVariantFormRow, 'sizeDetails' | 'sizes'> & { size?: string | null },
 ): string[] {
@@ -335,7 +347,7 @@ export function buildSizeDetailsForSelection(
 }
 
 export function expandVariantFormRows(
-  rows: ProductVariantFormRow[],
+  rows: VariantFormRowPricingInput[],
   options?: { perSizeSalePricing?: boolean },
 ): ProductVariantFormRow[] {
   const perSizeSalePricing = options?.perSizeSalePricing ?? true
@@ -343,14 +355,18 @@ export function expandVariantFormRows(
 
   for (const row of rows) {
     const shared = {
-      color: row.color,
+      color: row.color?.trim() || undefined,
       sizeSystem: row.sizeSystem,
-      imageUrl: row.imageUrl,
+      imageUrl: row.imageUrl?.trim() || undefined,
     }
     const sizes = getFormRowSizes(row)
 
     if (sizes.length === 0) {
-      expanded.push({ ...shared, price: row.price, stock: row.stock })
+      expanded.push({
+        ...shared,
+        price: row.price ?? 0,
+        stock: row.stock ?? 0,
+      })
       continue
     }
 
@@ -359,7 +375,7 @@ export function expandVariantFormRows(
       expanded.push({
         ...shared,
         size: detail.size,
-        price: perSizeSalePricing ? detail.price : row.price,
+        price: perSizeSalePricing ? detail.price : (row.price ?? 0),
         stock: detail.stock,
       })
     }
@@ -369,7 +385,7 @@ export function expandVariantFormRows(
 }
 
 export function collectVariantFormSalePrices(
-  rows: ProductVariantFormRow[],
+  rows: VariantFormRowPricingInput[],
   options?: { perSizeSalePricing?: boolean },
 ): number[] {
   return expandVariantFormRows(rows, options)
@@ -377,7 +393,7 @@ export function collectVariantFormSalePrices(
     .filter((price) => price > 0)
 }
 
-export function variantFormRowsHaveSalePrice(rows: ProductVariantFormRow[]): boolean {
+export function variantFormRowsHaveSalePrice(rows: VariantFormRowPricingInput[]): boolean {
   return collectVariantFormSalePrices(rows).length > 0
 }
 
