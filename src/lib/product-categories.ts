@@ -318,14 +318,53 @@ export function isAccessoryCategoryId(
   categories: ProductCategory[],
 ): boolean {
   if (!categoryId) return false
-  return isAccessoryCategory(categories.find((c) => c.id === categoryId))
+  const list = categories.length > 0 ? categories : DEFAULT_PRODUCT_CATEGORIES
+  const category = list.find((c) => c.id === categoryId)
+  if (isAccessoryCategory(category)) return true
+
+  const defaultMatch = DEFAULT_PRODUCT_CATEGORIES.find((entry) => entry.id === categoryId)
+  if (isAccessoryCategory(defaultMatch)) return true
+
+  const canonical = CANONICAL_PRODUCT_TAXONOMY.find((entry) => entry.id === categoryId)
+  if (isAccessoryCategory(canonical)) return true
+
+  if (category) {
+    const byName = [...CANONICAL_PRODUCT_TAXONOMY, ...DEFAULT_PRODUCT_CATEGORIES].find(
+      (entry) => entry.name === category.name,
+    )
+    if (isAccessoryCategory(byName)) return true
+  }
+
+  return false
 }
 
-export function isSizeOptionalCategory(category: ProductCategory | undefined | null): boolean {
+function matchesSizeOptionalCatalogEntry(category: ProductCategory | undefined | null): boolean {
   if (!category) return false
   if (isAccessoryCategory(category)) return true
   if (SIZE_OPTIONAL_CATEGORY_IDS.has(category.id)) return true
   if (SIZE_OPTIONAL_CATEGORY_SLUGS.has(category.slug)) return true
+  return false
+}
+
+export function isSizeOptionalCategory(category: ProductCategory | undefined | null): boolean {
+  if (!category) return false
+  if (matchesSizeOptionalCatalogEntry(category)) return true
+
+  const canonicalBySlug = CANONICAL_PRODUCT_TAXONOMY.find(
+    (entry) => entry.slug === category.slug,
+  )
+  if (matchesSizeOptionalCatalogEntry(canonicalBySlug)) return true
+
+  const defaultBySlug = DEFAULT_PRODUCT_CATEGORIES.find(
+    (entry) => entry.slug === category.slug,
+  )
+  if (matchesSizeOptionalCatalogEntry(defaultBySlug)) return true
+
+  const canonicalByName = CANONICAL_PRODUCT_TAXONOMY.find(
+    (entry) => entry.name === category.name,
+  )
+  if (matchesSizeOptionalCatalogEntry(canonicalByName)) return true
+
   const name = category.name.trim().toLowerCase()
   if (name.includes('კალიასკ') || name.includes('სათამაშო') || name.includes('ჩანთ')) {
     return true
@@ -367,7 +406,24 @@ export function isSizeOptionalCategoryId(
   categories: ProductCategory[],
 ): boolean {
   if (!categoryId) return false
-  return isSizeOptionalCategory(categories.find((c) => c.id === categoryId))
+  const list = categories.length > 0 ? categories : DEFAULT_PRODUCT_CATEGORIES
+  const category = list.find((c) => c.id === categoryId)
+  if (isSizeOptionalCategory(category)) return true
+
+  const defaultMatch = DEFAULT_PRODUCT_CATEGORIES.find((entry) => entry.id === categoryId)
+  if (isSizeOptionalCategory(defaultMatch)) return true
+
+  const canonical = CANONICAL_PRODUCT_TAXONOMY.find((entry) => entry.id === categoryId)
+  if (isSizeOptionalCategory(canonical)) return true
+
+  if (category) {
+    const byName = [...CANONICAL_PRODUCT_TAXONOMY, ...DEFAULT_PRODUCT_CATEGORIES].find(
+      (entry) => entry.name === category.name,
+    )
+    if (isSizeOptionalCategory(byName)) return true
+  }
+
+  return false
 }
 
 export function clearVariantSizes<
