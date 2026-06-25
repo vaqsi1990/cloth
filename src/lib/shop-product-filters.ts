@@ -328,11 +328,38 @@ export type ProductFormSizeOptionsInput = {
   categories?: ProductCategory[]
 }
 
+export function resolveProductFormCategories(
+  options?: ProductFormSizeOptionsInput,
+): ProductCategory[] {
+  const fromOptions = options?.categories
+  if (fromOptions && fromOptions.length > 0) {
+    return fromOptions
+  }
+  return DEFAULT_PRODUCT_CATEGORIES
+}
+
+/** Strip a leading size-system prefix accidentally stored in the size value. */
+export function normalizeStoredFootwearSize(size: string): string {
+  const trimmed = size.trim()
+  const match = trimmed.match(/^(EU|US|UK|CN):(.+)$/i)
+  return match ? match[2].trim() : trimmed
+}
+
+export function isProductFormSizeOptionSelected(
+  optionValue: string,
+  selectedValues: string[],
+): boolean {
+  const upper = optionValue.toUpperCase()
+  return selectedValues.some(
+    (entry) => entry === optionValue || entry.toUpperCase() === upper,
+  )
+}
+
 export function buildProductFormSizeOptions(
   gender: 'MEN' | 'WOMEN' | 'CHILDREN' | 'UNISEX' | string,
   options?: ProductFormSizeOptionsInput,
 ): ProductFormSizeOption[] {
-  const categories = options?.categories ?? DEFAULT_PRODUCT_CATEGORIES
+  const categories = resolveProductFormCategories(options)
   const isFootwear = options?.categoryId
     ? isFootwearCategoryId(options.categoryId, categories)
     : false
@@ -360,7 +387,7 @@ export function getProductFormSizeLabel(
   gender: 'MEN' | 'WOMEN' | 'CHILDREN' | 'UNISEX' | string,
   options?: ProductFormSizeOptionsInput,
 ): string {
-  const categories = options?.categories ?? DEFAULT_PRODUCT_CATEGORIES
+  const categories = resolveProductFormCategories(options)
   const isFootwear = options?.categoryId
     ? isFootwearCategoryId(options.categoryId, categories)
     : false
@@ -378,7 +405,7 @@ export function isValidProductFormSize(
   const normalized = size.trim()
   if (!normalized) return true
 
-  const categories = options?.categories ?? DEFAULT_PRODUCT_CATEGORIES
+  const categories = resolveProductFormCategories(options)
   const isFootwear = options?.categoryId
     ? isFootwearCategoryId(options.categoryId, categories)
     : false
@@ -397,7 +424,7 @@ export function parseProductFormSizeSelection(
     return { sizeSystem: undefined, size: undefined }
   }
 
-  const categories = options?.categories ?? DEFAULT_PRODUCT_CATEGORIES
+  const categories = resolveProductFormCategories(options)
   const isFootwear = options?.categoryId
     ? isFootwearCategoryId(options.categoryId, categories)
     : false
@@ -445,7 +472,7 @@ export function getProductFormSizeSelectValue(
 ): string {
   if (!size?.trim()) return ''
 
-  const categories = options?.categories ?? DEFAULT_PRODUCT_CATEGORIES
+  const categories = resolveProductFormCategories(options)
   const isFootwear = options?.categoryId
     ? isFootwearCategoryId(options.categoryId, categories)
     : false
@@ -457,7 +484,8 @@ export function getProductFormSizeSelectValue(
 
   if (isFootwear) {
     const system = sizeSystem?.trim() || 'EU'
-    return `${system}:${size}`
+    const footwearSize = normalizeStoredFootwearSize(size)
+    return `${system}:${footwearSize}`
   }
 
   if (sizeSystem?.trim()) return `${sizeSystem}:${size}`

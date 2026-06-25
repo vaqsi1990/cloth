@@ -21,6 +21,7 @@ import {
   isCategoryValidForProductGender,
   isSizeOptionalCategoryId,
   clearVariantSizes,
+  mergeProductCategoriesWithDefaults,
   PRODUCT_GENDER_OPTIONS,
   type ProductGender,
 } from '@/lib/product-categories'
@@ -71,12 +72,6 @@ import {
 import SizePillSelector from '@/components/SizePillSelector'
 import { isSupport } from '@/lib/roles'
 
-const categories = DEFAULT_PRODUCT_CATEGORIES
-type Category = {
-  id: number
-  name: string
-  slug: string
-}
 const productSchema = z.object({
   name: z.string()
     .min(1, 'სახელი აუცილებელია')
@@ -162,6 +157,7 @@ type ProductFormGender = ProductGender | ''
 const NewProductPage = () => {
   const router = useRouter()
   const { data: session, status } = useSession()
+  const [categories, setCategories] = useState(DEFAULT_PRODUCT_CATEGORIES)
   const [formData, setFormData] = useState<Omit<ProductFormData, 'gender'> & { gender: ProductFormGender }>({
     name: '',
     slug: '',
@@ -235,7 +231,7 @@ const NewProductPage = () => {
 
   const sizeOptionsInput = useMemo(
     () => ({ categoryId: formData.categoryId, categories }),
-    [formData.categoryId],
+    [formData.categoryId, categories],
   )
 
   const combinedSizeOptions = useMemo(
@@ -250,7 +246,7 @@ const NewProductPage = () => {
 
   const genderCategories = useMemo(
     () => filterProductCategoriesByGender(categories, formData.gender || null),
-    [formData.gender],
+    [categories, formData.gender],
   )
 
   const hasSelectedGender = Boolean(formData.gender)
@@ -262,6 +258,25 @@ const NewProductPage = () => {
       router.push('/')
     }
   }, [status, session, router])
+
+  useEffect(() => {
+    if (status !== 'authenticated' || !isSupport(session?.user?.role)) {
+      return
+    }
+
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('/api/categories')
+        const data = await response.json()
+        if (data.success && data.categories?.length > 0) {
+          setCategories(mergeProductCategoriesWithDefaults(data.categories))
+        }
+      } catch {
+        // keep defaults
+      }
+    }
+    void fetchCategories()
+  }, [status, session?.user?.role])
 
   const handleCombinedSizeSelect = (value: string) => {
     if (!value) {

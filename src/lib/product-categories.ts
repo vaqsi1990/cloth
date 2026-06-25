@@ -244,7 +244,8 @@ export function isFootwearCategoryId(
   categories: ProductCategory[],
 ): boolean {
   if (!categoryId) return false
-  return isFootwearCategory(categories.find((c) => c.id === categoryId))
+  const list = categories.length > 0 ? categories : DEFAULT_PRODUCT_CATEGORIES
+  return isFootwearCategory(list.find((c) => c.id === categoryId))
 }
 
 export function getFootwearGenderFromCategory(

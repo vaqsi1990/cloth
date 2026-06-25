@@ -1,5 +1,9 @@
 import type { ProductVariantFormRow } from '@/lib/product-variants'
-import { expandVariantFormRows, getFormRowSizes } from '@/lib/product-variants'
+import {
+  buildSizeDetailsForSelection,
+  expandVariantFormRows,
+  getFormRowSizes,
+} from '@/lib/product-variants'
 
 export type RentalPriceTierFormRow = {
   minDays: number
@@ -110,10 +114,20 @@ export function buildPricingModeFormPatch(
       : [{ minDays: 1, pricePerDay: 0 }],
     variants: input.variants.map((variant) => {
       const sizes = getFormRowSizes(variant)
+      const sizeDetails =
+        variant.sizeDetails?.length
+          ? variant.sizeDetails.map((detail) => ({ ...detail, price: 0 }))
+          : sizes.length > 0
+            ? buildSizeDetailsForSelection(undefined, sizes, {
+                price: 0,
+                stock: variant.stock ?? 0,
+              })
+            : undefined
+
       return {
         ...variant,
         price: 0,
-        sizeDetails: undefined,
+        sizeDetails,
         sizes: sizes.length > 1 ? sizes : undefined,
         size: sizes.length === 1 ? sizes[0] : variant.size,
       }
