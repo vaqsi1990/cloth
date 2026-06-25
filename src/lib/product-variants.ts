@@ -354,24 +354,12 @@ export function expandVariantFormRows(
       continue
     }
 
-    if (!perSizeSalePricing) {
-      for (const size of sizes) {
-        expanded.push({
-          ...shared,
-          size,
-          price: row.price,
-          stock: row.stock,
-        })
-      }
-      continue
-    }
-
-    const details = row.sizeDetails?.length ? row.sizeDetails : getFormRowSizeDetails(row)
+    const details = getFormRowSizeDetails(row)
     for (const detail of details) {
       expanded.push({
         ...shared,
         size: detail.size,
-        price: detail.price,
+        price: perSizeSalePricing ? detail.price : row.price,
         stock: detail.stock,
       })
     }

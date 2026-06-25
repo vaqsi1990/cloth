@@ -285,7 +285,7 @@ const EditProductPage = () => {
       return
     }
 
-    const parsed = parseProductFormSizeSelection(value, formData.gender)
+    const parsed = parseProductFormSizeSelection(value, formData.gender, sizeOptionsInput)
     setSelectedSizeSystem(parsed.sizeSystem ?? '')
     setSelectedSizeValue(parsed.size ?? '')
     handleInputChange('sizeSystem', parsed.sizeSystem)
@@ -991,6 +991,7 @@ const EditProductPage = () => {
                       formData.gender,
                       selectedSizeSystem || undefined,
                       selectedSizeValue || undefined,
+                      sizeOptionsInput,
                     )}
                     onChange={handleCombinedSizeSelect}
                     options={combinedSizeOptions.map((option) => ({

@@ -100,10 +100,14 @@ export default function ProductVariantEditor({
         const activeSizeSystem = variant.sizeSystem || sizeSystem
         const selectedSizes = getFormRowSizes(variant)
         const selectedSizeValues = selectedSizes
-          .map((size) => getProductFormSizeSelectValue(gender, activeSizeSystem, size))
+          .map((size) =>
+            getProductFormSizeSelectValue(gender, activeSizeSystem, size, sizeOptionsInput),
+          )
           .filter(Boolean)
-        const hasPerSizeSalePricing = showPrice && showSizeField && selectedSizes.length > 0
-        const showSharedStockPrice = !hasPerSizeSalePricing
+        const hasPerSizeStock = showSizeField && selectedSizes.length > 1
+        const hasPerSizePrice = showPrice && showSizeField && selectedSizes.length > 0
+        const showPerSizeRows = hasPerSizeStock || hasPerSizePrice
+        const showSharedStockPrice = !showPerSizeRows
         const { value: colorPickerValue, customColor } = getProductColorPickerState(variant.color)
 
         const formatSizeLabel = (size: string) => {
@@ -117,30 +121,17 @@ export default function ProductVariantEditor({
           nextSizes: string[],
           nextSizeSystem?: ProductVariantFormRow['sizeSystem'],
         ) => {
-          if (showPrice) {
-            const nextDetails = buildSizeDetailsForSelection(variant.sizeDetails, nextSizes, {
-              price: variant.price,
-              stock: variant.stock,
-            })
-
-            patchVariant(index, {
-              sizes: nextSizes.length > 1 ? nextSizes : undefined,
-              size: nextSizes.length === 1 ? nextSizes[0] : undefined,
-              sizeDetails: nextSizes.length > 0 ? nextDetails : undefined,
-              price: nextDetails[0]?.price ?? variant.price,
-              stock: nextDetails[0]?.stock ?? variant.stock,
-              sizeSystem:
-                nextSizes.length > 0
-                  ? nextSizeSystem || variant.sizeSystem || activeSizeSystem
-                  : variant.sizeSystem,
-            })
-            return
-          }
+          const nextDetails = buildSizeDetailsForSelection(variant.sizeDetails, nextSizes, {
+            price: variant.price,
+            stock: variant.stock,
+          })
 
           patchVariant(index, {
             sizes: nextSizes.length > 1 ? nextSizes : undefined,
             size: nextSizes.length === 1 ? nextSizes[0] : undefined,
-            sizeDetails: undefined,
+            sizeDetails: nextSizes.length > 0 ? nextDetails : undefined,
+            price: showPrice ? (nextDetails[0]?.price ?? variant.price) : variant.price,
+            stock: nextDetails[0]?.stock ?? variant.stock,
             sizeSystem:
               nextSizes.length > 0
                 ? nextSizeSystem || variant.sizeSystem || activeSizeSystem
@@ -204,15 +195,19 @@ export default function ProductVariantEditor({
                   mode="multiple"
                   values={selectedSizeValues}
                   onToggle={(optionValue) => {
-                    const parsed = parseProductFormSizeSelection(optionValue, gender)
+                    const parsed = parseProductFormSizeSelection(optionValue, gender, sizeOptionsInput)
                     const isSelected = selectedSizeValues.includes(optionValue)
                     const currentSizes = getFormRowSizes(variant)
 
                     const nextSizes = isSelected
                       ? currentSizes.filter(
                           (size) =>
-                            getProductFormSizeSelectValue(gender, activeSizeSystem, size) !==
-                            optionValue,
+                            getProductFormSizeSelectValue(
+                              gender,
+                              activeSizeSystem,
+                              size,
+                              sizeOptionsInput,
+                            ) !== optionValue,
                         )
                       : parsed.size
                         ? [...currentSizes, parsed.size]
@@ -227,19 +222,18 @@ export default function ProductVariantEditor({
                   compact={gender === 'CHILDREN'}
                   error={errors[`variants.${index}.size`]}
                 />
-                {hasPerSizeSalePricing ? (
-                  <p className="text-sm text-gray-500 mt-2">
-                    არჩეულია {selectedSizes.length} ზომა — თითოეულს ცალკე მიუთითეთ რაოდენობა და ფასი
-                  </p>
-                ) : selectedSizes.length > 1 ? (
+                {showPerSizeRows && hasPerSizeStock ? (
                   <p className="text-sm text-gray-500 mt-2">
                     არჩეულია {selectedSizes.length} ზომა
+                    {hasPerSizePrice
+                      ? ' — თითოეულს ცალკე მიუთითეთ რაოდენობა და ფასი'
+                      : ' — თითოეულს ცალკე მიუთითეთ რაოდენობა'}
                   </p>
                 ) : null}
               </div>
             )}
 
-            {hasPerSizeSalePricing ? (
+            {showPerSizeRows ? (
               <div className="md:col-span-2 lg:col-span-3 space-y-3">
                 {getFormRowSizeDetails(variant).map((detail, detailIndex) => (
                   <div

@@ -391,12 +391,18 @@ export function isValidProductFormSize(
 export function parseProductFormSizeSelection(
   value: string,
   gender: 'MEN' | 'WOMEN' | 'CHILDREN' | 'UNISEX' | string,
+  options?: ProductFormSizeOptionsInput,
 ): { sizeSystem?: ProductFormSizeSystem; size?: string } {
   if (!value) {
     return { sizeSystem: undefined, size: undefined }
   }
 
-  if (gender === 'CHILDREN') {
+  const categories = options?.categories ?? DEFAULT_PRODUCT_CATEGORIES
+  const isFootwear = options?.categoryId
+    ? isFootwearCategoryId(options.categoryId, categories)
+    : false
+
+  if (gender === 'CHILDREN' && !isFootwear) {
     return { sizeSystem: undefined, size: value }
   }
 
@@ -435,12 +441,25 @@ export function getProductFormSizeSelectValue(
   gender: 'MEN' | 'WOMEN' | 'CHILDREN' | 'UNISEX' | string,
   sizeSystem: string | undefined,
   size: string | undefined,
+  options?: ProductFormSizeOptionsInput,
 ): string {
   if (!size?.trim()) return ''
-  if (gender === 'CHILDREN') return size
+
+  const categories = options?.categories ?? DEFAULT_PRODUCT_CATEGORIES
+  const isFootwear = options?.categoryId
+    ? isFootwearCategoryId(options.categoryId, categories)
+    : false
+
+  if (gender === 'CHILDREN' && !isFootwear) return size
   if (isAdultClothingSize(size)) return size
   const normalized = normalizeAdultClothingSize(size)
   if (isAdultClothingSize(normalized)) return normalized
+
+  if (isFootwear) {
+    const system = sizeSystem?.trim() || 'EU'
+    return `${system}:${size}`
+  }
+
   if (sizeSystem?.trim()) return `${sizeSystem}:${size}`
   return ''
 }

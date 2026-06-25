@@ -279,7 +279,7 @@ const NewProductPage = () => {
       return
     }
 
-    const parsed = parseProductFormSizeSelection(value, formData.gender)
+    const parsed = parseProductFormSizeSelection(value, formData.gender, sizeOptionsInput)
     setSizeSystem(parsed.sizeSystem ?? '')
     setSelectedSize(parsed.size ?? '')
     handleInputChange('sizeSystem', parsed.sizeSystem)
@@ -837,7 +837,7 @@ const NewProductPage = () => {
                     {sizeFieldLabel} (არასავალდებულო)
                   </label>
                   <SizePillSelector
-                    value={getProductFormSizeSelectValue(formData.gender, sizeSystem, selectedSize)}
+                    value={getProductFormSizeSelectValue(formData.gender, sizeSystem, selectedSize, sizeOptionsInput)}
                     onChange={handleCombinedSizeSelect}
                     options={combinedSizeOptions.map((option) => ({
                       value: option.value,
