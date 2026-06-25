@@ -8,7 +8,8 @@ import { Product, ProductVariant } from '@/types/product'
 import ImageUploadForProduct from '@/component/productimage'
 import ProductCategorySelect from '@/component/ProductCategorySelect'
 import { showToast } from '@/utils/toast'
-import { PRODUCT_FORM_COLORS } from '@/lib/product-colors'
+import { PRODUCT_COLORS } from '@/lib/product-colors'
+import ProductColorPicker, { getProductColorPickerState } from '@/components/ProductColorPicker'
 import {
   isValidProductText,
   PRODUCT_NAME_ERROR_MESSAGE,
@@ -306,7 +307,7 @@ const EditProductPage = () => {
     }
   }, [formData.gender, formData.categoryId, selectedSizeValue, categories])
 
-  const colors = PRODUCT_FORM_COLORS
+  const colors = PRODUCT_COLORS
 
   const isSizeOptional = useMemo(
     () => isSizeOptionalCategoryId(formData.categoryId, categories),
@@ -939,46 +940,24 @@ const EditProductPage = () => {
               </div>
 
               {!showVariantOptions && (
-              <div>
-                <label className="block text-[20px] text-black font-medium mb-2">
-                  ფერი
-                </label>
-                <select
-                  value={useCustomColor ? 'სხვა ფერი' : (formData.color || '')}
-                  onChange={(e) => {
-                    const selectedValue = e.target.value
-                    if (selectedValue === 'სხვა ფერი') {
-                      setUseCustomColor(true)
-                      handleInputChange('color', customColor)
-                    } else {
-                      setUseCustomColor(false)
-                      handleInputChange('color', selectedValue)
-                      setCustomColor('')
-                    }
-                  }}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                >
-                  <option value="">აირჩიეთ ფერი</option>
-                  {colors.map(color => (
-                    <option key={color.id} value={color.label}>
-                      {color.label}
-                    </option>
-                  ))}
-                </select>
-                {useCustomColor && (
-                  <input
-                    type="text"
-                    value={customColor}
-                    onChange={(e) => {
-                      const value = e.target.value
-                      setCustomColor(value)
-                      handleInputChange('color', value)
-                    }}
-                    placeholder="შეიყვანეთ ფერი"
-                    className="w-full mt-2 px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
-                  />
-                )}
-              </div>
+              <ProductColorPicker
+                value={
+                  getProductColorPickerState(formData.color).value === 'სხვა ფერი'
+                    ? ''
+                    : getProductColorPickerState(formData.color).value
+                }
+                customColor={getProductColorPickerState(formData.color).customColor}
+                onSelect={(selectedValue) => {
+                  setUseCustomColor(false)
+                  setCustomColor('')
+                  handleInputChange('color', selectedValue)
+                }}
+                onCustomColorChange={(value) => {
+                  setUseCustomColor(true)
+                  setCustomColor(value)
+                  handleInputChange('color', value)
+                }}
+              />
               )}
 
               {!showVariantOptions && !isSizeOptional && (

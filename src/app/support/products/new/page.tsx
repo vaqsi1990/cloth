@@ -42,7 +42,7 @@ import SimpleProductSalePriceSection from '@/components/SimpleProductSalePriceSe
 import ProductVariantEditor from '@/components/ProductVariantEditor'
 import ProductTypeSelector, { type ProductListingType } from '@/components/ProductTypeSelector'
 import ProductMultiPricingSelector from '@/components/ProductMultiPricingSelector'
-import ProductColorPicker from '@/components/ProductColorPicker'
+import ProductColorPicker, { getProductColorPickerState } from '@/components/ProductColorPicker'
 import { VIP_MONTHLY_PRICE_GEL } from '@/lib/product-vip'
 import { getProductDiscountBasePrice } from '@/lib/discount-helpers'
 import { optionalCategoryIdField } from '@/lib/product-schema-fields'
@@ -827,19 +827,19 @@ const NewProductPage = () => {
 
               {!showVariantOptions && (
               <ProductColorPicker
-                value={useCustomColor ? 'სხვა ფერი' : (formData.color || '')}
-                customColor={customColor}
+                value={
+                  getProductColorPickerState(formData.color).value === 'სხვა ფერი'
+                    ? ''
+                    : getProductColorPickerState(formData.color).value
+                }
+                customColor={getProductColorPickerState(formData.color).customColor}
                 onSelect={(selectedValue) => {
-                  if (selectedValue === 'სხვა ფერი') {
-                    setUseCustomColor(true)
-                    handleInputChange('color', customColor)
-                  } else {
-                    setUseCustomColor(false)
-                    handleInputChange('color', selectedValue)
-                    setCustomColor('')
-                  }
+                  setUseCustomColor(false)
+                  setCustomColor('')
+                  handleInputChange('color', selectedValue)
                 }}
                 onCustomColorChange={(value) => {
+                  setUseCustomColor(true)
                   setCustomColor(value)
                   handleInputChange('color', value)
                 }}

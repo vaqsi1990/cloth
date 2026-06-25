@@ -1,10 +1,10 @@
 'use client'
 
 import React from 'react'
-import { PRODUCT_FORM_COLORS } from '@/lib/product-colors'
+import { PRODUCT_COLORS } from '@/lib/product-colors'
 
 const OTHER_COLOR_LABEL = 'სხვა ფერი'
-const PREDEFINED_COLOR_LABELS = new Set(PRODUCT_FORM_COLORS.map((color) => color.label))
+const PREDEFINED_COLOR_LABELS = new Set(PRODUCT_COLORS.map((color) => color.label))
 
 export function getProductColorPickerState(color: string | undefined) {
   if (!color) {
@@ -35,18 +35,19 @@ export default function ProductColorPicker({
   onSelect,
   onCustomColorChange,
   labelClassName = 'block text-[20px] text-black font-medium mb-2',
-  inputClassName = 'w-full mt-3 pl-4 pr-4 py-3 placeholder:text-gray-500 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent',
+  inputClassName = 'w-full max-w-[11rem] mt-2 px-2.5 py-1.5 text-sm placeholder:text-gray-400 border border-gray-300 rounded-md focus:ring-2 focus:ring-black focus:border-transparent',
   error,
   showLabel = true,
 }: ProductColorPickerProps) {
-  const isOtherSelected = value === OTHER_COLOR_LABEL
+  const selectedSwatch =
+    value && value !== OTHER_COLOR_LABEL && PREDEFINED_COLOR_LABELS.has(value) ? value : ''
 
   return (
     <div>
       {showLabel && <label className={labelClassName}>ფერი</label>}
       <div className="grid grid-cols-4 gap-x-4 gap-y-3 max-w-xs">
-        {PRODUCT_FORM_COLORS.map((color) => {
-          const isSelected = value === color.label
+        {PRODUCT_COLORS.map((color) => {
+          const isSelected = selectedSwatch === color.label
 
           return (
             <button
@@ -69,15 +70,14 @@ export default function ProductColorPicker({
         })}
       </div>
 
-      {isOtherSelected && (
-        <input
-          type="text"
-          value={customColor}
-          onChange={(e) => onCustomColorChange(e.target.value)}
-          placeholder="შეიყვანეთ ფერი"
-          className={inputClassName}
-        />
-      )}
+      <input
+        type="text"
+        value={customColor}
+        onChange={(e) => onCustomColorChange(e.target.value)}
+        placeholder="სხვა ფერი..."
+        className={inputClassName}
+        aria-label="სხვა ფერი"
+      />
 
       {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
     </div>

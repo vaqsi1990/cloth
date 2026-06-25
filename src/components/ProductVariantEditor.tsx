@@ -130,6 +130,7 @@ export default function ProductVariantEditor({
         const showPerSizeRows = hasPerSizeStock || hasPerSizePrice
         const showSharedStockPrice = !showPerSizeRows
         const { value: colorPickerValue, customColor } = getProductColorPickerState(variant.color)
+        const swatchValue = colorPickerValue === 'სხვა ფერი' ? '' : colorPickerValue
 
         const formatSizeLabel = (size: string) => {
           const normalizedSize = normalizeRowSize(size)
@@ -193,16 +194,11 @@ export default function ProductVariantEditor({
           <div key={index} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4 border border-gray-200 rounded-lg">
             <div className="md:col-span-2 lg:col-span-3">
               <ProductColorPicker
-                value={colorPickerValue}
+                value={swatchValue}
                 customColor={customColor}
                 labelClassName="block text-[18px] text-black font-medium mb-2"
-                inputClassName="w-full mt-2 px-3 py-2 placeholder:text-gray-500 border border-gray-300 rounded-lg text-[16px] text-black focus:ring-2 focus:ring-black focus:border-transparent"
+                inputClassName="w-full max-w-[11rem] mt-2 px-2.5 py-1.5 text-sm placeholder:text-gray-400 border border-gray-300 rounded-md focus:ring-2 focus:ring-black focus:border-transparent"
                 onSelect={(selectedValue) => {
-                  if (selectedValue === 'სხვა ფერი') {
-                    onUpdate(index, 'color', customColor || undefined)
-                    return
-                  }
-
                   onUpdate(index, 'color', selectedValue || undefined)
                 }}
                 onCustomColorChange={(value) => onUpdate(index, 'color', value || undefined)}
