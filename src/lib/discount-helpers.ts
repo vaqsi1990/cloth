@@ -1,4 +1,4 @@
-import { formatVariantPriceRange } from '@/lib/product-variants'
+import { formatVariantPriceRange, collectVariantFormSalePrices, type ProductVariantFormRow } from '@/lib/product-variants'
 import { getBuyerPrice } from '@/lib/platform-pricing'
 
 export type DiscountFields = {
@@ -34,11 +34,15 @@ export function productHasActiveDiscount(product: DiscountFields): boolean {
   return typeof processed.discount === 'number' && processed.discount > 0
 }
 
-export function getProductBasePrice(variants: Array<{ price?: number | null }>): number {
-  const prices = variants
-    .map((variant) => variant.price ?? 0)
-    .filter((price) => price > 0)
-
+export function getProductBasePrice(
+  variants: Array<{
+    price?: number | null
+    size?: string | null
+    sizes?: string[] | null
+    sizeDetails?: Array<{ price?: number | null; size?: string }> | null
+  }>,
+): number {
+  const prices = collectVariantFormSalePrices(variants as ProductVariantFormRow[])
   return prices.length > 0 ? Math.min(...prices) : 0
 }
 
@@ -81,11 +85,14 @@ export type OwnerProductPriceInput = {
 }
 
 export function getOwnerProductSalePrices(
-  variants: Array<{ price?: number | null }> | null | undefined,
+  variants: Array<{
+    price?: number | null
+    size?: string | null
+    sizes?: string[] | null
+    sizeDetails?: Array<{ price?: number | null; size?: string }> | null
+  }> | null | undefined,
 ): number[] {
-  return (variants || [])
-    .map((variant) => variant.price ?? 0)
-    .filter((price) => price > 0)
+  return collectVariantFormSalePrices((variants || []) as ProductVariantFormRow[])
 }
 
 export function getOwnerProductRentalDisplayPrice(

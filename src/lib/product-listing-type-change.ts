@@ -1,5 +1,6 @@
 import type { SizeSystem } from '@prisma/client'
 import type { ProductListingType } from '@/components/ProductTypeSelector'
+import { productVariantsHaveSalePrice } from '@/lib/product-form-pricing'
 import {
   convertMultiToSimpleFormState,
   convertSimpleToMultiVariantRows,
@@ -18,7 +19,7 @@ export type ProductListingFormSlice = {
 }
 
 function hasSalePricing(variants: ProductVariantFormRow[]): boolean {
-  return variants.some((variant) => (variant.price ?? 0) > 0)
+  return productVariantsHaveSalePrice(variants)
 }
 
 function hasRentalPricing(input: {

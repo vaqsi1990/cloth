@@ -368,6 +368,19 @@ export function expandVariantFormRows(
   return expanded
 }
 
+export function collectVariantFormSalePrices(
+  rows: ProductVariantFormRow[],
+  options?: { perSizeSalePricing?: boolean },
+): number[] {
+  return expandVariantFormRows(rows, options)
+    .map((variant) => variant.price ?? 0)
+    .filter((price) => price > 0)
+}
+
+export function variantFormRowsHaveSalePrice(rows: ProductVariantFormRow[]): boolean {
+  return collectVariantFormSalePrices(rows).length > 0
+}
+
 function formRowGroupKey(
   row: {
     color?: string | null
@@ -666,8 +679,7 @@ export function validateSkuVariantRows(
   }
 
   const requireSalePrices =
-    options?.requireSalePrices ??
-    variants.some((variant) => (variant.price ?? 0) > 0)
+    options?.requireSalePrices ?? variantFormRowsHaveSalePrice(variants)
   const requireSize = options?.requireSize !== false
   const requireColor = options?.requireColor !== false
 

@@ -4,6 +4,7 @@ import {
   getProductDiscountBasePrice,
   salePriceFromDiscount,
 } from '@/lib/discount-helpers'
+import { productVariantsHaveSalePrice } from '@/lib/product-form-pricing'
 
 export const PRODUCT_IMAGE_REQUIRED_MESSAGE =
   'სურათის ატვირთვა აუცილებელია'
@@ -109,7 +110,10 @@ export const productImageUrlsFieldWithUrlValidation = z
 
 type ProductPricingInput = {
   pricePerDay?: number | null
-  variants?: Array<{ price?: number | null }>
+  variants?: Array<{
+    price?: number | null
+    sizeDetails?: Array<{ price?: number | null; stock?: number | null }> | null
+  }>
   rentalPriceTiers?: Array<{ minDays?: number; pricePerDay?: number | null }> | null
   discount?: number | null
   discountDays?: number | null
@@ -150,6 +154,17 @@ function collectMinPriceFieldErrors(data: ProductPricingInput): Record<string, s
 
   if (Array.isArray(data.variants)) {
     data.variants.forEach((variant, index) => {
+      const sizeDetails = variant.sizeDetails || []
+      if (sizeDetails.length > 0) {
+        sizeDetails.forEach((detail, detailIndex) => {
+          const price = detail.price ?? 0
+          if (price > 0 && price < MIN_PRODUCT_PRICE) {
+            errors[`variants.${index}.sizeDetails.${detailIndex}.price`] = PRODUCT_MIN_PRICE_MESSAGE
+          }
+        })
+        return
+      }
+
       const price = variant.price ?? 0
       if (price > 0 && price < MIN_PRODUCT_PRICE) {
         errors[`variants.${index}.price`] = PRODUCT_MIN_PRICE_MESSAGE
@@ -174,8 +189,7 @@ export function hasBothProductPricingModes(data: ProductPricingInput): boolean {
     Array.isArray(data.rentalPriceTiers) &&
     data.rentalPriceTiers.some((tier) => (tier.pricePerDay ?? 0) > 0)
   const hasSalePrice =
-    Array.isArray(data.variants) &&
-    data.variants.some((variant) => (variant.price ?? 0) > 0)
+    Array.isArray(data.variants) && productVariantsHaveSalePrice(data.variants)
 
   return hasRentalPrice && hasSalePrice
 }
@@ -189,8 +203,7 @@ export function hasProductPricing(data: ProductPricingInput): boolean {
     Array.isArray(data.rentalPriceTiers) &&
     data.rentalPriceTiers.some((tier) => (tier.pricePerDay ?? 0) > 0)
   const hasSalePrice =
-    Array.isArray(data.variants) &&
-    data.variants.some((variant) => (variant.price ?? 0) > 0)
+    Array.isArray(data.variants) && productVariantsHaveSalePrice(data.variants)
 
   return hasRentalPrice || hasSalePrice
 }
@@ -198,7 +211,14 @@ export function hasProductPricing(data: ProductPricingInput): boolean {
 export function getProductCreateFieldErrors(data: {
   imageUrls?: string[]
   stock?: number
-  variants?: Array<{ color?: string; size?: string; imageUrl?: string; price?: number | null; stock?: number | null }>
+  variants?: Array<{
+    color?: string
+    size?: string
+    imageUrl?: string
+    price?: number | null
+    stock?: number | null
+    sizeDetails?: Array<{ price?: number | null; stock?: number | null }> | null
+  }>
   isSkuVariantProduct?: boolean
   requireVariantSalePrices?: boolean
   requireVariantSize?: boolean
@@ -242,6 +262,7 @@ export function getProductCreateFieldErrors(data: {
     pricingCheckData.variants = (data.variants || []).map((variant) => ({
       ...variant,
       price: 0,
+      sizeDetails: (variant.sizeDetails || []).map((detail) => ({ ...detail, price: 0 })),
     }))
   }
   if (data.isSkuVariantProduct && !data.showRentalOptions) {
