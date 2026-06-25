@@ -232,11 +232,45 @@ const FOOTWEAR_CATEGORY_SLUGS = new Set([
   'kids-slippers', 'kids-rubber-boots',
 ])
 
+/** Shop + product-form taxonomy (women, men, children lists). */
+const CANONICAL_PRODUCT_TAXONOMY: ProductCategory[] = [
+  ...WOMEN_PRODUCT_CATEGORIES,
+  ...MEN_PRODUCT_CATEGORIES,
+  ...CHILDREN_PRODUCT_CATEGORIES,
+]
+
+function resolveApiCategoryForTemplate<T extends ProductCategory>(
+  template: ProductCategory,
+  bySlug: Map<string, T>,
+  byId: Map<number, T>,
+): T | undefined {
+  const fromSlug = bySlug.get(template.slug)
+  if (fromSlug) return fromSlug
+
+  const fromId = byId.get(template.id)
+  // Avoid id collisions when production DB ids diverge from canonical template ids.
+  if (fromId && fromId.slug === template.slug) return fromId
+
+  return undefined
+}
+
 export function isFootwearCategory(category: ProductCategory | undefined | null): boolean {
   if (!category) return false
   if (FOOTWEAR_CATEGORY_IDS.has(category.id)) return true
   if (FOOTWEAR_CATEGORY_SLUGS.has(category.slug)) return true
-  return category.slug.endsWith('-footwear')
+  if (category.slug.endsWith('-footwear')) return true
+
+  const canonicalBySlug = CANONICAL_PRODUCT_TAXONOMY.find(
+    (entry) => entry.slug === category.slug,
+  )
+  if (canonicalBySlug && FOOTWEAR_CATEGORY_SLUGS.has(canonicalBySlug.slug)) return true
+
+  const canonicalByName = CANONICAL_PRODUCT_TAXONOMY.find(
+    (entry) => entry.name === category.name && FOOTWEAR_CATEGORY_SLUGS.has(entry.slug),
+  )
+  if (canonicalByName) return true
+
+  return false
 }
 
 export function isFootwearCategoryId(
@@ -245,7 +279,21 @@ export function isFootwearCategoryId(
 ): boolean {
   if (!categoryId) return false
   const list = categories.length > 0 ? categories : DEFAULT_PRODUCT_CATEGORIES
-  return isFootwearCategory(list.find((c) => c.id === categoryId))
+  const category = list.find((c) => c.id === categoryId)
+  if (isFootwearCategory(category)) return true
+
+  const canonical = CANONICAL_PRODUCT_TAXONOMY.find((entry) => entry.id === categoryId)
+  if (isFootwearCategory(canonical)) return true
+
+  if (category) {
+    const footwearByName = CANONICAL_PRODUCT_TAXONOMY.find(
+      (entry) =>
+        entry.name === category.name && FOOTWEAR_CATEGORY_SLUGS.has(entry.slug),
+    )
+    if (footwearByName) return true
+  }
+
+  return false
 }
 
 export function getFootwearGenderFromCategory(
@@ -453,7 +501,7 @@ export function mergeWomenProductCategories<T extends ProductCategory>(
   const byId = new Map(apiCategories.map((category) => [category.id, category]))
 
   return WOMEN_PRODUCT_CATEGORIES.map((template) => {
-    const fromApi = bySlug.get(template.slug) ?? byId.get(template.id)
+    const fromApi = resolveApiCategoryForTemplate(template, bySlug, byId)
     if (!fromApi) return template
     return { ...fromApi, name: template.name }
   })
@@ -467,7 +515,7 @@ export function mergeMenProductCategories<T extends ProductCategory>(
   const byId = new Map(apiCategories.map((category) => [category.id, category]))
 
   return MEN_PRODUCT_CATEGORIES.map((template) => {
-    const fromApi = bySlug.get(template.slug) ?? byId.get(template.id)
+    const fromApi = resolveApiCategoryForTemplate(template, bySlug, byId)
     if (!fromApi) return template
     return { ...fromApi, name: template.name }
   })
@@ -481,7 +529,7 @@ export function mergeChildrenProductCategories<T extends ProductCategory>(
   const byId = new Map(apiCategories.map((category) => [category.id, category]))
 
   return CHILDREN_PRODUCT_CATEGORIES.map((template) => {
-    const fromApi = bySlug.get(template.slug) ?? byId.get(template.id)
+    const fromApi = resolveApiCategoryForTemplate(template, bySlug, byId)
     if (!fromApi) return template
     return { ...fromApi, name: template.name }
   })
