@@ -845,8 +845,7 @@ const EditProductPage = () => {
               onClick={() => router.back()}
               className="flex md:text-[20px] text-[18px] items-center text-black hover:opacity-80"
             >
-              <ArrowLeft className="w-5 h-5 mr-2" />
-              უკან დაბრუნება
+              <ArrowLeft className="w-7 font-bold h-7 mr-2" />
             </button>
           </div>
         </div>

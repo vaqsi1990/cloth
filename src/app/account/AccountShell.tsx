@@ -21,11 +21,17 @@ function sectionFromPathname(pathname: string): AccountSection | null {
   return null
 }
 
+function isAccountProductFormRoute(pathname: string): boolean {
+  if (pathname === '/account/products/new') return true
+  return /^\/account\/products\/[^/]+\/edit$/.test(pathname)
+}
+
 export default function AccountShell({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession()
   const router = useRouter()
   const pathname = usePathname()
   const currentSection = sectionFromPathname(pathname)
+  const isProductFormRoute = isAccountProductFormRoute(pathname)
   const isChatsSection = currentSection === 'chats'
   const navItems = getAccountNavItems(session?.user?.role)
   const { unreadCount: polledChatUnread } = useUserChatUnreadCount(!!session?.user?.id)
@@ -80,6 +86,10 @@ export default function AccountShell({ children }: { children: React.ReactNode }
 
   if (!session) {
     return null
+  }
+
+  if (isProductFormRoute) {
+    return <>{children}</>
   }
 
   const renderNav = (layout: 'vertical' | 'horizontal') =>
