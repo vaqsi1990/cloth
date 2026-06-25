@@ -1,5 +1,8 @@
 import { z } from 'zod'
-import { validateSkuVariantRows } from '@/lib/product-variants'
+import {
+  validateSkuVariantRows,
+  type ProductVariantSkuFormRow,
+} from '@/lib/product-variants'
 import {
   getProductDiscountBasePrice,
   salePriceFromDiscount,
@@ -110,10 +113,7 @@ export const productImageUrlsFieldWithUrlValidation = z
 
 type ProductPricingInput = {
   pricePerDay?: number | null
-  variants?: Array<{
-    price?: number | null
-    sizeDetails?: Array<{ price?: number | null; stock?: number | null }> | null
-  }>
+  variants?: ProductVariantSkuFormRow[]
   rentalPriceTiers?: Array<{ minDays?: number; pricePerDay?: number | null }> | null
   discount?: number | null
   discountDays?: number | null
@@ -208,23 +208,17 @@ export function hasProductPricing(data: ProductPricingInput): boolean {
   return hasRentalPrice || hasSalePrice
 }
 
-export function getProductCreateFieldErrors(data: {
-  imageUrls?: string[]
-  stock?: number
-  variants?: Array<{
-    color?: string
-    size?: string
-    imageUrl?: string
-    price?: number | null
-    stock?: number | null
-    sizeDetails?: Array<{ price?: number | null; stock?: number | null }> | null
-  }>
-  isSkuVariantProduct?: boolean
-  requireVariantSalePrices?: boolean
-  requireVariantSize?: boolean
-  showPurchaseOptions?: boolean
-  showRentalOptions?: boolean
-} & ProductPricingInput): Record<string, string> {
+export function getProductCreateFieldErrors(
+  data: {
+    imageUrls?: string[]
+    stock?: number
+    isSkuVariantProduct?: boolean
+    requireVariantSalePrices?: boolean
+    requireVariantSize?: boolean
+    showPurchaseOptions?: boolean
+    showRentalOptions?: boolean
+  } & ProductPricingInput,
+): Record<string, string> {
   const errors: Record<string, string> = {}
 
   if (data.isSkuVariantProduct) {
@@ -284,7 +278,6 @@ export function getProductCreateFieldErrors(data: {
 export function refineProductImagesAndPricing(
   data: {
     imageUrls?: string[]
-    variants?: Array<{ color?: string; size?: string; imageUrl?: string; price?: number | null }>
     isSkuVariantProduct?: boolean
     requireVariantSalePrices?: boolean
     requireVariantSize?: boolean
