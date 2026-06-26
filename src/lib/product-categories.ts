@@ -772,7 +772,82 @@ export function filterProductCategoriesByGender<T extends ProductCategory>(
   )
 }
 
-/** Single optgroup per gender in product forms — no duplicate rows under კაცი/ბავშვი. */
+export type ProductCategoryRef = Pick<ProductCategory, 'id' | 'name' | 'slug'>
+
+/** Map stored product category id to the id used in the current form category list (by slug when ids diverge). */
+export function resolveProductFormCategoryId(
+  categoryId: number | undefined,
+  categories: ProductCategory[],
+  productCategory?: ProductCategoryRef | null,
+): number | undefined {
+  const list = categories.length > 0 ? categories : DEFAULT_PRODUCT_CATEGORIES
+  const slug = productCategory?.slug?.trim()
+  const preferredId = categoryId ?? productCategory?.id
+
+  if (preferredId && list.some((entry) => entry.id === preferredId)) {
+    return preferredId
+  }
+
+  if (slug) {
+    const bySlug = list.find((entry) => entry.slug === slug)
+    if (bySlug) return bySlug.id
+  }
+
+  if (preferredId) {
+    const canonical = CANONICAL_PRODUCT_TAXONOMY.find((entry) => entry.id === preferredId)
+    if (canonical) {
+      const bySlug = list.find((entry) => entry.slug === canonical.slug)
+      if (bySlug) return bySlug.id
+    }
+  }
+
+  if (slug) {
+    const canonical = CANONICAL_PRODUCT_TAXONOMY.find((entry) => entry.slug === slug)
+    if (canonical) {
+      const bySlug = list.find((entry) => entry.slug === canonical.slug)
+      if (bySlug) return bySlug.id
+    }
+  }
+
+  return preferredId
+}
+
+/** Gender-filtered categories for product forms, always including the product's current category. */
+export function getProductFormGenderCategories(
+  categories: ProductCategory[],
+  gender: ProductGender | null | undefined,
+  selectedCategoryId?: number,
+  productCategory?: ProductCategoryRef | null,
+): ProductCategory[] {
+  const filtered = filterProductCategoriesByGender(categories, gender)
+  const resolvedId = resolveProductFormCategoryId(
+    selectedCategoryId,
+    categories,
+    productCategory,
+  )
+  if (!resolvedId || filtered.some((entry) => entry.id === resolvedId)) {
+    return filtered
+  }
+
+  const fromFullList = categories.find((entry) => entry.id === resolvedId)
+  if (fromFullList) {
+    return sortProductCategories([...filtered, fromFullList])
+  }
+
+  if (productCategory && (productCategory.id === resolvedId || productCategory.slug)) {
+    return sortProductCategories([
+      ...filtered,
+      {
+        id: resolvedId,
+        name: productCategory.name,
+        slug: productCategory.slug,
+      },
+    ])
+  }
+
+  return filtered
+}
+
 export function groupProductCategoriesForGender<T extends ProductCategory>(
   categories: T[],
   gender?: ProductGender | null,
@@ -842,9 +917,15 @@ export function isCategoryValidForProductGender(
   categoryId: number | undefined,
   gender: ProductGender | null | undefined,
   categories: ProductCategory[],
+  productCategory?: ProductCategoryRef | null,
 ): boolean {
-  if (!categoryId || !gender) return false
-  const category = categories.find((entry) => entry.id === categoryId)
+  const resolvedId = resolveProductFormCategoryId(categoryId, categories, productCategory)
+  if (!resolvedId || !gender) return false
+
+  const genderCategories = filterProductCategoriesByGender(categories, gender)
+  const category =
+    genderCategories.find((entry) => entry.id === resolvedId) ??
+    categories.find((entry) => entry.id === resolvedId)
   if (!category) return false
   return categoryMatchesProductGender(category, gender)
 }

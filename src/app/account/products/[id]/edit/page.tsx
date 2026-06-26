@@ -36,13 +36,14 @@ import { getProductDiscountBasePrice } from '@/lib/discount-helpers'
 import { isProductVipActive, VIP_MONTHLY_PRICE_GEL } from '@/lib/product-vip'
 import {
   DEFAULT_PRODUCT_CATEGORIES,
-  filterProductCategoriesByGender,
+  getProductFormGenderCategories,
   isCategoryValidForProductGender,
   isFootwearCategoryId,
   isSizeOptionalCategoryId,
   clearVariantSizes,
   mergeProductCategoriesWithDefaults,
   PRODUCT_GENDER_OPTIONS,
+  resolveProductFormCategoryId,
 } from '@/lib/product-categories'
 import { optionalCategoryIdField } from '@/lib/product-schema-fields'
 import {
@@ -250,9 +251,26 @@ const EditProductPage = () => {
   )
 
   const genderCategories = useMemo(
-    () => filterProductCategoriesByGender(categories, formData.gender),
-    [categories, formData.gender],
+    () =>
+      getProductFormGenderCategories(
+        categories,
+        formData.gender,
+        formData.categoryId,
+        product?.category ?? null,
+      ),
+    [categories, formData.gender, formData.categoryId, product?.category],
   )
+
+  useEffect(() => {
+    if (!product) return
+    const resolved = resolveProductFormCategoryId(
+      formData.categoryId ?? product.category?.id ?? product.categoryId,
+      categories,
+      product.category ?? null,
+    )
+    if (!resolved || resolved === formData.categoryId) return
+    setFormData((prev) => ({ ...prev, categoryId: resolved }))
+  }, [product, categories, formData.categoryId])
 
   const [selectedSizeSystem, setSelectedSizeSystem] = useState<ProductFormData['sizeSystem'] | ''>('')
   const [selectedSizeValue, setSelectedSizeValue] = useState<string>('')
@@ -417,7 +435,11 @@ const EditProductPage = () => {
             discount: product.discount,
             discountDays: product.discountDays,
             rating: product.rating || 0,
-            categoryId: product.category?.id ?? product.categoryId ?? undefined,
+            categoryId: resolveProductFormCategoryId(
+              product.category?.id ?? product.categoryId ?? undefined,
+              categories,
+              product.category ?? null,
+            ),
             isRentable: product.isRentable ?? true,
             pricePerDay: product.pricePerDay || undefined,
             maxRentalDays: product.maxRentalDays || undefined,
@@ -550,8 +572,17 @@ const EditProductPage = () => {
     setFormData((prev) => ({
       ...prev,
       gender,
-      categoryId: isCategoryValidForProductGender(prev.categoryId, gender, categories)
-        ? prev.categoryId
+      categoryId: isCategoryValidForProductGender(
+        prev.categoryId,
+        gender,
+        categories,
+        product?.category ?? null,
+      )
+        ? resolveProductFormCategoryId(
+            prev.categoryId,
+            categories,
+            product?.category ?? null,
+          )
         : undefined,
     }))
     if (previousGender !== gender) {
