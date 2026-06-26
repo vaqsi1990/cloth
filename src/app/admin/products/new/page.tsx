@@ -67,7 +67,7 @@ import {
   isValidProductFormSize,
   parseProductFormSizeSelection,
 } from '@/lib/shop-product-filters'
-import SizePillSelector from '@/components/SizePillSelector'
+import ProductFormSizeField from '@/components/ProductFormSizeField'
 
 const categories = DEFAULT_PRODUCT_CATEGORIES
 type Category = {
@@ -817,13 +817,11 @@ const NewProductPage = () => {
                   <label className="block text-[20px] text-black font-medium mb-2">
                     {sizeFieldLabel} (არასავალდებულო)
                   </label>
-                  <SizePillSelector
+                  <ProductFormSizeField
+                    gender={formData.gender}
+                    sizeOptionsInput={sizeOptionsInput}
                     value={getProductFormSizeSelectValue(formData.gender, sizeSystem, selectedSize, sizeOptionsInput)}
                     onChange={handleCombinedSizeSelect}
-                    options={combinedSizeOptions.map((option) => ({
-                      value: option.value,
-                      label: option.label,
-                    }))}
                     compact={formData.gender === 'CHILDREN'}
                   />
                 </div>

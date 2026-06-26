@@ -131,6 +131,79 @@ export function isFootwearSize(
   return getFootwearSizesForGender(gender).includes(normalized)
 }
 
+/** Strip a leading size-system prefix accidentally stored in the size value. */
+export function normalizeStoredFootwearSize(size: string): string {
+  const trimmed = size.trim()
+  const match = trimmed.match(/^(EU|US|UK|CN):(.+)$/i)
+  return match ? match[2].trim() : trimmed
+}
+
+export function isPredefinedFootwearSize(
+  size: string,
+  gender: 'MEN' | 'WOMEN' | 'CHILDREN' | 'UNISEX' | string,
+): boolean {
+  return isFootwearSize(normalizeStoredFootwearSize(size), gender)
+}
+
+export function isValidCustomFootwearSize(size: string): boolean {
+  const normalized = normalizeStoredFootwearSize(size)
+  if (!normalized) return false
+  return normalized.length <= 24
+}
+
+export function buildFootwearFormSelectValue(
+  rawSize: string,
+  sizeSystem: ProductFormSizeSystem = 'EU',
+): string {
+  const normalized = normalizeStoredFootwearSize(rawSize.trim())
+  if (!normalized) return ''
+  return `${sizeSystem}:${normalized}`
+}
+
+export function getCustomFootwearSizeInputValue(
+  gender: 'MEN' | 'WOMEN' | 'CHILDREN' | 'UNISEX' | string,
+  size: string | undefined,
+  sizeSystem: string | undefined,
+  options?: ProductFormSizeOptionsInput,
+): string {
+  if (!size?.trim()) return ''
+
+  const categories = resolveProductFormCategories(options)
+  const isFootwear = options?.categoryId
+    ? isFootwearCategoryId(options.categoryId, categories)
+    : false
+  if (!isFootwear) return ''
+
+  const normalized = normalizeStoredFootwearSize(size)
+  if (isPredefinedFootwearSize(normalized, gender)) return ''
+  return normalized
+}
+
+export function appendCustomFootwearSizeOptions(
+  gender: 'MEN' | 'WOMEN' | 'CHILDREN' | 'UNISEX' | string,
+  options: ProductFormSizeOption[],
+  selectedValues: string[],
+  sizeOptionsInput?: ProductFormSizeOptionsInput,
+): Array<{ value: string; label: string }> {
+  const merged = options.map((option) => ({
+    value: option.value,
+    label: option.label,
+  }))
+  const seen = new Set(merged.map((option) => option.value.toUpperCase()))
+
+  for (const selected of selectedValues) {
+    if (seen.has(selected.toUpperCase())) continue
+    const parsed = parseProductFormSizeSelection(selected, gender, sizeOptionsInput)
+    if (!parsed.size) continue
+    const value = buildFootwearFormSelectValue(parsed.size, parsed.sizeSystem || 'EU')
+    if (seen.has(value.toUpperCase())) continue
+    seen.add(value.toUpperCase())
+    merged.push({ value, label: parsed.size })
+  }
+
+  return merged
+}
+
 function sortFootwearSizes(sizes: string[]): string[] {
   const order = new Map<string, number>()
   for (const gender of ['WOMEN', 'MEN', 'CHILDREN'] as const) {
@@ -338,13 +411,6 @@ export function resolveProductFormCategories(
   return DEFAULT_PRODUCT_CATEGORIES
 }
 
-/** Strip a leading size-system prefix accidentally stored in the size value. */
-export function normalizeStoredFootwearSize(size: string): string {
-  const trimmed = size.trim()
-  const match = trimmed.match(/^(EU|US|UK|CN):(.+)$/i)
-  return match ? match[2].trim() : trimmed
-}
-
 export function isProductFormSizeOptionSelected(
   optionValue: string,
   selectedValues: string[],
@@ -410,7 +476,12 @@ export function isValidProductFormSize(
     ? isFootwearCategoryId(options.categoryId, categories)
     : false
 
-  if (isFootwear) return isFootwearSize(normalized, gender)
+  if (isFootwear) {
+    const footwearSize = normalizeStoredFootwearSize(normalized)
+    if (!footwearSize) return true
+    if (isPredefinedFootwearSize(footwearSize, gender)) return true
+    return isValidCustomFootwearSize(footwearSize)
+  }
   if (gender === 'CHILDREN') return isChildrenAgeSize(normalized)
   return isAdultClothingSize(normalized)
 }

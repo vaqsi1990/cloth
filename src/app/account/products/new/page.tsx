@@ -42,7 +42,7 @@ import ProductVariantEditor from '@/components/ProductVariantEditor'
 import ProductTypeSelector, { type ProductListingType } from '@/components/ProductTypeSelector'
 import ProductMultiPricingSelector from '@/components/ProductMultiPricingSelector'
 import ProductColorPicker, { getProductColorPickerState } from '@/components/ProductColorPicker'
-import SizePillSelector from '@/components/SizePillSelector'
+import ProductFormSizeField from '@/components/ProductFormSizeField'
 import {
   seedVariantRowsFromLegacyProduct,
   getVariantImageUrls,
@@ -913,13 +913,11 @@ const NewProductPage = () => {
                   <label className="block md:text-[18px] text-[16px] text-black font-medium mb-2">
                     {sizeFieldLabel} (არასავალდებულო)
                   </label>
-                  <SizePillSelector
+                  <ProductFormSizeField
+                    gender={formData.gender}
+                    sizeOptionsInput={sizeOptionsInput}
                     value={getProductFormSizeSelectValue(formData.gender, sizeSystem, selectedSize, sizeOptionsInput)}
                     onChange={handleCombinedSizeSelect}
-                    options={combinedSizeOptions.map((option) => ({
-                      value: option.value,
-                      label: option.label,
-                    }))}
                     compact={formData.gender === 'CHILDREN'}
                   />
                 </div>

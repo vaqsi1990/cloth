@@ -21,7 +21,7 @@ import {
 import { isFootwearCategoryId } from '@/lib/product-categories'
 import type { ProductCategory, ProductGender } from '@/lib/product-categories'
 import VariantImageUpload from '@/components/VariantImageUpload'
-import SizePillSelector from '@/components/SizePillSelector'
+import ProductFormSizeField from '@/components/ProductFormSizeField'
 import ProductMinPriceNotice from '@/components/ProductMinPriceNotice'
 
 export type { ProductVariantFormRow } from '@/lib/product-variants'
@@ -214,8 +214,10 @@ export default function ProductVariantEditor({
                   {sizeLabel}
                   {requireSize && <span className="text-red-600"> *</span>}
                 </label>
-                <SizePillSelector
+                <ProductFormSizeField
                   mode="multiple"
+                  gender={gender}
+                  sizeOptionsInput={sizeOptionsInput}
                   values={selectedSizeValues}
                   onToggle={(optionValue) => {
                     const parsed = parseProductFormSizeSelection(optionValue, gender, sizeOptionsInput)
@@ -243,12 +245,9 @@ export default function ProductVariantEditor({
 
                     applySizeSelection(nextSizes, parsed.sizeSystem || activeSizeSystem)
                   }}
-                  options={combinedSizeOptions.map((option) => ({
-                    value: option.value,
-                    label: option.label,
-                  }))}
                   compact={gender === 'CHILDREN'}
                   error={errors[`variants.${index}.size`]}
+                  inputClassName="w-full max-w-[11rem] mt-2 px-2.5 py-1.5 text-sm placeholder:text-gray-400 border border-gray-300 rounded-md focus:ring-2 focus:ring-black focus:border-transparent"
                 />
                 {showPerSizeRows ? (
                   <p className="text-sm text-gray-500 mt-2">
