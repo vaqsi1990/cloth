@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { syncExpiredPaymentHolds } from '@/lib/payment-hold'
 
 // GET - Fetch user's orders
 export async function GET(request: NextRequest) {
@@ -14,6 +15,8 @@ export async function GET(request: NextRequest) {
         { status: 401 }
       )
     }
+
+    await syncExpiredPaymentHolds()
 
     const orders = await prisma.order.findMany({
       where: {

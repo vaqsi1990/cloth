@@ -15,6 +15,11 @@ import {
   getDeliverySpeedLabel,
 } from '@/lib/delivery'
 import { processExpiredDiscount } from '@/lib/discount-helpers'
+import {
+  PAYMENT_HOLD_MAX_DAYS,
+  getPaymentHoldExpiresAt,
+  getPaymentHoldDaysRemaining,
+} from '@/lib/payment-hold-config'
 
 interface OrderItemProduct {
   discount: number | null
@@ -39,6 +44,9 @@ interface OrderItem {
 interface Order {
   id: number
   status: string
+  paymentHoldStatus?: string | null
+  paymentHoldBlockedAt?: string | null
+  updatedAt?: string
   total: number
   createdAt: string
   customerName: string
@@ -119,6 +127,12 @@ const OrderConfirmationContent = () => {
 
     const load = async (attempt = 0) => {
       try {
+        if (attempt > 0) {
+          await fetch(`/api/orders/${orderId}/sync-payment`, { method: 'POST' }).catch(
+            () => undefined,
+          )
+        }
+
         const fetched = await fetchOrder()
         if (cancelled || !fetched) return
 
@@ -187,6 +201,9 @@ const OrderConfirmationContent = () => {
   }
 
   const getStatusLabel = (status: string) => {
+    if (status === 'PAID' && order.paymentHoldStatus === 'BLOCKED') {
+      return 'თანხა დაბლოკილია'
+    }
     const statusMap: Record<string, string> = {
       PENDING: 'მოლოდინში',
       PAID: 'გადახდილი',
@@ -198,6 +215,9 @@ const OrderConfirmationContent = () => {
   }
 
   const getStatusColor = (status: string) => {
+    if (status === 'PAID' && order.paymentHoldStatus === 'BLOCKED') {
+      return 'bg-amber-100 text-amber-800'
+    }
     const colorMap: Record<string, string> = {
       PENDING: 'bg-yellow-100 text-yellow-800',
       PAID: 'bg-green-100 text-green-800',
@@ -233,7 +253,9 @@ const OrderConfirmationContent = () => {
             <p className="text-black text-lg">
               {order.status === 'PENDING'
                 ? 'გადახდის დადასტურება მიმდინარეობს...'
-                : 'გმადლობთ თქვენი შეკვეთისთვის'}
+                : order.paymentHoldStatus === 'BLOCKED'
+                  ? `თანხა დაბლოკილია თქვენს ბარათზე ${PAYMENT_HOLD_MAX_DAYS} დღით. ვადა: ${formatDate(getPaymentHoldExpiresAt(order).toISOString())}. მიმწოდებელთან ჩარიცხვამდე დაადასტურეთ ან მოაშორეთ ბლოკი ანგარიშის გვერდიდან.`
+                  : 'გმადლობთ თქვენი შეკვეთისთვის'}
             </p>
           </div>
 

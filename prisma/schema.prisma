@@ -15,6 +15,18 @@ enum OrderStatus {
   CANCELED
   REFUNDED
 }
+
+enum PaymentCaptureMode {
+  AUTOMATIC
+  MANUAL
+}
+
+enum PaymentHoldStatus {
+  NONE
+  BLOCKED
+  CAPTURED
+  RELEASED
+}
 model VerifiedEmail {
   id         String   @id @default(cuid())
   email      String   @unique
@@ -492,6 +504,9 @@ model Order {
   // optional for payment
   paymentMethod String?
   paymentId     String?
+  paymentCaptureMode PaymentCaptureMode @default(AUTOMATIC)
+  paymentHoldStatus  PaymentHoldStatus  @default(NONE)
+  paymentHoldBlockedAt DateTime?
   sourceCartItemId Int?
 
   // Voucher

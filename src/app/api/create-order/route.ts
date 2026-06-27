@@ -27,6 +27,7 @@ import {
 } from '@/lib/order-item-snapshot'
 import { releaseRentalOrderHolds } from '@/lib/rental-order-holds'
 import { validateSaleItemStock } from '@/lib/sale-stock'
+import { usesManualPaymentCapture } from '@/lib/payment-hold'
 
 interface CartItemInput {
   productId: string | number
@@ -51,6 +52,7 @@ interface BOGSplitPayment {
 interface BOGRequestData {
   callback_url: string
   external_order_id: string
+  capture?: 'automatic' | 'manual'
   purchase_units: {
     currency: string
     total_amount: number
@@ -564,6 +566,9 @@ export async function POST(req: NextRequest) {
       deliveryCityNameResolved = deliveryCity?.name || null
     }
 
+    const paymentMethod = orderData.paymentMethod || 'card'
+    const manualCapture = usesManualPaymentCapture(paymentMethod)
+
     const dbOrder = await prisma.order.create({
       data: {
         userId: auth.user.id,
@@ -581,7 +586,8 @@ export async function POST(req: NextRequest) {
           ? toPrismaDeliverySpeed(deliverySpeed)
           : null,
         deliveryPrice: deliveryPrice,
-        paymentMethod: "BOG Card Payment",
+        paymentMethod,
+        paymentCaptureMode: manualCapture ? 'MANUAL' : 'AUTOMATIC',
         total,
         voucherCode,
         voucherDiscount: voucherDiscount > 0 ? voucherDiscount : null,
@@ -638,6 +644,7 @@ export async function POST(req: NextRequest) {
     const requestData: BOGRequestData = {
       callback_url: "https://www.dressla.ge/api/payment-callback",
       external_order_id: String(dbOrder.id),
+      ...(manualCapture ? { capture: 'manual' as const } : {}),
       purchase_units: {
         currency: "GEL",
         total_amount: total,
@@ -647,7 +654,7 @@ export async function POST(req: NextRequest) {
         success: `https://www.dressla.ge/order-confirmation?status=success&orderId=${dbOrder.id}`,
         fail: `https://www.dressla.ge/payment-fail?orderId=${dbOrder.id}`
       },
-      payment_method: [orderData.paymentMethod || 'card']
+      payment_method: [paymentMethod]
     }
 
     const config: BOGRequestData['config'] = {}

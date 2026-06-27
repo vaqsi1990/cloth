@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { PaymentCaptureMode } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { recordSellerTransactions } from '@/utils/sellerTransactions'
 import { redeemVoucher } from '@/lib/voucher'
@@ -8,6 +9,11 @@ import {
   finalizeRentalOrderHolds,
   releaseRentalOrderHolds,
 } from '@/lib/rental-order-holds'
+import {
+  markOrderPaymentBlocked,
+  markOrderPaymentCaptured,
+  markOrderPaymentReleased,
+} from '@/lib/payment-hold'
 import crypto from 'crypto'
 
 const BOG_PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
@@ -31,8 +37,19 @@ function verifySignature(signature: string, body: string, publicKey: string) {
   }
 }
 
-async function updateOrderStatus(paymentId: string, status: string) {
-  const lower = status.toLowerCase()
+async function updateAutomaticOrderStatus(
+  order: {
+    id: number
+    status: string
+    userId: string | null
+    sourceCartItemId: number | null
+    voucherId: number | null
+    voucherDiscount: number | null
+  },
+  lower: string,
+) {
+  const wasAlreadyPaid = order.status === 'PAID'
+  const wasFulfilled = order.status === 'PAID' || order.status === 'SHIPPED'
 
   let final: "PENDING" | "PAID" | "CANCELED" | "REFUNDED" = "PENDING"
 
@@ -41,18 +58,9 @@ async function updateOrderStatus(paymentId: string, status: string) {
   else if (lower === "rejected" || lower === "blocked") final = "CANCELED"
   else if (lower === "refunded" || lower === "refunded_partially") final = "REFUNDED"
 
-  const order = await prisma.order.findFirst({
-    where: { paymentId }
-  })
-
-  if (!order) return false
-
-  const wasAlreadyPaid = order.status === 'PAID'
-  const wasFulfilled = order.status === 'PAID' || order.status === 'SHIPPED'
-
   await prisma.order.update({
     where: { id: order.id },
-    data: { status: final }
+    data: { status: final },
   })
 
   if (final === "PAID") {
@@ -98,7 +106,50 @@ async function updateOrderStatus(paymentId: string, status: string) {
       await restoreOrderSaleItems(order.id)
     }
   }
+}
 
+async function updateOrderStatus(paymentId: string, status: string) {
+  const lower = status.toLowerCase()
+
+  const order = await prisma.order.findFirst({
+    where: { paymentId },
+  })
+
+  if (!order) return false
+
+  if (order.paymentCaptureMode === PaymentCaptureMode.MANUAL) {
+    if (lower === 'blocked') {
+      await markOrderPaymentBlocked(order.id)
+      return true
+    }
+
+    if (lower === 'completed' || lower === 'partial_completed') {
+      await markOrderPaymentCaptured(order.id)
+      return true
+    }
+
+    if (lower === 'refunded' || lower === 'refunded_partially') {
+      await markOrderPaymentReleased(order.id)
+      return true
+    }
+
+    if (lower === 'rejected') {
+      if (order.paymentHoldStatus === 'BLOCKED' || order.status === 'PAID') {
+        await markOrderPaymentReleased(order.id)
+      } else {
+        await prisma.order.update({
+          where: { id: order.id },
+          data: { status: 'CANCELED' },
+        })
+        await releaseRentalOrderHolds(order.id)
+      }
+      return true
+    }
+
+    return true
+  }
+
+  await updateAutomaticOrderStatus(order, lower)
   return true
 }
 
