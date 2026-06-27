@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import Image from '@/component/AppImage'
+import ImageModal from '@/component/ImageModal'
 import { X } from 'lucide-react'
 import HeicAwareUploadButton from '@/components/HeicAwareUploadButton'
 import UploadLoadingIndicator from '@/component/UploadLoadingIndicator'
@@ -52,17 +52,15 @@ export default function VariantImageUpload({ value, onChange, error }: VariantIm
 
       {imageUrl && (
         <div className="relative mb-2 inline-block">
-          <Image
+          <ImageModal
             src={imageUrl}
             alt="ვარიანტის სურათი"
-            width={120}
-            height={120}
             className="h-28 w-28 rounded-lg border border-gray-200 object-cover"
           />
           <button
             type="button"
             onClick={handleRemove}
-            className="absolute -right-2 -top-2 rounded-full bg-red-500 p-1 text-white"
+            className="absolute -right-2 -top-2 z-10 rounded-full bg-red-500 p-1 text-white touch-manipulation"
             aria-label="სურათის წაშლა"
           >
             <X className="h-4 w-4" />

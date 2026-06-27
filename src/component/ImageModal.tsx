@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Image from '@/component/AppImage'
 import { PRODUCT_IMAGE_QUALITY, UPLOAD_PREVIEW_QUALITY } from '@/lib/image-config'
+
 interface ImageModalProps {
   src: string
   alt: string
@@ -12,51 +13,77 @@ interface ImageModalProps {
 export default function ImageModal({ src, alt, className = '' }: ImageModalProps) {
   const [isOpen, setIsOpen] = useState(false)
 
-  const openModal = () => setIsOpen(true)
-  const closeModal = () => setIsOpen(false)
+  const openModal = useCallback(() => setIsOpen(true), [])
+  const closeModal = useCallback(() => setIsOpen(false), [])
+
+  useEffect(() => {
+    if (!isOpen) return
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeModal()
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [closeModal, isOpen])
 
   return (
     <>
-      {/* Clickable Image */}
-      <Image
-        width={1200}
-        height={1200}
-        src={src}
-        alt={alt}
-        quality={UPLOAD_PREVIEW_QUALITY}
-        className={`cursor-pointer transition-transform hover:scale-105 ${className}`}
+      <button
+        type="button"
         onClick={openModal}
-      />
+        className="block w-full max-w-full cursor-pointer touch-manipulation border-0 bg-transparent p-0 text-left"
+        aria-label={`${alt} — გადიდება`}
+      >
+        <Image
+          width={1200}
+          height={1200}
+          src={src}
+          alt={alt}
+          quality={UPLOAD_PREVIEW_QUALITY}
+          className={`pointer-events-none transition-transform hover:scale-105 ${className}`}
+        />
+      </button>
 
-      {/* Modal */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 p-4"
           onClick={closeModal}
+          role="dialog"
+          aria-modal="true"
+          aria-label={alt}
         >
-          <div className="relative max-w-[90vw] max-h-[90vh] flex items-center justify-center">
-            {/* Close Button */}
-            <div
+          <div className="relative flex max-h-[90vh] max-w-[90vw] items-center justify-center">
+            <button
+              type="button"
               onClick={closeModal}
-              className="absolute -top-12 right-0 text-white hover:text-gray-300 text-3xl font-bold z-10 bg-black bg-opacity-50 rounded-full w-10 h-10 flex items-center justify-center cursor-pointer"
+              className="absolute -top-12 right-0 z-10 flex h-10 w-10 cursor-pointer touch-manipulation items-center justify-center rounded-full bg-black/60 text-3xl font-bold text-white hover:text-gray-300"
+              aria-label="დახურვა"
             >
               ✕
-            </div>
+            </button>
 
-            {/* Image */}
             <Image
               width={1600}
               height={1600}
               src={src}
               alt={alt}
               quality={PRODUCT_IMAGE_QUALITY}
-              className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
+              className="max-h-[90vh] max-w-full rounded-lg object-contain shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
             />
           </div>
         </div>
       )}
-
     </>
   )
 }

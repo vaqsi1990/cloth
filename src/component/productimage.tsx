@@ -114,7 +114,7 @@ const ImageUploadForProduct = ({ onChange, value, onUploadingChange, photoBackgr
                   />
                   <button
                     onClick={() => handleDeleteImage(originalIndex)}
-                    className="absolute cursor-pointer top-2 right-2 bg-black hover:bg-black text-white rounded-full w-8 h-8 flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shadow-lg z-10"
+                    className="absolute cursor-pointer top-2 right-2 z-10 flex h-8 w-8 touch-manipulation items-center justify-center rounded-full bg-black text-white opacity-100 shadow-lg transition-opacity md:opacity-0 md:group-hover:opacity-100"
                     type="button"
                     aria-label="სურათის წაშლა"
                   >
