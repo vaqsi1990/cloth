@@ -902,6 +902,31 @@ export function convertSimpleToMultiVariantRows(input: {
   }))
 }
 
+/** Always use multi-variant form rows (legacy simple products are converted on edit). */
+export function ensureMultiVariantFormRows(input: {
+  product: {
+    color?: string | null
+    size?: string | null
+    sizeSystem?: SizeSystem | null
+    stock?: number | null
+  }
+  mappedVariants: ProductVariantFormRow[]
+  imageUrls: string[]
+}): ProductVariantFormRow[] {
+  if (productHasSkuVariants({ variants: input.mappedVariants })) {
+    return input.mappedVariants
+  }
+
+  return convertSimpleToMultiVariantRows({
+    color: input.product.color || undefined,
+    size: input.product.size || undefined,
+    sizeSystem: input.product.sizeSystem || undefined,
+    stock: input.product.stock ?? undefined,
+    imageUrls: input.imageUrls,
+    variants: input.mappedVariants,
+  })
+}
+
 /** Convert multi-variant form state back to a simple single-color product. */
 export function convertMultiToSimpleFormState(input: {
   variants: ProductVariantFormRow[]

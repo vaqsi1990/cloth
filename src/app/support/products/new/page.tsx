@@ -40,14 +40,12 @@ import ProductDiscountFields from '@/components/ProductDiscountFields'
 import ProductMinPriceNotice from '@/components/ProductMinPriceNotice'
 import SimpleProductSalePriceSection from '@/components/SimpleProductSalePriceSection'
 import ProductVariantEditor from '@/components/ProductVariantEditor'
-import ProductTypeSelector, { type ProductListingType } from '@/components/ProductTypeSelector'
 import ProductMultiPricingSelector from '@/components/ProductMultiPricingSelector'
 import ProductColorPicker, { getProductColorPickerState } from '@/components/ProductColorPicker'
 import { VIP_MONTHLY_PRICE_GEL } from '@/lib/product-vip'
 import { getProductDiscountBasePrice } from '@/lib/discount-helpers'
 import { optionalCategoryIdField } from '@/lib/product-schema-fields'
 import {
-  seedVariantRowsFromLegacyProduct,
   getVariantImageUrls,
   type ProductVariantFormRow,
   patchVariantFormRow,
@@ -181,7 +179,7 @@ const NewProductPage = () => {
     pricePerDay: undefined,
     maxRentalDays: undefined,
     status: 'AVAILABLE',
-    variants: [],
+    variants: [{ price: 0, stock: 1 }],
     imageUrls: [],
     rentalPriceTiers: [{ minDays: 1, pricePerDay: 0 }],
   })
@@ -192,40 +190,12 @@ const NewProductPage = () => {
   const [wantsVip, setWantsVip] = useState(false)
   const [agreedToPhotoBackgroundChange, setAgreedToPhotoBackgroundChange] = useState(false)
   const [showPurchaseOptions, setShowPurchaseOptions] = useState(false)
-  const [showRentalOptions, setShowRentalOptions] = useState(true)
-  const [showVariantOptions, setShowVariantOptions] = useState(false)
-  const productListingType: ProductListingType = showVariantOptions ? 'multi' : 'simple'
+  const [showRentalOptions, setShowRentalOptions] = useState(false)
+  const [showVariantOptions] = useState(true)
   const [sizeSystem, setSizeSystem] = useState(formData.sizeSystem ?? '')
   const [selectedSize, setSelectedSize] = useState('')
   const [customColor, setCustomColor] = useState('')
   const [useCustomColor, setUseCustomColor] = useState(false)
-
-  const handleProductListingTypeChange = (type: ProductListingType) => {
-    const isMulti = type === 'multi'
-    setShowVariantOptions(isMulti)
-
-    if (!isMulti) {
-      setFormData((prev) => ({ ...prev, variants: [] }))
-      setShowPurchaseOptions(false)
-      setShowRentalOptions(true)
-      return
-    }
-
-    setShowPurchaseOptions(false)
-    setShowRentalOptions(false)
-    setFormData((prev) => ({
-      ...prev,
-      variants: seedVariantRowsFromLegacyProduct({
-        color: useCustomColor ? customColor.trim() : prev.color,
-        size: prev.size,
-        sizeSystem: prev.sizeSystem,
-        stock: prev.stock,
-        variants: prev.variants.length > 0
-          ? prev.variants
-          : [{ price: 0, stock: prev.stock && prev.stock > 0 ? prev.stock : 1 }],
-      }),
-    }))
-  }
 
   type SizeSystem = NonNullable<ProductFormData['sizeSystem']>
 
@@ -880,11 +850,6 @@ const NewProductPage = () => {
           </div>
 
           {/* Product type & variants */}
-          <ProductTypeSelector
-            value={productListingType}
-            onChange={handleProductListingTypeChange}
-          />
-
           <ProductMultiPricingSelector
             pricingMode={pricingMode}
             onPricingModeChange={handlePricingModeChange}

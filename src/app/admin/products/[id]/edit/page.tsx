@@ -41,11 +41,10 @@ import ProductDiscountFields from '@/components/ProductDiscountFields'
 import ProductMinPriceNotice from '@/components/ProductMinPriceNotice'
 import SimpleProductSalePriceSection from '@/components/SimpleProductSalePriceSection'
 import ProductVariantEditor from '@/components/ProductVariantEditor'
-import ProductTypeSelector, { type ProductListingType } from '@/components/ProductTypeSelector'
 import { getProductDiscountBasePrice } from '@/lib/discount-helpers'
 import {
   mapProductVariantsToFormRows,
-  productHasSkuVariants,
+  ensureMultiVariantFormRows,
   getVariantImageUrls,
   getOrderedProductImageUrls,
   type ProductVariantFormRow,
@@ -74,7 +73,6 @@ import {
   parseProductFormSizeSelection,
 } from '@/lib/shop-product-filters'
 import ProductFormSizeField from '@/components/ProductFormSizeField'
-import { applyProductListingTypeChange } from '@/lib/product-listing-type-change'
 
 const productSchema = z.object({
   name: z.string()
@@ -208,28 +206,9 @@ const EditProductPage = () => {
   const [vipWasActiveOnLoad, setVipWasActiveOnLoad] = useState(false)
   const [customColor, setCustomColor] = useState('')
   const [useCustomColor, setUseCustomColor] = useState(false)
-  const [showVariantOptions, setShowVariantOptions] = useState(false)
+  const [showVariantOptions] = useState(true)
   const [showPurchaseOptions, setShowPurchaseOptions] = useState(false)
   const [showRentalOptions, setShowRentalOptions] = useState(false)
-  const productListingType: ProductListingType = showVariantOptions ? 'multi' : 'simple'
-
-  const handleProductListingTypeChange = (type: ProductListingType) => {
-    const result = applyProductListingTypeChange({
-      type,
-      formData,
-      color: useCustomColor ? customColor.trim() : formData.color || '',
-      showPurchaseOptions,
-      showRentalOptions,
-    })
-
-    setShowVariantOptions(result.showVariantOptions)
-    setShowPurchaseOptions(result.showPurchaseOptions)
-    setShowRentalOptions(result.showRentalOptions)
-    setFormData((prev) => ({
-      ...prev,
-      ...result.formData,
-    }))
-  }
 
   type SizeSystem = NonNullable<ProductFormData['sizeSystem']>
 
@@ -368,7 +347,11 @@ const EditProductPage = () => {
           console.log('Product images:', product.images)
           const orderedImageUrls = getOrderedProductImageUrls(product)
           const mappedVariants = mapProductVariantsToFormRows(product)
-          const isSkuProduct = productHasSkuVariants(product)
+          const multiVariants = ensureMultiVariantFormRows({
+            product,
+            mappedVariants,
+            imageUrls: orderedImageUrls,
+          })
           console.log('Mapped image URLs:', orderedImageUrls)
           setProduct(product)
           const vipActive = isProductVipActive(product)
@@ -412,20 +395,19 @@ const EditProductPage = () => {
             pricePerDay: product.pricePerDay || undefined,
             maxRentalDays: product.maxRentalDays || undefined,
             status: product.status || 'AVAILABLE',
-            variants: mappedVariants,
-            imageUrls: isSkuProduct ? [] : orderedImageUrls,
+            variants: multiVariants,
+            imageUrls: [],
             rentalPriceTiers: product.rentalPriceTiers && product.rentalPriceTiers.length > 0 
               ? product.rentalPriceTiers 
               : [{ minDays: 1, pricePerDay: 0 }]
           })
           const pricingFlags = resolveExclusivePricingFlagsFromProduct({
-            variants: mappedVariants,
+            variants: multiVariants,
             isRentable: product.isRentable,
             rentalPriceTiers: product.rentalPriceTiers,
           })
           setShowPurchaseOptions(pricingFlags.showPurchaseOptions)
           setShowRentalOptions(pricingFlags.showRentalOptions)
-          setShowVariantOptions(isSkuProduct)
           console.log('Form data set successfully')
         } else {
           console.log('API returned success: false')
@@ -1070,11 +1052,6 @@ const EditProductPage = () => {
             </div>
 
           </div>
-
-          <ProductTypeSelector
-            value={productListingType}
-            onChange={handleProductListingTypeChange}
-          />
 
           <ProductMultiPricingSelector
             pricingMode={pricingMode}
