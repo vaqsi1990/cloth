@@ -40,6 +40,7 @@ import { useChatTyping } from "@/hooks/useChatTyping"
 import StructuredData from "@/components/StructuredData"
 import SizePillSelector from "@/components/SizePillSelector"
 import { PRODUCT_IMAGE_QUALITY } from "@/lib/image-config"
+import { isShopReturnUrl, SHOP_RETURN_URL_KEY } from "@/lib/shop-browser-state"
 import { useProductStatusSync } from "@/hooks/useProductStatusSync"
 import {
   findVariantBySelection,
@@ -379,6 +380,17 @@ const ProductPage = () => {
             return false
         }
     }, [productId])
+
+    const handleBackToShop = useCallback(() => {
+        if (typeof window !== 'undefined') {
+            const returnUrl = sessionStorage.getItem(SHOP_RETURN_URL_KEY)
+            if (returnUrl && isShopReturnUrl(returnUrl)) {
+                router.push(returnUrl)
+                return
+            }
+        }
+        router.back()
+    }, [router])
 
     useEffect(() => {
         const fetchData = async () => {
@@ -1637,7 +1649,7 @@ const ProductPage = () => {
                 <div className="max-w-[1200px] mx-auto px-4 py-4">
                     <button
                         type="button"
-                        onClick={() => router.back()}
+                        onClick={handleBackToShop}
                         className="flex md:text-[20px] text-[18px] items-center text-black hover:opacity-80"
                     >
                         <ArrowLeft className="w-5 h-5 mr-2" />

@@ -36,6 +36,15 @@ import ProductListPrice from '@/components/ProductListPrice'
 import ProductListDiscountBadge from '@/components/ProductListDiscountBadge'
 import ProductMasonryGrid from '@/components/ProductMasonryGrid'
 import {
+    buildShopBrowserUrl,
+    HOME_PAGE_STATE_KEY,
+    loadPersistedShopState,
+    mergeShopStateWithUrl,
+    SHOP_PAGE_STATE_KEY,
+    SHOP_RETURN_URL_KEY,
+    type PersistedShopPageState,
+} from '@/lib/shop-browser-state'
+import {
     fetchShopData,
     getShopFilterKey,
     SHOP_FETCH_DEBOUNCE_MS,
@@ -162,8 +171,12 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
     const prevCategoryParamRef = useRef(categoryParam)
     const filtersSnapshotRef = useRef<string | null>(null)
     const allowFilterPageResetRef = useRef(false)
+    const isRestoreSettlingRef = useRef(true)
+    const prevSizeContextRef = useRef<string | null>(null)
+    const hasCompletedInitialRestoreRef = useRef(false)
     const prevPriceCeilingKeyRef = useRef<string | null>(null)
     const [savedScrollY, setSavedScrollY] = useState<number | null>(null)
+    const [scrollRestored, setScrollRestored] = useState(false)
     const [hasRestoredState, setHasRestoredState] = useState(false)
     const [homepageRefreshNonce, setHomepageRefreshNonce] = useState(0)
 
@@ -218,7 +231,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
             scrollY: scrollYRef.current,
         }
         sessionStorage.setItem(
-            homepageMode ? 'homePageState' : 'shopPageState',
+            homepageMode ? HOME_PAGE_STATE_KEY : SHOP_PAGE_STATE_KEY,
             JSON.stringify(state),
         )
     }, [
@@ -238,112 +251,74 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         homepageMode,
     ])
 
+    const applyPersistedShopState = useCallback((state: PersistedShopPageState) => {
+        setSelectedCategories(state.selectedCategories)
+        setPriceRange(state.priceRange)
+        setSelectedSizeSystems(state.selectedSizeSystems)
+        setSelectedSizes(state.selectedSizes)
+        setSelectedColors(state.selectedColors)
+        setSelectedLocations(state.selectedLocations)
+        setRentalStartDate(state.rentalStartDate ? new Date(state.rentalStartDate) : null)
+        setRentalEndDate(state.rentalEndDate ? new Date(state.rentalEndDate) : null)
+        setSortBy(state.sortBy)
+        setPurchaseType(state.purchaseType)
+        setOnlyDiscounted(state.onlyDiscounted)
+        setOnlyVip(state.onlyVip)
+        setCurrentPage(state.currentPage)
+        setSavedScrollY(state.scrollY)
+    }, [])
+
     // Restore saved state once on mount; URL params override session values
     useEffect(() => {
         if (typeof window === 'undefined') return
 
-        if (homepageMode) {
-            let restoredPage = 1
-            let restoredScrollY: number | null = null
+        const storageKey = homepageMode ? HOME_PAGE_STATE_KEY : SHOP_PAGE_STATE_KEY
+        const persisted =
+            loadPersistedShopState(storageKey) ??
+            ({
+                selectedCategories: [],
+                priceRange: [0, 0],
+                selectedSizeSystems: [],
+                selectedSizes: [],
+                selectedColors: [],
+                selectedLocations: [],
+                rentalStartDate: null,
+                rentalEndDate: null,
+                sortBy: 'newest',
+                purchaseType: 'all',
+                onlyDiscounted: false,
+                onlyVip: false,
+                currentPage: 1,
+                scrollY: 0,
+            } satisfies PersistedShopPageState)
 
-            const urlPageRaw = new URLSearchParams(window.location.search).get('page')
-            if (urlPageRaw) {
-                const urlPage = parseInt(urlPageRaw, 10)
-                if (!Number.isNaN(urlPage) && urlPage > 0) {
-                    restoredPage = urlPage
-                }
-            } else {
-                const saved = sessionStorage.getItem('homePageState')
-                if (saved) {
-                    try {
-                        const parsed = JSON.parse(saved)
-                        restoredPage = parsed.currentPage || 1
-                        restoredScrollY =
-                            typeof parsed.scrollY === 'number' ? parsed.scrollY : null
-                    } catch (e) {
-                        console.warn('Failed to restore homepage state', e)
-                    }
-                }
-            }
+        const currentSearchParams = new URLSearchParams(window.location.search)
+        const categoryNames = categoryParam
+            ? [
+                  findCategoryByParam(categoryParam, DEFAULT_PRODUCT_CATEGORIES)?.name ??
+                      categoryParam,
+              ]
+            : persisted.selectedCategories
 
-            setOnlyDiscounted(discountParam === 'true')
-            setOnlyVip(vipParam === 'true')
-            setCurrentPage(restoredPage)
-            setSavedScrollY(restoredScrollY)
-            shopInitializedRef.current = true
-            setHasRestoredState(true)
-            return
-        }
-
-        let restoredCategories: string[] = []
-        let restoredPriceRange: [number, number] = [0, 0]
-        let restoredSizeSystems: string[] = []
-        let restoredSizes: string[] = []
-        let restoredColors: string[] = []
-        let restoredLocations: string[] = []
-        let restoredRentalStart: Date | null = null
-        let restoredRentalEnd: Date | null = null
-        let restoredSortBy = 'newest'
-        let restoredPurchaseType: PurchaseType = 'all'
-        let restoredOnlyDiscounted = false
-        let restoredOnlyVip = false
-        let restoredPage = 1
-        let restoredScrollY: number | null = null
-
-        const saved = sessionStorage.getItem('shopPageState')
-        if (saved) {
-            try {
-                const parsed = JSON.parse(saved)
-                restoredCategories = parsed.selectedCategories || []
-                restoredPriceRange = parsed.priceRange || [0, 0]
-                restoredSizeSystems = parsed.selectedSizeSystems || []
-                restoredSizes = parsed.selectedSizes || []
-                restoredColors = parsed.selectedColors || []
-                restoredLocations = parsed.selectedLocations || []
-                restoredRentalStart = parsed.rentalStartDate ? new Date(parsed.rentalStartDate) : null
-                restoredRentalEnd = parsed.rentalEndDate ? new Date(parsed.rentalEndDate) : null
-                restoredSortBy = parsed.sortBy || 'newest'
-                restoredPurchaseType = parsed.purchaseType || 'all'
-                restoredOnlyDiscounted = Boolean(parsed.onlyDiscounted)
-                restoredOnlyVip = Boolean(parsed.onlyVip)
-                restoredPage = parsed.currentPage || 1
-                restoredScrollY = typeof parsed.scrollY === 'number' ? parsed.scrollY : null
-            } catch (e) {
-                console.warn('Failed to restore shop state', e)
-            }
-        }
-
-        const urlPageRaw = new URLSearchParams(window.location.search).get('page')
-        if (urlPageRaw) {
-            const urlPage = parseInt(urlPageRaw, 10)
-            if (!Number.isNaN(urlPage) && urlPage > 0) {
-                restoredPage = urlPage
-            }
-        }
-
-        const initialCategory = categoryParam
-            ? findCategoryByParam(categoryParam, DEFAULT_PRODUCT_CATEGORIES)?.name ??
-              categoryParam
-            : restoredCategories
-        setSelectedCategories(
-            Array.isArray(initialCategory) ? initialCategory : [initialCategory].filter(Boolean),
+        const merged = mergeShopStateWithUrl(
+            {
+                ...persisted,
+                selectedCategories: categoryNames.filter(Boolean),
+            },
+            currentSearchParams,
+            {
+                discountParam,
+                vipParam,
+                categoryNames: categoryParam ? categoryNames.filter(Boolean) : null,
+            },
         )
-        setPriceRange(restoredPriceRange)
-        setSelectedSizeSystems(restoredSizeSystems)
-        setSelectedSizes(restoredSizes)
-        setSelectedColors(restoredColors)
-        setSelectedLocations(restoredLocations)
-        setRentalStartDate(restoredRentalStart)
-        setRentalEndDate(restoredRentalEnd)
-        setSortBy(restoredSortBy)
-        setPurchaseType(restoredPurchaseType)
-        setOnlyDiscounted(discountParam === 'true' || restoredOnlyDiscounted)
-        setOnlyVip(vipParam === 'true' || restoredOnlyVip)
-        setCurrentPage(restoredPage)
-        setSavedScrollY(restoredScrollY)
+
+        applyPersistedShopState(merged)
 
         shopInitializedRef.current = true
         prevCategoryParamRef.current = categoryParam
+        isRestoreSettlingRef.current = true
+        setScrollRestored(false)
         setHasRestoredState(true)
     }, [])
 
@@ -359,6 +334,14 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
 
     useEffect(() => {
         if (!hasRestoredState) return
+
+        const sizeContextKey = `${isChildrenShop}|${isFootwearShop}|${isSizeOptionalShop}|${footwearGender}`
+        if (prevSizeContextRef.current === null) {
+            prevSizeContextRef.current = sizeContextKey
+            return
+        }
+        if (prevSizeContextRef.current === sizeContextKey) return
+        prevSizeContextRef.current = sizeContextKey
 
         const sizeContext = {
             isChildren: isChildrenShop && !isFootwearShop,
@@ -420,51 +403,12 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
     }, [saveState])
 
     // Restore scroll after data load
-    const [scrollRestored, setScrollRestored] = useState(false)
     useEffect(() => {
         if (!loading && hasRestoredState && !scrollRestored && savedScrollY !== null) {
             window.scrollTo(0, savedScrollY)
             setScrollRestored(true)
         }
     }, [loading, hasRestoredState, scrollRestored, savedScrollY])
-
-    const syncPageToUrl = useCallback(
-        (page: number) => {
-            if (typeof window === 'undefined') return
-            const params = new URLSearchParams(window.location.search)
-            if (page <= 1) {
-                params.delete('page')
-            } else {
-                params.set('page', String(page))
-            }
-            const query = params.toString()
-            const base = homepageMode ? '/' : '/shop'
-            router.replace(query ? `${base}?${query}` : base, { scroll: false })
-        },
-        [homepageMode, router],
-    )
-
-    // Keep pagination in sync when navigating with browser back/forward
-    useEffect(() => {
-        if (!hasRestoredState) return
-        const raw = searchParams.get('page')
-        if (!raw) return
-        const urlPage = Math.max(1, parseInt(raw, 10) || 1)
-        setCurrentPage((prev) => (prev === urlPage ? prev : urlPage))
-    }, [searchParams, hasRestoredState])
-
-    // Reflect restored page in URL so mobile back returns to the same page
-    useEffect(() => {
-        if (!hasRestoredState) return
-        if (currentPage > 1 && !searchParams.get('page')) {
-            syncPageToUrl(currentPage)
-        }
-    }, [hasRestoredState, currentPage, searchParams, syncPageToUrl])
-
-    useEffect(() => {
-        if (!hasRestoredState) return
-        allowFilterPageResetRef.current = !loading
-    }, [hasRestoredState, loading])
 
     const clearSearch = () => {
         const params = new URLSearchParams(Array.from(searchParams.entries()))
@@ -532,6 +476,98 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
             sortBy,
         ],
     )
+
+    const buildCurrentShopUrl = useCallback(
+        (pageOverride?: number) => {
+            const base = homepageMode ? '/' : '/shop'
+            return buildShopBrowserUrl({
+                basePath: base,
+                currentSearchParams: new URLSearchParams(searchParams.toString()),
+                categoryParam,
+                categorySlug: resolveCategoryApiSlug(categoryParam, selectedCategories),
+                currentPage: pageOverride ?? currentPage,
+                onlyDiscounted,
+                onlyVip,
+                filters: shopListFilters(),
+            })
+        },
+        [
+            homepageMode,
+            searchParams,
+            categoryParam,
+            selectedCategories,
+            currentPage,
+            onlyDiscounted,
+            onlyVip,
+            resolveCategoryApiSlug,
+            shopListFilters,
+        ],
+    )
+
+    const syncShopUrl = useCallback(
+        (pageOverride?: number) => {
+            if (typeof window === 'undefined') return
+            const nextUrl = buildCurrentShopUrl(pageOverride)
+            const currentUrl = `${window.location.pathname}${window.location.search}`
+            if (currentUrl !== nextUrl) {
+                router.replace(nextUrl, { scroll: false })
+            }
+        },
+        [buildCurrentShopUrl, router],
+    )
+
+    // Keep pagination in sync when navigating with browser back/forward
+    useEffect(() => {
+        if (!hasRestoredState) return
+        const raw = searchParams.get('page')
+        if (!raw) return
+        const urlPage = Math.max(1, parseInt(raw, 10) || 1)
+        setCurrentPage((prev) => (prev === urlPage ? prev : urlPage))
+    }, [searchParams, hasRestoredState])
+
+    // Persist filters/page in the URL so product back returns to the same list
+    useEffect(() => {
+        if (!hasRestoredState || isRestoreSettlingRef.current) return
+        const timer = window.setTimeout(() => {
+            syncShopUrl()
+        }, 200)
+        return () => window.clearTimeout(timer)
+    }, [
+        hasRestoredState,
+        syncShopUrl,
+        selectedCategories,
+        priceRange,
+        selectedSizeSystems,
+        selectedSizes,
+        selectedColors,
+        selectedLocations,
+        rentalStartDate,
+        rentalEndDate,
+        sortBy,
+        purchaseType,
+        onlyDiscounted,
+        onlyVip,
+        currentPage,
+    ])
+
+    useEffect(() => {
+        if (
+            !hasRestoredState ||
+            loading ||
+            hasCompletedInitialRestoreRef.current
+        ) {
+            return
+        }
+
+        syncShopUrl()
+        const frameId = window.requestAnimationFrame(() => {
+            isRestoreSettlingRef.current = false
+            allowFilterPageResetRef.current = true
+            hasCompletedInitialRestoreRef.current = true
+        })
+
+        return () => window.cancelAnimationFrame(frameId)
+    }, [hasRestoredState, loading, syncShopUrl])
 
     const shopQueryKey = React.useMemo(() => {
         const params = new URLSearchParams()
@@ -658,14 +694,19 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
 
     const goToPage = (page: number) => {
         setCurrentPage(page)
-        syncPageToUrl(page)
+        syncShopUrl(page)
         window.scrollTo({ top: 0, behavior: 'smooth' })
     }
 
     const handleProductNavigate = useCallback(() => {
         scrollYRef.current = window.scrollY
+        const returnUrl = buildCurrentShopUrl()
         saveState()
-    }, [saveState])
+        if (typeof window !== 'undefined') {
+            sessionStorage.setItem(SHOP_RETURN_URL_KEY, returnUrl)
+        }
+        syncShopUrl()
+    }, [buildCurrentShopUrl, saveState, syncShopUrl])
 
     // Single orchestrated fetch via /api/shop
     useEffect(() => {
@@ -797,7 +838,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
             vipParam,
         })
 
-        if (!allowFilterPageResetRef.current) {
+        if (!allowFilterPageResetRef.current || isRestoreSettlingRef.current) {
             filtersSnapshotRef.current = snapshot
             return
         }
@@ -810,7 +851,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         if (filtersSnapshotRef.current !== snapshot) {
             filtersSnapshotRef.current = snapshot
             setCurrentPage(1)
-            syncPageToUrl(1)
+            syncShopUrl(1)
         }
     }, [
         hasRestoredState,
@@ -831,7 +872,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         searchParam,
         discountParam,
         vipParam,
-        syncPageToUrl,
+        syncShopUrl,
     ])
 
     // Handle category selection
@@ -881,8 +922,9 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
     const clearFilters = () => {
         // Clear sessionStorage first
         if (typeof window !== 'undefined') {
-            sessionStorage.removeItem('shopPageState')
-            sessionStorage.removeItem('homePageState')
+            sessionStorage.removeItem(SHOP_PAGE_STATE_KEY)
+            sessionStorage.removeItem(HOME_PAGE_STATE_KEY)
+            sessionStorage.removeItem(SHOP_RETURN_URL_KEY)
         }
         
         // Clear all state filters immediately
@@ -897,7 +939,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         setOnlyDiscounted(false)
         setOnlyVip(false)
         setCurrentPage(1)
-        syncPageToUrl(1)
+        syncShopUrl(1)
         
         // Price range will be updated when products are fetched
         // Set to 0 initially, will be updated by useEffect when products load
