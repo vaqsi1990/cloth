@@ -161,9 +161,13 @@ const CartPage = () => {
                                                 </div>
 
                                                 <div className="flex-1 min-w-0">
-                                                    <h3 className="text-lg font-medium text-black truncate">
+                                                    <Link
+                                                        href={`/product/${item.productId}`}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className="text-lg font-medium text-black truncate hover:text-[#1B3729] hover:underline block"
+                                                    >
                                                         {item.productName}
-                                                    </h3>
+                                                    </Link>
                                                     <p className="text-black md:text-[18px] text-[16px]">
                                                         {item.color && (
                                                             <>
@@ -237,7 +241,12 @@ const CartPage = () => {
 
                                 {selectedItem ? (
                                     <div className="mb-6 p-4 border border-gray-200 rounded-lg">
-                                        <p className="font-medium text-black truncate">{selectedItem.productName}</p>
+                                        <Link
+                                            href={`/product/${selectedItem.productId}`}
+                                            className="font-medium text-black truncate hover:text-[#1B3729] hover:underline block"
+                                        >
+                                            {selectedItem.productName}
+                                        </Link>
                                         <p className="text-black text-sm mt-1">
                                             {selectedItem.color && <>ფერი: {selectedItem.color} · </>}
                                             ზომა: {selectedItem.size}
