@@ -10,6 +10,7 @@ export type ProductVariantSkuLike = {
   color?: string | null
   size?: string | null
   imageUrl?: string | null
+  imageUrls?: string[] | null
 }
 
 export type ProductVariantRecord = ProductVariantSkuLike & {
@@ -29,7 +30,35 @@ export type ProductWithVariants = {
 }
 
 export type ProductWithVariantsAndImages = ProductWithVariants & {
-  images?: Array<{ url: string; position?: number | null }> | null
+  images?: Array<{ url: string; position?: number | null; alt?: string | null }> | null
+}
+
+export const VARIANT_COLOR_IMAGE_ALT_PREFIX = 'variant-color:'
+
+export function buildVariantColorImageAlt(color: string, index: number): string {
+  return `${VARIANT_COLOR_IMAGE_ALT_PREFIX}${encodeURIComponent(color)}:${index}`
+}
+
+export function getColorFromVariantImageAlt(alt?: string | null): string | null {
+  if (!alt?.startsWith(VARIANT_COLOR_IMAGE_ALT_PREFIX)) return null
+  const rest = alt.slice(VARIANT_COLOR_IMAGE_ALT_PREFIX.length)
+  const lastColon = rest.lastIndexOf(':')
+  if (lastColon <= 0) return null
+  try {
+    return decodeURIComponent(rest.slice(0, lastColon))
+  } catch {
+    return null
+  }
+}
+
+export function getVariantRowImageUrls(row: {
+  imageUrls?: string[] | null
+  imageUrl?: string | null
+}): string[] {
+  const fromArray = (row.imageUrls || []).map((url) => url.trim()).filter(Boolean)
+  if (fromArray.length > 0) return fromArray
+  const single = row.imageUrl?.trim()
+  return single ? [single] : []
 }
 
 export const productVariantInputSchema = z.object({
@@ -51,6 +80,7 @@ export const productVariantInputSchema = z.object({
     (val) => (val === '' || val === null ? undefined : val),
     z.string().url('არასწორი URL').optional(),
   ),
+  imageUrls: z.array(z.string().url('არასწორი URL')).optional(),
 })
 
 export type ProductVariantInput = z.infer<typeof productVariantInputSchema>
@@ -268,6 +298,8 @@ export type ProductVariantFormRow = {
   price: number
   stock: number
   imageUrl?: string
+  /** Multiple gallery images for the same color row (up to 4 in the form UI). */
+  imageUrls?: string[]
 }
 
 /** Accepts both strict form rows and looser SKU validation rows (nullable fields). */
@@ -354,10 +386,12 @@ export function expandVariantFormRows(
   const expanded: ProductVariantFormRow[] = []
 
   for (const row of rows) {
+    const urls = getVariantRowImageUrls(row)
     const shared = {
       color: row.color?.trim() || undefined,
       sizeSystem: row.sizeSystem,
-      imageUrl: row.imageUrl?.trim() || undefined,
+      imageUrls: urls.length > 0 ? urls : undefined,
+      imageUrl: urls[0],
     }
     const sizes = getFormRowSizes(row)
 
@@ -408,7 +442,7 @@ function formRowGroupKey(
   options?: { perSizeSalePricing?: boolean },
 ): string {
   const color = row.color?.trim() || ''
-  const imageUrl = row.imageUrl?.trim() || ''
+  const imageUrl = getVariantRowImageUrls(row)[0] || ''
   const sizeSystem = row.sizeSystem || ''
 
   if (options?.perSizeSalePricing ?? true) {
@@ -555,15 +589,115 @@ export function validateSkuVariantRowSizesUniqueness(
   return errors
 }
 
-export function getVariantImageUrls(variants: Array<{ imageUrl?: string | null }>): string[] {
+export function getVariantImageUrls(
+  variants: Array<{ imageUrl?: string | null; imageUrls?: string[] | null }>,
+): string[] {
+  return mergeProductImageUrls(...variants.map((variant) => getVariantRowImageUrls(variant)))
+}
+
+export function dedupeSkuVariantRowsByColor<T extends { color?: string | null }>(variants: T[]): T[] {
+  const byColor = new Map<string, T>()
+  for (const variant of variants) {
+    const color = variant.color?.trim() || ''
+    if (!byColor.has(color)) {
+      byColor.set(color, variant)
+    }
+  }
+  return Array.from(byColor.values())
+}
+
+export function buildSkuProductImageCreates(
+  formRows: Array<{ color?: string | null; imageUrls?: string[] | null; imageUrl?: string | null }>,
+  productName: string,
+): Array<{ url: string; alt: string; position: number }> {
+  const creates: Array<{ url: string; alt: string; position: number }> = []
+  let position = 0
+
+  for (const row of formRows) {
+    const urls = getVariantRowImageUrls(row)
+    const color = row.color?.trim() || ''
+
+    for (const [index, url] of urls.entries()) {
+      creates.push({
+        url,
+        alt: color
+          ? buildVariantColorImageAlt(color, index)
+          : `${productName} - სურათი ${position + 1}`,
+        position: position++,
+      })
+    }
+  }
+
+  return creates
+}
+
+export function buildProductImageCreates(input: {
+  isSkuVariantProduct?: boolean
+  productName: string
+  imageUrls: string[]
+  variants: Array<{ color?: string | null; imageUrls?: string[] | null; imageUrl?: string | null }>
+}): Array<{ url: string; alt: string; position: number }> {
+  if (input.isSkuVariantProduct) {
+    const skuCreates = buildSkuProductImageCreates(
+      dedupeSkuVariantRowsByColor(input.variants),
+      input.productName,
+    )
+    if (skuCreates.length > 0) {
+      return skuCreates
+    }
+  }
+
+  return input.imageUrls.map((url, index) => ({
+    url,
+    alt: `${input.productName} - სურათი ${index + 1}`,
+    position: index,
+  }))
+}
+
+export function attachVariantImageUrlsFromProduct<
+  T extends { color?: string; imageUrl?: string; imageUrls?: string[] },
+>(
+  rows: T[],
+  productImages?: Array<{ url: string; alt?: string | null; position?: number | null }> | null,
+): T[] {
+  if (!productImages?.length) {
+    return rows.map((row) => ({
+      ...row,
+      imageUrls: getVariantRowImageUrls(row),
+      imageUrl: getVariantRowImageUrls(row)[0],
+    }))
+  }
+
+  return rows.map((row) => {
+    const color = row.color?.trim() || ''
+    const taggedUrls = productImages
+      .filter((image) => getColorFromVariantImageAlt(image.alt) === color)
+      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+      .map((image) => image.url.trim())
+      .filter(Boolean)
+
+    const urls = taggedUrls.length > 0 ? [...new Set(taggedUrls)] : getVariantRowImageUrls(row)
+    return {
+      ...row,
+      imageUrls: urls,
+      imageUrl: urls[0],
+    }
+  })
+}
+
+export function mergeProductImageUrls(
+  ...urlLists: Array<Array<string | null | undefined> | undefined>
+): string[] {
   const seen = new Set<string>()
   const urls: string[] = []
 
-  for (const variant of variants) {
-    const url = variant.imageUrl?.trim()
-    if (url && !seen.has(url)) {
-      seen.add(url)
-      urls.push(url)
+  for (const list of urlLists) {
+    for (const raw of list ?? []) {
+      const url = raw?.trim()
+      if (url && !seen.has(url)) {
+        seen.add(url)
+        urls.push(url)
+      }
     }
   }
 
@@ -587,10 +721,21 @@ export function resolveProductImagesForWrite<T extends VariantImageWriteRow>(inp
   const isSkuProduct = isSkuVariantProductForWrite(input)
 
   if (isSkuProduct) {
-    return {
-      imageUrls: getVariantImageUrls(input.variants),
-      variants: input.variants,
-    }
+    const variantUrls = getVariantImageUrls(input.variants)
+    const galleryUrls = input.imageUrls
+      .map((url) => url.trim())
+      .filter(Boolean)
+    const imageUrls = mergeProductImageUrls(galleryUrls, variantUrls)
+    const primaryImage = imageUrls[0]
+
+    const variants = primaryImage
+      ? input.variants.map((variant) => ({
+          ...variant,
+          imageUrl: variant.imageUrl?.trim() || primaryImage,
+        }))
+      : input.variants
+
+    return { imageUrls, variants }
   }
 
   const imageUrls = input.imageUrls
@@ -612,11 +757,24 @@ export function resolveProductImagesForWrite<T extends VariantImageWriteRow>(inp
 
 /** Unique variant image URLs for the current color/size selection (color alone is enough to switch gallery). */
 export function getVariantImagesForSelection(
-  product: ProductWithVariants,
+  product: ProductWithVariantsAndImages,
   selection: { color?: string | null; size?: string | null },
 ): string[] {
   const color = selection.color?.trim() || null
   const size = selection.size?.trim() || null
+
+  if (color && product.images?.length) {
+    const colorImages = product.images
+      .filter((image) => getColorFromVariantImageAlt(image.alt) === color)
+      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+      .map((image) => image.url.trim())
+      .filter(Boolean)
+
+    if (colorImages.length > 0) {
+      return [...new Set(colorImages)]
+    }
+  }
+
   const urls: string[] = []
   const seen = new Set<string>()
 
@@ -706,7 +864,7 @@ export function validateSkuVariantRows(
     if (requireSize && getFormRowSizes(variant).length === 0) {
       errors[`variants.${index}.size`] = 'ზომა აუცილებელია'
     }
-    if (!variant.imageUrl?.trim()) {
+    if (getVariantRowImageUrls(variant).length === 0) {
       errors[`variants.${index}.imageUrl`] = 'სურათი აუცილებელია'
     }
 

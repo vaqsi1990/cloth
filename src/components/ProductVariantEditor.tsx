@@ -350,8 +350,15 @@ export default function ProductVariantEditor({
             {requireImage && (
               <div className="md:col-span-2 lg:col-span-1">
                 <VariantImageUpload
-                  value={variant.imageUrl}
-                  onChange={(url) => onUpdate(index, 'imageUrl', url)}
+                  value={variant.imageUrls ?? (variant.imageUrl ? [variant.imageUrl] : [])}
+                  onChange={(urls) => {
+                    if (onPatch) {
+                      onPatch(index, { imageUrls: urls, imageUrl: urls[0] })
+                      return
+                    }
+                    onUpdate(index, 'imageUrls', urls)
+                    onUpdate(index, 'imageUrl', urls[0])
+                  }}
                   error={errors[`variants.${index}.imageUrl`]}
                 />
               </div>

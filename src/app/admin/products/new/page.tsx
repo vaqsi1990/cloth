@@ -514,7 +514,7 @@ const NewProductPage = () => {
         requireVariantSalePrices: showPurchaseOptions && showVariantOptions,
         requireVariantSize: !isSizeOptional,
         isRentable: pricing.isRentable,
-        imageUrls: showVariantOptions ? getVariantImageUrls(variantsToSubmit) : formData.imageUrls,
+        imageUrls: showVariantOptions ? getVariantImageUrls(formData.variants) : formData.imageUrls,
         rentalPriceTiers: pricing.rentalPriceTiers,
         variants: variantsToSubmit.map(({ discount: _discount, ...variant }) => variant),
         color: useCustomColor ? customColor.trim() : formData.color,

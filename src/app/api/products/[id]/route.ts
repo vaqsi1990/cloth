@@ -24,6 +24,7 @@ import {
   buildDisplayableUrlMap,
 } from '@/lib/ensure-displayable-image-url'
 import {
+  buildProductImageCreates,
   deriveProductFieldsFromVariants,
   getVariantImageUrls,
   mapVariantInputForCreate,
@@ -427,11 +428,17 @@ export async function PUT(
 
     const displayableUrlMap = await buildDisplayableUrlMap([
       ...validatedData.imageUrls,
-      ...validatedData.variants.map((variant) => variant.imageUrl),
+      ...validatedData.variants.flatMap((variant) => [
+        ...(variant.imageUrls || []),
+        ...(variant.imageUrl ? [variant.imageUrl] : []),
+      ]),
     ])
     const normalizedVariants = validatedData.variants.map((variant) => ({
       ...variant,
       imageUrl: applyDisplayableUrlMap(variant.imageUrl, displayableUrlMap) ?? undefined,
+      imageUrls: variant.imageUrls?.map(
+        (url) => applyDisplayableUrlMap(url, displayableUrlMap) ?? url,
+      ),
     }))
     const normalizedImageUrls = validatedData.imageUrls.map(
       (url) => applyDisplayableUrlMap(url, displayableUrlMap) ?? url,
@@ -474,11 +481,12 @@ export async function PUT(
       rejectionReason: shouldResetApproval ? null : existingProduct.rejectionReason,
       // Create new images
       images: {
-        create: resolvedImageUrls.map((url, index) => ({
-          url: url,
-          alt: `${validatedData.name} - სურათი ${index + 1}`,
-          position: index
-        }))
+        create: buildProductImageCreates({
+          isSkuVariantProduct: validatedData.isSkuVariantProduct,
+          productName: validatedData.name,
+          imageUrls: resolvedImageUrls,
+          variants: normalizedVariants,
+        }),
       },
       // Create new variants
       variants: {
