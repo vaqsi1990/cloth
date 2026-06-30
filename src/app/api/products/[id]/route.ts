@@ -37,7 +37,7 @@ import {
 } from '@/lib/product-create-validation'
 import { revalidateProductCaches } from '@/lib/product-cache-revalidation'
 import { removeCartItemsForProduct } from '@/lib/cart-cleanup'
-import { resolveCategoryIdForWrite } from '@/lib/category-sync'
+import { resolveCategoryIdForWrite, resolveProductCategoryForRead } from '@/lib/category-sync'
 import {
   isProductStatus,
   updateProductStatus,
@@ -91,6 +91,7 @@ const productSchema = z.object({
   ),
   rating: z.number().min(0).max(5).optional(),
   categoryId: optionalCategoryIdField,
+  categorySlug: z.string().optional(),
   isRentable: z.boolean().default(true),
   pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional(),
   maxRentalDays: z.number().optional(),
@@ -301,6 +302,17 @@ export async function GET(
       }
     }
 
+    if (finalProduct.categoryId) {
+      const { category } = await resolveProductCategoryForRead(
+        finalProduct.categoryId,
+        finalProduct.gender,
+        finalProduct.id,
+      )
+      if (category) {
+        finalProduct = { ...finalProduct, category }
+      }
+    }
+
     return NextResponse.json({
       success: true,
       product: finalProduct
@@ -380,7 +392,10 @@ export async function PUT(
 
     let resolvedCategoryId: number | null = null
     if (validatedData.categoryId) {
-      resolvedCategoryId = await resolveCategoryIdForWrite(validatedData.categoryId)
+      resolvedCategoryId = await resolveCategoryIdForWrite(
+        validatedData.categoryId,
+        validatedData.categorySlug,
+      )
       if (!resolvedCategoryId) {
         return NextResponse.json(
           { success: false, message: 'არჩეული კატეგორია ვერ მოიძებნა' },
@@ -536,10 +551,19 @@ export async function PUT(
 
     revalidateProductCaches(productId, { authorId: updatedProduct.userId })
 
+    const { category: displayCategory } = await resolveProductCategoryForRead(
+      updatedProduct.categoryId,
+      updatedProduct.gender,
+      updatedProduct.id,
+    )
+
     return NextResponse.json({
       success: true,
       message: 'პროდუქტი წარმატებით განახლდა',
-      product: updatedProduct
+      product: {
+        ...updatedProduct,
+        category: displayCategory ?? updatedProduct.category,
+      },
     })
     
   } catch (error) {

@@ -25,6 +25,7 @@ import {
   mergeProductCategoriesWithDefaults,
   PRODUCT_GENDER_OPTIONS,
   resolveProductFormCategoryId,
+  resolveCategorySlugForSubmit,
 } from '@/lib/product-categories'
 import {
   productPickupAddressField,
@@ -107,6 +108,7 @@ const productSchema = z.object({
   ),
   rating: z.number().min(0).max(5).optional(),
   categoryId: optionalCategoryIdField,
+  categorySlug: z.string().optional(),
   isRentable: z.boolean().default(true),
   pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').nullable().optional(),
   maxRentalDays: z.number().nullable().optional(),
@@ -753,6 +755,9 @@ const EditProductPage = () => {
               sizeSystem: showVariantOptions ? undefined : formData.sizeSystem,
             }
           : {}),
+        categorySlug:
+          resolveCategorySlugForSubmit(formData.categoryId, genderCategories) ??
+          resolveCategorySlugForSubmit(formData.categoryId, categories),
       }
       
       console.log('Data to validate:', JSON.stringify(dataToValidate, null, 2))

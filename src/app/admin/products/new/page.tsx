@@ -21,6 +21,7 @@ import {
   isSizeOptionalCategoryId,
   clearVariantSizes,
   PRODUCT_GENDER_OPTIONS,
+  resolveCategorySlugForSubmit,
   type ProductGender,
 } from '@/lib/product-categories'
 import {
@@ -96,6 +97,7 @@ const productSchema = z.object({
   discountDays: z.number().int().min(1).optional(),
   rating: z.number().min(0).max(5).optional(),
   categoryId: optionalCategoryIdField,
+  categorySlug: z.string().optional(),
   isRentable: z.boolean().default(true), // 🆕
   pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional(), // 🆕
   maxRentalDays: z.number().optional(), // 🆕
@@ -524,6 +526,9 @@ const NewProductPage = () => {
               sizeSystem: showVariantOptions ? undefined : formData.sizeSystem,
             }
           : {}),
+        categorySlug:
+          resolveCategorySlugForSubmit(formData.categoryId, genderCategories) ??
+          resolveCategorySlugForSubmit(formData.categoryId, categories),
       }
 
       // Validate form data

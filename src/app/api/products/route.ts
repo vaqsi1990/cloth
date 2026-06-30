@@ -82,6 +82,7 @@ const productSchema = z.object({
   discountDays: z.number().int().min(1).optional(),
   rating: z.number().min(0).max(5).optional(),
   categoryId: optionalCategoryIdField,
+  categorySlug: z.string().optional(),
   isRentable: z.boolean().default(true),
   pricePerDay: z.number().min(0, 'ფასი უნდა იყოს დადებითი').optional(),
   maxRentalDays: z.number().optional(),
@@ -678,7 +679,10 @@ export async function POST(request: NextRequest) {
 
     let resolvedCategoryId: number | null = null
     if (validatedData.categoryId) {
-      resolvedCategoryId = await resolveCategoryIdForWrite(validatedData.categoryId)
+      resolvedCategoryId = await resolveCategoryIdForWrite(
+        validatedData.categoryId,
+        validatedData.categorySlug,
+      )
       if (!resolvedCategoryId) {
         return NextResponse.json(
           { success: false, message: 'არჩეული კატეგორია ვერ მოიძებნა' },

@@ -774,6 +774,92 @@ export function filterProductCategoriesByGender<T extends ProductCategory>(
 
 export type ProductCategoryRef = Pick<ProductCategory, 'id' | 'name' | 'slug'>
 
+/** Canonical template row for a static taxonomy id (slug is authoritative, not numeric id). */
+export function findCanonicalCategoryByStaticId(
+  categoryId: number,
+): ProductCategory | undefined {
+  return (
+    DEFAULT_PRODUCT_CATEGORIES.find((entry) => entry.id === categoryId) ??
+    CANONICAL_PRODUCT_TAXONOMY.find((entry) => entry.id === categoryId)
+  )
+}
+
+const GENDER_PANTS_SUIT_SLUG: Record<
+  Exclude<ProductGender, 'UNISEX'>,
+  string
+> = {
+  WOMEN: 'women-pants-suit',
+  MEN: 'men-pants-suit',
+  CHILDREN: 'kids-pants-suit',
+}
+
+function getGenderCategoryList(
+  gender: ProductGender | null | undefined,
+): ProductCategory[] {
+  if (gender === 'MEN') return MEN_PRODUCT_CATEGORIES
+  if (gender === 'CHILDREN') return CHILDREN_PRODUCT_CATEGORIES
+  if (gender === 'WOMEN') return WOMEN_PRODUCT_CATEGORIES
+  return DEFAULT_PRODUCT_CATEGORIES
+}
+
+/** Find canonical category row by slug across all taxonomies. */
+export function findCanonicalCategoryBySlug(
+  slug: string,
+): ProductCategory | undefined {
+  return (
+    DEFAULT_PRODUCT_CATEGORIES.find((entry) => entry.slug === slug) ??
+    CANONICAL_PRODUCT_TAXONOMY.find((entry) => entry.slug === slug)
+  )
+}
+
+/** Normalize category name for API/display using canonical taxonomy slug. */
+export function normalizeProductCategoryForDisplay<
+  T extends ProductCategory | null | undefined,
+>(category: T): T {
+  if (!category) return category
+
+  const canonical = findCanonicalCategoryBySlug(category.slug)
+  if (!canonical || canonical.name === category.name) return category
+
+  return { ...category, name: canonical.name }
+}
+
+/** Gender-aware category label for product detail and listings. */
+export function resolveProductCategoryForDisplay<
+  T extends ProductCategory | null | undefined,
+>(category: T, gender?: ProductGender | null): T {
+  if (!category) return category
+
+  let resolved: ProductCategory = { ...category }
+
+  if (gender && gender !== 'UNISEX') {
+    const genderList = getGenderCategoryList(gender)
+
+    if (resolved.slug === 'suit') {
+      const pantsSuitSlug = GENDER_PANTS_SUIT_SLUG[gender]
+      const pantsSuit = genderList.find((entry) => entry.slug === pantsSuitSlug)
+      if (pantsSuit) {
+        resolved = { ...resolved, name: pantsSuit.name, slug: pantsSuit.slug }
+      }
+    } else {
+      const genderMatch = genderList.find((entry) => entry.slug === resolved.slug)
+      if (genderMatch) {
+        resolved = { ...resolved, name: genderMatch.name }
+      }
+    }
+  }
+
+  return normalizeProductCategoryForDisplay(resolved) as T
+}
+
+export function resolveCategorySlugForSubmit(
+  categoryId: number | undefined,
+  categories: ProductCategory[],
+): string | undefined {
+  if (!categoryId) return undefined
+  return categories.find((entry) => entry.id === categoryId)?.slug
+}
+
 /** Map stored product category id to the id used in the current form category list (by slug when ids diverge). */
 export function resolveProductFormCategoryId(
   categoryId: number | undefined,
@@ -783,14 +869,14 @@ export function resolveProductFormCategoryId(
   const list = categories.length > 0 ? categories : DEFAULT_PRODUCT_CATEGORIES
 
   const mapIdInList = (id: number): number | undefined => {
-    if (list.some((entry) => entry.id === id)) {
-      return id
-    }
-
-    const canonical = CANONICAL_PRODUCT_TAXONOMY.find((entry) => entry.id === id)
+    const canonical = findCanonicalCategoryByStaticId(id)
     if (canonical) {
       const bySlug = list.find((entry) => entry.slug === canonical.slug)
       if (bySlug) return bySlug.id
+    }
+
+    if (list.some((entry) => entry.id === id)) {
+      return id
     }
 
     return id

@@ -10,7 +10,7 @@ import {
 type ProductCategorySelectProps = {
   categories: ProductCategory[]
   value: number | ''
-  onChange: (categoryId: number | undefined) => void
+  onChange: (categoryId: number | undefined, categorySlug?: string) => void
   className?: string
   placeholder?: string
   gender?: ProductGender | null
@@ -28,19 +28,30 @@ export default function ProductCategorySelect({
     ? groupProductCategoriesForGender(categories, gender)
     : groupProductCategories(categories)
 
+  const flatCategories = groups.flatMap((group) => group.categories)
+  const selectedSlug = value
+    ? flatCategories.find((category) => category.id === value)?.slug ?? ''
+    : ''
+
   return (
     <select
-      value={value}
-      onChange={(e) =>
-        onChange(e.target.value ? parseInt(e.target.value, 10) : undefined)
-      }
+      value={selectedSlug}
+      onChange={(e) => {
+        const slug = e.target.value
+        if (!slug) {
+          onChange(undefined)
+          return
+        }
+        const category = flatCategories.find((entry) => entry.slug === slug)
+        onChange(category?.id, category?.slug)
+      }}
       className={className}
     >
       <option value="">{placeholder}</option>
       {groups.map((group) => (
         <optgroup key={group.label} label={group.label}>
           {group.categories.map((category) => (
-            <option key={category.id} value={category.id}>
+            <option key={category.slug} value={category.slug}>
               {category.name}
             </option>
           ))}
