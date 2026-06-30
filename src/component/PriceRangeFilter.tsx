@@ -40,6 +40,10 @@ export default function PriceRangeFilter({
     const draggingRef = useRef<'min' | 'max' | null>(null)
     const localRangeRef = useRef<[number, number]>(priceRange)
     const [localRange, setLocalRange] = useState<[number, number]>(priceRange)
+    const [editingMin, setEditingMin] = useState(false)
+    const [editingMax, setEditingMax] = useState(false)
+    const [minText, setMinText] = useState('')
+    const [maxText, setMaxText] = useState('')
 
     const updateLocalRange = useCallback((next: [number, number]) => {
         localRangeRef.current = next
@@ -47,14 +51,26 @@ export default function PriceRangeFilter({
     }, [])
 
     useEffect(() => {
-        if (draggingRef.current === null) {
+        if (draggingRef.current === null && !editingMin && !editingMax) {
             const next = clampRange(priceRange[0], priceRange[1], maxPrice)
             localRangeRef.current = next
             setLocalRange(next)
         }
-    }, [priceRange, maxPrice])
+    }, [priceRange, maxPrice, editingMin, editingMax])
 
     const [minValue, maxValue] = localRange
+
+    useEffect(() => {
+        if (!editingMin) {
+            setMinText(formatInputValue(minValue))
+        }
+    }, [minValue, editingMin])
+
+    useEffect(() => {
+        if (!editingMax) {
+            setMaxText(formatInputValue(maxValue))
+        }
+    }, [maxValue, editingMax])
 
     const commitRange = useCallback(
         (nextMin: number, nextMax: number) => {
@@ -77,13 +93,13 @@ export default function PriceRangeFilter({
         [maxPrice],
     )
 
-    const handleMinInput = (raw: string) => {
+    const commitMinInput = (raw: string) => {
         const parsed = parseInputValue(raw)
         if (parsed === null) return
         commitRange(Math.min(parsed, maxValue), maxValue)
     }
 
-    const handleMaxInput = (raw: string) => {
+    const commitMaxInput = (raw: string) => {
         if (raw === '') {
             commitRange(minValue, maxPrice)
             return
@@ -160,21 +176,47 @@ export default function PriceRangeFilter({
         <div className="space-y-3">
             <div className="flex items-center gap-2">
                 <input
-                    type="number"
-                    min={0}
-                    max={maxValue}
-                    value={formatInputValue(minValue)}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={minText}
                     placeholder="0"
-                    onChange={(e) => handleMinInput(e.target.value)}
+                    onFocus={() => {
+                        setEditingMin(true)
+                        setMinText(formatInputValue(minValue))
+                    }}
+                    onChange={(e) => setMinText(e.target.value.replace(/[^\d]/g, ''))}
+                    onBlur={() => {
+                        setEditingMin(false)
+                        commitMinInput(minText)
+                    }}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                            e.currentTarget.blur()
+                        }
+                    }}
                     className={inputClassName}
                 />
                 <input
-                    type="number"
-                    min={minValue}
-                    max={maxPrice}
-                    value={formatInputValue(maxValue)}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={maxText}
                     placeholder={maxPrice > 0 ? String(maxPrice) : '0'}
-                    onChange={(e) => handleMaxInput(e.target.value)}
+                    onFocus={() => {
+                        setEditingMax(true)
+                        setMaxText(formatInputValue(maxValue))
+                    }}
+                    onChange={(e) => setMaxText(e.target.value.replace(/[^\d]/g, ''))}
+                    onBlur={() => {
+                        setEditingMax(false)
+                        commitMaxInput(maxText)
+                    }}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                            e.currentTarget.blur()
+                        }
+                    }}
                     className={inputClassName}
                 />
             </div>
