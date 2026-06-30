@@ -11,7 +11,7 @@ import {
   getCategoryIdBySlugParam,
   resolveCategorySlugParam,
 } from '@/lib/product-categories'
-import { resolveCategoryIdsForFilter } from '@/lib/product-category-resolve'
+import { resolveCategoryIdsForFilterSlugs } from '@/lib/product-category-resolve'
 import {
   PRODUCT_NAME_ERROR_MESSAGE,
   PRODUCT_TEXT_REGEX,
@@ -144,6 +144,7 @@ export async function GET(request: NextRequest) {
     // Parse URL first (synchronous, fast)
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category')
+    const categoriesParam = searchParams.get('categories')
     const gender = searchParams.get('gender')
     const isNew = searchParams.get('isNew')
     const isSecondHand = searchParams.get('isSecondHand')
@@ -173,12 +174,19 @@ export async function GET(request: NextRequest) {
 
     const resolvedCategorySlug =
       category && category !== 'ALL' ? resolveCategorySlugParam(category) : null
+
+    const filterCategoryParams = categoriesParam
+      ? categoriesParam
+          .split(',')
+          .map((entry) => entry.trim())
+          .filter(Boolean)
+      : resolvedCategorySlug && category
+        ? [category]
+        : []
+
     const categoryIdsPromise =
-      resolvedCategorySlug && category
-        ? resolveCategoryIdsForFilter(category).catch(() => {
-            const fallbackId = getCategoryIdBySlugParam(category)
-            return fallbackId != null ? [fallbackId] : []
-          })
+      filterCategoryParams.length > 0
+        ? resolveCategoryIdsForFilterSlugs(filterCategoryParams)
         : Promise.resolve([] as number[])
 
     const [session, categoryIds] = await Promise.all([
@@ -207,7 +215,9 @@ export async function GET(request: NextRequest) {
       hasDiscount ||
       isVip ||
       shopFilters.color ||
+      shopFilters.colors?.length ||
       shopFilters.colorSearch ||
+      shopFilters.categorySlugs?.length ||
       shopFilters.sizes?.length ||
       shopFilters.sizeSystems?.length ||
       shopFilters.locations?.length ||
@@ -245,6 +255,7 @@ export async function GET(request: NextRequest) {
         isVip: isVip === 'true',
         search: search || undefined,
         color: shopFilters.color,
+        colors: shopFilters.colors,
         colorSearch: shopFilters.colorSearch,
         sizes: shopFilters.sizes,
         sizeSystems: shopFilters.sizeSystems,

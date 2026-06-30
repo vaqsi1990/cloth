@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import {
   getAliasSlugsForCanonical,
   getCategoryIdBySlugParam,
+  getStaticCategoryIdsForCanonicalSlug,
   resolveCategorySlugParam,
 } from '@/lib/product-categories'
 
@@ -15,10 +16,35 @@ export async function resolveCategoryIdsForFilter(
     where: { slug: { in: slugs } },
     select: { id: true },
   })
-  const ids = new Set(rows.map((row) => row.id))
+  const ids = new Set(getStaticCategoryIdsForCanonicalSlug(canonical))
+  for (const row of rows) {
+    ids.add(row.id)
+  }
   const defaultId = getCategoryIdBySlugParam(canonical)
   if (defaultId != null) {
     ids.add(defaultId)
   }
+  return [...ids]
+}
+
+/** Resolve category ids for multiple shop filter slugs (OR semantics). */
+export async function resolveCategoryIdsForFilterSlugs(
+  categoryParams: string[],
+): Promise<number[]> {
+  const ids = new Set<number>()
+
+  for (const param of categoryParams) {
+    const trimmed = param.trim()
+    if (!trimmed) continue
+
+    try {
+      const resolved = await resolveCategoryIdsForFilter(trimmed)
+      for (const id of resolved) ids.add(id)
+    } catch {
+      const fallbackId = getCategoryIdBySlugParam(trimmed)
+      if (fallbackId != null) ids.add(fallbackId)
+    }
+  }
+
   return [...ids]
 }

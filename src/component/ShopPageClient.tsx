@@ -74,12 +74,21 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
     const genderParam = searchParams.get('gender')
     const searchParam = searchParams.get('search')
     const categoryParam = searchParams.get('category')
+    const categoriesParam = searchParams.get('categories')
     const discountParam = searchParams.get('discount')
     const vipParam = searchParams.get('vip')
 
     const [products, setProducts] = useState<Product[]>([])
     const [shopCategories, setShopCategories] = useState<ProductCategory[]>(
         DEFAULT_PRODUCT_CATEGORIES,
+    )
+    const filterCategories = React.useMemo(
+        () =>
+            collectShopFilterCategoriesForGender(
+                genderParam as ShopGenderFilterValue | null,
+                shopCategories,
+            ),
+        [genderParam, shopCategories],
     )
     const [loading, setLoading] = useState(true)
     const [selectedCategories, setSelectedCategories] = useState<string[]>([])
@@ -171,7 +180,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
     const scrollYRef = useRef(0)
     const shopFetchIdRef = useRef(0)
     const shopInitializedRef = useRef(false)
-    const prevCategoryParamRef = useRef(categoryParam)
+    const prevCategoryUrlRef = useRef<string | null>(null)
     const filtersSnapshotRef = useRef<string | null>(null)
     const allowFilterPageResetRef = useRef(false)
     const isRestoreSettlingRef = useRef(true)
@@ -300,12 +309,21 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
             } satisfies PersistedShopPageState)
 
         const currentSearchParams = new URLSearchParams(window.location.search)
-        const categoryNames = categoryParam
-            ? [
-                  findCategoryByParam(categoryParam, DEFAULT_PRODUCT_CATEGORIES)?.name ??
-                      categoryParam,
-              ]
-            : persisted.selectedCategories
+        const categoriesFromUrl = currentSearchParams.get('categories')
+        const categoryNames = categoriesFromUrl
+            ? categoriesFromUrl
+                  .split(',')
+                  .map(
+                      (slug) =>
+                          findCategoryByParam(slug, DEFAULT_PRODUCT_CATEGORIES)?.name ??
+                          slug,
+                  )
+            : categoryParam
+              ? [
+                    findCategoryByParam(categoryParam, DEFAULT_PRODUCT_CATEGORIES)?.name ??
+                        categoryParam,
+                ]
+              : persisted.selectedCategories
 
         const merged = mergeShopStateWithUrl(
             {
@@ -316,14 +334,19 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
             {
                 discountParam,
                 vipParam,
-                categoryNames: categoryParam ? categoryNames.filter(Boolean) : null,
+                categoryNames:
+                    categoryNames.length > 0 ? categoryNames.filter(Boolean) : null,
             },
         )
 
         applyPersistedShopState(merged)
 
         shopInitializedRef.current = true
-        prevCategoryParamRef.current = categoryParam
+        prevCategoryUrlRef.current = categoriesParam
+            ? `categories:${categoriesParam}`
+            : categoryParam
+              ? `category:${categoryParam}`
+              : ''
         isRestoreSettlingRef.current = true
         setScrollRestored(false)
         setHasRestoredState(true)
@@ -331,13 +354,38 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
 
     useEffect(() => {
         if (!shopInitializedRef.current) return
-        if (prevCategoryParamRef.current === categoryParam) return
-        prevCategoryParamRef.current = categoryParam
-        const resolved = categoryParam
-            ? findCategoryByParam(categoryParam, shopCategories)?.name ?? categoryParam
-            : null
-        setSelectedCategories(resolved ? [resolved] : [])
-    }, [categoryParam, shopCategories])
+
+        const urlCategoryKey = categoriesParam
+            ? `categories:${categoriesParam}`
+            : categoryParam
+              ? `category:${categoryParam}`
+              : ''
+
+        if (prevCategoryUrlRef.current === urlCategoryKey) return
+        prevCategoryUrlRef.current = urlCategoryKey
+
+        if (categoriesParam) {
+            const names = categoriesParam
+                .split(',')
+                .map(
+                    (slug) =>
+                        findCategoryByParam(slug.trim(), filterCategories)?.name ??
+                        slug.trim(),
+                )
+                .filter(Boolean)
+            setSelectedCategories(names)
+            return
+        }
+
+        if (categoryParam) {
+            const resolved =
+                findCategoryByParam(categoryParam, filterCategories)?.name ?? categoryParam
+            setSelectedCategories([resolved])
+            return
+        }
+
+        setSelectedCategories([])
+    }, [categoryParam, categoriesParam, filterCategories])
 
     useEffect(() => {
         if (!hasRestoredState) return
@@ -448,24 +496,29 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         return null
     }
 
-    const resolveCategoryApiSlug = useCallback(
-        (param: string | null, selected: string[]) => {
-            if (param) return resolveCategorySlugParam(param)
-            if (selected.length === 1) {
-                const cat =
-                    shopCategories.find((c) => c.name === selected[0]) ||
-                    findCategoryByParam(selected[0], shopCategories)
-                return cat?.slug ?? resolveCategorySlugParam(selected[0])
-            }
-            return null
+    const resolveCategorySlugsFromNames = useCallback(
+        (names: string[]): string[] => {
+            return names
+                .map((name) => {
+                    const cat =
+                        filterCategories.find((c) => c.name === name) ||
+                        findCategoryByParam(name, filterCategories)
+                    return cat?.slug ?? resolveCategorySlugParam(name)
+                })
+                .filter((slug): slug is string => Boolean(slug))
         },
-        [shopCategories],
+        [filterCategories],
     )
+
+    const activeCategorySlugs = useCallback((): string[] => {
+        return resolveCategorySlugsFromNames(selectedCategories)
+    }, [selectedCategories, resolveCategorySlugsFromNames])
 
     const shopListFilters = useCallback(
         () => ({
             selectedColors,
             colorSearch: colorSearch.trim() || undefined,
+            selectedCategorySlugs: activeCategorySlugs(),
             selectedSizes,
             selectedSizeSystems,
             selectedLocations,
@@ -484,6 +537,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
             maxPrice,
             purchaseType,
             sortBy,
+            activeCategorySlugs,
         ],
     )
 
@@ -493,8 +547,6 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
             return buildShopBrowserUrl({
                 basePath: base,
                 currentSearchParams: new URLSearchParams(searchParams.toString()),
-                categoryParam,
-                categorySlug: resolveCategoryApiSlug(categoryParam, selectedCategories),
                 currentPage: pageOverride ?? currentPage,
                 onlyDiscounted,
                 onlyVip,
@@ -504,12 +556,9 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         [
             homepageMode,
             searchParams,
-            categoryParam,
-            selectedCategories,
             currentPage,
             onlyDiscounted,
             onlyVip,
-            resolveCategoryApiSlug,
             shopListFilters,
         ],
     )
@@ -590,13 +639,6 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         if (searchParam) {
             params.append('search', searchParam)
         }
-        const categorySlug = resolveCategoryApiSlug(
-            categoryParam,
-            selectedCategories,
-        )
-        if (categorySlug) {
-            params.append('category', categorySlug)
-        }
         if (onlyDiscounted) {
             params.append('hasDiscount', 'true')
         }
@@ -622,7 +664,6 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         onlyVip,
         homepageMode,
         homepageRefreshNonce,
-        resolveCategoryApiSlug,
         shopListFilters,
     ])
 
@@ -677,15 +718,6 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         }
         void loadCategories()
     }, [])
-
-    const filterCategories = React.useMemo(
-        () =>
-            collectShopFilterCategoriesForGender(
-                genderParam as ShopGenderFilterValue | null,
-                shopCategories,
-            ),
-        [genderParam, shopCategories],
-    )
 
     useEffect(() => {
         if (!genderParam) return
@@ -844,6 +876,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
             onlyDiscounted,
             onlyVip,
             categoryParam,
+            categoriesParam,
             genderParam,
             searchParam,
             discountParam,
@@ -890,11 +923,21 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
 
     // Handle category selection
     const toggleCategory = (categoryName: string) => {
-        setSelectedCategories(prev =>
-            prev.includes(categoryName)
-                ? prev.filter(c => c !== categoryName)
+        setSelectedCategories((prev) => {
+            const next = prev.includes(categoryName)
+                ? prev.filter((c) => c !== categoryName)
                 : [...prev, categoryName]
-        )
+
+            const slugs = resolveCategorySlugsFromNames(next)
+            prevCategoryUrlRef.current =
+                slugs.length > 1
+                    ? `categories:${slugs.join(',')}`
+                    : slugs.length === 1
+                      ? `category:${slugs[0]}`
+                      : ''
+
+            return next
+        })
     }
 
     const toggleSize = (size: string) => {
@@ -921,10 +964,10 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
 
     const toggleColor = (color: string) => {
         setColorSearch('')
-        setSelectedColors(prev =>
+        setSelectedColors((prev) =>
             prev.includes(color)
-                ? [] // თუ იგივე ფერია, გაუქმდება
-                : [color] // თუ სხვა ფერია, მხოლოდ ის იქნება არჩეული
+                ? prev.filter((entry) => entry !== color)
+                : [...prev, color],
         )
     }
 

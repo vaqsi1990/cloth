@@ -1,8 +1,7 @@
 import { buildShopColorFacets } from '@/lib/product-colors'
 import { buildShopCategoryFacetCounts } from '@/lib/product-categories'
-import { resolveCategoryIdsForFilter } from '@/lib/product-category-resolve'
+import { resolveCategoryIdsForFilterSlugs } from '@/lib/product-category-resolve'
 import {
-  getCategoryIdBySlugParam,
   isChildrenProductCategory,
   resolveCategorySlugParam,
 } from '@/lib/product-categories'
@@ -87,6 +86,7 @@ function parseGenderEnum(
 /** Resolve shared shop context once for list + facet queries. */
 async function resolveShopContext(searchParams: URLSearchParams) {
   const category = searchParams.get('category')
+  const categoriesParam = searchParams.get('categories')
   const gender = searchParams.get('gender')
   const search = searchParams.get('search')?.trim()
   const hasDiscount = searchParams.get('hasDiscount')
@@ -98,12 +98,18 @@ async function resolveShopContext(searchParams: URLSearchParams) {
   const resolvedCategorySlug =
     category && category !== 'ALL' ? resolveCategorySlugParam(category) : null
 
+  const filterCategoryParams = categoriesParam
+    ? categoriesParam
+        .split(',')
+        .map((entry) => entry.trim())
+        .filter(Boolean)
+    : resolvedCategorySlug && category
+      ? [category]
+      : []
+
   const [categoryIds] = await Promise.all([
-    resolvedCategorySlug && category
-      ? resolveCategoryIdsForFilter(category).catch(() => {
-          const fallbackId = getCategoryIdBySlugParam(category)
-          return fallbackId != null ? [fallbackId] : []
-        })
+    filterCategoryParams.length > 0
+      ? resolveCategoryIdsForFilterSlugs(filterCategoryParams)
       : Promise.resolve([] as number[]),
   ])
 
@@ -123,6 +129,7 @@ async function resolveShopContext(searchParams: URLSearchParams) {
     isVip: isVip === 'true',
     featuredFirst,
     color: shopFilters.color,
+    colors: shopFilters.colors,
     colorSearch: shopFilters.colorSearch,
     sizes: shopFilters.sizes,
     sizeSystems: shopFilters.sizeSystems,
@@ -152,6 +159,7 @@ async function resolveShopContext(searchParams: URLSearchParams) {
     isVip: isVip === 'true',
     search: search || undefined,
     color: shopFilters.color,
+    colors: shopFilters.colors,
     colorSearch: shopFilters.colorSearch,
     sizes: shopFilters.sizes,
     sizeSystems: shopFilters.sizeSystems,
@@ -282,6 +290,7 @@ export function getShopBundleCacheControl(searchParams: URLSearchParams): string
     isVip: isVip === 'true',
     search: search || undefined,
     color: shopFilters.color,
+    colors: shopFilters.colors,
     colorSearch: shopFilters.colorSearch,
     sizes: shopFilters.sizes,
     sizeSystems: shopFilters.sizeSystems,

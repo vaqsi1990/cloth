@@ -1133,7 +1133,6 @@ const CATEGORY_SLUG_ALIASES: Record<string, string> = {
   'სადღესასწაულო კოსტუმი': 'men-festive-costume',
   'festive': 'festive',
   'men-blouse': 'men-blouse',
-  'ბლუზა': 'men-blouse',
   'men-cosplay': 'men-cosplay',
   'ქოსფლეის კოსტუმი': 'men-cosplay',
   'evening-shirt': 'evening-shirt',
@@ -1148,7 +1147,6 @@ const CATEGORY_SLUG_ALIASES: Record<string, string> = {
   'shirt': 'shirt',
   'პერანგი': 'shirt',
   'men-pants': 'men-pants',
-  'შარვალი': 'men-pants',
   pecsapertmeli: 'women-footwear',
   qalispecsapertmeli: 'women-footwear',
   qalischanta: 'women-bags',
@@ -1276,12 +1274,40 @@ export function findCategoryByParam(
   param: string,
   categories: ProductCategory[],
 ): ProductCategory | undefined {
+  const trimmed = param.trim()
+  const lower = trimmed.toLowerCase()
+
+  const byName =
+    categories.find((c) => c.name === trimmed) ||
+    categories.find((c) => c.name.toLowerCase() === lower)
+  if (byName) return byName
+
   const slug = resolveCategorySlugParam(param)
   return (
     categories.find((c) => c.slug === slug) ||
-    categories.find((c) => c.name === param.trim()) ||
-    categories.find((c) => c.slug === param.trim().toLowerCase())
+    categories.find((c) => c.slug === lower)
   )
+}
+
+/** Static + legacy DB row ids that map to one canonical shop filter slug. */
+export function getStaticCategoryIdsForCanonicalSlug(
+  canonicalSlug: string,
+): number[] {
+  const ids = new Set<number>()
+
+  for (const category of DEFAULT_PRODUCT_CATEGORIES) {
+    if (category.slug === canonicalSlug) {
+      ids.add(category.id)
+    }
+  }
+
+  for (const [legacyId, slug] of Object.entries(LEGACY_CATEGORY_ID_TO_SLUG)) {
+    if (slug === canonicalSlug) {
+      ids.add(Number(legacyId))
+    }
+  }
+
+  return [...ids]
 }
 
 export function productMatchesCategoryFilter(

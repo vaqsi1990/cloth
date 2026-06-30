@@ -4,7 +4,9 @@ export type ShopSortBy = 'newest' | 'price-low' | 'price-high' | 'rating'
 
 export type ShopListFilterParams = {
   color?: string | null
+  colors?: string[] | null
   colorSearch?: string | null
+  categorySlugs?: string[] | null
   sizes?: string[] | null
   sizeSystems?: string[] | null
   locations?: string[] | null
@@ -14,11 +16,23 @@ export type ShopListFilterParams = {
   sort?: ShopSortBy | null
 }
 
+function splitCsvParam(value: string | null): string[] | null {
+  if (!value?.trim()) return null
+  const items = value
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+  return items.length > 0 ? items : null
+}
+
 export function parseShopListFilterParams(
   searchParams: URLSearchParams,
 ): ShopListFilterParams {
   const color = searchParams.get('color')?.trim() || null
+  const colors = splitCsvParam(searchParams.get('colors'))
   const colorSearch = searchParams.get('colorSearch')?.trim() || null
+  const category = searchParams.get('category')?.trim() || null
+  const categories = splitCsvParam(searchParams.get('categories'))
   const sizesRaw = searchParams.get('sizes')?.trim()
   const sizeSystemsRaw = searchParams.get('sizeSystems')?.trim()
   const locationsRaw = searchParams.get('locations')?.trim()
@@ -51,9 +65,17 @@ export function parseShopListFilterParams(
       ? sortRaw
       : null
 
+  const normalizedColors =
+    colors ?? (color ? [color] : null)
+
+  const categorySlugs =
+    categories ?? (category ? [category] : null)
+
   return {
     color,
+    colors: normalizedColors,
     colorSearch,
+    categorySlugs,
     sizes: sizesRaw ? sizesRaw.split(',').map((s) => s.trim()).filter(Boolean) : null,
     sizeSystems: sizeSystemsRaw
       ? sizeSystemsRaw.split(',').map((s) => s.trim()).filter(Boolean)
@@ -71,6 +93,7 @@ export function parseShopListFilterParams(
 export type ClientShopListFilters = {
   selectedColors: string[]
   colorSearch?: string
+  selectedCategorySlugs?: string[]
   selectedSizes: string[]
   selectedSizeSystems: string[]
   selectedLocations: string[]
@@ -84,13 +107,22 @@ export function appendShopListFilterParams(
   params: URLSearchParams,
   filters: ClientShopListFilters,
 ): void {
-  if (filters.selectedColors.length === 1) {
+  if (filters.selectedColors.length > 1) {
+    params.set('colors', filters.selectedColors.join(','))
+  } else if (filters.selectedColors.length === 1) {
     params.set('color', filters.selectedColors[0])
   }
 
   const colorSearch = filters.colorSearch?.trim()
   if (colorSearch) {
     params.set('colorSearch', colorSearch)
+  }
+
+  const categorySlugs = filters.selectedCategorySlugs?.filter(Boolean) ?? []
+  if (categorySlugs.length > 1) {
+    params.set('categories', categorySlugs.join(','))
+  } else if (categorySlugs.length === 1) {
+    params.set('category', categorySlugs[0])
   }
 
   if (filters.selectedSizes.length > 0) {

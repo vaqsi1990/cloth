@@ -102,8 +102,8 @@ export function mergeShopStateWithUrl(
     selectedCategories: options.categoryNames ?? persisted.selectedCategories,
     selectedColors: urlFilters.colorSearch
       ? []
-      : urlFilters.color
-        ? [urlFilters.color]
+      : urlFilters.colors?.length
+        ? urlFilters.colors
         : persisted.selectedColors,
     colorSearch: urlFilters.colorSearch ?? persisted.colorSearch ?? '',
     selectedSizes: urlFilters.sizes ?? persisted.selectedSizes,
@@ -122,8 +122,6 @@ export function mergeShopStateWithUrl(
 type BuildShopBrowserUrlOptions = {
   basePath: string
   currentSearchParams: URLSearchParams
-  categoryParam: string | null
-  categorySlug: string | null
   currentPage: number
   onlyDiscounted: boolean
   onlyVip: boolean
@@ -133,8 +131,6 @@ type BuildShopBrowserUrlOptions = {
 export function buildShopBrowserUrl({
   basePath,
   currentSearchParams,
-  categoryParam,
-  categorySlug,
   currentPage,
   onlyDiscounted,
   onlyVip,
@@ -143,7 +139,10 @@ export function buildShopBrowserUrl({
   const params = new URLSearchParams(currentSearchParams.toString())
 
   params.delete('color')
+  params.delete('colors')
   params.delete('colorSearch')
+  params.delete('category')
+  params.delete('categories')
   params.delete('sizes')
   params.delete('sizeSystems')
   params.delete('locations')
@@ -157,14 +156,6 @@ export function buildShopBrowserUrl({
   params.delete('limit')
   params.delete('featuredFirst')
   params.delete('fresh')
-
-  if (!categoryParam) {
-    if (categorySlug) {
-      params.set('category', categorySlug)
-    } else {
-      params.delete('category')
-    }
-  }
 
   if (onlyDiscounted) {
     params.set('discount', 'true')

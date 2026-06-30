@@ -34,6 +34,7 @@ export type PublicListFilters = {
   featuredOnly?: boolean
   search?: string
   color?: string | null
+  colors?: string[] | null
   colorSearch?: string | null
   sizes?: string[] | null
   sizeSystems?: string[] | null
@@ -78,6 +79,17 @@ type CombinedListRow = {
 }
 
 const ALL_SIZE_SYSTEMS = ['EU', 'US', 'UK', 'CN'] as const
+
+function buildColorsWhere(colorIds: string[]): Prisma.Sql {
+  const clauses = colorIds.map((colorId) => buildColorWhere(colorId))
+  return Prisma.sql`(${Prisma.join(clauses, ' OR ')})`
+}
+
+function resolveActiveColorIds(filters: PublicListFilters): string[] {
+  if (filters.colors?.length) return filters.colors
+  if (filters.color) return [filters.color]
+  return []
+}
 
 function buildColorWhere(colorId: string): Prisma.Sql {
   const values = getDbColorMatchValues(colorId).map((v) => v.toLowerCase())
@@ -342,8 +354,11 @@ function buildWhere(filters: PublicListFilters): Prisma.Sql {
   }
   if (filters.colorSearch) {
     parts.push(buildColorSearchWhere(filters.colorSearch))
-  } else if (filters.color) {
-    parts.push(buildColorWhere(filters.color))
+  } else {
+    const colorIds = resolveActiveColorIds(filters)
+    if (colorIds.length > 0) {
+      parts.push(buildColorsWhere(colorIds))
+    }
   }
   const sizeWhere = buildSizeWhere(filters)
   if (sizeWhere) {
@@ -803,6 +818,7 @@ export function getPublicListCacheKey(filters: PublicListFilters): string {
     featuredFirst: filters.featuredFirst ?? false,
     search: filters.search ?? null,
     color: filters.color ?? null,
+    colors: filters.colors ?? null,
     colorSearch: filters.colorSearch ?? null,
     sizes: filters.sizes ?? null,
     sizeSystems: filters.sizeSystems ?? null,
@@ -827,6 +843,7 @@ function hasActiveFilters(filters: PublicListFilters): boolean {
       filters.hasDiscount ||
       filters.isVip ||
       filters.color ||
+      filters.colors?.length ||
       filters.colorSearch ||
       filters.sizes?.length ||
       filters.sizeSystems?.length ||
