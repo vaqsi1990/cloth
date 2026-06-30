@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { revalidateProductListCache } from '@/lib/product-list-query'
 import { revalidateProductCaches } from '@/lib/product-cache-revalidation'
+import { removeCartItemsForProduct, removeCartItemsForVariant } from '@/lib/cart-cleanup'
 import {
   productHasSkuVariants,
   sumVariantStock,
@@ -31,9 +32,7 @@ async function markSoldSkuVariantInTx(
   productId: number,
   variantId: number,
 ): Promise<'fulfilled' | 'already_sold'> {
-  await tx.cartItem.deleteMany({
-    where: { variantId },
-  })
+  await removeCartItemsForVariant(variantId, tx)
 
   const updated = await tx.productVariant.updateMany({
     where: { id: variantId, stock: { gt: 0 } },
@@ -64,9 +63,7 @@ async function markSoldSimpleProductInTx(
   tx: TransactionClient,
   productId: number,
 ): Promise<'fulfilled' | 'already_sold'> {
-  await tx.cartItem.deleteMany({
-    where: { productId },
-  })
+  await removeCartItemsForProduct(productId, tx)
 
   const updated = await tx.product.updateMany({
     where: { id: productId, stock: { gt: 0 } },

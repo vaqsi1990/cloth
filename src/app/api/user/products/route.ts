@@ -6,6 +6,7 @@ import { checkAndClearExpiredDiscounts, processExpiredDiscount } from '@/utils/d
 import { ownerProductListSelect, parseListPagination } from '@/lib/product-owner-query'
 import { buildExcludeSoldProductsWhere } from '@/lib/sold-products'
 import { revalidateProductListCache } from '@/lib/product-list-query'
+import { removeCartItemsForProduct } from '@/lib/cart-cleanup'
 
 // GET - Fetch user's products
 export async function GET(request: NextRequest) {
@@ -83,9 +84,17 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
+    const parsedProductId = parseInt(productId, 10)
+    if (Number.isNaN(parsedProductId)) {
+      return NextResponse.json(
+        { success: false, error: 'Product ID is required' },
+        { status: 400 },
+      )
+    }
+
     const product = await prisma.product.findFirst({
       where: {
-        id: parseInt(productId),
+        id: parsedProductId,
         userId: session.user.id,
       },
     })
@@ -97,8 +106,11 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    await prisma.product.delete({
-      where: { id: parseInt(productId) },
+    await prisma.$transaction(async (tx) => {
+      await removeCartItemsForProduct(parsedProductId, tx)
+      await tx.product.delete({
+        where: { id: parsedProductId },
+      })
     })
 
     revalidateProductListCache()

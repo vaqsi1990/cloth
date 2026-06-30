@@ -36,6 +36,7 @@ import {
   refineProductImagesAndPricing,
 } from '@/lib/product-create-validation'
 import { revalidateProductCaches } from '@/lib/product-cache-revalidation'
+import { removeCartItemsForProduct } from '@/lib/cart-cleanup'
 import { resolveCategoryIdForWrite } from '@/lib/category-sync'
 import {
   isProductStatus,
@@ -676,9 +677,11 @@ export async function DELETE(
       )
     }
 
-    // Delete product (cascade will handle related records)
-    await prisma.product.delete({
-      where: { id: productId }
+    await prisma.$transaction(async (tx) => {
+      await removeCartItemsForProduct(productId, tx)
+      await tx.product.delete({
+        where: { id: productId },
+      })
     })
 
     revalidateProductCaches(productId, { authorId: existingProduct.userId })

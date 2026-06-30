@@ -27,6 +27,7 @@ import {
   syncCartItemBuyerListPrices,
 } from '@/lib/sync-cart-prices'
 import { validateSaleItemStock } from '@/lib/sale-stock'
+import { purgeInvalidCartItems } from '@/lib/cart-cleanup'
 
 // Cart item validation schema
 const cartItemSchema = z.object({
@@ -296,6 +297,8 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    await purgeInvalidCartItems(cart.id)
+
     const normalizedCart = (await enforceCartDeliveryRules(cart.id)) || cart
 
     const resolvedPrices = resolveCartItemsBuyerListPrices(normalizedCart.items)
@@ -381,6 +384,8 @@ export async function POST(request: NextRequest) {
       })
       console.log('Created cart:', cart)
     }
+
+    await purgeInvalidCartItems(cart.id)
 
     // Check if item already exists in cart
     const existingItem = await prisma.cartItem.findFirst({
