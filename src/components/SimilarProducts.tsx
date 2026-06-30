@@ -6,7 +6,8 @@ import { Plus } from "lucide-react"
 import { Product } from "@/types/product"
 import StarRating from "@/components/StarRating"
 import ProductListPrice from '@/components/ProductListPrice'
-import { getBuyerSavingsFromSellerDiscount } from '@/lib/platform-pricing'
+import ProductListDiscountBadge from '@/components/ProductListDiscountBadge'
+import ProductMasonryGrid from '@/components/ProductMasonryGrid'
 
 interface SimilarProductsProps {
   productId: number
@@ -40,7 +41,27 @@ const SimilarProducts: React.FC<SimilarProductsProps> = ({ productId, categoryNa
     return (
       <div className="bg-white rounded-2xl p-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">მსგავსი პროდუქტები</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="flex items-start gap-4 lg:hidden">
+          <div className="flex min-w-0 flex-1 flex-col gap-4">
+            {[0, 2].map((i) => (
+              <div key={i} className="animate-pulse">
+                <div className="aspect-[2/3] bg-gray-200 rounded-xl mb-3"></div>
+                <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+              </div>
+            ))}
+          </div>
+          <div className="flex min-w-0 flex-1 flex-col gap-4">
+            {[1, 3].map((i) => (
+              <div key={i} className="animate-pulse">
+                <div className="aspect-[2/3] bg-gray-200 rounded-xl mb-3"></div>
+                <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="hidden gap-4 lg:grid lg:grid-cols-4">
           {[...Array(4)].map((_, i) => (
             <div key={i} className="animate-pulse">
                <div className="aspect-[2/3] bg-gray-200 rounded-xl mb-3"></div>
@@ -64,12 +85,11 @@ const SimilarProducts: React.FC<SimilarProductsProps> = ({ productId, categoryNa
    
       </h2>
       
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 gap-y-16">
-        {products.map((product, index) => (
-          <div
-            key={product.id}
-            className="group bg-white rounded-xl overflow-hidden transition-shadow"
-          >
+      <ProductMasonryGrid
+        items={products}
+        getKey={(product) => product.id}
+        renderItem={(product, index) => (
+          <div className="group bg-white rounded-xl overflow-hidden transition-shadow flex flex-col lg:h-full">
             <div className="rounded-xl overflow-hidden">
               <div className="relative w-full h-[273px] bg-gray-100 overflow-hidden">
                 <Image
@@ -82,7 +102,7 @@ const SimilarProducts: React.FC<SimilarProductsProps> = ({ productId, categoryNa
                 />
               </div>
             </div>
-            <div className="mt-2 space-y-2">
+            <div className="mt-2 space-y-2 flex flex-col flex-1 min-w-0">
               <div className="flex items-center justify-between">
                 <h3 className="font-regular text-black md:text-[18px] text-[16px] leading-snug line-clamp-2">
                   {product.name}
@@ -99,23 +119,17 @@ const SimilarProducts: React.FC<SimilarProductsProps> = ({ productId, categoryNa
                 <ProductListPrice product={product} />
               </div>
 
-              {product.discount && product.discount > 0 && (
-                <div className="bg-[#1B3729] w-full md:w-[220px] rounded-md text-[#FFFFFF] font-regular flex items-center">
-                  <div className='px-2 py-1 w-full md:w-[220px] text-[15px] flex flex-col md:flex-row items-center gap-2 flex-1'>
-                    <span className='whitespace-nowrap'>დანაზოგი: ₾{getBuyerSavingsFromSellerDiscount(product.discount).toFixed(2)}</span>
-                    {product.discountDays && (
-                      <span className="bg-white text-black px-2 py-1 rounded whitespace-nowrap">{product.discountDays} დღე</span>
-                    )}
-                  </div>
-                </div>
-              )}
+              <ProductListDiscountBadge
+                discount={product.discount ?? 0}
+                discountDays={product.discountDays}
+              />
               {product.stock !== undefined && (
-                <p className='text-black text-[16px] font-regular'>
-                  მარაგში: {product.stock}
-                </p>
+                  <p className='text-black text-[16px] font-regular'>
+                    მარაგში: {product.stock}
+                  </p>
               )}
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 lg:mt-auto">
                 <StarRating
                   rating={product.rating && product.rating > 0 ? Math.round(product.rating) : 0}
                   readonly
@@ -130,8 +144,8 @@ const SimilarProducts: React.FC<SimilarProductsProps> = ({ productId, categoryNa
               </div>
             </div>
           </div>
-        ))}
-      </div>
+        )}
+      />
       
       {/* View more button */}
       {products.length >= 8 && (

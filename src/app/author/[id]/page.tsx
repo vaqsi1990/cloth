@@ -7,7 +7,8 @@ import { ArrowLeft, User, ChevronLeft, ChevronRight, Plus } from "lucide-react"
 import { Product } from "@/types/product"
 import StarRating from "@/components/StarRating"
 import ProductSalePrice from "@/components/ProductSalePrice"
-import { getBuyerSavingsFromSellerDiscount } from '@/lib/platform-pricing'
+import ProductListDiscountBadge from '@/components/ProductListDiscountBadge'
+import ProductMasonryGrid from '@/components/ProductMasonryGrid'
 import {
   isProductHiddenFromShop,
   PRODUCT_STATUS_UPDATED_EVENT,
@@ -166,12 +167,11 @@ const AuthorPage = () => {
 
                 {/* Products Grid */}
                 {currentProducts.length > 0 ? (
-                            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 gap-y-16 mb-8">
-                                {currentProducts.map((product, index) => (
-                                    <div
-                                        key={product.id}
-                                        className="group bg-white rounded-xl overflow-hidden transition-shadow"
-                                    >
+                            <ProductMasonryGrid
+                                items={currentProducts}
+                                getKey={(product) => product.id}
+                                renderItem={(product, index) => (
+                                    <div className="group bg-white rounded-xl overflow-hidden transition-shadow flex flex-col lg:h-full">
                                         <div className="rounded-xl overflow-hidden">
                                             <div className="relative w-full h-[273px] bg-gray-100 overflow-hidden">
                                                 <Image
@@ -184,7 +184,7 @@ const AuthorPage = () => {
                                                 />
                                             </div>
                                         </div>
-                                        <div className="mt-2 space-y-2">
+                                        <div className="mt-2 space-y-2 flex flex-col flex-1 min-w-0">
                                             <div className="flex items-center justify-between">
                                                 <h3 className="font-regular text-black md:text-[18px] text-[16px] leading-snug line-clamp-2">
                                                     {product.name}
@@ -204,25 +204,17 @@ const AuthorPage = () => {
                                                 />
                                             </div>
 
-                                         
-                                            {product.discount && product.discount > 0 && (
-                                                <div className="bg-[#1B3729]  w-full md:w-[220px] rounded-md text-[#FFFFFF] font-regular flex items-center">
-
-                                                <div className='px-2 py-1 w-full md:w-[220px] text-[15px] flex flex-col md:flex-row items-center gap-2 flex-1'>
-                                                    <span className='whitespace-nowrap'>დანაზოგი: ₾{getBuyerSavingsFromSellerDiscount(product.discount).toFixed(2)}</span>
-                                                    {product.discountDays && (
-                                                        <span className="bg-white text-black px-2 py-1 rounded whitespace-nowrap">{product.discountDays} დღე</span>
-                                                    )}
-                                                </div>
-                                                </div>
-                                            )}
+                                            <ProductListDiscountBadge
+                                                discount={product.discount ?? 0}
+                                                discountDays={product.discountDays}
+                                            />
                                             {product.stock !== undefined && (
-                                                <p className='text-black text-[16px] font-regular'>
-                                                    მარაგში: {product.stock}
-                                                </p>
+                                                    <p className='text-black text-[16px] font-regular'>
+                                                        მარაგში: {product.stock}
+                                                    </p>
                                             )}
 
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-2 lg:mt-auto">
                                                 <StarRating
                                                     rating={product.rating && product.rating > 0 ? Math.round(product.rating) : 0}
                                                     readonly
@@ -237,8 +229,8 @@ const AuthorPage = () => {
                                             </div>
                                         </div>
                                     </div>
-                                ))}
-                            </div>
+                                )}
+                            />
                         ) : (
                             <div className="text-center py-16">
                                 <h3 className="text-xl font-semibold text-black md:text-[20px] text-[16px] mb-2">
