@@ -7,7 +7,7 @@ import {
   isProductVipActive,
 } from '@/lib/product-vip'
 import { resolveCanonicalCategory } from '@/lib/product-categories'
-import { getDbColorMatchValues } from '@/lib/product-colors'
+import { getDbColorMatchValues, resolveProductColorFilterId, PRODUCT_COLORS, PRODUCT_COLOR_FILTER_MAPPING } from '@/lib/product-colors'
 import {
   getAdultSizeDbMatchValues,
   isLetterSize,
@@ -34,6 +34,7 @@ export type PublicListFilters = {
   featuredOnly?: boolean
   search?: string
   color?: string | null
+  colorSearch?: string | null
   sizes?: string[] | null
   sizeSystems?: string[] | null
   locations?: string[] | null
@@ -81,6 +82,54 @@ const ALL_SIZE_SYSTEMS = ['EU', 'US', 'UK', 'CN'] as const
 function buildColorWhere(colorId: string): Prisma.Sql {
   const values = getDbColorMatchValues(colorId).map((v) => v.toLowerCase())
   return Prisma.sql`LOWER(TRIM(p.color)) IN (${Prisma.join(values)})`
+}
+
+function buildColorSearchWhere(query: string): Prisma.Sql {
+  const trimmed = query.trim()
+  if (!trimmed) return Prisma.sql`TRUE`
+
+  const exactFilterId = resolveProductColorFilterId(trimmed)
+  if (exactFilterId) {
+    return buildColorWhere(exactFilterId)
+  }
+
+  const pattern = `%${trimmed}%`
+  const matchingValues = new Set<string>()
+  const needle = trimmed.toLowerCase()
+
+  for (const color of PRODUCT_COLORS) {
+    if (
+      color.id.toLowerCase().includes(needle) ||
+      color.label.toLowerCase().includes(needle)
+    ) {
+      for (const value of getDbColorMatchValues(color.id)) {
+        matchingValues.add(value.toLowerCase())
+      }
+    }
+  }
+
+  for (const [id, variations] of Object.entries(PRODUCT_COLOR_FILTER_MAPPING)) {
+    if (id.toLowerCase().includes(needle)) {
+      for (const value of getDbColorMatchValues(id)) {
+        matchingValues.add(value.toLowerCase())
+      }
+      continue
+    }
+    for (const variation of variations) {
+      if (variation.toLowerCase().includes(needle)) {
+        for (const value of getDbColorMatchValues(id)) {
+          matchingValues.add(value.toLowerCase())
+        }
+      }
+    }
+  }
+
+  if (matchingValues.size > 0) {
+    const values = [...matchingValues]
+    return Prisma.sql`(LOWER(TRIM(p.color)) IN (${Prisma.join(values)}) OR p.color ILIKE ${pattern})`
+  }
+
+  return Prisma.sql`p.color ILIKE ${pattern}`
 }
 
 function buildSizeWhere(filters: PublicListFilters): Prisma.Sql | null {
@@ -291,7 +340,9 @@ function buildWhere(filters: PublicListFilters): Prisma.Sql {
       Prisma.sql`(p.name ILIKE ${pattern} OR p.brand ILIKE ${pattern})`,
     )
   }
-  if (filters.color) {
+  if (filters.colorSearch) {
+    parts.push(buildColorSearchWhere(filters.colorSearch))
+  } else if (filters.color) {
     parts.push(buildColorWhere(filters.color))
   }
   const sizeWhere = buildSizeWhere(filters)
@@ -752,6 +803,7 @@ export function getPublicListCacheKey(filters: PublicListFilters): string {
     featuredFirst: filters.featuredFirst ?? false,
     search: filters.search ?? null,
     color: filters.color ?? null,
+    colorSearch: filters.colorSearch ?? null,
     sizes: filters.sizes ?? null,
     sizeSystems: filters.sizeSystems ?? null,
     locations: filters.locations ?? null,
@@ -775,6 +827,7 @@ function hasActiveFilters(filters: PublicListFilters): boolean {
       filters.hasDiscount ||
       filters.isVip ||
       filters.color ||
+      filters.colorSearch ||
       filters.sizes?.length ||
       filters.sizeSystems?.length ||
       filters.locations?.length ||

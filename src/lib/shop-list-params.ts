@@ -4,6 +4,7 @@ export type ShopSortBy = 'newest' | 'price-low' | 'price-high' | 'rating'
 
 export type ShopListFilterParams = {
   color?: string | null
+  colorSearch?: string | null
   sizes?: string[] | null
   sizeSystems?: string[] | null
   locations?: string[] | null
@@ -17,6 +18,7 @@ export function parseShopListFilterParams(
   searchParams: URLSearchParams,
 ): ShopListFilterParams {
   const color = searchParams.get('color')?.trim() || null
+  const colorSearch = searchParams.get('colorSearch')?.trim() || null
   const sizesRaw = searchParams.get('sizes')?.trim()
   const sizeSystemsRaw = searchParams.get('sizeSystems')?.trim()
   const locationsRaw = searchParams.get('locations')?.trim()
@@ -51,6 +53,7 @@ export function parseShopListFilterParams(
 
   return {
     color,
+    colorSearch,
     sizes: sizesRaw ? sizesRaw.split(',').map((s) => s.trim()).filter(Boolean) : null,
     sizeSystems: sizeSystemsRaw
       ? sizeSystemsRaw.split(',').map((s) => s.trim()).filter(Boolean)
@@ -67,6 +70,7 @@ export function parseShopListFilterParams(
 
 export type ClientShopListFilters = {
   selectedColors: string[]
+  colorSearch?: string
   selectedSizes: string[]
   selectedSizeSystems: string[]
   selectedLocations: string[]
@@ -82,6 +86,11 @@ export function appendShopListFilterParams(
 ): void {
   if (filters.selectedColors.length === 1) {
     params.set('color', filters.selectedColors[0])
+  }
+
+  const colorSearch = filters.colorSearch?.trim()
+  if (colorSearch) {
+    params.set('colorSearch', colorSearch)
   }
 
   if (filters.selectedSizes.length > 0) {

@@ -1,12 +1,13 @@
 'use client'
 
-import React, { useState, useEffect, Suspense } from 'react'
+import React, { useState, useEffect, Suspense, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
-import { Search, Menu, User, LogOut, ShoppingCart, ChevronRight, Plus } from 'lucide-react'
+import { Search, Menu, User, LogOut, ShoppingCart, ChevronRight, Plus, X } from 'lucide-react'
 import Image from '@/component/AppImage'
 import { useSession, signOut } from 'next-auth/react'
 import { CHILDREN_PRODUCT_CATEGORIES, MEN_PRODUCT_CATEGORIES, WOMEN_PRODUCT_CATEGORIES } from '@/lib/product-categories'
+import { resetShopBrowserFilters } from '@/lib/shop-browser-state'
 
 const HeaderContent = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -24,6 +25,25 @@ const HeaderContent = () => {
   const router = useRouter()
   const searchParams = useSearchParams()
   const pathname = usePathname()
+  const headerRef = useRef<HTMLElement>(null)
+  const [headerBottom, setHeaderBottom] = useState(0)
+
+  const updateHeaderBottom = useCallback(() => {
+    if (!headerRef.current) return
+    setHeaderBottom(headerRef.current.getBoundingClientRect().bottom)
+  }, [])
+
+  useEffect(() => {
+    updateHeaderBottom()
+    window.addEventListener('resize', updateHeaderBottom)
+    return () => window.removeEventListener('resize', updateHeaderBottom)
+  }, [isSearchOpen, isMobileMenuOpen, updateHeaderBottom])
+
+  useEffect(() => {
+    if (!isMobileMenuOpen) return
+    const frameId = window.requestAnimationFrame(updateHeaderBottom)
+    return () => window.cancelAnimationFrame(frameId)
+  }, [isMobileMenuOpen, updateHeaderBottom])
 
   // Update active category based on URL params
   useEffect(() => {
@@ -139,7 +159,16 @@ const HeaderContent = () => {
     }, 150)
   }
 
-  const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen)
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen((open) => {
+      const next = !open
+      if (next) {
+        setIsMobileUserDropdownOpen(false)
+        setIsSearchOpen(false)
+      }
+      return next
+    })
+  }
   const toggleSearch = () => setIsSearchOpen(!isSearchOpen)
   const toggleMobileDropdown = (dropdown: string) =>
     setMobileDropdownOpen(mobileDropdownOpen === dropdown ? null : dropdown)
@@ -154,6 +183,13 @@ const HeaderContent = () => {
     setIsSearchOpen(false)
     setIsMobileUserDropdownOpen(false)
     setIsDesktopUserDropdownOpen(false)
+  }
+
+  const handleLogoClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    closeAllOverlays()
+    event.preventDefault()
+    resetShopBrowserFilters()
+    router.replace('/')
   }
 
   useEffect(() => {
@@ -191,13 +227,13 @@ const HeaderContent = () => {
   }
 
   return (
-    <header className="sticky bg-[#1B3729] text-gray-900 shadow-sm top-0 z-50">
-      <div className="container max-w-7xl mx-auto px-6 py-4">
-        <div className="flex items-center justify-between gap-4">
+    <header ref={headerRef} className="sticky bg-[#1B3729] text-gray-900 shadow-sm top-0 z-50">
+      <div className="container max-w-7xl mx-auto px-3 py-3 sm:px-4 sm:py-4 lg:px-6">
+        <div className="flex items-center justify-between gap-2 sm:gap-4 min-w-0">
           {/* --- Logo --- */}
           <Link
             href="/"
-            onClick={closeAllOverlays}
+            onClick={handleLogoClick}
             className="group flex items-center space-x-3 transition-all duration-300 hover:scale-105 flex-shrink-0"
           >
             <div className="relative overflow-hidden rounded-full">
@@ -326,18 +362,23 @@ const HeaderContent = () => {
           </nav>
 
           {/* --- Mobile/Tablet: Search Icon and Menu --- */}
-          <div className="flex lg:hidden items-center space-x-4">
+          <div className="flex lg:hidden items-center gap-1 sm:gap-2 flex-shrink-0">
             <Link
               href={newProductHref}
               onClick={closeAllOverlays}
-              className="inline-flex items-center gap-1.5 bg-white text-[#1B3729] font-bold text-sm px-3 py-2 rounded-lg"
+              className="inline-flex items-center gap-1 bg-white text-[#1B3729] font-bold text-xs sm:text-sm px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg whitespace-nowrap"
               aria-label="ახალი პროდუქტი"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4 flex-shrink-0" />
               <span className="hidden sm:inline">ახალი</span>
             </Link>
-            <button onClick={toggleSearch} className="group cursor-pointer p-2 text-white">
-              <Search className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            <button
+              type="button"
+              onClick={toggleSearch}
+              className="p-2 text-white touch-manipulation"
+              aria-label="ძებნა"
+            >
+              <Search className="w-5 h-5" />
             </button>
 
             {/* Account Section */}
@@ -394,22 +435,32 @@ const HeaderContent = () => {
                 )}
               </div>
             ) : (
-              <Link href="/auth/signin" className="text-sm md:text-[20px] text-[16px] text-white">
-                შესვლა
+              <Link
+                href="/auth/signin"
+                className="p-2 text-white touch-manipulation"
+                aria-label="შესვლა"
+              >
+                <User className="w-5 h-5" />
               </Link>
             )}
 
-            <Link href="/cart" onClick={closeAllOverlays} className="relative p-2 text-white">
+            <Link href="/cart" onClick={closeAllOverlays} className="relative p-2 text-white touch-manipulation">
               <ShoppingCart className="w-5 h-5" />
               {cartItemCount > 0 && (
-                <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center">
                   {cartItemCount}
                 </span>
               )}
             </Link>
 
-            <button onClick={toggleMobileMenu} className="md:hidden p-2 text-white">
-              <Menu className="w-6 h-6" />
+            <button
+              type="button"
+              onClick={toggleMobileMenu}
+              className="p-2 text-white touch-manipulation"
+              aria-label={isMobileMenuOpen ? 'მენიუს დახურვა' : 'მენიუს გახსნა'}
+              aria-expanded={isMobileMenuOpen}
+            >
+              {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
         </div>
@@ -437,25 +488,66 @@ const HeaderContent = () => {
 
       {/* --- Mobile Menu --- */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden fixed inset-x-0 top-[73px] bottom-0 z-40 overflow-y-auto border-t border-gray-200 bg-white">
-          <div className="container mx-auto px-4 py-4">
-            <nav className="space-y-2">
+        <>
+          <button
+            type="button"
+            className="lg:hidden fixed inset-0 z-40 bg-black/40"
+            style={{ top: headerBottom }}
+            onClick={closeMobileMenu}
+            aria-label="მენიუს დახურვა"
+          />
+          <div
+            className="lg:hidden fixed inset-x-0 bottom-0 z-50 flex flex-col bg-white border-t border-gray-200 shadow-xl"
+            style={{ top: headerBottom }}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 flex-shrink-0">
+              <span className="text-base font-semibold text-black">მენიუ</span>
+              <button
+                type="button"
+                onClick={closeMobileMenu}
+                className="p-2 -mr-2 text-gray-600 touch-manipulation"
+                aria-label="დახურვა"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto overscroll-contain px-3 py-3 sm:px-4 sm:py-4">
+            <nav className="space-y-1">
+              <Link
+                href="/"
+                onClick={(e) => {
+                  closeMobileMenu()
+                  handleLogoClick(e)
+                }}
+                className="block px-3 py-2.5 text-black hover:bg-gray-100 rounded-lg text-base"
+              >
+                მთავარი
+              </Link>
+              <Link
+                href="/shop"
+                onClick={closeMobileMenu}
+                className="block px-3 py-2.5 text-black hover:bg-gray-100 rounded-lg text-base"
+              >
+                პროდუქტები
+              </Link>
+
               {/* Menu Categories */}
-              <div className="space-y-1">
+              <div className="space-y-1 pt-1">
                 {['ქალი', 'მამაკაცი', 'ბავშვები'].map((item) => (
                   <div key={item}>
                     <button
+                      type="button"
                       onClick={() => toggleMobileDropdown(item)}
-                      className="w-full flex items-center justify-between px-4 py-3 text-black md:text-[18px] text-[16px] hover:bg-gray-100 rounded-lg text-[18px]"
+                      className="w-full flex items-center justify-between px-3 py-2.5 text-black hover:bg-gray-100 rounded-lg text-base touch-manipulation"
                     >
                       <span>{item}</span>
-                      <ChevronRight className={`w-4 h-4 transition-transform ${mobileDropdownOpen === item ? 'rotate-90' : ''}`} />
+                      <ChevronRight className={`w-4 h-4 flex-shrink-0 transition-transform ${mobileDropdownOpen === item ? 'rotate-90' : ''}`} />
                     </button>
                     {mobileDropdownOpen === item && (
-                      <div className="pl-4 space-y-1 mt-1 max-h-96 overflow-y-auto">
+                      <div className="pl-2 sm:pl-4 space-y-0.5 mt-0.5 max-h-[50vh] overflow-y-auto overscroll-contain">
                         {item === 'ქალი' && (
                           <>
-                            <Link href="/shop?gender=women" onClick={closeMobileMenu} className="block px-4 py-2 text-black font-semibold hover:bg-gray-100 rounded-lg text-[16px]">
+                            <Link href="/shop?gender=women" onClick={closeMobileMenu} className="block px-3 py-2 text-black font-semibold hover:bg-gray-100 rounded-lg text-sm sm:text-base">
                               ყველა
                             </Link>
                             {WOMEN_PRODUCT_CATEGORIES.map((category, index) => (
@@ -463,7 +555,7 @@ const HeaderContent = () => {
                                 key={category.slug}
                                 href={`/shop?gender=women&category=${encodeURIComponent(category.slug)}`}
                                 onClick={closeMobileMenu}
-                                className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]"
+                                className="block px-3 py-2 text-black hover:bg-gray-100 rounded-lg text-sm sm:text-base break-words"
                               >
                                 {index + 1}. {category.name}
                               </Link>
@@ -472,7 +564,7 @@ const HeaderContent = () => {
                         )}
                         {item === 'მამაკაცი' && (
                           <>
-                            <Link href="/shop?gender=men" onClick={closeMobileMenu} className="block px-4 py-2 text-black font-semibold hover:bg-gray-100 rounded-lg text-[16px]">
+                            <Link href="/shop?gender=men" onClick={closeMobileMenu} className="block px-3 py-2 text-black font-semibold hover:bg-gray-100 rounded-lg text-sm sm:text-base">
                               ყველა
                             </Link>
                             {MEN_PRODUCT_CATEGORIES.map((category, index) => (
@@ -480,7 +572,7 @@ const HeaderContent = () => {
                                 key={category.slug}
                                 href={`/shop?gender=men&category=${encodeURIComponent(category.slug)}`}
                                 onClick={closeMobileMenu}
-                                className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]"
+                                className="block px-3 py-2 text-black hover:bg-gray-100 rounded-lg text-sm sm:text-base break-words"
                               >
                                 {index + 1}. {category.name}
                               </Link>
@@ -489,7 +581,7 @@ const HeaderContent = () => {
                         )}
                         {item === 'ბავშვები' && (
                           <>
-                            <Link href="/shop?gender=children" onClick={closeMobileMenu} className="block px-4 py-2 text-black font-semibold hover:bg-gray-100 rounded-lg text-[16px]">
+                            <Link href="/shop?gender=children" onClick={closeMobileMenu} className="block px-3 py-2 text-black font-semibold hover:bg-gray-100 rounded-lg text-sm sm:text-base">
                               ყველა
                             </Link>
                             {CHILDREN_PRODUCT_CATEGORIES.map((category, index) => (
@@ -497,7 +589,7 @@ const HeaderContent = () => {
                                 key={category.slug}
                                 href={`/shop?gender=children&category=${encodeURIComponent(category.slug)}`}
                                 onClick={closeMobileMenu}
-                                className="block px-4 py-2 text-black hover:bg-gray-100 rounded-lg text-[16px]"
+                                className="block px-3 py-2 text-black hover:bg-gray-100 rounded-lg text-sm sm:text-base break-words"
                               >
                                 {index + 1}. {category.name}
                               </Link>
@@ -510,17 +602,16 @@ const HeaderContent = () => {
                 ))}
               </div>
 
-              {/* Other Links */}
-              <Link href="/about" onClick={closeMobileMenu} className="block px-4 py-3 text-black hover:bg-gray-100 rounded-lg text-[18px]">
+              <Link href="/about" onClick={closeMobileMenu} className="block px-3 py-2.5 text-black hover:bg-gray-100 rounded-lg text-base">
                 ჩვენს შესახებ
               </Link>
-              <Link href="/rules" onClick={closeMobileMenu} className="block px-4 py-3 text-black hover:bg-gray-100 rounded-lg text-[18px]">
+              <Link href="/rules" onClick={closeMobileMenu} className="block px-3 py-2.5 text-black hover:bg-gray-100 rounded-lg text-base">
                 წესები
               </Link>
-             
             </nav>
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* --- Category Navigation Bar --- */}

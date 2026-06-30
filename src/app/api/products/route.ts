@@ -207,6 +207,7 @@ export async function GET(request: NextRequest) {
       hasDiscount ||
       isVip ||
       shopFilters.color ||
+      shopFilters.colorSearch ||
       shopFilters.sizes?.length ||
       shopFilters.sizeSystems?.length ||
       shopFilters.locations?.length ||
@@ -244,6 +245,7 @@ export async function GET(request: NextRequest) {
         isVip: isVip === 'true',
         search: search || undefined,
         color: shopFilters.color,
+        colorSearch: shopFilters.colorSearch,
         sizes: shopFilters.sizes,
         sizeSystems: shopFilters.sizeSystems,
         locations: shopFilters.locations,

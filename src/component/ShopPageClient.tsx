@@ -37,9 +37,11 @@ import ProductListDiscountBadge from '@/components/ProductListDiscountBadge'
 import ProductMasonryGrid from '@/components/ProductMasonryGrid'
 import {
     buildShopBrowserUrl,
+    clearPersistedShopBrowserState,
     HOME_PAGE_STATE_KEY,
     loadPersistedShopState,
     mergeShopStateWithUrl,
+    SHOP_FILTERS_RESET_EVENT,
     SHOP_PAGE_STATE_KEY,
     SHOP_RETURN_URL_KEY,
     type PersistedShopPageState,
@@ -88,6 +90,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
     const [selectedSizeSystems, setSelectedSizeSystems] = useState<string[]>([])
     const [selectedSizes, setSelectedSizes] = useState<string[]>([])
     const [selectedColors, setSelectedColors] = useState<string[]>([])
+    const [colorSearch, setColorSearch] = useState('')
     const [colorFacets, setColorFacets] = useState<ProductColorFacet[]>(() =>
         PRODUCT_COLORS.map((color) => ({ ...color, count: 0 })),
     )
@@ -220,6 +223,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
             selectedSizeSystems,
             selectedSizes,
             selectedColors,
+            colorSearch,
             selectedLocations,
             rentalStartDate: rentalStartDate ? rentalStartDate.toISOString() : null,
             rentalEndDate: rentalEndDate ? rentalEndDate.toISOString() : null,
@@ -240,6 +244,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         selectedSizeSystems,
         selectedSizes,
         selectedColors,
+        colorSearch,
         selectedLocations,
         rentalStartDate,
         rentalEndDate,
@@ -257,6 +262,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         setSelectedSizeSystems(state.selectedSizeSystems)
         setSelectedSizes(state.selectedSizes)
         setSelectedColors(state.selectedColors)
+        setColorSearch(state.colorSearch ?? '')
         setSelectedLocations(state.selectedLocations)
         setRentalStartDate(state.rentalStartDate ? new Date(state.rentalStartDate) : null)
         setRentalEndDate(state.rentalEndDate ? new Date(state.rentalEndDate) : null)
@@ -281,6 +287,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
                 selectedSizeSystems: [],
                 selectedSizes: [],
                 selectedColors: [],
+                colorSearch: '',
                 selectedLocations: [],
                 rentalStartDate: null,
                 rentalEndDate: null,
@@ -381,6 +388,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         selectedSizeSystems,
         selectedSizes,
         selectedColors,
+        colorSearch,
         selectedLocations,
         rentalStartDate,
         rentalEndDate,
@@ -457,6 +465,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
     const shopListFilters = useCallback(
         () => ({
             selectedColors,
+            colorSearch: colorSearch.trim() || undefined,
             selectedSizes,
             selectedSizeSystems,
             selectedLocations,
@@ -467,6 +476,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         }),
         [
             selectedColors,
+            colorSearch,
             selectedSizes,
             selectedSizeSystems,
             selectedLocations,
@@ -540,6 +550,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         selectedSizeSystems,
         selectedSizes,
         selectedColors,
+        colorSearch,
         selectedLocations,
         rentalStartDate,
         rentalEndDate,
@@ -824,6 +835,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
             selectedSizeSystems,
             selectedSizes,
             selectedColors,
+            colorSearch,
             selectedLocations,
             rentalStartDate: rentalStartDate?.toISOString() ?? null,
             rentalEndDate: rentalEndDate?.toISOString() ?? null,
@@ -860,6 +872,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         selectedSizeSystems,
         selectedSizes,
         selectedColors,
+        colorSearch,
         selectedLocations,
         rentalStartDate,
         rentalEndDate,
@@ -899,7 +912,15 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
     }
 
     // Handle color selection
+    const handleColorSearchChange = (value: string) => {
+        setColorSearch(value)
+        if (value.trim()) {
+            setSelectedColors([])
+        }
+    }
+
     const toggleColor = (color: string) => {
+        setColorSearch('')
         setSelectedColors(prev =>
             prev.includes(color)
                 ? [] // თუ იგივე ფერია, გაუქმდება
@@ -919,35 +940,32 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
 
 
     // Clear all filters
-    const clearFilters = () => {
-        // Clear sessionStorage first
-        if (typeof window !== 'undefined') {
-            sessionStorage.removeItem(SHOP_PAGE_STATE_KEY)
-            sessionStorage.removeItem(HOME_PAGE_STATE_KEY)
-            sessionStorage.removeItem(SHOP_RETURN_URL_KEY)
-        }
-        
-        // Clear all state filters immediately
+    const clearFilters = useCallback(() => {
+        clearPersistedShopBrowserState()
+
         setSelectedCategories([])
         setSelectedSizeSystems([])
         setSelectedSizes([])
         setSelectedColors([])
+        setColorSearch('')
         setSelectedLocations([])
         setRentalStartDate(null)
         setRentalEndDate(null)
-        setPurchaseType("all")
+        setPurchaseType('all')
         setOnlyDiscounted(false)
         setOnlyVip(false)
         setCurrentPage(1)
-        syncShopUrl(1)
-        
-        // Price range will be updated when products are fetched
-        // Set to 0 initially, will be updated by useEffect when products load
         setPriceRange([0, 0])
-        
-        // Navigate to home page (remove all URL parameters including gender)
+        setSortBy('newest')
+
         router.replace('/')
-    }
+    }, [router])
+
+    useEffect(() => {
+        const handler = () => clearFilters()
+        window.addEventListener(SHOP_FILTERS_RESET_EVENT, handler)
+        return () => window.removeEventListener(SHOP_FILTERS_RESET_EVENT, handler)
+    }, [clearFilters])
 
     // Get main product image
     const getMainImage = (product: Product) => {
@@ -1141,6 +1159,13 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
                                 {activeMobileFilter === 'color' && (
                                     <div className="space-y-3">
                                         <h3 className="text-lg font-semibold text-black mb-4">ფერი</h3>
+                                        <input
+                                            type="text"
+                                            value={colorSearch}
+                                            onChange={(e) => handleColorSearchChange(e.target.value)}
+                                            placeholder="მაგ. შავი, ლურჯი..."
+                                            className="w-full px-3 py-2 mb-4 border border-gray-300 rounded-md text-[16px] focus:outline-none focus:ring-2 focus:ring-[#1B3729]"
+                                        />
                                         <div className="flex flex-wrap gap-4">
                                             {colorFacets.map((color) => {
                                                 return (
@@ -1606,6 +1631,13 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
                             {/* Color Filter (moved below rental date) */}
                             <div className="mb-6  pb-6">
                                 <h4 className="font-medium text-black md:text-[20px] text-[16px] mb-3">ფერი</h4>
+                                <input
+                                    type="text"
+                                    value={colorSearch}
+                                    onChange={(e) => handleColorSearchChange(e.target.value)}
+                                    placeholder="მაგ. შავი, ლურჯი..."
+                                    className="w-full px-3 py-2 mb-4 border border-gray-300 rounded-md md:text-[18px] text-[16px] focus:outline-none focus:ring-2 focus:ring-[#1B3729]"
+                                />
                                 <div className="flex flex-wrap gap-4">
                                     {colorFacets.map((color) => {
                                         return (

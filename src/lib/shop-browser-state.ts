@@ -9,6 +9,21 @@ import {
 export const SHOP_PAGE_STATE_KEY = 'shopPageState'
 export const HOME_PAGE_STATE_KEY = 'homePageState'
 export const SHOP_RETURN_URL_KEY = 'shopReturnUrl'
+export const SHOP_FILTERS_RESET_EVENT = 'dressla:shop-filters-reset'
+
+export function clearPersistedShopBrowserState(): void {
+  if (typeof window === 'undefined') return
+
+  sessionStorage.removeItem(SHOP_PAGE_STATE_KEY)
+  sessionStorage.removeItem(HOME_PAGE_STATE_KEY)
+  sessionStorage.removeItem(SHOP_RETURN_URL_KEY)
+}
+
+/** Clear saved shop/home filters and notify mounted shop views to reset. */
+export function resetShopBrowserFilters(): void {
+  clearPersistedShopBrowserState()
+  window.dispatchEvent(new CustomEvent(SHOP_FILTERS_RESET_EVENT))
+}
 
 export type PersistedShopPageState = {
   selectedCategories: string[]
@@ -16,6 +31,7 @@ export type PersistedShopPageState = {
   selectedSizeSystems: string[]
   selectedSizes: string[]
   selectedColors: string[]
+  colorSearch: string
   selectedLocations: string[]
   rentalStartDate: string | null
   rentalEndDate: string | null
@@ -43,6 +59,7 @@ export function loadPersistedShopState(
       selectedSizeSystems: parsed.selectedSizeSystems ?? [],
       selectedSizes: parsed.selectedSizes ?? [],
       selectedColors: parsed.selectedColors ?? [],
+      colorSearch: parsed.colorSearch ?? '',
       selectedLocations: parsed.selectedLocations ?? [],
       rentalStartDate: parsed.rentalStartDate ?? null,
       rentalEndDate: parsed.rentalEndDate ?? null,
@@ -83,7 +100,12 @@ export function mergeShopStateWithUrl(
   return {
     ...persisted,
     selectedCategories: options.categoryNames ?? persisted.selectedCategories,
-    selectedColors: urlFilters.color ? [urlFilters.color] : persisted.selectedColors,
+    selectedColors: urlFilters.colorSearch
+      ? []
+      : urlFilters.color
+        ? [urlFilters.color]
+        : persisted.selectedColors,
+    colorSearch: urlFilters.colorSearch ?? persisted.colorSearch ?? '',
     selectedSizes: urlFilters.sizes ?? persisted.selectedSizes,
     selectedSizeSystems: urlFilters.sizeSystems ?? persisted.selectedSizeSystems,
     selectedLocations: urlFilters.locations ?? persisted.selectedLocations,
@@ -121,6 +143,7 @@ export function buildShopBrowserUrl({
   const params = new URLSearchParams(currentSearchParams.toString())
 
   params.delete('color')
+  params.delete('colorSearch')
   params.delete('sizes')
   params.delete('sizeSystems')
   params.delete('locations')
