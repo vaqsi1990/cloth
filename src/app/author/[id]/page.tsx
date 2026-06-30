@@ -185,10 +185,13 @@ const AuthorPage = () => {
                                             </div>
                                         </div>
                                         <div className="mt-2 space-y-2 flex flex-col flex-1 min-w-0">
-                                            <div className="flex items-center justify-between">
-                                                <h3 className="font-regular text-black md:text-[18px] text-[16px] leading-snug line-clamp-2">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <Link
+                                                    href={`/product/${product.id}`}
+                                                    className="font-regular text-black md:text-[18px] text-[16px] leading-snug line-clamp-2 hover:text-[#1B3729] hover:underline flex-1 min-w-0"
+                                                >
                                                     {product.name}
-                                                </h3>
+                                                </Link>
                                                 <Link
                                                     href={`/product/${product.id}`}
                                                     className="w-9 h-9 rounded-xl bg-black text-white flex items-center justify-center hover:bg-gray-800 transition"
