@@ -781,35 +781,47 @@ export function resolveProductFormCategoryId(
   productCategory?: ProductCategoryRef | null,
 ): number | undefined {
   const list = categories.length > 0 ? categories : DEFAULT_PRODUCT_CATEGORIES
-  const slug = productCategory?.slug?.trim()
-  const preferredId = categoryId ?? productCategory?.id
 
-  if (preferredId && list.some((entry) => entry.id === preferredId)) {
-    return preferredId
+  const mapIdInList = (id: number): number | undefined => {
+    if (list.some((entry) => entry.id === id)) {
+      return id
+    }
+
+    const canonical = CANONICAL_PRODUCT_TAXONOMY.find((entry) => entry.id === id)
+    if (canonical) {
+      const bySlug = list.find((entry) => entry.slug === canonical.slug)
+      if (bySlug) return bySlug.id
+    }
+
+    return id
+  }
+
+  if (categoryId != null) {
+    return mapIdInList(categoryId)
+  }
+
+  const slug = productCategory?.slug?.trim()
+  const productId = productCategory?.id
+
+  if (productId != null) {
+    const mapped = mapIdInList(productId)
+    if (list.some((entry) => entry.id === mapped)) {
+      return mapped
+    }
   }
 
   if (slug) {
     const bySlug = list.find((entry) => entry.slug === slug)
     if (bySlug) return bySlug.id
-  }
 
-  if (preferredId) {
-    const canonical = CANONICAL_PRODUCT_TAXONOMY.find((entry) => entry.id === preferredId)
-    if (canonical) {
-      const bySlug = list.find((entry) => entry.slug === canonical.slug)
-      if (bySlug) return bySlug.id
-    }
-  }
-
-  if (slug) {
     const canonical = CANONICAL_PRODUCT_TAXONOMY.find((entry) => entry.slug === slug)
     if (canonical) {
-      const bySlug = list.find((entry) => entry.slug === canonical.slug)
-      if (bySlug) return bySlug.id
+      const bySlugFromCanonical = list.find((entry) => entry.slug === canonical.slug)
+      if (bySlugFromCanonical) return bySlugFromCanonical.id
     }
   }
 
-  return preferredId
+  return productId
 }
 
 /** Gender-filtered categories for product forms, always including the product's current category. */

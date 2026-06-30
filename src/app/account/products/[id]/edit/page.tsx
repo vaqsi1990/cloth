@@ -241,15 +241,32 @@ const EditProductPage = () => {
   )
 
   useEffect(() => {
-    if (!product) return
+    if (!product || categories.length === 0) return
     const resolved = resolveProductFormCategoryId(
-      formData.categoryId ?? product.category?.id ?? product.categoryId,
+      product.category?.id ?? product.categoryId ?? undefined,
       categories,
       product.category ?? null,
     )
-    if (!resolved || resolved === formData.categoryId) return
-    setFormData((prev) => ({ ...prev, categoryId: resolved }))
-  }, [product, categories, formData.categoryId])
+    if (!resolved) return
+    setFormData((prev) => {
+      if (prev.categoryId != null) {
+        const mappedSelection = resolveProductFormCategoryId(
+          prev.categoryId,
+          categories,
+          null,
+        )
+        if (
+          mappedSelection &&
+          categories.some((entry) => entry.id === mappedSelection)
+        ) {
+          return prev.categoryId === mappedSelection
+            ? prev
+            : { ...prev, categoryId: mappedSelection }
+        }
+      }
+      return prev.categoryId === resolved ? prev : { ...prev, categoryId: resolved }
+    })
+  }, [product, categories])
 
   const [selectedSizeSystem, setSelectedSizeSystem] = useState<ProductFormData['sizeSystem'] | ''>('')
   const [selectedSizeValue, setSelectedSizeValue] = useState<string>('')
