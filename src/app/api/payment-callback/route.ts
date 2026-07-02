@@ -4,8 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { recordSellerTransactions } from '@/utils/sellerTransactions'
 import { redeemVoucher } from '@/lib/voucher'
 import { activateVipPayment } from '@/lib/product-vip-payment'
-import { sendOrderConfirmationEmail } from '@/lib/order-confirmation-email'
-import { sendOrderConfirmationSms } from '@/lib/order-confirmation-sms'
+import { sendPaidOrderNotificationsOnce } from '@/lib/order-paid-notifications'
 import {
   finalizeRentalOrderHolds,
   releaseRentalOrderHolds,
@@ -94,11 +93,8 @@ async function updateAutomaticOrderStatus(
     }
 
     if (!wasAlreadyPaid) {
-      void sendOrderConfirmationEmail(order.id).catch((error) => {
-        console.error(`[payment-callback] Order confirmation email failed for #${order.id}:`, error)
-      })
-      void sendOrderConfirmationSms(order.id).catch((error) => {
-        console.error(`[payment-callback] Order confirmation SMS failed for #${order.id}:`, error)
+      void sendPaidOrderNotificationsOnce(order.id).catch((error) => {
+        console.error(`[payment-callback] Order notifications failed for #${order.id}:`, error)
       })
     }
   }

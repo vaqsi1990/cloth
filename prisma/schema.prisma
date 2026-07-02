@@ -507,6 +507,7 @@ model Order {
   paymentCaptureMode PaymentCaptureMode @default(AUTOMATIC)
   paymentHoldStatus  PaymentHoldStatus  @default(NONE)
   paymentHoldBlockedAt DateTime?
+  paidNotificationsSentAt DateTime?
   sourceCartItemId Int?
 
   // Voucher

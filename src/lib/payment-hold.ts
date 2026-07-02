@@ -2,8 +2,7 @@ import { PaymentCaptureMode, PaymentHoldStatus, Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { recordSellerTransactions } from '@/utils/sellerTransactions'
 import { redeemVoucher } from '@/lib/voucher'
-import { sendOrderConfirmationEmail } from '@/lib/order-confirmation-email'
-import { sendOrderConfirmationSms } from '@/lib/order-confirmation-sms'
+import { sendPaidOrderNotificationsOnce } from '@/lib/order-paid-notifications'
 import {
   finalizeRentalOrderHolds,
   releaseRentalOrderHolds,
@@ -108,11 +107,8 @@ export async function markOrderPaymentBlocked(orderId: number): Promise<void> {
   if (!wasAlreadyPaid) {
     await finalizeRentalOrderHolds(orderId)
     await clearSourceCartItem(order)
-    void sendOrderConfirmationEmail(orderId).catch((error) => {
-      console.error(`[payment-hold] Order confirmation email failed for #${orderId}:`, error)
-    })
-    void sendOrderConfirmationSms(orderId).catch((error) => {
-      console.error(`[payment-hold] Order confirmation SMS failed for #${orderId}:`, error)
+    void sendPaidOrderNotificationsOnce(orderId).catch((error) => {
+      console.error(`[payment-hold] Order notifications failed for #${orderId}:`, error)
     })
   }
 }
@@ -153,11 +149,8 @@ export async function markOrderPaymentCaptured(orderId: number): Promise<void> {
   if (!wasAlreadyPaid && order.paymentCaptureMode === PaymentCaptureMode.AUTOMATIC) {
     await finalizeRentalOrderHolds(orderId)
     await clearSourceCartItem(order)
-    void sendOrderConfirmationEmail(orderId).catch((error) => {
-      console.error(`[payment-hold] Order confirmation email failed for #${orderId}:`, error)
-    })
-    void sendOrderConfirmationSms(orderId).catch((error) => {
-      console.error(`[payment-hold] Order confirmation SMS failed for #${orderId}:`, error)
+    void sendPaidOrderNotificationsOnce(orderId).catch((error) => {
+      console.error(`[payment-hold] Order notifications failed for #${orderId}:`, error)
     })
   }
 }

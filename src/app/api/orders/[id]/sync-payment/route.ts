@@ -10,6 +10,7 @@ import {
   markOrderPaymentReleased,
   syncExpiredPaymentHolds,
 } from '@/lib/payment-hold'
+import { sendPaidOrderNotificationsOnce } from '@/lib/order-paid-notifications'
 
 export async function POST(
   _request: NextRequest,
@@ -83,6 +84,10 @@ export async function POST(
       }
     } else if (bogStatus === 'completed') {
       await markOrderPaymentCaptured(order.id)
+    }
+
+    if (bogStatus === 'completed' || bogStatus === 'blocked') {
+      await sendPaidOrderNotificationsOnce(order.id)
     }
 
     const updated = await prisma.order.findUnique({
