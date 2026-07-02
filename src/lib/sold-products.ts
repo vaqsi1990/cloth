@@ -50,6 +50,11 @@ export function buildSoldProductSqlExclusion(): Prisma.Sql {
   )`
 }
 
+/** Priced variant with remaining stock (for list price aggregation). */
+export function purchasableVariantSql(): Prisma.Sql {
+  return Prisma.sql`pv.price > 0 AND pv.stock > 0`
+}
+
 /** Sale listings need stock on the product or on at least one priced variant. */
 export function buildSaleStockAvailabilitySql(): Prisma.Sql {
   return Prisma.sql`(

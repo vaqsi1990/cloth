@@ -18,6 +18,7 @@ import {
   buildExcludeSoldProductsWhere,
   buildSaleStockAvailabilitySql,
   buildSoldProductSqlExclusion,
+  purchasableVariantSql,
 } from '@/lib/sold-products'
 
 export const PRODUCT_LIST_CACHE_TAG = 'product-list'
@@ -243,20 +244,20 @@ function buildPriceRangeWhere(priceMin: number, priceMax: number): Prisma.Sql {
   const minBuyPrice = Prisma.sql`(
     SELECT MIN(${effectiveVariantPriceSql()})::float8
     FROM "ProductVariant" pv
-    WHERE pv."productId" = p.id AND pv.price > 0
+    WHERE pv."productId" = p.id AND ${purchasableVariantSql()}
   )`
 
   const maxBuyPrice = Prisma.sql`(
     SELECT MAX(${effectiveVariantPriceSql()})::float8
     FROM "ProductVariant" pv
-    WHERE pv."productId" = p.id AND pv.price > 0
+    WHERE pv."productId" = p.id AND ${purchasableVariantSql()}
   )`
 
   return Prisma.sql`(
     EXISTS (
       SELECT 1 FROM "ProductVariant" pv
       WHERE pv."productId" = p.id
-        AND pv.price > 0
+        AND ${purchasableVariantSql()}
         AND ${effectiveVariantPriceSql()} >= ${priceMin}
         AND ${effectiveVariantPriceSql()} <= ${priceMax}
     )
@@ -290,12 +291,12 @@ function buildOrderByClause(
     case 'price-low':
       return Prisma.sql`${vipOrder}, ${featuredOrder} (
         SELECT MIN(${effectiveVariantPriceSql()}) FROM "ProductVariant" pv
-        WHERE pv."productId" = p.id AND pv.price > 0
+        WHERE pv."productId" = p.id AND ${purchasableVariantSql()}
       ) ASC NULLS LAST, p."createdAt" DESC, p.id DESC`
     case 'price-high':
       return Prisma.sql`${vipOrder}, ${featuredOrder} (
         SELECT MAX(${effectiveVariantPriceSql()}) FROM "ProductVariant" pv
-        WHERE pv."productId" = p.id AND pv.price > 0
+        WHERE pv."productId" = p.id AND ${purchasableVariantSql()}
       ) DESC NULLS LAST, p."createdAt" DESC, p.id DESC`
     case 'rating':
       return Prisma.sql`${vipOrder}, ${featuredOrder} COALESCE(p.rating, 0) DESC, p."createdAt" DESC, p.id DESC`
@@ -430,7 +431,7 @@ export async function getShopCatalogPriceMax(
       FROM "ProductVariant" pv
       INNER JOIN "Product" p ON p.id = pv."productId"
       WHERE pv."productId" IN (SELECT id FROM filtered)
-        AND pv.price > 0
+        AND ${purchasableVariantSql()}
       UNION ALL
       SELECT GREATEST(
         (rpt."pricePerDay" * rpt."minDays")::float8
@@ -719,6 +720,8 @@ export async function fetchPublicProductListCombined(
         MAX(pv.price)::float8 AS max_price
       FROM "ProductVariant" pv
       WHERE pv."productId" IN (SELECT id FROM filtered)
+        AND pv.price > 0
+        AND pv.stock > 0
       GROUP BY pv."productId"
     ),
     first_tiers AS (
@@ -933,7 +936,7 @@ const getCachedProductList = unstable_cache(
     const filters = JSON.parse(filtersKey) as PublicListFilters
     return buildListPayload(filters)
   },
-  ['public-product-list-v9'],
+  ['public-product-list-v10'],
   {
     revalidate: 120,
     tags: [PRODUCT_LIST_CACHE_TAG],

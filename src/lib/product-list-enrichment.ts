@@ -66,6 +66,8 @@ async function fetchProductListExtras(ids: number[]): Promise<Map<number, Enrich
         MAX(pv.price)::float8 AS max_price
       FROM "ProductVariant" pv
       INNER JOIN ids ON ids.id = pv."productId"
+      WHERE pv.price > 0
+        AND pv.stock > 0
       GROUP BY pv."productId"
     ),
     first_tiers AS (

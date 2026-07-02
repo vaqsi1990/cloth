@@ -804,7 +804,7 @@ export function getVariantSalePricesForSelection(
     if (color && variant.color !== color) continue
     if (size && variant.size !== size) continue
     const price = variant.price ?? 0
-    if (price > 0) prices.add(price)
+    if (price > 0 && (variant.stock ?? 0) > 0) prices.add(price)
   }
 
   return Array.from(prices)
@@ -818,11 +818,16 @@ export type ProductVariantSkuFormRow = ProductVariantSkuLike & {
 }
 
 export function getVariantSalePrices(
-  product: { variants?: Array<{ price?: number | null }> | null },
+  product: { variants?: Array<{ price?: number | null; stock?: number | null }> | null },
 ): number[] {
   return (product.variants || [])
+    .filter((variant) => {
+      const price = variant.price ?? 0
+      if (price <= 0) return false
+      if (variant.stock != null) return variant.stock > 0
+      return true
+    })
     .map((variant) => variant.price ?? 0)
-    .filter((price) => price > 0)
 }
 
 export function formatVariantPriceRange(
