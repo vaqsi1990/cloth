@@ -108,7 +108,7 @@ export function getBogPreAuthErrorMessage(error: unknown): string {
   }
   if (error instanceof Error) {
     if (isBogAuthorizeRejectedError(error)) {
-      return `${error.message}. BOG-მა უარყო ოპერაცია (კოდი 179) — დაუკავშირდით ბანკს.`
+      return error.message
     }
     return error.message
   }
@@ -176,7 +176,6 @@ export async function waitForPendingAuthorizeToSettle(
 
   while (Date.now() < deadline) {
     lastReceipt = await fetchBogPaymentReceipt(paymentId)
-    console.log(JSON.stringify(lastReceipt, null, 2))
     const action = getLastAuthorizeAction(lastReceipt)
     const status = action?.status?.toLowerCase()
     const orderStatus = lastReceipt.order_status?.key?.toLowerCase()
@@ -248,21 +247,76 @@ function findAuthorizeAction(
 ): BogReceiptAction | undefined {
   const actions = receipt.actions ?? []
   if (approveActionId) {
-    const matched = actions.find((a) => a.action_id === approveActionId)
-    if (matched) return matched
+    return actions.find((a) => a.action_id === approveActionId)
   }
-  const authorizeActions = actions.filter((a) => a.action === 'authorize')
-  return authorizeActions.at(-1)
+  return actions.filter((a) => a.action === 'authorize').at(-1)
 }
 
-export function getBogAuthorizeFailureMessage(receipt: BogPaymentReceipt): string | null {
+export function isBogPaymentCaptured(receipt: BogPaymentReceipt): boolean {
+  const status = receipt.order_status?.key?.toLowerCase()
+  return status === 'completed' || status === 'partial_completed'
+}
+
+export function getBogApproveReadinessMessage(
+  receipt: BogPaymentReceipt,
+): string | null {
+  const status = receipt.order_status?.key?.toLowerCase()
+
+  if (status === 'completed' || status === 'partial_completed') {
+    return null
+  }
+
+  if (status === 'blocked') {
+    return null
+  }
+
+  if (status === 'auth_requested') {
+    const lastAuth = getLastAuthorizeAction(receipt)
+    const lastStatus = lastAuth?.status?.toLowerCase()
+
+    if (
+      lastStatus === 'pending' ||
+      lastStatus === 'processing' ||
+      lastStatus === 'in_progress'
+    ) {
+      return 'BOG უკვე ამუშავებს დადასტურების მოთხოვნას. დაელოდეთ რამდენიმე წამს და სცადეთ თავიდან.'
+    }
+
+    if (lastStatus === 'rejected' || lastStatus === 'failed') {
+      if (lastAuth?.code === '179') {
+        return 'BOG-მა გადახდის დადასტურება უარყო (კოდი 179). დაუკავშირდით BOG-ს — pre-authorization შესაძლოა არ არის ჩართული მერჩანტ ანგარიშზე, ან შეკვეთა უკვე დაზიანებულია. სცადეთ ახალი გადახდა.'
+      }
+      return 'BOG-მა გადახდის დადასტურება უარყო. გააუქმეთ ბლოკი ან დაუკავშირდით BOG-ს.'
+    }
+
+    return 'გადახდა ჯერ არ არის მზად დადასტურებისთვის BOG-ში.'
+  }
+
+  if (status === 'rejected' || status === 'refunded' || status === 'refunded_partially') {
+    return 'გადახდა BOG-ში უკვე გაუქმებულია ან უარყოფილია.'
+  }
+
+  if (status) {
+    return `BOG სტატუსი "${status}" — დადასტურება შესაძლებელია მხოლოდ "blocked" შეკვეთებზე.`
+  }
+
+  return 'BOG-ის სტატუსი ვერ განისაზღვრა.'
+}
+
+export function getBogAuthorizeFailureMessage(
+  receipt: BogPaymentReceipt,
+  approveActionId?: string,
+): string | null {
   const orderStatus = receipt.order_status?.key?.toLowerCase()
   if (orderStatus === 'completed' || orderStatus === 'partial_completed') {
     return null
   }
 
-  const action = findAuthorizeAction(receipt)
+  const action = findAuthorizeAction(receipt, approveActionId)
   if (!action) {
+    if (approveActionId) {
+      return null
+    }
     if (orderStatus === 'blocked') {
       return 'BOG-მა გადახდის დადასტურება ჯერ არ დაასრულა'
     }
@@ -274,9 +328,16 @@ export function getBogAuthorizeFailureMessage(receipt: BogPaymentReceipt): strin
     return null
   }
 
+  if (status === 'pending' || status === 'processing' || status === 'in_progress') {
+    return null
+  }
+
   if (status === 'rejected' || status === 'failed') {
     const code = action.code ? ` (${action.code})` : ''
     const description = action.code_description || 'გადახდის დადასტურება უარყოფილია'
+    if (action.code === '179') {
+      return `BOG: ${description}${code}. დაუკავშირდით BOG-ს — შესაძლოა pre-authorization ჯერ არ არის ჩართული მერჩანტ ანგარიშზე.`
+    }
     return `BOG: ${description}${code}`
   }
 
@@ -295,29 +356,30 @@ export async function waitForBogAuthorizeOutcome(
 
   while (Date.now() < deadline) {
     lastReceipt = await fetchBogPaymentReceipt(paymentId)
-    console.log('lastReceipt', JSON.stringify(lastReceipt, null, 2))
     const orderStatus = lastReceipt.order_status?.key?.toLowerCase()
 
     if (orderStatus === 'completed' || orderStatus === 'partial_completed') {
       return lastReceipt
     }
 
-    const failure = getBogAuthorizeFailureMessage(lastReceipt)
     const action = findAuthorizeAction(lastReceipt, approveActionId)
     const actionStatus = action?.status?.toLowerCase()
+    const failure = getBogAuthorizeFailureMessage(lastReceipt, approveActionId)
 
     if (failure && (actionStatus === 'rejected' || actionStatus === 'failed')) {
       throw new Error(failure)
     }
 
-    if (!failure && (actionStatus === 'success' || actionStatus === 'completed')) {
-      return lastReceipt
-    }
-
     await sleep(intervalMs)
   }
 
-  const failure = lastReceipt ? getBogAuthorizeFailureMessage(lastReceipt) : null
+  if (lastReceipt && isBogPaymentCaptured(lastReceipt)) {
+    return lastReceipt
+  }
+
+  const failure = lastReceipt
+    ? getBogAuthorizeFailureMessage(lastReceipt, approveActionId)
+    : null
   if (failure) {
     throw new Error(failure)
   }

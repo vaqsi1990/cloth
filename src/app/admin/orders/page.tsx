@@ -681,20 +681,25 @@ const AdminOrdersPage = () => {
                         </div>
                       </div>
 
+                      {order.paymentHoldStatus === 'CAPTURED' && (
+                        <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+                          <p className="text-xs sm:text-sm text-emerald-800">
+                            გადახდა დადასტურებულია BOG-ში. თანხა უნდა ჩანდეს მერჩანტ ანგარიშზე.
+                          </p>
+                        </div>
+                      )}
+
                       {/* Payment hold actions */}
                       {(order.paymentHoldStatus === 'BLOCKED' ||
-                        order.paymentHoldStatus === 'CAPTURED' ||
                         order.paymentHoldStatus === 'RELEASED') && (
                         <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-amber-50 border border-amber-200 rounded-lg">
                           <p className="text-xs sm:text-sm text-amber-800 mb-2">
                             {order.paymentHoldStatus === 'BLOCKED'
                               ? `ბარათზე დაბლოკილი თანხა: ₾${order.total.toFixed(2)}.`
-                              : order.paymentHoldStatus === 'CAPTURED'
-                                ? 'საიტზე დადასტურებულია, მაგრამ თუ BOG-ში თანხა არ ჩანს — დაადასტურეთ თავიდან.'
-                                : 'საიტზე გაუქმებულია. თუ ბარათზე თანხა კვლავ დაბლოკილია — სცადეთ გაუქმება თავიდან (BOG-ის დადასტურების შემდეგ).'}
+                              : 'საიტზე გაუქმებულია. თუ ბარათზე თანხა კვლავ დაბლოკილია — სცადეთ გაუქმება თავიდან (BOG-ის დადასტურების შემდეგ).'}
                           </p>
                           <div className="flex flex-wrap gap-2">
-                            {order.paymentHoldStatus !== 'RELEASED' && (
+                            {order.paymentHoldStatus === 'BLOCKED' && (
                             <button
                               type="button"
                               onClick={() => handleCapturePaymentHold(order.id)}

@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { isAdminOrSupport } from '@/lib/roles'
 import { Prisma } from '@prisma/client'
+import { syncPaymentHoldWithBog } from '@/lib/payment-hold'
 
 // GET - Fetch all orders (admin only)
 export async function GET(request: NextRequest) {
@@ -105,6 +106,40 @@ export async function GET(request: NextRequest) {
       }),
       prisma.order.count({ where }),
     ])
+
+    const holdOrdersToSync = orders.filter(
+      (order) =>
+        order.paymentCaptureMode === 'MANUAL' &&
+        (order.paymentHoldStatus === 'CAPTURED' || order.paymentHoldStatus === 'BLOCKED'),
+    )
+
+    if (holdOrdersToSync.length > 0) {
+      const syncResults = await Promise.all(
+        holdOrdersToSync.slice(0, 15).map(async (order) => ({
+          orderId: order.id,
+          ...(await syncPaymentHoldWithBog(order.id)),
+        })),
+      )
+
+      const changedIds = new Set(
+        syncResults.filter((result) => result.changed).map((result) => result.orderId),
+      )
+
+      if (changedIds.size > 0) {
+        const refreshed = await prisma.order.findMany({
+          where: { id: { in: [...changedIds] } },
+          select: { id: true, paymentHoldStatus: true, status: true },
+        })
+        const refreshedById = new Map(refreshed.map((order) => [order.id, order]))
+        for (const order of orders) {
+          const updated = refreshedById.get(order.id)
+          if (updated) {
+            order.paymentHoldStatus = updated.paymentHoldStatus
+            order.status = updated.status
+          }
+        }
+      }
+    }
 
     return NextResponse.json({
       success: true,

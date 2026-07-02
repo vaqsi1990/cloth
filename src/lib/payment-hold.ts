@@ -7,7 +7,7 @@ import {
   finalizeRentalOrderHolds,
   releaseRentalOrderHolds,
 } from '@/lib/rental-order-holds'
-import { bogCancelPreAuthorization } from '@/lib/bog-preauth'
+import { bogCancelPreAuthorization, fetchBogPaymentReceipt, isBogPaymentCaptured } from '@/lib/bog-preauth'
 import {
   PAYMENT_HOLD_MAX_DAYS,
   isPaymentHoldExpired,
@@ -213,6 +213,76 @@ export async function rollbackFalsePaymentRelease(orderId: number): Promise<void
       paymentHoldStatus: PaymentHoldStatus.BLOCKED,
     },
   })
+}
+
+/** Reconcile local hold state with BOG receipt (fixes false CAPTURED markers). */
+export async function syncPaymentHoldWithBog(orderId: number): Promise<{
+  bogStatus: string
+  paymentHoldStatus: PaymentHoldStatus
+  changed: boolean
+}> {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: {
+      id: true,
+      paymentId: true,
+      paymentCaptureMode: true,
+      paymentHoldStatus: true,
+    },
+  })
+
+  if (!order?.paymentId || order.paymentCaptureMode !== PaymentCaptureMode.MANUAL) {
+    return {
+      bogStatus: '',
+      paymentHoldStatus: order?.paymentHoldStatus ?? PaymentHoldStatus.NONE,
+      changed: false,
+    }
+  }
+
+  const receipt = await fetchBogPaymentReceipt(order.paymentId)
+  const bogStatus = receipt.order_status?.key?.toLowerCase() ?? ''
+
+  if (isBogPaymentCaptured(receipt)) {
+    if (order.paymentHoldStatus !== PaymentHoldStatus.CAPTURED) {
+      await markOrderPaymentCaptured(orderId)
+      return { bogStatus, paymentHoldStatus: PaymentHoldStatus.CAPTURED, changed: true }
+    }
+    return { bogStatus, paymentHoldStatus: PaymentHoldStatus.CAPTURED, changed: false }
+  }
+
+  if (bogStatus === 'blocked') {
+    if (order.paymentHoldStatus === PaymentHoldStatus.CAPTURED) {
+      await rollbackFailedPaymentCapture(orderId)
+      return { bogStatus, paymentHoldStatus: PaymentHoldStatus.BLOCKED, changed: true }
+    }
+    if (
+      order.paymentHoldStatus !== PaymentHoldStatus.BLOCKED &&
+      order.paymentHoldStatus !== PaymentHoldStatus.RELEASED
+    ) {
+      await markOrderPaymentBlocked(orderId)
+      return { bogStatus, paymentHoldStatus: PaymentHoldStatus.BLOCKED, changed: true }
+    }
+    return { bogStatus, paymentHoldStatus: PaymentHoldStatus.BLOCKED, changed: false }
+  }
+
+  if (bogStatus === 'refunded' || bogStatus === 'refunded_partially' || bogStatus === 'rejected') {
+    if (order.paymentHoldStatus !== PaymentHoldStatus.RELEASED) {
+      await markOrderPaymentReleased(orderId)
+      return { bogStatus, paymentHoldStatus: PaymentHoldStatus.RELEASED, changed: true }
+    }
+    return { bogStatus, paymentHoldStatus: PaymentHoldStatus.RELEASED, changed: false }
+  }
+
+  if (order.paymentHoldStatus === PaymentHoldStatus.CAPTURED) {
+    await rollbackFailedPaymentCapture(orderId)
+    return { bogStatus, paymentHoldStatus: PaymentHoldStatus.BLOCKED, changed: true }
+  }
+
+  return {
+    bogStatus,
+    paymentHoldStatus: order.paymentHoldStatus,
+    changed: false,
+  }
 }
 
 /** BOG approve failed after we optimistically marked capture — restore hold state. */

@@ -570,14 +570,10 @@ const SupportOrdersPage = () => {
                         </div>
                       </div>
 
-                      {/* Payment hold actions */}
-                      {(order.paymentHoldStatus === 'BLOCKED' ||
-                        order.paymentHoldStatus === 'CAPTURED') && (
+                      {order.paymentHoldStatus === 'BLOCKED' && (
                         <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-amber-50 border border-amber-200 rounded-lg">
                           <p className="text-xs sm:text-sm text-amber-800 mb-2">
-                            {order.paymentHoldStatus === 'BLOCKED'
-                              ? `ბარათზე დაბლოკილი თანხა: ₾${order.total.toFixed(2)}.`
-                              : `საიტზე დადასტურებულია, მაგრამ თუ BOG-ში თანხა არ ჩანს — დაადასტურეთ თავიდან.`}
+                            {`ბარათზე დაბლოკილი თანხა: ₾${order.total.toFixed(2)}.`}
                           </p>
                           <div className="flex flex-wrap gap-2">
                             <button
@@ -607,6 +603,14 @@ const SupportOrdersPage = () => {
                                 : 'გაუქმება'}
                             </button>
                           </div>
+                        </div>
+                      )}
+
+                      {order.paymentHoldStatus === 'CAPTURED' && (
+                        <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+                          <p className="text-xs sm:text-sm text-emerald-800">
+                            გადახდა დადასტურებულია BOG-ში.
+                          </p>
                         </div>
                       )}
 

@@ -7,7 +7,9 @@ import { prisma } from '@/lib/prisma'
 import {
   bogApprovePreAuthorization,
   fetchBogPaymentReceipt,
+  getBogApproveReadinessMessage,
   getBogPreAuthErrorMessage,
+  isBogPaymentCaptured,
   isBogPreAuthAlreadyRequestedError,
   isBogAuthorizeRejectedError,
   waitForBogAuthorizeOutcome,
@@ -21,7 +23,7 @@ import {
 import {
   expirePaymentHoldIfNeeded,
   markOrderPaymentCaptured,
-  rollbackFailedPaymentCapture,
+  syncPaymentHoldWithBog,
 } from '@/lib/payment-hold'
 
 const paymentHoldOrderSelect = {
@@ -72,7 +74,7 @@ export async function POST(
       )
     }
 
-    const order = await prisma.order.findUnique({
+    let order = await prisma.order.findUnique({
       where: { id: orderId },
       select: paymentHoldOrderSelect,
     })
@@ -90,39 +92,54 @@ export async function POST(
       )
     }
 
-    if (order.paymentHoldStatus !== PaymentHoldStatus.BLOCKED) {
-      if (order.paymentHoldStatus === PaymentHoldStatus.CAPTURED && order.paymentId) {
-        const receipt = await fetchBogPaymentReceipt(order.paymentId)
-        const bogStatus = receipt.order_status?.key?.toLowerCase()
+    if (!order.paymentId) {
+      return NextResponse.json(
+        { success: false, error: 'გადახდის იდენტიფიკატორი ვერ მოიძებნა' },
+        { status: 400 },
+      )
+    }
 
-        if (bogStatus === 'completed' || bogStatus === 'partial_completed') {
-          return NextResponse.json({
-            success: true,
-            message: 'გადახდა უკვე დადასტურებულია BOG-ში.',
-            paymentHoldStatus: PaymentHoldStatus.CAPTURED,
-          })
-        }
-
-        if (bogStatus === 'blocked') {
-          await rollbackFailedPaymentCapture(orderId)
-        } else {
-          return NextResponse.json(
-            {
-              success: false,
-              error: 'გადახდის ბლოკი უკვე მოხსნილია ან დადასტურებულია',
-            },
-            { status: 400 },
-          )
-        }
-      } else {
+    const sync = await syncPaymentHoldWithBog(orderId)
+    if (sync.changed) {
+      order = await prisma.order.findUnique({
+        where: { id: orderId },
+        select: paymentHoldOrderSelect,
+      })
+      if (!order) {
         return NextResponse.json(
-          {
-            success: false,
-            error: 'გადახდის ბლოკი უკვე მოხსნილია ან დადასტურებულია',
-          },
-          { status: 400 },
+          { success: false, error: 'შეკვეთა ვერ მოიძებნა' },
+          { status: 404 },
         )
       }
+    }
+
+    if (order.paymentHoldStatus === PaymentHoldStatus.CAPTURED) {
+      return NextResponse.json({
+        success: true,
+        message: 'გადახდა უკვე დადასტურებულია BOG-ში.',
+        bogStatus: sync.bogStatus,
+        paymentHoldStatus: PaymentHoldStatus.CAPTURED,
+      })
+    }
+
+    if (order.paymentHoldStatus === PaymentHoldStatus.RELEASED) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'გადახდის ბლოკი უკვე მოხსნილია',
+        },
+        { status: 400 },
+      )
+    }
+
+    if (order.paymentHoldStatus !== PaymentHoldStatus.BLOCKED) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'გადახდის ბლოკი უკვე მოხსნილია ან დადასტურებულია',
+        },
+        { status: 400 },
+      )
     }
 
     if (isPaymentHoldExpired(order)) {
@@ -132,13 +149,6 @@ export async function POST(
           success: false,
           error: `გადახდის ბლოკის ${PAYMENT_HOLD_MAX_DAYS} დღიანი ვადა გავიდა და ავტომატურად მოიხსნა`,
         },
-        { status: 400 },
-      )
-    }
-
-    if (!order.paymentId) {
-      return NextResponse.json(
-        { success: false, error: 'გადახდის იდენტიფიკატორი ვერ მოიძებნა' },
         { status: 400 },
       )
     }
@@ -153,7 +163,26 @@ export async function POST(
     const splitConfig = await buildSplitPaymentConfigForOrder(order)
     const approveAmount = body.amount ?? order.total
     const approveDescription = body.description || 'Admin approved pre-authorization'
-    const paymentId = order.paymentId
+    const paymentId = order.paymentId!
+
+    const receiptBeforeApprove = await fetchBogPaymentReceipt(paymentId)
+    if (isBogPaymentCaptured(receiptBeforeApprove)) {
+      await markOrderPaymentCaptured(orderId)
+      return NextResponse.json({
+        success: true,
+        message: 'გადახდა უკვე დადასტურებულია BOG-ში.',
+        bogStatus: receiptBeforeApprove.order_status?.key,
+        paymentHoldStatus: PaymentHoldStatus.CAPTURED,
+      })
+    }
+
+    const approveReadinessError = getBogApproveReadinessMessage(receiptBeforeApprove)
+    if (approveReadinessError) {
+      return NextResponse.json(
+        { success: false, error: approveReadinessError },
+        { status: 400 },
+      )
+    }
 
     const runApprove = async (withSplit: boolean) => {
       if (withSplit && splitConfig) {
@@ -179,7 +208,10 @@ export async function POST(
 
       try {
         const response = await postApprove()
-        await waitForBogAuthorizeOutcome(paymentId, response.action_id)
+        const receipt = await waitForBogAuthorizeOutcome(paymentId, response.action_id)
+        if (!isBogPaymentCaptured(receipt)) {
+          throw new Error('BOG-მა დადასტურება მიიღო, მაგრამ გადახდა ჯერ არ დასრულებულა.')
+        }
         return response
       } catch (bogError) {
         if (!isBogPreAuthAlreadyRequestedError(bogError)) {
@@ -191,7 +223,10 @@ export async function POST(
         )
         await waitForPendingAuthorizeToSettle(paymentId)
         const response = await postApprove()
-        await waitForBogAuthorizeOutcome(paymentId, response.action_id)
+        const receipt = await waitForBogAuthorizeOutcome(paymentId, response.action_id)
+        if (!isBogPaymentCaptured(receipt)) {
+          throw new Error('BOG-მა დადასტურება მიიღო, მაგრამ გადახდა ჯერ არ დასრულებულა.')
+        }
         return response
       }
     }
@@ -204,8 +239,6 @@ export async function POST(
         bogResponse = await runApprove(true)
         usedSplit = true
       } catch (bogError) {
-        await rollbackFailedPaymentCapture(orderId)
-
         if (!isBogAuthorizeRejectedError(bogError)) {
           throw bogError
         }
