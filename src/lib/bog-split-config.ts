@@ -1,5 +1,10 @@
 import { prisma } from '@/lib/prisma'
-import { computePaymentSplitAmounts } from '@/lib/platform-pricing'
+import {
+  computePaymentSplitAmounts,
+  getOwnerItemsSubtotalFromBuyer,
+  getSellerPriceFromBuyer,
+  roundMoney,
+} from '@/lib/platform-pricing'
 
 export interface BogSplitPayment {
   amount?: number
@@ -97,7 +102,7 @@ export async function buildSplitPaymentConfig(
   paymentMethod: string | undefined,
   productIds: (string | number)[],
   totalAmount: number,
-  productBuyerSubtotal: number,
+  ownerItemsSubtotal: number,
   deliveryFee: number,
   sellerUserIds: string[] = [],
 ): Promise<BogSplitConfig | null> {
@@ -116,7 +121,7 @@ export async function buildSplitPaymentConfig(
   const sellerIban = [...authors.values()][0]
   const splitAmounts = computePaymentSplitAmounts(
     totalAmount,
-    productBuyerSubtotal,
+    ownerItemsSubtotal,
     deliveryFee,
   )
   if (!splitAmounts) {
@@ -130,14 +135,14 @@ export async function buildSplitPaymentConfig(
     split_payments.push({
       amount: splitAmounts.platformAmount,
       iban: merchantIban,
-      description: validateSplitDescription('Platform commission'),
+      description: validateSplitDescription('Delivery and commission'),
     })
   }
 
   split_payments.push({
     amount: splitAmounts.sellerAmount,
     iban: sellerIban,
-    description: validateSplitDescription('Seller earning'),
+    description: validateSplitDescription('Owner item payout'),
   })
 
   const totalSplitAmount = split_payments.reduce((sum, p) => sum + (p.amount ?? 0), 0)
@@ -183,12 +188,21 @@ export async function buildSplitPaymentConfigForOrder(
   const productBuyerSubtotal =
     Math.round((itemsSubtotal - (order.voucherDiscount ?? 0)) * 100) / 100
   const deliveryFee = order.deliveryPrice ?? 0
+  const ownerItemsSubtotal =
+    order.voucherDiscount && order.voucherDiscount > 0
+      ? getOwnerItemsSubtotalFromBuyer(productBuyerSubtotal)
+      : roundMoney(
+          saleItems.reduce(
+            (sum, item) => sum + getSellerPriceFromBuyer(item.price) * item.quantity,
+            0,
+          ),
+        )
 
   return buildSplitPaymentConfig(
     order.paymentMethod ?? 'card',
     productIds,
     order.total,
-    productBuyerSubtotal,
+    ownerItemsSubtotal,
     deliveryFee,
     sellerUserIds,
   )

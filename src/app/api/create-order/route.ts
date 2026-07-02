@@ -9,6 +9,11 @@ import { validateVoucher } from '@/lib/voucher'
 import { processExpiredDiscount } from '@/utils/discountUtils'
 import { buildSplitPaymentConfig } from '@/lib/bog-split-config'
 import {
+  getOwnerItemsSubtotalFromBuyer,
+  getSellerPriceFromBuyer,
+  roundMoney,
+} from '@/lib/platform-pricing'
+import {
   cartProductPricingSelect,
   resolveCartItemBuyerListPrice,
 } from '@/lib/resolve-cart-item-price'
@@ -28,6 +33,7 @@ import { releaseRentalOrderHolds } from '@/lib/rental-order-holds'
 import { validateSaleItemStock } from '@/lib/sale-stock'
 import { isProductSoftDeleted } from '@/lib/product-soft-delete'
 import { getBogCallbackUrl, getSiteUrl } from '@/lib/site-url'
+import { usesManualPaymentCapture } from '@/lib/payment-hold'
 
 interface CartItemInput {
   productId: string | number
@@ -535,6 +541,17 @@ export async function POST(req: NextRequest) {
     const productIds = resolvedCartItems
       .map((i) => i.productId)
       .filter((id): id is number => id !== null)
+    const saleItems = resolvedCartItems.filter((item) => !item.isRental)
+    const ownerItemsSubtotal =
+      voucherDiscount > 0
+        ? getOwnerItemsSubtotalFromBuyer(productBuyerSubtotal)
+        : roundMoney(
+            saleItems.reduce(
+              (sum, item) =>
+                sum + getSellerPriceFromBuyer(item.buyerListPrice) * item.quantity,
+              0,
+            ),
+          )
     // BOG applies split at capture time for pre-auth orders; sending split here can fail with manual capture.
     const splitConfig = manualCapture
       ? null
@@ -542,7 +559,7 @@ export async function POST(req: NextRequest) {
           paymentMethod,
           productIds,
           total,
-          productBuyerSubtotal,
+          ownerItemsSubtotal,
           deliveryFee,
         )
 

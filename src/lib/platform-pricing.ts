@@ -64,21 +64,22 @@ export function convertBuyerPriceFiltersToSeller(filters: {
   }
 }
 
-/** BOG split percents for a mixed order (products + optional delivery to platform). */
+/** BOG split percents: owner gets 100% of listed item prices; platform gets 10% commission + delivery. */
 export function computePaymentSplitPercents(
   totalAmount: number,
   productBuyerSubtotal: number,
   deliveryFee: number,
 ): { platformPercent: number; sellerPercent: number } | null {
-  if (totalAmount <= 0 || productBuyerSubtotal < 0) return null
-
-  const sellerAmount = getSellerPriceFromBuyer(productBuyerSubtotal)
-  const platformAmount = roundMoney(
-    productBuyerSubtotal - sellerAmount + Math.max(0, deliveryFee),
+  const ownerItemsSubtotal = getOwnerItemsSubtotalFromBuyer(productBuyerSubtotal)
+  const splitAmounts = computePaymentSplitAmounts(
+    totalAmount,
+    ownerItemsSubtotal,
+    deliveryFee,
   )
+  if (!splitAmounts) return null
 
-  let platformPercent = roundMoney((platformAmount / totalAmount) * 100)
-  let sellerPercent = roundMoney((sellerAmount / totalAmount) * 100)
+  let platformPercent = roundMoney((splitAmounts.platformAmount / totalAmount) * 100)
+  let sellerPercent = roundMoney((splitAmounts.sellerAmount / totalAmount) * 100)
   const drift = roundMoney(100 - platformPercent - sellerPercent)
 
   if (drift !== 0) {
@@ -88,18 +89,18 @@ export function computePaymentSplitPercents(
   return { platformPercent, sellerPercent }
 }
 
-/** BOG split amounts for a mixed order (products + optional delivery to platform). */
+/** BOG split amounts: owner gets 100% of listed item prices; platform gets 10% commission + delivery. */
 export function computePaymentSplitAmounts(
   totalAmount: number,
-  productBuyerSubtotal: number,
+  ownerItemsSubtotal: number,
   deliveryFee: number,
 ): { platformAmount: number; sellerAmount: number } | null {
-  if (totalAmount <= 0 || productBuyerSubtotal < 0) return null
+  if (totalAmount <= 0 || ownerItemsSubtotal < 0) return null
 
-  const sellerAmount = getSellerPriceFromBuyer(productBuyerSubtotal)
-  let platformAmount = roundMoney(
-    productBuyerSubtotal - sellerAmount + Math.max(0, deliveryFee),
-  )
+  const sellerAmount = roundMoney(ownerItemsSubtotal)
+  const platformCommission = getCommissionFromSellerPrice(sellerAmount)
+  let platformAmount = roundMoney(platformCommission + Math.max(0, deliveryFee))
+
   const drift = roundMoney(totalAmount - platformAmount - sellerAmount)
   if (drift !== 0) {
     platformAmount = roundMoney(platformAmount + drift)
@@ -110,4 +111,9 @@ export function computePaymentSplitAmounts(
   }
 
   return { platformAmount, sellerAmount }
+}
+
+/** Derive owner item subtotal from buyer-facing item total (after voucher). */
+export function getOwnerItemsSubtotalFromBuyer(productBuyerSubtotal: number): number {
+  return getSellerPriceFromBuyer(productBuyerSubtotal)
 }
