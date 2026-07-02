@@ -22,6 +22,7 @@ import {
   cartProductPricingSelect,
   resolveCartItemBuyerListPrice,
 } from '@/lib/resolve-cart-item-price'
+import { isProductSoftDeleted } from '@/lib/product-soft-delete'
 import {
   resolveCartItemsBuyerListPrices,
   syncCartItemBuyerListPrices,
@@ -425,11 +426,12 @@ export async function POST(request: NextRequest) {
       select: {
         allowsPickup: true,
         approvalStatus: true,
+        deletedAt: true,
         ...cartProductPricingSelect,
       },
     })
 
-    if (!product) {
+    if (!product || isProductSoftDeleted(product)) {
       return NextResponse.json({
         success: false,
         message: 'პროდუქტი ვერ მოიძებნა',

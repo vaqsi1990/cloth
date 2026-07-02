@@ -312,6 +312,7 @@ model Product {
   approvalStatus VerificationStatus @default(PENDING)
   rejectionReason String?
   approvedAt    DateTime?
+  deletedAt     DateTime?
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
 
@@ -346,6 +347,7 @@ model Product {
   @@index([status, approvalStatus, userId]) // Composite index covers status+approvalStatus queries
   @@index([categoryId, status, approvalStatus]) // Composite index covers categoryId queries
   @@index([purposeId, status, approvalStatus]) // Composite index covers purposeId queries
+  @@index([deletedAt])
 }
 
 model ProductVipPayment {

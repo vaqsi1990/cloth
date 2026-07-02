@@ -36,8 +36,7 @@ import {
   refineProductImagesAndPricing,
 } from '@/lib/product-create-validation'
 import { revalidateProductCaches } from '@/lib/product-cache-revalidation'
-import { removeCartItemsForProduct } from '@/lib/cart-cleanup'
-import { resolveCategoryIdForWrite, resolveProductCategoryForRead } from '@/lib/category-sync'
+import { softDeleteProductAndRevalidate, isProductSoftDeleted } from '@/lib/product-soft-delete'
 import {
   isProductStatus,
   updateProductStatus,
@@ -167,6 +166,7 @@ const buildProductSelect = (includeAdminFields: boolean = false) => {
     maxRentalDays: true,
     status: true,
     approvalStatus: true, // Always needed for permission checks
+    deletedAt: true,
     // Removed: createdAt, updatedAt - not needed for display
   category: {
     select: {
@@ -258,6 +258,7 @@ export async function GET(
     // Check access permissions
     if (
       !product ||
+      isProductSoftDeleted(product) ||
       (!isAdminOrSupportRole && product.user?.banned) ||
       (!isAdminOrSupportRole && !isOwner && product.approvalStatus !== 'APPROVED')
     ) {
@@ -371,10 +372,11 @@ export async function PUT(
         approvalStatus: true,
         approvedAt: true,
         rejectionReason: true,
-      }
+        deletedAt: true,
+      },
     })
 
-    if (!existingProduct) {
+    if (!existingProduct || isProductSoftDeleted(existingProduct)) {
       return NextResponse.json({
         success: false,
         message: 'პროდუქტი ვერ მოიძებნა'
@@ -612,10 +614,11 @@ export async function PATCH(
 
     // Check if product exists
     const existingProduct = await prisma.product.findUnique({
-      where: { id: productId }
+      where: { id: productId },
+      select: { id: true, userId: true, deletedAt: true },
     })
 
-    if (!existingProduct) {
+    if (!existingProduct || isProductSoftDeleted(existingProduct)) {
       return NextResponse.json({
         success: false,
         message: 'პროდუქტი ვერ მოიძებნა'
@@ -685,7 +688,7 @@ export async function DELETE(
       where: { id: productId }
     })
 
-    if (!existingProduct) {
+    if (!existingProduct || isProductSoftDeleted(existingProduct)) {
       return NextResponse.json({
         success: false,
         message: 'პროდუქტი ვერ მოიძებნა'
@@ -701,14 +704,7 @@ export async function DELETE(
       )
     }
 
-    await prisma.$transaction(async (tx) => {
-      await removeCartItemsForProduct(productId, tx)
-      await tx.product.delete({
-        where: { id: productId },
-      })
-    })
-
-    revalidateProductCaches(productId, { authorId: existingProduct.userId })
+    await softDeleteProductAndRevalidate(productId)
 
     return NextResponse.json({
       success: true,

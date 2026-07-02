@@ -5,8 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { checkAndClearExpiredDiscounts, processExpiredDiscount } from '@/utils/discountUtils'
 import { ownerProductListSelect, parseListPagination } from '@/lib/product-owner-query'
 import { buildExcludeSoldProductsWhere } from '@/lib/sold-products'
-import { revalidateProductListCache } from '@/lib/product-list-query'
-import { removeCartItemsForProduct } from '@/lib/cart-cleanup'
+import { notDeletedProductWhere, softDeleteProductAndRevalidate } from '@/lib/product-soft-delete'
 
 // GET - Fetch user's products
 export async function GET(request: NextRequest) {
@@ -24,6 +23,7 @@ export async function GET(request: NextRequest) {
 
     const where = {
       userId: session.user.id,
+      ...notDeletedProductWhere,
       ...buildExcludeSoldProductsWhere(),
     }
 
@@ -96,6 +96,7 @@ export async function DELETE(request: NextRequest) {
       where: {
         id: parsedProductId,
         userId: session.user.id,
+        ...notDeletedProductWhere,
       },
     })
 
@@ -106,14 +107,7 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    await prisma.$transaction(async (tx) => {
-      await removeCartItemsForProduct(parsedProductId, tx)
-      await tx.product.delete({
-        where: { id: parsedProductId },
-      })
-    })
-
-    revalidateProductListCache()
+    await softDeleteProductAndRevalidate(parsedProductId)
 
     return NextResponse.json({
       success: true,

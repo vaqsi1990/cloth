@@ -308,6 +308,7 @@ function buildOrderByClause(
 
 function buildWhere(filters: PublicListFilters): Prisma.Sql {
   const parts: Prisma.Sql[] = [
+    Prisma.sql`p."deletedAt" IS NULL`,
     Prisma.sql`p.status NOT IN ('MAINTENANCE', 'DAMAGED', 'RESERVED')`,
     Prisma.sql`p."approvalStatus" = 'APPROVED'`,
     Prisma.sql`p."userId" IS NOT NULL`,

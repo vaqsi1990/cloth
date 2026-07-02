@@ -62,12 +62,44 @@ async function collectProductAuthorsIBANs(productIds: (string | number)[]) {
   return result
 }
 
+async function collectSellerUserIdsIBANs(sellerUserIds: string[]) {
+  const result = new Map<string, string>()
+  const uniqueIds = [...new Set(sellerUserIds.filter(Boolean))]
+
+  if (uniqueIds.length === 0) return result
+
+  const users = await prisma.user.findMany({
+    where: { id: { in: uniqueIds } },
+    select: { id: true, iban: true },
+  })
+
+  for (const user of users) {
+    if (!user.iban) continue
+    const norm = normalizeIban(user.iban)
+    if (norm) {
+      result.set(user.id, norm)
+    }
+  }
+
+  return result
+}
+
+async function collectSellerIBANs(
+  productIds: (string | number)[],
+  sellerUserIds: string[] = [],
+) {
+  const fromProducts = await collectProductAuthorsIBANs(productIds)
+  const fromSellers = await collectSellerUserIdsIBANs(sellerUserIds)
+  return new Map<string, string>([...fromProducts, ...fromSellers])
+}
+
 export async function buildSplitPaymentConfig(
   paymentMethod: string | undefined,
   productIds: (string | number)[],
   totalAmount: number,
   productBuyerSubtotal: number,
   deliveryFee: number,
+  sellerUserIds: string[] = [],
 ): Promise<BogSplitConfig | null> {
   if (!paymentMethod || !['card', 'google_pay', 'apple_pay'].includes(paymentMethod)) {
     console.warn(`⚠️ [SPLIT] Payment method not supported for split: ${paymentMethod}`)
@@ -75,7 +107,7 @@ export async function buildSplitPaymentConfig(
   }
 
   const merchantIban = getMerchantIBAN()
-  const authors = await collectProductAuthorsIBANs(productIds)
+  const authors = await collectSellerIBANs(productIds, sellerUserIds)
   if (authors.size === 0) {
     console.error('❌ [SPLIT] No seller IBANs found - split config cannot be created')
     return null
@@ -126,6 +158,7 @@ type OrderForSplit = {
   voucherDiscount?: number | null
   items: Array<{
     productId: number | null
+    sellerUserId?: string | null
     price: number
     quantity: number
     isRental?: boolean | null
@@ -139,6 +172,9 @@ export async function buildSplitPaymentConfigForOrder(
   const productIds = saleItems
     .map((item) => item.productId)
     .filter((id): id is number => id != null)
+  const sellerUserIds = saleItems
+    .map((item) => item.sellerUserId)
+    .filter((id): id is string => Boolean(id))
 
   const itemsSubtotal = saleItems.reduce(
     (sum, item) => sum + item.price * item.quantity,
@@ -154,5 +190,6 @@ export async function buildSplitPaymentConfigForOrder(
     order.total,
     productBuyerSubtotal,
     deliveryFee,
+    sellerUserIds,
   )
 }

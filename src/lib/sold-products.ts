@@ -120,6 +120,7 @@ export function buildSaleStockAvailabilityWhere(): Prisma.ProductWhereInput {
 export function buildPublicProductDiscoveryWhere(): Prisma.ProductWhereInput {
   return {
     AND: [
+      { deletedAt: null },
       { status: { notIn: ['MAINTENANCE', 'DAMAGED', 'RESERVED'] } },
       { approvalStatus: 'APPROVED' },
       { userId: { not: null } },

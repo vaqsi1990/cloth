@@ -41,6 +41,7 @@ const paymentHoldOrderSelect = {
   items: {
     select: {
       productId: true,
+      sellerUserId: true,
       price: true,
       quantity: true,
       isRental: true,

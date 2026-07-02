@@ -26,6 +26,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         brand: true,
         color: true,
         isRentable: true,
+        deletedAt: true,
         category: {
           select: {
             id: true,
@@ -58,7 +59,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       },
     });
 
-    if (!product) {
+    if (!product || product.deletedAt) {
       return {
         title: "პროდუქტი",
         description: "პროდუქტის დეტალები Dressla.ge-ზე",

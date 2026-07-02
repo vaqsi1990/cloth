@@ -26,7 +26,7 @@ import {
 } from '@/lib/order-item-snapshot'
 import { releaseRentalOrderHolds } from '@/lib/rental-order-holds'
 import { validateSaleItemStock } from '@/lib/sale-stock'
-import { isPaymentHoldEnabled, usesManualPaymentCapture } from '@/lib/payment-hold'
+import { isProductSoftDeleted } from '@/lib/product-soft-delete'
 import { getBogCallbackUrl, getSiteUrl } from '@/lib/site-url'
 
 interface CartItemInput {
@@ -395,6 +395,7 @@ export async function POST(req: NextRequest) {
                 ...cartProductPricingSelect,
                 ...orderItemSnapshotProductSelect,
                 approvalStatus: true,
+                deletedAt: true,
                 allowsPickup: true,
               },
             },
@@ -434,6 +435,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { success: false, error: 'პროდუქტი ჯერ არ არის დამტკიცებული' },
         { status: 403 },
+      )
+    }
+
+    if (isProductSoftDeleted(selectedCartItem.product)) {
+      return NextResponse.json(
+        { success: false, error: 'პროდუქტი აღარ არის ხელმისაწვდომი' },
+        { status: 409 },
       )
     }
 

@@ -27,6 +27,7 @@ export const ensureUniqueProductSlug = async (
     const match = await prisma.product.findFirst({
       where: {
         slug,
+        deletedAt: null,
         ...(options.excludeProductId
           ? {
               NOT: { id: options.excludeProductId }
