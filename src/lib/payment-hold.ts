@@ -39,7 +39,13 @@ type OrderForHold = Prisma.OrderGetPayload<{
 
 const CARD_CAPTURE_METHODS = new Set(['card', 'google_pay', 'apple_pay'])
 
+/** Set PAYMENT_HOLD_ENABLED=false until BOG activates pre-authorization on the merchant account. */
+export function isPaymentHoldEnabled(): boolean {
+  return process.env.PAYMENT_HOLD_ENABLED !== 'false'
+}
+
 export function usesManualPaymentCapture(paymentMethod?: string | null): boolean {
+  if (!isPaymentHoldEnabled()) return false
   if (!paymentMethod) return true
   return CARD_CAPTURE_METHODS.has(paymentMethod)
 }

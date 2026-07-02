@@ -26,7 +26,7 @@ import {
 } from '@/lib/order-item-snapshot'
 import { releaseRentalOrderHolds } from '@/lib/rental-order-holds'
 import { validateSaleItemStock } from '@/lib/sale-stock'
-import { usesManualPaymentCapture } from '@/lib/payment-hold'
+import { isPaymentHoldEnabled, usesManualPaymentCapture } from '@/lib/payment-hold'
 import { getBogCallbackUrl, getSiteUrl } from '@/lib/site-url'
 
 interface CartItemInput {
@@ -608,6 +608,12 @@ export async function POST(req: NextRequest) {
     const paymentMethod = orderData.paymentMethod || 'card'
     const manualCapture = usesManualPaymentCapture(paymentMethod)
 
+    if (manualCapture) {
+      console.log('🔒 [PAYMENT-HOLD] Manual capture enabled (card funds will be blocked until approved)')
+    } else if (isPaymentHoldEnabled() === false) {
+      console.log('ℹ️ [PAYMENT-HOLD] Disabled via PAYMENT_HOLD_ENABLED=false — using automatic capture')
+    }
+
     const dbOrder = await prisma.order.create({
       data: {
         userId: auth.user.id,
@@ -672,13 +678,16 @@ export async function POST(req: NextRequest) {
     const productIds = resolvedCartItems
       .map((i) => i.productId)
       .filter((id): id is number => id !== null)
-    const splitConfig = await buildSplitPaymentConfig(
-      orderData.paymentMethod || 'card',
-      productIds,
-      total,
-      productBuyerSubtotal,
-      deliveryFee,
-    )
+    // BOG applies split at capture time for pre-auth orders; sending split here can fail with manual capture.
+    const splitConfig = manualCapture
+      ? null
+      : await buildSplitPaymentConfig(
+          paymentMethod,
+          productIds,
+          total,
+          productBuyerSubtotal,
+          deliveryFee,
+        )
 
     const siteUrl = getSiteUrl()
 
