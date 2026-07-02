@@ -1,6 +1,7 @@
 import axios, { AxiosError } from 'axios'
 import { randomUUID } from 'crypto'
 import { bogTokenManager } from '@/lib/bog-token'
+import type { BogSplitConfig } from '@/lib/bog-split-config'
 
 export interface BogPreAuthActionResponse {
   key: string
@@ -10,15 +11,22 @@ export interface BogPreAuthActionResponse {
 
 export async function bogApprovePreAuthorization(
   bogOrderId: string,
-  options?: { amount?: number; description?: string },
+  options?: {
+    amount?: number
+    description?: string
+    split?: BogSplitConfig
+  },
 ): Promise<BogPreAuthActionResponse> {
   return bogTokenManager.makeAuthenticatedRequest(async (token) => {
-    const body: Record<string, string | number> = {}
+    const body: Record<string, unknown> = {}
     if (options?.amount != null) {
       body.amount = options.amount
     }
     if (options?.description) {
       body.description = options.description
+    }
+    if (options?.split?.split_payments?.length) {
+      body.split = options.split
     }
 
     const response = await axios.post<BogPreAuthActionResponse>(

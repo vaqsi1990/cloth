@@ -8,6 +8,7 @@ import {
   bogApprovePreAuthorization,
   getBogPreAuthErrorMessage,
 } from '@/lib/bog-preauth'
+import { buildSplitPaymentConfigForOrder } from '@/lib/bog-split-config'
 import {
   isPaymentHoldExpired,
   PAYMENT_HOLD_MAX_DAYS,
@@ -22,10 +23,21 @@ const paymentHoldOrderSelect = {
   paymentId: true,
   total: true,
   status: true,
+  paymentMethod: true,
+  deliveryPrice: true,
+  voucherDiscount: true,
   paymentCaptureMode: true,
   paymentHoldStatus: true,
   paymentHoldBlockedAt: true,
   updatedAt: true,
+  items: {
+    select: {
+      productId: true,
+      price: true,
+      quantity: true,
+      isRental: true,
+    },
+  },
 } as const
 
 export async function POST(
@@ -100,9 +112,32 @@ export async function POST(
       body = {}
     }
 
+    const splitConfig = await buildSplitPaymentConfigForOrder(order)
+    if (!splitConfig) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            'Split გადახდის კონფიგურაცია ვერ შეიქმნა. შეამოწმეთ გამყიდველის IBAN და BOG_MERCHANT_IBAN.',
+        },
+        { status: 400 },
+      )
+    }
+
+    console.log(
+      `[payment-hold] Approving order #${orderId} with split:`,
+      JSON.stringify(
+        splitConfig.split_payments.map((sp) => ({
+          percent: sp.percent,
+          iban: `${sp.iban.substring(0, 8)}...${sp.iban.slice(-4)}`,
+        })),
+      ),
+    )
+
     const bogResponse = await bogApprovePreAuthorization(order.paymentId, {
       amount: body.amount ?? order.total,
       description: body.description || 'Admin approved pre-authorization',
+      split: splitConfig,
     })
 
     await markOrderPaymentCaptured(orderId)
