@@ -47,6 +47,8 @@ interface Order {
   note?: string
   paymentMethod?: string
   paymentId?: string
+  paymentHoldStatus?: string | null
+  paymentHoldBlockedAt?: string | null
   userId?: string
   user?: {
     id: string
@@ -67,6 +69,8 @@ const SupportOrdersPage = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('ALL')
   const [expandedOrders, setExpandedOrders] = useState<Set<number>>(new Set())
+  const [releasingHoldOrderId, setReleasingHoldOrderId] = useState<number | null>(null)
+  const [capturingHoldOrderId, setCapturingHoldOrderId] = useState<number | null>(null)
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -110,6 +114,72 @@ const SupportOrdersPage = () => {
       fetchOrders()
     }
   }, [status, session?.user?.role, fetchOrders])
+
+  const handleCapturePaymentHold = async (orderId: number) => {
+    if (
+      !confirm(
+        'დარწმუნებული ხართ, რომ გსურთ გადახდის დადასტურება? ბარათზე დაბლოკილი თანხა ჩაირიცხება მიმწოდებლის ანგარიშზე.',
+      )
+    ) {
+      return
+    }
+
+    try {
+      setCapturingHoldOrderId(orderId)
+      const response = await fetch(`/api/admin/orders/${orderId}/payment-hold/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          description: 'Support approved payment hold',
+        }),
+      })
+      const data = await response.json()
+      if (response.ok && data.success) {
+        await fetchOrders()
+        showToast(data.message || 'გადახდა დადასტურებულია', 'success')
+      } else {
+        showToast(data.error || 'გადახდის დადასტურება ვერ მოხერხდა', 'error')
+      }
+    } catch (error) {
+      console.error('Error capturing payment hold:', error)
+      showToast('გადახდის დადასტურება ვერ მოხერხდა', 'error')
+    } finally {
+      setCapturingHoldOrderId(null)
+    }
+  }
+
+  const handleReleasePaymentHold = async (orderId: number) => {
+    if (
+      !confirm(
+        'დარწმუნებული ხართ, რომ გსურთ შეკვეთის გაუქმება? ბარათზე დაბლოკილი თანხა განგება და შეკვეთა დაბრუნდებულად მონიშნავს.',
+      )
+    ) {
+      return
+    }
+
+    try {
+      setReleasingHoldOrderId(orderId)
+      const response = await fetch(`/api/admin/orders/${orderId}/payment-hold/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          description: 'Support released payment hold',
+        }),
+      })
+      const data = await response.json()
+      if (response.ok && data.success) {
+        await fetchOrders()
+        showToast(data.message || 'შეკვეთა გაუქმდა', 'success')
+      } else {
+        showToast(data.error || 'გაუქმება ვერ მოხერხდა', 'error')
+      }
+    } catch (error) {
+      console.error('Error releasing payment hold:', error)
+      showToast('გაუქმება ვერ მოხერხდა', 'error')
+    } finally {
+      setReleasingHoldOrderId(null)
+    }
+  }
 
   const handleStatusUpdate = async (
     orderId: number,
@@ -371,6 +441,11 @@ const SupportOrdersPage = () => {
                         {getStatusIcon(order.status)}
                         <span>{getStatusText(order.status)}</span>
                       </span>
+                      {order.paymentHoldStatus === 'BLOCKED' && (
+                        <span className="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap">
+                          თანხა დაბლოკილია
+                        </span>
+                      )}
                       {/* Rental indicator */}
                       {order.items.some(item => item.isRental) && (
                         <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap">
@@ -477,6 +552,43 @@ const SupportOrdersPage = () => {
                           </div>
                         </div>
                       </div>
+
+                      {/* Payment hold actions */}
+                      {order.paymentHoldStatus === 'BLOCKED' && (
+                        <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                          <p className="text-xs sm:text-sm text-amber-800 mb-2">
+                            ბარათზე დაბლოკილი თანხა: ₾{order.total.toFixed(2)}.
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleCapturePaymentHold(order.id)}
+                              disabled={
+                                capturingHoldOrderId === order.id ||
+                                releasingHoldOrderId === order.id
+                              }
+                              className="inline-flex items-center justify-center px-3 py-1.5 bg-[#1B3729] text-white rounded text-xs sm:text-sm font-medium hover:bg-[#164321] transition-colors disabled:opacity-60"
+                            >
+                              {capturingHoldOrderId === order.id
+                                ? 'მუშავდება...'
+                                : 'გადახდის დადასტურება'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleReleasePaymentHold(order.id)}
+                              disabled={
+                                capturingHoldOrderId === order.id ||
+                                releasingHoldOrderId === order.id
+                              }
+                              className="inline-flex items-center justify-center px-3 py-1.5 border border-red-600 text-red-600 rounded text-xs sm:text-sm font-medium hover:bg-red-50 transition-colors disabled:opacity-60"
+                            >
+                              {releasingHoldOrderId === order.id
+                                ? 'მუშავდება...'
+                                : 'გაუქმება'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Status Actions */}
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 pt-3 sm:pt-4 border-t border-gray-200">

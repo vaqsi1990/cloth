@@ -113,13 +113,28 @@ async function updateOrderStatus(paymentId: string, status: string) {
 
   const order = await prisma.order.findFirst({
     where: { paymentId },
+    select: {
+      id: true,
+      status: true,
+      userId: true,
+      sourceCartItemId: true,
+      voucherId: true,
+      voucherDiscount: true,
+      paymentCaptureMode: true,
+      paymentHoldStatus: true,
+    },
   })
 
   if (!order) return false
 
   if (order.paymentCaptureMode === PaymentCaptureMode.MANUAL) {
     if (lower === 'blocked') {
-      await markOrderPaymentBlocked(order.id)
+      if (
+        order.paymentHoldStatus !== 'CAPTURED' &&
+        order.paymentHoldStatus !== 'RELEASED'
+      ) {
+        await markOrderPaymentBlocked(order.id)
+      }
       return true
     }
 

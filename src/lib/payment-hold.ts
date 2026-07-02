@@ -93,6 +93,17 @@ export async function markOrderPaymentBlocked(orderId: number): Promise<void> {
 
   if (!order) return
 
+  if (
+    order.paymentHoldStatus === PaymentHoldStatus.CAPTURED ||
+    order.paymentHoldStatus === PaymentHoldStatus.RELEASED
+  ) {
+    return
+  }
+
+  if (order.paymentHoldStatus === PaymentHoldStatus.BLOCKED) {
+    return
+  }
+
   const wasAlreadyPaid = order.status === 'PAID' || order.status === 'SHIPPED'
 
   await prisma.order.update({
@@ -182,22 +193,6 @@ export async function markOrderPaymentReleased(orderId: number): Promise<void> {
 
   await prisma.transaction.deleteMany({
     where: { orderId, type: { in: ['SALE', 'RENT'] } },
-  })
-}
-
-export async function getOrderForPaymentHoldAction(orderId: number, userId: string) {
-  return prisma.order.findFirst({
-    where: { id: orderId, userId },
-    select: {
-      id: true,
-      paymentId: true,
-      total: true,
-      status: true,
-      paymentCaptureMode: true,
-      paymentHoldStatus: true,
-      paymentHoldBlockedAt: true,
-      updatedAt: true,
-    },
   })
 }
 

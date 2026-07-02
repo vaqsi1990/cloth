@@ -72,7 +72,12 @@ export async function POST(
 
     if (order.paymentCaptureMode === 'MANUAL') {
       if (bogStatus === 'blocked') {
-        await markOrderPaymentBlocked(order.id)
+        if (
+          order.paymentHoldStatus !== 'CAPTURED' &&
+          order.paymentHoldStatus !== 'RELEASED'
+        ) {
+          await markOrderPaymentBlocked(order.id)
+        }
       } else if (bogStatus === 'completed' || bogStatus === 'partial_completed') {
         await markOrderPaymentCaptured(order.id)
       } else if (

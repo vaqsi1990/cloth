@@ -251,7 +251,6 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
   const [productsTotalPages, setProductsTotalPages] = useState(1)
   const [productsTotalCount, setProductsTotalCount] = useState(0)
   const [loadingOrders, setLoadingOrders] = useState(false)
-  const [paymentHoldActionOrderId, setPaymentHoldActionOrderId] = useState<number | null>(null)
   const [contactingChatKey, setContactingChatKey] = useState<string | null>(null)
   const [loadingSales, setLoadingSales] = useState(false)
   const [reportingOutOfStockItemId, setReportingOutOfStockItemId] = useState<number | null>(null)
@@ -953,72 +952,6 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
       console.error('Error fetching orders:', error)
     } finally {
       setLoadingOrders(false)
-    }
-  }
-
-  const handleApprovePaymentHold = async (orderId: number) => {
-    if (
-      !confirm(
-        'დარწმუნებული ხართ, რომ გსურთ გადახდის დადასტურება? თანხა ჩაირიცხება მიმწოდებლის ანგარიშზე.',
-      )
-    ) {
-      return
-    }
-
-    try {
-      setPaymentHoldActionOrderId(orderId)
-      const response = await fetch(`/api/orders/${orderId}/payment-hold/approve`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          description: 'Customer approved payment hold',
-        }),
-      })
-      const data = await response.json()
-      if (data.success) {
-        showToast(data.message || 'გადახდა დადასტურებულია', 'success')
-        await fetchOrders()
-      } else {
-        showToast(data.error || 'გადახდის დადასტურება ვერ მოხერხდა', 'error')
-      }
-    } catch (error) {
-      console.error('Error approving payment hold:', error)
-      showToast('გადახდის დადასტურება ვერ მოხერხდა', 'error')
-    } finally {
-      setPaymentHoldActionOrderId(null)
-    }
-  }
-
-  const handleCancelPaymentHold = async (orderId: number) => {
-    if (
-      !confirm(
-        'დარწმუნებული ხართ, რომ გსურთ გადახდის ბლოკის მოხსნა? თანხა აღარ ჩაირიცხება და ბარათზე დაბლოკილი თანხა განგება.',
-      )
-    ) {
-      return
-    }
-
-    try {
-      setPaymentHoldActionOrderId(orderId)
-      const response = await fetch(`/api/orders/${orderId}/payment-hold/cancel`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          description: 'Customer released payment hold',
-        }),
-      })
-      const data = await response.json()
-      if (data.success) {
-        showToast(data.message || 'გადახდის ბლოკი მოხსნილია', 'success')
-        await fetchOrders()
-      } else {
-        showToast(data.error || 'ბლოკის მოხსნა ვერ მოხერხდა', 'error')
-      }
-    } catch (error) {
-      console.error('Error canceling payment hold:', error)
-      showToast('ბლოკის მოხსნა ვერ მოხერხდა', 'error')
-    } finally {
-      setPaymentHoldActionOrderId(null)
     }
   }
 
@@ -1836,8 +1769,8 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
                     )}
                     {order.paymentHoldStatus === 'BLOCKED' && (
                       <p className="text-amber-700 font-medium">
-                        თანხა დაბლოკილია თქვენს ბარათზე ({PAYMENT_HOLD_MAX_DAYS} დღე). მიმწოდებელთან
-                        ჩარიცხვამდე დაადასტურეთ ან მოაშორეთ ბლოკი. ვადა:{' '}
+                        თანხა დაბლოკილია თქვენს ბარათზე ({PAYMENT_HOLD_MAX_DAYS} დღე). გადახდის
+                        დადასტურებას ადმინისტრატორი განახორციელებს. ვადა:{' '}
                         {formatDate(getPaymentHoldExpiresAt(order).toISOString())}
                         {getPaymentHoldDaysRemaining(order) > 0
                           ? ` (დარჩა ${getPaymentHoldDaysRemaining(order)} დღე)`
@@ -1846,31 +1779,6 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
                       </p>
                     )}
                   </div>
-
-                  {order.paymentHoldStatus === 'BLOCKED' && (
-                    <div className="mb-4 flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleApprovePaymentHold(order.id)}
-                        disabled={paymentHoldActionOrderId === order.id}
-                        className="inline-flex items-center justify-center px-4 py-2 bg-[#1B3729] text-white rounded-lg text-[15px] font-semibold transition-colors hover:bg-[#164321] disabled:opacity-60"
-                      >
-                        {paymentHoldActionOrderId === order.id
-                          ? 'მუშავდება...'
-                          : 'გადახდის დადასტურება'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleCancelPaymentHold(order.id)}
-                        disabled={paymentHoldActionOrderId === order.id}
-                        className="inline-flex items-center justify-center px-4 py-2 border border-red-600 text-red-600 rounded-lg text-[15px] font-semibold transition-colors hover:bg-red-50 disabled:opacity-60"
-                      >
-                        {paymentHoldActionOrderId === order.id
-                          ? 'მუშავდება...'
-                          : 'ბლოკის მოხსნა'}
-                      </button>
-                    </div>
-                  )}
 
                   <div className="space-y-3">
                     {order.items?.map((item, index) => {

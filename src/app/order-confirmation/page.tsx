@@ -254,7 +254,7 @@ const OrderConfirmationContent = () => {
               {order.status === 'PENDING'
                 ? 'გადახდის დადასტურება მიმდინარეობს...'
                 : order.paymentHoldStatus === 'BLOCKED'
-                  ? `თანხა დაბლოკილია თქვენს ბარათზე ${PAYMENT_HOLD_MAX_DAYS} დღით. ვადა: ${formatDate(getPaymentHoldExpiresAt(order).toISOString())}. მიმწოდებელთან ჩარიცხვამდე დაადასტურეთ ან მოაშორეთ ბლოკი ანგარიშის გვერდიდან.`
+                  ? `თანხა დაბლოკილია თქვენს ბარათზე ${PAYMENT_HOLD_MAX_DAYS} დღით. ვადა: ${formatDate(getPaymentHoldExpiresAt(order).toISOString())}. გადახდის დადასტურებას ადმინისტრატორი განახორციელებს.`
                   : 'გმადლობთ თქვენი შეკვეთისთვის'}
             </p>
           </div>
