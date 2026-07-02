@@ -87,3 +87,27 @@ export function computePaymentSplitPercents(
 
   return { platformPercent, sellerPercent }
 }
+
+/** BOG split amounts for a mixed order (products + optional delivery to platform). */
+export function computePaymentSplitAmounts(
+  totalAmount: number,
+  productBuyerSubtotal: number,
+  deliveryFee: number,
+): { platformAmount: number; sellerAmount: number } | null {
+  if (totalAmount <= 0 || productBuyerSubtotal < 0) return null
+
+  const sellerAmount = getSellerPriceFromBuyer(productBuyerSubtotal)
+  let platformAmount = roundMoney(
+    productBuyerSubtotal - sellerAmount + Math.max(0, deliveryFee),
+  )
+  const drift = roundMoney(totalAmount - platformAmount - sellerAmount)
+  if (drift !== 0) {
+    platformAmount = roundMoney(platformAmount + drift)
+  }
+
+  if (roundMoney(platformAmount + sellerAmount) !== roundMoney(totalAmount)) {
+    return null
+  }
+
+  return { platformAmount, sellerAmount }
+}

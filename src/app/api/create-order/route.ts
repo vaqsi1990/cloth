@@ -7,7 +7,7 @@ import { bogTokenManager } from '@/lib/bog-token'
 import { getCartItemPayablePrice, getRentalCartDiscountContext } from '@/lib/cart-item-pricing'
 import { validateVoucher } from '@/lib/voucher'
 import { processExpiredDiscount } from '@/utils/discountUtils'
-import { computePaymentSplitPercents } from '@/lib/platform-pricing'
+import { buildSplitPaymentConfig } from '@/lib/bog-split-config'
 import {
   cartProductPricingSelect,
   resolveCartItemBuyerListPrice,
@@ -43,7 +43,7 @@ interface BOGBasketItem {
 }
 
 interface BOGSplitPayment {
-  amount: number | null  // Required: null when using percent
+  amount?: number
   percent?: number
   iban: string
   description?: string
@@ -129,157 +129,6 @@ const orderDataSchema = z.object({
     }).optional()
   })
 })
-
-function normalizeIban(iban?: string | null) {
-  return iban ? iban.replace(/\s+/g, '').toUpperCase() : null
-}
-
-function validateSplitDescription(desc: string): string | undefined {
-  if (!desc) return undefined
-  const allowed = /^[0-9 /\-?:().,'+a-zA-Z]+$/
-  if (!allowed.test(desc)) return undefined
-  return desc.length > 25 ? desc.substring(0, 25) : desc
-}
-
-async function collectProductAuthorsIBANs(productIds: (string | number)[]) {
-  const result = new Map<string, string>()
-
-  const ids = productIds
-    .map(id => typeof id === 'string' ? parseInt(id) : id)
-    .filter(n => typeof n === 'number' && !isNaN(n))
-
-  console.log('🔍 [IBAN] Collecting IBANs for product IDs:', ids)
-
-  const products = await prisma.product.findMany({
-    where: { id: { in: ids } },
-    select: { id: true, userId: true, user: { select: { iban: true } } }
-  })
-
-  console.log(`🔍 [IBAN] Found ${products.length} products`)
-
-  for (const p of products) {
-    console.log(`🔍 [IBAN] Product ${p.id} - userId: ${p.userId}, IBAN: ${p.user?.iban ? p.user.iban.substring(0, 8) + '...' : 'NOT FOUND'}`)
-    if (p.user?.iban) {
-      const norm = normalizeIban(p.user.iban)
-      if (norm) {
-        result.set(String(p.userId), norm)
-        console.log(`✅ [IBAN] Added IBAN for user ${p.userId}: ${norm.substring(0, 8)}...${norm.substring(norm.length - 4)}`)
-      } else {
-        console.warn(`⚠️ [IBAN] Invalid IBAN format for user ${p.userId}: ${p.user.iban}`)
-      }
-    } else {
-      console.warn(`⚠️ [IBAN] Product ${p.id} author (userId: ${p.userId}) has no IBAN`)
-    }
-  }
-
-  console.log(`✅ [IBAN] Total unique seller IBANs collected: ${result.size}`)
-  return result
-}
-
-/**
- * Get merchant account IBAN from environment variable
- * This is the BOG merchant account IBAN associated with BOG_CLIENT_ID/BOG_CLIENT_SECRET
- * The merchant account automatically receives payments, so we use it for the platform commission split
- */
-function getMerchantIBAN(): string | null {
-  const merchantIban = process.env.BOG_MERCHANT_IBAN
-  if (!merchantIban) {
-    console.error('❌ [IBAN] BOG_MERCHANT_IBAN environment variable not set!')
-    console.error('   ⚠️ ACTION REQUIRED: Set BOG_MERCHANT_IBAN in .env file')
-    console.error('   This should be the merchant account IBAN associated with your BOG API credentials')
-    console.error('   You can find this IBAN in BOG Merchant Manager dashboard')
-    return null
-  }
-  
-  const normalized = normalizeIban(merchantIban)
-  if (normalized) {
-    console.log(`✅ [IBAN] Merchant IBAN found from env: ${normalized.substring(0, 8)}...${normalized.substring(normalized.length - 4)}`)
-  } else {
-    console.error(`❌ [IBAN] Invalid merchant IBAN format in BOG_MERCHANT_IBAN: ${merchantIban}`)
-    console.error('   IBAN must start with GE and be 15-34 characters long')
-  }
-  return normalized
-}
-
-async function buildSplitPaymentConfig(
-  paymentMethod: string | undefined,
-  productIds: (string | number)[],
-  totalAmount: number,
-  productBuyerSubtotal: number,
-  deliveryFee: number,
-) {
-  console.log('🔍 [SPLIT] Building split payment config...')
-  console.log(`🔍 [SPLIT] Payment method: ${paymentMethod}, Product IDs: ${productIds.length}`)
-  
-  if (!paymentMethod || !['card', 'google_pay', 'apple_pay'].includes(paymentMethod)) {
-    console.warn(`⚠️ [SPLIT] Payment method not supported for split: ${paymentMethod}`)
-    return null
-  }
-
-  const merchantIban = getMerchantIBAN()
-  
-  const authors = await collectProductAuthorsIBANs(productIds)
-  if (authors.size === 0) {
-    console.error('❌ [SPLIT] No seller IBANs found - split config cannot be created')
-    return null
-  }
-
-  const sellerIban = [...authors.values()][0] // first seller
-  console.log(`✅ [SPLIT] Using seller IBAN: ${sellerIban.substring(0, 8)}...${sellerIban.substring(sellerIban.length - 4)}`)
-
-  // If merchant IBAN is not available, BOG should automatically use merchant account from credentials
-  // But according to BOG docs, split_payments must sum to 100%
-  // So we'll try with only seller IBAN and see if BOG accepts it
-  // If not, we might need to get merchant IBAN from BOG API or configuration
-  
-  const splitPercents = computePaymentSplitPercents(
-    totalAmount,
-    productBuyerSubtotal,
-    deliveryFee,
-  )
-  if (!splitPercents) {
-    console.error('❌ [SPLIT] Could not compute split percentages')
-    return null
-  }
-
-  const split_payments: BOGSplitPayment[] = []
-  
-  if (merchantIban) {
-    split_payments.push({
-      amount: null,
-      percent: splitPercents.platformPercent,
-      iban: merchantIban,
-      description: validateSplitDescription("Platform commission")
-    })
-  }
-  
-  split_payments.push({
-    amount: null,
-    percent: splitPercents.sellerPercent,
-    iban: sellerIban,
-    description: validateSplitDescription("Seller earning")
-  })
-
-  // Validate percentages sum to 100%
-  const totalPercent = split_payments.reduce((sum, p) => sum + (p.percent || 0), 0)
-  if (totalPercent !== 100) {
-    console.error(`❌ [SPLIT] Split percentages don't sum to 100: ${totalPercent}%`)
-    console.error(`   ⚠️ Merchant IBAN is required for split payment to work correctly`)
-    console.error(`   ⚠️ BOG requires all split payments to sum to 100%`)
-    console.error(`   ⚠️ Without merchant IBAN, split payment cannot be created`)
-    return null
-  }
-
-  console.log('✅ [SPLIT] Split payment config created:')
-  if (merchantIban) {
-    console.log(`   📊 Merchant/Platform (${splitPercents.platformPercent}%): ${merchantIban.substring(0, 8)}...${merchantIban.substring(merchantIban.length - 4)}`)
-  } else {
-    console.log(`   📊 Merchant/Platform (${splitPercents.platformPercent}%): Will be handled automatically by BOG merchant account`)
-  }
-  console.log(`   📊 Seller (${splitPercents.sellerPercent}%): ${sellerIban.substring(0, 8)}...${sellerIban.substring(sellerIban.length - 4)}`)
-
-  return { split_payments }
-}
 
 function buildBasketFromResolvedCartItems(
   items: Array<{
@@ -737,12 +586,17 @@ export async function POST(req: NextRequest) {
       })), null, 2))
       
       // Validate split config before sending
-      const totalPercent = splitConfig.split_payments.reduce((sum, p) => sum + (p.percent || 0), 0)
-      if (totalPercent !== 100) {
-        console.error(`❌ [SPLIT] CRITICAL: Split percentages don't sum to 100: ${totalPercent}%`)
+      const totalSplitAmount = splitConfig.split_payments.reduce(
+        (sum, p) => sum + (p.amount ?? 0),
+        0,
+      )
+      if (Math.abs(totalSplitAmount - total) > 0.01) {
+        console.error(
+          `❌ [SPLIT] CRITICAL: Split amounts don't sum to order total: ${totalSplitAmount} vs ${total}`,
+        )
         console.error('   Split payment will likely fail or be ignored by BOG')
       } else {
-        console.log(`✅ [SPLIT] Split percentages sum to 100% - config is valid`)
+        console.log(`✅ [SPLIT] Split amounts sum to order total - config is valid`)
       }
       
       // Check if merchant IBAN is included

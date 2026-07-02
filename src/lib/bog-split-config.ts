@@ -1,8 +1,8 @@
 import { prisma } from '@/lib/prisma'
-import { computePaymentSplitPercents } from '@/lib/platform-pricing'
+import { computePaymentSplitAmounts } from '@/lib/platform-pricing'
 
 export interface BogSplitPayment {
-  amount: number | null
+  amount?: number
   percent?: number
   iban: string
   description?: string
@@ -114,13 +114,13 @@ export async function buildSplitPaymentConfig(
   }
 
   const sellerIban = [...authors.values()][0]
-  const splitPercents = computePaymentSplitPercents(
+  const splitAmounts = computePaymentSplitAmounts(
     totalAmount,
     productBuyerSubtotal,
     deliveryFee,
   )
-  if (!splitPercents) {
-    console.error('❌ [SPLIT] Could not compute split percentages')
+  if (!splitAmounts) {
+    console.error('❌ [SPLIT] Could not compute split amounts')
     return null
   }
 
@@ -128,23 +128,23 @@ export async function buildSplitPaymentConfig(
 
   if (merchantIban) {
     split_payments.push({
-      amount: null,
-      percent: splitPercents.platformPercent,
+      amount: splitAmounts.platformAmount,
       iban: merchantIban,
       description: validateSplitDescription('Platform commission'),
     })
   }
 
   split_payments.push({
-    amount: null,
-    percent: splitPercents.sellerPercent,
+    amount: splitAmounts.sellerAmount,
     iban: sellerIban,
     description: validateSplitDescription('Seller earning'),
   })
 
-  const totalPercent = split_payments.reduce((sum, p) => sum + (p.percent || 0), 0)
-  if (totalPercent !== 100) {
-    console.error(`❌ [SPLIT] Split percentages don't sum to 100: ${totalPercent}%`)
+  const totalSplitAmount = split_payments.reduce((sum, p) => sum + (p.amount ?? 0), 0)
+  if (Math.abs(totalSplitAmount - totalAmount) > 0.01) {
+    console.error(
+      `❌ [SPLIT] Split amounts don't sum to order total: ${totalSplitAmount} vs ${totalAmount}`,
+    )
     return null
   }
 

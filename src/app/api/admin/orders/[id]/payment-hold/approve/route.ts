@@ -191,7 +191,7 @@ export async function POST(
           `[payment-hold] Approving order #${orderId} with split:`,
           JSON.stringify(
             splitConfig.split_payments.map((sp) => ({
-              percent: sp.percent,
+              amount: sp.amount,
               iban: `${sp.iban.substring(0, 8)}...${sp.iban.slice(-4)}`,
             })),
           ),
