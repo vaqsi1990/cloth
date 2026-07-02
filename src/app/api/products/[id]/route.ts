@@ -43,6 +43,7 @@ import {
   clearProductRentalBlocks,
 } from '@/lib/update-product-status'
 import { buildPublicProductDiscoveryWhere } from '@/lib/sold-products'
+import { resolveProductCategoryForRead, resolveCategoryIdForWrite } from '@/lib/category-sync'
 
 const VALID_PRODUCT_STATUSES = new Set([
   'AVAILABLE',
@@ -373,10 +374,15 @@ export async function PUT(
         approvedAt: true,
         rejectionReason: true,
         deletedAt: true,
-      },
+      } as Prisma.ProductSelect,
     })
 
-    if (!existingProduct || isProductSoftDeleted(existingProduct)) {
+    if (
+      !existingProduct ||
+      isProductSoftDeleted(
+        existingProduct as { deletedAt?: Date | string | null } | null | undefined,
+      )
+    ) {
       return NextResponse.json({
         success: false,
         message: 'პროდუქტი ვერ მოიძებნა'
@@ -615,10 +621,15 @@ export async function PATCH(
     // Check if product exists
     const existingProduct = await prisma.product.findUnique({
       where: { id: productId },
-      select: { id: true, userId: true, deletedAt: true },
+      select: { id: true, userId: true, deletedAt: true } as Prisma.ProductSelect,
     })
 
-    if (!existingProduct || isProductSoftDeleted(existingProduct)) {
+    if (
+      !existingProduct ||
+      isProductSoftDeleted(
+        existingProduct as { deletedAt?: Date | string | null } | null | undefined,
+      )
+    ) {
       return NextResponse.json({
         success: false,
         message: 'პროდუქტი ვერ მოიძებნა'
@@ -688,7 +699,12 @@ export async function DELETE(
       where: { id: productId }
     })
 
-    if (!existingProduct || isProductSoftDeleted(existingProduct)) {
+    if (
+      !existingProduct ||
+      isProductSoftDeleted(
+        existingProduct as { deletedAt?: Date | string | null } | null | undefined,
+      )
+    ) {
       return NextResponse.json({
         success: false,
         message: 'პროდუქტი ვერ მოიძებნა'
