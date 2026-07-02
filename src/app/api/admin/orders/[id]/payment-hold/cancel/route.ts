@@ -6,7 +6,11 @@ import { isAdminOrSupport } from '@/lib/roles'
 import { prisma } from '@/lib/prisma'
 import {
   bogCancelPreAuthorization,
+  fetchBogPaymentReceipt,
   getBogPreAuthErrorMessage,
+  isBogPreAuthAlreadyRequestedError,
+  waitForBogCancelOutcome,
+  waitForPendingAuthorizeToSettle,
 } from '@/lib/bog-preauth'
 import {
   isPaymentHoldExpired,
@@ -15,6 +19,7 @@ import {
 import {
   expirePaymentHoldIfNeeded,
   markOrderPaymentReleased,
+  rollbackFalsePaymentRelease,
 } from '@/lib/payment-hold'
 
 const paymentHoldOrderSelect = {
@@ -69,10 +74,43 @@ export async function POST(
     }
 
     if (order.paymentHoldStatus !== PaymentHoldStatus.BLOCKED) {
-      return NextResponse.json(
-        { success: false, error: 'გადახდის ბლოკი უკვე მოხსნილია ან დადასტურებულია' },
-        { status: 400 },
-      )
+      if (
+        order.paymentHoldStatus === PaymentHoldStatus.RELEASED &&
+        order.paymentId
+      ) {
+        const receipt = await fetchBogPaymentReceipt(order.paymentId)
+        const bogStatus = receipt.order_status?.key?.toLowerCase()
+
+        if (bogStatus === 'blocked') {
+          await rollbackFalsePaymentRelease(orderId)
+        } else if (
+          bogStatus === 'refunded' ||
+          bogStatus === 'refunded_partially' ||
+          bogStatus === 'rejected'
+        ) {
+          return NextResponse.json({
+            success: true,
+            message: 'გადახდის ბლოკი უკვე მოხსნილია BOG-ში.',
+            paymentHoldStatus: PaymentHoldStatus.RELEASED,
+          })
+        } else {
+          return NextResponse.json(
+            {
+              success: false,
+              error: 'გადახდის ბლოკი უკვე მოხსნილია ან დადასტურებულია',
+            },
+            { status: 400 },
+          )
+        }
+      } else {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'გადახდის ბლოკი უკვე მოხსნილია ან დადასტურებულია',
+          },
+          { status: 400 },
+        )
+      }
     }
 
     if (isPaymentHoldExpired(order)) {
@@ -100,9 +138,28 @@ export async function POST(
       body = {}
     }
 
-    const bogResponse = await bogCancelPreAuthorization(order.paymentId, {
-      description: body.description || 'Admin released payment hold',
-    })
+    const paymentId = order.paymentId
+    const description = body.description || 'Admin released payment hold'
+
+    const postCancel = async () =>
+      bogCancelPreAuthorization(paymentId, { description })
+
+    let bogResponse
+    try {
+      bogResponse = await postCancel()
+      await waitForBogCancelOutcome(paymentId, bogResponse.action_id)
+    } catch (bogError) {
+      if (!isBogPreAuthAlreadyRequestedError(bogError)) {
+        throw bogError
+      }
+
+      console.warn(
+        `[payment-hold] BOG already processing cancel for #${orderId}, waiting to settle`,
+      )
+      await waitForPendingAuthorizeToSettle(paymentId)
+      bogResponse = await postCancel()
+      await waitForBogCancelOutcome(paymentId, bogResponse.action_id)
+    }
 
     await markOrderPaymentReleased(orderId)
 
@@ -114,6 +171,10 @@ export async function POST(
     })
   } catch (error) {
     console.error('Admin payment hold cancel error:', error)
+    if (error && typeof error === 'object' && 'response' in error) {
+      const axiosError = error as { response?: { status?: number; data?: unknown } }
+      console.error('BOG response:', axiosError.response?.status, axiosError.response?.data)
+    }
     return NextResponse.json(
       {
         success: false,

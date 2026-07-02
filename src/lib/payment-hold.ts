@@ -196,6 +196,48 @@ export async function markOrderPaymentReleased(orderId: number): Promise<void> {
   })
 }
 
+/** Site marked released but BOG still has funds blocked — restore hold state. */
+export async function rollbackFalsePaymentRelease(orderId: number): Promise<void> {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: { paymentHoldStatus: true },
+  })
+  if (!order || order.paymentHoldStatus !== PaymentHoldStatus.RELEASED) {
+    return
+  }
+
+  await prisma.order.update({
+    where: { id: orderId },
+    data: {
+      status: 'PAID',
+      paymentHoldStatus: PaymentHoldStatus.BLOCKED,
+    },
+  })
+}
+
+/** BOG approve failed after we optimistically marked capture — restore hold state. */
+export async function rollbackFailedPaymentCapture(orderId: number): Promise<void> {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: { paymentHoldStatus: true },
+  })
+  if (!order || order.paymentHoldStatus !== PaymentHoldStatus.CAPTURED) {
+    return
+  }
+
+  await prisma.order.update({
+    where: { id: orderId },
+    data: {
+      status: 'PAID',
+      paymentHoldStatus: PaymentHoldStatus.BLOCKED,
+    },
+  })
+
+  await prisma.transaction.deleteMany({
+    where: { orderId, type: { in: ['SALE', 'RENT'] } },
+  })
+}
+
 async function releaseExpiredPaymentHold(order: {
   id: number
   paymentId: string | null

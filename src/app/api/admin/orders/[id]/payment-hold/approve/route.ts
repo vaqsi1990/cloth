@@ -6,7 +6,12 @@ import { isAdminOrSupport } from '@/lib/roles'
 import { prisma } from '@/lib/prisma'
 import {
   bogApprovePreAuthorization,
+  fetchBogPaymentReceipt,
   getBogPreAuthErrorMessage,
+  isBogPreAuthAlreadyRequestedError,
+  isBogAuthorizeRejectedError,
+  waitForBogAuthorizeOutcome,
+  waitForPendingAuthorizeToSettle,
 } from '@/lib/bog-preauth'
 import { buildSplitPaymentConfigForOrder } from '@/lib/bog-split-config'
 import {
@@ -16,6 +21,7 @@ import {
 import {
   expirePaymentHoldIfNeeded,
   markOrderPaymentCaptured,
+  rollbackFailedPaymentCapture,
 } from '@/lib/payment-hold'
 
 const paymentHoldOrderSelect = {
@@ -39,6 +45,10 @@ const paymentHoldOrderSelect = {
     },
   },
 } as const
+
+function shouldTrySplitOnApprove(): boolean {
+  return process.env.PAYMENT_HOLD_SPLIT_ON_APPROVE === 'true'
+}
 
 export async function POST(
   request: NextRequest,
@@ -81,10 +91,38 @@ export async function POST(
     }
 
     if (order.paymentHoldStatus !== PaymentHoldStatus.BLOCKED) {
-      return NextResponse.json(
-        { success: false, error: 'გადახდის ბლოკი უკვე მოხსნილია ან დადასტურებულია' },
-        { status: 400 },
-      )
+      if (order.paymentHoldStatus === PaymentHoldStatus.CAPTURED && order.paymentId) {
+        const receipt = await fetchBogPaymentReceipt(order.paymentId)
+        const bogStatus = receipt.order_status?.key?.toLowerCase()
+
+        if (bogStatus === 'completed' || bogStatus === 'partial_completed') {
+          return NextResponse.json({
+            success: true,
+            message: 'გადახდა უკვე დადასტურებულია BOG-ში.',
+            paymentHoldStatus: PaymentHoldStatus.CAPTURED,
+          })
+        }
+
+        if (bogStatus === 'blocked') {
+          await rollbackFailedPaymentCapture(orderId)
+        } else {
+          return NextResponse.json(
+            {
+              success: false,
+              error: 'გადახდის ბლოკი უკვე მოხსნილია ან დადასტურებულია',
+            },
+            { status: 400 },
+          )
+        }
+      } else {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'გადახდის ბლოკი უკვე მოხსნილია ან დადასტურებულია',
+          },
+          { status: 400 },
+        )
+      }
     }
 
     if (isPaymentHoldExpired(order)) {
@@ -113,43 +151,95 @@ export async function POST(
     }
 
     const splitConfig = await buildSplitPaymentConfigForOrder(order)
-    if (!splitConfig) {
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            'Split გადახდის კონფიგურაცია ვერ შეიქმნა. შეამოწმეთ გამყიდველის IBAN და BOG_MERCHANT_IBAN.',
-        },
-        { status: 400 },
-      )
+    const approveAmount = body.amount ?? order.total
+    const approveDescription = body.description || 'Admin approved pre-authorization'
+    const paymentId = order.paymentId
+
+    const runApprove = async (withSplit: boolean) => {
+      if (withSplit && splitConfig) {
+        console.log(
+          `[payment-hold] Approving order #${orderId} with split:`,
+          JSON.stringify(
+            splitConfig.split_payments.map((sp) => ({
+              percent: sp.percent,
+              iban: `${sp.iban.substring(0, 8)}...${sp.iban.slice(-4)}`,
+            })),
+          ),
+        )
+      } else {
+        console.log(`[payment-hold] Approving order #${orderId} without split`)
+      }
+
+      const postApprove = async () =>
+        bogApprovePreAuthorization(paymentId, {
+          amount: approveAmount,
+          description: approveDescription,
+          split: withSplit ? splitConfig ?? undefined : undefined,
+        })
+
+      try {
+        const response = await postApprove()
+        await waitForBogAuthorizeOutcome(paymentId, response.action_id)
+        return response
+      } catch (bogError) {
+        if (!isBogPreAuthAlreadyRequestedError(bogError)) {
+          throw bogError
+        }
+
+        console.warn(
+          `[payment-hold] BOG already processing authorize for #${orderId}, waiting to settle`,
+        )
+        await waitForPendingAuthorizeToSettle(paymentId)
+        const response = await postApprove()
+        await waitForBogAuthorizeOutcome(paymentId, response.action_id)
+        return response
+      }
     }
 
-    console.log(
-      `[payment-hold] Approving order #${orderId} with split:`,
-      JSON.stringify(
-        splitConfig.split_payments.map((sp) => ({
-          percent: sp.percent,
-          iban: `${sp.iban.substring(0, 8)}...${sp.iban.slice(-4)}`,
-        })),
-      ),
-    )
+    let bogResponse
+    let usedSplit = false
 
-    const bogResponse = await bogApprovePreAuthorization(order.paymentId, {
-      amount: body.amount ?? order.total,
-      description: body.description || 'Admin approved pre-authorization',
-      split: splitConfig,
-    })
+    if (shouldTrySplitOnApprove() && splitConfig) {
+      try {
+        bogResponse = await runApprove(true)
+        usedSplit = true
+      } catch (bogError) {
+        await rollbackFailedPaymentCapture(orderId)
+
+        if (!isBogAuthorizeRejectedError(bogError)) {
+          throw bogError
+        }
+
+        console.warn(
+          `[payment-hold] Split approve rejected by BOG for #${orderId}, retrying without split`,
+        )
+        await waitForPendingAuthorizeToSettle(paymentId)
+        bogResponse = await runApprove(false)
+        usedSplit = false
+      }
+    } else {
+      bogResponse = await runApprove(false)
+    }
 
     await markOrderPaymentCaptured(orderId)
 
     return NextResponse.json({
       success: true,
-      message: 'გადახდა დადასტურებულია. თანხა ჩაირიცხება მიმწოდებლის ანგარიშზე.',
+      message: usedSplit
+        ? 'გადახდა დადასტურებულია. თანხა ჩაირიცხება მიმწოდებლის ანგარიშზე.'
+        : splitConfig
+          ? 'გადახდა დადასტურებულია BOG-ში. Split პრეავტორიზაციაზე არ მუშაობს — თანხა მერჩანტ ანგარიშზე ჩაირიცხა, გამყიდველის ნაწილი ხელით გადაირიცხეთ.'
+          : 'გადახდა დადასტურებულია BOG-ში.',
       bog: bogResponse,
+      splitApplied: usedSplit,
       paymentHoldStatus: PaymentHoldStatus.CAPTURED,
     })
   } catch (error) {
     console.error('Admin payment hold approve error:', error)
+    if (error && typeof error === 'object' && 'response' in error) {
+      const axiosError = error as { response?: { status?: number; data?: unknown } }
+      console.error('BOG response:', axiosError.response?.status, axiosError.response?.data)
+    }
     return NextResponse.json(
       {
         success: false,

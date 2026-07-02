@@ -256,7 +256,13 @@ const SupportOrdersPage = () => {
     })
   }
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string, paymentHoldStatus?: string | null) => {
+    if (status === 'PAID' && paymentHoldStatus === 'BLOCKED') {
+      return 'bg-amber-100 text-amber-800'
+    }
+    if (status === 'PAID' && paymentHoldStatus === 'CAPTURED') {
+      return 'bg-emerald-100 text-emerald-800'
+    }
     switch (status) {
       case 'PENDING':
         return 'bg-yellow-100 text-yellow-800'
@@ -290,7 +296,13 @@ const SupportOrdersPage = () => {
     }
   }
 
-  const getStatusText = (status: string) => {
+  const getStatusText = (status: string, paymentHoldStatus?: string | null) => {
+    if (status === 'PAID' && paymentHoldStatus === 'BLOCKED') {
+      return 'დაბლოკილი'
+    }
+    if (status === 'PAID' && paymentHoldStatus === 'CAPTURED') {
+      return 'დადასტურებული'
+    }
     switch (status) {
       case 'PENDING':
         return 'მოლოდინი'
@@ -437,13 +449,18 @@ const SupportOrdersPage = () => {
                     </div>
                     
                     <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                      <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm flex items-center space-x-1 whitespace-nowrap ${getStatusColor(order.status)}`}>
+                      <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm flex items-center space-x-1 whitespace-nowrap ${getStatusColor(order.status, order.paymentHoldStatus)}`}>
                         {getStatusIcon(order.status)}
-                        <span>{getStatusText(order.status)}</span>
+                        <span>{getStatusText(order.status, order.paymentHoldStatus)}</span>
                       </span>
                       {order.paymentHoldStatus === 'BLOCKED' && (
                         <span className="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap">
                           თანხა დაბლოკილია
+                        </span>
+                      )}
+                      {order.paymentHoldStatus === 'CAPTURED' && (
+                        <span className="bg-emerald-100 text-emerald-800 text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap">
+                          hold დადასტურებული
                         </span>
                       )}
                       {/* Rental indicator */}
@@ -554,10 +571,13 @@ const SupportOrdersPage = () => {
                       </div>
 
                       {/* Payment hold actions */}
-                      {order.paymentHoldStatus === 'BLOCKED' && (
+                      {(order.paymentHoldStatus === 'BLOCKED' ||
+                        order.paymentHoldStatus === 'CAPTURED') && (
                         <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-amber-50 border border-amber-200 rounded-lg">
                           <p className="text-xs sm:text-sm text-amber-800 mb-2">
-                            ბარათზე დაბლოკილი თანხა: ₾{order.total.toFixed(2)}.
+                            {order.paymentHoldStatus === 'BLOCKED'
+                              ? `ბარათზე დაბლოკილი თანხა: ₾${order.total.toFixed(2)}.`
+                              : `საიტზე დადასტურებულია, მაგრამ თუ BOG-ში თანხა არ ჩანს — დაადასტურეთ თავიდან.`}
                           </p>
                           <div className="flex flex-wrap gap-2">
                             <button
