@@ -684,7 +684,7 @@ const AdminOrdersPage = () => {
                       {order.paymentHoldStatus === 'CAPTURED' && (
                         <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
                           <p className="text-xs sm:text-sm text-emerald-800">
-                            გადახდა დადასტურებულია BOG-ში. თანხა უნდა ჩანდეს მერჩანტ ანგარიშზე.
+                            BOG-ში გადახდა დადასტურებულია (completed). თანხა მერჩანტ ანგარიშზე შეიძლება 1-2 სამუშაო დღეში გამოჩნდეს — შეამოწმეთ BOG ბიზნეს პორტალის ანგარიშსწორებები.
                           </p>
                         </div>
                       )}
