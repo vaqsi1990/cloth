@@ -4,7 +4,6 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { bogTokenManager } from '@/lib/bog-token'
-import { computeCartItemSubtotal } from '@/lib/cart-totals'
 import { getCartItemPayablePrice, getRentalCartDiscountContext } from '@/lib/cart-item-pricing'
 import { validateVoucher } from '@/lib/voucher'
 import { processExpiredDiscount } from '@/utils/discountUtils'
@@ -518,7 +517,9 @@ export async function POST(req: NextRequest) {
       })),
     )
 
-    const cartSubtotal = await computeCartItemSubtotal(auth.user.id, cartItemId)
+    const cartSubtotal = sumBasketTotal(
+      buildBasketFromResolvedCartItems(resolvedCartItems),
+    )
 
     let voucherDiscount = 0
     let voucherId: number | null = null

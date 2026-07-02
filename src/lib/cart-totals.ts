@@ -12,6 +12,7 @@ function sumCartLineItems(
     quantity: number
     isRental: boolean | null
     rentalDays: number | null
+    variantId?: number | null
     product: {
       discount: number | null
       discountDays: number | null
@@ -30,6 +31,7 @@ function sumCartLineItems(
       storedPrice: item.price,
       isRental: item.isRental ?? false,
       rentalDays: item.rentalDays,
+      variantId: item.variantId ?? null,
       product,
     })
     const rentalContext: RentalCartDiscountContext | null =
@@ -57,6 +59,7 @@ const cartSubtotalSelect = {
       quantity: true,
       isRental: true,
       rentalDays: true,
+      variantId: true,
       product: {
         select: cartProductPricingSelect,
       },
