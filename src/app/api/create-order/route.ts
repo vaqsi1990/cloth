@@ -33,7 +33,8 @@ import { releaseRentalOrderHolds } from '@/lib/rental-order-holds'
 import { validateSaleItemStock } from '@/lib/sale-stock'
 import { isProductSoftDeleted } from '@/lib/product-soft-delete'
 import { getBogCallbackUrl, getSiteUrl } from '@/lib/site-url'
-import { usesManualPaymentCapture } from '@/lib/payment-hold'
+import { isPaymentHoldEnabled, usesManualPaymentCapture } from '@/lib/payment-hold'
+import type { Prisma } from '@prisma/client'
 
 interface CartItemInput {
   productId: string | number
@@ -227,6 +228,15 @@ function extractRedirectUrl(responseData: BOGResponseData): string | undefined {
   return links.redirect?.href || links.approve?.href
 }
 
+/** Includes deletedAt for checkout guard; cast until Prisma client is regenerated after soft-delete migration. */
+const checkoutProductSelect = {
+  ...cartProductPricingSelect,
+  ...orderItemSnapshotProductSelect,
+  approvalStatus: true,
+  deletedAt: true,
+  allowsPickup: true,
+} as Prisma.ProductSelect
+
 export async function POST(req: NextRequest) {
   let pendingOrderId: number | null = null
 
@@ -246,13 +256,7 @@ export async function POST(req: NextRequest) {
         items: {
           include: {
             product: {
-              select: {
-                ...cartProductPricingSelect,
-                ...orderItemSnapshotProductSelect,
-                approvalStatus: true,
-                deletedAt: true,
-                allowsPickup: true,
-              },
+              select: checkoutProductSelect,
             },
           },
         },
@@ -293,7 +297,11 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    if (isProductSoftDeleted(selectedCartItem.product)) {
+    if (
+      isProductSoftDeleted(
+        selectedCartItem.product as { deletedAt?: Date | string | null } | null | undefined,
+      )
+    ) {
       return NextResponse.json(
         { success: false, error: 'პროდუქტი აღარ არის ხელმისაწვდომი' },
         { status: 409 },
