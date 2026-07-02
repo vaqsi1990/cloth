@@ -28,6 +28,7 @@ import {
 import { releaseRentalOrderHolds } from '@/lib/rental-order-holds'
 import { validateSaleItemStock } from '@/lib/sale-stock'
 import { usesManualPaymentCapture } from '@/lib/payment-hold'
+import { getBogCallbackUrl, getSiteUrl } from '@/lib/site-url'
 
 interface CartItemInput {
   productId: string | number
@@ -345,6 +346,28 @@ function applyDiscountToBasket(
   }))
 }
 
+function appendDeliveryToBasket(
+  basket: BOGBasketItem[],
+  deliveryFee: number,
+): BOGBasketItem[] {
+  if (deliveryFee <= 0) return basket
+
+  return [
+    ...basket,
+    {
+      quantity: 1,
+      unit_price: deliveryFee,
+      product_id: 'delivery',
+    },
+  ]
+}
+
+function sumBasketTotal(basket: BOGBasketItem[]): number {
+  return Math.round(
+    basket.reduce((sum, item) => sum + item.quantity * item.unit_price, 0) * 100,
+  ) / 100
+}
+
 function extractRedirectUrl(responseData: BOGResponseData): string | undefined {
   const links = responseData.links || responseData._links || {}
   return links.redirect?.href || links.approve?.href
@@ -555,6 +578,21 @@ export async function POST(req: NextRequest) {
     if (voucherDiscount > 0) {
       basket = applyDiscountToBasket(basket, voucherDiscount)
     }
+    basket = appendDeliveryToBasket(basket, deliveryFee)
+
+    const basketTotal = sumBasketTotal(basket)
+    if (Math.abs(basketTotal - total) > 0.01) {
+      console.error(
+        `❌ [BOG] Basket total (${basketTotal}) does not match order total (${total})`,
+      )
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'შეკვეთის თანხის გამოთვლა ვერ მოხერხდა. გთხოვთ სცადოთ თავიდან.',
+        },
+        { status: 500 },
+      )
+    }
 
     // Get delivery city name if delivery
     let deliveryCityNameResolved: string | null = deliveryCityName
@@ -641,8 +679,10 @@ export async function POST(req: NextRequest) {
       deliveryFee,
     )
 
+    const siteUrl = getSiteUrl()
+
     const requestData: BOGRequestData = {
-      callback_url: "https://www.dressla.ge/api/payment-callback",
+      callback_url: getBogCallbackUrl(),
       external_order_id: String(dbOrder.id),
       ...(manualCapture ? { capture: 'manual' as const } : {}),
       purchase_units: {
@@ -651,8 +691,8 @@ export async function POST(req: NextRequest) {
         basket
       },
       redirect_urls: {
-        success: `https://www.dressla.ge/order-confirmation?status=success&orderId=${dbOrder.id}`,
-        fail: `https://www.dressla.ge/payment-fail?orderId=${dbOrder.id}`
+        success: `${siteUrl}/order-confirmation?status=success&orderId=${dbOrder.id}`,
+        fail: `${siteUrl}/payment-fail?orderId=${dbOrder.id}`
       },
       payment_method: [paymentMethod]
     }
