@@ -38,13 +38,14 @@ function preventImageDownload(
   event.preventDefault()
 }
 
-const noCalloutStyle: CSSProperties = {
+const noCalloutStyle = {
   userSelect: 'none',
   WebkitUserSelect: 'none',
+  // Vendor-only; not in React's CSSProperties typings.
   WebkitUserDrag: 'none',
   WebkitTouchCallout: 'none',
   touchAction: 'manipulation',
-}
+} as CSSProperties
 
 export default function Image({
   src,
