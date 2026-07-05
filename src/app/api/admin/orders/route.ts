@@ -48,7 +48,15 @@ export async function GET(request: NextRequest) {
       where.items = {
         some: {
           sellerMarkedTransferred: true,
-          isRental: { not: true },
+        },
+      }
+    }
+
+    const canceledOnly = searchParams.get('canceled') === 'true'
+    if (canceledOnly) {
+      where.items = {
+        some: {
+          sellerCanceledItem: true,
         },
       }
     }

@@ -29,6 +29,7 @@ import {
 import ChatTypingIndicator from '@/components/ChatTypingIndicator'
 import ChatUnreadBadge from '@/components/ChatUnreadBadge'
 import OrderItemSaleStatusActions from '@/components/OrderItemSaleStatusActions'
+import { ORDER_ITEM_RETURNED_STATUS_LABEL } from '@/lib/order-item-fulfillment-status'
 import ChatMessageContent from '@/components/ChatMessageContent'
 import ChatImageUploadButton from '@/components/ChatImageUploadButton'
 import ChatPendingImagePreview from '@/components/ChatPendingImagePreview'
@@ -108,6 +109,10 @@ interface Order {
 
 interface SaleOrderItem {
   id: number
+  isRental?: boolean | null
+  rentalStartDate?: string | null
+  rentalEndDate?: string | null
+  rentalDays?: number | null
   productName: string
   size: string | null
   price: number
@@ -237,15 +242,18 @@ function getSaleOrderStatusDisplay(order: {
   if (order.status === 'REFUNDED') {
     return { label: 'დაბრუნებული', className: 'text-black' }
   }
-  if (order.status === 'CANCELED' || saleOrderItemsAllCanceled(items)) {
+  if (order.status === 'CANCELED') {
     return { label: 'გაუქმებული', className: 'text-red-500' }
+  }
+  if (saleOrderItemsAllCanceled(items)) {
+    return { label: ORDER_ITEM_RETURNED_STATUS_LABEL, className: 'text-red-500' }
   }
   if (order.status === 'SHIPPED') {
     return { label: 'გაგზავნილი', className: 'text-blue-500' }
   }
   if (order.status === 'PAID') {
     return {
-      label: saleOrderHasActiveItems(items) ? 'გადახდილი' : 'გაუქმებული',
+      label: saleOrderHasActiveItems(items) ? 'გადახდილი' : ORDER_ITEM_RETURNED_STATUS_LABEL,
       className: saleOrderHasActiveItems(items) ? 'text-green-500' : 'text-red-500',
     }
   }
@@ -2026,7 +2034,7 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
                   ['ALL', 'ყველა'],
                   ['TRANSFERRED', 'გაცემული'],
                   ['PENDING', 'მოლოდინში'],
-                  ['CANCELED', 'გაუქმებული'],
+                  ['CANCELED', ORDER_ITEM_RETURNED_STATUS_LABEL],
                 ] as const
               ).map(([value, label]) => (
                 <button
@@ -2064,7 +2072,7 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
                   : salesTransferFilter === 'TRANSFERRED'
                     ? 'გაცემული ნივთები ჯერ არ გაქვთ'
                     : salesTransferFilter === 'CANCELED'
-                      ? 'გაუქმებული ნივთები ჯერ არ გაქვთ'
+                      ? `${ORDER_ITEM_RETURNED_STATUS_LABEL} — ნივთები ჯერ არ გაქვთ`
                       : 'მოლოდინში მყოფი ნივთები ჯერ არ გაქვთ'}
               </p>
               {salesTransferFilter === 'ALL' && (
@@ -2187,6 +2195,8 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
                                 <OrderItemSaleStatusActions
                                   item={item}
                                   orderStatus={order.status}
+                                  allowStatusChange
+                                  statusAudience="seller"
                                   showSellerReportActions={!item.isRental}
                                   reportingOutOfStockItemId={reportingOutOfStockItemId}
                                   reportingDamagedItemId={reportingDamagedItemId}

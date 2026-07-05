@@ -3,6 +3,11 @@
 import React, { useState } from 'react'
 import ConfirmDialog from '@/component/ConfirmDialog'
 import { showToast } from '@/utils/toast'
+import OrderItemSaleStatusDropdown from '@/components/OrderItemSaleStatusDropdown'
+import {
+  getOrderItemFulfillmentStatus,
+  ORDER_ITEM_RETURNED_STATUS_LABEL,
+} from '@/lib/order-item-fulfillment-status'
 
 export type OrderItemSaleStatusFields = {
   id: number
@@ -19,6 +24,8 @@ type OrderItemSaleStatusActionsProps = {
   item: OrderItemSaleStatusFields
   orderStatus: string
   variant?: 'default' | 'compact'
+  allowStatusChange?: boolean
+  statusAudience?: 'admin' | 'seller'
   showSellerReportActions?: boolean
   reportingOutOfStockItemId?: number | null
   reportingDamagedItemId?: number | null
@@ -31,6 +38,8 @@ export default function OrderItemSaleStatusActions({
   item,
   orderStatus,
   variant = 'default',
+  allowStatusChange = false,
+  statusAudience = 'seller',
   showSellerReportActions = false,
   reportingOutOfStockItemId = null,
   reportingDamagedItemId = null,
@@ -128,22 +137,6 @@ export default function OrderItemSaleStatusActions({
     }
   }
 
-  if (item.sellerMarkedTransferred) {
-    return (
-      <span className={`${badgeClass} bg-[#1B3729] text-white`}>
-        გაცემული
-      </span>
-    )
-  }
-
-  if (item.sellerCanceledItem) {
-    return (
-      <span className={`${badgeClass} bg-gray-100 text-black border border-gray-300`}>
-        გაუქმებული
-      </span>
-    )
-  }
-
   if (item.sellerReportedOutOfStock) {
     return (
       <span className={`${badgeClass} bg-gray-100 text-black border border-gray-300`}>
@@ -156,6 +149,67 @@ export default function OrderItemSaleStatusActions({
     return (
       <span className={`${badgeClass} bg-gray-100 text-black border border-gray-300`}>
         დაზიანებულია
+      </span>
+    )
+  }
+
+  if (allowStatusChange) {
+    const fulfillmentStatus = getOrderItemFulfillmentStatus(item)
+    const showReportActions =
+      showSellerReportActions &&
+      fulfillmentStatus === 'PENDING' &&
+      onReportOutOfStock &&
+      onReportDamaged
+
+    return (
+      <div className={`flex flex-wrap items-center gap-2 ${isCompact ? '' : 'mt-1'}`}>
+        <OrderItemSaleStatusDropdown
+          item={item}
+          orderStatus={orderStatus}
+          variant={variant}
+          audience={statusAudience}
+          onItemUpdate={onItemUpdate}
+        />
+        {showReportActions && (
+          <>
+            <button
+              type="button"
+              onClick={() => onReportOutOfStock(item.id)}
+              disabled={reportingOutOfStockItemId === item.id}
+              className={secondaryButtonClass}
+            >
+              {reportingOutOfStockItemId === item.id
+                ? 'იგზავნება...'
+                : 'მარაგში არ მაქვს'}
+            </button>
+            <button
+              type="button"
+              onClick={() => onReportDamaged(item.id)}
+              disabled={reportingDamagedItemId === item.id}
+              className={secondaryButtonClass}
+            >
+              {reportingDamagedItemId === item.id
+                ? 'იგზავნება...'
+                : 'დაზიანებულია'}
+            </button>
+          </>
+        )}
+      </div>
+    )
+  }
+
+  if (item.sellerMarkedTransferred) {
+    return (
+      <span className={`${badgeClass} bg-[#1B3729] text-white`}>
+        გაცემული
+      </span>
+    )
+  }
+
+  if (item.sellerCanceledItem) {
+    return (
+      <span className={`${badgeClass} bg-gray-100 text-black border border-gray-300`}>
+        {ORDER_ITEM_RETURNED_STATUS_LABEL}
       </span>
     )
   }
@@ -177,7 +231,7 @@ export default function OrderItemSaleStatusActions({
           disabled={cancelingItemId === item.id}
           className={secondaryButtonClass}
         >
-          {cancelingItemId === item.id ? 'იუქმდება...' : 'გაუქმება'}
+          {cancelingItemId === item.id ? 'ინახება...' : ORDER_ITEM_RETURNED_STATUS_LABEL}
         </button>
         {showSellerReportActions && onReportOutOfStock && onReportDamaged && (
           <>
@@ -209,7 +263,7 @@ export default function OrderItemSaleStatusActions({
         open={confirmAction !== null}
         message={
           confirmAction === 'cancel'
-            ? 'დარწმუნებული ხართ რომ გაუქმება გსურთ?'
+            ? `დარწმუნებული ხართ რომ ${ORDER_ITEM_RETURNED_STATUS_LABEL} გსურთ?`
             : 'დაადასტურეთ რომ ნამდვილად გადაეცით პროდუქტი'
         }
         confirmLabel="კი"

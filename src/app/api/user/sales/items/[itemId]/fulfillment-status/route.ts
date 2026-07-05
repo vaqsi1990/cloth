@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
 import { z } from 'zod'
-import { authOptions } from '@/lib/auth'
-import { isAdminOrSupport } from '@/lib/roles'
-import type { OrderItemFulfillmentStatus } from '@/lib/order-item-fulfillment-status'
+import { requireOrderItemStatusAccess } from '@/lib/order-item-status-access'
 import { updateOrderItemFulfillmentStatus } from '@/lib/update-order-item-fulfillment-status'
+import type { OrderItemFulfillmentStatus } from '@/lib/order-item-fulfillment-status'
 
 const bodySchema = z.object({
   status: z.enum(['PENDING', 'TRANSFERRED', 'CANCELED']),
@@ -15,20 +13,27 @@ export async function PATCH(
   { params }: { params: Promise<{ itemId: string }> },
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session || !isAdminOrSupport(session.user.role)) {
-      return NextResponse.json(
-        { success: false, message: 'Admin or Support access required' },
-        { status: 403 },
-      )
-    }
-
     const resolvedParams = await params
     const itemId = parseInt(resolvedParams.itemId, 10)
     if (!Number.isFinite(itemId)) {
       return NextResponse.json(
         { success: false, message: 'არასწორი პროდუქტის ID' },
         { status: 400 },
+      )
+    }
+
+    const access = await requireOrderItemStatusAccess(itemId)
+    if (!access.ok) {
+      return NextResponse.json(
+        { success: false, message: access.message },
+        { status: access.status },
+      )
+    }
+
+    if (!access.isStaff && !access.isSeller) {
+      return NextResponse.json(
+        { success: false, message: 'მხოლოდ გამყიდველს შეუძლია სტატუსის შეცვლა' },
+        { status: 403 },
       )
     }
 
@@ -59,7 +64,7 @@ export async function PATCH(
       )
     }
 
-    console.error('Error updating admin order item fulfillment status:', error)
+    console.error('Error updating seller order item fulfillment status:', error)
     return NextResponse.json(
       { success: false, message: 'შეცდომა სტატუსის განახლებისას' },
       { status: 500 },

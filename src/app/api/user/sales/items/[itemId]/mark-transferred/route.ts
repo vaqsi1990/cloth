@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireOrderItemStatusAccess } from '@/lib/order-item-status-access'
-import { buildOrderItemFulfillmentUpdate } from '@/lib/order-item-fulfillment-status'
+import {
+  buildOrderItemFulfillmentUpdate,
+  ORDER_ITEM_RETURNED_STATUS_LABEL,
+} from '@/lib/order-item-fulfillment-status'
 
 const bodySchema = z.object({
   transferred: z.boolean(),
@@ -54,7 +57,7 @@ export async function PATCH(
       return NextResponse.json(
         {
           success: false,
-          message: 'გაუქმებული ნივთის გაცემა ვერ მოხდება',
+          message: `${ORDER_ITEM_RETURNED_STATUS_LABEL}-ის შემდეგ გაცემა ვერ მოხდება`,
         },
         { status: 400 },
       )

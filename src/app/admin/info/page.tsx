@@ -14,6 +14,7 @@ import {
 import { markAdminSectionSeen } from '@/lib/admin-dashboard-seen'
 import OrderItemSaleStatusDropdown from '@/components/OrderItemSaleStatusDropdown'
 import type { OrderItemSaleStatusFields } from '@/components/OrderItemSaleStatusActions'
+import { ORDER_ITEM_RETURNED_STATUS_LABEL } from '@/lib/order-item-fulfillment-status'
 import { getSaleItemFulfillmentLabel } from '@/lib/order-item-sale-status'
 
 type AdminInfoFilter =
@@ -684,7 +685,7 @@ const AdminInfoPage = () => {
                   : 'bg-[#E4F0EC] text-green-700 hover:bg-green-200'
               }`}
             >
-              გაუქმებული
+              {ORDER_ITEM_RETURNED_STATUS_LABEL}
             </button>
             {selectedIds.size > 0 && (
               <button

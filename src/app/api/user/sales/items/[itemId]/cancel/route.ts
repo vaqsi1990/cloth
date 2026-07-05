@@ -3,7 +3,10 @@ import { prisma } from '@/lib/prisma'
 import { isSaleOrderItem } from '@/lib/order-item-snapshot'
 import { restoreSaleItemStock } from '@/lib/order-out-of-stock'
 import { requireOrderItemStatusAccess } from '@/lib/order-item-status-access'
-import { buildOrderItemFulfillmentUpdate } from '@/lib/order-item-fulfillment-status'
+import {
+  buildOrderItemFulfillmentUpdate,
+  ORDER_ITEM_RETURNED_STATUS_LABEL,
+} from '@/lib/order-item-fulfillment-status'
 
 export async function POST(
   _request: NextRequest,
@@ -55,7 +58,7 @@ export async function POST(
     if (orderItem.sellerCanceledItem) {
       return NextResponse.json({
         success: true,
-        message: 'ნივთი უკვე მონიშნულია როგორც გაუქმებული',
+        message: `ნივთი უკვე მონიშნულია როგორც ${ORDER_ITEM_RETURNED_STATUS_LABEL}`,
         alreadyCanceled: true,
         item: {
           id: orderItem.id,
@@ -132,7 +135,7 @@ export async function POST(
       message:
         pendingItems.length > 0
           ? 'ნივთი გაუქმდა. შეკვეთის სხვა პროდუქტები უცვლელია.'
-          : 'ნივთი მონიშნულია როგორც გაუქმებული',
+          : `ნივთი მონიშნულია როგორც ${ORDER_ITEM_RETURNED_STATUS_LABEL}`,
       item: updated,
       orderCanceled: false,
       orderId: orderItem.orderId,

@@ -1,5 +1,10 @@
 import type { OrderItemSaleStatusFields } from '@/components/OrderItemSaleStatusActions'
 
+/** UI label for sellerCanceledItem — not OrderStatus.CANCELED / REFUNDED. */
+export const ORDER_ITEM_RETURNED_STATUS_LABEL = 'უკან დაბრუნება'
+
+export const ORDER_ITEM_RETURNED_AT_LABEL = 'დაბრუნების თარიღი'
+
 /** UI tri-state for seller/admin item fulfillment (OrderItem fields in schema). */
 export type OrderItemFulfillmentStatus = 'PENDING' | 'TRANSFERRED' | 'CANCELED'
 
@@ -9,16 +14,16 @@ export const ORDER_ITEM_FULFILLMENT_STATUS_LABELS: Record<
 > = {
   PENDING: 'მოლოდინში',
   TRANSFERRED: 'გაცემული',
-  CANCELED: 'გაუქმებული',
+  CANCELED: ORDER_ITEM_RETURNED_STATUS_LABEL,
 }
 
 /**
  * Maps OrderItem DB fields to UI status:
  * - sellerMarkedTransferred → გაცემული
- * - sellerCanceledItem → გაუქმებული
+ * - sellerCanceledItem → უკან დაბრუნება
  * - both false → მოლოდინში
  *
- * Not related to RentalInquiryStatus.CANCELLED or OrderStatus.CANCELED.
+ * Not related to RentalInquiryStatus.CANCELLED or OrderStatus.CANCELED/REFUNDED.
  */
 export function getOrderItemFulfillmentStatus(
   item: OrderItemSaleStatusFields,

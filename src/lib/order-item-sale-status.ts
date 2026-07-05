@@ -1,3 +1,5 @@
+import { ORDER_ITEM_RETURNED_STATUS_LABEL } from '@/lib/order-item-fulfillment-status'
+
 export type OrderItemSaleStatus = {
   sellerCanceledItem?: boolean | null
   sellerReportedOutOfStock?: boolean | null
@@ -42,7 +44,7 @@ export function getSaleItemFulfillmentLabel(
   item: OrderItemSaleStatus,
 ): string | null {
   if (item.sellerMarkedTransferred) return 'გაცემული'
-  if (item.sellerCanceledItem) return 'გაუქმებული'
+  if (item.sellerCanceledItem) return ORDER_ITEM_RETURNED_STATUS_LABEL
   if (item.sellerReportedOutOfStock) return 'მარაგში არ მაქვს'
   if (item.sellerReportedDamaged) return 'დაზიანებულია'
   return null

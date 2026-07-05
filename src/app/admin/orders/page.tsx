@@ -15,6 +15,10 @@ import {
   getOrderItemProductName,
   getOrderItemVariantLabel,
 } from '@/lib/order-item-snapshot'
+import {
+  ORDER_ITEM_RETURNED_STATUS_LABEL,
+  ORDER_ITEM_RETURNED_AT_LABEL,
+} from '@/lib/order-item-fulfillment-status'
 import { getSaleItemFulfillmentLabel } from '@/lib/order-item-sale-status'
 
 interface OrderItem {
@@ -156,8 +160,14 @@ const AdminOrdersPage = () => {
   const orderHasTransferredItems = (order: Order) =>
     order.items.some((item) => item.sellerMarkedTransferred)
 
+  const orderHasCanceledItems = (order: Order) =>
+    order.items.some((item) => item.sellerCanceledItem)
+
   const getTransferredItems = (order: Order) =>
     order.items.filter((item) => item.sellerMarkedTransferred)
+
+  const getCanceledItems = (order: Order) =>
+    order.items.filter((item) => item.sellerCanceledItem)
 
   const getItemFulfillmentLabel = (item: OrderItem): string | null =>
     getSaleItemFulfillmentLabel(item)
@@ -422,7 +432,11 @@ const AdminOrdersPage = () => {
     const matchesSearch = order.id.toString().includes(searchTerm.toLowerCase()) ||
                          order.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (order.email && order.email.toLowerCase().includes(searchTerm.toLowerCase()))
-    const matchesStatus = filterStatus === 'ALL' || order.status === filterStatus
+    const matchesStatus =
+      filterStatus === 'ALL' ||
+      (filterStatus === 'CANCELED'
+        ? order.status === 'CANCELED' || orderHasCanceledItems(order)
+        : order.status === filterStatus)
     
     return matchesSearch && matchesStatus
   })
@@ -596,6 +610,11 @@ const AdminOrdersPage = () => {
                           გაცემული ნივთი
                         </span>
                       )}
+                      {orderHasCanceledItems(order) && (
+                        <span className="bg-gray-200 text-black border border-gray-400 text-xs px-2 py-1 rounded-lg font-medium whitespace-nowrap">
+                          {ORDER_ITEM_RETURNED_STATUS_LABEL}
+                        </span>
+                      )}
                       {/* Rental indicator */}
                       {order.items.some(item => item.isRental) && (
                         <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap">
@@ -616,6 +635,34 @@ const AdminOrdersPage = () => {
                       </button>
                     </div>
                   </div>
+
+                  {getCanceledItems(order).length > 0 && (
+                    <div className="mb-3 sm:mb-4 rounded-lg border border-gray-300 bg-gray-100 p-2 sm:p-3">
+                      <p className="text-xs sm:text-sm font-semibold text-black mb-2">
+                        {ORDER_ITEM_RETURNED_STATUS_LABEL} — პროდუქტები და ვარიანტები:
+                      </p>
+                      <ul className="space-y-1.5">
+                        {getCanceledItems(order).map((item) => (
+                          <li
+                            key={item.id}
+                            className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-black"
+                          >
+                            <span className="inline-flex items-center rounded-lg bg-gray-200 border border-gray-400 px-2 py-0.5 text-xs font-medium text-black">
+                              {ORDER_ITEM_RETURNED_STATUS_LABEL}
+                            </span>
+                            <span className="font-medium break-words">
+                              {getOrderItemAdminSummary(item)}
+                            </span>
+                            {item.sellerCanceledAt && (
+                              <span className="text-gray-600">
+                                ({formatDate(item.sellerCanceledAt)})
+                              </span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
                   {getTransferredItems(order).length > 0 && (
                     <div className="mb-3 sm:mb-4 rounded-lg border border-gray-200 bg-gray-50 p-2 sm:p-3">
@@ -694,9 +741,11 @@ const AdminOrdersPage = () => {
                               className={`flex items-start sm:items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg border ${
                                 item.isRental
                                   ? 'bg-blue-50 border-blue-200'
-                                  : item.sellerMarkedTransferred
-                                    ? 'bg-white border-[#1B3729]/30'
-                                    : 'bg-gray-50 border-gray-200'
+                                  : item.sellerCanceledItem
+                                    ? 'bg-gray-100 border-gray-400'
+                                    : item.sellerMarkedTransferred
+                                      ? 'bg-white border-[#1B3729]/30'
+                                      : 'bg-gray-50 border-gray-200'
                               }`}
                             >
                               <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded flex items-center justify-center flex-shrink-0 ${item.isRental ? 'bg-blue-200' : 'bg-gray-200'}`}>
@@ -717,7 +766,9 @@ const AdminOrdersPage = () => {
                                       className={`text-xs px-2 py-0.5 rounded-lg font-medium whitespace-nowrap ${
                                         item.sellerMarkedTransferred
                                           ? 'bg-[#1B3729] text-white'
-                                          : 'bg-gray-100 text-black border border-gray-300'
+                                          : item.sellerCanceledItem
+                                            ? 'bg-gray-200 text-black border border-gray-400'
+                                            : 'bg-gray-100 text-black border border-gray-300'
                                       }`}
                                     >
                                       {fulfillmentLabel}
@@ -732,7 +783,7 @@ const AdminOrdersPage = () => {
                                 <p className="text-xs text-black mt-1">რაოდენობა: {item.quantity}</p>
                                 {item.sellerCanceledAt && (
                                   <p className="text-xs text-gray-600 mt-1">
-                                    გაუქმების თარიღი: {formatDate(item.sellerCanceledAt)}
+                                    {ORDER_ITEM_RETURNED_AT_LABEL}: {formatDate(item.sellerCanceledAt)}
                                   </p>
                                 )}
                                 {item.sellerMarkedTransferredAt && (
@@ -741,14 +792,20 @@ const AdminOrdersPage = () => {
                                   </p>
                                 )}
                                 <div className="mt-2">
-                                  <OrderItemSaleStatusDropdown
-                                    item={item}
-                                    orderStatus={order.status}
-                                    variant="compact"
-                                    onItemUpdate={(itemId, patch) =>
-                                      updateOrderItemStatus(order.id, itemId, patch)
-                                    }
-                                  />
+                                  {(order.status === 'PAID' || order.status === 'SHIPPED') ? (
+                                    <OrderItemSaleStatusDropdown
+                                      item={item}
+                                      orderStatus={order.status}
+                                      variant="compact"
+                                      onItemUpdate={(itemId, patch) =>
+                                        updateOrderItemStatus(order.id, itemId, patch)
+                                      }
+                                    />
+                                  ) : fulfillmentLabel ? (
+                                    <span className="inline-flex items-center rounded-lg bg-gray-200 border border-gray-400 px-2 py-1 text-xs font-medium text-black">
+                                      {fulfillmentLabel}
+                                    </span>
+                                  ) : null}
                                 </div>
                                 {/* Show rental information if it's a rental item */}
                                 {item.isRental && item.rentalStartDate && item.rentalEndDate && (

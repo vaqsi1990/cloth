@@ -14,6 +14,7 @@ type OrderItemSaleStatusDropdownProps = {
   item: OrderItemSaleStatusFields
   orderStatus: string
   variant?: 'default' | 'compact'
+  audience?: 'admin' | 'seller'
   onItemUpdate: (itemId: number, patch: Partial<OrderItemSaleStatusFields>) => void
 }
 
@@ -21,6 +22,7 @@ export default function OrderItemSaleStatusDropdown({
   item,
   orderStatus,
   variant = 'default',
+  audience = 'admin',
   onItemUpdate,
 }: OrderItemSaleStatusDropdownProps) {
   const [saving, setSaving] = useState(false)
@@ -33,19 +35,21 @@ export default function OrderItemSaleStatusDropdown({
     ? 'rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-black focus:border-[#1B3729] focus:outline-none focus:ring-1 focus:ring-[#1B3729] disabled:opacity-50'
     : 'rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-[15px] font-medium text-black focus:border-[#1B3729] focus:outline-none focus:ring-1 focus:ring-[#1B3729] disabled:opacity-50'
 
+  const statusApiPath =
+    audience === 'seller'
+      ? `/api/user/sales/items/${item.id}/fulfillment-status`
+      : `/api/admin/order-items/${item.id}/fulfillment-status`
+
   const handleChange = async (nextStatus: OrderItemFulfillmentStatus) => {
     if (nextStatus === currentStatus || saving) return
 
     try {
       setSaving(true)
-      const response = await fetch(
-        `/api/admin/order-items/${item.id}/fulfillment-status`,
-        {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: nextStatus }),
-        },
-      )
+      const response = await fetch(statusApiPath, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus }),
+      })
       const data = await response.json()
 
       if (!data.success) {
