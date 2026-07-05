@@ -46,7 +46,6 @@ export default function OrderItemSaleStatusActions({
   >(null)
   const [cancelingItemId, setCancelingItemId] = useState<number | null>(null)
 
-  if (item.isRental) return null
   if (orderStatus !== 'PAID' && orderStatus !== 'SHIPPED') return null
 
   const isCompact = variant === 'compact'

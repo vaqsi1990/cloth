@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireOrderItemStatusAccess } from '@/lib/order-item-status-access'
+import { buildOrderItemFulfillmentUpdate } from '@/lib/order-item-fulfillment-status'
 
 const bodySchema = z.object({
   transferred: z.boolean(),
@@ -71,10 +72,9 @@ export async function PATCH(
 
     const updated = await prisma.orderItem.update({
       where: { id: itemId },
-      data: {
-        sellerMarkedTransferred: body.transferred,
-        sellerMarkedTransferredAt: body.transferred ? new Date() : null,
-      },
+      data: buildOrderItemFulfillmentUpdate(
+        body.transferred ? 'TRANSFERRED' : 'PENDING',
+      ),
       select: {
         id: true,
         sellerMarkedTransferred: true,

@@ -9,6 +9,7 @@ import { REPORTABLE_SALE_ORDER_STATUSES } from '@/lib/order-out-of-stock'
 import { isAdminOrSupport } from '@/lib/roles'
 import type { COMPLETED_SALE_ORDER_STATUSES } from '@/lib/sold-products'
 import type { OrderItemFulfillmentStatus } from '@/lib/order-item-fulfillment-status'
+import { buildOrderItemFulfillmentUpdate } from '@/lib/order-item-fulfillment-status'
 
 const bodySchema = z.object({
   status: z.enum(['PENDING', 'TRANSFERRED', 'CANCELED']),
@@ -52,13 +53,6 @@ export async function PATCH(
       )
     }
 
-    if (!isSaleOrderItem(orderItem.isRental)) {
-      return NextResponse.json(
-        { success: false, message: 'მხოლოდ გაყიდვის პროდუქტზეა შესაძლებელი' },
-        { status: 400 },
-      )
-    }
-
     if (
       !REPORTABLE_SALE_ORDER_STATUSES.includes(
         orderItem.order.status as (typeof COMPLETED_SALE_ORDER_STATUSES)[number],
@@ -78,13 +72,7 @@ export async function PATCH(
 
     const updated = await prisma.orderItem.update({
       where: { id: itemId },
-      data: {
-        sellerMarkedTransferred: nextStatus === 'TRANSFERRED',
-        sellerMarkedTransferredAt:
-          nextStatus === 'TRANSFERRED' ? new Date() : null,
-        sellerCanceledItem: nextStatus === 'CANCELED',
-        sellerCanceledAt: nextStatus === 'CANCELED' ? new Date() : null,
-      },
+      data: buildOrderItemFulfillmentUpdate(nextStatus),
       select: {
         id: true,
         sellerMarkedTransferred: true,
@@ -97,6 +85,7 @@ export async function PATCH(
     if (
       nextStatus === 'CANCELED' &&
       !wasCanceled &&
+      isSaleOrderItem(orderItem.isRental) &&
       orderItem.productId != null
     ) {
       await restoreSaleItemStock({

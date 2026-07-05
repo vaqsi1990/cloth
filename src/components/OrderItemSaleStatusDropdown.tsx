@@ -5,6 +5,7 @@ import { showToast } from '@/utils/toast'
 import {
   getOrderItemFulfillmentStatus,
   ORDER_ITEM_FULFILLMENT_STATUS_LABELS,
+  toOrderItemFulfillmentClientPatch,
   type OrderItemFulfillmentStatus,
 } from '@/lib/order-item-fulfillment-status'
 import type { OrderItemSaleStatusFields } from '@/components/OrderItemSaleStatusActions'
@@ -25,7 +26,6 @@ export default function OrderItemSaleStatusDropdown({
   const [saving, setSaving] = useState(false)
   const currentStatus = getOrderItemFulfillmentStatus(item)
 
-  if (item.isRental) return null
   if (orderStatus !== 'PAID' && orderStatus !== 'SHIPPED') return null
 
   const isCompact = variant === 'compact'
@@ -53,18 +53,7 @@ export default function OrderItemSaleStatusDropdown({
         return
       }
 
-      onItemUpdate(item.id, {
-        sellerMarkedTransferred: nextStatus === 'TRANSFERRED',
-        sellerMarkedTransferredAt:
-          nextStatus === 'TRANSFERRED'
-            ? data.item?.sellerMarkedTransferredAt ?? new Date().toISOString()
-            : null,
-        sellerCanceledItem: nextStatus === 'CANCELED',
-        sellerCanceledAt:
-          nextStatus === 'CANCELED'
-            ? data.item?.sellerCanceledAt ?? new Date().toISOString()
-            : null,
-      })
+      onItemUpdate(item.id, toOrderItemFulfillmentClientPatch(nextStatus, data.item))
       showToast(data.message || 'სტატუსი განახლდა', 'success')
     } catch {
       showToast('შეცდომა სტატუსის განახლებისას', 'error')

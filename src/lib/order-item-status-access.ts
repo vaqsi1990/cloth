@@ -1,7 +1,6 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { isSaleOrderItem } from '@/lib/order-item-snapshot'
 import { REPORTABLE_SALE_ORDER_STATUSES } from '@/lib/order-out-of-stock'
 import { isAdminOrSupport } from '@/lib/roles'
 import type { COMPLETED_SALE_ORDER_STATUSES } from '@/lib/sold-products'
@@ -42,14 +41,6 @@ export async function requireOrderItemStatusAccess(itemId: number) {
   }
 
   const ctx = orderItem as OrderItemStatusContext
-
-  if (!isSaleOrderItem(ctx.isRental)) {
-    return {
-      ok: false as const,
-      status: 400,
-      message: 'მხოლოდ გაყიდვის პროდუქტზეა შესაძლებელი',
-    }
-  }
 
   const userId = session.user.id
   const isStaff = isAdminOrSupport(session.user.role)

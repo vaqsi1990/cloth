@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { isSaleOrderItem } from '@/lib/order-item-snapshot'
 import { restoreSaleItemStock } from '@/lib/order-out-of-stock'
 import { requireOrderItemStatusAccess } from '@/lib/order-item-status-access'
+import { buildOrderItemFulfillmentUpdate } from '@/lib/order-item-fulfillment-status'
 
 export async function POST(
   _request: NextRequest,
@@ -85,10 +86,7 @@ export async function POST(
 
     const updated = await prisma.orderItem.update({
       where: { id: itemId },
-      data: {
-        sellerCanceledItem: true,
-        sellerCanceledAt: new Date(),
-      },
+      data: buildOrderItemFulfillmentUpdate('CANCELED'),
       select: {
         id: true,
         sellerCanceledItem: true,

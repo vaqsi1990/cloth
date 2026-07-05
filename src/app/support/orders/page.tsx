@@ -7,9 +7,8 @@ import { formatDate } from '@/utils/dateUtils'
 import Link from 'next/link'
 import { ArrowLeft, Search, Filter, ShoppingCart, Package, User, MapPin, Phone, Mail, CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
 import { showToast } from '@/utils/toast'
-import OrderItemSaleStatusActions, {
-  type OrderItemSaleStatusFields,
-} from '@/components/OrderItemSaleStatusActions'
+import OrderItemSaleStatusDropdown from '@/components/OrderItemSaleStatusDropdown'
+import type { OrderItemSaleStatusFields } from '@/components/OrderItemSaleStatusActions'
 
 interface OrderItem {
   id: number
@@ -565,18 +564,16 @@ const SupportOrdersPage = () => {
                                   )}
                                 </div>
                                 <p className="text-xs text-black">რაოდენობა: {item.quantity}</p>
-                                {!item.isRental && (
-                                  <div className="mt-2">
-                                    <OrderItemSaleStatusActions
-                                      item={item}
-                                      orderStatus={order.status}
-                                      variant="compact"
-                                      onItemUpdate={(itemId, patch) =>
-                                        updateOrderItemStatus(order.id, itemId, patch)
-                                      }
-                                    />
-                                  </div>
-                                )}
+                                <div className="mt-2">
+                                  <OrderItemSaleStatusDropdown
+                                    item={item}
+                                    orderStatus={order.status}
+                                    variant="compact"
+                                    onItemUpdate={(itemId, patch) =>
+                                      updateOrderItemStatus(order.id, itemId, patch)
+                                    }
+                                  />
+                                </div>
                                 {/* Show rental information if it's a rental item */}
                                 {item.isRental && item.rentalStartDate && item.rentalEndDate && (
                                   <div className="text-xs text-blue-600 mt-1 space-y-1">

@@ -552,8 +552,10 @@ model OrderItem {
   sellerReportedAt         DateTime?
   sellerReportedDamaged    Boolean  @default(false)
   sellerReportedDamagedAt  DateTime?
+  /// გაცემული (UI: გაცემული) — seller/admin მიერ შეცვლილი სტატუსი
   sellerMarkedTransferred  Boolean  @default(false)
   sellerMarkedTransferredAt DateTime?
+  /// გაუქმებული (UI: გაუქმებული) — seller/admin მიერ შეცვლილი სტატუსი
   sellerCanceledItem       Boolean  @default(false)
   sellerCanceledAt         DateTime?
   

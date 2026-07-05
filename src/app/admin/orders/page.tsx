@@ -154,10 +154,10 @@ const AdminOrdersPage = () => {
     order.items.some((item) => !item.isRental && item.sellerReportedOutOfStock)
 
   const orderHasTransferredItems = (order: Order) =>
-    order.items.some((item) => !item.isRental && item.sellerMarkedTransferred)
+    order.items.some((item) => item.sellerMarkedTransferred)
 
-  const getTransferredSaleItems = (order: Order) =>
-    order.items.filter((item) => !item.isRental && item.sellerMarkedTransferred)
+  const getTransferredItems = (order: Order) =>
+    order.items.filter((item) => item.sellerMarkedTransferred)
 
   const getItemFulfillmentLabel = (item: OrderItem): string | null =>
     getSaleItemFulfillmentLabel(item)
@@ -617,13 +617,13 @@ const AdminOrdersPage = () => {
                     </div>
                   </div>
 
-                  {getTransferredSaleItems(order).length > 0 && (
+                  {getTransferredItems(order).length > 0 && (
                     <div className="mb-3 sm:mb-4 rounded-lg border border-gray-200 bg-gray-50 p-2 sm:p-3">
                       <p className="text-xs sm:text-sm font-semibold text-black mb-2">
                         გაცემული პროდუქტები და ვარიანტები:
                       </p>
                       <ul className="space-y-1.5">
-                        {getTransferredSaleItems(order).map((item) => (
+                        {getTransferredItems(order).map((item) => (
                           <li
                             key={item.id}
                             className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-black"
@@ -712,7 +712,7 @@ const AdminOrdersPage = () => {
                                       ქირაობა
                                     </span>
                                   )}
-                                  {!item.isRental && fulfillmentLabel && (
+                                  {fulfillmentLabel && (
                                     <span
                                       className={`text-xs px-2 py-0.5 rounded-lg font-medium whitespace-nowrap ${
                                         item.sellerMarkedTransferred
@@ -730,28 +730,26 @@ const AdminOrdersPage = () => {
                                   </p>
                                 )}
                                 <p className="text-xs text-black mt-1">რაოდენობა: {item.quantity}</p>
-                                {!item.isRental && item.sellerCanceledAt && (
+                                {item.sellerCanceledAt && (
                                   <p className="text-xs text-gray-600 mt-1">
                                     გაუქმების თარიღი: {formatDate(item.sellerCanceledAt)}
                                   </p>
                                 )}
-                                {!item.isRental && item.sellerMarkedTransferredAt && (
+                                {item.sellerMarkedTransferredAt && (
                                   <p className="text-xs text-gray-600 mt-1">
                                     გაცემის თარიღი: {formatDate(item.sellerMarkedTransferredAt)}
                                   </p>
                                 )}
-                                {!item.isRental && (
-                                  <div className="mt-2">
-                                    <OrderItemSaleStatusDropdown
-                                      item={item}
-                                      orderStatus={order.status}
-                                      variant="compact"
-                                      onItemUpdate={(itemId, patch) =>
-                                        updateOrderItemStatus(order.id, itemId, patch)
-                                      }
-                                    />
-                                  </div>
-                                )}
+                                <div className="mt-2">
+                                  <OrderItemSaleStatusDropdown
+                                    item={item}
+                                    orderStatus={order.status}
+                                    variant="compact"
+                                    onItemUpdate={(itemId, patch) =>
+                                      updateOrderItemStatus(order.id, itemId, patch)
+                                    }
+                                  />
+                                </div>
                                 {/* Show rental information if it's a rental item */}
                                 {item.isRental && item.rentalStartDate && item.rentalEndDate && (
                                   <div className="text-xs text-blue-600 mt-1 space-y-1">

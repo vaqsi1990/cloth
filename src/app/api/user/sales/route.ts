@@ -5,7 +5,6 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { COMPLETED_SALE_ORDER_STATUSES, isSellerIncomeOrderStatus } from '@/lib/sold-products'
 import {
-  isSaleOrderItem,
   parseOrderItemProductSnapshot,
 } from '@/lib/order-item-snapshot'
 import { computeSellerSaleLineAmount } from '@/lib/seller-sale-amounts'
@@ -75,6 +74,10 @@ function mapSaleItem(item: SellerOrderItemRecord) {
 
   return {
     id: item.id,
+    isRental: item.isRental ?? false,
+    rentalStartDate: item.rentalStartDate ?? null,
+    rentalEndDate: item.rentalEndDate ?? null,
+    rentalDays: item.rentalDays ?? null,
     productName: snapshot?.name || item.productName,
     size: snapshot?.size || item.size,
     price: buyerUnitPrice,
@@ -105,7 +108,6 @@ function mapSellerOrder(
   transactionTotalByOrderId: Map<number, number>,
 ) {
   const items = order.items
-    .filter((item) => isSaleOrderItem(item.isRental))
     .filter(
       (item) =>
         item.sellerUserId === sellerUserId ||
@@ -169,7 +171,6 @@ export async function GET(request: NextRequest) {
         items: {
           some: {
             sellerUserId: session.user.id,
-            isRental: { not: true },
           },
         },
       },

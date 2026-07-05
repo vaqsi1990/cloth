@@ -1903,7 +1903,7 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
                             </button>
                           )}
 
-                          {item.id != null && !item.isRental && (
+                          {item.id != null && (
                             <OrderItemSaleStatusActions
                               item={{
                                 id: item.id,
@@ -2187,7 +2187,7 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
                                 <OrderItemSaleStatusActions
                                   item={item}
                                   orderStatus={order.status}
-                                  showSellerReportActions
+                                  showSellerReportActions={!item.isRental}
                                   reportingOutOfStockItemId={reportingOutOfStockItemId}
                                   reportingDamagedItemId={reportingDamagedItemId}
                                   onItemUpdate={updateSaleOrderItem}

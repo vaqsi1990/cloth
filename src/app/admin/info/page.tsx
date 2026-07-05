@@ -16,6 +16,13 @@ import OrderItemSaleStatusDropdown from '@/components/OrderItemSaleStatusDropdow
 import type { OrderItemSaleStatusFields } from '@/components/OrderItemSaleStatusActions'
 import { getSaleItemFulfillmentLabel } from '@/lib/order-item-sale-status'
 
+type AdminInfoFilter =
+  | 'ALL'
+  | 'RENTAL'
+  | 'PURCHASE'
+  | 'TRANSFERRED'
+  | 'CANCELED'
+
 interface OrderItemProduct {
   id: number
   name: string
@@ -89,7 +96,7 @@ interface OrderInfoRow {
   sellerName: string
   sellerPhone: string
   productsLabel: string
-  purchaseItems: AdminOrderItem[]
+  statusItems: AdminOrderItem[]
   rentalPeriod: string
   deliveryLabel: string
   total: number
@@ -253,7 +260,7 @@ function transformOrdersToRows(orders: AdminOrder[]): OrderInfoRow[] {
         id: order.id * 10 + 1,
         orderType: 'RENTAL',
         productsLabel: buildProductsLabel(order.items, true),
-        purchaseItems: [],
+        statusItems: order.items.filter((item) => item.isRental),
         rentalPeriod: buildRentalPeriod(order.items),
       })
     }
@@ -264,7 +271,7 @@ function transformOrdersToRows(orders: AdminOrder[]): OrderInfoRow[] {
         id: order.id * 10 + 2,
         orderType: 'PURCHASE',
         productsLabel: buildProductsLabel(order.items, false),
-        purchaseItems,
+        statusItems: purchaseItems,
         rentalPeriod: '-',
       })
     }
@@ -312,12 +319,12 @@ function OrderDetailsPanel({
 
         <DetailItem label="პროდუქტები" value={row.productsLabel} />
 
-        {row.orderType === 'PURCHASE' && row.purchaseItems.length > 0 && (
+        {row.statusItems.length > 0 && (
           <div className="rounded-xl border border-gray-100 bg-white p-4 space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-              ყიდვის ნივთების სტატუსი
+              {row.orderType === 'RENTAL' ? 'ქირავების ნივთების სტატუსი' : 'ყიდვის ნივთების სტატუსი'}
             </p>
-            {row.purchaseItems.map((item) => {
+            {row.statusItems.map((item) => {
               const fulfillmentLabel = getSaleItemFulfillmentLabel(item)
               const productName = item.product?.name || item.productName
               const sizeLabel = item.size ? ` (${item.size})` : ''
@@ -395,7 +402,7 @@ const AdminInfoPage = () => {
   const [orders, setOrders] = useState<AdminOrder[]>([])
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
-  const [filter, setFilter] = useState<'ALL' | 'RENTAL' | 'PURCHASE'>('ALL')
+  const [filter, setFilter] = useState<AdminInfoFilter>('ALL')
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [expandedRowId, setExpandedRowId] = useState<number | null>(null)
 
@@ -455,8 +462,22 @@ const AdminInfoPage = () => {
   }, [loadOrders])
 
   const getFilteredRows = () => {
-    if (filter === 'RENTAL') return orderRows.filter((row) => row.orderType === 'RENTAL')
-    if (filter === 'PURCHASE') return orderRows.filter((row) => row.orderType === 'PURCHASE')
+    if (filter === 'RENTAL') {
+      return orderRows.filter((row) => row.orderType === 'RENTAL')
+    }
+    if (filter === 'PURCHASE') {
+      return orderRows.filter((row) => row.orderType === 'PURCHASE')
+    }
+    if (filter === 'TRANSFERRED') {
+      return orderRows.filter((row) =>
+        row.statusItems.some((item) => item.sellerMarkedTransferred === true),
+      )
+    }
+    if (filter === 'CANCELED') {
+      return orderRows.filter((row) =>
+        row.statusItems.some((item) => item.sellerCanceledItem === true),
+      )
+    }
     return orderRows
   }
 
@@ -645,6 +666,26 @@ const AdminInfoPage = () => {
             >
               ყიდვა
             </button>
+            <button
+              onClick={() => setFilter('TRANSFERRED')}
+              className={`px-3 sm:px-6 py-1.5 sm:py-2 md:text-[18px] text-[16px] rounded-lg font-medium transition-colors ${
+                filter === 'TRANSFERRED'
+                  ? 'bg-[#1B3729] text-white'
+                  : 'bg-[#E4F0EC] text-green-700 hover:bg-green-200'
+              }`}
+            >
+              გაცემული
+            </button>
+            <button
+              onClick={() => setFilter('CANCELED')}
+              className={`px-3 sm:px-6 py-1.5 sm:py-2 md:text-[18px] text-[16px] rounded-lg font-medium transition-colors ${
+                filter === 'CANCELED'
+                  ? 'bg-[#1B3729] text-white'
+                  : 'bg-[#E4F0EC] text-green-700 hover:bg-green-200'
+              }`}
+            >
+              გაუქმებული
+            </button>
             {selectedIds.size > 0 && (
               <button
                 onClick={handleRemoveSelected}
@@ -758,9 +799,9 @@ const AdminInfoPage = () => {
                             {row.productsLabel}
                           </td>
                           <td className="px-3 sm:px-4 py-3">
-                            {row.orderType === 'PURCHASE' ? (
+                            {row.statusItems.length > 0 ? (
                               <div className="flex flex-col gap-2 min-w-[120px]">
-                                {row.purchaseItems.map((item) => (
+                                {row.statusItems.map((item) => (
                                   <OrderItemSaleStatusDropdown
                                     key={item.id}
                                     item={{
