@@ -143,14 +143,6 @@ const SupportOrdersPage = () => {
     )
   }
 
-  const handleOrderCanceledFromItem = (orderId: number) => {
-    setOrders((prev) =>
-      prev.map((order) =>
-        order.id === orderId ? { ...order, status: 'CANCELED' } : order,
-      ),
-    )
-  }
-
   const handleCapturePaymentHold = async (orderId: number) => {
     if (
       !confirm(
@@ -578,12 +570,10 @@ const SupportOrdersPage = () => {
                                     <OrderItemSaleStatusActions
                                       item={item}
                                       orderStatus={order.status}
-                                      orderId={order.id}
                                       variant="compact"
                                       onItemUpdate={(itemId, patch) =>
                                         updateOrderItemStatus(order.id, itemId, patch)
                                       }
-                                      onOrderCanceled={handleOrderCanceledFromItem}
                                     />
                                   </div>
                                 )}

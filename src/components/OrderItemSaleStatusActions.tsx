@@ -18,13 +18,11 @@ export type OrderItemSaleStatusFields = {
 type OrderItemSaleStatusActionsProps = {
   item: OrderItemSaleStatusFields
   orderStatus: string
-  orderId?: number
   variant?: 'default' | 'compact'
   showSellerReportActions?: boolean
   reportingOutOfStockItemId?: number | null
   reportingDamagedItemId?: number | null
   onItemUpdate: (itemId: number, patch: Partial<OrderItemSaleStatusFields>) => void
-  onOrderCanceled?: (orderId: number) => void
   onReportOutOfStock?: (itemId: number) => void
   onReportDamaged?: (itemId: number) => void
 }
@@ -32,13 +30,11 @@ type OrderItemSaleStatusActionsProps = {
 export default function OrderItemSaleStatusActions({
   item,
   orderStatus,
-  orderId,
   variant = 'default',
   showSellerReportActions = false,
   reportingOutOfStockItemId = null,
   reportingDamagedItemId = null,
   onItemUpdate,
-  onOrderCanceled,
   onReportOutOfStock,
   onReportDamaged,
 }: OrderItemSaleStatusActionsProps) {
@@ -109,9 +105,6 @@ export default function OrderItemSaleStatusActions({
           sellerCanceledAt:
             data.item?.sellerCanceledAt ?? new Date().toISOString(),
         })
-        if (data.orderCanceled && data.orderId != null) {
-          onOrderCanceled?.(data.orderId)
-        }
         showToast(data.message || 'ნივთი გაუქმდა', 'success')
         setConfirmAction(null)
         return true

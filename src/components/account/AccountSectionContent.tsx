@@ -43,6 +43,7 @@ import {
   buildAccountChatsPath,
   type AccountSection,
 } from '@/lib/account-routes'
+import { isSellerIncomeOrderStatus } from '@/lib/sold-products'
 import { isValidPhone } from '@/lib/phone'
 import {
   formatSnapshotGender,
@@ -204,6 +205,51 @@ function getOrderStatusClass(status: string, paymentHoldStatus?: string | null) 
   if (status === 'CANCELED') return 'text-red-500'
   if (status === 'REFUNDED') return 'text-black'
   return 'text-yellow-500'
+}
+
+type SaleOrderStatusItem = {
+  sellerCanceledItem?: boolean
+  sellerMarkedTransferred?: boolean
+  sellerReportedOutOfStock?: boolean
+  sellerReportedDamaged?: boolean
+}
+
+function saleOrderHasActiveItems(items: SaleOrderStatusItem[] = []) {
+  return items.some(
+    (item) =>
+      !item.sellerCanceledItem &&
+      !item.sellerMarkedTransferred &&
+      !item.sellerReportedOutOfStock &&
+      !item.sellerReportedDamaged,
+  )
+}
+
+function saleOrderItemsAllCanceled(items: SaleOrderStatusItem[] = []) {
+  return items.length > 0 && items.every((item) => item.sellerCanceledItem === true)
+}
+
+function getSaleOrderStatusDisplay(order: {
+  status: string
+  items?: SaleOrderStatusItem[]
+}) {
+  const items = order.items ?? []
+
+  if (order.status === 'REFUNDED') {
+    return { label: 'დაბრუნებული', className: 'text-black' }
+  }
+  if (order.status === 'CANCELED' || saleOrderItemsAllCanceled(items)) {
+    return { label: 'გაუქმებული', className: 'text-red-500' }
+  }
+  if (order.status === 'SHIPPED') {
+    return { label: 'გაგზავნილი', className: 'text-blue-500' }
+  }
+  if (order.status === 'PAID') {
+    return {
+      label: saleOrderHasActiveItems(items) ? 'გადახდილი' : 'გაუქმებული',
+      className: saleOrderHasActiveItems(items) ? 'text-green-500' : 'text-red-500',
+    }
+  }
+  return { label: 'მოლოდინში', className: 'text-yellow-500' }
 }
 
 function getOrderItemDiscount(item: OrderItem): number {
@@ -1054,28 +1100,6 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
     )
   }
 
-  const handleSaleOrderCanceledFromItem = (orderId: number) => {
-    setSales((prev) =>
-      prev.map((order) =>
-        order.id === orderId ? { ...order, status: 'CANCELED' } : order,
-      ),
-    )
-    setTotalSellerIncome((prev) => {
-      const canceledOrder = sales.find((order) => order.id === orderId)
-      if (!canceledOrder) return prev
-      const orderTotal =
-        canceledOrder.sellerTotal ??
-        (canceledOrder.items?.reduce(
-          (sum, item) =>
-            sum +
-            (item.sellerLineTotal ??
-              (item.sellerUnitPrice ?? 0) * (item.quantity ?? 1)),
-          0,
-        ) ?? 0)
-      return Math.max(0, prev - orderTotal)
-    })
-  }
-
   const updateBuyerOrderItem = (
     itemId: number,
     patch: Partial<OrderItem>,
@@ -1892,17 +1916,7 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
                                 sellerReportedDamaged: item.sellerReportedDamaged,
                               }}
                               orderStatus={order.status}
-                              orderId={order.id}
                               onItemUpdate={updateBuyerOrderItem}
-                              onOrderCanceled={(orderId) => {
-                                setOrders((prev) =>
-                                  prev.map((o) =>
-                                    o.id === orderId
-                                      ? { ...o, status: 'CANCELED' }
-                                      : o,
-                                  ),
-                                )
-                              }}
                             />
                           )}
                         </div>
@@ -1926,7 +1940,7 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
 
   const renderSalesTab = () => {
     const totalSoldItems = sales
-      .filter((order) => order.status !== 'CANCELED')
+      .filter((order) => isSellerIncomeOrderStatus(order.status))
       .reduce(
       (sum, order) =>
         sum +
@@ -2075,6 +2089,7 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
                         (item.sellerUnitPrice ?? 0) * (item.quantity ?? 1)),
                     0,
                   ) ?? 0)
+                const saleStatus = getSaleOrderStatusDisplay(order)
                 return (
                   <div key={order.id} className="border border-black rounded-lg p-4 hover:shadow-md transition-shadow">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-3">
@@ -2092,27 +2107,9 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
                       <div className="text-right space-y-2">
                         <p className="font-bold md:text-[22px] text-[16px] text-black">ჯამი: ₾{sellerTotal.toFixed(2)}</p>
                         <span
-                          className={`inline-block px-2 py-1 md:text-[20px] text-[18px] font-bold rounded-full ${
-                            order.status === 'PAID'
-                              ? 'text-green-500'
-                              : order.status === 'SHIPPED'
-                                ? ' text-blue-500'
-                                : order.status === 'CANCELED'
-                                  ? ' text-red-500'
-                                  : order.status === 'REFUNDED'
-                                    ? ' text-black'
-                                    : ' text-yellow-500'
-                          }`}
+                          className={`inline-block px-2 py-1 md:text-[20px] text-[18px] font-bold rounded-full ${saleStatus.className}`}
                         >
-                          {order.status === 'PAID'
-                            ? 'გადახდილი'
-                            : order.status === 'SHIPPED'
-                              ? 'გაგზავნილი'
-                              : order.status === 'CANCELED'
-                                ? 'გაუქმებული'
-                                : order.status === 'REFUNDED'
-                                  ? 'დაბრუნებული'
-                                  : 'მოლოდინში'}
+                          {saleStatus.label}
                         </span>
                       </div>
                     </div>
@@ -2190,12 +2187,10 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
                                 <OrderItemSaleStatusActions
                                   item={item}
                                   orderStatus={order.status}
-                                  orderId={order.id}
                                   showSellerReportActions
                                   reportingOutOfStockItemId={reportingOutOfStockItemId}
                                   reportingDamagedItemId={reportingDamagedItemId}
                                   onItemUpdate={updateSaleOrderItem}
-                                  onOrderCanceled={handleSaleOrderCanceledFromItem}
                                   onReportOutOfStock={handleReportOutOfStock}
                                   onReportDamaged={handleReportDamaged}
                                 />

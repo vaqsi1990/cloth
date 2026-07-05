@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { COMPLETED_SALE_ORDER_STATUSES } from '@/lib/sold-products'
+import { COMPLETED_SALE_ORDER_STATUSES, isSellerIncomeOrderStatus } from '@/lib/sold-products'
 import {
   isSaleOrderItem,
   parseOrderItemProductSnapshot,
@@ -213,7 +213,7 @@ export async function GET(request: NextRequest) {
       .filter((order) => (order.items?.length ?? 0) > 0)
 
     const totalSellerIncome = mappedOrders
-      .filter((order) => order.status !== 'CANCELED')
+      .filter((order) => isSellerIncomeOrderStatus(order.status))
       .reduce((sum, order) => sum + order.sellerTotal, 0)
 
     return NextResponse.json({

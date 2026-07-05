@@ -1,29 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { cancelSaleOrder } from '@/lib/cancel-sale-order'
 import { isSaleOrderItem } from '@/lib/order-item-snapshot'
+import { restoreSaleItemStock } from '@/lib/order-out-of-stock'
 import { requireOrderItemStatusAccess } from '@/lib/order-item-status-access'
-
-type SaleItemStatus = {
-  sellerCanceledItem: boolean
-  sellerReportedOutOfStock: boolean
-  sellerReportedDamaged: boolean
-  sellerMarkedTransferred: boolean
-}
-
-function isNegativeTerminalItem(item: SaleItemStatus) {
-  return (
-    item.sellerCanceledItem ||
-    item.sellerReportedOutOfStock ||
-    item.sellerReportedDamaged
-  )
-}
-
-function shouldCancelEntireOrder(items: SaleItemStatus[]) {
-  const saleItems = items
-  if (saleItems.length === 0) return false
-  return saleItems.every(isNegativeTerminalItem)
-}
 
 export async function POST(
   _request: NextRequest,
@@ -52,6 +31,12 @@ export async function POST(
       select: {
         id: true,
         orderId: true,
+        productId: true,
+        variantId: true,
+        quantity: true,
+        color: true,
+        size: true,
+        isRental: true,
         sellerCanceledItem: true,
         sellerMarkedTransferred: true,
         sellerReportedOutOfStock: true,
@@ -111,6 +96,19 @@ export async function POST(
       },
     })
 
+    if (
+      isSaleOrderItem(orderItem.isRental) &&
+      orderItem.productId != null
+    ) {
+      await restoreSaleItemStock({
+        productId: orderItem.productId,
+        variantId: orderItem.variantId,
+        quantity: orderItem.quantity ?? 1,
+        color: orderItem.color,
+        size: orderItem.size,
+      })
+    }
+
     const orderSaleItems = await prisma.orderItem.findMany({
       where: { orderId: orderItem.orderId },
       select: {
@@ -123,20 +121,22 @@ export async function POST(
     })
 
     const saleItems = orderSaleItems.filter((item) => isSaleOrderItem(item.isRental))
-
-    let orderCanceled = false
-    if (shouldCancelEntireOrder(saleItems)) {
-      const cancelResult = await cancelSaleOrder(orderItem.orderId)
-      orderCanceled = cancelResult.ok
-    }
+    const pendingItems = saleItems.filter(
+      (item) =>
+        !item.sellerMarkedTransferred &&
+        !item.sellerCanceledItem &&
+        !item.sellerReportedOutOfStock &&
+        !item.sellerReportedDamaged,
+    )
 
     return NextResponse.json({
       success: true,
-      message: orderCanceled
-        ? 'ნივთი გაუქმდა და შეკვეთა დახურულია'
-        : 'ნივთი მონიშნულია როგორც გაუქმებული',
+      message:
+        pendingItems.length > 0
+          ? 'ნივთი გაუქმდა. შეკვეთის სხვა პროდუქტები უცვლელია.'
+          : 'ნივთი მონიშნულია როგორც გაუქმებული',
       item: updated,
-      orderCanceled,
+      orderCanceled: false,
       orderId: orderItem.orderId,
     })
   } catch (error) {

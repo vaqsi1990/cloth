@@ -3,6 +3,16 @@ import { buildProductHasSkuVariantsWhere } from '@/lib/product-variants'
 
 export const COMPLETED_SALE_ORDER_STATUSES = ['PAID', 'SHIPPED'] as const
 
+/** Paid sales that still count toward seller income (incl. later canceled). */
+export const SELLER_INCOME_ORDER_STATUSES = [
+  ...COMPLETED_SALE_ORDER_STATUSES,
+  'CANCELED',
+] as const
+
+export function isSellerIncomeOrderStatus(status: string): boolean {
+  return (SELLER_INCOME_ORDER_STATUSES as readonly string[]).includes(status)
+}
+
 export const soldProductOrderItemFilter = {
   isRental: false,
   order: {

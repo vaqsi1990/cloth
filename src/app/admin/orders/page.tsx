@@ -16,6 +16,7 @@ import {
   getOrderItemProductName,
   getOrderItemVariantLabel,
 } from '@/lib/order-item-snapshot'
+import { getSaleItemFulfillmentLabel } from '@/lib/order-item-sale-status'
 
 interface OrderItem {
   id: number
@@ -159,13 +160,8 @@ const AdminOrdersPage = () => {
   const getTransferredSaleItems = (order: Order) =>
     order.items.filter((item) => !item.isRental && item.sellerMarkedTransferred)
 
-  const getItemFulfillmentLabel = (item: OrderItem): string | null => {
-    if (item.sellerMarkedTransferred) return 'გაცემული'
-    if (item.sellerCanceledItem) return 'გაუქმებული'
-    if (item.sellerReportedOutOfStock) return 'მარაგში არ მაქვს'
-    if (item.sellerReportedDamaged) return 'დაზიანებულია'
-    return null
-  }
+  const getItemFulfillmentLabel = (item: OrderItem): string | null =>
+    getSaleItemFulfillmentLabel(item)
 
   const updateOrderItemStatus = (
     orderId: number,
@@ -182,14 +178,6 @@ const AdminOrdersPage = () => {
               ),
             }
           : order,
-      ),
-    )
-  }
-
-  const handleOrderCanceledFromItem = (orderId: number) => {
-    setOrders((prev) =>
-      prev.map((order) =>
-        order.id === orderId ? { ...order, status: 'CANCELED' } : order,
       ),
     )
   }
@@ -743,6 +731,11 @@ const AdminOrdersPage = () => {
                                   </p>
                                 )}
                                 <p className="text-xs text-black mt-1">რაოდენობა: {item.quantity}</p>
+                                {!item.isRental && item.sellerCanceledAt && (
+                                  <p className="text-xs text-gray-600 mt-1">
+                                    გაუქმების თარიღი: {formatDate(item.sellerCanceledAt)}
+                                  </p>
+                                )}
                                 {!item.isRental && item.sellerMarkedTransferredAt && (
                                   <p className="text-xs text-gray-600 mt-1">
                                     გაცემის თარიღი: {formatDate(item.sellerMarkedTransferredAt)}
@@ -753,12 +746,10 @@ const AdminOrdersPage = () => {
                                     <OrderItemSaleStatusActions
                                       item={item}
                                       orderStatus={order.status}
-                                      orderId={order.id}
                                       variant="compact"
                                       onItemUpdate={(itemId, patch) =>
                                         updateOrderItemStatus(order.id, itemId, patch)
                                       }
-                                      onOrderCanceled={handleOrderCanceledFromItem}
                                     />
                                   </div>
                                 )}
