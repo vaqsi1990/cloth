@@ -9,13 +9,20 @@ import { ArrowLeft, Search, Filter, ShoppingCart, Package, User, MapPin, Phone, 
 import { showToast } from '@/utils/toast'
 import { markAdminSectionSeen } from '@/lib/admin-dashboard-seen'
 import OrderItemSaleStatusActions from '@/components/OrderItemSaleStatusActions'
+import {
+  getOrderItemAdminSummary,
+  getOrderItemProductName,
+  getOrderItemVariantLabel,
+} from '@/lib/order-item-snapshot'
 
 interface OrderItem {
   id: number
   productId?: number
   productName: string
   image?: string
-  size?: string
+  size?: string | null
+  color?: string | null
+  productSnapshot?: unknown
   quantity: number
   price: number
   sellerReportedOutOfStock?: boolean
@@ -146,6 +153,17 @@ const AdminOrdersPage = () => {
 
   const orderHasTransferredItems = (order: Order) =>
     order.items.some((item) => !item.isRental && item.sellerMarkedTransferred)
+
+  const getTransferredSaleItems = (order: Order) =>
+    order.items.filter((item) => !item.isRental && item.sellerMarkedTransferred)
+
+  const getItemFulfillmentLabel = (item: OrderItem): string | null => {
+    if (item.sellerMarkedTransferred) return 'გაცემული'
+    if (item.sellerCanceledItem) return 'გაუქმებული'
+    if (item.sellerReportedOutOfStock) return 'მარაგში არ მაქვს'
+    if (item.sellerReportedDamaged) return 'დაზიანებულია'
+    return null
+  }
 
   const updateOrderItemStatus = (
     orderId: number,
@@ -523,7 +541,7 @@ const AdminOrdersPage = () => {
                 onChange={(e) => setFilterTransferred(e.target.checked)}
                 className="rounded border-gray-300"
               />
-              <span className="text-sm text-black">გადაცემული შეკვეთები</span>
+              <span className="text-sm text-black">გაცემული ნივთები</span>
             </label>
           </div>
         </div>
@@ -585,8 +603,8 @@ const AdminOrdersPage = () => {
                         </span>
                       )}
                       {orderHasTransferredItems(order) && (
-                        <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap">
-                          გადაცემული
+                        <span className="bg-[#1B3729] text-white text-xs px-2 py-1 rounded-lg font-medium whitespace-nowrap">
+                          გაცემული ნივთი
                         </span>
                       )}
                       {/* Rental indicator */}
@@ -609,6 +627,34 @@ const AdminOrdersPage = () => {
                       </button>
                     </div>
                   </div>
+
+                  {getTransferredSaleItems(order).length > 0 && (
+                    <div className="mb-3 sm:mb-4 rounded-lg border border-gray-200 bg-gray-50 p-2 sm:p-3">
+                      <p className="text-xs sm:text-sm font-semibold text-black mb-2">
+                        გაცემული პროდუქტები და ვარიანტები:
+                      </p>
+                      <ul className="space-y-1.5">
+                        {getTransferredSaleItems(order).map((item) => (
+                          <li
+                            key={item.id}
+                            className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-black"
+                          >
+                            <span className="inline-flex items-center rounded-lg bg-[#1B3729] px-2 py-0.5 text-xs font-medium text-white">
+                              გაცემული
+                            </span>
+                            <span className="font-medium break-words">
+                              {getOrderItemAdminSummary(item)}
+                            </span>
+                            {item.sellerMarkedTransferredAt && (
+                              <span className="text-gray-600">
+                                ({formatDate(item.sellerMarkedTransferredAt)})
+                              </span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
                   {/* Order Details - Only show when expanded */}
                   {expandedOrders.has(order.id) && (
@@ -648,21 +694,58 @@ const AdminOrdersPage = () => {
                       <div className="mb-3 sm:mb-4">
                         <h2 className="font-medium text-sm sm:text-base text-black mb-2">შეკვეთის პროდუქტები:</h2>
                         <div className="space-y-2">
-                          {order.items.map((item) => (
-                            <div key={item.id} className={`flex items-start sm:items-center gap-2 sm:gap-3 p-2 rounded-lg ${item.isRental ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50'}`}>
+                          {order.items.map((item) => {
+                            const productName = getOrderItemProductName(item)
+                            const variantLabel = getOrderItemVariantLabel(item)
+                            const fulfillmentLabel = getItemFulfillmentLabel(item)
+
+                            return (
+                            <div
+                              key={item.id}
+                              className={`flex items-start sm:items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg border ${
+                                item.isRental
+                                  ? 'bg-blue-50 border-blue-200'
+                                  : item.sellerMarkedTransferred
+                                    ? 'bg-white border-[#1B3729]/30'
+                                    : 'bg-gray-50 border-gray-200'
+                              }`}
+                            >
                               <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded flex items-center justify-center flex-shrink-0 ${item.isRental ? 'bg-blue-200' : 'bg-gray-200'}`}>
                                 <Package className={`w-3 h-3 sm:w-4 sm:h-4 ${item.isRental ? 'text-blue-600' : 'text-black'}`} />
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex flex-wrap items-center gap-2">
-                                  <p className="text-xs sm:text-sm font-medium text-black break-words">{item.product?.name || item.productName || 'პროდუქტი ვერ მოიძებნა'}</p>
+                                  <p className="text-xs sm:text-sm font-semibold text-black break-words">
+                                    {productName}
+                                  </p>
                                   {item.isRental && (
                                     <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full whitespace-nowrap">
                                       ქირაობა
                                     </span>
                                   )}
+                                  {!item.isRental && fulfillmentLabel && (
+                                    <span
+                                      className={`text-xs px-2 py-0.5 rounded-lg font-medium whitespace-nowrap ${
+                                        item.sellerMarkedTransferred
+                                          ? 'bg-[#1B3729] text-white'
+                                          : 'bg-gray-100 text-black border border-gray-300'
+                                      }`}
+                                    >
+                                      {fulfillmentLabel}
+                                    </span>
+                                  )}
                                 </div>
-                                <p className="text-xs text-black">რაოდენობა: {item.quantity}</p>
+                                {!item.isRental && variantLabel && (
+                                  <p className="text-xs sm:text-sm text-black mt-1">
+                                    <span className="font-medium">ვარიანტი:</span> {variantLabel}
+                                  </p>
+                                )}
+                                <p className="text-xs text-black mt-1">რაოდენობა: {item.quantity}</p>
+                                {!item.isRental && item.sellerMarkedTransferredAt && (
+                                  <p className="text-xs text-gray-600 mt-1">
+                                    გაცემის თარიღი: {formatDate(item.sellerMarkedTransferredAt)}
+                                  </p>
+                                )}
                                 {!item.isRental && (
                                   <div className="mt-2">
                                     <OrderItemSaleStatusActions
@@ -687,7 +770,8 @@ const AdminOrdersPage = () => {
                               </div>
                               <span className="text-xs sm:text-sm font-medium text-black whitespace-nowrap flex-shrink-0">₾{item.price}</span>
                             </div>
-                          ))}
+                            )
+                          })}
                         </div>
                       </div>
 

@@ -55,11 +55,14 @@ export default function OrderItemSaleStatusActions({
 
   const isCompact = variant === 'compact'
   const badgeClass = isCompact
-    ? 'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap'
-    : 'inline-flex items-center rounded-lg px-3 py-2 text-[15px] font-medium'
-  const buttonClass = isCompact
-    ? 'inline-flex items-center rounded px-2 py-1 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-50'
-    : 'inline-flex items-center rounded-lg px-3 py-2 text-[15px] font-medium transition disabled:cursor-not-allowed disabled:opacity-50'
+    ? 'inline-flex items-center rounded-lg px-2 py-1 text-xs font-medium whitespace-nowrap'
+    : 'inline-flex items-center rounded-lg px-3 py-1.5 text-[15px] font-medium'
+  const primaryButtonClass = isCompact
+    ? 'inline-flex items-center rounded-lg px-2 py-1 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 bg-[#1B3729] text-white hover:bg-[#164321]'
+    : 'inline-flex items-center rounded-lg px-3 py-1.5 text-[15px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 bg-[#1B3729] text-white hover:bg-[#164321]'
+  const secondaryButtonClass = isCompact
+    ? 'inline-flex items-center rounded-lg px-2 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 border border-gray-300 bg-white text-black hover:bg-gray-50 hover:border-black'
+    : 'inline-flex items-center rounded-lg px-3 py-1.5 text-[15px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 border border-gray-300 bg-white text-black hover:bg-gray-50 hover:border-black'
 
   const handleMarkTransferred = async () => {
     try {
@@ -135,7 +138,7 @@ export default function OrderItemSaleStatusActions({
 
   if (item.sellerMarkedTransferred) {
     return (
-      <span className={`${badgeClass} border border-green-300 bg-green-50 text-green-800`}>
+      <span className={`${badgeClass} bg-[#1B3729] text-white`}>
         გაცემული
       </span>
     )
@@ -143,7 +146,7 @@ export default function OrderItemSaleStatusActions({
 
   if (item.sellerCanceledItem) {
     return (
-      <span className={`${badgeClass} border border-red-300 bg-red-50 text-red-700`}>
+      <span className={`${badgeClass} bg-gray-100 text-black border border-gray-300`}>
         გაუქმებული
       </span>
     )
@@ -151,9 +154,7 @@ export default function OrderItemSaleStatusActions({
 
   if (item.sellerReportedOutOfStock) {
     return (
-      <span
-        className={`${badgeClass} border border-amber-300 bg-amber-50 text-amber-800`}
-      >
+      <span className={`${badgeClass} bg-gray-100 text-black border border-gray-300`}>
         მარაგში არ მაქვს
       </span>
     )
@@ -161,9 +162,7 @@ export default function OrderItemSaleStatusActions({
 
   if (item.sellerReportedDamaged) {
     return (
-      <span
-        className={`${badgeClass} border border-orange-300 bg-orange-50 text-orange-800`}
-      >
+      <span className={`${badgeClass} bg-gray-100 text-black border border-gray-300`}>
         დაზიანებულია
       </span>
     )
@@ -176,7 +175,7 @@ export default function OrderItemSaleStatusActions({
           type="button"
           onClick={() => setConfirmAction('transfer')}
           disabled={markingTransferredItemId === item.id}
-          className={`${buttonClass} border border-green-300 bg-green-50 text-green-800 hover:bg-green-100`}
+          className={primaryButtonClass}
         >
           {markingTransferredItemId === item.id ? 'ინახება...' : 'გაცემული'}
         </button>
@@ -184,7 +183,7 @@ export default function OrderItemSaleStatusActions({
           type="button"
           onClick={() => setConfirmAction('cancel')}
           disabled={cancelingItemId === item.id}
-          className={`${buttonClass} border border-red-300 bg-red-50 text-red-700 hover:bg-red-100`}
+          className={secondaryButtonClass}
         >
           {cancelingItemId === item.id ? 'იუქმდება...' : 'გაუქმება'}
         </button>
@@ -194,7 +193,7 @@ export default function OrderItemSaleStatusActions({
               type="button"
               onClick={() => onReportOutOfStock(item.id)}
               disabled={reportingOutOfStockItemId === item.id}
-              className={`${buttonClass} border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100`}
+              className={secondaryButtonClass}
             >
               {reportingOutOfStockItemId === item.id
                 ? 'იგზავნება...'
@@ -204,7 +203,7 @@ export default function OrderItemSaleStatusActions({
               type="button"
               onClick={() => onReportDamaged(item.id)}
               disabled={reportingDamagedItemId === item.id}
-              className={`${buttonClass} border border-orange-300 bg-orange-50 text-orange-800 hover:bg-orange-100`}
+              className={secondaryButtonClass}
             >
               {reportingDamagedItemId === item.id
                 ? 'იგზავნება...'

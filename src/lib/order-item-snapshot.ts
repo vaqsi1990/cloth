@@ -139,3 +139,46 @@ export function formatSnapshotGender(gender: Gender | null): string | null {
       return null
   }
 }
+
+type OrderItemVariantSource = {
+  productName?: string
+  size?: string | null
+  color?: string | null
+  productSnapshot?: Prisma.JsonValue | null
+  product?: { name?: string } | null
+}
+
+export function getOrderItemProductName(item: OrderItemVariantSource): string {
+  const snapshot = parseOrderItemProductSnapshot(item.productSnapshot)
+  return (
+    snapshot?.name ||
+    item.product?.name ||
+    item.productName ||
+    'პროდუქტი'
+  )
+}
+
+export function getOrderItemVariantLabel(item: OrderItemVariantSource): string | null {
+  const snapshot = parseOrderItemProductSnapshot(item.productSnapshot)
+  const size = snapshot?.size ?? item.size
+  const color = snapshot?.color ?? item.color
+  const sizeSystem = snapshot?.sizeSystem ?? null
+
+  const parts: string[] = []
+  if (size) {
+    parts.push(
+      sizeSystem ? `ზომა: ${size} (${sizeSystem})` : `ზომა: ${size}`,
+    )
+  }
+  if (color) {
+    parts.push(`ფერი: ${color}`)
+  }
+
+  return parts.length > 0 ? parts.join(' · ') : null
+}
+
+export function getOrderItemAdminSummary(item: OrderItemVariantSource): string {
+  const name = getOrderItemProductName(item)
+  const variant = getOrderItemVariantLabel(item)
+  return variant ? `${name} — ${variant}` : name
+}
