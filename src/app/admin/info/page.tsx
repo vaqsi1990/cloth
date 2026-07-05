@@ -12,6 +12,9 @@ import {
   getDeliverySpeedLabel,
 } from '@/lib/delivery'
 import { markAdminSectionSeen } from '@/lib/admin-dashboard-seen'
+import OrderItemSaleStatusDropdown from '@/components/OrderItemSaleStatusDropdown'
+import type { OrderItemSaleStatusFields } from '@/components/OrderItemSaleStatusActions'
+import { getSaleItemFulfillmentLabel } from '@/lib/order-item-sale-status'
 
 interface OrderItemProduct {
   id: number
@@ -37,6 +40,12 @@ interface AdminOrderItem {
   rentalStartDate?: string | null
   rentalEndDate?: string | null
   rentalDays?: number | null
+  sellerMarkedTransferred?: boolean
+  sellerMarkedTransferredAt?: string | null
+  sellerCanceledItem?: boolean
+  sellerCanceledAt?: string | null
+  sellerReportedOutOfStock?: boolean
+  sellerReportedDamaged?: boolean
   product?: OrderItemProduct | null
 }
 
@@ -69,6 +78,7 @@ interface AdminOrder {
 interface OrderInfoRow {
   id: number
   orderId: number
+  orderStatus: string
   orderType: 'RENTAL' | 'PURCHASE'
   customerName: string
   email: string
@@ -79,6 +89,7 @@ interface OrderInfoRow {
   sellerName: string
   sellerPhone: string
   productsLabel: string
+  purchaseItems: AdminOrderItem[]
   rentalPeriod: string
   deliveryLabel: string
   total: number
@@ -205,10 +216,11 @@ function transformOrdersToRows(orders: AdminOrder[]): OrderInfoRow[] {
   const rows: OrderInfoRow[] = []
 
   orders.forEach((order) => {
-    if (order.status !== 'PAID') return
+    if (order.status !== 'PAID' && order.status !== 'SHIPPED') return
 
     const hasRental = order.items.some((item) => item.isRental)
-    const hasPurchase = order.items.some((item) => !item.isRental)
+    const purchaseItems = order.items.filter((item) => !item.isRental)
+    const hasPurchase = purchaseItems.length > 0
     const buyerAddress = buildBuyerAddress(order)
     const pickupAddress = buildSellerPickupAddress(order)
     const objectAddress = buildObjectAddress(order)
@@ -218,6 +230,7 @@ function transformOrdersToRows(orders: AdminOrder[]): OrderInfoRow[] {
 
     const base = {
       orderId: order.id,
+      orderStatus: order.status,
       customerName: order.customerName || order.user?.name || 'უცნობი',
       email: order.email || order.user?.email || '-',
       phone: order.phone || '-',
@@ -240,6 +253,7 @@ function transformOrdersToRows(orders: AdminOrder[]): OrderInfoRow[] {
         id: order.id * 10 + 1,
         orderType: 'RENTAL',
         productsLabel: buildProductsLabel(order.items, true),
+        purchaseItems: [],
         rentalPeriod: buildRentalPeriod(order.items),
       })
     }
@@ -250,6 +264,7 @@ function transformOrdersToRows(orders: AdminOrder[]): OrderInfoRow[] {
         id: order.id * 10 + 2,
         orderType: 'PURCHASE',
         productsLabel: buildProductsLabel(order.items, false),
+        purchaseItems,
         rentalPeriod: '-',
       })
     }
@@ -275,7 +290,13 @@ function DetailItem({
   )
 }
 
-function OrderDetailsPanel({ row }: { row: OrderInfoRow }) {
+function OrderDetailsPanel({
+  row,
+  onItemUpdate,
+}: {
+  row: OrderInfoRow
+  onItemUpdate: (orderId: number, itemId: number, patch: Partial<OrderItemSaleStatusFields>) => void
+}) {
   return (
     <div className="px-4 sm:px-6 py-5 border-t border-[#1B3729]/20 bg-[#1B3729]/5">
       <div className="mb-4">
@@ -290,6 +311,54 @@ function OrderDetailsPanel({ row }: { row: OrderInfoRow }) {
         </div>
 
         <DetailItem label="პროდუქტები" value={row.productsLabel} />
+
+        {row.orderType === 'PURCHASE' && row.purchaseItems.length > 0 && (
+          <div className="rounded-xl border border-gray-100 bg-white p-4 space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              ყიდვის ნივთების სტატუსი
+            </p>
+            {row.purchaseItems.map((item) => {
+              const fulfillmentLabel = getSaleItemFulfillmentLabel(item)
+              const productName = item.product?.name || item.productName
+              const sizeLabel = item.size ? ` (${item.size})` : ''
+
+              return (
+                <div
+                  key={item.id}
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-black break-words">
+                      {productName}
+                      {sizeLabel}
+                      {item.quantity > 1 ? ` ×${item.quantity}` : ''}
+                    </p>
+                    {fulfillmentLabel && (
+                      <p className="text-xs text-gray-600 mt-1">
+                        მიმდინარე სტატუსი: {fulfillmentLabel}
+                      </p>
+                    )}
+                  </div>
+                  <OrderItemSaleStatusDropdown
+                    item={{
+                      id: item.id,
+                      isRental: item.isRental,
+                      sellerMarkedTransferred: item.sellerMarkedTransferred,
+                      sellerMarkedTransferredAt: item.sellerMarkedTransferredAt,
+                      sellerCanceledItem: item.sellerCanceledItem,
+                      sellerCanceledAt: item.sellerCanceledAt,
+                      sellerReportedOutOfStock: item.sellerReportedOutOfStock,
+                      sellerReportedDamaged: item.sellerReportedDamaged,
+                    }}
+                    orderStatus={row.orderStatus}
+                    variant="compact"
+                    onItemUpdate={(itemId, patch) => onItemUpdate(row.orderId, itemId, patch)}
+                  />
+                </div>
+              )
+            })}
+          </div>
+        )}
 
         {row.orderType === 'RENTAL' && row.rentalPeriod !== '-' && (
           <DetailItem label="ქირაობის პერიოდი" value={row.rentalPeriod} />
@@ -323,7 +392,7 @@ function OrderDetailsPanel({ row }: { row: OrderInfoRow }) {
 const AdminInfoPage = () => {
   const { data: session, status } = useSession()
   const router = useRouter()
-  const [orderRows, setOrderRows] = useState<OrderInfoRow[]>([])
+  const [orders, setOrders] = useState<AdminOrder[]>([])
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
   const [filter, setFilter] = useState<'ALL' | 'RENTAL' | 'PURCHASE'>('ALL')
@@ -334,13 +403,34 @@ const AdminInfoPage = () => {
     setExpandedRowId((current) => (current === rowId ? null : rowId))
   }
 
+  const orderRows = React.useMemo(() => transformOrdersToRows(orders), [orders])
+
+  const updateOrderItem = (
+    orderId: number,
+    itemId: number,
+    patch: Partial<OrderItemSaleStatusFields>,
+  ) => {
+    setOrders((prev) =>
+      prev.map((order) =>
+        order.id === orderId
+          ? {
+              ...order,
+              items: order.items.map((item) =>
+                item.id === itemId ? { ...item, ...patch } : item,
+              ),
+            }
+          : order,
+      ),
+    )
+  }
+
   const loadOrders = useCallback(async () => {
     if (status !== 'authenticated' || session?.user?.role !== 'ADMIN') return
 
     try {
       setLoading(true)
-      const orders = await fetchAllAdminOrders()
-      setOrderRows(transformOrdersToRows(orders))
+      const fetchedOrders = await fetchAllAdminOrders()
+      setOrders(fetchedOrders)
     } catch (error) {
       console.error('Error fetching delivery users:', error)
     } finally {
@@ -590,13 +680,14 @@ const AdminInfoPage = () => {
                   <th className="px-3 sm:px-4 py-3 text-left text-sm font-semibold text-black whitespace-nowrap">თარიღი</th>
                   <th className="px-3 sm:px-4 py-3 text-left text-sm font-semibold text-black whitespace-nowrap min-w-[140px]">მყიდველი</th>
                   <th className="px-3 sm:px-4 py-3 text-left text-sm font-semibold text-black whitespace-nowrap min-w-[180px]">პროდუქტები</th>
+                  <th className="px-3 sm:px-4 py-3 text-left text-sm font-semibold text-black whitespace-nowrap min-w-[140px]">სტატუსი</th>
                   <th className="px-3 sm:px-4 py-3 text-left text-sm font-semibold text-black whitespace-nowrap">დეტალები</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-100">
                 {filteredRows.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-gray-500 md:text-[18px] text-[16px]">
+                    <td colSpan={8} className="px-4 py-8 text-center text-gray-500 md:text-[18px] text-[16px]">
                       არ არის მონაცემები
                     </td>
                   </tr>
@@ -667,6 +758,34 @@ const AdminInfoPage = () => {
                             {row.productsLabel}
                           </td>
                           <td className="px-3 sm:px-4 py-3">
+                            {row.orderType === 'PURCHASE' ? (
+                              <div className="flex flex-col gap-2 min-w-[120px]">
+                                {row.purchaseItems.map((item) => (
+                                  <OrderItemSaleStatusDropdown
+                                    key={item.id}
+                                    item={{
+                                      id: item.id,
+                                      isRental: item.isRental,
+                                      sellerMarkedTransferred: item.sellerMarkedTransferred,
+                                      sellerMarkedTransferredAt: item.sellerMarkedTransferredAt,
+                                      sellerCanceledItem: item.sellerCanceledItem,
+                                      sellerCanceledAt: item.sellerCanceledAt,
+                                      sellerReportedOutOfStock: item.sellerReportedOutOfStock,
+                                      sellerReportedDamaged: item.sellerReportedDamaged,
+                                    }}
+                                    orderStatus={row.orderStatus}
+                                    variant="compact"
+                                    onItemUpdate={(itemId, patch) =>
+                                      updateOrderItem(row.orderId, itemId, patch)
+                                    }
+                                  />
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-gray-500">—</span>
+                            )}
+                          </td>
+                          <td className="px-3 sm:px-4 py-3">
                             <button
                               type="button"
                               onClick={() => toggleRowDetails(row.id)}
@@ -683,8 +802,8 @@ const AdminInfoPage = () => {
                         </tr>
                         {isExpanded && (
                           <tr>
-                            <td colSpan={7} className="p-0">
-                              <OrderDetailsPanel row={row} />
+                            <td colSpan={8} className="p-0">
+                              <OrderDetailsPanel row={row} onItemUpdate={updateOrderItem} />
                             </td>
                           </tr>
                         )}

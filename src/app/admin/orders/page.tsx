@@ -8,9 +8,8 @@ import Link from 'next/link'
 import { ArrowLeft, Search, Filter, ShoppingCart, Package, User, MapPin, Phone, Mail, CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
 import { showToast } from '@/utils/toast'
 import { markAdminSectionSeen } from '@/lib/admin-dashboard-seen'
-import OrderItemSaleStatusActions, {
-  type OrderItemSaleStatusFields,
-} from '@/components/OrderItemSaleStatusActions'
+import OrderItemSaleStatusDropdown from '@/components/OrderItemSaleStatusDropdown'
+import type { OrderItemSaleStatusFields } from '@/components/OrderItemSaleStatusActions'
 import {
   getOrderItemAdminSummary,
   getOrderItemProductName,
@@ -743,7 +742,7 @@ const AdminOrdersPage = () => {
                                 )}
                                 {!item.isRental && (
                                   <div className="mt-2">
-                                    <OrderItemSaleStatusActions
+                                    <OrderItemSaleStatusDropdown
                                       item={item}
                                       orderStatus={order.status}
                                       variant="compact"
