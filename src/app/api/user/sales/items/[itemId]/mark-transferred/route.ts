@@ -4,7 +4,6 @@ import { prisma } from '@/lib/prisma'
 import { requireOrderItemStatusAccess } from '@/lib/order-item-status-access'
 import {
   buildOrderItemFulfillmentUpdate,
-  ORDER_ITEM_RETURNED_STATUS_LABEL,
 } from '@/lib/order-item-fulfillment-status'
 
 const bodySchema = z.object({
@@ -57,7 +56,7 @@ export async function PATCH(
       return NextResponse.json(
         {
           success: false,
-          message: `${ORDER_ITEM_RETURNED_STATUS_LABEL}-ის შემდეგ გაცემა ვერ მოხდება`,
+          message: 'დაბრუნებული ნივთის გაცემა ვერ მოხდება',
         },
         { status: 400 },
       )

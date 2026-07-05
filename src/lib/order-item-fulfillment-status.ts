@@ -1,7 +1,7 @@
 import type { OrderItemSaleStatusFields } from '@/components/OrderItemSaleStatusActions'
 
 /** UI label for sellerCanceledItem — not OrderStatus.CANCELED / REFUNDED. */
-export const ORDER_ITEM_RETURNED_STATUS_LABEL = 'უკან დაბრუნება'
+export const ORDER_ITEM_RETURNED_STATUS_LABEL = 'უკან დაბრუნებული'
 
 export const ORDER_ITEM_RETURNED_AT_LABEL = 'დაბრუნების თარიღი'
 
@@ -20,7 +20,7 @@ export const ORDER_ITEM_FULFILLMENT_STATUS_LABELS: Record<
 /**
  * Maps OrderItem DB fields to UI status:
  * - sellerMarkedTransferred → გაცემული
- * - sellerCanceledItem → უკან დაბრუნება
+ * - sellerCanceledItem → უკან დაბრუნებული
  * - both false → მოლოდინში
  *
  * Not related to RentalInquiryStatus.CANCELLED or OrderStatus.CANCELED/REFUNDED.

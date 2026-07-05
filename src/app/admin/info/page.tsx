@@ -595,7 +595,7 @@ const AdminInfoPage = () => {
             >
               <ArrowLeft className="w-5 h-5 sm:w-7 sm:h-7 font-bold" />
               <span className="text-sm sm:text-base md:text-lg lg:text-[20px] font-bold text-black">
-                უკან დაბრუნება
+                უკან დაბრუნებული
               </span>
             </button>
             <Link

@@ -263,7 +263,7 @@ export default function OrderItemSaleStatusActions({
         open={confirmAction !== null}
         message={
           confirmAction === 'cancel'
-            ? `დარწმუნებული ხართ რომ ${ORDER_ITEM_RETURNED_STATUS_LABEL} გსურთ?`
+            ? 'დარწმუნებული ხართ, რომ ნივთი უკან დაბრუნდეს?'
             : 'დაადასტურეთ რომ ნამდვილად გადაეცით პროდუქტი'
         }
         confirmLabel="კი"

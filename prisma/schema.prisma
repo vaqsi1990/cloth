@@ -555,7 +555,7 @@ model OrderItem {
   /// გაცემული (UI: გაცემული) — seller/admin მიერ შეცვლილი სტატუსი
   sellerMarkedTransferred  Boolean  @default(false)
   sellerMarkedTransferredAt DateTime?
-  /// უკან დაბრუნება (UI: უკან დაბრუნება) — seller/admin მიერ შეცვლილი სტატუსი; არა OrderStatus.CANCELED/REFUNDED
+  /// უკან დაბრუნებული (UI: უკან დაბრუნებული) — seller/admin მიერ შეცვლილი სტატუსი; არა OrderStatus.CANCELED/REFUNDED
   sellerCanceledItem       Boolean  @default(false)
   sellerCanceledAt         DateTime?
   
