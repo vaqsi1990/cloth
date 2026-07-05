@@ -7,7 +7,9 @@ import { formatDate } from '@/utils/dateUtils'
 import Link from 'next/link'
 import { ArrowLeft, Search, Filter, ShoppingCart, Package, User, MapPin, Phone, Mail, CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
 import { showToast } from '@/utils/toast'
-import OrderItemSaleStatusActions from '@/components/OrderItemSaleStatusActions'
+import OrderItemSaleStatusActions, {
+  type OrderItemSaleStatusFields,
+} from '@/components/OrderItemSaleStatusActions'
 
 interface OrderItem {
   id: number
@@ -24,7 +26,7 @@ interface OrderItem {
   sellerCanceledItem?: boolean
   sellerCanceledAt?: string | null
   // Rental fields
-  isRental?: boolean
+  isRental?: boolean | null
   rentalStartDate?: string
   rentalEndDate?: string
   rentalDays?: number
@@ -125,7 +127,7 @@ const SupportOrdersPage = () => {
   const updateOrderItemStatus = (
     orderId: number,
     itemId: number,
-    patch: Partial<OrderItem>,
+    patch: Partial<OrderItemSaleStatusFields>,
   ) => {
     setOrders((prev) =>
       prev.map((order) =>

@@ -8,7 +8,9 @@ import Link from 'next/link'
 import { ArrowLeft, Search, Filter, ShoppingCart, Package, User, MapPin, Phone, Mail, CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
 import { showToast } from '@/utils/toast'
 import { markAdminSectionSeen } from '@/lib/admin-dashboard-seen'
-import OrderItemSaleStatusActions from '@/components/OrderItemSaleStatusActions'
+import OrderItemSaleStatusActions, {
+  type OrderItemSaleStatusFields,
+} from '@/components/OrderItemSaleStatusActions'
 import {
   getOrderItemAdminSummary,
   getOrderItemProductName,
@@ -33,7 +35,7 @@ interface OrderItem {
   sellerCanceledItem?: boolean
   sellerCanceledAt?: string | null
   // Rental fields
-  isRental?: boolean
+  isRental?: boolean | null
   rentalStartDate?: string
   rentalEndDate?: string
   rentalDays?: number
@@ -168,7 +170,7 @@ const AdminOrdersPage = () => {
   const updateOrderItemStatus = (
     orderId: number,
     itemId: number,
-    patch: Partial<OrderItem>,
+    patch: Partial<OrderItemSaleStatusFields>,
   ) => {
     setOrders((prev) =>
       prev.map((order) =>

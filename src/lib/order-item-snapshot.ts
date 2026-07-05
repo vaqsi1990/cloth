@@ -60,7 +60,7 @@ export function buildOrderItemProductSnapshot(input: {
 }
 
 export function parseOrderItemProductSnapshot(
-  value: Prisma.JsonValue | null | undefined,
+  value: unknown,
 ): OrderItemProductSnapshot | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return null
@@ -144,7 +144,7 @@ type OrderItemVariantSource = {
   productName?: string
   size?: string | null
   color?: string | null
-  productSnapshot?: Prisma.JsonValue | null
+  productSnapshot?: unknown
   product?: { name?: string } | null
 }
 
