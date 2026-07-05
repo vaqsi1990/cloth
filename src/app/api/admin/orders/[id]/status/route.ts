@@ -87,12 +87,6 @@ export async function PUT(
       await recordSellerTransactions(orderId)
     }
 
-    if (status === 'CANCELED' && previousStatus !== 'CANCELED') {
-      await prisma.transaction.deleteMany({
-        where: { orderId, type: 'SALE' },
-      })
-    }
-
     if (shouldRestoreStockOnCancel(previousStatus, status)) {
       await restoreOrderSaleItems(orderId)
     } else if (status === 'CANCELED' && previousStatus !== 'CANCELED') {

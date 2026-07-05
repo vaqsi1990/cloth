@@ -54,10 +54,6 @@ export async function cancelSaleOrder(
       where: { id: orderId },
       data: { status: 'CANCELED', updatedAt: new Date() },
     })
-
-    await tx.transaction.deleteMany({
-      where: { orderId, type: 'SALE' },
-    })
   })
 
   await finalizeCanceledSaleProducts(orderId)

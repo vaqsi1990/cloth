@@ -117,8 +117,9 @@ function mapSellerOrder(
     (sum, item) => sum + item.sellerLineTotal,
     0,
   )
+  const transactionTotal = transactionTotalByOrderId.get(order.id) ?? 0
   const sellerTotal =
-    transactionTotalByOrderId.get(order.id) ?? computedSellerTotal
+    computedSellerTotal > 0 ? computedSellerTotal : transactionTotal
 
   return {
     ...order,
