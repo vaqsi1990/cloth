@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { ArrowLeft, Search, Filter, ShoppingCart, Package, User, MapPin, Phone, Mail, CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
 import { showToast } from '@/utils/toast'
 import { markAdminSectionSeen } from '@/lib/admin-dashboard-seen'
+import OrderItemSaleStatusActions from '@/components/OrderItemSaleStatusActions'
 
 interface OrderItem {
   id: number
@@ -22,6 +23,8 @@ interface OrderItem {
   sellerReportedAt?: string | null
   sellerMarkedTransferred?: boolean
   sellerMarkedTransferredAt?: string | null
+  sellerCanceledItem?: boolean
+  sellerCanceledAt?: string | null
   // Rental fields
   isRental?: boolean
   rentalStartDate?: string
@@ -143,6 +146,33 @@ const AdminOrdersPage = () => {
 
   const orderHasTransferredItems = (order: Order) =>
     order.items.some((item) => !item.isRental && item.sellerMarkedTransferred)
+
+  const updateOrderItemStatus = (
+    orderId: number,
+    itemId: number,
+    patch: Partial<OrderItem>,
+  ) => {
+    setOrders((prev) =>
+      prev.map((order) =>
+        order.id === orderId
+          ? {
+              ...order,
+              items: order.items.map((item) =>
+                item.id === itemId ? { ...item, ...patch } : item,
+              ),
+            }
+          : order,
+      ),
+    )
+  }
+
+  const handleOrderCanceledFromItem = (orderId: number) => {
+    setOrders((prev) =>
+      prev.map((order) =>
+        order.id === orderId ? { ...order, status: 'CANCELED' } : order,
+      ),
+    )
+  }
 
   const handleCancelOutOfStock = async (orderId: number) => {
     if (
@@ -631,23 +661,22 @@ const AdminOrdersPage = () => {
                                       ქირაობა
                                     </span>
                                   )}
-                                  {!item.isRental && item.sellerMarkedTransferred && (
-                                    <span className="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full whitespace-nowrap font-medium">
-                                      გადაცემული შეკვეთა
-                                    </span>
-                                  )}
-                                  {!item.isRental && item.sellerReportedOutOfStock && (
-                                    <span className="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full whitespace-nowrap font-medium">
-                                      ნივთი არაა მარაგში
-                                    </span>
-                                  )}
-                                  {!item.isRental && item.sellerReportedDamaged && (
-                                    <span className="bg-orange-100 text-orange-800 text-xs px-2 py-0.5 rounded-full whitespace-nowrap font-medium">
-                                      დაზიანებული
-                                    </span>
-                                  )}
                                 </div>
                                 <p className="text-xs text-black">რაოდენობა: {item.quantity}</p>
+                                {!item.isRental && (
+                                  <div className="mt-2">
+                                    <OrderItemSaleStatusActions
+                                      item={item}
+                                      orderStatus={order.status}
+                                      orderId={order.id}
+                                      variant="compact"
+                                      onItemUpdate={(itemId, patch) =>
+                                        updateOrderItemStatus(order.id, itemId, patch)
+                                      }
+                                      onOrderCanceled={handleOrderCanceledFromItem}
+                                    />
+                                  </div>
+                                )}
                                 {/* Show rental information if it's a rental item */}
                                 {item.isRental && item.rentalStartDate && item.rentalEndDate && (
                                   <div className="text-xs text-blue-600 mt-1 space-y-1">

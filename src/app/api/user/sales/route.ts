@@ -51,6 +51,8 @@ type SellerOrderRecord = Prisma.OrderGetPayload<{
 type SellerOrderItemRecord = SellerOrderRecord['items'][number] & {
   sellerReportedDamaged?: boolean
   sellerReportedDamagedAt?: Date | null
+  sellerCanceledItem?: boolean
+  sellerCanceledAt?: Date | null
 }
 
 function readDamagedReport(item: SellerOrderItemRecord) {
@@ -91,6 +93,8 @@ function mapSaleItem(item: SellerOrderItemRecord) {
     sellerReportedDamagedAt: damagedReport.sellerReportedDamagedAt,
     sellerMarkedTransferred: item.sellerMarkedTransferred,
     sellerMarkedTransferredAt: item.sellerMarkedTransferredAt,
+    sellerCanceledItem: item.sellerCanceledItem ?? false,
+    sellerCanceledAt: item.sellerCanceledAt ?? null,
   }
 }
 

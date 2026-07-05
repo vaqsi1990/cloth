@@ -7,6 +7,7 @@ import { formatDate } from '@/utils/dateUtils'
 import Link from 'next/link'
 import { ArrowLeft, Search, Filter, ShoppingCart, Package, User, MapPin, Phone, Mail, CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
 import { showToast } from '@/utils/toast'
+import OrderItemSaleStatusActions from '@/components/OrderItemSaleStatusActions'
 
 interface OrderItem {
   id: number
@@ -16,6 +17,12 @@ interface OrderItem {
   size?: string
   quantity: number
   price: number
+  sellerReportedOutOfStock?: boolean
+  sellerReportedDamaged?: boolean
+  sellerMarkedTransferred?: boolean
+  sellerMarkedTransferredAt?: string | null
+  sellerCanceledItem?: boolean
+  sellerCanceledAt?: string | null
   // Rental fields
   isRental?: boolean
   rentalStartDate?: string
@@ -114,6 +121,33 @@ const SupportOrdersPage = () => {
       fetchOrders()
     }
   }, [status, session?.user?.role, fetchOrders])
+
+  const updateOrderItemStatus = (
+    orderId: number,
+    itemId: number,
+    patch: Partial<OrderItem>,
+  ) => {
+    setOrders((prev) =>
+      prev.map((order) =>
+        order.id === orderId
+          ? {
+              ...order,
+              items: order.items.map((item) =>
+                item.id === itemId ? { ...item, ...patch } : item,
+              ),
+            }
+          : order,
+      ),
+    )
+  }
+
+  const handleOrderCanceledFromItem = (orderId: number) => {
+    setOrders((prev) =>
+      prev.map((order) =>
+        order.id === orderId ? { ...order, status: 'CANCELED' } : order,
+      ),
+    )
+  }
 
   const handleCapturePaymentHold = async (orderId: number) => {
     if (
@@ -537,6 +571,20 @@ const SupportOrdersPage = () => {
                                   )}
                                 </div>
                                 <p className="text-xs text-black">რაოდენობა: {item.quantity}</p>
+                                {!item.isRental && (
+                                  <div className="mt-2">
+                                    <OrderItemSaleStatusActions
+                                      item={item}
+                                      orderStatus={order.status}
+                                      orderId={order.id}
+                                      variant="compact"
+                                      onItemUpdate={(itemId, patch) =>
+                                        updateOrderItemStatus(order.id, itemId, patch)
+                                      }
+                                      onOrderCanceled={handleOrderCanceledFromItem}
+                                    />
+                                  </div>
+                                )}
                                 {/* Show rental information if it's a rental item */}
                                 {item.isRental && item.rentalStartDate && item.rentalEndDate && (
                                   <div className="text-xs text-blue-600 mt-1 space-y-1">

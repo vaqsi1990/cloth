@@ -554,6 +554,8 @@ model OrderItem {
   sellerReportedDamagedAt  DateTime?
   sellerMarkedTransferred  Boolean  @default(false)
   sellerMarkedTransferredAt DateTime?
+  sellerCanceledItem       Boolean  @default(false)
+  sellerCanceledAt         DateTime?
   
   // Rental fields
   isRental        Boolean?

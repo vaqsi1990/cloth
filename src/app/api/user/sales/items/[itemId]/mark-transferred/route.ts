@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
-import { requireSellerOrderItemAccess } from '@/lib/seller-order-item-access'
+import { requireOrderItemStatusAccess } from '@/lib/order-item-status-access'
 
 const bodySchema = z.object({
   transferred: z.boolean(),
@@ -21,7 +21,7 @@ export async function PATCH(
       )
     }
 
-    const access = await requireSellerOrderItemAccess(itemId)
+    const access = await requireOrderItemStatusAccess(itemId)
     if (!access.ok) {
       return NextResponse.json(
         { success: false, message: access.message },
@@ -35,7 +35,35 @@ export async function PATCH(
       return NextResponse.json(
         {
           success: false,
-          message: 'მარაგში არ მაქვს-ის მონიშვნის შემდეგ გადაცემა ვერ მოხდება',
+          message: 'მარაგში არ მაქვს-ის მონიშვნის შემდეგ გაცემა ვერ მოხდება',
+        },
+        { status: 400 },
+      )
+    }
+
+    const currentItem = await prisma.orderItem.findUnique({
+      where: { id: itemId },
+      select: {
+        sellerCanceledItem: true,
+        sellerReportedDamaged: true,
+      },
+    })
+
+    if (body.transferred && currentItem?.sellerCanceledItem) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'გაუქმებული ნივთის გაცემა ვერ მოხდება',
+        },
+        { status: 400 },
+      )
+    }
+
+    if (body.transferred && currentItem?.sellerReportedDamaged) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'დაზიანებული ნივთის გაცემა ვერ მოხდება',
         },
         { status: 400 },
       )
@@ -57,8 +85,8 @@ export async function PATCH(
     return NextResponse.json({
       success: true,
       message: body.transferred
-        ? 'შეკვეთა მონიშნულია როგორც გადაცემული'
-        : 'გადაცემის მონიშვნა მოხსნილია',
+        ? 'ნივთი მონიშნულია როგორც გაცემული'
+        : 'გაცემის მონიშვნა მოხსნილია',
       item: updated,
     })
   } catch (error) {
