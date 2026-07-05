@@ -23,6 +23,7 @@ const HeaderContent = () => {
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null)
   const { data: session, status } = useSession()
   const isAuthenticated = status === 'authenticated' && !!session
+  const [mounted, setMounted] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
   const pathname = usePathname()
@@ -45,6 +46,10 @@ const HeaderContent = () => {
     const frameId = window.requestAnimationFrame(updateHeaderBottom)
     return () => window.cancelAnimationFrame(frameId)
   }, [isMobileMenuOpen, updateHeaderBottom])
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Update active category based on URL params
   useEffect(() => {
@@ -210,7 +215,9 @@ const HeaderContent = () => {
     }
   }, [isMobileMenuOpen])
 
-  const newProductHref = !isAuthenticated
+  const showAuthenticated = mounted && isAuthenticated
+
+  const newProductHref = !showAuthenticated
     ? '/auth/signup'
     : session.user.role === 'ADMIN'
       ? '/admin/products/new'
@@ -218,7 +225,7 @@ const HeaderContent = () => {
         ? '/support/products/new'
         : '/account/products/new'
 
-  const profileHref = !isAuthenticated
+  const profileHref = !showAuthenticated
     ? '/auth/signin'
     : session.user.role === 'ADMIN'
       ? '/admin'
@@ -304,7 +311,7 @@ const HeaderContent = () => {
               {/* Cart Icon */}
               <Link href="/cart" className="relative p-2 text-white  transition-colors">
                 <ShoppingCart className="w-6 h-6" />
-                {cartItemCount > 0 && (
+                {mounted && cartItemCount > 0 && (
                   <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                     {cartItemCount}
                   </span>
@@ -312,7 +319,7 @@ const HeaderContent = () => {
               </Link>
 
               {/* User Icon */}
-              {isAuthenticated ? (
+              {showAuthenticated ? (
                 <div className="relative group desktop-user-dropdown">
                   <button
                     onClick={() => setIsDesktopUserDropdownOpen(!isDesktopUserDropdownOpen)}
@@ -386,7 +393,7 @@ const HeaderContent = () => {
             </Link>
 
             {/* Account Section */}
-            {isAuthenticated ? (
+            {showAuthenticated ? (
               <div className="relative mobile-user-dropdown">
                 <button
                   onClick={() => setIsMobileUserDropdownOpen(!isMobileUserDropdownOpen)}
@@ -450,7 +457,7 @@ const HeaderContent = () => {
 
             <Link href="/cart" onClick={closeAllOverlays} className="relative p-2 text-white touch-manipulation">
               <ShoppingCart className="w-5 h-5" />
-              {cartItemCount > 0 && (
+              {mounted && cartItemCount > 0 && (
                 <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center">
                   {cartItemCount}
                 </span>
@@ -738,28 +745,47 @@ const HeaderContent = () => {
 
     </header>
 
-    <MobileBottomNav
-      cartItemCount={cartItemCount}
-      isAuthenticated={isAuthenticated}
-      profileHref={profileHref}
-    />
+    {mounted && (
+      <MobileBottomNav
+        cartItemCount={cartItemCount}
+        isAuthenticated={isAuthenticated}
+        profileHref={profileHref}
+        newProductHref={newProductHref}
+      />
+    )}
     </>
   )
 }
 
+const HeaderFallback = () => (
+  <header className="sticky bg-[#1B3729] text-gray-900 shadow-sm top-0 z-50">
+    <div className="container max-w-7xl mx-auto px-3 py-3 sm:px-4 sm:py-4 lg:px-6">
+      <div className="flex items-center justify-between gap-2 sm:gap-4 min-w-0">
+        <Link href="/" className="flex-shrink-0">
+          <Image
+            src="/logo.jpg"
+            className="w-[50px] h-[50px] md:w-16 md:h-16 rounded-full"
+            alt="logo"
+            width={64}
+            height={64}
+          />
+        </Link>
+        <div className="flex lg:hidden items-center gap-1 sm:gap-2 flex-shrink-0">
+          <span className="p-2 text-white opacity-70" aria-hidden>
+            <Search className="w-5 h-5" />
+          </span>
+          <span className="p-2 text-white opacity-70" aria-hidden>
+            <Menu className="w-6 h-6" />
+          </span>
+        </div>
+      </div>
+    </div>
+  </header>
+)
+
 const Header = () => {
   return (
-    <Suspense fallback={
-      <header className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="text-xl font-bold text-black">
-              Dressla.ge
-            </Link>
-          </div>
-        </div>
-      </header>
-    }>
+    <Suspense fallback={<HeaderFallback />}>
       <HeaderContent />
     </Suspense>
   )
