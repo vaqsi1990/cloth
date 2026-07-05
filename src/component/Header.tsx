@@ -8,6 +8,7 @@ import Image from '@/component/AppImage'
 import { useSession, signOut } from 'next-auth/react'
 import { CHILDREN_PRODUCT_CATEGORIES, MEN_PRODUCT_CATEGORIES, WOMEN_PRODUCT_CATEGORIES } from '@/lib/product-categories'
 import { resetShopBrowserFilters } from '@/lib/shop-browser-state'
+import MobileBottomNav from '@/component/MobileBottomNav'
 
 const HeaderContent = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -217,6 +218,14 @@ const HeaderContent = () => {
         ? '/support/products/new'
         : '/account/products/new'
 
+  const profileHref = !isAuthenticated
+    ? '/auth/signin'
+    : session.user.role === 'ADMIN'
+      ? '/admin'
+      : session.user.role === 'SUPPORT'
+        ? '/support'
+        : '/account/profile'
+
   const handleSearchSubmit = (event?: React.FormEvent) => {
     event?.preventDefault()
     const query = searchValue.trim()
@@ -227,6 +236,7 @@ const HeaderContent = () => {
   }
 
   return (
+    <>
     <header ref={headerRef} className="sticky bg-[#1B3729] text-gray-900 shadow-sm top-0 z-50">
       <div className="container max-w-7xl mx-auto px-3 py-3 sm:px-4 sm:py-4 lg:px-6">
         <div className="flex items-center justify-between gap-2 sm:gap-4 min-w-0">
@@ -363,6 +373,8 @@ const HeaderContent = () => {
 
           {/* --- Mobile/Tablet: Search Icon and Menu --- */}
           <div className="flex lg:hidden items-center gap-1 sm:gap-2 flex-shrink-0">
+            {/* Hidden below 420px — moved to bottom nav */}
+            <div className="hidden min-[426px]:flex items-center gap-1 sm:gap-2">
             <Link
               href={newProductHref}
               onClick={closeAllOverlays}
@@ -372,14 +384,6 @@ const HeaderContent = () => {
               <Plus className="w-4 h-4 flex-shrink-0" />
               <span className="hidden sm:inline">ახალი</span>
             </Link>
-            <button
-              type="button"
-              onClick={toggleSearch}
-              className="p-2 text-white touch-manipulation"
-              aria-label="ძებნა"
-            >
-              <Search className="w-5 h-5" />
-            </button>
 
             {/* Account Section */}
             {isAuthenticated ? (
@@ -452,6 +456,16 @@ const HeaderContent = () => {
                 </span>
               )}
             </Link>
+            </div>
+
+            <button
+              type="button"
+              onClick={toggleSearch}
+              className="p-2 text-white touch-manipulation"
+              aria-label="ძებნა"
+            >
+              <Search className="w-5 h-5" />
+            </button>
 
             <button
               type="button"
@@ -491,13 +505,13 @@ const HeaderContent = () => {
         <>
           <button
             type="button"
-            className="lg:hidden fixed inset-0 z-40 bg-black/40"
+            className="lg:hidden fixed inset-x-0 bottom-0 max-[425px]:bottom-16 z-40 bg-black/40"
             style={{ top: headerBottom }}
             onClick={closeMobileMenu}
             aria-label="მენიუს დახურვა"
           />
           <div
-            className="lg:hidden fixed inset-x-0 bottom-0 z-50 flex flex-col bg-white border-t border-gray-200 shadow-xl"
+            className="lg:hidden fixed inset-x-0 bottom-0 max-[425px]:bottom-16 z-50 flex flex-col bg-white border-t border-gray-200 shadow-xl"
             style={{ top: headerBottom }}
           >
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 flex-shrink-0">
@@ -529,6 +543,14 @@ const HeaderContent = () => {
                 className="block px-3 py-2.5 text-black hover:bg-gray-100 rounded-lg text-base"
               >
                 პროდუქტები
+              </Link>
+              <Link
+                href={newProductHref}
+                onClick={closeMobileMenu}
+                className="block px-3 py-2.5 text-black hover:bg-gray-100 rounded-lg text-base max-[425px]:flex min-[426px]:hidden items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                ახალი პროდუქტი
               </Link>
 
               {/* Menu Categories */}
@@ -715,6 +737,13 @@ const HeaderContent = () => {
 
 
     </header>
+
+    <MobileBottomNav
+      cartItemCount={cartItemCount}
+      isAuthenticated={isAuthenticated}
+      profileHref={profileHref}
+    />
+    </>
   )
 }
 

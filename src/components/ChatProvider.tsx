@@ -140,7 +140,7 @@ const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
 
   const chatUi = showChatUi ? (
     <div
-      className="fixed bottom-0 right-0 z-[60] flex flex-col items-end justify-end p-4 sm:p-6 pointer-events-none"
+      className="fixed bottom-0 right-0 z-[60] flex flex-col items-end justify-end p-4 sm:p-6 pointer-events-none max-[425px]:bottom-[calc(4rem+env(safe-area-inset-bottom,0px))] max-[425px]:p-3"
       aria-live="polite"
     >
       <div className="pointer-events-auto flex flex-col items-end gap-3">
