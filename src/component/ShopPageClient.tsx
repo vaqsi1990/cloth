@@ -64,6 +64,8 @@ import SizePillSelector from '@/components/SizePillSelector'
 
 type PurchaseType = 'all' | 'rent-only' | 'sale-only' | 'rent-and-sale'
 
+const MOBILE_HOME_MAX_WIDTH_QUERY = '(max-width: 1023px)'
+
 type ShopPageClientProps = {
     homepageMode?: boolean
 }
@@ -91,6 +93,16 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         [genderParam, shopCategories],
     )
     const [loading, setLoading] = useState(true)
+    const [loadingMore, setLoadingMore] = useState(false)
+    const [isMobileViewport, setIsMobileViewport] = useState(() =>
+        typeof window !== 'undefined'
+            ? window.matchMedia(MOBILE_HOME_MAX_WIDTH_QUERY).matches
+            : false,
+    )
+    const useHomeInfiniteScroll = React.useMemo(
+        () => homepageMode && isMobileViewport,
+        [homepageMode, isMobileViewport],
+    )
     const [selectedCategories, setSelectedCategories] = useState<string[]>([])
     const [sortBy, setSortBy] = useState("newest")
     const [isFilterOpen, setIsFilterOpen] = useState(false)
@@ -187,6 +199,9 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
     const prevSizeContextRef = useRef<string | null>(null)
     const hasCompletedInitialRestoreRef = useRef(false)
     const prevPriceCeilingKeyRef = useRef<string | null>(null)
+    const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null)
+    const pendingHomeRestorePagesRef = useRef<number | null>(null)
+    const prevHomeInfiniteScrollRef = useRef<boolean | null>(null)
     const [savedScrollY, setSavedScrollY] = useState<number | null>(null)
     const [scrollRestored, setScrollRestored] = useState(false)
     const [hasRestoredState, setHasRestoredState] = useState(false)
@@ -199,6 +214,30 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         window.addEventListener('scroll', handleScroll)
         return () => window.removeEventListener('scroll', handleScroll)
     }, [])
+
+    useEffect(() => {
+        const mq = window.matchMedia(MOBILE_HOME_MAX_WIDTH_QUERY)
+        const onChange = () => setIsMobileViewport(mq.matches)
+        mq.addEventListener('change', onChange)
+        return () => mq.removeEventListener('change', onChange)
+    }, [])
+
+    useEffect(() => {
+        if (!homepageMode || !hasRestoredState) return
+
+        const mode = useHomeInfiniteScroll
+        if (prevHomeInfiniteScrollRef.current === null) {
+            prevHomeInfiniteScrollRef.current = mode
+            return
+        }
+
+        if (prevHomeInfiniteScrollRef.current !== mode) {
+            prevHomeInfiniteScrollRef.current = mode
+            pendingHomeRestorePagesRef.current = null
+            setCurrentPage(1)
+            setLoadingMore(false)
+        }
+    }, [homepageMode, hasRestoredState, useHomeInfiniteScroll])
 
     useEffect(() => {
         const handler = (event: Event) => {
@@ -339,7 +378,16 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
             },
         )
 
-        applyPersistedShopState(merged)
+        if (
+            homepageMode &&
+            merged.currentPage > 1 &&
+            window.matchMedia(MOBILE_HOME_MAX_WIDTH_QUERY).matches
+        ) {
+            pendingHomeRestorePagesRef.current = merged.currentPage
+            applyPersistedShopState({ ...merged, currentPage: 1 })
+        } else {
+            applyPersistedShopState(merged)
+        }
 
         shopInitializedRef.current = true
         prevCategoryUrlRef.current = categoriesParam
@@ -460,11 +508,18 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
 
     // Restore scroll after data load
     useEffect(() => {
-        if (!loading && hasRestoredState && !scrollRestored && savedScrollY !== null) {
+        if (
+            !loading &&
+            !loadingMore &&
+            hasRestoredState &&
+            !scrollRestored &&
+            savedScrollY !== null
+        ) {
+            if (useHomeInfiniteScroll && pendingHomeRestorePagesRef.current !== null) return
             window.scrollTo(0, savedScrollY)
             setScrollRestored(true)
         }
-    }, [loading, hasRestoredState, scrollRestored, savedScrollY])
+    }, [loading, loadingMore, hasRestoredState, scrollRestored, savedScrollY, useHomeInfiniteScroll])
 
     const clearSearch = () => {
         const params = new URLSearchParams(Array.from(searchParams.entries()))
@@ -547,7 +602,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
             return buildShopBrowserUrl({
                 basePath: base,
                 currentSearchParams: new URLSearchParams(searchParams.toString()),
-                currentPage: pageOverride ?? currentPage,
+                currentPage: useHomeInfiniteScroll ? 1 : (pageOverride ?? currentPage),
                 onlyDiscounted,
                 onlyVip,
                 filters: shopListFilters(),
@@ -555,6 +610,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         },
         [
             homepageMode,
+            useHomeInfiniteScroll,
             searchParams,
             currentPage,
             onlyDiscounted,
@@ -577,12 +633,12 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
 
     // Keep pagination in sync when navigating with browser back/forward
     useEffect(() => {
-        if (!hasRestoredState) return
+        if (!hasRestoredState || useHomeInfiniteScroll) return
         const raw = searchParams.get('page')
         if (!raw) return
         const urlPage = Math.max(1, parseInt(raw, 10) || 1)
         setCurrentPage((prev) => (prev === urlPage ? prev : urlPage))
-    }, [searchParams, hasRestoredState])
+    }, [searchParams, hasRestoredState, useHomeInfiniteScroll])
 
     // Persist filters/page in the URL so product back returns to the same list
     useEffect(() => {
@@ -760,12 +816,37 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         const isStale = () => fetchId !== shopFetchIdRef.current
 
         const loadShopData = async () => {
-            setLoading(true)
+            const queryParams = new URLSearchParams(activeShopQueryKey)
+            const requestPage = Math.max(
+                1,
+                parseInt(queryParams.get('page') ?? '1', 10) || 1,
+            )
+            const isHomeLoadMore = useHomeInfiniteScroll && requestPage > 1
+
+            if (isHomeLoadMore) {
+                setLoadingMore(true)
+            } else {
+                setLoading(true)
+            }
             try {
                 const data = await fetchShopData(activeShopQueryKey, controller.signal)
                 if (isStale()) return
 
-                setProducts(data.products)
+                if (isHomeLoadMore) {
+                    setProducts((prev) => {
+                        const seen = new Set(prev.map((product) => product.id))
+                        const next = [...prev]
+                        for (const product of data.products) {
+                            if (!seen.has(product.id)) {
+                                seen.add(product.id)
+                                next.push(product)
+                            }
+                        }
+                        return next
+                    })
+                } else {
+                    setProducts(data.products)
+                }
                 setServerTotalPages(data.totalPages ?? 1)
                 setServerTotalCount(data.totalCount ?? data.products.length)
                 setServerHasMore(Boolean(data.hasMore))
@@ -773,13 +854,24 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
                     data.totalPages !== null && data.totalPages !== undefined,
                 )
 
+                if (useHomeInfiniteScroll && pendingHomeRestorePagesRef.current !== null) {
+                    const targetPage = pendingHomeRestorePagesRef.current
+                    if (requestPage < targetPage && data.hasMore) {
+                        setCurrentPage(requestPage + 1)
+                    } else {
+                        pendingHomeRestorePagesRef.current = null
+                    }
+                }
+
                 setColorFacets(data.facets.colors)
                 setCategoryCountsBySlug(data.facets.categoryCounts)
                 setAvailableSizes(resolveShopDisplaySizes(data.facets.sizes, shopSizeDisplayContext))
                 setVipProductsCount(data.facets.vipCount)
                 setDiscountedProductsCount(data.facets.discountCount)
 
-                setProductRentalStatus(data.rentalStatus ?? {})
+                setProductRentalStatus((prev) =>
+                    isHomeLoadMore ? { ...prev, ...(data.rentalStatus ?? {}) } : (data.rentalStatus ?? {}),
+                )
 
                 const calculatedMaxPrice = Math.max(1, Math.ceil(data.priceRange?.max ?? 200))
                 setMaxPrice(calculatedMaxPrice)
@@ -794,20 +886,22 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
                     prevPriceCeilingKeyRef.current !== priceCeilingKey
                 prevPriceCeilingKeyRef.current = priceCeilingKey
 
-                setPriceRange((prev) => {
-                    if (priceCeilingChanged) {
-                        return [0, calculatedMaxPrice]
-                    }
-                    if (prev[0] === 0 && prev[1] === 0) {
-                        return [0, calculatedMaxPrice]
-                    }
-                    const nextMin = Math.max(0, Math.min(prev[0], calculatedMaxPrice))
-                    const nextMax = Math.max(nextMin, Math.min(prev[1], calculatedMaxPrice))
-                    if (nextMin === prev[0] && nextMax === prev[1]) {
-                        return prev
-                    }
-                    return [nextMin, nextMax]
-                })
+                if (!isHomeLoadMore) {
+                    setPriceRange((prev) => {
+                        if (priceCeilingChanged) {
+                            return [0, calculatedMaxPrice]
+                        }
+                        if (prev[0] === 0 && prev[1] === 0) {
+                            return [0, calculatedMaxPrice]
+                        }
+                        const nextMin = Math.max(0, Math.min(prev[0], calculatedMaxPrice))
+                        const nextMax = Math.max(nextMin, Math.min(prev[1], calculatedMaxPrice))
+                        if (nextMin === prev[0] && nextMax === prev[1]) {
+                            return prev
+                        }
+                        return [nextMin, nextMax]
+                    })
+                }
             } catch (error: unknown) {
                 if (
                     isStale() ||
@@ -819,14 +913,18 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
                 console.error('Error fetching shop data:', error)
             } finally {
                 if (!isStale()) {
-                    setLoading(false)
+                    if (isHomeLoadMore) {
+                        setLoadingMore(false)
+                    } else {
+                        setLoading(false)
+                    }
                 }
             }
         }
 
         void loadShopData()
         return () => controller.abort('cleanup')
-    }, [hasRestoredState, activeShopQueryKey])
+    }, [hasRestoredState, activeShopQueryKey, useHomeInfiniteScroll, shopSizeDisplayContext])
 
     // Check if product is available during selected dates
     const isProductAvailable = (product: Product): boolean => {
@@ -855,7 +953,42 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
     // Server-side filtered page; rental dates applied client-side on current page only
     const currentProducts = products.filter((product) => isProductAvailable(product))
 
-    const showPagination = currentPage > 1 || serverHasMore
+    const showPagination =
+        !useHomeInfiniteScroll && (currentPage > 1 || serverHasMore)
+
+    // Mobile homepage infinite scroll — load next page when sentinel enters viewport
+    useEffect(() => {
+        if (!useHomeInfiniteScroll || !hasRestoredState) return
+        if (pendingHomeRestorePagesRef.current !== null) return
+
+        const sentinel = loadMoreSentinelRef.current
+        if (!sentinel) return
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const [entry] = entries
+                if (
+                    entry?.isIntersecting &&
+                    serverHasMore &&
+                    !loading &&
+                    !loadingMore
+                ) {
+                    setCurrentPage((prev) => prev + 1)
+                }
+            },
+            { rootMargin: '400px 0px' },
+        )
+
+        observer.observe(sentinel)
+        return () => observer.disconnect()
+    }, [
+        useHomeInfiniteScroll,
+        hasRestoredState,
+        serverHasMore,
+        loading,
+        loadingMore,
+        currentProducts.length,
+    ])
 
     // Reset to page 1 when filters change (skip initial restore snapshot)
     useEffect(() => {
@@ -895,6 +1028,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
 
         if (filtersSnapshotRef.current !== snapshot) {
             filtersSnapshotRef.current = snapshot
+            pendingHomeRestorePagesRef.current = null
             setCurrentPage(1)
             syncShopUrl(1)
         }
@@ -997,6 +1131,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         setPurchaseType('all')
         setOnlyDiscounted(false)
         setOnlyVip(false)
+        pendingHomeRestorePagesRef.current = null
         setCurrentPage(1)
         setPriceRange([0, 0])
         setSortBy('newest')
@@ -1026,8 +1161,8 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
          
 
             <div className="container max-w-7xl mx-auto px-2 py-8">
-                {/* Mobile Filter Bar - Temu Style */}
-                <div className="lg:hidden mb-4">
+                {/* Mobile Filter Bar - sticky below header on small screens */}
+                <div className="lg:hidden sticky top-[4.625rem] md:top-24 z-40 -mx-2 px-2 mb-4 py-2 bg-white border-b border-gray-200 shadow-sm">
                     <div className="bg-white rounded-lg shadow-sm border">
                         <div className="flex items-center justify-center px-2 py-2">
                             <button
@@ -1820,7 +1955,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
                             </div>
                         )}
 
-                        {/* Pagination */}
+                        {/* Pagination — desktop homepage + shop; hidden on mobile homepage */}
                         {showPagination && (
                             <div className="flex flex-col items-center justify-center gap-4 mt-8">
                                 <div className="flex items-center gap-2">
@@ -1852,6 +1987,16 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
                                         <ChevronRight className="w-5 h-5" />
                                     </button>
                                 </div>
+                            </div>
+                        )}
+
+                        {useHomeInfiniteScroll && currentProducts.length > 0 && serverHasMore && (
+                            <div ref={loadMoreSentinelRef} className="h-12" aria-hidden />
+                        )}
+
+                        {useHomeInfiniteScroll && loadingMore && (
+                            <div className="flex justify-center py-8">
+                                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#1B3729]" />
                             </div>
                         )}
 
