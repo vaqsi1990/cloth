@@ -311,9 +311,7 @@ export function resolveFootwearGenderFromShopContext(input: {
   }
 
   for (const selectedCategory of input.selectedCategories ?? []) {
-    const category =
-      categories.find((entry) => entry.name === selectedCategory) ??
-      findCategoryByParam(selectedCategory, categories)
+    const category = findCategoryByParam(selectedCategory, categories)
     const fromCategory = getFootwearGenderFromCategory(category)
     if (fromCategory) return fromCategory
   }
@@ -339,9 +337,7 @@ export function isFootwearShopContext(input: {
   }
 
   return (input.selectedCategories ?? []).some((selectedCategory) => {
-    const category =
-      categories.find((entry) => entry.name === selectedCategory) ??
-      findCategoryByParam(selectedCategory, categories)
+    const category = findCategoryByParam(selectedCategory, categories)
     if (category) return isFootwearCategory(category)
     const normalized = selectedCategory.toLowerCase()
     return (
@@ -729,11 +725,12 @@ export function countProductsForCategory(
   products: Array<{
     categoryId?: number | null
     category?: { id?: number; name?: string; slug?: string } | null
+    gender?: string | null
   }>,
   category: ProductCategory,
   categories: ProductCategory[],
 ): number {
   return products.filter((product) =>
-    productMatchesCategoryFilter(product, [category.name], categories),
+    productMatchesCategoryFilter(product, [category.slug], categories),
   ).length
 }

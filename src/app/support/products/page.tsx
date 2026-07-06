@@ -435,7 +435,10 @@ const SupportProductsPage = () => {
     products.filter((product) => {
     const matchesSearch = productMatchesPanelSearch(product, searchTerm)
     const matchesGender = filterGender === 'ALL' || product.gender === filterGender
-    const productCategorySlug = resolveCanonicalCategorySlug(product.category ?? undefined)
+    const productCategorySlug = resolveCanonicalCategorySlug(
+      product.category ?? undefined,
+      product.gender,
+    )
     const matchesCategory =
       filterCategory === 'ALL' || productCategorySlug === filterCategory
     

@@ -27,6 +27,7 @@ import {
   dedupeProductCategories,
   findCategoryByParam,
   isSizeOptionalShopContext,
+  normalizeSelectedCategorySlugs,
   resolveCategorySlugParam,
   sortProductCategories,
   type ProductCategory,
@@ -103,7 +104,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
         () => homepageMode && isMobileViewport,
         [homepageMode, isMobileViewport],
     )
-    const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+    const [selectedCategories, setSelectedCategories] = useState<string[]>([]) // canonical category slugs
     const [sortBy, setSortBy] = useState("newest")
     const [isFilterOpen, setIsFilterOpen] = useState(false)
     const [priceRange, setPriceRange] = useState([0, 0])
@@ -349,32 +350,34 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
 
         const currentSearchParams = new URLSearchParams(window.location.search)
         const categoriesFromUrl = currentSearchParams.get('categories')
-        const categoryNames = categoriesFromUrl
+        const categorySlugsFromUrl = categoriesFromUrl
             ? categoriesFromUrl
                   .split(',')
-                  .map(
-                      (slug) =>
-                          findCategoryByParam(slug, DEFAULT_PRODUCT_CATEGORIES)?.name ??
-                          slug,
-                  )
+                  .map((slug) => resolveCategorySlugParam(slug.trim()))
+                  .filter(Boolean)
             : categoryParam
-              ? [
-                    findCategoryByParam(categoryParam, DEFAULT_PRODUCT_CATEGORIES)?.name ??
-                        categoryParam,
-                ]
-              : persisted.selectedCategories
+              ? [resolveCategorySlugParam(categoryParam)]
+              : normalizeSelectedCategorySlugs(
+                    persisted.selectedCategories,
+                    collectShopFilterCategoriesForGender(
+                        genderParam as ShopGenderFilterValue | null,
+                        DEFAULT_PRODUCT_CATEGORIES,
+                    ),
+                )
 
         const merged = mergeShopStateWithUrl(
             {
                 ...persisted,
-                selectedCategories: categoryNames.filter(Boolean),
+                selectedCategories: categorySlugsFromUrl.filter(Boolean),
             },
             currentSearchParams,
             {
                 discountParam,
                 vipParam,
                 categoryNames:
-                    categoryNames.length > 0 ? categoryNames.filter(Boolean) : null,
+                    categorySlugsFromUrl.length > 0
+                        ? categorySlugsFromUrl.filter(Boolean)
+                        : null,
             },
         )
 
@@ -552,16 +555,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
     }
 
     const resolveCategorySlugsFromNames = useCallback(
-        (names: string[]): string[] => {
-            return names
-                .map((name) => {
-                    const cat =
-                        filterCategories.find((c) => c.name === name) ||
-                        findCategoryByParam(name, filterCategories)
-                    return cat?.slug ?? resolveCategorySlugParam(name)
-                })
-                .filter((slug): slug is string => Boolean(slug))
-        },
+        (values: string[]): string[] => normalizeSelectedCategorySlugs(values, filterCategories),
         [filterCategories],
     )
 
@@ -777,10 +771,14 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
 
     useEffect(() => {
         if (!genderParam) return
-        const allowedNames = new Set(filterCategories.map((category) => category.name))
+        const allowedSlugs = new Set(filterCategories.map((category) => category.slug))
         setSelectedCategories((prev) => {
-            const next = prev.filter((name) => allowedNames.has(name))
-            return next.length === prev.length ? prev : next
+            const next = normalizeSelectedCategorySlugs(prev, filterCategories).filter((slug) =>
+                allowedSlugs.has(slug),
+            )
+            return next.length === prev.length && next.every((slug, index) => slug === prev[index])
+                ? prev
+                : next
         })
     }, [genderParam, filterCategories])
 
@@ -1056,11 +1054,11 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
     ])
 
     // Handle category selection
-    const toggleCategory = (categoryName: string) => {
+    const toggleCategory = (categorySlug: string) => {
         setSelectedCategories((prev) => {
-            const next = prev.includes(categoryName)
-                ? prev.filter((c) => c !== categoryName)
-                : [...prev, categoryName]
+            const next = prev.includes(categorySlug)
+                ? prev.filter((slug) => slug !== categorySlug)
+                : [...prev, categorySlug]
 
             const slugs = resolveCategorySlugsFromNames(next)
             prevCategoryUrlRef.current =
@@ -1372,7 +1370,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
                                         <h3 className="text-lg font-semibold text-black mb-4">კატეგორია</h3>
                                         <div className="space-y-2 max-h-[60vh] overflow-y-auto">
                                             {filterCategories.map((category) => {
-                                                const isSelected = selectedCategories.includes(category.name);
+                                                const isSelected = selectedCategories.includes(category.slug);
                                                 const categoryCount = categoryCountsBySlug[category.slug] ?? 0
 
                                                 return (
@@ -1384,7 +1382,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
                                                             <input
                                                                 type="checkbox"
                                                                 checked={isSelected}
-                                                                onChange={() => toggleCategory(category.name)}
+                                                                onChange={() => toggleCategory(category.slug)}
                                                                 className="w-4 h-4"
                                                             />
                                                             <span className="text-[16px] text-black">{category.name}</span>
@@ -1698,7 +1696,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
                                 {isCategoryOpen && (
                                     <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                                         {filterCategories.map((category) => {
-                                            const isSelected = selectedCategories.includes(category.name);
+                                            const isSelected = selectedCategories.includes(category.slug);
                                             const categoryCount = categoryCountsBySlug[category.slug] ?? 0
 
                                             return (
@@ -1710,7 +1708,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
                                                         <input
                                                             type="checkbox"
                                                             checked={isSelected}
-                                                            onChange={() => toggleCategory(category.name)}
+                                                            onChange={() => toggleCategory(category.slug)}
                                                             className="w-4 h-4"
                                                         />
                                                         {category.name}

@@ -18,15 +18,10 @@ export async function GET(request: NextRequest) {
       index === self.findIndex((c) => c.id === category.id)
     )
 
-    // Also remove duplicates by name (in case same name exists with different ids)
-    const deduplicatedCategories = uniqueCategories.filter((category, index, self) =>
-      index === self.findIndex((c) => c.name.toLowerCase().trim() === category.name.toLowerCase().trim())
-    )
-
     return NextResponse.json({
       success: true,
       categories: sortProductCategories(
-        dedupeProductCategories(deduplicatedCategories),
+        dedupeProductCategories(uniqueCategories),
       ),
     })
     

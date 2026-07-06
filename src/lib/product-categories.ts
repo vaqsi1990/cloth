@@ -111,6 +111,69 @@ export const DEFAULT_PRODUCT_CATEGORIES: ProductCategory[] = [
   { id: 125, name: 'საფულე', slug: 'kids-wallet' },
 ]
 
+/** Georgian names reused across women / men / children taxonomies — slug disambiguates. */
+const GENDER_SHARED_EXACT_CATEGORY_NAMES = new Set(
+  (() => {
+    const countByName = new Map<string, number>()
+    for (const category of DEFAULT_PRODUCT_CATEGORIES) {
+      const key = category.name.toLowerCase().trim()
+      countByName.set(key, (countByName.get(key) ?? 0) + 1)
+    }
+    return [...countByName.entries()]
+      .filter(([, count]) => count > 1)
+      .map(([name]) => name)
+  })(),
+)
+
+function isGenderSharedExactCategoryName(name: string | null | undefined): boolean {
+  if (!name) return false
+  return GENDER_SHARED_EXACT_CATEGORY_NAMES.has(name.toLowerCase().trim())
+}
+
+function pickCategoryByProductGender(
+  categories: ProductCategory[],
+  gender: ProductGender | string | null | undefined,
+): ProductCategory | undefined {
+  if (!gender || gender === 'UNISEX') return undefined
+  const prefix =
+    gender === 'WOMEN' ? 'women-' : gender === 'MEN' ? 'men-' : gender === 'CHILDREN' ? 'kids-' : null
+  if (!prefix) return undefined
+  return categories.find((category) => category.slug.startsWith(prefix))
+}
+
+/** Map legacy persisted category filter keys (names or slugs) to canonical slugs. */
+export function normalizeSelectedCategorySlugs(
+  values: string[],
+  categories: ProductCategory[],
+): string[] {
+  const slugs = new Set<string>()
+
+  for (const value of values) {
+    const trimmed = value.trim()
+    if (!trimmed) continue
+
+    const direct = categories.find((category) => category.slug === trimmed)
+    if (direct) {
+      slugs.add(direct.slug)
+      continue
+    }
+
+    const resolvedSlug = resolveCategorySlugParam(trimmed)
+    const byResolved = categories.find((category) => category.slug === resolvedSlug)
+    if (byResolved) {
+      slugs.add(byResolved.slug)
+      continue
+    }
+
+    const byParam = findCategoryByParam(trimmed, categories)
+    if (byParam) {
+      slugs.add(byParam.slug)
+    }
+  }
+
+  return [...slugs]
+}
+
 /** Canonical women's shop taxonomy — order matches navigation and filters */
 export const WOMEN_PRODUCT_CATEGORIES: ProductCategory[] = [
   { id: 1, name: 'კაბა', slug: 'dresses' },
@@ -393,10 +456,16 @@ export function isAccessoryCategoryId(
   if (isAccessoryCategory(canonical)) return true
 
   if (category) {
-    const byName = [...CANONICAL_PRODUCT_TAXONOMY, ...DEFAULT_PRODUCT_CATEGORIES].find(
-      (entry) => entry.name === category.name,
+    if (!isGenderSharedExactCategoryName(category.name)) {
+      const byName = [...CANONICAL_PRODUCT_TAXONOMY, ...DEFAULT_PRODUCT_CATEGORIES].find(
+        (entry) => entry.name === category.name,
+      )
+      if (isAccessoryCategory(byName)) return true
+    }
+    const bySlug = [...CANONICAL_PRODUCT_TAXONOMY, ...DEFAULT_PRODUCT_CATEGORIES].find(
+      (entry) => entry.slug === category.slug,
     )
-    if (isAccessoryCategory(byName)) return true
+    if (isAccessoryCategory(bySlug)) return true
   }
 
   return false
@@ -425,7 +494,10 @@ export function isSizeOptionalCategory(category: ProductCategory | undefined | n
   if (matchesSizeOptionalCatalogEntry(defaultBySlug)) return true
 
   const canonicalByName = CANONICAL_PRODUCT_TAXONOMY.find(
-    (entry) => entry.name === category.name,
+    (entry) =>
+      entry.slug === category.slug ||
+      (!isGenderSharedExactCategoryName(category.name) &&
+        entry.name === category.name),
   )
   if (matchesSizeOptionalCatalogEntry(canonicalByName)) return true
 
@@ -457,18 +529,17 @@ export function isSizeOptionalShopContext(input: {
   }
 
   return (input.selectedCategories ?? []).some((selectedCategory) => {
-    const category =
-      categories.find((entry) => entry.name === selectedCategory) ??
-      findCategoryByParam(selectedCategory, categories)
+    const category = findCategoryByParam(selectedCategory, categories)
     if (category) return isSizeOptionalCategory(category)
 
     const normalized = selectedCategory.trim().toLowerCase()
+    if (isGenderSharedExactCategoryName(selectedCategory)) {
+      return false
+    }
     return (
       normalized.includes('ჩანთ') ||
       normalized.includes('სათვალ') ||
-      normalized.includes('აქსესუარ') ||
-      normalized.includes('ქამარ') ||
-      normalized.includes('საფულ')
+      normalized.includes('აქსესუარ')
     )
   })
 }
@@ -476,11 +547,27 @@ export function isSizeOptionalShopContext(input: {
 export function isSizeOptionalCategoryId(
   categoryId: number | undefined,
   categories: ProductCategory[],
+  productCategory?: ProductCategoryRef | null,
 ): boolean {
   if (!categoryId) return false
   const list = categories.length > 0 ? categories : DEFAULT_PRODUCT_CATEGORIES
   const category = list.find((c) => c.id === categoryId)
   if (isSizeOptionalCategory(category)) return true
+
+  const staticCanonical = findCanonicalCategoryByStaticId(categoryId)
+  if (isSizeOptionalCategory(staticCanonical)) return true
+  if (staticCanonical) {
+    const bySlug = list.find((entry) => entry.slug === staticCanonical.slug)
+    if (isSizeOptionalCategory(bySlug)) return true
+  }
+
+  const productSlug = productCategory?.slug?.trim()
+  if (productSlug) {
+    const byProductSlug = list.find((entry) => entry.slug === productSlug)
+    if (isSizeOptionalCategory(byProductSlug)) return true
+    const canonicalByProductSlug = findCanonicalCategoryBySlug(productSlug)
+    if (isSizeOptionalCategory(canonicalByProductSlug)) return true
+  }
 
   const defaultMatch = DEFAULT_PRODUCT_CATEGORIES.find((entry) => entry.id === categoryId)
   if (isSizeOptionalCategory(defaultMatch)) return true
@@ -489,8 +576,10 @@ export function isSizeOptionalCategoryId(
   if (isSizeOptionalCategory(canonical)) return true
 
   if (category) {
+    const bySlug = list.find((entry) => entry.slug === category.slug)
+    if (isSizeOptionalCategory(bySlug)) return true
     const byName = [...CANONICAL_PRODUCT_TAXONOMY, ...DEFAULT_PRODUCT_CATEGORIES].find(
-      (entry) => entry.name === category.name,
+      (entry) => entry.slug === category.slug,
     )
     if (isSizeOptionalCategory(byName)) return true
   }
@@ -579,7 +668,7 @@ function getCategoryGroup(category: ProductCategory): number {
   return getCategoryGroups(category)[0] ?? 4
 }
 
-/** Drop duplicate category names and ids (keep canonical DEFAULT row per id) */
+/** Drop duplicate category ids (keep canonical DEFAULT row per id). Slug is authoritative — same Georgian name across genders is allowed. */
 export function dedupeProductCategories<T extends ProductCategory>(
   categories: T[],
 ): T[] {
@@ -591,21 +680,6 @@ export function dedupeProductCategories<T extends ProductCategory>(
 
     if (byId.has(category.id)) {
       if (canonical) {
-        byId.set(category.id, canonical as T)
-      }
-      continue
-    }
-
-    const nameKey = category.name.toLowerCase().trim()
-    const duplicateName = [...byId.values()].find(
-      (existing) => existing.name.toLowerCase().trim() === nameKey,
-    )
-    if (duplicateName) {
-      const keepCanonical =
-        canonical &&
-        duplicateName.name.toLowerCase().trim() === canonical.name.toLowerCase().trim()
-      if (keepCanonical) {
-        byId.delete(duplicateName.id)
         byId.set(category.id, canonical as T)
       }
       continue
@@ -721,8 +795,15 @@ export function resolveCanonicalCategorySlug(
     | { id?: number | null; name?: string | null; slug?: string | null }
     | null
     | undefined,
+  gender?: ProductGender | string | null,
 ): string | null {
   if (!category) return null
+
+  const rawSlug = category.slug?.trim().toLowerCase()
+  if (rawSlug) {
+    const canonical = CATEGORY_SLUG_ALIASES[rawSlug] ?? rawSlug
+    if (categoryIdBySlug.has(canonical)) return canonical
+  }
 
   if (category.id != null) {
     const byId = DEFAULT_PRODUCT_CATEGORIES.find((c) => c.id === category.id)
@@ -731,21 +812,22 @@ export function resolveCanonicalCategorySlug(
     if (legacySlug) return legacySlug
   }
 
-  const slug = category.slug?.trim().toLowerCase()
-  if (slug) {
-    const canonical = CATEGORY_SLUG_ALIASES[slug] ?? slug
-    if (categoryIdBySlug.has(canonical)) return canonical
-  }
-
   const name = category.name?.trim()
   if (name) {
-    const byAlias = CATEGORY_SLUG_ALIASES[name] ?? CATEGORY_SLUG_ALIASES[name.toLowerCase()]
-    if (byAlias) return byAlias
-    const byName = DEFAULT_PRODUCT_CATEGORIES.find((c) => c.name === name)
-    if (byName) return byName.slug
+    if (!isGenderSharedExactCategoryName(name)) {
+      const byAlias = CATEGORY_SLUG_ALIASES[name] ?? CATEGORY_SLUG_ALIASES[name.toLowerCase()]
+      if (byAlias) return byAlias
+    }
+
+    const nameMatches = DEFAULT_PRODUCT_CATEGORIES.filter((c) => c.name === name)
+    if (nameMatches.length === 1) return nameMatches[0].slug
+    if (nameMatches.length > 1) {
+      const byGender = pickCategoryByProductGender(nameMatches, gender)
+      if (byGender) return byGender.slug
+    }
   }
 
-  return slug ?? null
+  return rawSlug ?? null
 }
 
 /** Canonical display meta for shop filters and product cards. */
@@ -754,8 +836,9 @@ export function resolveCanonicalCategory(
     | { id?: number | null; name?: string | null; slug?: string | null }
     | null
     | undefined,
+  gender?: ProductGender | string | null,
 ): ProductCategory | null {
-  const slug = resolveCanonicalCategorySlug(category)
+  const slug = resolveCanonicalCategorySlug(category, gender)
   if (!slug) return null
   return DEFAULT_PRODUCT_CATEGORIES.find((c) => c.slug === slug) ?? null
 }
@@ -944,7 +1027,9 @@ export function resolveCategorySlugForSubmit(
   categories: ProductCategory[],
 ): string | undefined {
   if (!categoryId) return undefined
-  return categories.find((entry) => entry.id === categoryId)?.slug
+  const fromList = categories.find((entry) => entry.id === categoryId)?.slug
+  if (fromList) return fromList
+  return findCanonicalCategoryByStaticId(categoryId)?.slug
 }
 
 /** Map stored product category id to the id used in the current form category list (by slug when ids diverge). */
@@ -966,11 +1051,34 @@ export function resolveProductFormCategoryId(
       return id
     }
 
-    return id
+    return undefined
+  }
+
+  const resolveBySlug = (slug: string | undefined): number | undefined => {
+    if (!slug) return undefined
+    const bySlug = list.find((entry) => entry.slug === slug)
+    if (bySlug) return bySlug.id
+
+    const canonical = CANONICAL_PRODUCT_TAXONOMY.find((entry) => entry.slug === slug)
+    if (canonical) {
+      const bySlugFromCanonical = list.find((entry) => entry.slug === canonical.slug)
+      if (bySlugFromCanonical) return bySlugFromCanonical.id
+    }
+
+    return undefined
   }
 
   if (categoryId != null) {
-    return mapIdInList(categoryId)
+    const mapped = mapIdInList(categoryId)
+    if (mapped != null) return mapped
+
+    const slug =
+      productCategory?.slug?.trim() ??
+      findCanonicalCategoryByStaticId(categoryId)?.slug
+    const fromSlug = resolveBySlug(slug)
+    if (fromSlug != null) return fromSlug
+
+    return categoryId
   }
 
   const slug = productCategory?.slug?.trim()
@@ -984,14 +1092,8 @@ export function resolveProductFormCategoryId(
   }
 
   if (slug) {
-    const bySlug = list.find((entry) => entry.slug === slug)
-    if (bySlug) return bySlug.id
-
-    const canonical = CANONICAL_PRODUCT_TAXONOMY.find((entry) => entry.slug === slug)
-    if (canonical) {
-      const bySlugFromCanonical = list.find((entry) => entry.slug === canonical.slug)
-      if (bySlugFromCanonical) return bySlugFromCanonical.id
-    }
+    const fromSlug = resolveBySlug(slug)
+    if (fromSlug != null) return fromSlug
   }
 
   return productId
@@ -1311,26 +1413,14 @@ const CATEGORY_SLUG_ALIASES: Record<string, string> = {
   lifi: 'women-bra',
   'ლიფი': 'women-bra',
   'women-underwear': 'women-underwear',
-  sacvali: 'women-underwear',
-  'საცვალი': 'women-underwear',
   'women-bra-underwear-set': 'women-bra-underwear-set',
   'lifisa-da-sacvlis-kompleqti': 'women-bra-underwear-set',
   'ლიფისა და საცვლის კომპლექტი': 'women-bra-underwear-set',
   'women-nightgown': 'women-nightgown',
-  khalati: 'women-nightgown',
-  'ხალათი': 'women-nightgown',
   'women-socks': 'women-socks',
-  tsindebi: 'women-socks',
-  'წინდები': 'women-socks',
   'women-swimsuit': 'women-swimsuit',
-  'satsurao-kostiumi': 'women-swimsuit',
-  'საცურაო კოსტიუმი': 'women-swimsuit',
   'women-belt': 'women-belt',
-  kamari: 'women-belt',
-  'ქამარი': 'women-belt',
   'women-wallet': 'women-wallet',
-  sapule: 'women-wallet',
-  'საფულე': 'women-wallet',
   'men-underwear': 'men-underwear',
   'men-nightgown': 'men-nightgown',
   'men-socks': 'men-socks',
@@ -1381,14 +1471,17 @@ export function resolveCategorySlugParam(param: string): string {
   const trimmed = param.trim()
   const lower = trimmed.toLowerCase()
 
-  if (CATEGORY_SLUG_ALIASES[lower]) return CATEGORY_SLUG_ALIASES[lower]
-  if (CATEGORY_SLUG_ALIASES[trimmed]) return CATEGORY_SLUG_ALIASES[trimmed]
   if (categoryIdBySlug.has(lower)) return lower
 
-  const byName = DEFAULT_PRODUCT_CATEGORIES.find(
+  if (!isGenderSharedExactCategoryName(trimmed)) {
+    if (CATEGORY_SLUG_ALIASES[lower]) return CATEGORY_SLUG_ALIASES[lower]
+    if (CATEGORY_SLUG_ALIASES[trimmed]) return CATEGORY_SLUG_ALIASES[trimmed]
+  }
+
+  const nameMatches = DEFAULT_PRODUCT_CATEGORIES.filter(
     (c) => c.name === trimmed || c.name.toLowerCase() === lower,
   )
-  if (byName) return byName.slug
+  if (nameMatches.length === 1) return nameMatches[0].slug
 
   return lower
 }
@@ -1400,16 +1493,27 @@ export function findCategoryByParam(
   const trimmed = param.trim()
   const lower = trimmed.toLowerCase()
 
-  const byName =
-    categories.find((c) => c.name === trimmed) ||
-    categories.find((c) => c.name.toLowerCase() === lower)
-  if (byName) return byName
-
-  const slug = resolveCategorySlugParam(param)
-  return (
-    categories.find((c) => c.slug === slug) ||
+  const byDirectSlug =
+    categories.find((c) => c.slug === trimmed) ||
     categories.find((c) => c.slug === lower)
+  if (byDirectSlug) return byDirectSlug
+
+  const resolvedSlug = resolveCategorySlugParam(param)
+  const byResolvedSlug =
+    categories.find((c) => c.slug === resolvedSlug) ||
+    categories.find((c) => c.slug === resolvedSlug.toLowerCase())
+  if (byResolvedSlug) return byResolvedSlug
+
+  if (isGenderSharedExactCategoryName(trimmed)) {
+    return undefined
+  }
+
+  const nameMatches = categories.filter(
+    (c) => c.name === trimmed || c.name.toLowerCase() === lower,
   )
+  if (nameMatches.length === 1) return nameMatches[0]
+
+  return undefined
 }
 
 /** Static + legacy DB row ids that map to one canonical shop filter slug. */
@@ -1437,6 +1541,7 @@ export function productMatchesCategoryFilter(
   product: {
     categoryId?: number | null
     category?: { id?: number; name?: string; slug?: string } | null
+    gender?: ProductGender | string | null
   },
   selected: string[],
   categories: ProductCategory[],
@@ -1446,6 +1551,7 @@ export function productMatchesCategoryFilter(
   const productSlug = resolveCanonicalCategorySlug(
     product.category ??
       (product.categoryId != null ? { id: product.categoryId } : null),
+    product.gender,
   )
   if (!productSlug) return false
 

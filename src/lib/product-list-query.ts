@@ -651,11 +651,14 @@ export function mapCombinedRowsToProducts(rows: CombinedListRow[]) {
           : [],
       category:
         row.cat_id != null && row.cat_name && row.cat_slug
-          ? resolveCanonicalCategory({
-              id: row.cat_id,
-              name: row.cat_name,
-              slug: row.cat_slug,
-            }) ?? { id: row.cat_id, name: row.cat_name, slug: row.cat_slug }
+          ? resolveCanonicalCategory(
+              {
+                id: row.cat_id,
+                name: row.cat_name,
+                slug: row.cat_slug,
+              },
+              row.gender,
+            ) ?? { id: row.cat_id, name: row.cat_name, slug: row.cat_slug }
           : null,
     }
   })

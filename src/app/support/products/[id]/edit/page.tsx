@@ -328,8 +328,13 @@ const EditProductPage = () => {
   const colors = PRODUCT_COLORS
 
   const isSizeOptional = useMemo(
-    () => isSizeOptionalCategoryId(formData.categoryId, categories),
-    [formData.categoryId, categories],
+    () =>
+      isSizeOptionalCategoryId(
+        formData.categoryId,
+        categories,
+        product?.category ?? null,
+      ),
+    [formData.categoryId, categories, product?.category],
   )
 
   const isVipActive = useMemo(
@@ -1045,6 +1050,7 @@ const EditProductPage = () => {
                   categories={genderCategories}
                   gender={formData.gender}
                   value={formData.categoryId || ''}
+                  categorySlug={product?.category?.slug}
                   onChange={handleCategoryChange}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg text-[20px] text-black focus:outline-none focus:ring-2 focus:ring-black"
                 />

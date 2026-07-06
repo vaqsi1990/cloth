@@ -14,6 +14,8 @@ type ProductCategorySelectProps = {
   className?: string
   placeholder?: string
   gender?: ProductGender | null
+  /** Fallback when stored category id differs from ids in the gender-filtered list */
+  categorySlug?: string | null
 }
 
 export default function ProductCategorySelect({
@@ -23,6 +25,7 @@ export default function ProductCategorySelect({
   className,
   placeholder = 'აირჩიეთ კატეგორია',
   gender,
+  categorySlug,
 }: ProductCategorySelectProps) {
   const groups = gender
     ? groupProductCategoriesForGender(categories, gender)
@@ -30,7 +33,10 @@ export default function ProductCategorySelect({
 
   const flatCategories = groups.flatMap((group) => group.categories)
   const selectedSlug = value
-    ? flatCategories.find((category) => category.id === value)?.slug ?? ''
+    ? flatCategories.find((category) => category.id === value)?.slug
+      ?? (categorySlug && flatCategories.some((category) => category.slug === categorySlug)
+        ? categorySlug
+        : '')
     : ''
 
   return (
