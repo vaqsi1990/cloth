@@ -89,6 +89,26 @@ export const DEFAULT_PRODUCT_CATEGORIES: ProductCategory[] = [
   { id: 103, name: 'სანდლები', slug: 'kids-sandals' },
   { id: 104, name: 'ჩუსტები', slug: 'kids-slippers' },
   { id: 105, name: 'რეზინის ჩექმები', slug: 'kids-rubber-boots' },
+  { id: 106, name: 'ლიფი', slug: 'women-bra' },
+  { id: 107, name: 'საცვალი', slug: 'women-underwear' },
+  { id: 108, name: 'ლიფისა და საცვლის კომპლექტი', slug: 'women-bra-underwear-set' },
+  { id: 109, name: 'ხალათი', slug: 'women-nightgown' },
+  { id: 110, name: 'წინდები', slug: 'women-socks' },
+  { id: 111, name: 'საცურაო კოსტიუმი', slug: 'women-swimsuit' },
+  { id: 112, name: 'ქამარი', slug: 'women-belt' },
+  { id: 113, name: 'საფულე', slug: 'women-wallet' },
+  { id: 114, name: 'საცვალი', slug: 'men-underwear' },
+  { id: 115, name: 'ხალათი', slug: 'men-nightgown' },
+  { id: 116, name: 'წინდები', slug: 'men-socks' },
+  { id: 117, name: 'საცურაო კოსტიუმი', slug: 'men-swimsuit' },
+  { id: 118, name: 'ქამარი', slug: 'men-belt' },
+  { id: 119, name: 'საფულე', slug: 'men-wallet' },
+  { id: 120, name: 'საცვალი', slug: 'kids-underwear' },
+  { id: 121, name: 'ხალათი', slug: 'kids-nightgown' },
+  { id: 122, name: 'წინდები', slug: 'kids-socks' },
+  { id: 123, name: 'საცურაო კოსტიუმი', slug: 'kids-swimsuit' },
+  { id: 124, name: 'ქამარი', slug: 'kids-belt' },
+  { id: 125, name: 'საფულე', slug: 'kids-wallet' },
 ]
 
 /** Canonical women's shop taxonomy — order matches navigation and filters */
@@ -131,6 +151,14 @@ export const WOMEN_PRODUCT_CATEGORIES: ProductCategory[] = [
   { id: 86, name: 'მაღალქუსლიანი ფეხსაცმელი', slug: 'women-high-heels' },
   { id: 87, name: 'ლოფერები', slug: 'women-loafers' },
   { id: 88, name: 'ბალეტკები', slug: 'women-ballet-flats' },
+  { id: 106, name: 'ლიფი', slug: 'women-bra' },
+  { id: 107, name: 'საცვალი', slug: 'women-underwear' },
+  { id: 108, name: 'ლიფისა და საცვლის კომპლექტი', slug: 'women-bra-underwear-set' },
+  { id: 109, name: 'ხალათი', slug: 'women-nightgown' },
+  { id: 110, name: 'წინდები', slug: 'women-socks' },
+  { id: 111, name: 'საცურაო კოსტიუმი', slug: 'women-swimsuit' },
+  { id: 112, name: 'ქამარი', slug: 'women-belt' },
+  { id: 113, name: 'საფულე', slug: 'women-wallet' },
 ]
 
 /** Canonical men's shop taxonomy — order matches navigation and filters */
@@ -164,6 +192,12 @@ export const MEN_PRODUCT_CATEGORIES: ProductCategory[] = [
   { id: 95, name: 'ლოფერები', slug: 'men-loafers' },
   { id: 96, name: 'სანდლები', slug: 'men-sandals' },
   { id: 97, name: 'ჩუსტები', slug: 'men-slippers' },
+  { id: 114, name: 'საცვალი', slug: 'men-underwear' },
+  { id: 115, name: 'ხალათი', slug: 'men-nightgown' },
+  { id: 116, name: 'წინდები', slug: 'men-socks' },
+  { id: 117, name: 'საცურაო კოსტიუმი', slug: 'men-swimsuit' },
+  { id: 118, name: 'ქამარი', slug: 'men-belt' },
+  { id: 119, name: 'საფულე', slug: 'men-wallet' },
 ]
 
 /** Canonical children's shop taxonomy — order matches navigation and filters */
@@ -198,6 +232,12 @@ export const CHILDREN_PRODUCT_CATEGORIES: ProductCategory[] = [
   { id: 103, name: 'სანდლები', slug: 'kids-sandals' },
   { id: 104, name: 'ჩუსტები', slug: 'kids-slippers' },
   { id: 105, name: 'რეზინის ჩექმები', slug: 'kids-rubber-boots' },
+  { id: 120, name: 'საცვალი', slug: 'kids-underwear' },
+  { id: 121, name: 'ხალათი', slug: 'kids-nightgown' },
+  { id: 122, name: 'წინდები', slug: 'kids-socks' },
+  { id: 123, name: 'საცურაო კოსტიუმი', slug: 'kids-swimsuit' },
+  { id: 124, name: 'ქამარი', slug: 'kids-belt' },
+  { id: 125, name: 'საფულე', slug: 'kids-wallet' },
 ]
 
 const WOMEN_CATEGORY_IDS = new Set(WOMEN_PRODUCT_CATEGORIES.map((category) => category.id))
@@ -205,7 +245,11 @@ const MEN_CATEGORY_IDS = new Set(MEN_PRODUCT_CATEGORIES.map((category) => catego
 const CHILDREN_CATEGORY_IDS = new Set(CHILDREN_PRODUCT_CATEGORIES.map((category) => category.id))
 const ACCESSORY_CATEGORY_IDS = new Set([11, 12, 17, 51])
 const ACCESSORY_CATEGORY_SLUGS = new Set(['accessories', 'goggles', 'helmet', 'ski-goggles', 'aksesuarebi'])
-const SIZE_OPTIONAL_CATEGORY_IDS = new Set([...ACCESSORY_CATEGORY_IDS, 47, 48, 53, 55, 57])
+const SIZE_OPTIONAL_CATEGORY_IDS = new Set([
+  ...ACCESSORY_CATEGORY_IDS,
+  47, 48, 53, 55, 57,
+  112, 113, 118, 119, 124, 125,
+])
 const SIZE_OPTIONAL_CATEGORY_SLUGS = new Set([
   ...ACCESSORY_CATEGORY_SLUGS,
   'bavshvebis-kaliaska',
@@ -213,6 +257,12 @@ const SIZE_OPTIONAL_CATEGORY_SLUGS = new Set([
   'women-bags',
   'men-bags',
   'kids-bags',
+  'women-belt',
+  'women-wallet',
+  'men-belt',
+  'men-wallet',
+  'kids-belt',
+  'kids-wallet',
 ])
 
 const FOOTWEAR_CATEGORY_IDS = new Set([
@@ -380,7 +430,13 @@ export function isSizeOptionalCategory(category: ProductCategory | undefined | n
   if (matchesSizeOptionalCatalogEntry(canonicalByName)) return true
 
   const name = category.name.trim().toLowerCase()
-  if (name.includes('კალიასკ') || name.includes('სათამაშო') || name.includes('ჩანთ')) {
+  if (
+    name.includes('კალიასკ') ||
+    name.includes('სათამაშო') ||
+    name.includes('ჩანთ') ||
+    name.includes('ქამარ') ||
+    name.includes('საფულ')
+  ) {
     return true
   }
   if (name.includes('სათვალ')) return true
@@ -410,7 +466,9 @@ export function isSizeOptionalShopContext(input: {
     return (
       normalized.includes('ჩანთ') ||
       normalized.includes('სათვალ') ||
-      normalized.includes('აქსესუარ')
+      normalized.includes('აქსესუარ') ||
+      normalized.includes('ქამარ') ||
+      normalized.includes('საფულ')
     )
   })
 }
@@ -1249,6 +1307,42 @@ const CATEGORY_SLUG_ALIASES: Record<string, string> = {
   'kids-rubber-boots': 'kids-rubber-boots',
   'rezinis-cheqmebi': 'kids-rubber-boots',
   'რეზინის ჩექმები': 'kids-rubber-boots',
+  'women-bra': 'women-bra',
+  lifi: 'women-bra',
+  'ლიფი': 'women-bra',
+  'women-underwear': 'women-underwear',
+  sacvali: 'women-underwear',
+  'საცვალი': 'women-underwear',
+  'women-bra-underwear-set': 'women-bra-underwear-set',
+  'lifisa-da-sacvlis-kompleqti': 'women-bra-underwear-set',
+  'ლიფისა და საცვლის კომპლექტი': 'women-bra-underwear-set',
+  'women-nightgown': 'women-nightgown',
+  khalati: 'women-nightgown',
+  'ხალათი': 'women-nightgown',
+  'women-socks': 'women-socks',
+  tsindebi: 'women-socks',
+  'წინდები': 'women-socks',
+  'women-swimsuit': 'women-swimsuit',
+  'satsurao-kostiumi': 'women-swimsuit',
+  'საცურაო კოსტიუმი': 'women-swimsuit',
+  'women-belt': 'women-belt',
+  kamari: 'women-belt',
+  'ქამარი': 'women-belt',
+  'women-wallet': 'women-wallet',
+  sapule: 'women-wallet',
+  'საფულე': 'women-wallet',
+  'men-underwear': 'men-underwear',
+  'men-nightgown': 'men-nightgown',
+  'men-socks': 'men-socks',
+  'men-swimsuit': 'men-swimsuit',
+  'men-belt': 'men-belt',
+  'men-wallet': 'men-wallet',
+  'kids-underwear': 'kids-underwear',
+  'kids-nightgown': 'kids-nightgown',
+  'kids-socks': 'kids-socks',
+  'kids-swimsuit': 'kids-swimsuit',
+  'kids-belt': 'kids-belt',
+  'kids-wallet': 'kids-wallet',
 }
 
 const categoryIdBySlug = new Map(
