@@ -1162,7 +1162,7 @@ const ShopPageClient = ({ homepageMode = false }: ShopPageClientProps) => {
 
             <div className="container max-w-7xl mx-auto px-2 py-8">
                 {/* Mobile Filter Bar - sticky below header on small screens */}
-                <div className="lg:hidden sticky top-[4.625rem] md:top-24 z-40 -mx-2 px-2 mb-4 py-2 bg-white border-b border-gray-200 shadow-sm">
+                <div className="lg:hidden mb-4">
                     <div className="bg-white rounded-lg shadow-sm border">
                         <div className="flex items-center justify-center px-2 py-2">
                             <button
