@@ -380,8 +380,8 @@ const HeaderContent = () => {
 
           {/* --- Mobile/Tablet: Search Icon and Menu --- */}
           <div className="flex lg:hidden items-center gap-1 sm:gap-2 flex-shrink-0">
-            {/* Hidden below 420px — moved to bottom nav */}
-            <div className="hidden min-[426px]:flex items-center gap-1 sm:gap-2">
+            {/* Mobile icons live in bottom nav (lg:hidden) — keep header minimal on phones/tablets */}
+            <div className="hidden items-center gap-1 sm:gap-2">
             <Link
               href={newProductHref}
               onClick={closeAllOverlays}
@@ -512,13 +512,13 @@ const HeaderContent = () => {
         <>
           <button
             type="button"
-            className="lg:hidden fixed inset-x-0 bottom-0 max-[425px]:bottom-16 z-40 bg-black/40"
+            className="lg:hidden fixed inset-x-0 bottom-0 max-lg:bottom-16 z-40 bg-black/40"
             style={{ top: headerBottom }}
             onClick={closeMobileMenu}
             aria-label="მენიუს დახურვა"
           />
           <div
-            className="lg:hidden fixed inset-x-0 bottom-0 max-[425px]:bottom-16 z-50 flex flex-col bg-white border-t border-gray-200 shadow-xl"
+            className="lg:hidden fixed inset-x-0 bottom-0 max-lg:bottom-16 z-50 flex flex-col bg-white border-t border-gray-200 shadow-xl"
             style={{ top: headerBottom }}
           >
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 flex-shrink-0">
@@ -554,7 +554,7 @@ const HeaderContent = () => {
               <Link
                 href={newProductHref}
                 onClick={closeMobileMenu}
-                className="block px-3 py-2.5 text-black hover:bg-gray-100 rounded-lg text-base max-[425px]:flex min-[426px]:hidden items-center gap-2"
+                className="block px-3 py-2.5 text-black hover:bg-gray-100 rounded-lg text-base flex lg:hidden items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
                 ახალი პროდუქტი

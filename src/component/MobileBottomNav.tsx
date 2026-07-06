@@ -59,7 +59,7 @@ const MobileBottomNav = ({
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 hidden max-[425px]:flex"
+      className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 flex lg:hidden"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       aria-label="მთავარი ნავიგაცია"
     >

@@ -19,6 +19,20 @@ const nextConfig: NextConfig = {
   },
   // Compress output for better performance
   compress: true,
+  async headers() {
+    return [
+      {
+        // Avoid stale HTML on mobile Safari after deploys (iPhone cache)
+        source: "/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=0, must-revalidate",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;
