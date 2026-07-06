@@ -504,6 +504,27 @@ export function parseProductFormSizeSelection(
     return { sizeSystem: undefined, size: value }
   }
 
+  if (isFootwear) {
+    const [system, ...sizeParts] = value.split(':')
+    const nextSize = sizeParts.join(':')
+    if (system && nextSize && ['EU', 'US', 'UK', 'CN'].includes(system)) {
+      return {
+        sizeSystem: system as ProductFormSizeSystem,
+        size: normalizeStoredFootwearSize(nextSize),
+      }
+    }
+
+    const footwearSize = normalizeStoredFootwearSize(value)
+    if (
+      footwearSize &&
+      (isPredefinedFootwearSize(footwearSize, gender) || isValidCustomFootwearSize(footwearSize))
+    ) {
+      return { sizeSystem: 'EU', size: footwearSize }
+    }
+
+    return { sizeSystem: undefined, size: undefined }
+  }
+
   if (isAdultClothingSize(value)) {
     return { sizeSystem: 'EU', size: value }
   }
@@ -549,15 +570,20 @@ export function getProductFormSizeSelectValue(
     : false
 
   if (gender === 'CHILDREN' && !isFootwear) return size
+
+  if (isFootwear) {
+    const footwearSize = normalizeStoredFootwearSize(size)
+    if (!footwearSize) return ''
+    if (isAdultClothingSize(footwearSize) && !isPredefinedFootwearSize(footwearSize, gender)) {
+      return ''
+    }
+    const system = sizeSystem?.trim() || 'EU'
+    return `${system}:${footwearSize}`
+  }
+
   if (isAdultClothingSize(size)) return size
   const normalized = normalizeAdultClothingSize(size)
   if (isAdultClothingSize(normalized)) return normalized
-
-  if (isFootwear) {
-    const system = sizeSystem?.trim() || 'EU'
-    const footwearSize = normalizeStoredFootwearSize(size)
-    return `${system}:${footwearSize}`
-  }
 
   if (sizeSystem?.trim()) return `${sizeSystem}:${size}`
   return ''

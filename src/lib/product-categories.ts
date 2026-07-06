@@ -254,7 +254,7 @@ function resolveApiCategoryForTemplate<T extends ProductCategory>(
   return undefined
 }
 
-export function isFootwearCategory(category: ProductCategory | undefined | null): boolean {
+function matchesFootwearCatalogEntry(category: ProductCategory | undefined | null): boolean {
   if (!category) return false
   if (FOOTWEAR_CATEGORY_IDS.has(category.id)) return true
   if (FOOTWEAR_CATEGORY_SLUGS.has(category.slug)) return true
@@ -270,7 +270,21 @@ export function isFootwearCategory(category: ProductCategory | undefined | null)
   )
   if (canonicalByName) return true
 
+  const name = category.name.trim().toLowerCase()
+  if (name.includes('ფეხსაცმელ')) return true
+  if (name.includes('ტუფლ')) return true
+  if (name.includes('ბოტას') || name.includes('ბოტი')) return true
+  if (name.includes('სანდლ')) return true
+  if (name.includes('ჩუსტ')) return true
+  if (name.includes('ლოფერ')) return true
+  if (name.includes('ბალეტკ')) return true
+  if (name.includes('ნახევარბოტ')) return true
+
   return false
+}
+
+export function isFootwearCategory(category: ProductCategory | undefined | null): boolean {
+  return matchesFootwearCatalogEntry(category)
 }
 
 export function isFootwearCategoryId(
@@ -441,6 +455,21 @@ export function clearVariantSizes<
     sizeDetails: undefined,
     sizeSystem: undefined,
   }))
+}
+
+/** Reset size fields when switching between footwear, clothing, and size-optional categories. */
+export function shouldResetProductFormSizesOnCategoryChange(
+  prevCategoryId: number | undefined,
+  nextCategoryId: number | undefined,
+  categories: ProductCategory[],
+): boolean {
+  if (prevCategoryId === nextCategoryId) return false
+  if (isSizeOptionalCategoryId(nextCategoryId, categories)) return true
+  if (isSizeOptionalCategoryId(prevCategoryId, categories)) return true
+
+  const prevFootwear = isFootwearCategoryId(prevCategoryId, categories)
+  const nextFootwear = isFootwearCategoryId(nextCategoryId, categories)
+  return prevFootwear !== nextFootwear
 }
 
 export function isChildrenProductCategory(

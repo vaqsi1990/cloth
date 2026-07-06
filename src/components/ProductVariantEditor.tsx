@@ -215,6 +215,7 @@ export default function ProductVariantEditor({
                   {requireSize && <span className="text-red-600"> *</span>}
                 </label>
                 <ProductFormSizeField
+                  key={`${categoryId ?? 'none'}-${gender}`}
                   mode="multiple"
                   gender={gender}
                   sizeOptionsInput={sizeOptionsInput}

@@ -20,6 +20,7 @@ import {
   isCategoryValidForProductGender,
   isSizeOptionalCategoryId,
   clearVariantSizes,
+  shouldResetProductFormSizesOnCategoryChange,
   PRODUCT_GENDER_OPTIONS,
   resolveCategorySlugForSubmit,
   type ProductGender,
@@ -274,17 +275,27 @@ const NewProductPage = () => {
   }
 
   const handleCategoryChange = (categoryId: number | undefined) => {
-    handleInputChange('categoryId', categoryId)
-    if (isSizeOptionalCategoryId(categoryId, categories)) {
+    const prevCategoryId = formData.categoryId
+    const shouldResetSizes = shouldResetProductFormSizesOnCategoryChange(
+      prevCategoryId,
+      categoryId,
+      categories,
+    )
+
+    if (shouldResetSizes) {
       clearSizeFields()
       setFormData((prev) => ({
         ...prev,
+        categoryId,
         size: undefined,
         sizeSystem: undefined,
         variants: clearVariantSizes(prev.variants),
       }))
       return
     }
+
+    handleInputChange('categoryId', categoryId)
+
     if (
       selectedSize &&
       !isValidProductFormSize(selectedSize, formData.gender, {
@@ -293,6 +304,11 @@ const NewProductPage = () => {
       })
     ) {
       clearSizeFields()
+      setFormData((prev) => ({
+        ...prev,
+        categoryId,
+        variants: clearVariantSizes(prev.variants),
+      }))
     }
   }
 
