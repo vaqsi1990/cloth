@@ -3,7 +3,8 @@
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Plus, MessageCircle, User, ShoppingCart } from 'lucide-react'
+import { Home, Plus, MessageCircle, User, ShoppingCart, LogOut } from 'lucide-react'
+import { signOut, useSession } from 'next-auth/react'
 import { useUserChatNotification } from '@/components/UserChatNotificationProvider'
 
 type MobileBottomNavProps = {
@@ -20,19 +21,27 @@ const MobileBottomNav = ({
   newProductHref,
 }: MobileBottomNavProps) => {
   const pathname = usePathname()
+  const { data: session } = useSession()
   const { unreadCount } = useUserChatNotification()
   const [mounted, setMounted] = useState(false)
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
 
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  useEffect(() => {
+    setIsProfileMenuOpen(false)
+  }, [pathname])
 
   // Avoid SSR/client mismatch for session-dependent hrefs, labels, and badges.
   const showAuthenticated = mounted && isAuthenticated
   const addProductHref = mounted ? newProductHref : '/auth/signup'
   const accountHref = mounted ? profileHref : '/auth/signin'
   const chatHref = showAuthenticated ? '/account/chats' : '/auth/signin'
-  const profileLabel = showAuthenticated ? 'შენ' : 'შესვლა'
+  const profileLabel = showAuthenticated
+    ? session?.user?.name?.trim() || 'პროფილი'
+    : 'შესვლა'
   const showUnreadBadge = showAuthenticated && unreadCount > 0
   const showCartBadge = mounted && cartItemCount > 0
 
@@ -100,14 +109,67 @@ const MobileBottomNav = ({
           <Plus className="w-6 h-6 flex-shrink-0" strokeWidth={isNewProduct ? 2.5 : 2} />
           <span className={labelClass(isNewProduct)}>+ დამატება</span>
         </Link>
-        <Link
-          href={accountHref}
-          className={navItemClass(isProfile)}
-          aria-current={isProfile ? 'page' : undefined}
-        >
-          <User className="w-6 h-6 flex-shrink-0" strokeWidth={isProfile ? 2.5 : 2} />
-          <span className={labelClass(isProfile)}>{profileLabel}</span>
-        </Link>
+        {showAuthenticated ? (
+          <div className="relative flex flex-1 min-w-0">
+            <button
+              type="button"
+              onClick={() => setIsProfileMenuOpen((open) => !open)}
+              className={navItemClass(isProfile)}
+              aria-expanded={isProfileMenuOpen}
+              aria-haspopup="menu"
+              aria-label="პროფილის მენიუ"
+            >
+              <User className="w-6 h-6 flex-shrink-0" strokeWidth={isProfile ? 2.5 : 2} />
+              <span className={labelClass(isProfile)}>{profileLabel}</span>
+            </button>
+            {isProfileMenuOpen && (
+              <>
+                <button
+                  type="button"
+                  className="fixed inset-0 z-40"
+                  aria-label="მენიუს დახურვა"
+                  onClick={() => setIsProfileMenuOpen(false)}
+                />
+                <div className="absolute bottom-full left-1/2 z-50 mb-2 w-48 -translate-x-1/2 rounded-xl border border-gray-200 bg-white shadow-xl">
+                  <div className="py-2">
+                    <p className="px-4 py-2 font-semibold text-black">{session?.user?.name}</p>
+                    <Link
+                      href={accountHref}
+                      className="block px-4 py-2 text-black hover:bg-gray-100"
+                      onClick={() => setIsProfileMenuOpen(false)}
+                    >
+                      {session?.user?.role === 'ADMIN'
+                        ? 'ადმინისტრატორი'
+                        : session?.user?.role === 'SUPPORT'
+                          ? 'საფორთი'
+                          : 'პროფილი'}
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsProfileMenuOpen(false)
+                        signOut()
+                      }}
+                      className="flex w-full items-center space-x-2 px-4 py-2 text-left text-black hover:bg-gray-100"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      <span>გასვლა</span>
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        ) : (
+          <Link
+            href={accountHref}
+            className={navItemClass(isProfile)}
+            aria-current={isProfile ? 'page' : undefined}
+          >
+            <User className="w-6 h-6 flex-shrink-0" strokeWidth={isProfile ? 2.5 : 2} />
+            <span className={labelClass(isProfile)}>{profileLabel}</span>
+          </Link>
+        )}
 
         <Link href="/cart" className={navItemClass(isCart)} aria-current={isCart ? 'page' : undefined}>
           <span className="relative flex-shrink-0">
