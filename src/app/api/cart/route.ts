@@ -29,6 +29,11 @@ import {
 } from '@/lib/sync-cart-prices'
 import { validateSaleItemStock } from '@/lib/sale-stock'
 import { purgeInvalidCartItems } from '@/lib/cart-cleanup'
+import {
+  cartHasAnyPickupAvailable,
+  cartItemsAllowPickup,
+  resolveProductPickupAddress,
+} from '@/lib/product-pickup'
 
 // Cart item validation schema
 const cartItemSchema = z.object({
@@ -51,6 +56,7 @@ const cartDeliverySchema = z.object({
   deliveryType: z.enum(['pickup', 'delivery']),
   deliveryCityId: z.number().nullable().optional(),
   deliverySpeed: z.enum(['extra', 'standard']).nullable().optional(),
+  cartItemId: z.number().int().positive().optional(),
 })
 
 const cartSelect = {
@@ -109,15 +115,6 @@ const cartSelect = {
     },
   },
 } as const
-
-function cartPickupAvailable(
-  items: Array<{ product: { allowsPickup: boolean } | null }>,
-): boolean {
-  if (items.length === 0) {
-    return true
-  }
-  return items.every((item) => item.product?.allowsPickup === true)
-}
 
 function buildCartResponse(cart: {
   id: number
@@ -193,7 +190,7 @@ function buildCartResponse(cart: {
       discountStartDate: product?.discountStartDate?.toISOString() ?? null,
       rentalPriceTiers: product?.rentalPriceTiers ?? [],
       pricePerDay: product?.pricePerDay ?? null,
-      sellerPickupAddress: item.product?.pickupAddress?.trim() || null,
+      sellerPickupAddress: resolveProductPickupAddress(item.product) || null,
       allowsPickup: item.product?.allowsPickup ?? false,
     }
   })
@@ -215,11 +212,9 @@ function buildCartResponse(cart: {
   }, 0)
 
   const deliverySpeed = fromPrismaDeliverySpeed(cart.deliverySpeed)
-  const pickupAvailable = cartPickupAvailable(cart.items)
-  const effectiveDeliveryType =
-    !pickupAvailable && cart.deliveryType === 'pickup'
-      ? 'delivery'
-      : ((cart.deliveryType as 'pickup' | 'delivery' | null) || 'pickup')
+  const pickupAvailable = cartItemsAllowPickup(cart.items)
+  const deliveryType =
+    (cart.deliveryType as 'pickup' | 'delivery' | null) || 'pickup'
 
   return {
     id: cart.id,
@@ -228,14 +223,14 @@ function buildCartResponse(cart: {
     totalPrice: itemsTotal,
     pickupAvailable,
     delivery: {
-      type: effectiveDeliveryType,
+      type: deliveryType,
       cityId: cart.deliveryCityId,
       cityName: cart.deliveryCity?.name || null,
       speed: deliverySpeed,
       price: cart.deliveryPrice || 0,
     },
     totalWithDelivery:
-      effectiveDeliveryType === 'delivery' && cart.deliveryPrice
+      deliveryType === 'delivery' && cart.deliveryPrice
         ? itemsTotal + cart.deliveryPrice
         : itemsTotal,
   }
@@ -251,9 +246,9 @@ async function enforceCartDeliveryRules(cartId: number) {
     return null
   }
 
-  const pickupAvailable = cartPickupAvailable(cart.items)
+  const canUsePickup = cartHasAnyPickupAvailable(cart.items)
 
-  if (!pickupAvailable && cart.deliveryType === 'pickup') {
+  if (!canUsePickup && cart.deliveryType === 'pickup') {
     return prisma.cart.update({
       where: { id: cartId },
       data: {
@@ -558,7 +553,10 @@ export async function PATCH(request: NextRequest) {
         select: cartSelect,
       })
 
-      if (currentCart && !cartPickupAvailable(currentCart.items)) {
+      if (
+        currentCart &&
+        !cartItemsAllowPickup(currentCart.items, data.cartItemId)
+      ) {
         return NextResponse.json({
           success: false,
           message: 'ამ პროდუქტისთვის ხელმისაწვდომია მხოლოდ მიტანა',

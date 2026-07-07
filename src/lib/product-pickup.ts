@@ -36,6 +36,46 @@ export function refineProductPickupAddress(
   }
 }
 
+type ProductPickupSource = {
+  allowsPickup?: boolean | null
+  pickupAddress?: string | null
+  user?: { pickupAddress?: string | null } | null
+} | null | undefined
+
+export function resolveProductPickupAddress(product: ProductPickupSource): string {
+  return (
+    product?.pickupAddress?.trim() ||
+    product?.user?.pickupAddress?.trim() ||
+    ''
+  )
+}
+
+export function productAllowsPickup(product: ProductPickupSource): boolean {
+  return product?.allowsPickup === true
+}
+
+export function cartItemsAllowPickup(
+  items: Array<{ id: number; product: { allowsPickup: boolean } | null }>,
+  scopeItemId?: number,
+): boolean {
+  const relevantItems =
+    scopeItemId !== undefined
+      ? items.filter((item) => item.id === scopeItemId)
+      : items
+
+  if (relevantItems.length === 0) {
+    return scopeItemId === undefined
+  }
+
+  return relevantItems.every((item) => productAllowsPickup(item.product))
+}
+
+export function cartHasAnyPickupAvailable(
+  items: Array<{ product: { allowsPickup: boolean } | null }>,
+): boolean {
+  return items.some((item) => productAllowsPickup(item.product))
+}
+
 export function resolveCartPickupAddress(
   addresses: Array<string | null | undefined>,
 ): string {

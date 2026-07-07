@@ -64,6 +64,8 @@ const CheckoutPage = () => {
     const checkoutItems = checkoutItem ? [checkoutItem] : []
     const { data: session, status: sessionStatus } = useSession()
     const hasPrefilledProfileRef = useRef(false)
+    const hasInitializedDeliveryRef = useRef(false)
+    const userDeliveryChoiceRef = useRef<DeliveryType | null>(null)
     
     const [formData, setFormData] = useState({
         firstName: '',
@@ -148,14 +150,41 @@ const CheckoutPage = () => {
     }, [deliveryType, fetchDeliveryCities])
 
     useEffect(() => {
-        if (!cart?.delivery) return
-        setDeliveryType(cart.delivery.type)
+        if (!cart?.delivery || !checkoutItem) return
+        if (userDeliveryChoiceRef.current !== null) return
+        if (hasInitializedDeliveryRef.current) return
+
+        hasInitializedDeliveryRef.current = true
+
+        if (pickupAvailable) {
+            const initialType =
+                cart.delivery.type === 'delivery' && cart.delivery.cityId
+                    ? 'delivery'
+                    : 'pickup'
+            setDeliveryType(initialType)
+            if (initialType === 'delivery') {
+                setSelectedDeliveryCityId(cart.delivery.cityId)
+                setDeliverySpeed(cart.delivery.speed)
+                if (cart.delivery.cityName) {
+                    setFormData((prev) => ({
+                        ...prev,
+                        city: cart.delivery.cityName || prev.city,
+                    }))
+                }
+            }
+            return
+        }
+
+        setDeliveryType('delivery')
         setSelectedDeliveryCityId(cart.delivery.cityId)
         setDeliverySpeed(cart.delivery.speed)
         if (cart.delivery.cityName) {
-            setFormData((prev) => ({ ...prev, city: cart.delivery.cityName || prev.city }))
+            setFormData((prev) => ({
+                ...prev,
+                city: cart.delivery.cityName || prev.city,
+            }))
         }
-    }, [cart?.delivery])
+    }, [cart?.delivery, checkoutItem, pickupAvailable])
 
     useEffect(() => {
         if (!pickupAvailable && deliveryType === 'pickup') {
@@ -164,6 +193,7 @@ const CheckoutPage = () => {
     }, [pickupAvailable, deliveryType])
 
     useEffect(() => {
+        if (deliveryType === 'pickup' && pickupAvailable) return
         if (cart?.delivery?.cityId) return
         if (selectedDeliveryCityId !== null) return
         if (deliveryCities.length === 0) return
@@ -183,6 +213,7 @@ const CheckoutPage = () => {
             deliveryType: 'delivery',
             deliveryCityId: defaultCity.id,
             deliverySpeed: nextSpeed,
+            cartItemId: checkoutItemId,
         })
     }, [
         cart?.delivery?.cityId,
@@ -192,6 +223,7 @@ const CheckoutPage = () => {
         deliveryType,
         deliverySpeed,
         updateCartDelivery,
+        checkoutItemId,
     ])
 
     // Pre-fill checkout from authenticated user's profile
@@ -683,22 +715,30 @@ const CheckoutPage = () => {
             deliveryType: nextType,
             deliveryCityId: nextType === 'delivery' ? nextCityId : null,
             deliverySpeed: nextType === 'delivery' ? nextSpeed : null,
+            cartItemId: checkoutItemId,
         })
         setSavingDelivery(false)
         if (!result.success) {
             showToast(result.message, 'error')
+            return false
         }
+        return true
     }
 
     const handleDeliveryTypeChange = async (type: DeliveryType) => {
         if (type === 'pickup' && !pickupAvailable) {
             return
         }
+        userDeliveryChoiceRef.current = type
         setDeliveryType(type)
         if (type === 'pickup') {
             setSelectedDeliveryCityId(null)
             setDeliverySpeed(null)
-            await persistDelivery('pickup', null, null)
+            const saved = await persistDelivery('pickup', null, null)
+            if (!saved) {
+                userDeliveryChoiceRef.current = 'delivery'
+                setDeliveryType('delivery')
+            }
         }
     }
 

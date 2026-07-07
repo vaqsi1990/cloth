@@ -171,6 +171,7 @@ export const useCart = () => {
     deliveryType: DeliveryType
     deliveryCityId?: number | null
     deliverySpeed?: DeliverySpeedOption | null
+    cartItemId?: number
   }) => {
     if (!session?.user?.id) {
       return { success: false, message: 'ავტორიზაცია საჭიროა' }
