@@ -21,6 +21,10 @@ interface ChatQuestion {
   a?: string
   // Optional call-to-action link rendered as a button below the answer.
   link?: { url: string; label: string }
+  // Optional tutorial video (path relative to /public) shown below the answer.
+  video?: string
+  // When set, shows a button (with this label) that starts a normal live chat.
+  chat?: string
 }
 
 interface ChatTopic {
@@ -29,7 +33,8 @@ interface ChatTopic {
   questions?: ChatQuestion[]
 }
 
-const CONTACT_INFO = 'დაგვიკავშირდით:\ndressla.online@gmail.com\n+995 599 556 395'
+const CONTACT_LINES = 'dressla.online@gmail.com\n+995 599 556 395'
+const CONTACT_INFO = `დაგვიკავშირდით:\n${CONTACT_LINES}`
 
 const CHAT_TOPICS: ChatTopic[] = [
   {
@@ -115,10 +120,100 @@ const CHAT_TOPICS: ChatTopic[] = [
       },
     ],
   },
-  { label: 'შეკვეთა და დაბრუნება' },
-  { label: 'გაყიდვა' },
-  { label: 'გაქირავება' },
-  { label: 'ტექნიკური დახმარება' },
+  {
+    label: 'შეკვეთა და დაბრუნება',
+    questions: [
+      {
+        q: 'როგორ გავაუქმო შეკვეთა?',
+        a: 'შეკვეთის გაუქმება შესაძლებელია მხოლოდ იმ შემთხვევაში, თუ პროდუქტს აქვს წუნი. ასეთ შემთხვევაში დაუყოვნებლივ დაგვიკავშირდით:\ndressla.online@gmail.com',
+      },
+      {
+        q: 'შესაძლებელია დაბრუნება?',
+        a: 'დიახ, დაბრუნება შესაძლებელია მხოლოდ იმ შემთხვევაში, თუ პროდუქტს აქვს წუნი.',
+      },
+      {
+        q: 'როდის დამიბრუნდება თანხა?',
+        a: 'თანხა დაგიბრუნდებათ 10 სამუშაო დღის განმავლობაში. Dressla ცდილობს თანხის დაბრუნება მაქსიმალურად სწრაფად უზრუნველყოს.',
+      },
+      {
+        q: 'ნივთს აქვს წუნი',
+        a: 'თუ მიღებულ ნივთს აქვს წუნი, დაუყოვნებლივ დაგვიკავშირდით:\ndressla.online@gmail.com',
+      },
+    ],
+  },
+  {
+    label: 'გაყიდვა',
+    questions: [
+      {
+        q: 'როგორ გავყიდო პროდუქტი?',
+        a: 'პროდუქტის გასაყიდად საჭიროა რეგისტრაციისას მიუთითოთ თქვენი საბანკო ანგარიში. შემდეგ გაეცანით პროდუქტის დამატების ტუტორიალს და განათავსეთ პროდუქტი.',
+        video: '/video/item.mp4',
+      },
+      {
+        q: 'როგორ განვათავსო პროდუქტი?',
+        a: 'პროდუქტის განთავსება შეგიძლიათ სტანდარტული რეგისტრაციის შემდეგ. გაეცანით პროდუქტის დამატების ტუტორიალს.',
+        video: '/video/item.mp4',
+      },
+      {
+        q: 'როგორ დავამატო გასაყიდი ნივთი?',
+        a: 'გაეცანით პროდუქტის დამატების ტუტორიალს და მიჰყევით ინსტრუქციას.',
+        video: '/video/item.mp4',
+      },
+      {
+        q: 'პროდუქციის განთავსება ფასიანია?',
+        a: 'არა. პროდუქტის განთავსება სრულიად უფასოა.',
+      },
+      {
+        q: 'იღებს Dressla საკომისიოს?',
+        a: 'არა. Dressla არ იღებს საკომისიოს გამყიდველისგან. თქვენ მიერ მითითებული თანხა სრულად დაგერიცხებათ.',
+      },
+      {
+        q: 'რატომ არ ჩანს ჩემი პროდუქტი?',
+        a: 'შეამოწმეთ „ჩემი პროდუქცია“. შესაძლოა პროდუქტი ჯერ მოდერაციას გადის, ადმინისტრაციამ დაგიტოვათ შენიშვნა ან წაიშალა, თუ არ შეესაბამება Dressla-ს წესებს.',
+      },
+      {
+        q: 'როგორ მივიღო გაყიდული თანხა?',
+        a: 'გაყიდული თანხა ჩაირიცხება იმ საბანკო ანგარიშზე, რომელიც რეგისტრაციისას მიუთითეთ.',
+      },
+    ],
+  },
+  {
+    label: 'გაქირავება',
+    questions: [
+      {
+        q: 'როგორ გავაქირავო პროდუქტი?',
+        a: 'გაეცანით გასაქირავებელი პროდუქტის დამატების ტუტორიალს და მიჰყევით ინსტრუქციას.',
+        video: '/video/new.mp4',
+      },
+      {
+        q: 'როგორ დავამატო გასაქირავებელი ნივთი?',
+        a: 'გაეცანით გასაქირავებელი პროდუქტის დამატების ტუტორიალს.',
+        video: '/video/new.mp4',
+      },
+    ],
+  },
+  {
+    label: 'ტექნიკური დახმარება',
+    questions: [
+      {
+        q: 'ჩემი პროდუქტი არ ჩანს.',
+        a: 'შეამოწმეთ „ჩემი პროდუქცია“. შესაძლოა პროდუქტი ჯერ მოდერაციას გადის, აქვს ადმინისტრაციის შენიშვნა ან წაიშალა წესების დარღვევის გამო.',
+      },
+      {
+        q: 'ანგარიში ვერ შევქმენი.',
+        a: `თუ რეგისტრაცია ვერ სრულდება, დაუკავშირდით მხარდაჭერის გუნდს:\n${CONTACT_LINES}`,
+      },
+      {
+        q: 'გადახდასთან პრობლემა მაქვს.',
+        a: `თუ გადახდა ვერ სრულდება, სცადეთ თავიდან ან დაგვიკავშირდით:\n${CONTACT_LINES}`,
+      },
+      {
+        q: 'სხვა პრობლემა მაქვს.',
+        a: `თუ თქვენს კითხვაზე პასუხი ვერ იპოვეთ, დაუკავშირდით საფორთს:\n${CONTACT_LINES}`,
+        chat: 'საფორთთან დაკავშირება',
+      },
+    ],
+  },
 ]
 
 const CHAT_TOPIC_STORAGE_KEY = 'chatSelectedTopic'
@@ -751,6 +846,14 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
                     {selectedQuestion?.a}
                   </p>
                 </div>
+                {selectedQuestion?.video ? (
+                  <video
+                    src={selectedQuestion.video}
+                    controls
+                    playsInline
+                    className="mt-3 w-full h-[300px] rounded-lg border border-gray-200 bg-black"
+                  />
+                ) : null}
                 {selectedQuestion?.link ? (
                   <a
                     href={selectedQuestion.link.url}
@@ -760,6 +863,15 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
                   >
                     {selectedQuestion.link.label}
                   </a>
+                ) : null}
+                {selectedQuestion?.chat ? (
+                  <button
+                    type="button"
+                    onClick={() => confirmTopic(menuTopic ?? 'ტექნიკური დახმარება')}
+                    className="mt-4 w-full px-4 py-3 rounded-lg bg-[#1B3729] text-white font-medium text-[15px] hover:bg-[#2a4d3a] transition-colors"
+                  >
+                    {selectedQuestion.chat}
+                  </button>
                 ) : null}
               </div>
             ) : isFetchingMessages && messages.length === 0 ? (
