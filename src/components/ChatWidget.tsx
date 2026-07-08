@@ -238,9 +238,12 @@ interface ChatWidgetProps {
 const ChatWidget: React.FC<ChatWidgetProps> = ({
   isOpen,
   onToggle,
-  chatRoomId,
   onChatRoomCreated
 }) => {
+  // The chat room lives only for the current open session. It always starts at 0
+  // so every time the widget opens the user sees the topic menu with an empty chat,
+  // instead of resuming a previous conversation.
+  const [chatRoomId, setChatRoomId] = useState(0)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [pendingImageUrl, setPendingImageUrl] = useState<string | null>(null)
@@ -273,18 +276,14 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
     guestEmail: session?.user?.id ? undefined : guestEmail,
   })
 
-  // Restore a previously selected topic (only matters before a room is created).
-  useLayoutEffect(() => {
-    if (typeof window === 'undefined') return
-    try {
-      const savedTopic = localStorage.getItem(CHAT_TOPIC_STORAGE_KEY)
-      if (savedTopic) setSelectedTopic(savedTopic)
-    } catch (error) {
-      console.error('Error loading chat topic from localStorage:', error)
-    }
-  }, [])
+  // Keep the current room id in sync with the parent (badge/notifications) while
+  // still driving all UI from local state so each open starts fresh.
+  const registerChatRoom = useCallback((id: number) => {
+    setChatRoomId(id)
+    onChatRoomCreated(id)
+  }, [onChatRoomCreated])
 
-  // Restore guest session before paint so the first fetch includes x-guest-email.
+  // Restore only the guest's name/email for convenience (never the previous room).
   useLayoutEffect(() => {
     if (typeof window === 'undefined') return
     if (session?.user?.id) return
@@ -292,24 +291,15 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
     try {
       const savedName = localStorage.getItem('chatGuestName')
       const savedEmail = localStorage.getItem('chatGuestEmail')
-      const savedChatRoomId = localStorage.getItem('chatRoomId')
 
       if (savedName && savedEmail) {
         setGuestName(savedName)
         setGuestEmail(savedEmail)
-        setShowGuestForm(false)
-
-        if (savedChatRoomId && savedChatRoomId !== '0') {
-          const roomId = parseInt(savedChatRoomId, 10)
-          if (!Number.isNaN(roomId)) {
-            onChatRoomCreated(roomId)
-          }
-        }
       }
     } catch (error) {
       console.error('Error loading chat data from localStorage:', error)
     }
-  }, [onChatRoomCreated, session?.user?.id])
+  }, [session?.user?.id])
 
 
 
@@ -351,7 +341,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
         // If chat room not found, reset chat room ID to allow creating new one
         if (response.status === 404) {
           console.log(`Chat room ${chatRoomId} not found, resetting...`)
-          onChatRoomCreated(0)
+          registerChatRoom(0)
           setMessages([])
           if (typeof window !== 'undefined') {
             localStorage.removeItem('chatRoomId')
@@ -423,7 +413,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
       fetchingRef.current = false
       setIsFetchingMessages(false)
     }
-  }, [chatRoomId, onChatRoomCreated, session?.user?.id, sessionStatus, guestEmail, acknowledgeActiveChat])
+  }, [chatRoomId, registerChatRoom, session?.user?.id, sessionStatus, guestEmail, acknowledgeActiveChat])
 
   useEffect(() => {
     if (!session?.user?.id) return
@@ -514,7 +504,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
         const data = await response.json()
 
         if (data.success && data.chatRoomId) {
-          onChatRoomCreated(data.chatRoomId)
+          registerChatRoom(data.chatRoomId)
           setShowGuestForm(false)
           // Save guest info and chat room ID to localStorage
           if (typeof window !== 'undefined') {
@@ -668,7 +658,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
     }
     setMessages([])
     clearSelectedTopic()
-    onChatRoomCreated(0) // Reset chat room ID
+    registerChatRoom(0) // Reset chat room ID
   }
 
   const endChat = async () => {
@@ -697,7 +687,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
 
         // Reset state
         setMessages([])
-        onChatRoomCreated(0)
+        registerChatRoom(0)
         setShowGuestForm(true)
         setGuestName('')
         setGuestEmail('')
@@ -801,6 +791,13 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
                     </button>
                   ))}
                 </div>
+                <button
+                  type="button"
+                  onClick={() => confirmTopic('საფორთთან დაკავშირება')}
+                  className="mt-4 w-full px-4 py-3 rounded-lg bg-[#1B3729] text-white text-center font-medium text-[15px] hover:bg-[#2a4d3a] transition-colors"
+                >
+                  საფორთთან დაკავშირება
+                </button>
               </div>
             ) : showQuestionMenu ? (
               <div className="py-2">
