@@ -52,6 +52,34 @@ const page = () => {
             <p className="mt-5 md:text-[18px] text-[16px]">
                 ჩვენი მიზანია შევქმნათ უსაფრთხო, გამჭვირვალე და სანდო სივრცე, რომელიც ხელს შეუწყობს ტანსაცმლისა და აქსესუარების პასუხისმგებლიან გამოყენებას, გაქირავების კულტურის განვითარებასა და მდგრადი მოხმარების ხელშეწყობას საქართველოში.
             </p>
+
+            <section className="mt-12">
+                <h2 className="text-xl text-center md:text-2xl font-bold">ვიდეო ინსტრუქცია</h2>
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 className="md:text-[18px] text-[16px] font-semibold mb-3">
+                            პროდუქციის განთავსების ტუტორიალი გასაყიდად
+                        </h3>
+                        <video
+                            src="/video/item.mp4"
+                            controls
+                            playsInline
+                            className="w-full h-72 md:h-96 object-contain rounded-lg border border-gray-200 bg-black"
+                        />
+                    </div>
+                    <div>
+                        <h3 className="md:text-[18px] text-[16px] font-semibold mb-3">
+                            პროდუქციის განთავსების ტუტორიალი გასაქირავებლად
+                        </h3>
+                        <video
+                            src="/video/new.mp4"
+                            controls
+                            playsInline
+                            className="w-full h-72 md:h-96 object-contain rounded-lg border border-gray-200 bg-black"
+                        />
+                    </div>
+                </div>
+            </section>
         </div>
     )
 }
