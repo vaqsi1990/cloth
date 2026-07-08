@@ -261,6 +261,8 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null)
   const [menuTopic, setMenuTopic] = useState<string | null>(null)
   const [selectedQuestion, setSelectedQuestion] = useState<ChatQuestion | null>(null)
+  // Direct live chat (via "საფორთთან დაკავშირება") — opens the chat with no topic text.
+  const [directChat, setDirectChat] = useState(false)
   const [isEndingChat, setIsEndingChat] = useState(false)
   const [otherPartyTyping, setOtherPartyTyping] = useState(false)
   const { data: session, status: sessionStatus } = useSession()
@@ -639,10 +641,21 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
     }
   }
 
+  const contactSupport = () => {
+    // Open the live chat directly without injecting any "თემა:" text.
+    setSelectedTopic(null)
+    setSelectedQuestion(null)
+    setDirectChat(true)
+    if (!session?.user?.id) {
+      setShowGuestForm(true)
+    }
+  }
+
   const clearSelectedTopic = () => {
     setSelectedTopic(null)
     setMenuTopic(null)
     setSelectedQuestion(null)
+    setDirectChat(false)
     if (typeof window !== 'undefined') {
       try {
         localStorage.removeItem(CHAT_TOPIC_STORAGE_KEY)
@@ -694,6 +707,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
         setSelectedTopic(null)
         setMenuTopic(null)
         setSelectedQuestion(null)
+        setDirectChat(false)
 
         showToast('ლაპარაკი წარმატებით დასრულდა', 'success')
       } else {
@@ -711,11 +725,11 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
   if (!isOpen) return null
 
   // Answer view: a predefined FAQ answer is being shown.
-  const showAnswer = !chatRoomId && !selectedTopic && !!selectedQuestion
+  const showAnswer = !chatRoomId && !selectedTopic && !directChat && !!selectedQuestion
   // Level 1: the topic picker (first screen, before a topic is chosen).
-  const showTopicMenu = !chatRoomId && !selectedTopic && !menuTopic && !selectedQuestion
+  const showTopicMenu = !chatRoomId && !selectedTopic && !menuTopic && !selectedQuestion && !directChat
   // Level 2: sub-questions for a topic that has them.
-  const showQuestionMenu = !chatRoomId && !selectedTopic && !!menuTopic && !selectedQuestion
+  const showQuestionMenu = !chatRoomId && !selectedTopic && !!menuTopic && !selectedQuestion && !directChat
   const activeMenuTopic = CHAT_TOPICS.find((t) => t.label === menuTopic)
   const showMenu = showTopicMenu || showQuestionMenu || showAnswer
 
@@ -793,7 +807,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
                 </div>
                 <button
                   type="button"
-                  onClick={() => confirmTopic('საფორთთან დაკავშირება')}
+                  onClick={contactSupport}
                   className="mt-4 w-full px-4 py-3 rounded-lg bg-[#1B3729] text-white text-center font-medium text-[15px] hover:bg-[#2a4d3a] transition-colors"
                 >
                   საფორთთან დაკავშირება
@@ -864,7 +878,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
                 {selectedQuestion?.chat ? (
                   <button
                     type="button"
-                    onClick={() => confirmTopic(menuTopic ?? 'ტექნიკური დახმარება')}
+                    onClick={contactSupport}
                     className="mt-4 w-full px-4 py-3 rounded-lg bg-[#1B3729] text-white font-medium text-[15px] hover:bg-[#2a4d3a] transition-colors"
                   >
                     {selectedQuestion.chat}
@@ -888,6 +902,17 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
                       aria-label="თემის შეცვლა"
                     >
                       <ChevronLeft className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : !chatRoomId ? (
+                  <div className="mb-4 text-left">
+                    <button
+                      type="button"
+                      onClick={clearSelectedTopic}
+                      className="inline-flex items-center gap-1 text-[14px] text-[#1B3729] font-medium hover:underline"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      უკან
                     </button>
                   </div>
                 ) : null}
@@ -934,6 +959,18 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
                     </div>
                   </div>
                 ))}
+                {chatRoomId > 0 && messages.length > 0 && !messages.some((m) => m.isFromAdmin) && (
+                  <div className="flex justify-start">
+                    <div className="max-w-[80%] p-3 rounded-lg shadow-sm bg-blue-100 text-gray-800">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-[14px] font-semibold text-blue-700">საფორთი</p>
+                      </div>
+                      <p className="text-[16px] break-words">
+                        მოგესალმებით, ოპერატორი მალე გიპასუხებთ
+                      </p>
+                    </div>
+                  </div>
+                )}
                 <ChatTypingIndicator show={otherPartyTyping} align="start" />
               </div>
             )}
