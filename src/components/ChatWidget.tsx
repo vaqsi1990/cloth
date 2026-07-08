@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react'
-import { MessageCircle, Send, X, Minimize2, Maximize2, Bell, BellOff } from 'lucide-react'
+import { MessageCircle, Send, X, Minimize2, Maximize2, Bell, BellOff, ChevronLeft } from 'lucide-react'
 import { formatDateTime } from '@/utils/dateUtils'
 import { useSession } from 'next-auth/react'
 import { showToast } from '@/utils/toast'
@@ -14,6 +14,66 @@ import ChatPendingImagePreview from '@/components/ChatPendingImagePreview'
 import { canSendChatMessage } from '@/lib/chat-message'
 import { guestChatEmailHeaders } from '@/lib/chat-guest-header'
 import { useUserChatNotification } from '@/components/UserChatNotificationProvider'
+
+interface ChatQuestion {
+  q: string
+  // Predefined answer shown in the widget. If omitted, the question starts a live chat.
+  a?: string
+  // Optional call-to-action link rendered as a button below the answer.
+  link?: { url: string; label: string }
+}
+
+interface ChatTopic {
+  label: string
+  // Optional second-level questions shown after the topic is chosen.
+  questions?: ChatQuestion[]
+}
+
+const CONTACT_INFO = 'დაგვიკავშირდით:\ndressla.online@gmail.com\n+995 599 556 395'
+
+const CHAT_TOPICS: ChatTopic[] = [
+  {
+    label: 'ანგარიში',
+    questions: [
+      {
+        q: 'როგორ დავრეგისტრირდე?',
+        a: 'რეგისტრაციისთვის დააჭირეთ „რეგისტრაცია“, შეავსეთ საჭირო ინფორმაცია და დაადასტურეთ ანგარიში.',
+      },
+      {
+        q: 'როგორ აღვადგინო პაროლი თუ დამავიწყდა?',
+        a: 'პაროლის აღსადგენად დააჭირეთ ქვემოთ მოცემულ ღილაკს, შეიყვანეთ მოთხოვნილი ინფორმაცია და შექმენით ახალი პაროლი.',
+        link: {
+          url: 'https://www.dressla.ge/auth/forgot-password',
+          label: 'პაროლის აღდგენა',
+        },
+      },
+      {
+        q: 'როგორ შევცვალო ტელეფონის ნომერი?',
+        a: 'გადადით პროფილი → პარამეტრები და შეცვალეთ თქვენი ტელეფონის ნომერი.',
+      },
+      {
+        q: 'როგორ შევცვალო მისამართი?',
+        a: `გადადით პროფილი → პარამეტრები და შეცვალეთ მიწოდების მისამართი. თუ შეკვეთა უკვე გაფორმებულია, ${CONTACT_INFO}`,
+      },
+      {
+        q: 'როგორ წავშალო ანგარიში?',
+        a: 'გადადით პროფილი → პარამეტრები, ჩამოსქროლეთ ბოლომდე და აირჩიეთ „პროფილის გაუქმება“.',
+      },
+      {
+        q: 'ოპერატორთან დაკავშირება',
+        a: CONTACT_INFO,
+      },
+    ],
+  },
+  { label: 'შეკვეთა' },
+  { label: 'საკურიერო მომსახურება' },
+  { label: 'შეკვეთა და დაბრუნება' },
+  { label: 'გაყიდვა' },
+  { label: 'გაქირავება' },
+  { label: 'ტექნიკური დახმარება' },
+]
+
+const CHAT_TOPIC_STORAGE_KEY = 'chatSelectedTopic'
 
 interface ChatMessage {
   id: number
@@ -52,6 +112,9 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
   const [guestName, setGuestName] = useState('')
   const [guestEmail, setGuestEmail] = useState('')
   const [showGuestForm, setShowGuestForm] = useState(true)
+  const [selectedTopic, setSelectedTopic] = useState<string | null>(null)
+  const [menuTopic, setMenuTopic] = useState<string | null>(null)
+  const [selectedQuestion, setSelectedQuestion] = useState<ChatQuestion | null>(null)
   const [isEndingChat, setIsEndingChat] = useState(false)
   const [otherPartyTyping, setOtherPartyTyping] = useState(false)
   const { data: session, status: sessionStatus } = useSession()
@@ -66,6 +129,17 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
     enabled: isOpen && !!chatRoomId,
     guestEmail: session?.user?.id ? undefined : guestEmail,
   })
+
+  // Restore a previously selected topic (only matters before a room is created).
+  useLayoutEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      const savedTopic = localStorage.getItem(CHAT_TOPIC_STORAGE_KEY)
+      if (savedTopic) setSelectedTopic(savedTopic)
+    } catch (error) {
+      console.error('Error loading chat topic from localStorage:', error)
+    }
+  }, [])
 
   // Restore guest session before paint so the first fetch includes x-guest-email.
   useLayoutEffect(() => {
@@ -234,11 +308,13 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
     return () => clearInterval(interval)
   }, [chatRoomId, isOpen, fetchMessages, session?.user?.id, sessionStatus, guestEmail])
 
-  const sendMessage = async () => {
-    if (!canSendChatMessage(newMessage, pendingImageUrl)) return
+  const sendMessage = async (contentOverride?: string) => {
+    const isOverride = typeof contentOverride === 'string'
+
+    if (!isOverride && !canSendChatMessage(newMessage, pendingImageUrl)) return
 
     // Client-side validation
-    if (newMessage.trim().length > 1000) {
+    if (!isOverride && newMessage.trim().length > 1000) {
       showToast('მესიჯი ძალიან გრძელია. მაქსიმუმ 1000 სიმბოლო.', 'warning')
       return
     }
@@ -257,10 +333,17 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
     }
 
     setIsLoading(true)
-    const messageToSend = newMessage.trim()
-    const imageToSend = pendingImageUrl
-    setNewMessage('')
-    setPendingImageUrl(null)
+    const typedMessage = isOverride ? (contentOverride as string).trim() : newMessage.trim()
+    const imageToSend = isOverride ? null : pendingImageUrl
+    // When creating a new chat room, prepend the chosen topic so the team sees the context.
+    const messageToSend =
+      !chatRoomId && selectedTopic && !typedMessage.startsWith('თემა:')
+        ? `თემა: ${selectedTopic}${typedMessage ? `\n${typedMessage}` : ''}`
+        : typedMessage
+    if (!isOverride) {
+      setNewMessage('')
+      setPendingImageUrl(null)
+    }
     stopTyping()
 
     try {
@@ -373,11 +456,75 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
     }
   }
 
+  const persistTopic = (topic: string) => {
+    if (typeof window === 'undefined') return
+    try {
+      localStorage.setItem(CHAT_TOPIC_STORAGE_KEY, topic)
+    } catch (error) {
+      console.error('Error saving chat topic to localStorage:', error)
+    }
+  }
+
+  const confirmTopic = (topic: string) => {
+    setSelectedTopic(topic)
+    persistTopic(topic)
+
+    // Logged-in users have no form to fill, so start the conversation right away.
+    if (session?.user?.id) {
+      sendMessage(`თემა: ${topic}`)
+    } else {
+      setShowGuestForm(true)
+    }
+  }
+
+  const handleSelectTopic = (topic: ChatTopic) => {
+    // Topics with sub-questions open a second-level menu instead of starting a chat.
+    if (topic.questions && topic.questions.length > 0) {
+      setMenuTopic(topic.label)
+      return
+    }
+    confirmTopic(topic.label)
+  }
+
+  const handleSelectQuestion = (topic: string, question: ChatQuestion) => {
+    // If the question has a predefined answer, show it inside the widget.
+    if (question.a) {
+      setSelectedQuestion(question)
+      return
+    }
+
+    // Otherwise fall back to starting a live chat with this question.
+    setSelectedTopic(topic)
+    persistTopic(topic)
+
+    if (session?.user?.id) {
+      sendMessage(`თემა: ${topic}\n${question.q}`)
+    } else {
+      // Prefill the question so the guest can just add their details and send.
+      setNewMessage(question.q)
+      setShowGuestForm(true)
+    }
+  }
+
+  const clearSelectedTopic = () => {
+    setSelectedTopic(null)
+    setMenuTopic(null)
+    setSelectedQuestion(null)
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem(CHAT_TOPIC_STORAGE_KEY)
+      } catch (error) {
+        console.error('Error clearing chat topic from localStorage:', error)
+      }
+    }
+  }
+
   const startNewChat = () => {
     if (!session) {
       setShowGuestForm(true)
     }
     setMessages([])
+    clearSelectedTopic()
     onChatRoomCreated(0) // Reset chat room ID
   }
 
@@ -399,6 +546,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
             localStorage.removeItem('chatGuestEmail')
             localStorage.removeItem('chatRoomId')
             localStorage.removeItem('liveSupportChatRoomId')
+            localStorage.removeItem(CHAT_TOPIC_STORAGE_KEY)
           } catch (error) {
             console.error('Error clearing localStorage:', error)
           }
@@ -410,6 +558,9 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
         setShowGuestForm(true)
         setGuestName('')
         setGuestEmail('')
+        setSelectedTopic(null)
+        setMenuTopic(null)
+        setSelectedQuestion(null)
 
         showToast('ლაპარაკი წარმატებით დასრულდა', 'success')
       } else {
@@ -425,6 +576,15 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
   }
 
   if (!isOpen) return null
+
+  // Answer view: a predefined FAQ answer is being shown.
+  const showAnswer = !chatRoomId && !selectedTopic && !!selectedQuestion
+  // Level 1: the topic picker (first screen, before a topic is chosen).
+  const showTopicMenu = !chatRoomId && !selectedTopic && !menuTopic && !selectedQuestion
+  // Level 2: sub-questions for a topic that has them.
+  const showQuestionMenu = !chatRoomId && !selectedTopic && !!menuTopic && !selectedQuestion
+  const activeMenuTopic = CHAT_TOPICS.find((t) => t.label === menuTopic)
+  const showMenu = showTopicMenu || showQuestionMenu || showAnswer
 
   return (
     <div className={`bg-white shadow-2xl border border-gray-200 ${isMinimized ? 'w-80 h-16 rounded-xl' : 'w-[min(24rem,calc(100vw-2rem))] h-[min(85vh,calc(100dvh-6rem))] rounded-xl overflow-hidden'
@@ -478,13 +638,102 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
             ref={messagesContainerRef}
             className="flex-1 p-4 overflow-y-auto bg-gray-50 min-h-0"
           >
-            {isFetchingMessages && messages.length === 0 ? (
+            {showTopicMenu ? (
+              <div className="py-2">
+                <p className="text-center font-medium text-black md:text-[18px] text-[16px]">
+                  როგორ დაგეხმაროთ?
+                </p>
+                <p className="text-center text-[14px] text-gray-500 mt-1 mb-4">
+                  აირჩიეთ თემა
+                </p>
+                <div className="grid grid-cols-1 gap-2">
+                  {CHAT_TOPICS.map((topic) => (
+                    <button
+                      key={topic.label}
+                      type="button"
+                      onClick={() => handleSelectTopic(topic)}
+                      className="w-full text-left px-4 py-3 rounded-lg border border-[#1B3729]/30 bg-white text-[#1B3729] font-medium text-[15px] hover:bg-[#1B3729] hover:text-white hover:border-[#1B3729] transition-colors"
+                    >
+                      {topic.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : showQuestionMenu ? (
+              <div className="py-2">
+                <button
+                  type="button"
+                  onClick={() => setMenuTopic(null)}
+                  className="inline-flex items-center gap-1 text-[14px] text-[#1B3729] font-medium mb-3 hover:underline"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  უკან
+                </button>
+                <p className="text-center font-medium text-black md:text-[18px] text-[16px] mb-4">
+                  {menuTopic}
+                </p>
+                <div className="grid grid-cols-1 gap-2">
+                  {activeMenuTopic?.questions?.map((question) => (
+                    <button
+                      key={question.q}
+                      type="button"
+                      onClick={() => handleSelectQuestion(menuTopic as string, question)}
+                      className="w-full text-left px-4 py-3 rounded-lg border border-[#1B3729]/30 bg-white text-[#1B3729] font-medium text-[15px] hover:bg-[#1B3729] hover:text-white hover:border-[#1B3729] transition-colors"
+                    >
+                      {question.q}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : showAnswer ? (
+              <div className="py-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedQuestion(null)}
+                  className="inline-flex items-center gap-1 text-[14px] text-[#1B3729] font-medium mb-3 hover:underline"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  უკან
+                </button>
+                <p className="font-semibold text-black text-[16px] mb-2">
+                  {selectedQuestion?.q}
+                </p>
+                <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+                  <p className="text-[15px] text-gray-800 whitespace-pre-line break-words">
+                    {selectedQuestion?.a}
+                  </p>
+                </div>
+                {selectedQuestion?.link ? (
+                  <a
+                    href={selectedQuestion.link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-4 block w-full px-4 py-3 rounded-lg bg-[#1B3729] text-white text-center font-medium text-[15px] hover:bg-[#2a4d3a] transition-colors"
+                  >
+                    {selectedQuestion.link.label}
+                  </a>
+                ) : null}
+              </div>
+            ) : isFetchingMessages && messages.length === 0 ? (
               <div className="text-center md:text-[18px] text-[16px] py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1B3729] mx-auto mb-4"></div>
                 <p className="text-gray-500">იტვირთება...</p>
               </div>
             ) : messages.length === 0 ? (
               <div className="text-center md:text-[18px] text-[16px]  py-8">
+                {selectedTopic ? (
+                  <div className="mb-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#1B3729]/10 text-[#1B3729] text-[14px] font-medium">
+                    <span>თემა: {selectedTopic}</span>
+                    <button
+                      type="button"
+                      onClick={clearSelectedTopic}
+                      className="inline-flex items-center gap-1 text-[#1B3729]/70 hover:text-[#1B3729]"
+                      aria-label="თემის შეცვლა"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : null}
                 <MessageCircle className="w-12 h-12 mx-auto mb-4 text-gray-400" />
                 <p className="font-medium text-black">დაიწყეთ საუბარი!</p>
                 <p className="text-[16px] text-gray-500 mt-2">ჩვენი გუნდი მზადაა დაგეხმაროთ</p>
@@ -534,7 +783,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
           </div>
 
           {/* Guest Form */}
-          {showGuestForm && !chatRoomId && !session && (
+          {showGuestForm && !chatRoomId && !session && !showMenu && (
             <div className="flex-shrink-0 p-4 border-t border-gray-200 bg-white">
               <div className="space-y-3">
                 <div>
@@ -566,6 +815,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
           )}
 
           {/* Input */}
+          {!showMenu && (
           <div className="flex-shrink-0 p-4 border-t border-gray-200 bg-white rounded-b-xl">
             {pendingImageUrl ? (
               <ChatPendingImagePreview
@@ -603,6 +853,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
 
          
           </div>
+          )}
         </div>
       )}
     </div>
