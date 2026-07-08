@@ -68,35 +68,40 @@ export async function POST(request: NextRequest) {
       const validatedData = createChatRoomMessageSchema.parse(body)
       const messageContent = normalizeChatMessageContent(validatedData.message)
       const messageImageUrl = validatedData.imageUrl ?? null
+      // When the widget starts a fresh support session it always wants a new room,
+      // so we skip reusing the previous conversation (avoids showing old messages).
+      const forceNew = body?.forceNew === true
 
-      const existingChatRoom = await prisma.$queryRaw<Array<{ id: number }>>`
-        SELECT cr.id FROM "ChatRoom" cr
-        WHERE ${activeLiveSupportChatRoomWhereForUser(userId)}
-        ORDER BY cr."createdAt" DESC
-        LIMIT 1
-      `
-
-      if (existingChatRoom.length > 0) {
-        const roomId = existingChatRoom[0].id
-        
-        await prisma.$executeRaw`
-          INSERT INTO "ChatMessage" ("content", "imageUrl", "chatRoomId", "userId", "isFromAdmin", "createdAt")
-          VALUES (${messageContent}, ${messageImageUrl}, ${roomId}, ${userId}, false, NOW())
+      if (!forceNew) {
+        const existingChatRoom = await prisma.$queryRaw<Array<{ id: number }>>`
+          SELECT cr.id FROM "ChatRoom" cr
+          WHERE ${activeLiveSupportChatRoomWhereForUser(userId)}
+          ORDER BY cr."createdAt" DESC
+          LIMIT 1
         `
 
-        await prisma.$executeRaw`
-          UPDATE "ChatRoom" 
-          SET status = 'ACTIVE', "updatedAt" = NOW()
-          WHERE id = ${roomId}
-        `
+        if (existingChatRoom.length > 0) {
+          const roomId = existingChatRoom[0].id
 
-        console.log(`✅ User ${userId} sent message to existing chat room ${roomId}`)
-        
-        return NextResponse.json({
-          success: true,
-          message: 'Message sent',
-          chatRoomId: roomId
-        })
+          await prisma.$executeRaw`
+            INSERT INTO "ChatMessage" ("content", "imageUrl", "chatRoomId", "userId", "isFromAdmin", "createdAt")
+            VALUES (${messageContent}, ${messageImageUrl}, ${roomId}, ${userId}, false, NOW())
+          `
+
+          await prisma.$executeRaw`
+            UPDATE "ChatRoom" 
+            SET status = 'ACTIVE', "updatedAt" = NOW()
+            WHERE id = ${roomId}
+          `
+
+          console.log(`✅ User ${userId} sent message to existing chat room ${roomId}`)
+
+          return NextResponse.json({
+            success: true,
+            message: 'Message sent',
+            chatRoomId: roomId
+          })
+        }
       }
 
       await removeClosedLiveSupportRoomsForUser(userId)

@@ -492,7 +492,9 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
           message: messageToSend,
           imageUrl: imageToSend || undefined,
           guestName: guestName || undefined,
-          guestEmail: guestEmail || undefined
+          guestEmail: guestEmail || undefined,
+          // Always start a brand-new support conversation so old messages never reappear.
+          forceNew: true,
         }
 
         const response = await fetch('/api/chat', {
