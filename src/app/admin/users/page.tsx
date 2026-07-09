@@ -337,63 +337,7 @@ const AdminUsersPage = () => {
             </div>
           </div>
 
-          {unverifiedSellers.length > 0 && (
-            <div className="border border-orange-200 rounded-xl bg-orange-50 p-3 sm:p-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-2">
-                <div>
-                  <h3 className="text-base sm:text-lg font-semibold text-orange-900">
-                    ვერიფიკაცია სჭირდება გამყიდველებს ({unverifiedSellers.length})
-                  </h3>
-                  <p className="text-xs sm:text-sm text-orange-700">
-                    ამ მომხმარებლებს აქვთ პროდუქტი, მაგრამ პირადობა ჯერ არ არის დამტკიცებული.
-                  </p>
-                </div>
-              </div>
-              <div className="overflow-x-auto rounded-lg border border-orange-100 bg-white -mx-2 sm:mx-0">
-                <table className="min-w-full divide-y divide-orange-100">
-                  <thead className="bg-orange-50">
-                    <tr>
-                      <th className="px-2 sm:px-4 py-2 text-left text-xs font-semibold text-orange-800 uppercase tracking-wider">სახელი</th>
-                      <th className="px-2 sm:px-4 py-2 text-left text-xs font-semibold text-orange-800 uppercase tracking-wider hidden sm:table-cell">ელფოსტა</th>
-                      <th className="px-2 sm:px-4 py-2 text-left text-xs font-semibold text-orange-800 uppercase tracking-wider">პროდუქტები</th>
-                      <th className="px-2 sm:px-4 py-2"></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-orange-100">
-                    {unverifiedSellers.map((seller) => (
-                      <tr key={seller.id}>
-                        <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-black">
-                          <div className="sm:hidden font-semibold">{seller.name || 'უცნობი მომხმარებელი'}</div>
-                          <div className="hidden sm:block">{seller.name || 'უცნობი მომხმარებელი'}</div>
-                          <div className="sm:hidden text-xs text-gray-600 mt-1">{seller.email || '---'}</div>
-                        </td>
-                        <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-black hidden sm:table-cell">{seller.email || '---'}</td>
-                        <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-black">{seller._count.products}</td>
-                        <td className="px-2 sm:px-4 py-2 text-right">
-                          <div className="flex items-center justify-end gap-3">
-                            {seller._count.products > 0 && (
-                              <Link
-                                href={`/author/${seller.id}`}
-                                className="text-xs sm:text-sm text-orange-700 hover:text-orange-900 font-semibold whitespace-nowrap"
-                              >
-                                ნივთების ნახვა
-                              </Link>
-                            )}
-                            <button
-                              onClick={() => toggleUserExpansion(seller.id)}
-                              className="text-xs sm:text-sm text-orange-700 hover:text-orange-900 font-semibold whitespace-nowrap"
-                            >
-                              დეტალები
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+         
         </div>
 
         {/* Users List */}
