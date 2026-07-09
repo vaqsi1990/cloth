@@ -209,3 +209,47 @@ export async function buildSplitPaymentConfigForOrder(
     sellerUserIds,
   )
 }
+
+export function describeSplitPayments(
+  splitConfig: BogSplitConfig | null,
+): Array<{ ibanMasked: string; amount: number | undefined; description?: string }> {
+  if (!splitConfig) return []
+
+  return splitConfig.split_payments.map((payment) => ({
+    ibanMasked: `${payment.iban.substring(0, 8)}...${payment.iban.slice(-4)}`,
+    amount: payment.amount,
+    description: payment.description,
+  }))
+}
+
+export function getOrderSplitReadinessMessage(
+  order: OrderForSplit,
+  splitConfig: BogSplitConfig | null,
+): string | null {
+  const saleItems = order.items.filter((item) => !item.isRental)
+  if (saleItems.length === 0) {
+    return null
+  }
+
+  const missingSellerIds = saleItems
+    .map((item) => item.sellerUserId)
+    .filter((id): id is string => Boolean(id))
+
+  if (missingSellerIds.length === 0) {
+    return 'შეკვეთაში არ არის მითითებული გამყიდველი'
+  }
+
+  if (!splitConfig) {
+    return 'გამყიდველს არ აქვს ვალიდური IBAN ან BOG_MERCHANT_IBAN არ არის დაყენებული'
+  }
+
+  const totalSplitAmount = splitConfig.split_payments.reduce(
+    (sum, payment) => sum + (payment.amount ?? 0),
+    0,
+  )
+  if (Math.abs(totalSplitAmount - order.total) > 0.01) {
+    return `split თანხების ჯამი (${totalSplitAmount}) არ ემთხვევა შეკვეთის ჯამს (${order.total})`
+  }
+
+  return null
+}

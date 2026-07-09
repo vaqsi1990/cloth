@@ -563,17 +563,26 @@ export async function POST(req: NextRequest) {
               0,
             ),
           )
-    // BOG applies split at capture time for pre-auth orders; sending split here can fail with manual capture.
-    const splitConfig = manualCapture
-      ? null
-      : await buildSplitPaymentConfig(
-          paymentMethod,
-          productIds,
-          total,
-          ownerItemsSubtotal,
-          deliveryFee,
-          sellerUserIds,
-        )
+    // BOG applies split at capture/approve time for pre-auth orders, not at order creation.
+    const splitConfigForCheckout = await buildSplitPaymentConfig(
+      paymentMethod,
+      productIds,
+      total,
+      ownerItemsSubtotal,
+      deliveryFee,
+      sellerUserIds,
+    )
+    if (manualCapture && saleItems.length > 0 && !splitConfigForCheckout) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            'გამყიდველს არ აქვს ვალიდური IBAN ან BOG_MERCHANT_IBAN არ არის დაყენებული. პრეავტორიზაციის split-ისთვის ორივე საჭიროა.',
+        },
+        { status: 400 },
+      )
+    }
+    const splitConfig = manualCapture ? null : splitConfigForCheckout
 
     const siteUrl = getSiteUrl()
 

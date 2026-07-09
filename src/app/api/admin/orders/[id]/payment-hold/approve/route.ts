@@ -15,9 +15,15 @@ import {
   waitForBogAuthorizeOutcome,
   waitForPendingAuthorizeToSettle,
 } from '@/lib/bog-preauth'
-import { buildSplitPaymentConfigForOrder } from '@/lib/bog-split-config'
 import {
+  buildSplitPaymentConfigForOrder,
+  describeSplitPayments,
+  getOrderSplitReadinessMessage,
+} from '@/lib/bog-split-config'
+import {
+  allowPaymentHoldApproveWithoutSplit,
   isPaymentHoldExpired,
+  isPaymentHoldSplitOnApproveEnabled,
   PAYMENT_HOLD_MAX_DAYS,
 } from '@/lib/payment-hold-config'
 import {
@@ -48,10 +54,6 @@ const paymentHoldOrderSelect = {
     },
   },
 } as const
-
-function shouldTrySplitOnApprove(): boolean {
-  return process.env.PAYMENT_HOLD_SPLIT_ON_APPROVE === 'true'
-}
 
 export async function POST(
   request: NextRequest,
@@ -161,7 +163,25 @@ export async function POST(
       body = {}
     }
 
-    const splitConfig = await buildSplitPaymentConfigForOrder(order)
+    const splitEnabled = isPaymentHoldSplitOnApproveEnabled()
+    const splitConfig = splitEnabled
+      ? await buildSplitPaymentConfigForOrder(order)
+      : null
+    const splitReadinessError = splitEnabled
+      ? getOrderSplitReadinessMessage(order, splitConfig)
+      : null
+
+    if (splitEnabled && splitReadinessError) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Split ვერ მომზადდა: ${splitReadinessError}`,
+          splitPreview: describeSplitPayments(splitConfig),
+        },
+        { status: 400 },
+      )
+    }
+
     const approveAmount = body.amount ?? order.total
     const approveDescription = body.description || 'Admin approved pre-authorization'
     const paymentId = order.paymentId!
@@ -189,12 +209,7 @@ export async function POST(
       if (withSplit && splitConfig) {
         console.log(
           `[payment-hold] Approving order #${orderId} with split:`,
-          JSON.stringify(
-            splitConfig.split_payments.map((sp) => ({
-              amount: sp.amount,
-              iban: `${sp.iban.substring(0, 8)}...${sp.iban.slice(-4)}`,
-            })),
-          ),
+          JSON.stringify(describeSplitPayments(splitConfig)),
         )
       } else {
         console.log(`[payment-hold] Approving order #${orderId} without split`)
@@ -235,13 +250,24 @@ export async function POST(
     let bogResponse
     let usedSplit = false
 
-    if (shouldTrySplitOnApprove() && splitConfig) {
+    if (splitEnabled && splitConfig) {
       try {
         bogResponse = await runApprove(true)
         usedSplit = true
       } catch (bogError) {
         if (!isBogAuthorizeRejectedError(bogError)) {
           throw bogError
+        }
+
+        if (!allowPaymentHoldApproveWithoutSplit()) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: `BOG-მა split-ით დადასტურება უარყო: ${getBogPreAuthErrorMessage(bogError)}. დაამატეთ გამყიდველის IBAN ან ჩართეთ PAYMENT_HOLD_SPLIT_FALLBACK_WITHOUT_SPLIT=true.`,
+              splitPreview: describeSplitPayments(splitConfig),
+            },
+            { status: 400 },
+          )
         }
 
         console.warn(
@@ -260,12 +286,13 @@ export async function POST(
     return NextResponse.json({
       success: true,
       message: usedSplit
-        ? 'გადახდა დადასტურებულია. თანხა ჩაირიცხება მიმწოდებლის ანგარიშზე.'
+        ? 'გადახდა დადასტურებულია. თანხა გადანაწილდა მერჩანტს და გამყიდველს.'
         : splitConfig
-          ? 'გადახდა დადასტურებულია BOG-ში. Split პრეავტორიზაციაზე არ მუშაობს — თანხა მერჩანტ ანგარიშზე ჩაირიცხა, გამყიდველის ნაწილი ხელით გადაირიცხეთ.'
+          ? 'გადახდა დადასტურებულია BOG-ში split-ის გარეშე — გამყიდველის ნაწილი ხელით გადაირიცხეთ.'
           : 'გადახდა დადასტურებულია BOG-ში.',
       bog: bogResponse,
       splitApplied: usedSplit,
+      splitPreview: describeSplitPayments(splitConfig),
       paymentHoldStatus: PaymentHoldStatus.CAPTURED,
     })
   } catch (error) {
