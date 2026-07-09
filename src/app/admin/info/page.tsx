@@ -109,14 +109,150 @@ interface OrderInfoRow {
   userImage?: string
 }
 
-const formatDateShort = (date: Date | string) => {
-  if (!date) return ''
-  const d = new Date(date)
-  const months = [
-    'იანვ.', 'თებ.', 'მარ.', 'აპრ.', 'მაი.', 'ივნ.',
-    'ივლ.', 'აგვ.', 'სექტ.', 'ოქტ.', 'ნოემ.', 'დეკ.',
-  ]
-  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`
+const mobileInfoBorderClass = 'border-b border-black pb-3 md:border-b-0 md:pb-0'
+
+function MobileInfoBox({
+  children,
+  className = '',
+}: {
+  children: React.ReactNode
+  className?: string
+}) {
+  return <div className={`${mobileInfoBorderClass} ${className}`}>{children}</div>
+}
+
+function BuyerProfile({
+  name,
+  image,
+  className = '',
+}: {
+  name: string
+  image?: string
+  className?: string
+}) {
+  return (
+    <div className={`flex flex-col items-center gap-2 ${className}`}>
+      {image ? (
+        <div className="w-12 h-12 bg-gray-200 rounded-full overflow-hidden shrink-0">
+          <Image
+            src={image}
+            alt={name}
+            width={48}
+            height={48}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      ) : (
+        <div className="w-12 h-12 bg-gray-200 rounded-full shrink-0 flex items-center justify-center text-gray-500 text-sm font-semibold">
+          {name.charAt(0).toUpperCase()}
+        </div>
+      )}
+      <span className="text-sm text-black font-medium text-center break-words">{name}</span>
+    </div>
+  )
+}
+
+function BuyerContactInfo({
+  phone,
+  address,
+  className = '',
+  showTitle = true,
+}: {
+  phone: string
+  address: string
+  className?: string
+  showTitle?: boolean
+}) {
+  return (
+    <div className={`text-sm text-black space-y-2 ${className}`}>
+      {showTitle && (
+        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">მყიდველის ინფორმაცია</p>
+      )}
+      <div className="space-y-1">
+        <p className="break-words">
+          <span className="text-gray-500">ტელეფონი:</span> {phone}
+        </p>
+        <p className="break-words">
+          <span className="text-gray-500">მისამართი:</span> {address}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+function SellerContactInfo({
+  phone,
+  address,
+  className = '',
+  showTitle = true,
+}: {
+  phone: string
+  address: string
+  className?: string
+  showTitle?: boolean
+}) {
+  return (
+    <div className={`text-sm text-black space-y-2 ${className}`}>
+      {showTitle && (
+        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">გამყიდველის ინფორმაცია</p>
+      )}
+      <div className="space-y-1">
+        <p className="break-words">
+          <span className="text-gray-500">ტელეფონი:</span> {phone}
+        </p>
+        <p className="break-words">
+          <span className="text-gray-500">მისამართი:</span> {address}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+function OrderMetaInfo({
+  orderId,
+  deliveryType,
+  className = '',
+  showTitle = true,
+}: {
+  orderId: number
+  deliveryType: string
+  className?: string
+  showTitle?: boolean
+}) {
+  return (
+    <div className={`text-sm text-black space-y-2 ${className}`}>
+      {showTitle && (
+        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">შეკვეთის ინფორმაცია</p>
+      )}
+      <div className="space-y-1">
+        <p className="break-words">
+          <span className="text-gray-500">გაყიდვის ნომერი:</span> #{orderId}
+        </p>
+        <p className="break-words">
+          <span className="text-gray-500">მიტანის ტიპი:</span> {deliveryType}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+function OrderInfoFields({ row, className = '' }: { row: OrderInfoRow; className?: string }) {
+  return (
+    <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${className}`}>
+      <MobileInfoBox>
+        <OrderMetaInfo orderId={row.orderId} deliveryType={row.deliveryServiceLabel} />
+      </MobileInfoBox>
+      <MobileInfoBox>
+        <BuyerProfile name={row.customerName} image={row.userImage} />
+      </MobileInfoBox>
+      <MobileInfoBox>
+        <BuyerContactInfo phone={row.phone} address={row.userAddress} />
+      </MobileInfoBox>
+      <MobileInfoBox>
+        <SellerContactInfo phone={row.sellerPhone} address={row.pickupAddress} />
+      </MobileInfoBox>
+    </div>
+  )
 }
 
 async function fetchAllAdminOrders(): Promise<AdminOrder[]> {
@@ -293,42 +429,6 @@ function transformOrdersToRows(orders: AdminOrder[]): OrderInfoRow[] {
   return rows
 }
 
-function OrderInfoRowSummary({ row, className = '' }: { row: OrderInfoRow; className?: string }) {
-  const typeLabel = row.orderType === 'RENTAL' ? 'გაქირავებული' : 'გაყიდულია'
-
-  return (
-    <div className={`md:text-[18px] text-[16px] text-black space-y-1 ${className}`}>
-      <p>
-        <span className="text-gray-500">ტიპი:</span> {typeLabel}
-      </p>
-      <p>
-        <span className="text-gray-500">შეკვეთა:</span> #{row.orderId}
-      </p>
-      <p>
-        <span className="text-gray-500">თარიღი:</span> {formatDateShort(row.date)}
-      </p>
-      <p>
-        <span className="text-gray-500">სერვისი:</span> {row.deliveryServiceLabel}
-      </p>
-      <p>
-        <span className="text-gray-500">გამყიდველი:</span> {row.sellerName}
-      </p>
-      <p>
-        <span className="text-gray-500">გამყიდველის ტელეფონი:</span> {row.sellerPhone}
-      </p>
-      <p>
-        <span className="text-gray-500">გამყიდველის მისამართი:</span> {row.pickupAddress}
-      </p>
-      <p>
-        <span className="text-gray-500">მყიდველის ტელეფონი:</span> {row.phone}
-      </p>
-      <p>
-        <span className="text-gray-500">მყიდველის მისამართი:</span> {row.userAddress}
-      </p>
-    </div>
-  )
-}
-
 function DetailItem({
   label,
   value,
@@ -339,7 +439,7 @@ function DetailItem({
   className?: string
 }) {
   return (
-    <div className={`rounded-xl border border-gray-100 bg-gray-50 p-4 text-center md:text-left ${className}`}>
+    <div className={`rounded-xl border border-gray-100 bg-gray-50 p-4 text-center md:text-left max-md:rounded-none max-md:border-0 max-md:border-b max-md:border-black max-md:bg-transparent ${className}`}>
       <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">{label}</p>
       <div className="text-sm sm:text-base text-black break-words">{value}</div>
     </div>
@@ -387,7 +487,7 @@ function OrderDetailsPanel({
         <DetailItem label="პროდუქტები" value={row.productsLabel} />
 
         {row.statusItems.length > 0 && (
-          <div className="rounded-xl border border-gray-100 bg-white p-4 space-y-3 text-center md:text-left">
+          <div className="rounded-xl border border-gray-100 bg-white p-4 space-y-3 text-center md:text-left max-md:rounded-none max-md:border-0 max-md:border-b max-md:border-black max-md:bg-transparent">
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
               {row.orderType === 'RENTAL' ? 'ქირავების ნივთების სტატუსი' : 'ყიდვის ნივთების სტატუსი'}
             </p>
@@ -399,7 +499,7 @@ function OrderDetailsPanel({
               return (
                 <div
                   key={item.id}
-                  className="flex flex-col items-center sm:flex-row sm:items-center sm:justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3"
+                  className="flex flex-col items-center sm:flex-row sm:items-center sm:justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3 max-md:rounded-none max-md:border-0 max-md:border-b max-md:border-black max-md:bg-transparent"
                 >
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-black break-words">
@@ -497,10 +597,10 @@ function OrderInfoRowCard({
           {isSelected && <Check className="w-4 h-4 text-white" />}
         </button>
 
-        <OrderInfoRowSummary row={row} className="text-center md:text-left" />
+        <OrderInfoFields row={row} className="text-center sm:text-left" />
 
         {row.statusItems.length > 0 && (
-          <div className="space-y-2 flex flex-col items-center">
+          <MobileInfoBox className="space-y-2 flex flex-col items-center">
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">სტატუსი</p>
             {row.statusItems.map((item) => (
               <OrderItemSaleStatusDropdown
@@ -520,7 +620,7 @@ function OrderInfoRowCard({
                 onItemUpdate={(itemId, patch) => onItemUpdate(row.orderId, itemId, patch)}
               />
             ))}
-          </div>
+          </MobileInfoBox>
         )}
 
         <button
@@ -922,8 +1022,17 @@ const AdminInfoPage = () => {
                         )}
                     </button>
                   </th>
-                  <th className="px-3 sm:px-4 py-3 text-left text-sm font-semibold text-black whitespace-nowrap min-w-[280px]">
-                    ინფორმაცია
+                  <th className="px-3 sm:px-4 py-3 text-left text-sm font-semibold text-black whitespace-nowrap min-w-[160px]">
+                    შეკვეთის ინფორმაცია
+                  </th>
+                  <th className="px-3 sm:px-4 py-3 text-left text-sm font-semibold text-black whitespace-nowrap min-w-[120px]">
+                    მყიდველი
+                  </th>
+                  <th className="px-3 sm:px-4 py-3 text-left text-sm font-semibold text-black whitespace-nowrap min-w-[200px]">
+                    მყიდველის ინფორმაცია
+                  </th>
+                  <th className="px-3 sm:px-4 py-3 text-left text-sm font-semibold text-black whitespace-nowrap min-w-[200px]">
+                    გამყიდველის ინფორმაცია
                   </th>
                   <th className="px-3 sm:px-4 py-3 text-left text-sm font-semibold text-black whitespace-nowrap min-w-[140px]">სტატუსი</th>
                   <th className="px-3 sm:px-4 py-3 text-left text-sm font-semibold text-black whitespace-nowrap">დეტალები</th>
@@ -932,7 +1041,7 @@ const AdminInfoPage = () => {
               <tbody>
                 {filteredRows.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-4 py-8 text-center text-gray-500 md:text-[18px] text-[16px]">
+                    <td colSpan={7} className="px-4 py-8 text-center text-gray-500 md:text-[18px] text-[16px]">
                       არ არის მონაცემები
                     </td>
                   </tr>
@@ -962,8 +1071,21 @@ const AdminInfoPage = () => {
                               )}
                             </button>
                           </td>
-                          <td className={`px-3 sm:px-4 py-3 text-sm text-black break-words min-w-[280px] max-w-[420px] border border-gray-100 ${isExpanded ? 'bg-[#1B3729]/5' : 'bg-white'}`}>
-                            <OrderInfoRowSummary row={row} />
+                          <td className={`px-3 sm:px-4 py-3 text-sm text-black break-words min-w-[160px] border border-gray-100 ${isExpanded ? 'bg-[#1B3729]/5' : 'bg-white'}`}>
+                            <OrderMetaInfo
+                              orderId={row.orderId}
+                              deliveryType={row.deliveryServiceLabel}
+                              showTitle={false}
+                            />
+                          </td>
+                          <td className={`px-3 sm:px-4 py-3 text-sm text-black border border-gray-100 ${isExpanded ? 'bg-[#1B3729]/5' : 'bg-white'}`}>
+                            <BuyerProfile name={row.customerName} image={row.userImage} />
+                          </td>
+                          <td className={`px-3 sm:px-4 py-3 text-sm text-black break-words min-w-[200px] border border-gray-100 ${isExpanded ? 'bg-[#1B3729]/5' : 'bg-white'}`}>
+                            <BuyerContactInfo phone={row.phone} address={row.userAddress} showTitle={false} />
+                          </td>
+                          <td className={`px-3 sm:px-4 py-3 text-sm text-black break-words min-w-[200px] border border-gray-100 ${isExpanded ? 'bg-[#1B3729]/5' : 'bg-white'}`}>
+                            <SellerContactInfo phone={row.sellerPhone} address={row.pickupAddress} showTitle={false} />
                           </td>
                           <td className={`px-3 sm:px-4 py-3 border border-gray-100 ${isExpanded ? 'bg-[#1B3729]/5' : 'bg-white'}`}>
                             {row.statusItems.length > 0 ? (
@@ -1010,7 +1132,7 @@ const AdminInfoPage = () => {
                         </tr>
                         {isExpanded && (
                           <tr>
-                            <td colSpan={4} className="p-0 border border-gray-100 bg-[#1B3729]/5">
+                            <td colSpan={7} className="p-0 border border-gray-100 bg-[#1B3729]/5">
                               <OrderDetailsPanel row={row} onItemUpdate={updateOrderItem} />
                             </td>
                           </tr>
