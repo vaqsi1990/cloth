@@ -1008,14 +1008,14 @@ const AdminInfoPage = () => {
                             <button
                               type="button"
                               onClick={() => toggleRowDetails(row.id)}
-                              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-[#1B3729] rounded-lg hover:opacity-95 transition-opacity whitespace-nowrap"
+                              className=""
                             >
                               {isExpanded ? (
-                                <ChevronUp className="w-4 h-4" />
+                                <ChevronUp className="w-10 h-10" />
                               ) : (
-                                <ChevronDown className="w-4 h-4" />
+                                <ChevronDown className="w-10 h-10" />
                               )}
-                              დეტალურად
+                             
                             </button>
                           </td>
                         </tr>
