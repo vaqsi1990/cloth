@@ -498,10 +498,10 @@ function OrderInfoRowCard({
         <button
           type="button"
           onClick={onToggleDetails}
-          className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm font-medium text-white bg-[#1B3729] rounded-lg hover:opacity-95 transition-opacity"
+          className=""
         >
-          {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          დეტალურად
+          {isExpanded ? <ChevronUp className="w-8 h-8" /> : <ChevronDown className="w-8 h-8" />}
+       
         </button>
       </div>
 
