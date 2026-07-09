@@ -15,9 +15,10 @@ import { markAdminSectionSeen } from '@/lib/admin-dashboard-seen'
 import OrderItemSaleStatusDropdown from '@/components/OrderItemSaleStatusDropdown'
 import type { OrderItemSaleStatusFields } from '@/components/OrderItemSaleStatusActions'
 import { ORDER_ITEM_RETURNED_STATUS_LABEL } from '@/lib/order-item-fulfillment-status'
-import { getSaleItemFulfillmentLabel } from '@/lib/order-item-sale-status'
+import { getPendingFulfillmentSaleItems, getSaleItemFulfillmentLabel } from '@/lib/order-item-sale-status'
 
 type AdminInfoFilter =
+  | 'PENDING'
   | 'ALL'
   | 'RENTAL'
   | 'PURCHASE'
@@ -291,7 +292,7 @@ function DetailItem({
   className?: string
 }) {
   return (
-    <div className={`rounded-xl border border-gray-100 bg-gray-50 p-4 ${className}`}>
+    <div className={`rounded-xl border border-gray-100 bg-gray-50 p-4 text-center md:text-left ${className}`}>
       <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">{label}</p>
       <div className="text-sm sm:text-base text-black break-words">{value}</div>
     </div>
@@ -306,7 +307,7 @@ function OrderDetailsPanel({
   onItemUpdate: (orderId: number, itemId: number, patch: Partial<OrderItemSaleStatusFields>) => void
 }) {
   return (
-    <div className="px-4 sm:px-6 py-5 border-t border-[#1B3729]/20 bg-[#1B3729]/5">
+    <div className="px-4 sm:px-6 py-5 border-t border-[#1B3729]/20 bg-[#1B3729]/5 text-center md:text-left">
       <div className="mb-4">
         <p className="text-sm font-semibold text-[#1B3729]">შეკვეთის დეტალები — #{row.orderId}</p>
       </div>
@@ -321,7 +322,7 @@ function OrderDetailsPanel({
         <DetailItem label="პროდუქტები" value={row.productsLabel} />
 
         {row.statusItems.length > 0 && (
-          <div className="rounded-xl border border-gray-100 bg-white p-4 space-y-3">
+          <div className="rounded-xl border border-gray-100 bg-white p-4 space-y-3 text-center md:text-left">
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
               {row.orderType === 'RENTAL' ? 'ქირავების ნივთების სტატუსი' : 'ყიდვის ნივთების სტატუსი'}
             </p>
@@ -333,7 +334,7 @@ function OrderDetailsPanel({
               return (
                 <div
                   key={item.id}
-                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3"
+                  className="flex flex-col items-center sm:flex-row sm:items-center sm:justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3"
                 >
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-black break-words">
@@ -397,13 +398,127 @@ function OrderDetailsPanel({
   )
 }
 
+function OrderInfoRowCard({
+  row,
+  isExpanded,
+  isSelected,
+  onToggleSelect,
+  onToggleDetails,
+  onItemUpdate,
+}: {
+  row: OrderInfoRow
+  isExpanded: boolean
+  isSelected: boolean
+  onToggleSelect: () => void
+  onToggleDetails: () => void
+  onItemUpdate: (orderId: number, itemId: number, patch: Partial<OrderItemSaleStatusFields>) => void
+}) {
+  return (
+    <div
+      className={`rounded-xl border overflow-hidden ${
+        isExpanded ? 'border-[#1B3729]/30 bg-[#1B3729]/5' : 'border-gray-200 bg-white'
+      }`}
+    >
+      <div className="p-4 space-y-3 text-center relative">
+        <button
+          type="button"
+          onClick={onToggleSelect}
+          className={`absolute top-4 right-4 w-5 h-5 border-2 rounded flex items-center justify-center shrink-0 transition-colors ${
+            isSelected
+              ? 'bg-green-600 border-green-600'
+              : 'border-gray-400 hover:border-green-600'
+          }`}
+        >
+          {isSelected && <Check className="w-4 h-4 text-white" />}
+        </button>
+
+        <div className="flex flex-col items-center gap-2 pr-8">
+          <div className="flex flex-wrap items-center justify-center gap-2 mb-1">
+            <span
+              className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
+                row.orderType === 'RENTAL'
+                  ? 'bg-blue-100 text-blue-800'
+                  : 'bg-emerald-100 text-emerald-800'
+              }`}
+            >
+              {row.orderType === 'RENTAL' ? 'გაქირავება' : 'ყიდვა'}
+            </span>
+            <span className="text-sm font-semibold text-black">#{row.orderId}</span>
+            <span className="text-xs text-gray-500">{formatDateShort(row.date)}</span>
+          </div>
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-8 h-8 bg-gray-200 rounded-full overflow-hidden shrink-0">
+              {row.userImage ? (
+                <Image
+                  src={row.userImage}
+                  alt={row.customerName}
+                  width={32}
+                  height={32}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gray-300 flex items-center justify-center text-xs text-gray-600">
+                  {row.customerName.charAt(0).toUpperCase()}
+                </div>
+              )}
+            </div>
+            <span className="text-sm font-medium text-black break-words">{row.customerName}</span>
+          </div>
+        </div>
+
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">პროდუქტები</p>
+          <p className="text-sm text-black break-words">{row.productsLabel}</p>
+        </div>
+
+        {row.statusItems.length > 0 && (
+          <div className="space-y-2 flex flex-col items-center">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">სტატუსი</p>
+            {row.statusItems.map((item) => (
+              <OrderItemSaleStatusDropdown
+                key={item.id}
+                item={{
+                  id: item.id,
+                  isRental: item.isRental,
+                  sellerMarkedTransferred: item.sellerMarkedTransferred,
+                  sellerMarkedTransferredAt: item.sellerMarkedTransferredAt,
+                  sellerCanceledItem: item.sellerCanceledItem,
+                  sellerCanceledAt: item.sellerCanceledAt,
+                  sellerReportedOutOfStock: item.sellerReportedOutOfStock,
+                  sellerReportedDamaged: item.sellerReportedDamaged,
+                }}
+                orderStatus={row.orderStatus}
+                variant="compact"
+                onItemUpdate={(itemId, patch) => onItemUpdate(row.orderId, itemId, patch)}
+              />
+            ))}
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={onToggleDetails}
+          className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm font-medium text-white bg-[#1B3729] rounded-lg hover:opacity-95 transition-opacity"
+        >
+          {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          დეტალურად
+        </button>
+      </div>
+
+      {isExpanded && (
+        <OrderDetailsPanel row={row} onItemUpdate={onItemUpdate} />
+      )}
+    </div>
+  )
+}
+
 const AdminInfoPage = () => {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [orders, setOrders] = useState<AdminOrder[]>([])
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
-  const [filter, setFilter] = useState<AdminInfoFilter>('ALL')
+  const [filter, setFilter] = useState<AdminInfoFilter>('PENDING')
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [expandedRowId, setExpandedRowId] = useState<number | null>(null)
 
@@ -463,6 +578,11 @@ const AdminInfoPage = () => {
   }, [loadOrders])
 
   const getFilteredRows = () => {
+    if (filter === 'PENDING') {
+      return orderRows.filter(
+        (row) => getPendingFulfillmentSaleItems(row.statusItems).length > 0,
+      )
+    }
     if (filter === 'RENTAL') {
       return orderRows.filter((row) => row.orderType === 'RENTAL')
     }
@@ -587,11 +707,11 @@ const AdminInfoPage = () => {
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white shadow-sm border-b">
         <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex flex-col items-center text-center sm:flex-row sm:items-center sm:justify-between sm:text-left gap-3">
             <button
               type="button"
               onClick={() => router.back()}
-              className="flex items-center space-x-2 text-black hover:text-gray-900 transition-colors"
+              className="flex items-center justify-center space-x-2 text-black hover:text-gray-900 transition-colors"
             >
               <ArrowLeft className="w-5 h-5 sm:w-7 sm:h-7 font-bold" />
               <span className="text-sm sm:text-base md:text-lg lg:text-[20px] font-bold text-black">
@@ -611,7 +731,7 @@ const AdminInfoPage = () => {
 
       <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
         <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 mb-4 sm:mb-6">
-          <div className="flex items-start space-x-2 sm:space-x-3 mb-4 sm:mb-6">
+          <div className="flex flex-col items-center text-center sm:flex-row sm:items-start sm:text-left space-y-3 sm:space-y-0 sm:space-x-3 mb-4 sm:mb-6">
             <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
               <Info className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
             </div>
@@ -619,7 +739,7 @@ const AdminInfoPage = () => {
               <h1 className="text-lg sm:text-xl font-bold text-black mb-3">
                 შეკვეთების ინფორმაცია
               </h1>
-              <div className="flex flex-wrap gap-x-6 gap-y-2">
+              <div className="flex flex-wrap justify-center sm:justify-start gap-x-6 gap-y-2">
                 <p className="text-sm sm:text-base md:text-[18px] text-black">
                   მიტანით სარგებლობს:{' '}
                   <span className="text-2xl sm:text-3xl font-bold text-red-600">{rentalCount}</span>
@@ -636,10 +756,20 @@ const AdminInfoPage = () => {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-3">
+            <button
+              onClick={() => setFilter('PENDING')}
+              className={`px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base rounded-lg font-medium transition-colors ${
+                filter === 'PENDING'
+                  ? 'bg-[#1B3729] text-white'
+                  : 'bg-[#E4F0EC] text-green-700 hover:bg-green-200'
+              }`}
+            >
+              მოლოდინში
+            </button>
             <button
               onClick={() => setFilter('ALL')}
-              className={`px-3 sm:px-6 py-1.5 sm:py-2 md:text-[18px] text-[16px] rounded-lg font-medium transition-colors ${
+              className={`px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base rounded-lg font-medium transition-colors ${
                 filter === 'ALL'
                   ? 'bg-[#1B3729] text-white'
                   : 'bg-[#E4F0EC] text-green-700 hover:bg-green-200'
@@ -649,7 +779,7 @@ const AdminInfoPage = () => {
             </button>
             <button
               onClick={() => setFilter('RENTAL')}
-              className={`px-3 sm:px-6 py-1.5 sm:py-2 md:text-[18px] text-[16px] rounded-lg font-medium transition-colors ${
+              className={`px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base rounded-lg font-medium transition-colors ${
                 filter === 'RENTAL'
                   ? 'bg-[#1B3729] text-white'
                   : 'bg-[#E4F0EC] text-green-700 hover:bg-green-200'
@@ -659,7 +789,7 @@ const AdminInfoPage = () => {
             </button>
             <button
               onClick={() => setFilter('PURCHASE')}
-              className={`px-3 sm:px-6 py-1.5 sm:py-2 md:text-[18px] text-[16px] rounded-lg font-medium transition-colors ${
+              className={`px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base rounded-lg font-medium transition-colors ${
                 filter === 'PURCHASE'
                   ? 'bg-[#1B3729] text-white'
                   : 'bg-[#E4F0EC] text-green-700 hover:bg-green-200'
@@ -669,7 +799,7 @@ const AdminInfoPage = () => {
             </button>
             <button
               onClick={() => setFilter('TRANSFERRED')}
-              className={`px-3 sm:px-6 py-1.5 sm:py-2 md:text-[18px] text-[16px] rounded-lg font-medium transition-colors ${
+              className={`px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base rounded-lg font-medium transition-colors ${
                 filter === 'TRANSFERRED'
                   ? 'bg-[#1B3729] text-white'
                   : 'bg-[#E4F0EC] text-green-700 hover:bg-green-200'
@@ -679,7 +809,7 @@ const AdminInfoPage = () => {
             </button>
             <button
               onClick={() => setFilter('CANCELED')}
-              className={`px-3 sm:px-6 py-1.5 sm:py-2 md:text-[18px] text-[16px] rounded-lg font-medium transition-colors ${
+              className={`px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base rounded-lg font-medium transition-colors ${
                 filter === 'CANCELED'
                   ? 'bg-[#1B3729] text-white'
                   : 'bg-[#E4F0EC] text-green-700 hover:bg-green-200'
@@ -691,7 +821,7 @@ const AdminInfoPage = () => {
               <button
                 onClick={handleRemoveSelected}
                 disabled={deleting}
-                className="ml-auto px-3 sm:px-6 py-1.5 sm:py-2 md:text-[18px] text-[16px] rounded-lg font-medium transition-colors bg-red-100 text-red-700 hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="w-full sm:w-auto sm:ml-auto px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base rounded-lg font-medium transition-colors bg-red-100 text-red-700 hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <Trash2 className="w-4 h-4" />
                 <span>{deleting ? 'წაშლა...' : `წაშლა (${selectedIds.size})`}</span>
@@ -701,7 +831,54 @@ const AdminInfoPage = () => {
         </div>
 
         <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="overflow-x-auto">
+          {/* Mobile cards */}
+          <div className="md:hidden p-3 sm:p-4 space-y-3 text-center">
+            {filteredRows.length > 0 && (
+              <div className="flex flex-col items-center gap-2 pb-1">
+                <button
+                  type="button"
+                  onClick={toggleSelectAll}
+                  className="inline-flex items-center justify-center gap-2 text-sm text-gray-700"
+                >
+                  <span
+                    className={`w-5 h-5 border-2 rounded flex items-center justify-center ${
+                      filteredRows.every((row) => selectedIds.has(row.id))
+                        ? 'bg-green-600 border-green-600'
+                        : 'border-gray-400'
+                    }`}
+                  >
+                    {filteredRows.length > 0 &&
+                      filteredRows.every((row) => selectedIds.has(row.id)) && (
+                        <Check className="w-4 h-4 text-white" />
+                      )}
+                  </span>
+                  ყველას მონიშვნა
+                </button>
+                <span className="text-xs text-gray-500">{filteredRows.length} ჩანაწერი</span>
+              </div>
+            )}
+
+            {filteredRows.length === 0 ? (
+              <div className="py-10 text-center text-gray-500 text-sm sm:text-base">
+                არ არის მონაცემები
+              </div>
+            ) : (
+              filteredRows.map((row) => (
+                <OrderInfoRowCard
+                  key={row.id}
+                  row={row}
+                  isExpanded={expandedRowId === row.id}
+                  isSelected={selectedIds.has(row.id)}
+                  onToggleSelect={() => toggleSelection(row.id)}
+                  onToggleDetails={() => toggleRowDetails(row.id)}
+                  onItemUpdate={updateOrderItem}
+                />
+              ))
+            )}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead>
                 <tr className="bg-green-50">
