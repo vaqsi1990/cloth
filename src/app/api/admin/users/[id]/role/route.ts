@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { UserRole } from '@prisma/client'
 
 const roleSchema = z.object({
-  role: z.enum(['USER', 'ADMIN', 'SUPPORT'])
+  role: z.enum(['USER', 'ADMIN', 'SUPPORT', 'COURIER'])
 })
 
 // PUT - Update user role

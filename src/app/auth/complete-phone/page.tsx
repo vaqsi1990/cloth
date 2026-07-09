@@ -11,6 +11,7 @@ import { userHasRequiredPhone } from '@/lib/user-phone-required'
 function getRedirectPath(role?: string | null): string {
   if (role === 'ADMIN') return '/admin'
   if (role === 'SUPPORT') return '/support'
+  if (role === 'COURIER') return '/courier'
   return '/'
 }
 

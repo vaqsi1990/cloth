@@ -50,6 +50,10 @@ export default withAuth(
           return token?.role === "SUPPORT"
         }
 
+        if (path.startsWith("/courier")) {
+          return token?.role === "COURIER"
+        }
+
         if (path.startsWith("/account")) {
           return !!token
         }
@@ -64,6 +68,7 @@ export const config = {
   matcher: [
     "/admin/:path*",
     "/support/:path*",
+    "/courier/:path*",
     "/account/:path*",
     "/auth/complete-phone",
     "/checkout/:path*",

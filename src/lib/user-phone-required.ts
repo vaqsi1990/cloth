@@ -1,11 +1,11 @@
-import { isAdminOrSupport } from '@/lib/roles'
+import { isStaffRole } from '@/lib/roles'
 import { isValidPhone } from '@/lib/phone'
 
 export function userHasRequiredPhone(params: {
   role?: string | null
   phone?: string | null
 }): boolean {
-  if (isAdminOrSupport(params.role)) {
+  if (isStaffRole(params.role)) {
     return true
   }
 

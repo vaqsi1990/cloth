@@ -97,6 +97,8 @@ const SignInContent = () => {
           router.push('/admin')
         } else if (session?.user?.role === 'SUPPORT') {
           router.push('/support')
+        } else if (session?.user?.role === 'COURIER') {
+          router.push('/courier')
         } else {
           router.push('/')
         }

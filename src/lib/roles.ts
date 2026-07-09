@@ -2,7 +2,7 @@
  * Role utility functions
  */
 
-export type UserRole = 'USER' | 'ADMIN' | 'SUPPORT'
+export type UserRole = 'USER' | 'ADMIN' | 'SUPPORT' | 'COURIER'
 
 /**
  * Check if user has admin privileges (ADMIN or SUPPORT)
@@ -25,3 +25,16 @@ export function isSupport(role: string | undefined | null): boolean {
   return role === 'SUPPORT'
 }
 
+/**
+ * Check if user is courier (only COURIER)
+ */
+export function isCourier(role: string | undefined | null): boolean {
+  return role === 'COURIER'
+}
+
+/**
+ * Staff roles that skip phone requirement during onboarding
+ */
+export function isStaffRole(role: string | undefined | null): boolean {
+  return isAdminOrSupport(role) || isCourier(role)
+}

@@ -58,6 +58,13 @@ enum UserRole {
   USER
   ADMIN
   SUPPORT
+  COURIER
+}
+
+enum CourierDeliveryStatus {
+  PENDING
+  PICKED_UP
+  DELIVERED
 }
 
 enum BlacklistSource {
@@ -176,6 +183,7 @@ model User {
   blacklistRecords  UserBlacklistRecord[] @relation("UserBlacklistRecords")
   blacklistCreated  UserBlacklistRecord[] @relation("BlacklistCreatedBy")
   blacklistResolved UserBlacklistRecord[] @relation("BlacklistResolvedBy")
+  courierOrders     Order[]               @relation("CourierOrders")
   
   @@index([blocked])
 }
@@ -522,12 +530,20 @@ model Order {
   userId        String?
   user          User?       @relation(fields: [userId], references: [id])
 
+  courierId           String?
+  courier             User?                 @relation("CourierOrders", fields: [courierId], references: [id], onDelete: SetNull)
+  courierStatus       CourierDeliveryStatus?
+  courierNote         String?
+  courierPickedUpAt   DateTime?
+  courierDeliveredAt  DateTime?
+
   items         OrderItem[]
   transactions  Transaction[]
   voucherRedemptions VoucherRedemption[]
   chatRooms     ChatRoom[]
   
   @@index([status])
+  @@index([courierId, courierStatus])
 }
 
 model OrderItem {

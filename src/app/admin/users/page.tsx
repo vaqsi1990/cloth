@@ -199,7 +199,14 @@ const AdminUsersPage = () => {
     const user = users.find(u => u.id === userId)
     if (!user) return
     
-    if (!confirm(`ნამდვილად გსურთ მომხმარებლის როლის შეცვლა ${user.role === 'ADMIN' ? 'ადმინისტრატორიდან' : user.role === 'SUPPORT' ? 'საფორთიდან' : 'მომხმარებლიდან'} ${newRole === 'ADMIN' ? 'ადმინისტრატორად' : newRole === 'SUPPORT' ? 'საფორთად' : 'მომხმარებლად'}?`)) {
+    const roleLabel = (role: string) => {
+      if (role === 'ADMIN') return 'ადმინისტრატორი'
+      if (role === 'SUPPORT') return 'საფორთი'
+      if (role === 'COURIER') return 'კურიერი'
+      return 'მომხმარებელი'
+    }
+
+    if (!confirm(`ნამდვილად გსურთ მომხმარებლის როლის შეცვლა ${roleLabel(user.role)}-დან ${roleLabel(newRole)}-ად?`)) {
       return
     }
 
@@ -333,6 +340,7 @@ const AdminUsersPage = () => {
                 <option value="USER">მომხმარებელი</option>
                 <option value="ADMIN">ადმინისტრატორი</option>
                 <option value="SUPPORT">საფორთი</option>
+                <option value="COURIER">კურიერი</option>
               </select>
             </div>
           </div>
@@ -380,9 +388,11 @@ const AdminUsersPage = () => {
                               ? 'text-red-800' 
                               : user.role === 'SUPPORT'
                               ? 'text-blue-800'
+                              : user.role === 'COURIER'
+                              ? 'text-emerald-700'
                               : 'text-green-500'
                           }`}>
-                            {user.role === 'ADMIN' ? 'ადმინისტრატორი' : user.role === 'SUPPORT' ? 'საფორთი' : 'მომხმარებელი'}
+                            {user.role === 'ADMIN' ? 'ადმინისტრატორი' : user.role === 'SUPPORT' ? 'საფორთი' : user.role === 'COURIER' ? 'კურიერი' : 'მომხმარებელი'}
                           </span>
                           {(!user.name || !user.email) && (
                             <span className="px-2 py-1 text-xs rounded-full bg-gray-200 text-black whitespace-nowrap">
@@ -457,6 +467,7 @@ const AdminUsersPage = () => {
                               <option value="USER">მომხმარებელი</option>
                               <option value="ADMIN">ადმინისტრატორი</option>
                               <option value="SUPPORT">საფორთი</option>
+                              <option value="COURIER">კურიერი</option>
                             </select>
                           </div>
                         )}
