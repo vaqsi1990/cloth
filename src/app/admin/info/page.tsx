@@ -208,14 +208,25 @@ function SellerContactInfo({
   )
 }
 
+function formatOrderDateNumeric(date: Date | string): string {
+  if (!date) return '-'
+  const d = new Date(date)
+  const day = String(d.getDate()).padStart(2, '0')
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const year = d.getFullYear()
+  return `${day}.${month}.${year}`
+}
+
 function OrderMetaInfo({
   orderId,
   deliveryType,
+  orderDate,
   className = '',
   showTitle = true,
 }: {
   orderId: number
   deliveryType: string
+  orderDate: string
   className?: string
   showTitle?: boolean
 }) {
@@ -228,6 +239,7 @@ function OrderMetaInfo({
         <p className="break-words">
           <span className="text-gray-500">გაყიდვის ნომერი:</span> #{orderId}
         </p>
+        <p className="break-words">{formatOrderDateNumeric(orderDate)}</p>
         <p className="break-words">
           <span className="text-gray-500">მიტანის ტიპი:</span> {deliveryType}
         </p>
@@ -240,7 +252,7 @@ function OrderInfoFields({ row, className = '' }: { row: OrderInfoRow; className
   return (
     <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${className}`}>
       <MobileInfoBox>
-        <OrderMetaInfo orderId={row.orderId} deliveryType={row.deliveryServiceLabel} />
+        <OrderMetaInfo orderId={row.orderId} deliveryType={row.deliveryServiceLabel} orderDate={row.date} />
       </MobileInfoBox>
       <MobileInfoBox>
         <BuyerProfile name={row.customerName} image={row.userImage} />
@@ -1075,6 +1087,7 @@ const AdminInfoPage = () => {
                             <OrderMetaInfo
                               orderId={row.orderId}
                               deliveryType={row.deliveryServiceLabel}
+                              orderDate={row.date}
                               showTitle={false}
                             />
                           </td>
