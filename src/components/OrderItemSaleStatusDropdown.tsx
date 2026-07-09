@@ -32,7 +32,7 @@ export default function OrderItemSaleStatusDropdown({
 
   const isCompact = variant === 'compact'
   const selectClass = isCompact
-    ? 'rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-black focus:border-[#1B3729] focus:outline-none focus:ring-1 focus:ring-[#1B3729] disabled:opacity-50'
+    ? 'rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-[16px] md:text-[18px] font-medium text-black focus:border-[#1B3729] focus:outline-none focus:ring-1 focus:ring-[#1B3729] disabled:opacity-50'
     : 'rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-[15px] font-medium text-black focus:border-[#1B3729] focus:outline-none focus:ring-1 focus:ring-[#1B3729] disabled:opacity-50'
 
   const statusApiPath =

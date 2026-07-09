@@ -101,6 +101,7 @@ interface OrderInfoRow {
   statusItems: AdminOrderItem[]
   rentalPeriod: string
   deliveryLabel: string
+  deliveryServiceLabel: string
   total: number
   paymentMethod: string
   note: string
@@ -199,6 +200,14 @@ function buildRentalPeriod(items: AdminOrderItem[]): string {
     .join('; ')
 }
 
+function buildDeliveryServiceLabel(order: AdminOrder): string {
+  if (!order.deliveryCityId) return 'ადგილიდან გატანა'
+  const speed = fromPrismaDeliverySpeed(order.deliverySpeed as 'EXTRA' | 'STANDARD' | null)
+  if (speed === 'extra') return 'ექსტრა'
+  if (speed === 'standard') return 'სტანდარტული'
+  return '-'
+}
+
 function buildDeliveryLabel(order: AdminOrder): string {
   if (order.deliveryCityId && order.deliveryCity?.name) {
     const speed = fromPrismaDeliverySpeed(order.deliverySpeed as 'EXTRA' | 'STANDARD' | null)
@@ -236,6 +245,7 @@ function transformOrdersToRows(orders: AdminOrder[]): OrderInfoRow[] {
     const sellerName = buildSellerName(order)
     const sellerPhone = buildSellerPhone(order)
     const deliveryLabel = buildDeliveryLabel(order)
+    const deliveryServiceLabel = buildDeliveryServiceLabel(order)
 
     const base = {
       orderId: order.id,
@@ -249,6 +259,7 @@ function transformOrdersToRows(orders: AdminOrder[]): OrderInfoRow[] {
       sellerName: sellerName || '-',
       sellerPhone: sellerPhone || '-',
       deliveryLabel,
+      deliveryServiceLabel,
       total: order.total,
       paymentMethod: order.paymentMethod || '-',
       note: order.note || '-',
@@ -280,6 +291,42 @@ function transformOrdersToRows(orders: AdminOrder[]): OrderInfoRow[] {
   })
 
   return rows
+}
+
+function OrderInfoRowSummary({ row, className = '' }: { row: OrderInfoRow; className?: string }) {
+  const typeLabel = row.orderType === 'RENTAL' ? 'გაქირავებული' : 'გაყიდულია'
+
+  return (
+    <div className={`md:text-[18px] text-[16px] text-black space-y-1 ${className}`}>
+      <p>
+        <span className="text-gray-500">ტიპი:</span> {typeLabel}
+      </p>
+      <p>
+        <span className="text-gray-500">შეკვეთა:</span> #{row.orderId}
+      </p>
+      <p>
+        <span className="text-gray-500">თარიღი:</span> {formatDateShort(row.date)}
+      </p>
+      <p>
+        <span className="text-gray-500">სერვისი:</span> {row.deliveryServiceLabel}
+      </p>
+      <p>
+        <span className="text-gray-500">გამყიდველი:</span> {row.sellerName}
+      </p>
+      <p>
+        <span className="text-gray-500">გამყიდველის ტელეფონი:</span> {row.sellerPhone}
+      </p>
+      <p>
+        <span className="text-gray-500">გამყიდველის მისამართი:</span> {row.pickupAddress}
+      </p>
+      <p>
+        <span className="text-gray-500">მყიდველის ტელეფონი:</span> {row.phone}
+      </p>
+      <p>
+        <span className="text-gray-500">მყიდველის მისამართი:</span> {row.userAddress}
+      </p>
+    </div>
+  )
 }
 
 function DetailItem({
@@ -314,7 +361,25 @@ function OrderDetailsPanel({
 
       <div className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <DetailItem label="მყიდველი" value={row.customerName} />
+          <DetailItem
+            label="მყიდველი"
+            value={
+              <div className="flex flex-col items-center md:items-start gap-2">
+                {row.userImage ? (
+                  <div className="w-12 h-12 bg-gray-200 rounded-full overflow-hidden shrink-0">
+                    <Image
+                      src={row.userImage}
+                      alt={row.customerName}
+                      width={48}
+                      height={48}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : null}
+                <span>{row.customerName}</span>
+              </div>
+            }
+          />
           <DetailItem label="ტელეფონი" value={row.phone} />
           <DetailItem label="ელფოსტა" value={row.email} />
         </div>
@@ -432,44 +497,7 @@ function OrderInfoRowCard({
           {isSelected && <Check className="w-4 h-4 text-white" />}
         </button>
 
-        <div className="flex flex-col items-center gap-2 pr-8">
-          <div className="flex flex-wrap items-center justify-center gap-2 mb-1">
-            <span
-              className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
-                row.orderType === 'RENTAL'
-                  ? 'bg-blue-100 text-blue-800'
-                  : 'bg-emerald-100 text-emerald-800'
-              }`}
-            >
-              {row.orderType === 'RENTAL' ? 'გაქირავება' : 'ყიდვა'}
-            </span>
-            <span className="text-sm font-semibold text-black">#{row.orderId}</span>
-            <span className="text-xs text-gray-500">{formatDateShort(row.date)}</span>
-          </div>
-          <div className="flex flex-col items-center gap-2">
-            <div className="w-8 h-8 bg-gray-200 rounded-full overflow-hidden shrink-0">
-              {row.userImage ? (
-                <Image
-                  src={row.userImage}
-                  alt={row.customerName}
-                  width={32}
-                  height={32}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full bg-gray-300 flex items-center justify-center text-xs text-gray-600">
-                  {row.customerName.charAt(0).toUpperCase()}
-                </div>
-              )}
-            </div>
-            <span className="text-sm font-medium text-black break-words">{row.customerName}</span>
-          </div>
-        </div>
-
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">პროდუქტები</p>
-          <p className="text-sm text-black break-words">{row.productsLabel}</p>
-        </div>
+        <OrderInfoRowSummary row={row} className="text-center md:text-left" />
 
         {row.statusItems.length > 0 && (
           <div className="space-y-2 flex flex-col items-center">
@@ -832,7 +860,7 @@ const AdminInfoPage = () => {
 
         <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           {/* Mobile cards */}
-          <div className="md:hidden p-3 sm:p-4 space-y-3 text-center">
+          <div className="md:hidden p-3 sm:p-4 space-y-[5px] text-center">
             {filteredRows.length > 0 && (
               <div className="flex flex-col items-center gap-2 pb-1">
                 <button
@@ -878,8 +906,8 @@ const AdminInfoPage = () => {
           </div>
 
           {/* Desktop table */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+          <div className="hidden md:block overflow-x-auto bg-gray-50 p-3 sm:p-4">
+            <table className="min-w-full border-separate border-spacing-y-[8px]">
               <thead>
                 <tr className="bg-green-50">
                   <th className="px-3 sm:px-4 py-3 text-left sticky left-0 bg-green-50 z-10">
@@ -894,19 +922,17 @@ const AdminInfoPage = () => {
                         )}
                     </button>
                   </th>
-                  <th className="px-3 sm:px-4 py-3 text-left text-sm font-semibold text-black whitespace-nowrap">ტიპი</th>
-                  <th className="px-3 sm:px-4 py-3 text-left text-sm font-semibold text-black whitespace-nowrap">შეკვეთა</th>
-                  <th className="px-3 sm:px-4 py-3 text-left text-sm font-semibold text-black whitespace-nowrap">თარიღი</th>
-                  <th className="px-3 sm:px-4 py-3 text-left text-sm font-semibold text-black whitespace-nowrap min-w-[140px]">მყიდველი</th>
-                  <th className="px-3 sm:px-4 py-3 text-left text-sm font-semibold text-black whitespace-nowrap min-w-[180px]">პროდუქტები</th>
+                  <th className="px-3 sm:px-4 py-3 text-left text-sm font-semibold text-black whitespace-nowrap min-w-[280px]">
+                    ინფორმაცია
+                  </th>
                   <th className="px-3 sm:px-4 py-3 text-left text-sm font-semibold text-black whitespace-nowrap min-w-[140px]">სტატუსი</th>
                   <th className="px-3 sm:px-4 py-3 text-left text-sm font-semibold text-black whitespace-nowrap">დეტალები</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-100">
+              <tbody>
                 {filteredRows.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-gray-500 md:text-[18px] text-[16px]">
+                    <td colSpan={4} className="px-4 py-8 text-center text-gray-500 md:text-[18px] text-[16px]">
                       არ არის მონაცემები
                     </td>
                   </tr>
@@ -921,7 +947,7 @@ const AdminInfoPage = () => {
                             isExpanded ? 'bg-[#1B3729]/5' : 'hover:bg-gray-50'
                           }`}
                         >
-                          <td className={`px-3 sm:px-4 py-3 sticky left-0 z-10 border-r border-gray-100 ${isExpanded ? 'bg-[#1B3729]/5' : 'bg-white'}`}>
+                          <td className={`px-3 sm:px-4 py-3 sticky left-0 z-10 border border-gray-100 ${isExpanded ? 'bg-[#1B3729]/5' : 'bg-white'}`}>
                             <button
                               type="button"
                               onClick={() => toggleSelection(row.id)}
@@ -936,47 +962,10 @@ const AdminInfoPage = () => {
                               )}
                             </button>
                           </td>
-                          <td className="px-3 sm:px-4 py-3">
-                            <span
-                              className={`inline-block px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
-                                row.orderType === 'RENTAL'
-                                  ? 'bg-blue-100 text-blue-800'
-                                  : 'bg-emerald-100 text-emerald-800'
-                              }`}
-                            >
-                              {row.orderType === 'RENTAL' ? 'გაქირავება' : 'ყიდვა'}
-                            </span>
+                          <td className={`px-3 sm:px-4 py-3 text-sm text-black break-words min-w-[280px] max-w-[420px] border border-gray-100 ${isExpanded ? 'bg-[#1B3729]/5' : 'bg-white'}`}>
+                            <OrderInfoRowSummary row={row} />
                           </td>
-                          <td className="px-3 sm:px-4 py-3 text-sm text-black font-medium whitespace-nowrap">
-                            #{row.orderId}
-                          </td>
-                          <td className="px-3 sm:px-4 py-3 text-sm text-black whitespace-nowrap">
-                            {formatDateShort(row.date)}
-                          </td>
-                          <td className="px-3 sm:px-4 py-3 text-sm text-black">
-                            <div className="flex items-center gap-2 min-w-[120px]">
-                              <div className="w-8 h-8 bg-gray-200 rounded-full overflow-hidden flex-shrink-0">
-                                {row.userImage ? (
-                                  <Image
-                                    src={row.userImage}
-                                    alt={row.customerName}
-                                    width={32}
-                                    height={32}
-                                    className="w-full h-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="w-full h-full bg-gray-300 flex items-center justify-center text-xs text-gray-600">
-                                    {row.customerName.charAt(0).toUpperCase()}
-                                  </div>
-                                )}
-                              </div>
-                              <span className="font-medium break-words">{row.customerName}</span>
-                            </div>
-                          </td>
-                          <td className="px-3 sm:px-4 py-3 text-sm text-black break-words max-w-[260px]">
-                            {row.productsLabel}
-                          </td>
-                          <td className="px-3 sm:px-4 py-3">
+                          <td className={`px-3 sm:px-4 py-3 border border-gray-100 ${isExpanded ? 'bg-[#1B3729]/5' : 'bg-white'}`}>
                             {row.statusItems.length > 0 ? (
                               <div className="flex flex-col gap-2 min-w-[120px]">
                                 {row.statusItems.map((item) => (
@@ -1004,7 +993,7 @@ const AdminInfoPage = () => {
                               <span className="text-xs text-gray-500">—</span>
                             )}
                           </td>
-                          <td className="px-3 sm:px-4 py-3">
+                          <td className={`px-3 sm:px-4 py-3 border border-gray-100 ${isExpanded ? 'bg-[#1B3729]/5' : 'bg-white'}`}>
                             <button
                               type="button"
                               onClick={() => toggleRowDetails(row.id)}
@@ -1021,7 +1010,7 @@ const AdminInfoPage = () => {
                         </tr>
                         {isExpanded && (
                           <tr>
-                            <td colSpan={8} className="p-0">
+                            <td colSpan={4} className="p-0 border border-gray-100 bg-[#1B3729]/5">
                               <OrderDetailsPanel row={row} onItemUpdate={updateOrderItem} />
                             </td>
                           </tr>
