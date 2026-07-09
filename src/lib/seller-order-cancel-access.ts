@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { isSaleOrderItem } from '@/lib/order-item-snapshot'
+import { isOrderItemSeller } from '@/lib/order-item-seller'
 import { COMPLETED_SALE_ORDER_STATUSES } from '@/lib/sold-products'
 
 function sellerOwnsSaleItem(
@@ -9,7 +10,7 @@ function sellerOwnsSaleItem(
   },
   sellerId: string,
 ) {
-  return item.sellerUserId === sellerId || item.product?.userId === sellerId
+  return isOrderItemSeller(sellerId, item)
 }
 
 export async function requireSellerOrderCancelAccess(

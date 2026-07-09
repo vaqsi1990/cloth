@@ -16,6 +16,7 @@ import {
   Info,
   Ticket,
   ShieldBan,
+  Import,
 } from 'lucide-react'
 import ChatUnreadBadge from '@/components/ChatUnreadBadge'
 import { useSupportChatNotification } from '@/components/SupportChatNotificationProvider'
@@ -305,6 +306,13 @@ const AdminDashboard = () => {
       description: 'ვიზიტორები და IP სტატისტიკა',
       href: '/admin/analytics',
       icon: BarChart3,
+      color: 'bg-indigo-600',
+    },
+    {
+      title: 'იმპორტი',
+      description: 'დააიმპორტე პროდუქტები ერთი იუზერიდან სხვაზე',
+      href: '/admin/import',
+      icon: Import,
       color: 'bg-indigo-600',
     },
   ]

@@ -93,9 +93,11 @@ async function collectSellerIBANs(
   productIds: (string | number)[],
   sellerUserIds: string[] = [],
 ) {
-  const fromProducts = await collectProductAuthorsIBANs(productIds)
-  const fromSellers = await collectSellerUserIdsIBANs(sellerUserIds)
-  return new Map<string, string>([...fromProducts, ...fromSellers])
+  const uniqueSellerIds = [...new Set(sellerUserIds.filter(Boolean))]
+  if (uniqueSellerIds.length > 0) {
+    return collectSellerUserIdsIBANs(uniqueSellerIds)
+  }
+  return collectProductAuthorsIBANs(productIds)
 }
 
 export async function buildSplitPaymentConfig(

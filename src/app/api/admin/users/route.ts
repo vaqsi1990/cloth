@@ -20,9 +20,22 @@ export async function GET(request: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1)
     const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '50', 10) || 50, 1), 200)
     const skip = (page - 1) * limit
+    const search = searchParams.get('search')?.trim()
+
+    const where = search
+      ? {
+          OR: [
+            { name: { contains: search, mode: 'insensitive' as const } },
+            { email: { contains: search, mode: 'insensitive' as const } },
+            { phone: { contains: search, mode: 'insensitive' as const } },
+            { id: { contains: search, mode: 'insensitive' as const } },
+          ],
+        }
+      : undefined
 
     const [users, totalCount] = await Promise.all([
       prisma.user.findMany({
+        where,
         select: {
           id: true,
           name: true,
@@ -65,7 +78,7 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.user.count(),
+      prisma.user.count({ where }),
     ])
 
     return NextResponse.json({

@@ -550,6 +550,9 @@ export async function POST(req: NextRequest) {
       .map((i) => i.productId)
       .filter((id): id is number => id !== null)
     const saleItems = resolvedCartItems.filter((item) => !item.isRental)
+    const sellerUserIds = saleItems
+      .map((item) => item.product?.userId)
+      .filter((id): id is string => Boolean(id))
     const ownerItemsSubtotal =
       voucherDiscount > 0
         ? getOwnerItemsSubtotalFromBuyer(productBuyerSubtotal)
@@ -569,6 +572,7 @@ export async function POST(req: NextRequest) {
           total,
           ownerItemsSubtotal,
           deliveryFee,
+          sellerUserIds,
         )
 
     const siteUrl = getSiteUrl()

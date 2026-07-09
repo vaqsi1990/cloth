@@ -53,7 +53,7 @@ export async function recordSellerTransactions(orderId: number) {
   const sellerTotals = new Map<string, { userId: string; type: TransactionType; total: number }>()
 
   for (const item of order.items) {
-    const sellerId = item.product?.userId
+    const sellerId = item.sellerUserId ?? item.product?.userId
     if (!sellerId) {
       continue
     }
@@ -117,5 +117,3 @@ export async function recordSellerTransactions(orderId: number) {
     await purgeSoldProductsStillInDatabase()
   }
 }
-
-

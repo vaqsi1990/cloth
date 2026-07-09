@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { isSaleOrderItem } from '@/lib/order-item-snapshot'
+import { isOrderItemSeller } from '@/lib/order-item-seller'
 import { REPORTABLE_SALE_ORDER_STATUSES } from '@/lib/order-out-of-stock'
 import { COMPLETED_SALE_ORDER_STATUSES } from '@/lib/sold-products'
 
@@ -51,9 +52,7 @@ export async function POST(
     }
 
     const sellerId = session.user.id
-    const ownsItem =
-      orderItem.sellerUserId === sellerId ||
-      orderItem.product?.userId === sellerId
+    const ownsItem = isOrderItemSeller(sellerId, orderItem)
 
     if (!ownsItem) {
       return NextResponse.json(

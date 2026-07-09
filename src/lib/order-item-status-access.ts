@@ -3,6 +3,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { REPORTABLE_SALE_ORDER_STATUSES } from '@/lib/order-out-of-stock'
 import { isAdminOrSupport } from '@/lib/roles'
+import { isOrderItemSeller } from '@/lib/order-item-seller'
 import type { COMPLETED_SALE_ORDER_STATUSES } from '@/lib/sold-products'
 
 type OrderItemStatusContext = {
@@ -44,8 +45,7 @@ export async function requireOrderItemStatusAccess(itemId: number) {
 
   const userId = session.user.id
   const isStaff = isAdminOrSupport(session.user.role)
-  const isSeller =
-    ctx.sellerUserId === userId || ctx.product?.userId === userId
+  const isSeller = isOrderItemSeller(userId, ctx)
   const isBuyer = ctx.order.userId === userId
 
   if (!isStaff && !isSeller && !isBuyer) {
