@@ -370,12 +370,22 @@ const AdminUsersPage = () => {
                         <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-black hidden sm:table-cell">{seller.email || '---'}</td>
                         <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-black">{seller._count.products}</td>
                         <td className="px-2 sm:px-4 py-2 text-right">
-                          <button
-                            onClick={() => toggleUserExpansion(seller.id)}
-                            className="text-xs sm:text-sm text-orange-700 hover:text-orange-900 font-semibold whitespace-nowrap"
-                          >
-                            დეტალები
-                          </button>
+                          <div className="flex items-center justify-end gap-3">
+                            {seller._count.products > 0 && (
+                              <Link
+                                href={`/author/${seller.id}`}
+                                className="text-xs sm:text-sm text-orange-700 hover:text-orange-900 font-semibold whitespace-nowrap"
+                              >
+                                ნივთების ნახვა
+                              </Link>
+                            )}
+                            <button
+                              onClick={() => toggleUserExpansion(seller.id)}
+                              className="text-xs sm:text-sm text-orange-700 hover:text-orange-900 font-semibold whitespace-nowrap"
+                            >
+                              დეტალები
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -467,6 +477,14 @@ const AdminUsersPage = () => {
                             <Package className="w-3 h-3 flex-shrink-0" />
                             <span>{user._count.products} პროდუქტი</span>
                           </div>
+                          {user._count.products > 0 && (
+                            <Link
+                              href={`/author/${user.id}`}
+                              className="text-blue-600 hover:text-blue-800 text-xs sm:text-sm md:text-[18px] font-medium whitespace-nowrap"
+                            >
+                              ნივთების ნახვა
+                            </Link>
+                          )}
                           <div className="flex items-center space-x-1 whitespace-nowrap">
                             <ShoppingCart className="w-3 h-3 flex-shrink-0" />
                             <span>{user._count.orders} შეკვეთა</span>
