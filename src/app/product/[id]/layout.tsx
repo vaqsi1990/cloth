@@ -66,7 +66,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       };
     }
 
-    const imageUrl = product.images?.[0]?.url || "/logo.jpg";
+    const imageUrl = product.images?.[0]?.url || "/logo-icon.jpg";
     const description = product.description
       ? `${product.description.substring(0, 160)}...`
       : `${product.name} - ${product.category?.name || "მოდური ნივთი"} Dressla.ge-ზე. ${product.isRentable ? "ქირაობა და შეძენა." : "შეძენა."}`;

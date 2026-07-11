@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "რეგისტრაცია - Dressla.ge",
     description: "შექმენით ახალი ანგარიში და დაიწყეთ მოდის ქირაობა",
-    images: ["/logo.jpg"],
+    images: ["/logo-icon.jpg"],
   },
 };
 

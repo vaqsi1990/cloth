@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "პაროლის აღდგენა - Dressla.ge",
     description: "აღადგინეთ თქვენი პაროლი და დაბრუნდით თქვენს ანგარიშში",
-    images: ["/logo.jpg"],
+    images: ["/logo-icon.jpg"],
   },
 };
 

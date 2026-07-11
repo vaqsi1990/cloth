@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "შესვლა - Dressla.ge",
     description: "შედით თქვენს ანგარიშში და განაგრძეთ შოპინგი",
-    images: ["/logo.jpg"],
+    images: ["/logo-icon.jpg"],
   },
 };
 

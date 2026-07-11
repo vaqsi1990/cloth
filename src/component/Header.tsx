@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense, useRef, useCallback } from 'react
 import Link from 'next/link'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { Search, Menu, User, LogOut, ShoppingCart, Plus, X, ChevronDown } from 'lucide-react'
-import Image from '@/component/AppImage'
+import SiteLogo from '@/component/SiteLogo'
 import { useSession, signOut } from 'next-auth/react'
 import { CHILDREN_PRODUCT_CATEGORIES, MEN_PRODUCT_CATEGORIES, WOMEN_PRODUCT_CATEGORIES, type ProductCategory } from '@/lib/product-categories'
 import { resetShopBrowserFilters } from '@/lib/shop-browser-state'
@@ -291,12 +291,10 @@ const HeaderContent = () => {
             className="group flex items-center space-x-3 transition-all duration-300 hover:scale-105 flex-shrink-0"
           >
             <div className="relative overflow-hidden rounded-full">
-              <Image
-                src="/logo.jpg"
-                className="w-[50px] h-[50px] md:w-16 md:h-16 rounded-full transition-transform duration-300 group-hover:scale-110"
-                alt="logo"
-                width={64}
-                height={64}
+              <SiteLogo
+                size="header"
+                priority
+                className="transition-transform duration-300 group-hover:scale-110"
               />
             </div>
          
@@ -774,13 +772,7 @@ const HeaderFallback = () => (
     <div className="container max-w-7xl mx-auto px-3 py-3 sm:px-4 sm:py-4 lg:px-6">
       <div className="flex items-center justify-between gap-2 sm:gap-4 min-w-0">
         <Link href="/" className="flex-shrink-0">
-          <Image
-            src="/logo.jpg"
-            className="w-[50px] h-[50px] md:w-16 md:h-16 rounded-full"
-            alt="logo"
-            width={64}
-            height={64}
-          />
+          <SiteLogo size="header" />
         </Link>
         <div className="flex lg:hidden items-center gap-1 sm:gap-2 flex-shrink-0">
           <span className="p-2 text-white opacity-70" aria-hidden>

@@ -17,7 +17,7 @@ export default function StructuredData({ type, data }: StructuredDataProps) {
           "@type": "Organization",
           name: "Dressla.ge",
           url: baseUrl,
-          logo: `${baseUrl}/logo.jpg`,
+          logo: `${baseUrl}/logo-icon.jpg`,
           description:
             "ინოვაციური ონლაინ პლატფორმა მოდის ქირაობისა და შეძენისთვის საქართველოში",
           address: {
@@ -58,7 +58,7 @@ export default function StructuredData({ type, data }: StructuredDataProps) {
         if (!data) return null;
 
         const product = data as Product;
-        const imageUrl = product.images?.[0]?.url || `${baseUrl}/logo.jpg`;
+        const imageUrl = product.images?.[0]?.url || `${baseUrl}/logo-icon.jpg`;
         const minPrice = product.variants?.length
           ? Math.min(
               ...product.variants

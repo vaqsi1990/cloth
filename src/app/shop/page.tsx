@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "მაღაზია - Dressla.ge",
     description: "გაეცანით მრავალფეროვან ასორტიმენტს და იპოვეთ იდეალური მოდური ნივთები",
-    images: ["/logo.jpg"],
+    images: ["/logo-icon.jpg"],
   },
 };
 

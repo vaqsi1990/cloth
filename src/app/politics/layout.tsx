@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "საიტის პოლიტიკა - Dressla.ge",
     description: "გაეცანით Dressla.ge-ის კონფიდენციალურობის პოლიტიკას და გამოყენების პირობებს",
-    images: ["/logo.jpg"],
+    images: ["/logo-icon.jpg"],
   },
 };
 

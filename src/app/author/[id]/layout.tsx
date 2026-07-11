@@ -50,13 +50,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
                 alt: authorName,
               },
             ]
-          : ["/logo.jpg"],
+          : ["/logo-icon.jpg"],
       },
       twitter: {
         card: "summary",
         title: `${authorName} - Dressla.ge`,
         description: description,
-        images: author.image ? [author.image] : ["/logo.jpg"],
+        images: author.image ? [author.image] : ["/logo-icon.jpg"],
       },
       alternates: {
         canonical: `/author/${authorId}`,

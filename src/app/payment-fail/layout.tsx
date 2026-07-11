@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "გადახდა წარუმატებლად - Dressla.ge",
     description: "თქვენი გადახდა ვერ განხორციელდა. სცადეთ კვლავ",
-    images: ["/logo.jpg"],
+    images: ["/logo-icon.jpg"],
   },
 };
 

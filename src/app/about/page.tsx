@@ -7,7 +7,7 @@ export const metadata: Metadata = {
     openGraph: {
         title: "ჩვენს შესახებ - Dressla.ge",
         description: "გაეცანით Dressla.ge-ს - თანამედროვე ონლაინ მარკეტპლეის პლატფორმას ტანსაცმლისა და აქსესუარების გაყიდვისა და გაქირავებისთვის.",
-        images: ["/logo.jpg"],
+        images: ["/logo-icon.jpg"],
     },
 };
 

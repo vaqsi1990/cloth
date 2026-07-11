@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "წესები და პოლიტიკა - Dressla.ge",
     description: "გაეცანით Dressla.ge-ის წესებს: პერსონალურ მონაცემთა დაცვის პოლიტიკა, წესები და პირობები, დაბრუნების პოლიტიკა",
-    images: ["/logo.jpg"],
+    images: ["/logo-icon.jpg"],
   },
 };
 

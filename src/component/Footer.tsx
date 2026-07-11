@@ -2,7 +2,8 @@
 
 import React from 'react'
 import Link from 'next/link'
-import Image from '@/component/AppImage'
+import SiteLogo from '@/component/SiteLogo'
+import AppImage from '@/component/AppImage'
 import { Facebook, Instagram, Mail, Phone, MapPin } from 'lucide-react'
 
 const Footer = () => {
@@ -15,14 +16,11 @@ const Footer = () => {
 
             {/* Logo & Company Info */}
             <div className="space-y-6 flex flex-col items-center md:items-start max-w-sm">
-              <div className="group   cursor-pointer">
-                <Image
-                  src="/logo.jpg"
-                  className="w-16 h-16 md:w-20 md:h-20 rounded-full transition-transform duration-300 group-hover:scale-110 shadow-lg"
-                  alt="Dressla Logo"
-                  width={80}
-                  height={80}
+              <div className="group cursor-pointer">
+                <SiteLogo
+                  size="footer"
                   priority
+                  className="transition-transform duration-300 group-hover:scale-110 shadow-lg"
                 />
               </div>
               <p className='text-white text-center md:text-left text-base md:text-lg leading-relaxed max-w-xs md:max-w-sm'>
@@ -68,12 +66,12 @@ const Footer = () => {
               <div className="space-y-3 text-start">
                 
                 <div className="flex items-center justify-start space-x-3">
-                  <Image src="/Frame2.png" alt="phone" width={60} height={60} />
+                  <AppImage src="/Frame2.png" alt="phone" width={60} height={60} />
                   <span className="text-white font-normal text-[16px] md:text-[18px]">
                   +995599556395</span>
                 </div>
                 <div className="flex items-center justify-start space-x-3">
-                  <Image src="/Frame3.png" alt="email" width={60} height={60} />
+                  <AppImage src="/Frame3.png" alt="email" width={60} height={60} />
                   <span className="text-white font-normal text-[16px] md:text-[18px]">dressla.online@gmail.com</span>
                 </div>
               </div>

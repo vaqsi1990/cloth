@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "კალათა - Dressla.ge",
     description: "გადახედეთ თქვენი კალათა და განაგრძეთ შეძენა",
-    images: ["/logo.jpg"],
+    images: ["/logo-icon.jpg"],
   },
 };
 

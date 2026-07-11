@@ -67,9 +67,9 @@ export const metadata: Metadata = {
     description: "ინოვაციური ონლაინ პლატფორმა მოდის ქირაობისა და შეძენისთვის საქართველოში",
     images: [
       {
-        url: "/logo.jpg",
-        width: 1200,
-        height: 630,
+        url: "/logo-icon.jpg",
+        width: 1100,
+        height: 1100,
         alt: "Dressla.ge - მოდის ქირაობა და შეძენა",
       },
     ],
@@ -78,7 +78,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Dressla.ge - მოდის ქირაობა და შეძენა საქართველოში",
     description: "ინოვაციური ონლაინ პლატფორმა მოდის ქირაობისა და შეძენისთვის საქართველოში",
-    images: ["/logo.jpg"],
+    images: ["/logo-icon.jpg"],
   },
   robots: {
     index: true,
@@ -93,13 +93,11 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: '/logo.jpg', type: 'image/jpeg' },
-      { url: '/logo.jpg', sizes: '16x16', type: 'image/jpeg' },
-      { url: '/logo.jpg', sizes: '32x32', type: 'image/jpeg' },
-      { url: '/logo.jpg', sizes: '48x48', type: 'image/jpeg' },
+      { url: '/logo-32.jpg', sizes: '32x32', type: 'image/jpeg' },
+      { url: '/logo-48.jpg', sizes: '48x48', type: 'image/jpeg' },
     ],
-    shortcut: '/logo.jpg',
-    apple: '/logo.jpg',
+    shortcut: '/logo-48.jpg',
+    apple: '/logo-192.jpg',
   },
   alternates: {
     canonical: "/",
