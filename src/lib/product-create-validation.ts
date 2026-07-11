@@ -21,7 +21,7 @@ export const PRODUCT_PRICING_MODE_REQUIRED_MESSAGE =
 export const PRODUCT_PRICING_MODE_EXCLUSIVE_MESSAGE =
   'პროდუქტი ან იყიდება, ან იქირავება — ორივე ერთდროულად არ შეიძლება'
 
-export const MIN_PRODUCT_PRICE = 15
+export const MIN_PRODUCT_PRICE = 1
 
 export const PRODUCT_MIN_PRICE_MESSAGE = `პროდუქტის მინიმალური ფასი უნდა იყოს ${MIN_PRODUCT_PRICE} ₾`
 
