@@ -1,23 +1,46 @@
 import type {
   CourierDeliveryStatus,
   Order,
-  OrderItem,
   Product,
   User,
   DeliveryCity,
 } from '@prisma/client'
 import { Prisma } from '@prisma/client'
 
-type OrderItemWithProduct = OrderItem & {
-  product: (Product & {
-    user: Pick<User, 'id' | 'name' | 'phone' | 'pickupAddress' | 'address' | 'location'> | null
-  }) | null
-}
+export const courierOrderInclude = {
+  deliveryCity: true,
+  items: {
+    where: {
+      isRental: { not: true },
+      sellerCanceledItem: false,
+    },
+    include: {
+      product: {
+        select: {
+          id: true,
+          name: true,
+          pickupAddress: true,
+          location: true,
+          allowsPickup: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              phone: true,
+              pickupAddress: true,
+              address: true,
+              location: true,
+            },
+          },
+        },
+      },
+    },
+  },
+} satisfies Prisma.OrderInclude
 
-export type CourierOrderRecord = Order & {
-  deliveryCity: DeliveryCity | null
-  items: OrderItemWithProduct[]
-}
+export type CourierOrderRecord = Prisma.OrderGetPayload<{
+  include: typeof courierOrderInclude
+}>
 
 export function orderNeedsCourierDelivery(order: Pick<Order, 'deliveryCityId' | 'deliveryPrice'>) {
   return Boolean(order.deliveryCityId) || (order.deliveryPrice ?? 0) > 0
@@ -98,37 +121,6 @@ export function mapCourierDelivery(order: CourierOrderRecord, courierUserId: str
     courierDeliveredAt: order.courierDeliveredAt,
   }
 }
-
-export const courierOrderInclude = {
-  deliveryCity: true,
-  items: {
-    where: {
-      isRental: { not: true },
-      sellerCanceledItem: false,
-    },
-    include: {
-      product: {
-        select: {
-          id: true,
-          name: true,
-          pickupAddress: true,
-          location: true,
-          allowsPickup: true,
-          user: {
-            select: {
-              id: true,
-              name: true,
-              phone: true,
-              pickupAddress: true,
-              address: true,
-              location: true,
-            },
-          },
-        },
-      },
-    },
-  },
-} satisfies Prisma.OrderInclude
 
 export function getCourierStatusLabel(status: CourierDeliveryStatus | null | undefined) {
   switch (status) {

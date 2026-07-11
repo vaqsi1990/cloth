@@ -13,7 +13,7 @@ const updateSchema = z.object({
   action: z.enum(['claim', 'pickup', 'deliver', 'release']),
   note: z.string().max(1000).optional(),
 })
-console.log('updateSchema',)
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ orderId: string }> },

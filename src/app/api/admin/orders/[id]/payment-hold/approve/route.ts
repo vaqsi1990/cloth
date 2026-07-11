@@ -6,9 +6,11 @@ import { isAdminOrSupport } from '@/lib/roles'
 import { prisma } from '@/lib/prisma'
 import {
   bogApprovePreAuthorization,
+  describeBogReceiptSplit,
   fetchBogPaymentReceipt,
   getBogApproveReadinessMessage,
   getBogPreAuthErrorMessage,
+  hasBogReceiptSplit,
   isBogPaymentCaptured,
   isBogPreAuthAlreadyRequestedError,
   isBogAuthorizeRejectedError,
@@ -19,6 +21,7 @@ import {
   buildSplitPaymentConfigForOrder,
   describeSplitPayments,
   getOrderSplitReadinessMessage,
+  logOrderSplitDiagnostics,
 } from '@/lib/bog-split-config'
 import {
   allowPaymentHoldApproveWithoutSplit,
@@ -171,7 +174,13 @@ export async function POST(
       ? getOrderSplitReadinessMessage(order, splitConfig)
       : null
 
+    logOrderSplitDiagnostics(order, splitConfig, {
+      splitEnabled,
+      context: `payment-hold approve #${orderId}`,
+    })
+
     if (splitEnabled && splitReadinessError) {
+      console.error(`[SPLIT] Approve blocked for order #${orderId}: ${splitReadinessError}`)
       return NextResponse.json(
         {
           success: false,
@@ -208,11 +217,19 @@ export async function POST(
     const runApprove = async (withSplit: boolean) => {
       if (withSplit && splitConfig) {
         console.log(
-          `[payment-hold] Approving order #${orderId} with split:`,
+          `[SPLIT] Approving order #${orderId} with split:`,
           JSON.stringify(describeSplitPayments(splitConfig)),
         )
       } else {
-        console.log(`[payment-hold] Approving order #${orderId} without split`)
+        console.warn(`[SPLIT] Approving order #${orderId} without split`, {
+          splitEnabled,
+          splitConfigBuilt: !!splitConfig,
+          reason: !splitEnabled
+            ? 'PAYMENT_HOLD_SPLIT_ON_APPROVE is disabled'
+            : !splitConfig
+              ? 'split config was not built'
+              : 'explicit fallback without split',
+        })
       }
 
       const postApprove = async () =>
@@ -228,14 +245,14 @@ export async function POST(
         if (!isBogPaymentCaptured(receipt)) {
           throw new Error('BOG-მა დადასტურება მიიღო, მაგრამ გადახდა ჯერ არ დასრულებულა.')
         }
-        return response
+        return { response, receipt }
       } catch (bogError) {
         if (!isBogPreAuthAlreadyRequestedError(bogError)) {
           throw bogError
         }
 
         console.warn(
-          `[payment-hold] BOG already processing authorize for #${orderId}, waiting to settle`,
+          `[SPLIT] BOG already processing authorize for #${orderId}, waiting to settle`,
         )
         await waitForPendingAuthorizeToSettle(paymentId)
         const response = await postApprove()
@@ -243,21 +260,49 @@ export async function POST(
         if (!isBogPaymentCaptured(receipt)) {
           throw new Error('BOG-მა დადასტურება მიიღო, მაგრამ გადახდა ჯერ არ დასრულებულა.')
         }
-        return response
+        return { response, receipt }
       }
     }
 
     let bogResponse
+    let finalReceipt
     let usedSplit = false
+    let splitSentToBog = false
 
     if (splitEnabled && splitConfig) {
       try {
-        bogResponse = await runApprove(true)
-        usedSplit = true
+        const approveResult = await runApprove(true)
+        bogResponse = approveResult.response
+        finalReceipt = approveResult.receipt
+        splitSentToBog = true
+        usedSplit = hasBogReceiptSplit(finalReceipt)
+
+        const receiptSplit = describeBogReceiptSplit(finalReceipt)
+        console.log(`[SPLIT] BOG receipt after approve #${orderId}`, receiptSplit)
+
+        if (!usedSplit) {
+          console.error(`[SPLIT] Split was sent to BOG but receipt shows no split for order #${orderId}`, {
+            orderId,
+            paymentId,
+            splitPreview: describeSplitPayments(splitConfig),
+            receiptSplit,
+            likelyCauses: [
+              'BOG split payment is not activated for pre-auth capture on this merchant account',
+              'BOG merchant settlement account has insufficient balance for split transfer fees',
+              'BOG rejected split silently while still completing authorize',
+              'Recipient IBAN is inactive or not eligible for BOG split transfer',
+            ],
+          })
+        }
       } catch (bogError) {
         if (!isBogAuthorizeRejectedError(bogError)) {
           throw bogError
         }
+
+        console.error(`[SPLIT] BOG rejected split approve for order #${orderId}`, {
+          error: getBogPreAuthErrorMessage(bogError),
+          splitPreview: describeSplitPayments(splitConfig),
+        })
 
         if (!allowPaymentHoldApproveWithoutSplit()) {
           return NextResponse.json(
@@ -271,14 +316,21 @@ export async function POST(
         }
 
         console.warn(
-          `[payment-hold] Split approve rejected by BOG for #${orderId}, retrying without split`,
+          `[SPLIT] Split approve rejected by BOG for #${orderId}, retrying without split`,
         )
         await waitForPendingAuthorizeToSettle(paymentId)
-        bogResponse = await runApprove(false)
+        const approveResult = await runApprove(false)
+        bogResponse = approveResult.response
+        finalReceipt = approveResult.receipt
         usedSplit = false
+        splitSentToBog = false
       }
     } else {
-      bogResponse = await runApprove(false)
+      const approveResult = await runApprove(false)
+      bogResponse = approveResult.response
+      finalReceipt = approveResult.receipt
+      usedSplit = false
+      splitSentToBog = false
     }
 
     await markOrderPaymentCaptured(orderId)
@@ -287,11 +339,15 @@ export async function POST(
       success: true,
       message: usedSplit
         ? 'გადახდა დადასტურებულია. თანხა გადანაწილდა მერჩანტს და გამყიდველს.'
-        : splitConfig
-          ? 'გადახდა დადასტურებულია BOG-ში split-ის გარეშე — გამყიდველის ნაწილი ხელით გადაირიცხეთ.'
-          : 'გადახდა დადასტურებულია BOG-ში.',
+        : splitSentToBog
+          ? 'გადახდა დადასტურებულია BOG-ში, მაგრამ split არ შესრულდა — გამყიდველის ნაწილი ხელით გადაირიცხეთ. Vercel logs-ში ნახე [SPLIT].'
+          : splitConfig
+            ? 'გადახდა დადასტურებულია BOG-ში split-ის გარეშე — გამყიდველის ნაწილი ხელით გადაირიცხეთ.'
+            : 'გადახდა დადასტურებულია BOG-ში.',
       bog: bogResponse,
       splitApplied: usedSplit,
+      splitSentToBog,
+      bogReceiptSplit: finalReceipt ? describeBogReceiptSplit(finalReceipt) : null,
       splitPreview: describeSplitPayments(splitConfig),
       paymentHoldStatus: PaymentHoldStatus.CAPTURED,
     })

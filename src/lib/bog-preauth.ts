@@ -29,20 +29,59 @@ export async function bogApprovePreAuthorization(
       body.split = options.split
     }
 
-    const response = await axios.post<BogPreAuthActionResponse>(
-      `https://api.bog.ge/payments/v1/payment/authorization/approve/${bogOrderId}`,
-      body,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'Idempotency-Key': randomUUID(),
-        },
-        timeout: 15000,
-      },
-    )
+    console.log('[SPLIT] BOG approve request', {
+      bogOrderId,
+      amount: body.amount ?? null,
+      withSplit: !!options?.split?.split_payments?.length,
+      splitPayments: options?.split?.split_payments?.map((payment) => ({
+        amount: payment.amount ?? null,
+        percent: payment.percent ?? null,
+        ibanMasked: `${payment.iban.substring(0, 8)}...${payment.iban.slice(-4)}`,
+        description: payment.description ?? null,
+      })),
+    })
 
-    return response.data
+    try {
+      const response = await axios.post<BogPreAuthActionResponse>(
+        `https://api.bog.ge/payments/v1/payment/authorization/approve/${bogOrderId}`,
+        body,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Idempotency-Key': randomUUID(),
+          },
+          timeout: 15000,
+        },
+      )
+
+      console.log('[SPLIT] BOG approve response', {
+        bogOrderId,
+        key: response.data.key,
+        message: response.data.message,
+        actionId: response.data.action_id,
+      })
+
+      return response.data
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const axiosError = error as AxiosError<{ message?: string; key?: string }>
+        console.error('[SPLIT] BOG approve failed', {
+          bogOrderId,
+          status: axiosError.response?.status ?? null,
+          message: axiosError.response?.data?.message ?? axiosError.message,
+          key: axiosError.response?.data?.key ?? null,
+          withSplit: !!options?.split?.split_payments?.length,
+        })
+      } else {
+        console.error('[SPLIT] BOG approve failed', {
+          bogOrderId,
+          error: error instanceof Error ? error.message : String(error),
+          withSplit: !!options?.split?.split_payments?.length,
+        })
+      }
+      throw error
+    }
   })
 }
 
@@ -129,8 +168,64 @@ export type BogPaymentReceipt = {
   external_order_id?: string
   order_status?: { key?: string; value?: string }
   capture?: string
-  split?: unknown
+  split?: BogReceiptSplit | null
   actions?: BogReceiptAction[]
+}
+
+export type BogReceiptSplitPayment = {
+  iban?: string
+  amount?: number | string
+  percent?: number | string
+  description?: string
+  status?: string
+}
+
+export type BogReceiptSplit = {
+  split_status?: string
+  currency?: string
+  request_channel?: string
+  split_payments?: BogReceiptSplitPayment[]
+}
+
+function maskIban(iban: string) {
+  return `${iban.substring(0, 8)}...${iban.slice(-4)}`
+}
+
+export function hasBogReceiptSplit(receipt: BogPaymentReceipt): boolean {
+  const split = receipt.split
+  if (!split || typeof split !== 'object') return false
+  return Array.isArray(split.split_payments) && split.split_payments.length > 0
+}
+
+export function describeBogReceiptSplit(receipt: BogPaymentReceipt) {
+  const split = receipt.split
+  if (!split || typeof split !== 'object') {
+    return {
+      applied: false,
+      reason: 'BOG receipt has no split object',
+      splitStatus: null,
+      payments: [],
+    }
+  }
+
+  const payments = (split.split_payments ?? []).map((payment) => ({
+    ibanMasked: payment.iban ? maskIban(payment.iban) : null,
+    amount: payment.amount ?? null,
+    percent: payment.percent ?? null,
+    status: payment.status ?? null,
+    description: payment.description ?? null,
+  }))
+
+  return {
+    applied: payments.length > 0,
+    reason:
+      payments.length > 0
+        ? null
+        : 'BOG receipt split object exists but split_payments is empty',
+    splitStatus: split.split_status ?? null,
+    requestChannel: split.request_channel ?? null,
+    payments,
+  }
 }
 
 function sleep(ms: number) {

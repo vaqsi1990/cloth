@@ -21,6 +21,18 @@ function normalizeIban(iban?: string | null) {
   return iban ? iban.replace(/\s+/g, '').toUpperCase() : null
 }
 
+function maskIban(iban: string) {
+  return `${iban.substring(0, 8)}...${iban.slice(-4)}`
+}
+
+function logSplitStep(message: string, details?: Record<string, unknown>) {
+  if (details) {
+    console.log(`[SPLIT] ${message}`, JSON.stringify(details))
+    return
+  }
+  console.log(`[SPLIT] ${message}`)
+}
+
 function validateSplitDescription(desc: string): string | undefined {
   if (!desc) return undefined
   const allowed = /^[0-9 /\-?:().,'+a-zA-Z]+$/
@@ -56,13 +68,34 @@ async function collectProductAuthorsIBANs(productIds: (string | number)[]) {
     select: { id: true, userId: true, user: { select: { iban: true } } },
   })
 
+  const missingIbanProductIds: number[] = []
+  const invalidIbanProductIds: number[] = []
+
   for (const product of products) {
-    if (!product.user?.iban) continue
+    if (!product.user?.iban) {
+      missingIbanProductIds.push(product.id)
+      continue
+    }
     const norm = normalizeIban(product.user.iban)
     if (norm) {
       result.set(String(product.userId), norm)
+      continue
     }
+    invalidIbanProductIds.push(product.id)
   }
+
+  const notFoundProductIds = ids.filter(
+    (id) => !products.some((product) => product.id === id),
+  )
+
+  logSplitStep('Seller IBAN lookup by product author', {
+    requestedProductIds: ids,
+    foundProducts: products.length,
+    withIban: result.size,
+    missingIbanProductIds,
+    invalidIbanProductIds,
+    notFoundProductIds,
+  })
 
   return result
 }
@@ -78,13 +111,34 @@ async function collectSellerUserIdsIBANs(sellerUserIds: string[]) {
     select: { id: true, iban: true },
   })
 
+  const missingIbanUserIds: string[] = []
+  const invalidIbanUserIds: string[] = []
+
   for (const user of users) {
-    if (!user.iban) continue
+    if (!user.iban) {
+      missingIbanUserIds.push(user.id)
+      continue
+    }
     const norm = normalizeIban(user.iban)
     if (norm) {
       result.set(user.id, norm)
+      continue
     }
+    invalidIbanUserIds.push(user.id)
   }
+
+  const notFoundUserIds = uniqueIds.filter(
+    (id) => !users.some((user) => user.id === id),
+  )
+
+  logSplitStep('Seller IBAN lookup by userId', {
+    requestedSellerIds: uniqueIds,
+    foundUsers: users.length,
+    withIban: result.size,
+    missingIbanUserIds,
+    invalidIbanUserIds,
+    notFoundUserIds,
+  })
 
   return result
 }
@@ -108,15 +162,35 @@ export async function buildSplitPaymentConfig(
   deliveryFee: number,
   sellerUserIds: string[] = [],
 ): Promise<BogSplitConfig | null> {
+  logSplitStep('Building split config', {
+    paymentMethod,
+    totalAmount,
+    ownerItemsSubtotal,
+    deliveryFee,
+    productIds,
+    sellerUserIds,
+    merchantIbanConfigured: !!process.env.BOG_MERCHANT_IBAN,
+  })
+
   if (!paymentMethod || !['card', 'google_pay', 'apple_pay'].includes(paymentMethod)) {
-    console.warn(`⚠️ [SPLIT] Payment method not supported for split: ${paymentMethod}`)
+    logSplitStep('FAILED: unsupported payment method for split', { paymentMethod })
     return null
   }
 
   const merchantIban = getMerchantIBAN()
+  if (!merchantIban) {
+    logSplitStep('FAILED: BOG_MERCHANT_IBAN missing or invalid')
+    return null
+  }
+
   const authors = await collectSellerIBANs(productIds, sellerUserIds)
   if (authors.size === 0) {
-    console.error('❌ [SPLIT] No seller IBANs found - split config cannot be created')
+    logSplitStep('FAILED: no seller IBAN found in database', {
+      sellerUserIds,
+      productIds,
+      hint:
+        'Users may exist but user.iban is null/empty, or sellerUserId is missing on order items',
+    })
     return null
   }
 
@@ -127,19 +201,21 @@ export async function buildSplitPaymentConfig(
     deliveryFee,
   )
   if (!splitAmounts) {
-    console.error('❌ [SPLIT] Could not compute split amounts')
+    logSplitStep('FAILED: could not compute split amounts', {
+      totalAmount,
+      ownerItemsSubtotal,
+      deliveryFee,
+    })
     return null
   }
 
   const split_payments: BogSplitPayment[] = []
 
-  if (merchantIban) {
-    split_payments.push({
-      amount: splitAmounts.platformAmount,
-      iban: merchantIban,
-      description: validateSplitDescription('Delivery and commission'),
-    })
-  }
+  split_payments.push({
+    amount: splitAmounts.platformAmount,
+    iban: merchantIban,
+    description: validateSplitDescription('Delivery and commission'),
+  })
 
   split_payments.push({
     amount: splitAmounts.sellerAmount,
@@ -149,11 +225,21 @@ export async function buildSplitPaymentConfig(
 
   const totalSplitAmount = split_payments.reduce((sum, p) => sum + (p.amount ?? 0), 0)
   if (Math.abs(totalSplitAmount - totalAmount) > 0.01) {
-    console.error(
-      `❌ [SPLIT] Split amounts don't sum to order total: ${totalSplitAmount} vs ${totalAmount}`,
-    )
+    logSplitStep('FAILED: split amounts do not sum to order total', {
+      totalSplitAmount,
+      totalAmount,
+      splitAmounts,
+    })
     return null
   }
+
+  logSplitStep('Split config ready', {
+    payments: split_payments.map((payment) => ({
+      amount: payment.amount,
+      ibanMasked: maskIban(payment.iban),
+      description: payment.description,
+    })),
+  })
 
   return { split_payments }
 }
@@ -170,6 +256,39 @@ type OrderForSplit = {
     quantity: number
     isRental?: boolean | null
   }>
+}
+
+export function logOrderSplitDiagnostics(
+  order: OrderForSplit,
+  splitConfig: BogSplitConfig | null,
+  options?: { splitEnabled?: boolean; context?: string },
+) {
+  const saleItems = order.items.filter((item) => !item.isRental)
+  const sellerUserIds = saleItems
+    .map((item) => item.sellerUserId)
+    .filter((id): id is string => Boolean(id))
+  const readinessError = getOrderSplitReadinessMessage(order, splitConfig)
+
+  logSplitStep('Order split diagnostics', {
+    context: options?.context ?? 'unknown',
+    splitEnabled: options?.splitEnabled ?? null,
+    orderTotal: order.total,
+    paymentMethod: order.paymentMethod ?? 'card',
+    deliveryFee: order.deliveryPrice ?? 0,
+    saleItemCount: saleItems.length,
+    sellerUserIds,
+    sellerUserIdsMissingOnItems: saleItems.length - sellerUserIds.length,
+    splitConfigBuilt: !!splitConfig,
+    readinessError,
+    splitPreview: describeSplitPayments(splitConfig),
+    env: {
+      BOG_MERCHANT_IBAN: !!process.env.BOG_MERCHANT_IBAN,
+      PAYMENT_HOLD_SPLIT_ON_APPROVE:
+        process.env.PAYMENT_HOLD_SPLIT_ON_APPROVE !== 'false',
+      PAYMENT_HOLD_SPLIT_FALLBACK_WITHOUT_SPLIT:
+        process.env.PAYMENT_HOLD_SPLIT_FALLBACK_WITHOUT_SPLIT === 'true',
+    },
+  })
 }
 
 export async function buildSplitPaymentConfigForOrder(
