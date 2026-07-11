@@ -3,18 +3,28 @@
 import React, { useState, useEffect, Suspense, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
-import { Search, Menu, User, LogOut, ShoppingCart, ChevronRight, Plus, X } from 'lucide-react'
+import { Search, Menu, User, LogOut, ShoppingCart, Plus, X, ChevronDown } from 'lucide-react'
 import Image from '@/component/AppImage'
 import { useSession, signOut } from 'next-auth/react'
-import { CHILDREN_PRODUCT_CATEGORIES, MEN_PRODUCT_CATEGORIES, WOMEN_PRODUCT_CATEGORIES } from '@/lib/product-categories'
+import { CHILDREN_PRODUCT_CATEGORIES, MEN_PRODUCT_CATEGORIES, WOMEN_PRODUCT_CATEGORIES, type ProductCategory } from '@/lib/product-categories'
 import { resetShopBrowserFilters } from '@/lib/shop-browser-state'
 import MobileBottomNav from '@/component/MobileBottomNav'
+
+const MOBILE_NAV_GENDER_SECTIONS = [
+  { label: 'ქალი', gender: 'women', categories: WOMEN_PRODUCT_CATEGORIES },
+  { label: 'მამაკაცი', gender: 'men', categories: MEN_PRODUCT_CATEGORIES },
+  { label: 'ბავშვები', gender: 'children', categories: CHILDREN_PRODUCT_CATEGORIES },
+] as const
+
+type MobileNavGenderLabel = (typeof MOBILE_NAV_GENDER_SECTIONS)[number]['label']
 
 const HeaderContent = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
  
-  const [mobileDropdownOpen, setMobileDropdownOpen] = useState<string | null>(null)
+  const [isMobileCategoriesOpen, setIsMobileCategoriesOpen] = useState(false)
+  const [mobileOpenGenderSection, setMobileOpenGenderSection] =
+    useState<MobileNavGenderLabel | null>(null)
   const [isMobileUserDropdownOpen, setIsMobileUserDropdownOpen] = useState(false)
   const [isDesktopUserDropdownOpen, setIsDesktopUserDropdownOpen] = useState(false)
   const [cartItemCount, setCartItemCount] = useState(0)
@@ -176,13 +186,40 @@ const HeaderContent = () => {
     })
   }
   const toggleSearch = () => setIsSearchOpen(!isSearchOpen)
-  const toggleMobileDropdown = (dropdown: string) =>
-    setMobileDropdownOpen(mobileDropdownOpen === dropdown ? null : dropdown)
-
   const closeMobileMenu = () => {
     setIsMobileMenuOpen(false)
-    setMobileDropdownOpen(null)
+    setIsMobileCategoriesOpen(false)
+    setMobileOpenGenderSection(null)
   }
+
+  const toggleMobileGenderSection = (label: MobileNavGenderLabel) => {
+    setMobileOpenGenderSection((current) => (current === label ? null : label))
+  }
+
+  const renderMobileCategoryLinks = (
+    gender: string,
+    categories: ProductCategory[],
+  ) => (
+    <>
+      <Link
+        href={`/shop?gender=${gender}`}
+        onClick={closeMobileMenu}
+        className="block px-3 py-2 text-black font-semibold hover:bg-gray-100 rounded-lg text-sm sm:text-base"
+      >
+        ყველა
+      </Link>
+      {categories.map((category, index) => (
+        <Link
+          key={category.slug}
+          href={`/shop?gender=${gender}&category=${encodeURIComponent(category.slug)}`}
+          onClick={closeMobileMenu}
+          className="block px-3 py-2 text-black hover:bg-gray-100 rounded-lg text-sm sm:text-base break-words"
+        >
+          {index + 1}. {category.name}
+        </Link>
+      ))}
+    </>
+  )
 
   const closeAllOverlays = () => {
     closeMobileMenu()
@@ -518,7 +555,7 @@ const HeaderContent = () => {
             aria-label="მენიუს დახურვა"
           />
           <div
-            className="lg:hidden fixed inset-x-0 bottom-0 max-lg:bottom-16 z-50 flex flex-col bg-white border-t border-gray-200 shadow-xl"
+            className="lg:hidden fixed inset-x-0 bottom-0 max-lg:bottom-16 z-50 flex min-h-0 flex-col bg-white border-t border-gray-200 shadow-xl"
             style={{ top: headerBottom }}
           >
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 flex-shrink-0">
@@ -532,7 +569,7 @@ const HeaderContent = () => {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto overscroll-contain px-3 py-3 sm:px-4 sm:py-4">
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain touch-pan-y px-3 py-3 sm:px-4 sm:py-4">
             <nav className="space-y-1">
               <Link
                 href="/"
@@ -560,75 +597,50 @@ const HeaderContent = () => {
                 ახალი პროდუქტი
               </Link>
 
-              {/* Menu Categories */}
-              <div className="space-y-1 pt-1">
-                {['ქალი', 'მამაკაცი', 'ბავშვები'].map((item) => (
-                  <div key={item}>
-                    <button
-                      type="button"
-                      onClick={() => toggleMobileDropdown(item)}
-                      className="w-full flex items-center justify-between px-3 py-2.5 text-black hover:bg-gray-100 rounded-lg text-base touch-manipulation"
-                    >
-                      <span>{item}</span>
-                      <ChevronRight className={`w-4 h-4 flex-shrink-0 transition-transform ${mobileDropdownOpen === item ? 'rotate-90' : ''}`} />
-                    </button>
-                    {mobileDropdownOpen === item && (
-                      <div className="pl-2 sm:pl-4 space-y-0.5 mt-0.5 max-h-[50vh] overflow-y-auto overscroll-contain">
-                        {item === 'ქალი' && (
-                          <>
-                            <Link href="/shop?gender=women" onClick={closeMobileMenu} className="block px-3 py-2 text-black font-semibold hover:bg-gray-100 rounded-lg text-sm sm:text-base">
-                              ყველა
-                            </Link>
-                            {WOMEN_PRODUCT_CATEGORIES.map((category, index) => (
-                              <Link
-                                key={category.slug}
-                                href={`/shop?gender=women&category=${encodeURIComponent(category.slug)}`}
-                                onClick={closeMobileMenu}
-                                className="block px-3 py-2 text-black hover:bg-gray-100 rounded-lg text-sm sm:text-base break-words"
-                              >
-                                {index + 1}. {category.name}
-                              </Link>
-                            ))}
-                          </>
-                        )}
-                        {item === 'მამაკაცი' && (
-                          <>
-                            <Link href="/shop?gender=men" onClick={closeMobileMenu} className="block px-3 py-2 text-black font-semibold hover:bg-gray-100 rounded-lg text-sm sm:text-base">
-                              ყველა
-                            </Link>
-                            {MEN_PRODUCT_CATEGORIES.map((category, index) => (
-                              <Link
-                                key={category.slug}
-                                href={`/shop?gender=men&category=${encodeURIComponent(category.slug)}`}
-                                onClick={closeMobileMenu}
-                                className="block px-3 py-2 text-black hover:bg-gray-100 rounded-lg text-sm sm:text-base break-words"
-                              >
-                                {index + 1}. {category.name}
-                              </Link>
-                            ))}
-                          </>
-                        )}
-                        {item === 'ბავშვები' && (
-                          <>
-                            <Link href="/shop?gender=children" onClick={closeMobileMenu} className="block px-3 py-2 text-black font-semibold hover:bg-gray-100 rounded-lg text-sm sm:text-base">
-                              ყველა
-                            </Link>
-                            {CHILDREN_PRODUCT_CATEGORIES.map((category, index) => (
-                              <Link
-                                key={category.slug}
-                                href={`/shop?gender=children&category=${encodeURIComponent(category.slug)}`}
-                                onClick={closeMobileMenu}
-                                className="block px-3 py-2 text-black hover:bg-gray-100 rounded-lg text-sm sm:text-base break-words"
-                              >
-                                {index + 1}. {category.name}
-                              </Link>
-                            ))}
-                          </>
-                        )}
-                      </div>
-                    )}
+              {/* Categories — collapsible, same taxonomy as desktop nav */}
+              <div className="mt-3 pt-3 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setIsMobileCategoriesOpen((open) => !open)}
+                  className="w-full flex items-center justify-between px-3 py-2.5 text-black hover:bg-gray-100 rounded-lg text-base touch-manipulation"
+                  aria-expanded={isMobileCategoriesOpen}
+                >
+                  <span className="text-sm font-semibold text-[#1B3729]">კატეგორიები</span>
+                  <ChevronDown
+                    className={`w-4 h-4 flex-shrink-0 text-gray-600 transition-transform ${
+                      isMobileCategoriesOpen ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+                {isMobileCategoriesOpen && (
+                  <div className="pl-1 pt-1 space-y-0.5 pb-2">
+                    {MOBILE_NAV_GENDER_SECTIONS.map((section) => {
+                      const isGenderOpen = mobileOpenGenderSection === section.label
+                      return (
+                        <div key={section.label}>
+                          <button
+                            type="button"
+                            onClick={() => toggleMobileGenderSection(section.label)}
+                            className="w-full flex items-center justify-between px-3 py-2.5 text-black hover:bg-gray-100 rounded-lg text-base touch-manipulation"
+                            aria-expanded={isGenderOpen}
+                          >
+                            <span>{section.label}</span>
+                            <ChevronDown
+                              className={`w-4 h-4 flex-shrink-0 text-gray-600 transition-transform ${
+                                isGenderOpen ? 'rotate-180' : ''
+                              }`}
+                            />
+                          </button>
+                          {isGenderOpen && (
+                            <div className="pl-2 sm:pl-3 space-y-0.5">
+                              {renderMobileCategoryLinks(section.gender, section.categories)}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
-                ))}
+                )}
               </div>
 
               <Link href="/about" onClick={closeMobileMenu} className="block px-3 py-2.5 text-black hover:bg-gray-100 rounded-lg text-base">
