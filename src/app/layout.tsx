@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Suspense } from "react";
 import { getServerSession } from "next-auth";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import Header from "@/component/Header";
 import Footer from "@/component/Footer";
@@ -136,6 +137,7 @@ export default async function RootLayout({
           </UserChatNotificationProvider>
           </SupportChatNotificationProvider>
         </AuthProvider>
+        <Analytics />
       </body>
     </html>
   );
