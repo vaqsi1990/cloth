@@ -696,15 +696,11 @@ export async function DELETE(
 
     // Check if product exists
     const existingProduct = await prisma.product.findUnique({
-      where: { id: productId }
+      where: { id: productId },
+      select: { id: true, userId: true, deletedAt: true },
     })
 
-    if (
-      !existingProduct ||
-      isProductSoftDeleted(
-        existingProduct as { deletedAt?: Date | string | null } | null | undefined,
-      )
-    ) {
+    if (!existingProduct) {
       return NextResponse.json({
         success: false,
         message: 'პროდუქტი ვერ მოიძებნა'
@@ -720,7 +716,10 @@ export async function DELETE(
       )
     }
 
-    await softDeleteProductAndRevalidate(productId)
+    // Idempotent: already soft-deleted still counts as success
+    if (!isProductSoftDeleted(existingProduct)) {
+      await softDeleteProductAndRevalidate(productId)
+    }
 
     return NextResponse.json({
       success: true,

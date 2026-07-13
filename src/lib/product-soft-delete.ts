@@ -54,6 +54,11 @@ export async function softDeleteProduct(productId: number): Promise<{ authorId: 
 
 export async function softDeleteProductAndRevalidate(productId: number) {
   const { authorId } = await softDeleteProduct(productId)
-  revalidateProductListCache()
-  await revalidateProductCaches(productId, { authorId: authorId ?? undefined })
+  try {
+    revalidateProductListCache()
+    revalidateProductCaches(productId, { authorId: authorId ?? undefined })
+  } catch (error) {
+    // Soft delete already committed — don't fail the request if cache bust throws.
+    console.error('Product cache revalidation failed after soft delete:', error)
+  }
 }

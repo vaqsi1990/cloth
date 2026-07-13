@@ -366,7 +366,7 @@ export async function GET(request: NextRequest) {
     
     const productWhere: Prisma.ProductWhereInput = {
       ...(isAdminOrSupportRole || shouldIncludeUnapproved
-        ? {}
+        ? { deletedAt: null }
         : buildPublicProductDiscoveryWhere()),
       ...(search
         ? {

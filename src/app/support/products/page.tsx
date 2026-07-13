@@ -206,12 +206,13 @@ const SupportProductsPage = () => {
       const response = await fetch(`/api/products/${productId}`, {
         method: 'DELETE'
       })
-      
-      if (response.ok) {
-        setProducts(products.filter(p => p.id !== productId))
-        showToast('პროდუქტი წარმატებით წაიშალა', 'success')
+      const result = await response.json().catch(() => null)
+
+      if (response.ok && result?.success !== false) {
+        setProducts((prev) => prev.filter((p) => p.id !== productId))
+        showToast(result?.message || 'პროდუქტი წარმატებით წაიშალა', 'success')
       } else {
-        showToast('შეცდომა პროდუქტის წაშლისას', 'error')
+        showToast(result?.message || 'შეცდომა პროდუქტის წაშლისას', 'error')
       }
     } catch (error) {
       console.error('Error deleting product:', error)

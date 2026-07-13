@@ -8,6 +8,7 @@ export async function fetchProductIdsByApprovalPriority(
   const rows = await prisma.$queryRaw<{ id: number }[]>`
     SELECT id
     FROM "Product"
+    WHERE "deletedAt" IS NULL
     ORDER BY
       CASE "approvalStatus"::text
         WHEN 'PENDING' THEN 0
