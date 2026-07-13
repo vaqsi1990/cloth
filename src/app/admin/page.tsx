@@ -225,11 +225,11 @@ const AdminDashboard = () => {
 
   const quickActions = [
     {
-      title: 'ახალი პროდუქტი',
-      description: 'დაამატე ახალი პროდუქტი კატალოგში',
-      href: '/admin/products/new',
-      icon: Plus,
-      color: 'bg-black',
+      title: 'შეკვეთების ინფორმაცია',
+      description: 'ნახე და მართე შეკვეთები',
+      href: '/admin/info',
+      icon: Info,
+      color: 'bg-gray-600',
     },
     {
       title: 'პროდუქტების მართვა',
@@ -295,13 +295,6 @@ const AdminDashboard = () => {
       color: 'bg-gray-600',
     },
     {
-      title: 'შეკვეთების ინფორმაცია',
-      description: 'ნახე და მართე შეკვეთები',
-      href: '/admin/info',
-      icon: Info,
-      color: 'bg-gray-600',
-    },
-    {
       title: 'ანალიტიკა',
       description: 'ვიზიტორები და IP სტატისტიკა',
       href: '/admin/analytics',
@@ -314,6 +307,13 @@ const AdminDashboard = () => {
       href: '/admin/import',
       icon: Import,
       color: 'bg-indigo-600',
+    },
+    {
+      title: 'ახალი პროდუქტი',
+      description: 'დაამატე ახალი პროდუქტი კატალოგში',
+      href: '/admin/products/new',
+      icon: Plus,
+      color: 'bg-black',
     },
   ]
 
