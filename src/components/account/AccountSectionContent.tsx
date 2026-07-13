@@ -1284,17 +1284,7 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
       const result = await response.json()
 
       if (response.ok && result.success && result.product) {
-        setProducts((prev) =>
-          prev.map((product) =>
-            product.id === productId
-              ? {
-                  ...product,
-                  approvalStatus: result.product.approvalStatus,
-                  rejectionReason: result.product.rejectionReason,
-                }
-              : product,
-          ),
-        )
+        await fetchProducts(productsPageRef.current)
         showToast(result.message || 'პროდუქტი ხელახლა გაიგზავნა დამტკიცებაზე', 'success')
       } else {
         showToast(result.error || 'შეცდომა დამტკიცებაზე ხელახლა გაგზავნისას', 'error')

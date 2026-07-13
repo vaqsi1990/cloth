@@ -4,7 +4,11 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { checkAndClearExpiredDiscounts, processExpiredDiscount } from '@/utils/discountUtils'
 import { ownerProductListSelect, parseListPagination } from '@/lib/product-owner-query'
-import { buildExcludeSoldProductsWhere } from '@/lib/sold-products'
+import {
+  buildExcludeSoldProductsWhere,
+  buildSoldProductSqlExclusion,
+} from '@/lib/sold-products'
+import { orderProductsByIdList } from '@/lib/admin-product-list-order'
 import { notDeletedProductWhere, softDeleteProductAndRevalidate } from '@/lib/product-soft-delete'
 
 // GET - Fetch user's products
@@ -27,23 +31,46 @@ export async function GET(request: NextRequest) {
       ...buildExcludeSoldProductsWhere(),
     }
 
-    const [products, totalCount] = await Promise.all([
-      prisma.product.findMany({
-        where,
-        select: ownerProductListSelect,
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
-      }),
+    const [orderedIds, totalCount] = await Promise.all([
+      prisma.$queryRaw<{ id: number }[]>`
+        SELECT p.id
+        FROM "Product" p
+        WHERE p."userId" = ${session.user.id}
+          AND p."deletedAt" IS NULL
+          AND ${buildSoldProductSqlExclusion()}
+        ORDER BY
+          CASE p."approvalStatus"::text
+            WHEN 'PENDING' THEN 0
+            WHEN 'REJECTED' THEN 1
+            WHEN 'APPROVED' THEN 2
+            ELSE 3
+          END ASC,
+          p."createdAt" DESC,
+          p.id DESC
+        LIMIT ${limit}
+        OFFSET ${skip}
+      `,
       prisma.product.count({ where }),
     ])
 
-    const productIds = products
+    const productIds = orderedIds.map((row) => row.id)
+    const products =
+      productIds.length === 0
+        ? []
+        : orderProductsByIdList(
+            await prisma.product.findMany({
+              where: { id: { in: productIds } },
+              select: ownerProductListSelect,
+            }),
+            productIds,
+          )
+
+    const discountProductIds = products
       .filter((p) => p.discount && p.discountDays && p.discountStartDate)
       .map((p) => p.id)
 
-    if (productIds.length > 0) {
-      void checkAndClearExpiredDiscounts(productIds).catch(() => {})
+    if (discountProductIds.length > 0) {
+      void checkAndClearExpiredDiscounts(discountProductIds).catch(() => {})
     }
 
     return NextResponse.json({
