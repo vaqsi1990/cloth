@@ -10,14 +10,14 @@ type SiteLogoProps = {
 
 const sizeConfig = {
   header: {
-    className: 'w-[50px] h-[50px] md:w-16 md:h-16',
-    width: 64,
-    height: 64,
+    className: 'w-[68px] h-[68px] md:w-[88px] md:h-[88px]',
+    width: 88,
+    height: 88,
   },
   footer: {
-    className: 'w-16 h-16 md:w-20 md:h-20',
-    width: 80,
-    height: 80,
+    className: 'w-20 h-20 md:w-24 md:h-24',
+    width: 96,
+    height: 96,
   },
 } as const
 
