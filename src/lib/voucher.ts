@@ -27,6 +27,30 @@ export async function findVoucherByCode(code: string) {
   })
 }
 
+/**
+ * Count how many times a user has actually consumed a voucher.
+ * PENDING checkouts must not count — abandoned BOG redirects used to lock
+ * vouchers forever while isUsed stayed false.
+ */
+async function countUserVoucherUsage(voucherId: number, userId: string) {
+  const [redemptionCount, activePaidWithoutRedeem] = await Promise.all([
+    prisma.voucherRedemption.count({
+      where: { voucherId, userId },
+    }),
+    // Payment-hold can mark PAID before redeem; still treat as consumed.
+    prisma.order.count({
+      where: {
+        voucherId,
+        userId,
+        status: { in: ['PAID', 'SHIPPED'] },
+        voucherRedemptions: { none: {} },
+      },
+    }),
+  ])
+
+  return redemptionCount + activePaidWithoutRedeem
+}
+
 export async function validateVoucher(
   code: string,
   userId: string,
@@ -82,13 +106,7 @@ export async function validateVoucher(
     }
   }
 
-  const userUsageCount = await prisma.order.count({
-    where: {
-      voucherId: voucher.id,
-      userId,
-      status: { in: ['PENDING', 'PAID'] },
-    },
-  })
+  const userUsageCount = await countUserVoucherUsage(voucher.id, userId)
 
   if (userUsageCount >= voucher.perUserLimit) {
     return { valid: false, message: 'თქვენ უკვე გამოიყენეთ ეს ვაუჩერი' }
@@ -109,12 +127,46 @@ export async function validateVoucher(
   }
 }
 
+/** Cancel abandoned PENDING checkouts so a voucher can be retried cleanly. */
+export async function cancelPendingVoucherOrders(
+  userId: string,
+  voucherId: number,
+) {
+  const pending = await prisma.order.findMany({
+    where: {
+      userId,
+      voucherId,
+      status: 'PENDING',
+    },
+    select: { id: true },
+  })
+
+  if (pending.length === 0) return
+
+  await prisma.order.updateMany({
+    where: {
+      id: { in: pending.map((o) => o.id) },
+    },
+    data: { status: 'CANCELED' },
+  })
+
+  const { releaseRentalOrderHolds } = await import('@/lib/rental-order-holds')
+  for (const order of pending) {
+    await releaseRentalOrderHolds(order.id).catch(() => undefined)
+  }
+}
+
 export async function redeemVoucher(
   voucherId: number,
   userId: string,
   orderId: number,
   discountAmount: number,
 ) {
+  const existing = await prisma.voucherRedemption.findFirst({
+    where: { orderId },
+  })
+  if (existing) return
+
   const assignment = await prisma.userVoucher.findUnique({
     where: {
       userId_voucherId: { userId, voucherId },
@@ -139,6 +191,54 @@ export async function redeemVoucher(
           prisma.userVoucher.update({
             where: { id: assignment.id },
             data: { isUsed: true },
+          }),
+        ]
+      : []),
+  ])
+}
+
+/** Undo redeem when payment is released/refunded/canceled after capture. */
+export async function restoreVoucherForOrder(orderId: number) {
+  const redemption = await prisma.voucherRedemption.findFirst({
+    where: { orderId },
+  })
+  if (!redemption) return
+
+  const [assignment, otherRedemptions, voucher] = await Promise.all([
+    prisma.userVoucher.findUnique({
+      where: {
+        userId_voucherId: {
+          userId: redemption.userId,
+          voucherId: redemption.voucherId,
+        },
+      },
+    }),
+    prisma.voucherRedemption.count({
+      where: {
+        voucherId: redemption.voucherId,
+        userId: redemption.userId,
+        id: { not: redemption.id },
+      },
+    }),
+    prisma.voucher.findUnique({
+      where: { id: redemption.voucherId },
+      select: { usedCount: true },
+    }),
+  ])
+
+  const nextUsedCount = Math.max(0, (voucher?.usedCount ?? 1) - 1)
+
+  await prisma.$transaction([
+    prisma.voucherRedemption.delete({ where: { id: redemption.id } }),
+    prisma.voucher.update({
+      where: { id: redemption.voucherId },
+      data: { usedCount: nextUsedCount },
+    }),
+    ...(assignment?.isUsed && otherRedemptions === 0
+      ? [
+          prisma.userVoucher.update({
+            where: { id: assignment.id },
+            data: { isUsed: false },
           }),
         ]
       : []),

@@ -1,7 +1,7 @@
 import { PaymentCaptureMode, PaymentHoldStatus, Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { recordSellerTransactions } from '@/utils/sellerTransactions'
-import { redeemVoucher } from '@/lib/voucher'
+import { redeemVoucher, restoreVoucherForOrder } from '@/lib/voucher'
 import { sendPaidOrderNotificationsOnce } from '@/lib/order-paid-notifications'
 import {
   finalizeRentalOrderHolds,
@@ -118,6 +118,9 @@ export async function markOrderPaymentBlocked(orderId: number): Promise<void> {
   if (!wasAlreadyPaid) {
     await finalizeRentalOrderHolds(orderId)
     await clearSourceCartItem(order)
+    // Funds are secured on block — redeem so the voucher cannot be reused
+    // while the order sits in PAID/BLOCKED without a redemption row.
+    await redeemOrderVoucherIfNeeded(order)
     void sendPaidOrderNotificationsOnce(orderId).catch((error) => {
       console.error(`[payment-hold] Order notifications failed for #${orderId}:`, error)
     })
@@ -185,6 +188,7 @@ export async function markOrderPaymentReleased(orderId: number): Promise<void> {
   })
 
   await releaseRentalOrderHolds(orderId)
+  await restoreVoucherForOrder(orderId)
 
   if (wasFulfilled) {
     const { restoreOrderSaleItems } = await import('@/lib/restore-order-sale-items')

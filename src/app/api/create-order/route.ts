@@ -5,7 +5,13 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { bogTokenManager } from '@/lib/bog-token'
 import { getCartItemPayablePrice, getRentalCartDiscountContext } from '@/lib/cart-item-pricing'
-import { validateVoucher } from '@/lib/voucher'
+import {
+  cancelPendingVoucherOrders,
+  redeemVoucher,
+  validateVoucher,
+} from '@/lib/voucher'
+import { recordSellerTransactions } from '@/utils/sellerTransactions'
+import { sendPaidOrderNotificationsOnce } from '@/lib/order-paid-notifications'
 import { processExpiredDiscount } from '@/utils/discountUtils'
 import { buildSplitPaymentConfig } from '@/lib/bog-split-config'
 import {
@@ -29,7 +35,10 @@ import {
   buildOrderItemProductSnapshot,
   orderItemSnapshotProductSelect,
 } from '@/lib/order-item-snapshot'
-import { releaseRentalOrderHolds } from '@/lib/rental-order-holds'
+import {
+  finalizeRentalOrderHolds,
+  releaseRentalOrderHolds,
+} from '@/lib/rental-order-holds'
 import { validateSaleItemStock } from '@/lib/sale-stock'
 import { isProductSoftDeleted } from '@/lib/product-soft-delete'
 import { getBogCallbackUrl, getSiteUrl } from '@/lib/site-url'
@@ -411,6 +420,7 @@ export async function POST(req: NextRequest) {
       voucherDiscount = voucherResult.discountAmount
       voucherId = voucherResult.voucherId
       voucherCode = voucherResult.code
+      await cancelPendingVoucherOrders(auth.user.id, voucherId)
     }
 
     const deliveryResolved = await resolveServerCheckoutDelivery({
@@ -546,6 +556,56 @@ export async function POST(req: NextRequest) {
 
     pendingOrderId = dbOrder.id
 
+    const siteUrl = getSiteUrl()
+
+    // Voucher can cover the full payable amount (e.g. free pickup) — BOG rejects ₾0.
+    if (total <= 0) {
+      await prisma.order.update({
+        where: { id: dbOrder.id },
+        data: { status: 'PAID' },
+      })
+
+      await recordSellerTransactions(dbOrder.id)
+      await finalizeRentalOrderHolds(dbOrder.id)
+
+      if (dbOrder.sourceCartItemId) {
+        await prisma.cartItem
+          .deleteMany({
+            where: {
+              id: dbOrder.sourceCartItemId,
+              cart: { userId: auth.user.id },
+            },
+          })
+          .catch(() => undefined)
+      }
+
+      if (voucherId && voucherDiscount > 0) {
+        await redeemVoucher(
+          voucherId,
+          auth.user.id,
+          dbOrder.id,
+          voucherDiscount,
+        )
+      }
+
+      void sendPaidOrderNotificationsOnce(dbOrder.id).catch((error) => {
+        console.error(
+          `[create-order] Free voucher order notifications failed for #${dbOrder.id}:`,
+          error,
+        )
+      })
+
+      pendingOrderId = null
+
+      return NextResponse.json({
+        success: true,
+        orderId: dbOrder.id,
+        bogOrderId: null,
+        redirectUrl: `${siteUrl}/order-confirmation?status=success&orderId=${dbOrder.id}`,
+        freeCheckout: true,
+      })
+    }
+
     const productIds = resolvedCartItems
       .map((i) => i.productId)
       .filter((id): id is number => id !== null)
@@ -573,6 +633,12 @@ export async function POST(req: NextRequest) {
       sellerUserIds,
     )
     if (manualCapture && saleItems.length > 0 && !splitConfigForCheckout) {
+      await prisma.order.update({
+        where: { id: dbOrder.id },
+        data: { status: 'CANCELED' },
+      })
+      await releaseRentalOrderHolds(dbOrder.id).catch(() => undefined)
+      pendingOrderId = null
       return NextResponse.json(
         {
           success: false,
@@ -583,8 +649,6 @@ export async function POST(req: NextRequest) {
       )
     }
     const splitConfig = manualCapture ? null : splitConfigForCheckout
-
-    const siteUrl = getSiteUrl()
 
     const requestData: BOGRequestData = {
       callback_url: getBogCallbackUrl(),

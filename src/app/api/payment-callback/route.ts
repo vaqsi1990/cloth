@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { PaymentCaptureMode } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { recordSellerTransactions } from '@/utils/sellerTransactions'
-import { redeemVoucher } from '@/lib/voucher'
+import { redeemVoucher, restoreVoucherForOrder } from '@/lib/voucher'
 import { activateVipPayment } from '@/lib/product-vip-payment'
 import { sendPaidOrderNotificationsOnce } from '@/lib/order-paid-notifications'
 import {
@@ -101,6 +101,7 @@ async function updateAutomaticOrderStatus(
 
   if (final === "CANCELED" || final === "REFUNDED") {
     await releaseRentalOrderHolds(order.id)
+    await restoreVoucherForOrder(order.id)
     if (wasFulfilled) {
       const { restoreOrderSaleItems } = await import('@/lib/restore-order-sale-items')
       await restoreOrderSaleItems(order.id)
