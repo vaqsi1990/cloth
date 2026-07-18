@@ -97,13 +97,19 @@ export function computePaymentSplitAmounts(
 ): { platformAmount: number; sellerAmount: number } | null {
   if (totalAmount <= 0 || ownerItemsSubtotal < 0) return null
 
-  const sellerAmount = roundMoney(ownerItemsSubtotal)
+  // After a voucher, seller share may be 0 (full product covered; only delivery left).
+  const sellerAmount = roundMoney(Math.max(0, ownerItemsSubtotal))
   const platformCommission = getCommissionFromSellerPrice(sellerAmount)
   let platformAmount = roundMoney(platformCommission + Math.max(0, deliveryFee))
 
   const drift = roundMoney(totalAmount - platformAmount - sellerAmount)
   if (drift !== 0) {
+    // Prefer absorbing rounding/voucher remainder on the platform side.
     platformAmount = roundMoney(platformAmount + drift)
+  }
+
+  if (platformAmount < 0) {
+    return null
   }
 
   if (roundMoney(platformAmount + sellerAmount) !== roundMoney(totalAmount)) {

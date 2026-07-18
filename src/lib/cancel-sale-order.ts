@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { revalidateProductListCache } from '@/lib/product-list-query'
 import { COMPLETED_SALE_ORDER_STATUSES } from '@/lib/sold-products'
 import { finalizeCanceledSaleProducts } from '@/lib/finalize-canceled-sale-products'
+import { restoreVoucherForOrder } from '@/lib/voucher'
 
 type CancelSaleOrderOptions = {
   requirePaidOrShipped?: boolean
@@ -56,6 +57,7 @@ export async function cancelSaleOrder(
     })
   })
 
+  await restoreVoucherForOrder(orderId)
   await finalizeCanceledSaleProducts(orderId)
 
   try {

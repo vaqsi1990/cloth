@@ -10,6 +10,7 @@ import {
   shouldRestoreStockOnCancel,
 } from '@/lib/restore-order-sale-items'
 import { finalizeCanceledSaleProducts } from '@/lib/finalize-canceled-sale-products'
+import { restoreVoucherForOrder } from '@/lib/voucher'
 
 const statusSchema = z.object({
   status: z.enum(['PENDING', 'PAID', 'SHIPPED', 'CANCELED', 'REFUNDED'])
@@ -85,6 +86,15 @@ export async function PUT(
 
     if (status === 'PAID' && !wasAlreadyPaid) {
       await recordSellerTransactions(orderId)
+    }
+
+    const becameCanceledOrRefunded =
+      (status === 'CANCELED' || status === 'REFUNDED') &&
+      previousStatus !== 'CANCELED' &&
+      previousStatus !== 'REFUNDED'
+
+    if (becameCanceledOrRefunded) {
+      await restoreVoucherForOrder(orderId)
     }
 
     if (shouldRestoreStockOnCancel(previousStatus, status)) {

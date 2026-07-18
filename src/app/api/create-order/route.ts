@@ -13,7 +13,10 @@ import {
 import { recordSellerTransactions } from '@/utils/sellerTransactions'
 import { sendPaidOrderNotificationsOnce } from '@/lib/order-paid-notifications'
 import { processExpiredDiscount } from '@/utils/discountUtils'
-import { buildSplitPaymentConfig } from '@/lib/bog-split-config'
+import {
+  buildSplitPaymentConfig,
+  hasSellerSplitPayout,
+} from '@/lib/bog-split-config'
 import {
   getOwnerItemsSubtotalFromBuyer,
   getSellerPriceFromBuyer,
@@ -451,8 +454,10 @@ export async function POST(req: NextRequest) {
       deliveryCityName,
     } = deliveryResolved
 
-    const productBuyerSubtotal =
-      Math.round((cartSubtotal - voucherDiscount) * 100) / 100
+    const productBuyerSubtotal = Math.max(
+      0,
+      Math.round((cartSubtotal - voucherDiscount) * 100) / 100,
+    )
     const total =
       Math.round((productBuyerSubtotal + deliveryFee) * 100) / 100
 
@@ -624,15 +629,24 @@ export async function POST(req: NextRequest) {
             ),
           )
     // BOG applies split at capture/approve time for pre-auth orders, not at order creation.
-    const splitConfigForCheckout = await buildSplitPaymentConfig(
-      paymentMethod,
-      productIds,
-      total,
-      ownerItemsSubtotal,
-      deliveryFee,
-      sellerUserIds,
-    )
-    if (manualCapture && saleItems.length > 0 && !splitConfigForCheckout) {
+    // When a voucher zeros the seller payout, skip split (BOG rejects amount 0).
+    const sellerPayoutRequired = hasSellerSplitPayout(ownerItemsSubtotal)
+    const splitConfigForCheckout = sellerPayoutRequired
+      ? await buildSplitPaymentConfig(
+          paymentMethod,
+          productIds,
+          total,
+          ownerItemsSubtotal,
+          deliveryFee,
+          sellerUserIds,
+        )
+      : null
+    if (
+      manualCapture &&
+      saleItems.length > 0 &&
+      sellerPayoutRequired &&
+      !splitConfigForCheckout
+    ) {
       await prisma.order.update({
         where: { id: dbOrder.id },
         data: { status: 'CANCELED' },

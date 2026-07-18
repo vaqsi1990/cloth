@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { restoreVoucherForOrder } from '@/lib/voucher'
 
 // GET - Fetch single order by ID
 export async function GET(
@@ -109,6 +110,19 @@ export async function PATCH(
       }, { status: 400 })
     }
 
+    const existingOrder = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: { id: true, status: true },
+    })
+    if (!existingOrder) {
+      return NextResponse.json({
+        success: false,
+        message: 'შეკვეთა ვერ მოიძებნა',
+      }, { status: 404 })
+    }
+
+    const previousStatus = existingOrder.status
+
     const updatedOrder = await prisma.order.update({
       where: { id: orderId },
       data: { status },
@@ -117,6 +131,15 @@ export async function PATCH(
         user: true
       }
     })
+
+    const becameCanceledOrRefunded =
+      (status === 'CANCELED' || status === 'REFUNDED') &&
+      previousStatus !== 'CANCELED' &&
+      previousStatus !== 'REFUNDED'
+
+    if (becameCanceledOrRefunded) {
+      await restoreVoucherForOrder(orderId)
+    }
 
     return NextResponse.json({
       success: true,

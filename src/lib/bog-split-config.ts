@@ -154,6 +154,14 @@ async function collectSellerIBANs(
   return collectProductAuthorsIBANs(productIds)
 }
 
+/**
+ * True when the seller still has a positive payout after voucher/discounts.
+ * When false, BOG split must not include a ₾0 seller line ("Split amount should be more than 0").
+ */
+export function hasSellerSplitPayout(ownerItemsSubtotal: number): boolean {
+  return roundMoney(ownerItemsSubtotal) > 0
+}
+
 export async function buildSplitPaymentConfig(
   paymentMethod: string | undefined,
   productIds: (string | number)[],
@@ -177,6 +185,32 @@ export async function buildSplitPaymentConfig(
     return null
   }
 
+  const splitAmounts = computePaymentSplitAmounts(
+    totalAmount,
+    ownerItemsSubtotal,
+    deliveryFee,
+  )
+  if (!splitAmounts) {
+    logSplitStep('FAILED: could not compute split amounts', {
+      totalAmount,
+      ownerItemsSubtotal,
+      deliveryFee,
+    })
+    return null
+  }
+
+  // Voucher can zero the seller share (e.g. product fully covered, only delivery left).
+  // BOG rejects split lines with amount 0 — skip split so the full charge stays with merchant.
+  if (splitAmounts.sellerAmount <= 0) {
+    logSplitStep('Skipping split: seller payout is 0 after voucher', {
+      totalAmount,
+      ownerItemsSubtotal,
+      deliveryFee,
+      splitAmounts,
+    })
+    return null
+  }
+
   const merchantIban = getMerchantIBAN()
   if (!merchantIban) {
     logSplitStep('FAILED: BOG_MERCHANT_IBAN missing or invalid')
@@ -195,33 +229,27 @@ export async function buildSplitPaymentConfig(
   }
 
   const sellerIban = [...authors.values()][0]
-  const splitAmounts = computePaymentSplitAmounts(
-    totalAmount,
-    ownerItemsSubtotal,
-    deliveryFee,
-  )
-  if (!splitAmounts) {
-    logSplitStep('FAILED: could not compute split amounts', {
-      totalAmount,
-      ownerItemsSubtotal,
-      deliveryFee,
-    })
-    return null
-  }
-
   const split_payments: BogSplitPayment[] = []
 
-  split_payments.push({
-    amount: splitAmounts.platformAmount,
-    iban: merchantIban,
-    description: validateSplitDescription('Delivery and commission'),
-  })
+  if (splitAmounts.platformAmount > 0) {
+    split_payments.push({
+      amount: splitAmounts.platformAmount,
+      iban: merchantIban,
+      description: validateSplitDescription('Delivery and commission'),
+    })
+  }
 
   split_payments.push({
     amount: splitAmounts.sellerAmount,
     iban: sellerIban,
     description: validateSplitDescription('Owner item payout'),
   })
+
+  // BOG rejects any split entry with amount <= 0
+  if (split_payments.some((payment) => (payment.amount ?? 0) <= 0)) {
+    logSplitStep('FAILED: split contains non-positive amount', { splitAmounts })
+    return null
+  }
 
   const totalSplitAmount = split_payments.reduce((sum, p) => sum + (p.amount ?? 0), 0)
   if (Math.abs(totalSplitAmount - totalAmount) > 0.01) {
@@ -341,12 +369,38 @@ export function describeSplitPayments(
   }))
 }
 
+function getOrderOwnerItemsSubtotal(order: OrderForSplit): number {
+  const saleItems = order.items.filter((item) => !item.isRental)
+  const itemsSubtotal = saleItems.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0,
+  )
+  const productBuyerSubtotal =
+    Math.round((itemsSubtotal - (order.voucherDiscount ?? 0)) * 100) / 100
+
+  if (order.voucherDiscount && order.voucherDiscount > 0) {
+    return getOwnerItemsSubtotalFromBuyer(Math.max(0, productBuyerSubtotal))
+  }
+
+  return roundMoney(
+    saleItems.reduce(
+      (sum, item) => sum + getSellerPriceFromBuyer(item.price) * item.quantity,
+      0,
+    ),
+  )
+}
+
 export function getOrderSplitReadinessMessage(
   order: OrderForSplit,
   splitConfig: BogSplitConfig | null,
 ): string | null {
   const saleItems = order.items.filter((item) => !item.isRental)
   if (saleItems.length === 0) {
+    return null
+  }
+
+  // Voucher covered the seller share — split is intentionally skipped.
+  if (!hasSellerSplitPayout(getOrderOwnerItemsSubtotal(order))) {
     return null
   }
 
@@ -360,6 +414,10 @@ export function getOrderSplitReadinessMessage(
 
   if (!splitConfig) {
     return 'გამყიდველს არ აქვს ვალიდური IBAN ან BOG_MERCHANT_IBAN არ არის დაყენებული'
+  }
+
+  if (splitConfig.split_payments.some((payment) => (payment.amount ?? 0) <= 0)) {
+    return 'split შეიცავს ₾0 თანხას'
   }
 
   const totalSplitAmount = splitConfig.split_payments.reduce(
