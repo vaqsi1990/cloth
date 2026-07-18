@@ -20,7 +20,9 @@ export async function GET(request: NextRequest) {
 
     const orders = await prisma.order.findMany({
       where: {
-        userId: session.user.id
+        userId: session.user.id,
+        // Abandoned / canceled checkouts stay out of the buyer's order history
+        status: { not: 'CANCELED' },
       },
       include: {
         deliveryCity: {

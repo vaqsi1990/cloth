@@ -41,8 +41,8 @@ import {
   orderItemSnapshotProductSelect,
 } from '@/lib/order-item-snapshot'
 import {
+  discardUnpaidOrder,
   finalizeRentalOrderHolds,
-  releaseRentalOrderHolds,
 } from '@/lib/rental-order-holds'
 import { validateSaleItemStock } from '@/lib/sale-stock'
 import { isProductSoftDeleted } from '@/lib/product-soft-delete'
@@ -674,11 +674,7 @@ export async function POST(req: NextRequest) {
       sellerPayoutRequired &&
       !splitConfigForCheckout
     ) {
-      await prisma.order.update({
-        where: { id: dbOrder.id },
-        data: { status: 'CANCELED' },
-      })
-      await releaseRentalOrderHolds(dbOrder.id).catch(() => undefined)
+      await discardUnpaidOrder(dbOrder.id).catch(() => undefined)
       pendingOrderId = null
       return NextResponse.json(
         {
@@ -848,11 +844,7 @@ export async function POST(req: NextRequest) {
 
   } catch (err) {
     if (pendingOrderId) {
-      await prisma.order.update({
-        where: { id: pendingOrderId },
-        data: { status: 'CANCELED' },
-      }).catch(() => undefined)
-      await releaseRentalOrderHolds(pendingOrderId).catch(() => undefined)
+      await discardUnpaidOrder(pendingOrderId).catch(() => undefined)
     }
 
     console.error('❌ [ERROR] Order creation failed:', err)

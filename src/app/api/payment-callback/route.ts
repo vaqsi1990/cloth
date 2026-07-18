@@ -6,6 +6,7 @@ import { redeemVoucher, restoreVoucherForOrder } from '@/lib/voucher'
 import { activateVipPayment } from '@/lib/product-vip-payment'
 import { sendPaidOrderNotificationsOnce } from '@/lib/order-paid-notifications'
 import {
+  discardUnpaidOrder,
   finalizeRentalOrderHolds,
   releaseRentalOrderHolds,
 } from '@/lib/rental-order-holds'
@@ -57,6 +58,12 @@ async function updateAutomaticOrderStatus(
   else if (lower === "partial_completed") final = "PENDING"
   else if (lower === "rejected" || lower === "blocked") final = "CANCELED"
   else if (lower === "refunded" || lower === "refunded_partially") final = "REFUNDED"
+
+  // Unpaid checkout abandoned/rejected — remove the order instead of leaving "გაუქმებული".
+  if (final === "CANCELED" && !wasFulfilled) {
+    await discardUnpaidOrder(order.id)
+    return
+  }
 
   await prisma.order.update({
     where: { id: order.id },
@@ -153,11 +160,7 @@ async function updateOrderStatus(paymentId: string, status: string) {
       if (order.paymentHoldStatus === 'BLOCKED' || order.status === 'PAID') {
         await markOrderPaymentReleased(order.id)
       } else {
-        await prisma.order.update({
-          where: { id: order.id },
-          data: { status: 'CANCELED' },
-        })
-        await releaseRentalOrderHolds(order.id)
+        await discardUnpaidOrder(order.id)
       }
       return true
     }

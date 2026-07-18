@@ -33,7 +33,7 @@ export async function POST(
       success: true,
       released,
       message: released
-        ? 'გადაუხდელი ჯავშან გათავისუფლდა'
+        ? 'გადაუხდელი შეკვეთა წაიშალა'
         : 'შეკვეთა უკვე დამუშავებულია',
     })
   } catch (error) {

@@ -234,7 +234,7 @@ export async function validateVoucher(
   }
 }
 
-/** Cancel abandoned PENDING checkouts so voucher balance can be reused cleanly. */
+/** Discard abandoned PENDING checkouts so voucher balance can be reused cleanly. */
 export async function cancelPendingVoucherOrders(
   userId: string,
   voucherId: number,
@@ -250,16 +250,9 @@ export async function cancelPendingVoucherOrders(
 
   if (pending.length === 0) return
 
-  await prisma.order.updateMany({
-    where: {
-      id: { in: pending.map((o) => o.id) },
-    },
-    data: { status: 'CANCELED' },
-  })
-
-  const { releaseRentalOrderHolds } = await import('@/lib/rental-order-holds')
+  const { discardUnpaidOrder } = await import('@/lib/rental-order-holds')
   for (const order of pending) {
-    await releaseRentalOrderHolds(order.id).catch(() => undefined)
+    await discardUnpaidOrder(order.id).catch(() => undefined)
   }
 }
 

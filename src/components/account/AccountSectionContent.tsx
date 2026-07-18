@@ -324,7 +324,7 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
   const [salesTransferFilter, setSalesTransferFilter] = useState<
     'ALL' | 'TRANSFERRED' | 'PENDING' | 'CANCELED'
   >('ALL')
-  const [ordersStatusFilter, setOrdersStatusFilter] = useState<'ALL' | 'ACTIVE' | 'CANCELED'>('ALL')
+  const [ordersStatusFilter, setOrdersStatusFilter] = useState<'ALL' | 'ACTIVE'>('ALL')
   const [loadingProducts, setLoadingProducts] = useState(false)
   const [resubmittingProductId, setResubmittingProductId] = useState<number | null>(null)
   const [vouchers, setVouchers] = useState<UserVoucherItem[]>([])
@@ -1645,11 +1645,9 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
 
   const renderOrdersTab = () => {
     const filteredOrders = orders.filter((order) => {
-      if (ordersStatusFilter === 'CANCELED') {
-        return order.status === 'CANCELED'
-      }
+      // Canceled checkouts are excluded by /api/user/orders
       if (ordersStatusFilter === 'ACTIVE') {
-        return order.status !== 'CANCELED' && order.status !== 'REFUNDED'
+        return order.status !== 'REFUNDED'
       }
       return true
     })
@@ -1664,7 +1662,6 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
               [
                 ['ALL', 'ყველა'],
                 ['ACTIVE', 'აქტიური'],
-                ['CANCELED', 'გაუქმებული'],
               ] as const
             ).map(([value, label]) => (
               <button
@@ -1692,11 +1689,9 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
           <div className="text-center py-8">
             <ShoppingCart className="w-12 h-12 text-black mx-auto mb-4" />
             <p className="text-[18px] text-black">
-              {ordersStatusFilter === 'CANCELED'
-                ? 'გაუქმებული შეკვეთები ჯერ არ გაქვთ'
-                : ordersStatusFilter === 'ACTIVE'
-                  ? 'აქტიური შეკვეთები ჯერ არ გაქვთ'
-                  : 'ჯერ არ გაქვთ შეკვეთები'}
+              {ordersStatusFilter === 'ACTIVE'
+                ? 'აქტიური შეკვეთები ჯერ არ გაქვთ'
+                : 'ჯერ არ გაქვთ შეკვეთები'}
             </p>
             {ordersStatusFilter === 'ALL' && (
             <Link

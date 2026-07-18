@@ -179,6 +179,33 @@ export async function releaseRentalOrderHolds(orderId: number): Promise<void> {
   }
 }
 
+/**
+ * Drop an unpaid PENDING checkout so it never appears as "გაუქმებული".
+ * Releases rental holds / voucher reservations, then deletes the order.
+ */
+export async function discardUnpaidOrder(orderId: number): Promise<boolean> {
+  const order = await prisma.order.findFirst({
+    where: { id: orderId, status: 'PENDING' },
+    select: { id: true },
+  })
+
+  if (!order) return false
+
+  await releaseRentalOrderHolds(orderId)
+
+  const { restoreVoucherForOrder } = await import('@/lib/voucher')
+  await restoreVoucherForOrder(orderId).catch(() => undefined)
+
+  // Transaction.order has no onDelete; PENDING checkouts normally have none.
+  await prisma.transaction.updateMany({
+    where: { orderId },
+    data: { orderId: null },
+  })
+
+  await prisma.order.delete({ where: { id: orderId } })
+  return true
+}
+
 export async function abandonPendingPayment(
   orderId: number,
   userId: string,
@@ -190,12 +217,7 @@ export async function abandonPendingPayment(
 
   if (!order) return false
 
-  await prisma.order.update({
-    where: { id: orderId },
-    data: { status: 'CANCELED' },
-  })
-  await releaseRentalOrderHolds(orderId)
-  return true
+  return discardUnpaidOrder(orderId)
 }
 
 /** Fix stuck BOOKED / RENTED state left by unpaid checkout (legacy or abandoned payment). */
@@ -243,9 +265,6 @@ export async function recoverStaleUnpaidRentalState(params: {
   })
 
   for (const pending of pendingOrders) {
-    await prisma.order.update({
-      where: { id: pending.id },
-      data: { status: 'CANCELED' },
-    })
+    await discardUnpaidOrder(pending.id)
   }
 }
