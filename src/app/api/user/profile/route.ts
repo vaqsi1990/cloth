@@ -205,6 +205,7 @@ export async function GET(request: NextRequest) {
         gender: true,
         dateOfBirth: true,
         iban: true,
+        freeDelivery: true,
       }
     })
 

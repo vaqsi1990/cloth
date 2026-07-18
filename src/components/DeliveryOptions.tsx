@@ -29,6 +29,7 @@ interface DeliveryOptionsProps {
   pickupAddress: string
   pickupAddressError?: string
   pickupAvailable?: boolean
+  freeDelivery?: boolean
   cityError?: string
   speedError?: string
   compact?: boolean
@@ -46,6 +47,7 @@ export default function DeliveryOptions({
   pickupAddress,
   pickupAddressError,
   pickupAvailable = true,
+  freeDelivery = false,
   cityError,
   speedError,
   compact = false,
@@ -171,7 +173,11 @@ export default function DeliveryOptions({
               <label className={labelClass}>მიტანის ტიპი *</label>
               <div className="space-y-3">
                 {DELIVERY_SPEED_OPTIONS.map((option) => {
-                  const price = getDeliveryPriceForCity(selectedCity, option.value)
+                  const catalogPrice = getDeliveryPriceForCity(
+                    selectedCity,
+                    option.value,
+                  )
+                  const price = freeDelivery ? 0 : catalogPrice
                   const isSelected = deliverySpeed === option.value
 
                   return (
@@ -193,7 +199,12 @@ export default function DeliveryOptions({
                         />
                         <div>
                           <p className="text-black font-medium">
-                            {option.label} — ₾{price.toFixed(2)}
+                            {option.label} —{' '}
+                            {freeDelivery ? (
+                              <span className="text-emerald-700">უფასო</span>
+                            ) : (
+                              `₾${price.toFixed(2)}`
+                            )}
                           </p>
                           <p className="text-sm text-gray-600">{option.daysLabel}</p>
                         </div>

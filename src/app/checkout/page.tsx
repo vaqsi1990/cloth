@@ -86,6 +86,7 @@ const CheckoutPage = () => {
     const [loadingCities, setLoadingCities] = useState(false)
     const [savingDelivery, setSavingDelivery] = useState(false)
     const [loadingProfile, setLoadingProfile] = useState(false)
+    const [freeDelivery, setFreeDelivery] = useState(false)
     const [voucherInput, setVoucherInput] = useState('')
     const [appliedVoucher, setAppliedVoucher] = useState<{
         code: string
@@ -240,6 +241,7 @@ const CheckoutPage = () => {
                 if (data.success && data.user) {
                     const user = data.user
                     hasPrefilledProfileRef.current = true
+                    setFreeDelivery(Boolean(user.freeDelivery))
                     setFormData((prev) => ({
                         ...prev,
                         firstName: user.name || prev.firstName,
@@ -261,10 +263,11 @@ const CheckoutPage = () => {
 
     const effectiveDeliveryType: DeliveryType = pickupAvailable ? deliveryType : 'delivery'
     const selectedDeliveryCity = deliveryCities.find((city) => city.id === selectedDeliveryCityId) ?? null
-    const deliveryPrice =
+    const catalogDeliveryPrice =
         effectiveDeliveryType === 'delivery' && selectedDeliveryCity && deliverySpeed
             ? getDeliveryPriceForCity(selectedDeliveryCity, deliverySpeed)
             : getDeliveryPrice()
+    const deliveryPrice = freeDelivery ? 0 : catalogDeliveryPrice
 
     const checkoutDeliveryFee =
         effectiveDeliveryType === 'delivery' && selectedDeliveryCity && deliverySpeed
@@ -926,6 +929,7 @@ const CheckoutPage = () => {
                                     pickupAddress={pickupAddress}
                                     pickupAddressError={fieldErrors.pickupAddress}
                                     pickupAvailable={pickupAvailable}
+                                    freeDelivery={freeDelivery}
                                     cityError={fieldErrors.deliveryCity}
                                     speedError={fieldErrors.deliverySpeed}
                                 />
@@ -1177,7 +1181,9 @@ const CheckoutPage = () => {
                                     {effectiveDeliveryType === 'delivery' && selectedDeliveryCity && deliverySpeed && (
                                         <div className="flex justify-between text-black md:text-[18px] text-[16px]">
                                             <span>მიტანა ({getDeliverySpeedLabel(deliverySpeed)}):</span>
-                                            <span className="font-medium">₾{deliveryPrice.toFixed(2)}</span>
+                                            <span className={`font-medium ${freeDelivery ? 'text-emerald-700' : ''}`}>
+                                                {freeDelivery ? 'უფასო' : `₾${deliveryPrice.toFixed(2)}`}
+                                            </span>
                                         </div>
                                     )}
                                     <div className="flex justify-between text-black md:text-[18px] text-[16px] border-t border-gray-300 pt-4 mt-2">

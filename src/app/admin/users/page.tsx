@@ -23,6 +23,7 @@ interface User {
   banned?: boolean
   banReason?: string | null
   bannedAt?: string | null
+  freeDelivery?: boolean
   blocked?: boolean
   verified?: boolean
   createdAt: string
@@ -478,6 +479,50 @@ const AdminUsersPage = () => {
                         >
                           <Pencil className="w-3 h-3 sm:w-4 sm:h-4" />
                           კონტაქტის რედაქტირება
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const next = !user.freeDelivery
+                            const res = await fetch(
+                              `/api/admin/users/${user.id}/free-delivery`,
+                              {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ freeDelivery: next }),
+                              },
+                            )
+                            const data = await res.json()
+                            if (res.ok && data.success) {
+                              setUsers((prev) =>
+                                prev.map((u) =>
+                                  u.id === user.id
+                                    ? { ...u, freeDelivery: next }
+                                    : u,
+                                ),
+                              )
+                              showToast(
+                                next
+                                  ? 'უფასო მიტანა ჩაირთო'
+                                  : 'უფასო მიტანა გამოირთო',
+                                'success',
+                              )
+                            } else {
+                              showToast(
+                                data.error || 'უფასო მიტანის შეცვლა ვერ მოხერხდა',
+                                'error',
+                              )
+                            }
+                          }}
+                          className={`px-3 py-2 rounded text-xs sm:text-sm md:text-[16px] whitespace-nowrap ${
+                            user.freeDelivery
+                              ? 'bg-emerald-700 text-white hover:bg-emerald-800'
+                              : 'border border-gray-300 bg-white text-black hover:bg-gray-50'
+                          }`}
+                        >
+                          {user.freeDelivery
+                            ? 'უფასო მიტანა ✓'
+                            : 'უფასო მიტანა'}
                         </button>
                         {/* Ban status badge */}
                         {user.banned && (

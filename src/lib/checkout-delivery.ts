@@ -71,7 +71,13 @@ export async function resolveServerCheckoutDelivery(params: {
     return { error: 'მიტანის ქალაქი ვერ მოიძებნა' }
   }
 
-  const deliveryPrice = getDeliveryPriceForCity(city, speed)
+  const catalogPrice = getDeliveryPriceForCity(city, speed)
+
+  const user = await prisma.user.findUnique({
+    where: { id: params.userId },
+    select: { freeDelivery: true },
+  })
+  const deliveryPrice = user?.freeDelivery ? 0 : catalogPrice
 
   return {
     deliveryType: 'delivery',

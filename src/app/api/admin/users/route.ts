@@ -45,6 +45,7 @@ export async function GET(request: NextRequest) {
           banned: true,
           banReason: true,
           bannedAt: true,
+          freeDelivery: true,
           blocked: true,
           verified: true,
           personalId: true,

@@ -142,6 +142,8 @@ model User {
   banned        Boolean   @default(false)
   banReason     String?
   bannedAt      DateTime?
+  // Per-user free delivery (admin-controlled)
+  freeDelivery  Boolean   @default(false)
   // Verification fields
   verified      Boolean   @default(false)
   blocked       Boolean   @default(false)
