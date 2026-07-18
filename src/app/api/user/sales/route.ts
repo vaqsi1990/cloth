@@ -9,10 +9,8 @@ import {
 } from '@/lib/order-item-snapshot'
 import { computeSellerSaleLineAmount } from '@/lib/seller-sale-amounts'
 
-const VISIBLE_SALE_ORDER_STATUSES = [
-  ...COMPLETED_SALE_ORDER_STATUSES,
-  'CANCELED',
-] as const
+// Paid/shipped only — abandoned unpaid checkouts (CANCELED) stay out of seller history
+const VISIBLE_SALE_ORDER_STATUSES = [...COMPLETED_SALE_ORDER_STATUSES] as const
 
 const sellerOrderInclude = {
   user: {

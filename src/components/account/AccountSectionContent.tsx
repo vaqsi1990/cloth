@@ -1954,18 +1954,7 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
     const totalSalesAmount = totalSellerIncome
 
     const filteredSales = sales
-      .filter((order) => {
-        if (salesTransferFilter === 'CANCELED') {
-          return (
-            order.status === 'CANCELED' ||
-            order.items?.some((item) => item.sellerCanceledItem)
-          )
-        }
-        if (salesTransferFilter !== 'ALL') {
-          return order.status !== 'CANCELED'
-        }
-        return true
-      })
+      .filter((order) => order.status !== 'CANCELED')
       .map((order) => {
         const items = order.items?.filter((item) => {
           if (salesTransferFilter === 'TRANSFERRED') {
@@ -1980,7 +1969,8 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
             )
           }
           if (salesTransferFilter === 'CANCELED') {
-            return order.status === 'CANCELED' || item.sellerCanceledItem === true
+            // Seller-returned items on paid orders only (not abandoned checkouts)
+            return item.sellerCanceledItem === true
           }
           return true
         })
@@ -1993,16 +1983,11 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
         sum + (order.items?.filter((item) => item.sellerMarkedTransferred).length ?? 0),
       0,
     )
-    const canceledCount =
-      sales.filter((order) => order.status === 'CANCELED').length +
-      sales.reduce(
-        (sum, order) =>
-          order.status === 'CANCELED'
-            ? sum
-            : sum +
-              (order.items?.filter((item) => item.sellerCanceledItem).length ?? 0),
-        0,
-      )
+    const canceledCount = sales.reduce(
+      (sum, order) =>
+        sum + (order.items?.filter((item) => item.sellerCanceledItem).length ?? 0),
+      0,
+    )
 
     return (
       <div className="space-y-6">
