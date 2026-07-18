@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { code, cartItemId } = body
+    const { code, cartItemId, deliveryFee } = body
 
     if (!code || typeof code !== 'string') {
       return NextResponse.json(
@@ -42,7 +42,20 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       )
     }
-    const result = await validateVoucher(code, session.user.id, cartSubtotal)
+
+    const parsedDeliveryFee =
+      typeof deliveryFee === 'number' && Number.isFinite(deliveryFee)
+        ? Math.max(0, deliveryFee)
+        : typeof deliveryFee === 'string' && deliveryFee.trim() !== ''
+          ? Math.max(0, Number(deliveryFee))
+          : 0
+
+    const result = await validateVoucher(
+      code,
+      session.user.id,
+      cartSubtotal,
+      Number.isFinite(parsedDeliveryFee) ? parsedDeliveryFee : 0,
+    )
 
     if (!result.valid) {
       return NextResponse.json({
@@ -57,6 +70,7 @@ export async function POST(request: NextRequest) {
         code: result.code,
         discountAmount: result.discountAmount,
         cartSubtotal: result.cartSubtotal,
+        deliveryFee: result.deliveryFee,
         finalSubtotal: result.finalSubtotal,
       },
     })

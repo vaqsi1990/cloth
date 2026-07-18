@@ -266,7 +266,16 @@ const CheckoutPage = () => {
             ? getDeliveryPriceForCity(selectedDeliveryCity, deliverySpeed)
             : getDeliveryPrice()
 
-    const getVoucherDiscount = () => appliedVoucher?.discountAmount || 0
+    const checkoutDeliveryFee =
+        effectiveDeliveryType === 'delivery' && selectedDeliveryCity && deliverySpeed
+            ? deliveryPrice
+            : 0
+
+    const getVoucherDiscount = () => {
+        if (!appliedVoucher) return 0
+        const orderTotal = getCheckoutSubtotal() + checkoutDeliveryFee
+        return Math.min(appliedVoucher.discountAmount, orderTotal)
+    }
 
     const normalizedVoucherInput = voucherInput.trim().toUpperCase().replace(/\s+/g, '')
     const hasUnappliedVoucher = Boolean(
@@ -274,14 +283,16 @@ const CheckoutPage = () => {
         (!appliedVoucher || appliedVoucher.code !== normalizedVoucherInput),
     )
 
-    // Calculate total with delivery and voucher
+    // Voucher covers products first, then delivery
     const getTotalWithDelivery = () => {
-        const baseTotal = Math.max(0, getCheckoutSubtotal() - getVoucherDiscount())
-        return effectiveDeliveryType === 'delivery' && selectedDeliveryCity ? baseTotal + deliveryPrice : baseTotal
+        const orderTotal = getCheckoutSubtotal() + checkoutDeliveryFee
+        return Math.max(0, Math.round((orderTotal - getVoucherDiscount()) * 100) / 100)
     }
 
     const validateVoucherCode = async (
         code: string,
+        deliveryFeeForValidation = checkoutDeliveryFee,
+        options?: { silent?: boolean },
     ): Promise<{ code: string; discountAmount: number } | null> => {
         const response = await fetch('/api/vouchers/validate', {
             method: 'POST',
@@ -289,6 +300,7 @@ const CheckoutPage = () => {
             body: JSON.stringify({
                 code: code.trim(),
                 cartItemId: checkoutItemId,
+                deliveryFee: deliveryFeeForValidation,
             }),
         })
         const data = await response.json()
@@ -300,7 +312,9 @@ const CheckoutPage = () => {
             }
         }
 
-        showToast(data.message || 'ვაუჩერი არასწორია', 'error')
+        if (!options?.silent) {
+            showToast(data.message || 'ვაუჩერი არასწორია', 'error')
+        }
         return null
     }
 
@@ -358,6 +372,30 @@ const CheckoutPage = () => {
         setAppliedVoucher(null)
         setVoucherInput('')
     }
+
+    // Re-validate when delivery fee changes so leftover voucher covers delivery too.
+    useEffect(() => {
+        if (!appliedVoucher?.code) return
+
+        let cancelled = false
+        const code = appliedVoucher.code
+        const refresh = async () => {
+            const voucher = await validateVoucherCode(code, checkoutDeliveryFee, {
+                silent: true,
+            })
+            if (cancelled || !voucher) return
+            setAppliedVoucher((prev) =>
+                prev && prev.code === voucher.code
+                    ? { ...prev, discountAmount: voucher.discountAmount }
+                    : prev,
+            )
+        }
+
+        void refresh()
+        return () => {
+            cancelled = true
+        }
+    }, [appliedVoucher?.code, checkoutDeliveryFee, checkoutItemId])
 
     const clearFieldError = (field: string) => {
         setFieldErrors(prev => {
@@ -1009,7 +1047,10 @@ const CheckoutPage = () => {
                                     {appliedVoucher && (
                                         <p className="text-sm text-green-700 mt-1">
                                             ვაუჩერი {appliedVoucher.code}: -₾
-                                            {appliedVoucher.discountAmount.toFixed(2)}
+                                            {getVoucherDiscount().toFixed(2)}
+                                            {checkoutDeliveryFee > 0
+                                                ? ' (პროდუქტი + მიტანა)'
+                                                : ''}
                                         </p>
                                     )}
                                 </div>
@@ -1130,7 +1171,7 @@ const CheckoutPage = () => {
                                     {appliedVoucher && (
                                         <div className="flex justify-between text-green-700 md:text-[18px] text-[16px]">
                                             <span>ვაუჩერი ({appliedVoucher.code}):</span>
-                                            <span className="font-medium">-₾{appliedVoucher.discountAmount.toFixed(2)}</span>
+                                            <span className="font-medium">-₾{getVoucherDiscount().toFixed(2)}</span>
                                         </div>
                                     )}
                                     {effectiveDeliveryType === 'delivery' && selectedDeliveryCity && deliverySpeed && (

@@ -7,12 +7,47 @@ export type VoucherValidationResult =
       code: string
       discountAmount: number
       cartSubtotal: number
+      deliveryFee: number
       finalSubtotal: number
     }
   | {
       valid: false
       message: string
     }
+
+function roundMoney(amount: number): number {
+  return Math.round(amount * 100) / 100
+}
+
+/** Apply voucher to products first, then remaining balance to delivery. */
+export function allocateVoucherDiscount(
+  cartSubtotal: number,
+  deliveryFee: number,
+  voucherDiscount: number,
+) {
+  const safeCart = Math.max(0, cartSubtotal)
+  const safeDelivery = Math.max(0, deliveryFee)
+  const maxApplicable = roundMoney(safeCart + safeDelivery)
+  const discountAmount = roundMoney(
+    Math.min(Math.max(0, voucherDiscount), maxApplicable),
+  )
+  const productDiscount = roundMoney(Math.min(discountAmount, safeCart))
+  const deliveryDiscount = roundMoney(
+    Math.min(Math.max(0, discountAmount - productDiscount), safeDelivery),
+  )
+  const productBuyerSubtotal = roundMoney(safeCart - productDiscount)
+  const payableDelivery = roundMoney(safeDelivery - deliveryDiscount)
+  const total = roundMoney(productBuyerSubtotal + payableDelivery)
+
+  return {
+    discountAmount,
+    productDiscount,
+    deliveryDiscount,
+    productBuyerSubtotal,
+    payableDelivery,
+    total,
+  }
+}
 
 export function normalizeVoucherCode(code: string): string {
   return code.trim().toUpperCase().replace(/\s+/g, '')
@@ -55,6 +90,7 @@ export async function validateVoucher(
   code: string,
   userId: string,
   cartSubtotal: number,
+  deliveryFee = 0,
 ): Promise<VoucherValidationResult> {
   const voucher = await findVoucherByCode(code)
 
@@ -112,8 +148,14 @@ export async function validateVoucher(
     return { valid: false, message: 'თქვენ უკვე გამოიყენეთ ეს ვაუჩერი' }
   }
 
-  const discountAmount = Math.min(voucher.discountAmount, cartSubtotal)
-  if (discountAmount <= 0) {
+  const safeDeliveryFee = Math.max(0, deliveryFee)
+  const allocated = allocateVoucherDiscount(
+    cartSubtotal,
+    safeDeliveryFee,
+    voucher.discountAmount,
+  )
+
+  if (allocated.discountAmount <= 0) {
     return { valid: false, message: 'კალათა ცარიელია' }
   }
 
@@ -121,9 +163,10 @@ export async function validateVoucher(
     valid: true,
     voucherId: voucher.id,
     code: voucher.code,
-    discountAmount: Math.round(discountAmount * 100) / 100,
+    discountAmount: allocated.discountAmount,
     cartSubtotal,
-    finalSubtotal: Math.round((cartSubtotal - discountAmount) * 100) / 100,
+    deliveryFee: safeDeliveryFee,
+    finalSubtotal: allocated.total,
   }
 }
 

@@ -5,6 +5,7 @@ import {
   getSellerPriceFromBuyer,
   roundMoney,
 } from '@/lib/platform-pricing'
+import { allocateVoucherDiscount } from '@/lib/voucher'
 
 export interface BogSplitPayment {
   amount?: number
@@ -334,12 +335,14 @@ export async function buildSplitPaymentConfigForOrder(
     (sum, item) => sum + item.price * item.quantity,
     0,
   )
-  const productBuyerSubtotal =
-    Math.round((itemsSubtotal - (order.voucherDiscount ?? 0)) * 100) / 100
-  const deliveryFee = order.deliveryPrice ?? 0
+  const allocated = allocateVoucherDiscount(
+    itemsSubtotal,
+    order.deliveryPrice ?? 0,
+    order.voucherDiscount ?? 0,
+  )
   const ownerItemsSubtotal =
     order.voucherDiscount && order.voucherDiscount > 0
-      ? getOwnerItemsSubtotalFromBuyer(productBuyerSubtotal)
+      ? getOwnerItemsSubtotalFromBuyer(allocated.productBuyerSubtotal)
       : roundMoney(
           saleItems.reduce(
             (sum, item) => sum + getSellerPriceFromBuyer(item.price) * item.quantity,
@@ -352,7 +355,7 @@ export async function buildSplitPaymentConfigForOrder(
     productIds,
     order.total,
     ownerItemsSubtotal,
-    deliveryFee,
+    allocated.payableDelivery,
     sellerUserIds,
   )
 }
@@ -375,11 +378,14 @@ function getOrderOwnerItemsSubtotal(order: OrderForSplit): number {
     (sum, item) => sum + item.price * item.quantity,
     0,
   )
-  const productBuyerSubtotal =
-    Math.round((itemsSubtotal - (order.voucherDiscount ?? 0)) * 100) / 100
+  const allocated = allocateVoucherDiscount(
+    itemsSubtotal,
+    order.deliveryPrice ?? 0,
+    order.voucherDiscount ?? 0,
+  )
 
   if (order.voucherDiscount && order.voucherDiscount > 0) {
-    return getOwnerItemsSubtotalFromBuyer(Math.max(0, productBuyerSubtotal))
+    return getOwnerItemsSubtotalFromBuyer(allocated.productBuyerSubtotal)
   }
 
   return roundMoney(

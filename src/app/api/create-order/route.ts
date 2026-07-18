@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { bogTokenManager } from '@/lib/bog-token'
 import { getCartItemPayablePrice, getRentalCartDiscountContext } from '@/lib/cart-item-pricing'
 import {
+  allocateVoucherDiscount,
   cancelPendingVoucherOrders,
   redeemVoucher,
   validateVoucher,
@@ -206,11 +207,31 @@ function applyDiscountToBasket(
   )
   if (basketTotal <= 0) return basket
 
-  const ratio = (basketTotal - discount) / basketTotal
-  return basket.map((item) => ({
+  const cappedDiscount = Math.min(discount, basketTotal)
+  // Fully covered products → omit ₾0 lines (BOG rejects non-positive amounts).
+  if (cappedDiscount >= basketTotal) {
+    return []
+  }
+
+  const targetTotal = Math.round((basketTotal - cappedDiscount) * 100) / 100
+  const ratio = targetTotal / basketTotal
+  const discounted = basket.map((item) => ({
     ...item,
     unit_price: Math.round(item.unit_price * ratio * 100) / 100,
   }))
+
+  const discountedTotal = sumBasketTotal(discounted)
+  const drift = Math.round((targetTotal - discountedTotal) * 100) / 100
+  if (drift !== 0 && discounted.length > 0) {
+    const last = discounted[discounted.length - 1]
+    const qty = last.quantity || 1
+    discounted[discounted.length - 1] = {
+      ...last,
+      unit_price: Math.round((last.unit_price + drift / qty) * 100) / 100,
+    }
+  }
+
+  return discounted.filter((item) => item.unit_price > 0)
 }
 
 function appendDeliveryToBasket(
@@ -404,28 +425,6 @@ export async function POST(req: NextRequest) {
       buildBasketFromResolvedCartItems(resolvedCartItems),
     )
 
-    let voucherDiscount = 0
-    let voucherId: number | null = null
-    let voucherCode: string | null = null
-
-    if (orderData.voucherCode) {
-      const voucherResult = await validateVoucher(
-        orderData.voucherCode,
-        auth.user.id,
-        cartSubtotal,
-      )
-      if (!voucherResult.valid) {
-        return NextResponse.json(
-          { success: false, error: voucherResult.message },
-          { status: 400 },
-        )
-      }
-      voucherDiscount = voucherResult.discountAmount
-      voucherId = voucherResult.voucherId
-      voucherCode = voucherResult.code
-      await cancelPendingVoucherOrders(auth.user.id, voucherId)
-    }
-
     const deliveryResolved = await resolveServerCheckoutDelivery({
       userId: auth.user.id,
       productAllowsPickup: selectedCartItem.product?.allowsPickup ?? false,
@@ -454,18 +453,40 @@ export async function POST(req: NextRequest) {
       deliveryCityName,
     } = deliveryResolved
 
-    const productBuyerSubtotal = Math.max(
-      0,
-      Math.round((cartSubtotal - voucherDiscount) * 100) / 100,
-    )
-    const total =
-      Math.round((productBuyerSubtotal + deliveryFee) * 100) / 100
+    let voucherDiscount = 0
+    let voucherId: number | null = null
+    let voucherCode: string | null = null
+
+    if (orderData.voucherCode) {
+      const voucherResult = await validateVoucher(
+        orderData.voucherCode,
+        auth.user.id,
+        cartSubtotal,
+        deliveryFee,
+      )
+      if (!voucherResult.valid) {
+        return NextResponse.json(
+          { success: false, error: voucherResult.message },
+          { status: 400 },
+        )
+      }
+      voucherDiscount = voucherResult.discountAmount
+      voucherId = voucherResult.voucherId
+      voucherCode = voucherResult.code
+      await cancelPendingVoucherOrders(auth.user.id, voucherId)
+    }
+
+    const {
+      productBuyerSubtotal,
+      payableDelivery,
+      total,
+    } = allocateVoucherDiscount(cartSubtotal, deliveryFee, voucherDiscount)
 
     let basket = buildBasketFromResolvedCartItems(resolvedCartItems)
+    basket = appendDeliveryToBasket(basket, deliveryFee)
     if (voucherDiscount > 0) {
       basket = applyDiscountToBasket(basket, voucherDiscount)
     }
-    basket = appendDeliveryToBasket(basket, deliveryFee)
 
     const basketTotal = sumBasketTotal(basket)
     if (Math.abs(basketTotal - total) > 0.01) {
@@ -637,7 +658,7 @@ export async function POST(req: NextRequest) {
           productIds,
           total,
           ownerItemsSubtotal,
-          deliveryFee,
+          payableDelivery,
           sellerUserIds,
         )
       : null
