@@ -8,6 +8,7 @@ import { getCartItemPayablePrice, getRentalCartDiscountContext } from '@/lib/car
 import {
   allocateVoucherDiscount,
   cancelPendingVoucherOrders,
+  findVoucherByCode,
   redeemVoucher,
   validateVoucher,
 } from '@/lib/voucher'
@@ -458,6 +459,12 @@ export async function POST(req: NextRequest) {
     let voucherCode: string | null = null
 
     if (orderData.voucherCode) {
+      // Free reserved PENDING balance before validating remaining amount.
+      const preview = await findVoucherByCode(orderData.voucherCode)
+      if (preview) {
+        await cancelPendingVoucherOrders(auth.user.id, preview.id)
+      }
+
       const voucherResult = await validateVoucher(
         orderData.voucherCode,
         auth.user.id,
@@ -473,7 +480,6 @@ export async function POST(req: NextRequest) {
       voucherDiscount = voucherResult.discountAmount
       voucherId = voucherResult.voucherId
       voucherCode = voucherResult.code
-      await cancelPendingVoucherOrders(auth.user.id, voucherId)
     }
 
     const {

@@ -222,15 +222,7 @@ export default function RentalInquiriesPanel({ scope, title }: RentalInquiriesPa
               </Link>
 
               <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
-                <div>
-                  {scope !== 'buyer' && inq.buyer && (
-                    <p className="text-sm text-gray-600">
-                      <span className="font-medium text-black">მყიდველი: </span>
-                      {inq.buyer.name || inq.buyer.email}
-                      {inq.buyer.phone ? ` · ${inq.buyer.phone}` : ''}
-                    </p>
-                  )}
-                </div>
+               
                 <span
                   className={`px-3 py-1 rounded-full text-sm font-medium ${
                     STATUS_STYLES[inq.status] || 'bg-gray-100'

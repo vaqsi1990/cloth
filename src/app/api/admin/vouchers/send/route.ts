@@ -14,6 +14,13 @@ function requireAdmin(session: Session | null) {
   return null
 }
 
+function parseExpiresAt(value: unknown): Date | null {
+  if (typeof value !== 'string' || !value.trim()) return null
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+  return date
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -21,7 +28,7 @@ export async function POST(request: NextRequest) {
     if (denied) return denied
 
     const body = await request.json()
-    const { voucherId, userIds, message } = body
+    const { voucherId, userIds, message, expiresAt } = body
 
     if (!voucherId || typeof voucherId !== 'number') {
       return NextResponse.json(
@@ -62,6 +69,24 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const giftExpiresAt = parseExpiresAt(expiresAt) ?? voucher.expiresAt
+    if (!giftExpiresAt) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'ვაუჩერის ვადა აუცილებელია (აირჩიეთ თარიღი ან დააყენეთ ვაუჩერზე)',
+        },
+        { status: 400 },
+      )
+    }
+
+    if (giftExpiresAt.getTime() <= Date.now()) {
+      return NextResponse.json(
+        { success: false, error: 'ვადა მომავალში უნდა იყოს' },
+        { status: 400 },
+      )
+    }
+
     const users = await prisma.user.findMany({
       where: {
         id: { in: uniqueUserIds },
@@ -95,6 +120,7 @@ export async function POST(request: NextRequest) {
         userId: u.id,
         voucherId,
         message: customMessage,
+        expiresAt: giftExpiresAt,
       }))
 
     if (toCreate.length === 0) {
@@ -119,6 +145,7 @@ export async function POST(request: NextRequest) {
           : `ვაუჩერი გაიგზავნა ${toCreate.length} მომხმარებელთან`,
       sentCount: toCreate.length,
       skippedCount,
+      expiresAt: giftExpiresAt.toISOString(),
     })
   } catch (error) {
     console.error('Error sending voucher:', error)

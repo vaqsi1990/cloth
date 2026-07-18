@@ -69,6 +69,7 @@ export async function POST(request: NextRequest) {
       voucher: {
         code: result.code,
         discountAmount: result.discountAmount,
+        remainingAmount: result.remainingAmount,
         cartSubtotal: result.cartSubtotal,
         deliveryFee: result.deliveryFee,
         finalSubtotal: result.finalSubtotal,

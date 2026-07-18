@@ -165,6 +165,7 @@ interface UserVoucherItem {
   id: number
   code: string
   discountAmount: number
+  remainingAmount?: number
   minOrderAmount: number | null
   expiresAt: string | null
   message: string | null
@@ -1585,7 +1586,16 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
                       )}
                     </div>
                     <p className="text-lg font-bold text-green-700 mt-1">
-                      -₾{voucher.discountAmount.toFixed(2)} ფასდაკლება
+                      ნაშთი: ₾
+                      {(voucher.remainingAmount ?? voucher.discountAmount).toFixed(
+                        2,
+                      )}
+                      {voucher.remainingAmount != null &&
+                        voucher.remainingAmount < voucher.discountAmount && (
+                          <span className="text-sm font-medium text-gray-600 ml-2">
+                            / ₾{voucher.discountAmount.toFixed(2)}
+                          </span>
+                        )}
                     </p>
                     {voucher.minOrderAmount && (
                       <p className="text-sm text-gray-600">
@@ -1618,7 +1628,7 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
                     {voucher.isAvailable
                       ? 'აქტიური'
                       : voucher.isUsed
-                        ? 'გამოყენებული'
+                        ? 'ბალანსი ამოიწურა'
                         : voucher.isExpired
                           ? 'ვადაგასული'
                           : 'არააქტიური'}
@@ -2096,11 +2106,7 @@ const AccountSectionContent = ({ section }: { section: AccountSection }) => {
                         <p className="text-[16px] text-black">
                           {saleDateLabel} • <span className="text-black text-[14px]">{saleTimeLabel}</span>
                         </p>
-                        {order.buyer && (
-                          <p className="text-[16px] text-black">
-                            მყიდველი: {order.buyer.name || 'უცნობი'} ({order.buyer.email || '---'})
-                          </p>
-                        )}
+                       
                       </div>
                       <div className="text-right space-y-2">
                         <p className="font-bold md:text-[22px] text-[16px] text-black">ჯამი: ₾{sellerTotal.toFixed(2)}</p>

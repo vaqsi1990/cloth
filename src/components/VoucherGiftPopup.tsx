@@ -10,6 +10,7 @@ interface PopupVoucher {
   id: number
   code: string
   discountAmount: number
+  remainingAmount?: number
   minOrderAmount: number | null
   expiresAt: string | null
   message: string | null
@@ -103,7 +104,10 @@ export default function VoucherGiftPopup() {
           <div className="absolute inset-0">
             <div className="absolute left-1/2 -translate-x-1/2 top-[50%] w-[40%] h-[7.5%] flex items-center justify-center">
               <p className="text-black text-[clamp(20px,7vw,30px)] font-bold leading-none tracking-tight">
-                ₾{formatDiscount(voucher.discountAmount)}
+                ₾
+                {formatDiscount(
+                  voucher.remainingAmount ?? voucher.discountAmount,
+                )}
               </p>
             </div>
 

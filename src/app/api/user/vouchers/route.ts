@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getUserVoucherRemainingAmount } from '@/lib/voucher'
 
 export async function GET() {
   try {
@@ -22,28 +23,37 @@ export async function GET() {
     })
 
     const now = new Date()
-    const vouchers = userVouchers.map((uv) => {
-      const v = uv.voucher
-      const isExpired = v.expiresAt ? now > v.expiresAt : false
-      const notStarted = v.startsAt ? now < v.startsAt : false
-      const isAvailable =
-        !uv.isUsed && v.isActive && !isExpired && !notStarted
+    const vouchers = await Promise.all(
+      userVouchers.map(async (uv) => {
+        const v = uv.voucher
+        const expiresAt = uv.expiresAt ?? v.expiresAt
+        const isExpired = expiresAt ? now > expiresAt : false
+        const notStarted = v.startsAt ? now < v.startsAt : false
+        const remainingAmount = await getUserVoucherRemainingAmount(
+          v.id,
+          session.user.id,
+          v.discountAmount,
+        )
+        const isAvailable =
+          remainingAmount > 0 && v.isActive && !isExpired && !notStarted
 
-      return {
-        id: uv.id,
-        voucherId: v.id,
-        code: v.code,
-        discountAmount: v.discountAmount,
-        minOrderAmount: v.minOrderAmount,
-        expiresAt: v.expiresAt,
-        message: uv.message,
-        isUsed: uv.isUsed,
-        isActive: v.isActive,
-        isExpired,
-        isAvailable,
-        receivedAt: uv.createdAt,
-      }
-    })
+        return {
+          id: uv.id,
+          voucherId: v.id,
+          code: v.code,
+          discountAmount: v.discountAmount,
+          remainingAmount,
+          minOrderAmount: v.minOrderAmount,
+          expiresAt,
+          message: uv.message,
+          isUsed: remainingAmount <= 0,
+          isActive: v.isActive,
+          isExpired,
+          isAvailable,
+          receivedAt: uv.createdAt,
+        }
+      }),
+    )
 
     return NextResponse.json({ success: true, vouchers })
   } catch (error) {

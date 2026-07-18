@@ -814,6 +814,8 @@ model UserVoucher {
   voucherId Int
   voucher   Voucher   @relation(fields: [voucherId], references: [id], onDelete: Cascade)
   message   String?
+  /// Gift expiry for this recipient — voucher stays usable until balance is 0 or this date passes.
+  expiresAt DateTime?
   isUsed    Boolean   @default(false)
   seenAt    DateTime?
   createdAt DateTime  @default(now())
@@ -821,6 +823,7 @@ model UserVoucher {
   @@unique([userId, voucherId])
   @@index([userId, isUsed])
   @@index([userId, seenAt])
+  @@index([expiresAt])
 }
 
 model VoucherRedemption {

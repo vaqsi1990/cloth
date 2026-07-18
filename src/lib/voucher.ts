@@ -6,6 +6,7 @@ export type VoucherValidationResult =
       voucherId: number
       code: string
       discountAmount: number
+      remainingAmount: number
       cartSubtotal: number
       deliveryFee: number
       finalSubtotal: number
@@ -63,27 +64,82 @@ export async function findVoucherByCode(code: string) {
 }
 
 /**
- * Count how many times a user has actually consumed a voucher.
- * PENDING checkouts must not count — abandoned BOG redirects used to lock
- * vouchers forever while isUsed stayed false.
+ * How much of the voucher face value this user has already spent or reserved.
+ * Multi-use until the balance hits 0 or the voucher expires.
  */
-async function countUserVoucherUsage(voucherId: number, userId: string) {
-  const [redemptionCount, activePaidWithoutRedeem] = await Promise.all([
-    prisma.voucherRedemption.count({
-      where: { voucherId, userId },
+export async function getUserVoucherSpentAmount(
+  voucherId: number,
+  userId: string,
+  options?: { excludeOrderId?: number },
+): Promise<number> {
+  const excludeOrderId = options?.excludeOrderId
+
+  const [redemptions, paidWithoutRedeem, pendingReserved] = await Promise.all([
+    prisma.voucherRedemption.aggregate({
+      where: {
+        voucherId,
+        userId,
+        ...(excludeOrderId != null ? { orderId: { not: excludeOrderId } } : {}),
+      },
+      _sum: { discountAmount: true },
     }),
-    // Payment-hold can mark PAID before redeem; still treat as consumed.
-    prisma.order.count({
+    prisma.order.aggregate({
       where: {
         voucherId,
         userId,
         status: { in: ['PAID', 'SHIPPED'] },
         voucherRedemptions: { none: {} },
+        ...(excludeOrderId != null ? { id: { not: excludeOrderId } } : {}),
       },
+      _sum: { voucherDiscount: true },
+    }),
+    // PENDING checkouts reserve balance until paid/canceled.
+    prisma.order.aggregate({
+      where: {
+        voucherId,
+        userId,
+        status: 'PENDING',
+        voucherRedemptions: { none: {} },
+        ...(excludeOrderId != null ? { id: { not: excludeOrderId } } : {}),
+      },
+      _sum: { voucherDiscount: true },
     }),
   ])
 
-  return redemptionCount + activePaidWithoutRedeem
+  return roundMoney(
+    (redemptions._sum.discountAmount ?? 0) +
+      (paidWithoutRedeem._sum.voucherDiscount ?? 0) +
+      (pendingReserved._sum.voucherDiscount ?? 0),
+  )
+}
+
+export async function getUserVoucherRemainingAmount(
+  voucherId: number,
+  userId: string,
+  faceAmount: number,
+  options?: { excludeOrderId?: number },
+): Promise<number> {
+  const spent = await getUserVoucherSpentAmount(voucherId, userId, options)
+  return roundMoney(Math.max(0, faceAmount - spent))
+}
+
+async function syncUserVoucherUsedFlag(
+  userId: string,
+  voucherId: number,
+  remainingAmount: number,
+) {
+  const assignment = await prisma.userVoucher.findUnique({
+    where: { userId_voucherId: { userId, voucherId } },
+  })
+  if (!assignment) return
+
+  const shouldBeUsed = remainingAmount <= 0
+  if (assignment.isUsed === shouldBeUsed) return
+
+  await prisma.userVoucher.update({
+    where: { id: assignment.id },
+    data: { isUsed: shouldBeUsed },
+  })
 }
 
 export async function validateVoucher(
@@ -107,10 +163,6 @@ export async function validateVoucher(
     return { valid: false, message: 'ვაუჩერი ჯერ არ არის აქტიური' }
   }
 
-  if (voucher.expiresAt && now > voucher.expiresAt) {
-    return { valid: false, message: 'ვაუჩერის ვადა ამოიწურა' }
-  }
-
   if (voucher.usageLimit !== null && voucher.usedCount >= voucher.usageLimit) {
     return { valid: false, message: 'ვაუჩერის გამოყენების ლიმიტი ამოიწურა' }
   }
@@ -126,6 +178,8 @@ export async function validateVoucher(
     where: { voucherId: voucher.id },
   })
 
+  let giftExpiresAt: Date | null = null
+
   if (assignmentCount > 0) {
     const assignment = await prisma.userVoucher.findUnique({
       where: {
@@ -137,22 +191,31 @@ export async function validateVoucher(
       return { valid: false, message: 'თქვენ არ გაქვთ ეს ვაუჩერი' }
     }
 
-    if (assignment.isUsed) {
-      return { valid: false, message: 'თქვენ უკვე გამოიყენეთ ეს ვაუჩერი' }
-    }
+    giftExpiresAt = assignment.expiresAt
   }
 
-  const userUsageCount = await countUserVoucherUsage(voucher.id, userId)
+  // Gift expiry wins when set; otherwise template voucher expiry.
+  // Usable until balance is spent OR effective expiry passes.
+  const effectiveExpiresAt = giftExpiresAt ?? voucher.expiresAt
+  if (effectiveExpiresAt && now > effectiveExpiresAt) {
+    return { valid: false, message: 'ვაუჩერის ვადა ამოიწურა' }
+  }
 
-  if (userUsageCount >= voucher.perUserLimit) {
-    return { valid: false, message: 'თქვენ უკვე გამოიყენეთ ეს ვაუჩერი' }
+  const remainingAmount = await getUserVoucherRemainingAmount(
+    voucher.id,
+    userId,
+    voucher.discountAmount,
+  )
+
+  if (remainingAmount <= 0) {
+    return { valid: false, message: 'ვაუჩერის ბალანსი ამოიწურა' }
   }
 
   const safeDeliveryFee = Math.max(0, deliveryFee)
   const allocated = allocateVoucherDiscount(
     cartSubtotal,
     safeDeliveryFee,
-    voucher.discountAmount,
+    remainingAmount,
   )
 
   if (allocated.discountAmount <= 0) {
@@ -164,13 +227,14 @@ export async function validateVoucher(
     voucherId: voucher.id,
     code: voucher.code,
     discountAmount: allocated.discountAmount,
+    remainingAmount,
     cartSubtotal,
     deliveryFee: safeDeliveryFee,
     finalSubtotal: allocated.total,
   }
 }
 
-/** Cancel abandoned PENDING checkouts so a voucher can be retried cleanly. */
+/** Cancel abandoned PENDING checkouts so voucher balance can be reused cleanly. */
 export async function cancelPendingVoucherOrders(
   userId: string,
   voucherId: number,
@@ -210,11 +274,11 @@ export async function redeemVoucher(
   })
   if (existing) return
 
-  const assignment = await prisma.userVoucher.findUnique({
-    where: {
-      userId_voucherId: { userId, voucherId },
-    },
+  const voucher = await prisma.voucher.findUnique({
+    where: { id: voucherId },
+    select: { discountAmount: true },
   })
+  if (!voucher) return
 
   await prisma.$transaction([
     prisma.voucher.update({
@@ -229,15 +293,15 @@ export async function redeemVoucher(
         discountAmount,
       },
     }),
-    ...(assignment
-      ? [
-          prisma.userVoucher.update({
-            where: { id: assignment.id },
-            data: { isUsed: true },
-          }),
-        ]
-      : []),
   ])
+
+  const remaining = await getUserVoucherRemainingAmount(
+    voucherId,
+    userId,
+    voucher.discountAmount,
+    { excludeOrderId: undefined },
+  )
+  await syncUserVoucherUsedFlag(userId, voucherId, remaining)
 }
 
 /** Undo redeem when payment is released/refunded/canceled after capture. */
@@ -247,27 +311,10 @@ export async function restoreVoucherForOrder(orderId: number) {
   })
   if (!redemption) return
 
-  const [assignment, otherRedemptions, voucher] = await Promise.all([
-    prisma.userVoucher.findUnique({
-      where: {
-        userId_voucherId: {
-          userId: redemption.userId,
-          voucherId: redemption.voucherId,
-        },
-      },
-    }),
-    prisma.voucherRedemption.count({
-      where: {
-        voucherId: redemption.voucherId,
-        userId: redemption.userId,
-        id: { not: redemption.id },
-      },
-    }),
-    prisma.voucher.findUnique({
-      where: { id: redemption.voucherId },
-      select: { usedCount: true },
-    }),
-  ])
+  const voucher = await prisma.voucher.findUnique({
+    where: { id: redemption.voucherId },
+    select: { usedCount: true, discountAmount: true },
+  })
 
   const nextUsedCount = Math.max(0, (voucher?.usedCount ?? 1) - 1)
 
@@ -277,13 +324,18 @@ export async function restoreVoucherForOrder(orderId: number) {
       where: { id: redemption.voucherId },
       data: { usedCount: nextUsedCount },
     }),
-    ...(assignment?.isUsed && otherRedemptions === 0
-      ? [
-          prisma.userVoucher.update({
-            where: { id: assignment.id },
-            data: { isUsed: false },
-          }),
-        ]
-      : []),
   ])
+
+  if (voucher) {
+    const remaining = await getUserVoucherRemainingAmount(
+      redemption.voucherId,
+      redemption.userId,
+      voucher.discountAmount,
+    )
+    await syncUserVoucherUsedFlag(
+      redemption.userId,
+      redemption.voucherId,
+      remaining,
+    )
+  }
 }

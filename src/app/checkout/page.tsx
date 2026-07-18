@@ -91,6 +91,7 @@ const CheckoutPage = () => {
     const [appliedVoucher, setAppliedVoucher] = useState<{
         code: string
         discountAmount: number
+        remainingAmount?: number
     } | null>(null)
     const [voucherLoading, setVoucherLoading] = useState(false)
 
@@ -296,7 +297,11 @@ const CheckoutPage = () => {
         code: string,
         deliveryFeeForValidation = checkoutDeliveryFee,
         options?: { silent?: boolean },
-    ): Promise<{ code: string; discountAmount: number } | null> => {
+    ): Promise<{
+        code: string
+        discountAmount: number
+        remainingAmount?: number
+    } | null> => {
         const response = await fetch('/api/vouchers/validate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -312,6 +317,7 @@ const CheckoutPage = () => {
             return {
                 code: data.voucher.code,
                 discountAmount: data.voucher.discountAmount,
+                remainingAmount: data.voucher.remainingAmount,
             }
         }
 
@@ -332,8 +338,12 @@ const CheckoutPage = () => {
             const voucher = await validateVoucherCode(voucherInput)
             if (voucher) {
                 setAppliedVoucher(voucher)
+                const remainingNote =
+                    voucher.remainingAmount != null
+                        ? ` (ნაშთი: ₾${voucher.remainingAmount.toFixed(2)})`
+                        : ''
                 showToast(
-                    `ვაუჩერი გამოყენებულია: -₾${voucher.discountAmount.toFixed(2)}`,
+                    `ვაუჩერი გამოყენებულია: -₾${voucher.discountAmount.toFixed(2)}${remainingNote}`,
                     'success',
                 )
             } else {
@@ -389,7 +399,11 @@ const CheckoutPage = () => {
             if (cancelled || !voucher) return
             setAppliedVoucher((prev) =>
                 prev && prev.code === voucher.code
-                    ? { ...prev, discountAmount: voucher.discountAmount }
+                    ? {
+                          ...prev,
+                          discountAmount: voucher.discountAmount,
+                          remainingAmount: voucher.remainingAmount,
+                      }
                     : prev,
             )
         }
@@ -968,7 +982,15 @@ const CheckoutPage = () => {
                                                     {appliedVoucher.code}
                                                 </span>
                                                 <span className="text-green-700 text-sm md:text-base">
-                                                    ფასდაკლება: -₾{appliedVoucher.discountAmount.toFixed(2)}
+                                                    ამ შეკვეთაზე: -₾
+                                                    {appliedVoucher.discountAmount.toFixed(2)}
+                                                    {appliedVoucher.remainingAmount != null && (
+                                                        <span className="text-green-800/80">
+                                                            {' '}
+                                                            · ნაშთი: ₾
+                                                            {appliedVoucher.remainingAmount.toFixed(2)}
+                                                        </span>
+                                                    )}
                                                 </span>
                                             </div>
                                             <button

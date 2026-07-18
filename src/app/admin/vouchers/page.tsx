@@ -84,6 +84,7 @@ const AdminVouchersPage = () => {
   const [sendSearch, setSendSearch] = useState('')
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set())
   const [sendMessage, setSendMessage] = useState('')
+  const [sendExpiresAt, setSendExpiresAt] = useState('')
   const [sending, setSending] = useState(false)
   const [receivedVouchers, setReceivedVouchers] = useState<ReceivedVoucher[]>([])
   const [loadingReceived, setLoadingReceived] = useState(true)
@@ -174,7 +175,12 @@ const AdminVouchersPage = () => {
 
     const discountAmount = parseFloat(formData.discountAmount)
     if (isNaN(discountAmount) || discountAmount <= 0) {
-      showToast('ფასდაკლება უნდა იყოს დადებითი რიცხვი (₾)', 'error')
+      showToast('ბალანსი უნდა იყოს დადებითი რიცხვი (₾)', 'error')
+      return
+    }
+
+    if (!formData.expiresAt) {
+      showToast('ვაუჩერის ვადა აუცილებელია', 'error')
       return
     }
 
@@ -185,8 +191,9 @@ const AdminVouchersPage = () => {
         ? parseFloat(formData.minOrderAmount)
         : null,
       usageLimit: formData.usageLimit ? parseInt(formData.usageLimit, 10) : null,
-      perUserLimit: parseInt(formData.perUserLimit, 10) || 1,
-      expiresAt: formData.expiresAt || null,
+      // Balance vouchers are multi-use until amount/expiry; keep DB default.
+      perUserLimit: 999,
+      expiresAt: formData.expiresAt,
       isActive: formData.isActive,
       note: formData.note.trim() || null,
     }
@@ -245,6 +252,11 @@ const AdminVouchersPage = () => {
     setSendSearch('')
     setSelectedUserIds(new Set())
     setSendMessage(options?.message || '')
+    setSendExpiresAt(
+      voucher.expiresAt
+        ? new Date(voucher.expiresAt).toISOString().slice(0, 10)
+        : '',
+    )
     setSendUserFilter(options?.filter || 'all')
     setSendUsersLoading(true)
 
@@ -300,6 +312,7 @@ const AdminVouchersPage = () => {
     setSendSearch('')
     setSelectedUserIds(new Set())
     setSendMessage('')
+    setSendExpiresAt('')
     setSendUsers([])
     setSendUserFilter('all')
   }
@@ -324,6 +337,11 @@ const AdminVouchersPage = () => {
       return
     }
 
+    if (!sendExpiresAt && !sendVoucher.expiresAt) {
+      showToast('აირჩიეთ ვაუჩერის ვადა', 'error')
+      return
+    }
+
     setSending(true)
     try {
       const response = await fetch('/api/admin/vouchers/send', {
@@ -333,6 +351,7 @@ const AdminVouchersPage = () => {
           voucherId: sendVoucher.id,
           userIds: Array.from(selectedUserIds),
           message: sendMessage.trim() || null,
+          expiresAt: sendExpiresAt || sendVoucher.expiresAt,
         }),
       })
       const data = await response.json()
@@ -463,7 +482,7 @@ const AdminVouchersPage = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  ფასდაკლება (₾) *
+                  ბალანსი (₾) *
                 </label>
                 <input
                   type="number"
@@ -473,9 +492,12 @@ const AdminVouchersPage = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, discountAmount: e.target.value })
                   }
-                  placeholder="10"
+                  placeholder="50"
                   className="w-full border border-gray-300 rounded-lg px-3 py-2"
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  მრავალჯერადი: იხარჯება ნაშთამდე ან ვადის ამოწურვამდე
+                </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -495,7 +517,7 @@ const AdminVouchersPage = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  გამოყენების ლიმიტი (სულ)
+                  გლობალური გამოყენების ლიმიტი
                 </label>
                 <input
                   type="number"
@@ -507,24 +529,13 @@ const AdminVouchersPage = () => {
                   placeholder="შეუზღუდავი"
                   className="w-full border border-gray-300 rounded-lg px-3 py-2"
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  ყველა მომხმარებლის ჯამური redeem-ების მაქს. რაოდენობა
+                </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  ერთ მომხმარებელზე
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={formData.perUserLimit}
-                  onChange={(e) =>
-                    setFormData({ ...formData, perUserLimit: e.target.value })
-                  }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  ვადის გასვლა
+                  ვადის გასვლა *
                 </label>
                 <input
                   type="date"
@@ -532,8 +543,12 @@ const AdminVouchersPage = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, expiresAt: e.target.value })
                   }
+                  required
                   className="w-full border border-gray-300 rounded-lg px-3 py-2"
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  მოქმედებს ბალანსის ამოწურვამდე ან ამ თარიღამდე
+                </p>
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -701,7 +716,7 @@ const AdminVouchersPage = () => {
                     კოდი
                   </th>
                   <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">
-                    ფასდაკლება
+                    ბალანსი
                   </th>
                   <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700 hidden md:table-cell">
                     გამოყენება
@@ -822,6 +837,21 @@ const AdminVouchersPage = () => {
             </div>
 
             <div className="p-5 overflow-y-auto flex-1 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  ვადა *
+                </label>
+                <input
+                  type="date"
+                  value={sendExpiresAt}
+                  onChange={(e) => setSendExpiresAt(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  მიმღები იყენებს ბალანსის ამოწურვამდე ან ამ ვადამდე
+                </p>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   შეტყობინება (ოფციონალური)
