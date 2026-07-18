@@ -319,6 +319,10 @@ function buildSellerPhone(order: AdminOrder): string {
   return [...new Set(phones)].join(', ')
 }
 
+function formatItemOriginalPrice(price: number): string {
+  return `₾${Number(price || 0).toFixed(2)}`
+}
+
 function buildProductsLabel(items: AdminOrderItem[], rentalOnly: boolean): string {
   const filtered = items.filter((item) =>
     rentalOnly ? item.isRental : !item.isRental,
@@ -328,7 +332,8 @@ function buildProductsLabel(items: AdminOrderItem[], rentalOnly: boolean): strin
     .map((item) => {
       const name = item.product?.name || item.productName
       const size = item.size ? ` (${item.size})` : ''
-      return `${name}${size} ×${item.quantity}`
+      const price = formatItemOriginalPrice(item.price)
+      return `${name}${size} ×${item.quantity} · ორიგინალი ფასი: ${price}`
     })
     .join('; ')
 }
@@ -518,6 +523,15 @@ function OrderDetailsPanel({
                       {productName}
                       {sizeLabel}
                       {item.quantity > 1 ? ` ×${item.quantity}` : ''}
+                    </p>
+                    <p className="text-xs text-gray-700 mt-1">
+                      ორიგინალი ფასი:{' '}
+                      <span className="font-semibold text-black">
+                        {formatItemOriginalPrice(item.price)}
+                      </span>
+                      {item.quantity > 1
+                        ? ` · ჯამი: ${formatItemOriginalPrice(item.price * item.quantity)}`
+                        : ''}
                     </p>
                     {fulfillmentLabel && (
                       <p className="text-xs text-gray-600 mt-1">
